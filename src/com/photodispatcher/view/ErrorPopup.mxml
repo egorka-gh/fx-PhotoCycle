@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   width="300">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			public var alert:String;
+			[Bindable]
+			public var okLabel:String='Ok';
+			[Bindable]
+			public var cancelLabel:String='Cancel';
+
+			public var okHandler:Function=null;
+			
+			public function show(info:Boolean = false):void{
+				if(info){
+					currentState = 'info';
+				}
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				PopUpManager.centerPopUp(this);
+			}
+			
+			protected function btClose_clickHandler(event:MouseEvent):void{
+				close();
+			}
+			
+			protected function btOk_clickHandler(event:MouseEvent):void{
+				if (Boolean(okHandler)){
+					okHandler();
+				}
+				close();
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="info" />
+	</s:states>
+	<s:Rect radiusX="3" top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="#cccccc"/>
+		</s:stroke>
+	</s:Rect>
+	<!--<common:ImageButton id="btClose" imageSource="{ygfx.y_btn_close_ornage_popup}" right="7" top="8"
+						skinClass="com.akmeful.fotokniga.library.ui.skins.IconButtonSkin"
+						click="btClose_clickHandler(event)" excludeFrom="info"/>-->
+	<s:Image source="assets/error.png" left="5" top="5" width="32" height="32"/>
+	<s:VGroup horizontalCenter="0" maxWidth="{width}" horizontalAlign="center" top="40" left="10" right="10" bottom="10">
+		<!--<s:Label id="alertLabel" text="{alert}" color="0" fontSize="14" width="100%"
+		textAlign="left" maxDisplayedLines="0"/>-->
+		<s:TextArea id="alertLabel" text="{alert}" color="0" fontSize="14" width="100%"
+					borderVisible="false"
+					textAlign="left" editable="false" maxHeight="150"/>
+		<s:HGroup horizontalAlign="center" gap="13">
+			<s:Button id="btOk" label="{okLabel}" fontSize="13" color="#0"
+								click="btOk_clickHandler(event)" visible="{okLabel}" includeInLayout="{okLabel}"/>
+			<s:Button id="btCancel" label="{cancelLabel}" fontSize="13" color="#0"
+								click="btClose_clickHandler(event)" visible="{cancelLabel}" includeInLayout="{cancelLabel}"
+								excludeFrom="info"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

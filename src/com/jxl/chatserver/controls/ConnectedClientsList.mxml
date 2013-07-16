@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:List xmlns:mx="http://www.adobe.com/2006/mxml"
+	itemRenderer="com.jxl.chatserver.controls.ConnectedClientItemRenderer"
+	borderStyle="none"
+	selectable="false">
+	
+	<mx:Metadata>
+		[Event(name="boot", type="com.jxl.chatserver.events.BootUserEvent")]
+	</mx:Metadata>
+	
+</mx:List>

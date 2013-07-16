@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:config="com.photodispatcher.view.config.*"
+		 creationComplete="{init()}">
+	
+<fx:Script>
+	<![CDATA[
+		import com.photodispatcher.event.AsyncSQLEvent;
+		import com.photodispatcher.model.PdfTemplate;
+		import com.photodispatcher.model.dao.PdfTemplateDAO;
+		
+		import mx.collections.ArrayCollection;
+		
+		[Bindable]
+		private var currentList:ArrayCollection=new ArrayCollection();
+		
+		private function addItem():void{
+			var newPdf:PdfTemplate= new PdfTemplate();
+			//fill vs filter vals
+			if(tiNameFilter && tiNameFilter.text) newPdf.name=tiNameFilter.text;
+			if(tiWidthFilter && tiWidthFilter.text) newPdf.width=int(tiWidthFilter.text);
+			if(tiHeightFilter && tiHeightFilter.text) newPdf.height=int(tiHeightFilter.text);
+
+			itemsGrid.addItem(newPdf);
+		}
+
+		private var itemsToSave:Array=[];
+		private var saveRunning:Boolean=false;
+		private function saveAll():void{
+			//TODO chek if save in process
+			var pdf:PdfTemplate;
+			for each (var o:Object in currentList){
+				pdf=o as PdfTemplate;
+				if(pdf && (!pdf.loaded || pdf.changed)){
+					itemsToSave.push(pdf);
+				}
+			}
+			if(!saveRunning) saveNext();
+		}
+		private function saveNext():void{
+			if(!itemsToSave || itemsToSave.length==0){
+				//completed
+				return;
+			}
+			saveRunning=true;
+			var o:Object=itemsToSave.shift();
+			var dao:PdfTemplateDAO=new PdfTemplateDAO();
+			dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
+			dao.save(o);
+		}
+		private function onSave(e:AsyncSQLEvent):void{
+			var dao:PdfTemplateDAO=e.target as PdfTemplateDAO;
+			if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
+			saveRunning=itemsToSave && itemsToSave.length>0;
+			if(e.result==AsyncSQLEvent.RESULT_COMLETED){
+				saveNext();
+			}else{
+				saveRunning=false;
+			}
+		}
+
+		private function refresh():void{
+			var dao:PdfTemplateDAO=new PdfTemplateDAO();
+			currentList.source=dao.findAllArr();
+		}
+
+		private function init():void{
+			currentList.filterFunction=gridFilter;
+			refresh();
+		}
+		
+		private function applyFilter():void{
+			currentList.refresh();
+		}
+		
+		private function gridFilter(item:Object):Boolean{
+			var template:PdfTemplate=item as PdfTemplate;
+			if(!template) return false;
+			if(tiNameFilter && tiNameFilter.text && template.name.substr(0,tiNameFilter.text.length)!=tiNameFilter.text) return false;
+			if(tiWidthFilter && tiWidthFilter.text && template.width.toString().substr(0,tiWidthFilter.text.length)!=tiWidthFilter.text) return false;
+			if(tiHeightFilter && tiHeightFilter.text && template.height.toString().substr(0,tiHeightFilter.text.length)!=tiHeightFilter.text) return false;
+			return true;
+		}
+
+
+	]]>
+</fx:Script>
+	
+	<s:VGroup gap="10" width="100%" height="100%">
+		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			<s:Label text="Фильтрация" fontWeight="bold"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Наименование"/>
+			<s:TextInput id="tiNameFilter" width="100" change="{applyFilter()}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Ширина"/>
+			<s:TextInput id="tiWidthFilter" width="100" restrict="0123456789" change="{applyFilter()}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Длина"/>
+			<s:TextInput id="tiHeightFilter" width="100" restrict="0123456789" change="{applyFilter()}"/>
+			
+			<s:Spacer width="100%"/>
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+
+		</s:HGroup>
+		<config:ItemsGrid id="itemsGrid" editable="true"
+						  currentData="{currentList}" currentColumns="{PdfTemplateDAO.gridColumns()}" 
+						  width="100%" height="100%"/>
+		<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="left">
+			<!--TODO implement DELETE-->
+			<s:Button id="btAdd" label="Добавить" click="{addItem()}"/>
+			<s:Button id="btSave" label="Сохранить" click="{saveAll()}"/>
+			<s:Button id="btCancel" label="Отмена" click="{refresh()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

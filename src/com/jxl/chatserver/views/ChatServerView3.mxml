@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Window 
+	maximizable="false"
+	minimizable="true"
+	resizable="false"
+	showStatusBar="false"
+	systemChrome="none"
+	transparent="true"
+	showFlexChrome="false"
+	layout="absolute"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	width="512" height="408" backgroundColor="#FFFFFF" xmlns:controls="com.jxl.chatserver.controls.*"
+	currentState="configure_state"
+	creationComplete="init()" xmlns:jxl="http://jessewarden.com/projects/chat/">
+	
+	<mx:Metadata>
+		[Event(name="startServer", type="com.jxl.chatserver.events.ChatServerEvent")]
+		[Event(name="boot", type="com.jxl.chatserver.events.BootUserEvent")]
+		[Event(name="disconnect", type="com.jxl.chatserver.events.ChatServerEvent")]
+	</mx:Metadata>
+	
+	<mx:Script>
+		<![CDATA[
+			import com.jxl.chatskins.events.ConnectingAnimeEvent;
+			import com.jxl.chatserver.mvcs.controllers.ChatServerController;
+			
+			import com.jxl.chatserver.events.BootUserEvent;
+			import com.jxl.chatserver.events.ChatServerEvent;
+			import mx.collections.ArrayCollection;
+			import com.jxl.chatserver.controls.ConnectedClientItemRenderer;
+			import mx.core.Window;
+			
+			[Bindable]
+			[ArrayElementType("com.jxl.chatserver.vo.ClientVO")]
+			public var connectedClients:ArrayCollection;
+			
+			[Bindable]
+			public var failMessage:String = "";
+			
+			private var serverSocket:ServerSocket;
+			private var controller:ChatServerController;
+			
+			private function init():void
+			{
+				move((Screen.mainScreen.bounds.width / 2) - width, (Screen.mainScreen.bounds.height / 2) - (height / 2));
+				if(x < 0) x = 0;
+				if(y < 0) y = 0;
+				controller = new ChatServerController(this);
+			}
+			
+			private function onStartServer():void
+			{
+				var evt:ChatServerEvent = new ChatServerEvent(ChatServerEvent.START_SERVER);
+				evt.host				= addressTextInput.text;
+				evt.port				= portNumericStepper.value;
+				dispatchEvent(evt);
+			}
+			
+			private function onBootUser(event:BootUserEvent):void
+			{
+				dispatchEvent(event);
+			}
+			
+			private function onAcceptFailureAtLife():void
+			{
+				currentState = "configure_state";
+			}
+			
+			private function onDisconnect():void
+			{
+				dispatchEvent(new ChatServerEvent(ChatServerEvent.DISCONNECT));
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:states>
+		<mx:State name="configure_state">
+			<mx:AddChild position="lastChild">
+				<jxl:FormOutline x="107" y="95" width="300" height="205"
+					mouseDown="nativeWindow.startMove()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<mx:Form horizontalCenter="0" verticalCenter="0" id="form1">
+					<mx:FormItem>
+						<jxl:TechLabel text="SERVER" />
+					</mx:FormItem>
+					<jxl:TechFormItem label="Port:">
+						<mx:NumericStepper minimum="0" maximum="100000" value="8087" id="portNumericStepper"/>
+					</jxl:TechFormItem>
+					<jxl:TechFormItem label="Address:">
+						<mx:Canvas horizontalScrollPolicy="off" verticalScrollPolicy="off">
+							<jxl:TextFieldBackground />
+							<mx:TextInput text="127.0.0.1" id="addressTextInput" borderStyle="none"  focusAlpha="0" enter="onStartServer()"/>
+						</mx:Canvas>
+					</jxl:TechFormItem>
+					<mx:FormItem>
+						<jxl:TechButton label="Start Server" click="onStartServer()"/>
+					</mx:FormItem>
+				</mx:Form>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{form1}" position="before">
+				<jxl:CloseButton x="377" y="107" click="close()"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{form1}" position="before">
+				<jxl:MinimizeButton x="353" y="107" click="minimize()"/>
+			</mx:AddChild>
+			
+		</mx:State>
+		<mx:State name="fail_state">
+			<mx:AddChild position="lastChild">
+				<jxl:ErrorSkin x="139.5" y="107" mouseDown="nativeWindow.startMove()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<mx:Text text="{failMessage}" horizontalCenter="-4" verticalCenter="-7" color="#980000" fontWeight="bold" fontSize="12" width="181" height="89" textAlign="center"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechButton x="256" y="265" label="OK" click="onAcceptFailureAtLife()"/>
+			</mx:AddChild>
+			
+		</mx:State>
+		<mx:State name="ready_state">
+			
+			<mx:AddChild position="lastChild">
+				<jxl:WindowSkin x="0" y="0" mouseDown="nativeWindow.startMove()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:SubPanel x="26" y="91" width="460" height="284"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechLabel x="26" y="69" text="CONNECTED CLIENTS"  width="121"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<controls:ConnectedClientsList
+					x="40" y="102" width="432" height="263" dataProvider="{connectedClients}"
+					boot="onBootUser(event)"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:CloseButton x="473" y="29" click="close()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:MinimizeButton x="449" y="29" click="minimize()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechLinkButton x="425" y="70" width="68" label="Disconnect" click="onDisconnect()"/>
+			</mx:AddChild>
+			
+			
+		</mx:State>
+	</mx:states>
+	
+</mx:Window>

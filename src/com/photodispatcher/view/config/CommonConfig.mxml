@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.IMRunerEvent;
+			import com.photodispatcher.model.AppConfig;
+			import com.photodispatcher.model.dao.AppConfigDAO;
+			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.shell.IMRuner;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.events.FlexEvent;
+			
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var conf:AppConfig;
+			private var confDAO:AppConfigDAO;
+			
+			[Bindable]
+			private var workFolder:String;
+			[Bindable]
+			private var prtPath:String;
+			[Bindable]
+			private var imPath:String;
+			[Bindable]
+			private var imRespond:String;
+			[Bindable]
+			private var imThreads:int=0;
+			[Bindable]
+			private var imPathValid:Boolean=false;
+			[Bindable]
+			private var forceStarHour:int=0;
+			[Bindable]
+			private var forceStarMinute:int=0;
+			[Bindable]
+			private var serverIP:String;
+			[Bindable]
+			private var pdfPageLimit:int=100;
+
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void{
+				confDAO=new AppConfigDAO();
+				conf=confDAO.getItem();
+				
+				imPath=Context.getAttribute('imPath');
+				workFolder=Context.getAttribute('workFolder');
+				prtPath=Context.getAttribute('prtPath');
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					imThreads=so.data.imThreads;
+					serverIP=so.data.serverIP;
+				}
+				if(!imThreads || imThreads<0) imThreads=0;
+				pingIM();
+				//so= SharedObject.getLocal('appProps','/');
+				forceStarHour=so.data.forceStarHour;
+				forceStarMinute=so.data.forceStarMinute;
+				if(so.data.pdfPageLimit) pdfPageLimit=so.data.pdfPageLimit;
+				if(!pdfPageLimit) pdfPageLimit=100;
+
+			}
+			
+			private function pingIM():void{
+				if(imPath){
+					var f:File=File.applicationStorageDirectory;
+					//var im:IMRuner= new IMRuner(imPath,Context.getAttribute('workFolder'));
+					var im:IMRuner= new IMRuner(imPath,f.nativePath);
+					im.addEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+					im.ping(imPath);
+				}
+			}
+			private function onImPing(e:IMRunerEvent):void{
+				var im:IMRuner=e.target as IMRuner;
+				im.removeEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+				imPathValid=!e.hasError;
+				imRespond=e.error;
+			}
+
+			protected function btWrkFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var sPath:String='';
+				var fl:File = File.userDirectory;
+				fl.addEventListener(Event.SELECT,wrkFolderSet);
+				fl.browseForDirectory('Выбирите рабочую папку');
+			}
+			protected function wrkFolderSet(event:Event):void{
+				var fl:File = event.target as File;
+				if(fl){
+					fl.removeEventListener(Event.SELECT,wrkFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					workFolder=fl.nativePath;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.workFolder = workFolder;
+					so.flush();  
+					Context.setAttribute("workFolder", workFolder);
+				}
+			}
+			
+			protected function btPrtFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var fl:File = File.userDirectory;
+				fl.addEventListener(Event.SELECT,prtFolderSet);
+				fl.browseForDirectory('Выбирите папку для подготовленных заказов');
+			}
+			protected function prtFolderSet(event:Event):void{
+				var fl:File = event.target as File;
+				if(fl){
+					fl.removeEventListener(Event.SELECT,prtFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					prtPath=fl.nativePath;;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.prtPath = prtPath;
+					so.flush();  
+					Context.setAttribute("prtPath", prtPath);
+				}
+			}
+
+			
+			protected function btIMFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var fl:File = File.userDirectory;
+				fl.addEventListener(Event.SELECT,imFolderSet);
+				fl.browseForDirectory('Выбирите папку ImageMagick');
+			}
+			protected function imFolderSet(event:Event):void{
+				imPathValid=false;
+				var fl:File = event.target as File;
+				if(fl){
+					fl.removeEventListener(Event.SELECT,imFolderSet);
+					imPath=fl.nativePath;
+
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.imPath = fl.nativePath;
+					so.flush();  
+					Context.setAttribute("imPath", imPath);
+
+					if(imPath) pingIM();
+				}
+			}
+			
+			protected function tiIMThreads_changeHandler(event:TextOperationEvent):void{
+				imThreads=int(tiIMThreads.text);
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imThreads = imThreads;
+				so.flush();  
+				Context.setAttribute("imThreads", imThreads);
+			}
+			
+			protected function btBdOptimize_clickHandler(event:MouseEvent):void{
+				var dao:BaseDAO= new BaseDAO();
+				dao.vacuumDatabase();
+				dao.analyzeDatabase();
+			}
+			
+			private static function leadingZero(value:Number):String{
+				return StrUtil.lPad(value.toString(),2);
+			}
+
+			protected function setForceStart():void{
+				//forceStarHour=nsForceStarHour.value;
+				//forceStarMinute=nsForceStarMinute.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.forceStarHour = forceStarHour;
+				so.data.forceStarMinute = forceStarMinute;
+				Context.setAttribute("forceStarHour", forceStarHour);
+				Context.setAttribute("forceStarMinute", forceStarMinute);
+			}
+			
+			protected function tiServerIP_changeHandler(event:TextOperationEvent):void{
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.serverIP = serverIP;
+				so.flush();  
+				Context.setAttribute("serverIP", serverIP);
+			}
+
+			/*
+			protected function tiPdfPageLimit_changeHandler(event:TextOperationEvent):void{
+				var newVal:int=int(tiPdfPageLimit.text);
+				if(!newVal) return;
+				newVal=Math.ceil(newVal/2)*2;
+				pdfPageLimit=newVal;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.pdfPageLimit = pdfPageLimit;
+				so.flush();  
+				Context.setAttribute("pdfPageLimit", pdfPageLimit);
+			}
+			*/
+				
+			protected function nsPdfPageLimit_changeHandler(event:Event):void{
+				var newVal:int=nsPdfPageLimit.value;
+				if(!newVal) return;
+				pdfPageLimit=newVal;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.pdfPageLimit = pdfPageLimit;
+				so.flush();  
+				Context.setAttribute("pdfPageLimit", pdfPageLimit);
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<s:Form>
+			<s:layout>
+				<s:FormLayout gap="-10"/>
+			</s:layout>
+
+			<s:FormItem label="Рабочая папка">
+				<mx:HBox>
+					<!--<s:TextInput id="tiWrkFolder" text="{conf.wrk_path}" editable="false" width="400"/>-->
+					<s:TextInput id="tiWrkFolder" text="{workFolder}" editable="false" width="400"/>
+					<s:Button id="btWrkFolder" label="..." click="btWrkFolder_clickHandler(event)"/>
+				</mx:HBox>
+			</s:FormItem> 
+
+			<s:FormItem label="Папка подготовленных заказов">
+				<mx:HBox>
+					<s:TextInput id="tiPrtFolder" text="{prtPath}" editable="false" width="400"/>
+					<s:Button id="btPrtFolder" label="..." click="btPrtFolder_clickHandler(event)"/>
+				</mx:HBox>
+			</s:FormItem> 
+
+			<s:FormItem label="IP компьютера">
+				<s:TextInput id="tiServerIP" text="@{serverIP}" editable="true"  width="300" change="tiServerIP_changeHandler(event)"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Интервал синхронизации (мин)">
+				<s:TextInput id="tiSyncInterval" text="{conf.monitor_interval}"
+							 restrict="0123456789"
+							 change="{conf.monitor_interval=int(tiSyncInterval.text)}"
+							 width="50"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Принудительный старт закачки после">
+				<s:HGroup gap="3" verticalAlign="baseline">
+					<s:NumericStepper id="nsForceStarHour" value="@{forceStarHour}" 
+									  minimum="0" maximum="23" valueFormatFunction="{leadingZero}" width="40" change="{setForceStart()}"/>
+					<s:Label text=":" fontWeight="bold"/>
+					<s:NumericStepper id="nsForceStarMinute"  value="@{forceStarMinute}"
+									  minimum="0" maximum="59" valueFormatFunction="{leadingZero}" width="40" change="{setForceStart()}"/>
+				</s:HGroup>
+			</s:FormItem> 
+
+			<s:FormItem label="Папка ImageMagick">
+				<s:VGroup gap="3">
+					<s:VGroup gap="3">
+						<s:HGroup gap="5">
+							<s:TextInput id="tiIMFolder" text="{imPath}" editable="false" width="400" color="{imPathValid?0:0xff0000}"/>
+							<s:Button id="btIMFolder" label="..." click="btIMFolder_clickHandler(event)"/>
+						</s:HGroup>
+						<s:Label text="{imRespond}" color="{imPathValid?0:0xff0000}"/>
+					</s:VGroup>
+					<s:HGroup gap="5" verticalAlign="baseline">
+						<s:Label text="Кол потоков"/>
+						<s:TextInput id="tiIMThreads" text="{imThreads.toString()}" restrict="0123456789" width="50" enabled="{imPathValid}"
+									 change="tiIMThreads_changeHandler(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:FormItem> 
+
+			<s:FormItem label="Кол-во страниц в PDF файле">
+				<!--<s:TextInput id="tiPdfPageLimit" text="{pdfPageLimit}"
+							 restrict="0123456789"
+							 change="tiPdfPageLimit_changeHandler(event)"
+							 width="50"/>-->
+				<s:NumericStepper id="nsPdfPageLimit" value="@{pdfPageLimit}" 
+								  minimum="0" maximum="200" snapInterval="10" width="50" change="nsPdfPageLimit_changeHandler(event)"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Сжать базу данных">
+				<s:Button id="btBdOptimize" label="Выполнить" click="btBdOptimize_clickHandler(event)"/>
+			</s:FormItem> 
+
+		</s:Form>
+		<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
+			<s:Button id="btSave" label="Сохранить" click="{confDAO.save(conf)}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

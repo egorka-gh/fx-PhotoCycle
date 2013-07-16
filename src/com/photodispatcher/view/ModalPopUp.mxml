@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx"
+						   minWidth="150" minHeight="50" maxWidth="300">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.IList;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			[Bindable]
+			public var dataProvider:IList;
+			[Bindable]
+			public var label:String;
+			
+			override public function open(owner:DisplayObjectContainer, modal:Boolean=false):void{
+				super.open(FlexGlobals.topLevelApplication as DisplayObjectContainer, true);
+				PopUpManager.centerPopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect  radiusX="6" radiusY="6" top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Label text="{label}" fontWeight="bold" left="10" right="10" verticalCenter="0" maxDisplayedLines="0" textAlign="center"/>
+</s:SkinnablePopUpContainer>

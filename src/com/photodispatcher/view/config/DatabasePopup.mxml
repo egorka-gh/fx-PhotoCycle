@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.dao.BaseDAO;
+			
+			import flash.display.DisplayObjectContainer;
+			
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.PopUpEvent;
+			public static const DEFAULT_DB_FILE_PATH:String = 'app-storage:/data/data.sqlite';
+
+			private var _databaseFile:File;
+			private var _configFile:File;
+			
+			[Bindable]
+			private var _connected:Boolean=false;
+			public function get connected():Boolean{
+				return _connected;
+			}
+
+			private var mode:String=SQLMode.UPDATE;
+			private var optimizeBD:Boolean=false;
+			public function chekConnect(mode:String=SQLMode.UPDATE,optimizeBD:Boolean=true):void{
+				this.mode=mode;
+				this.optimizeBD=optimizeBD;
+				reConnect();
+				/*
+				_connected=false;
+				if(statusMessage) statusMessage.text='';
+				
+				var sqlConnection:SQLConnection=Context.getAttribute("sqlConnection");
+				var asyncCnn:SQLConnection=Context.getAttribute("asyncConnection");
+				if(sqlConnection && asyncCnn){
+					//TODO ping bd
+					_connected=true;
+					return;
+				}
+				if(!_databaseFile){ 
+					//open default or last accessed
+					var path:String=DEFAULT_DB_FILE_PATH;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					if (so.size>0) path = so.data.dbPath;  
+					if (!path) return;
+					_databaseFile = new File(path);
+				}
+				if(tiBDPath) tiBDPath.text=_databaseFile.nativePath;
+				if(!_databaseFile.exists){
+					_databaseFile=null;
+					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+					return;
+				}
+				//resolve config bd
+				_configFile=_databaseFile.parent.resolvePath('config.sqlite');
+				if(!_configFile.exists){
+					_databaseFile=null;
+					_configFile=null;
+					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+					return;
+				}
+				
+				//create sync connection
+				try{
+					sqlConnection= new SQLConnection();
+					sqlConnection.open(_databaseFile, mode);
+					Context.setAttribute("sqlConnection", sqlConnection);
+				}
+				catch (error:SQLError){
+					if(!isOpen){
+						//commit=false
+						dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+					} else{
+						statusMessage.text = 'Ошибка открытия: ' + error.message;
+					}
+					return;
+				}
+				asyncCnn= new SQLConnection();
+				asyncCnn.addEventListener(SQLEvent.OPEN,onOpenAsync);
+				asyncCnn.addEventListener(SQLErrorEvent.ERROR,onErrAsync);
+				asyncCnn.openAsync(_databaseFile, mode);
+				*/
+			}
+
+			private function reConnect():void{
+				_connected=false;
+				this.mode=mode;
+				if(statusMessage) statusMessage.text='';
+				
+				var sqlConnection:SQLConnection=Context.getAttribute("sqlConnection");
+				var asyncCnn:SQLConnection=Context.getAttribute("asyncConnection");
+				if(sqlConnection && asyncCnn){
+					//TODO ping bd
+					_connected=true;
+					return;
+				}
+				if(!_databaseFile){ 
+					//open default or last accessed
+					var path:String=DEFAULT_DB_FILE_PATH;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					if (so.size>0) path = so.data.dbPath;  
+					if (!path) return;
+					_databaseFile = new File(path);
+				}
+				if(tiBDPath) tiBDPath.text=_databaseFile.nativePath;
+				if(!_databaseFile.exists){
+					_databaseFile=null;
+					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+					return;
+				}
+				//resolve config bd
+				_configFile=_databaseFile.parent.resolvePath('config.sqlite');
+				if(!_configFile.exists){
+					_databaseFile=null;
+					_configFile=null;
+					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+					return;
+				}
+				
+				//create sync connection
+				try{
+					sqlConnection= new SQLConnection();
+					sqlConnection.open(_databaseFile, mode);
+					Context.setAttribute("sqlConnection", sqlConnection);
+				}
+				catch (error:SQLError){
+					if(!isOpen){
+						//commit=false
+						dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+					} else{
+						statusMessage.text = 'Ошибка открытия: ' + error.message;
+					}
+					return;
+				}
+				asyncCnn= new SQLConnection();
+				asyncCnn.addEventListener(SQLEvent.OPEN,onOpenAsync);
+				asyncCnn.addEventListener(SQLErrorEvent.ERROR,onErrAsync);
+				asyncCnn.openAsync(_databaseFile, mode);
+			}
+
+			private function onOpenAsync(event:SQLEvent):void{
+				var asyncCnn:SQLConnection=event.target as SQLConnection;
+					asyncCnn.removeEventListener(SQLEvent.OPEN,onOpenAsync);
+					asyncCnn.removeEventListener(SQLErrorEvent.ERROR,onErrAsync);
+					Context.setAttribute("asyncConnection", asyncCnn);
+					//asyncCnn.addEventListener(SQLEvent.ATTACH,onAttachAsync);
+					//asyncCnn.addEventListener(SQLErrorEvent.ERROR,onErrAsync);
+					try{
+						var sqlConnection:SQLConnection=Context.getAttribute("sqlConnection");
+						sqlConnection.attach('config',_configFile);
+					}
+					catch (error:SQLError){
+						Context.setAttribute("sqlConnection", null);
+						Context.setAttribute("asyncConnection", null);
+						if(!isOpen){
+							//commit=false
+							dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+						} else{
+							statusMessage.text = 'Ошибка открытия: ' + error.message;
+						}
+						return;
+					}
+					asyncCnn.addEventListener(SQLEvent.ATTACH,onAttachAsync);
+					asyncCnn.addEventListener(SQLErrorEvent.ERROR,onErrAsync);
+					asyncCnn.attach('config',_configFile);
+			}
+
+			private function onAttachAsync(event:SQLEvent):void{
+				var asyncCnn:SQLConnection=event.target as SQLConnection;
+				asyncCnn.removeEventListener(SQLErrorEvent.ERROR,onErrAsync);
+				asyncCnn.removeEventListener(SQLEvent.ATTACH,onAttachAsync);
+					_connected=true;
+					if(mode==SQLMode.UPDATE){
+						var dao:BaseDAO= new BaseDAO();
+					 	if(optimizeBD) dao.analyzeDatabase();
+						dao.createTempTables();
+					}
+					if(!isOpen){
+						//commit=true
+						dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE,false,false,true));
+					}
+			}
+
+			private function onErrAsync(event:SQLErrorEvent):void{
+				var asyncCnn:SQLConnection=event.target as SQLConnection;
+				_connected=false;
+				asyncCnn.removeEventListener(SQLEvent.OPEN,onOpenAsync);
+				asyncCnn.removeEventListener(SQLErrorEvent.ERROR,onErrAsync);
+				asyncCnn.removeEventListener(SQLEvent.ATTACH,onAttachAsync);
+				Context.setAttribute("sqlConnection", null);
+				Context.setAttribute("asyncConnection", null);
+				if(!isOpen){
+					//commit=false
+					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+				} else{
+					statusMessage.text = 'Ошибка открытия: ' + event.error.message;
+				}
+			}
+			
+			protected function btBrowse_clickHandler(event:MouseEvent):void{
+				var fl:File = new File();
+				fl.nativePath = File.userDirectory.nativePath;
+				var txtFilter:FileFilter = new FileFilter('*.sqlite', '*.sqlite');
+				fl.addEventListener(Event.SELECT,bdSet);
+				fl.browseForOpen("Выберите файл базы данных",[txtFilter]);
+			}
+
+			private function bdSet(e:Event):void{
+				var fl:File= e.target as File;
+				if (!fl) return;
+				fl.removeEventListener(Event.SELECT,bdSet);
+				if (!fl.exists) return;
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.dbPath = fl.nativePath;
+				so.flush();  
+				//reset cnn
+				Context.setAttribute("sqlConnection", null);
+				Context.setAttribute("asyncConnection", null);
+				_databaseFile=fl;
+				_configFile=null;
+				reConnect();
+			}
+			
+			override public function close(commit:Boolean=false, data:*=null):void{
+				super.close(_connected, data);
+			}
+			
+			
+			override public function open(owner:DisplayObjectContainer, modal:Boolean=false):void{
+				super.open(FlexGlobals.topLevelApplication as DisplayObjectContainer, true);
+				PopUpManager.centerPopUp(this);
+				if(tiBDPath && _databaseFile) tiBDPath.text=_databaseFile.nativePath;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<s:VGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="База данных"/>
+			<s:TextInput id="tiBDPath" width="300" enabled="false"/>
+			<s:Button id="btBrowse" label="..." width="30"
+					  click="btBrowse_clickHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline" horizontalAlign="right">
+			<s:Label id="statusMessage" color="#ff0000" width="100%"/>
+			<s:Button id="btClose" label="Закрыть" enabled="{_connected}"
+					  click="{close()}"/>
+			<s:Button id="btCloseApp" label="Закрыть приложение" enabled="{!_connected}"
+					  click="{FlexGlobals.topLevelApplication.exit()}"/>
+		</s:HGroup>
+	</s:VGroup>
+
+</s:SkinnablePopUpContainer>

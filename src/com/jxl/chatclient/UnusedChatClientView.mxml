@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}">
+	
+	<fx:Metadata>
+		[Event(name="connect", type="flash.events.Event")]
+		[Event(name="close", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.jxl.chat.vo.messages.ChatMessageVO;
+			import com.jxl.chatclient.events.ServiceEvent;
+			import com.jxl.chatclient.mvcs.services.ChatService;
+			import com.photodispatcher.context.Context;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.utils.TextFlowUtil;
+			private static const SERVER_COLOR:String = "#660000";
+
+			[Bindable]
+			public var failMessage:String = "";
+			[Bindable]
+			public var chatText:String = "";
+			[Bindable]
+			public var users:ArrayCollection;
+
+			[Bindable]
+			private var chatService:ChatService;
+			public function getChatService():ChatService{
+				return chatService;
+			}
+
+			
+			private var socket:Socket;
+			private var timer:Timer;
+
+			private function init():void{
+				chatService = new ChatService();
+				chatService.addEventListener(ServiceEvent.CHAT_MESSAGE, 			onChatMessage);
+				chatService.addEventListener(ServiceEvent.CONNECTED, 				onChatConnected);
+				chatService.addEventListener(ServiceEvent.DISCONNECTED, 			onChatDisconnected);
+				chatService.addEventListener(ServiceEvent.ERROR, 					onChatError);
+				chatService.addEventListener(ServiceEvent.JOINED_CHAT, 				onJoinedChat);
+				chatService.addEventListener(ServiceEvent.USER_LIST_UPDATED, 		onUserListUpdated);
+				chatService.addEventListener(ServiceEvent.USERNAME_TAKEN, 			onUsernameTaken);
+				chatService.addEventListener(ServiceEvent.USER_JOINED_CHAT,			onUserJoinedChat);
+				chatService.addEventListener(ServiceEvent.USER_LEFT_CHAT,			onUserLeftChat);
+				
+				if(timer == null){
+					timer = new Timer(500);
+					timer.addEventListener(TimerEvent.TIMER, onTick, false, 0, true);
+				}				
+				timer.reset();
+				timer.start();
+			}
+
+			private function onTick(event:TimerEvent):void{
+				//if(chatTextArea) this.chatTextArea.verticalScrollPosition = this.chatTextArea.maxVerticalScrollPosition;
+			}
+
+			private function onChatMessage(event:ServiceEvent):void{
+				addChatMessage(event.chatMessage);
+			}
+
+			public function addChatMessage(chatMessage:ChatMessageVO):void{
+				if(chatMessage.username.toLowerCase() != "server"){
+					chatText += "<span color='#006600' fontWeight='bold'>" + chatMessage.username + ":</span>  " + chatMessage.message + "<br />";
+				}else{
+					chatText += "<span color='" + SERVER_COLOR + "' fontWeight='bold'>"+'§: '+chatMessage.message + "</span><br />";
+				}
+				chatTextArea.textFlow=TextFlowUtil.importFromString(chatText);
+			}
+			public function addServerMessage(message:String):void{
+				chatText += "<span color='" + SERVER_COLOR + "' fontWeight='bold'>"+'§: '+message + "</span><br />";
+				chatTextArea.textFlow=TextFlowUtil.importFromString(chatText);
+			}
+
+			private function onChatConnected(event:ServiceEvent):void{
+				// kruft
+			}
+			private function onChatDisconnected(event:ServiceEvent):void{
+				currentState = "offLine";
+			}
+			private function onChatError(event:ServiceEvent):void{
+				currentState = "fail";
+				failMessage = event.lastError;
+			}
+			private function onJoinedChat(event:ServiceEvent):void{
+				currentState = "onLine";
+			}
+			private function onUserListUpdated(event:ServiceEvent):void{
+				//DebugMax.log("ChatClientController::onUserListUpdated");
+				users = new ArrayCollection(event.userList);
+			}
+			private function onUsernameTaken(event:ServiceEvent):void{
+				usernameTaken();
+			}
+			public function usernameTaken():void{
+				currentState = "configure_state";
+				//usernameTextInput.errorString = "Username is taken.";
+			}
+			private function onUserJoinedChat(event:ServiceEvent):void{
+				//DebugMax.log("ChatClientController::onUserJoinedChat");
+				users.addItem(event.chatMessage.username);
+				addServerMessage(event.chatMessage.username + " joined.");
+			}
+			private function onUserLeftChat(event:ServiceEvent):void{
+				//DebugMax.log("ChatClientController::onUserLeftChat, message: " + event.chatMessage);
+				//DebugMax.log("message: " + message);
+				var index:int = users.getItemIndex(event.chatMessage.message);
+				//DebugMax.log("index: " + index);
+				if(index!=-1)users.removeItemAt(index);
+				addServerMessage(event.chatMessage.message + " has left.");
+			}
+
+			//connect
+			public function login():void{
+				var serverIP:String=hostTextInput.text; // Context.getAttribute('serverIP');
+				if(!serverIP) return;
+				currentState='connecting';
+				chatService.connect(serverIP, ChatService.DEFAULT_PORT, '');
+				//TODO implement get host port user from context & 
+			}
+
+			//disconnect
+			private function logoff():void{
+				chatService.destroySocket();
+				currentState = "offLine";
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="offLine" stateGroups="disconnected"/>
+		<s:State name="fail"  stateGroups="disconnected"/>
+		<s:State name="connecting" stateGroups="disconnected"/>
+		<s:State name="onLine"/>
+	</s:states>
+	
+	<s:VGroup includeIn="disconnected" width="100%" height="100%" gap="10">
+		<s:Label text="Подключение..." includeIn="connecting"/>
+		
+		<s:HGroup width="100%" verticalAlign="baseline" gap="5" includeIn="offLine,fail">
+			<s:Label text="User name"/>
+			<s:TextInput id="usernameTextInput"/>					 
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="baseline" gap="5" includeIn="offLine,fail">
+			<s:Label text="Host IP:"/>
+			<s:TextInput id="hostTextInput" text="127.0.0.1"/>					 
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="baseline" gap="5" includeIn="offLine,fail">
+			<s:Label text="Port:"/>
+			<s:NumericStepper id="portNumStepper" minimum="0" maximum="100000" value="8087"/>
+		</s:HGroup>
+		
+		<s:HGroup width="100%" verticalAlign="baseline" gap="5">
+			<s:Button id="btnConnect" label="Connect" includeIn="offLine,fail" click="{login()}"/>
+			<s:Label text="{failMessage}" color="#ff0000" includeIn="fail"/>
+		</s:HGroup>
+	</s:VGroup>
+	<s:VGroup includeIn="onLine" width="100%" height="100%" gap="10">
+		<s:Label text="User name: {chatService.username}"/>
+		<s:HGroup width="100%" height="100%" gap="10">
+			<s:VGroup width="100%" height="100%" gap="10">
+				<s:Label text="Chat"/>
+				<s:TextArea id="chatTextArea" width="100%" height="100%" editable="false"/>
+				<s:HGroup width="100%" verticalAlign="middle">
+					<s:TextInput id="sayTextInput" width="100%"/>
+					<s:Button label="Send"/>
+				</s:HGroup>
+			</s:VGroup>
+			<s:VGroup height="100%" gap="10">
+				<s:Label text="Users"/>
+				<s:List dataProvider="{users}"/>
+				<s:Button label="Disconnect" click="{logoff()}"/>
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:Group>

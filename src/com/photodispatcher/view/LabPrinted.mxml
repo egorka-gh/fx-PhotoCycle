@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.OrderState;
+			import com.photodispatcher.model.PrintGroup;
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.dao.OrderStateDAO;
+			import com.photodispatcher.model.dao.PrintGroupDAO;
+			import com.photodispatcher.model.dao.SourcesDAO;
+			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.PrintManager;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var pgList:ArrayCollection=new ArrayCollection();
+			
+			//filters
+			[Bindable]
+			private var labFilterList:ArrayCollection= new ArrayCollection();
+			//[Bindable]
+			//private var sizesList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var sourceFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var paperFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var statesFilterList:ArrayCollection= new ArrayCollection();
+			
+			private var gridMenu:GridContexMenu;
+			
+			//private var labId:int;
+			//private var lab:LabBase;
+			private var labMap:Object;
+			
+			[Bindable]
+			private var ordTotal:int;
+			[Bindable]
+			private var pgTotal:int;
+			[Bindable]
+			private var phTotal:int;
+			
+			public function init():void{
+				//labId=Context.getAttribute('applabId');
+				labMap=Context.getAttribute('appLabMap');
+				
+				var lDao:SourcesDAO= new SourcesDAO();
+				var a:Array=lDao.findAllArray();
+				if(!a) a=[];
+				var s:Source=new Source(); s.id=0; s.name='-';
+				a.unshift(s);
+				sourceFilterList.source=a;
+				
+				a=lDao.findAllArray(2);
+				if(!a) a=[];
+				//lab=LabBuilder.build(ArrayUtil.searchItem('id',labId,a) as Source);
+				a.unshift(s);
+				labFilterList.source=a;
+				
+				Context.initAttributeLists();
+				paperFilterList=Context.getAttribute('paperList');
+				
+				a=OrderStateDAO.getStateArray(OrderState.PRN_COMPLETE,OrderState.PRN_COMPLETE+1,true);
+				var os:OrderState=new OrderState(); os.id=0; os.name='-';
+				a.unshift(os);
+				statesFilterList.source=a;
+				
+				pgList.filterFunction=filterPGList;
+				
+				refresh();
+				
+			}
+			
+			public function refresh():void{
+				var dt:Date;
+				var pgDao:PrintGroupDAO=new PrintGroupDAO();
+
+				if (dfDateFilter && dfDateFilter.selectedDate){
+					dt=dfDateFilter.selectedDate;
+				}else{
+					dt= new Date();
+					dt= new Date(dt.fullYear,dt.month, dt.date);
+				}
+				var a:Array=pgDao.findPrinted(dt); 
+				if(a){
+					pgList.source=a;
+				}
+				calcTotals(a);
+			}
+			
+			private function calcTotals(pintGroups:Array):void{
+				var pgArray:Array=pintGroups.filter(totalsFilter);
+				ordTotal=0;
+				pgTotal=pgArray.length;
+				phTotal=0;
+				var pg:PrintGroup; 
+				var orderMap:Object=new Object();
+				var o:Object;
+				for each(o in pgArray){
+					pg= o as PrintGroup;
+					orderMap[pg.order_id]=pg.order_id;
+					//total files
+					phTotal+=pg.file_num;
+				}
+				//total orders
+				for (o in orderMap) ordTotal++;
+			}
+			protected function totalsFilter(element:*, index:int, arr:Array):Boolean {
+				var o:PrintGroup=element as PrintGroup;
+				//return o!=null && o.state==syncState;
+				//return o!=null && o.destination==labId && o.state==OrderState.PRN_COMPLETE;
+				return o!=null && labMap && labMap[o.destination.toString()] && o.state==OrderState.PRN_COMPLETE;
+			}
+			
+			private function filterPGList(item:Object):Boolean {
+				var pg:PrintGroup=item as PrintGroup;
+				if(!pg) return false;
+				
+				if(ddSourceFilter && ddSourceFilter.selectedIndex>0 && pg.source_id!=ddSourceFilter.selectedItem.id) return false;
+				if(tiOrderFilter && tiOrderFilter.text && pg.id.indexOf(tiOrderFilter.text)==-1) return false;
+				if(lstLabFilter && lstLabFilter.selectedIndex>0 && pg.destination!=lstLabFilter.selectedItem.id) return false;
+				if(ddStateFilter && ddStateFilter.selectedIndex>0 && pg.state!=ddStateFilter.selectedItem.id) return false;
+				if(tiSizeFilter && tiSizeFilter.text){
+					if(pg.width!=int(tiSizeFilter.text) && pg.height!=int(tiSizeFilter.text)) return false;
+				}
+				if(ddPaperFilter && ddPaperFilter.selectedIndex>0 && pg.paper!=ddPaperFilter.selectedItem.value) return false;
+				return true;
+			}
+			
+			private function applyFilter():void{
+				pgList.refresh();
+				if(dgPGroups){
+					dgPGroups.clearSelection();
+					dgPGroups.dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+				}
+			}
+			
+			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
+				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER]);
+			}
+			
+			protected function dfDateFilter_creationCompleteHandler(event:FlexEvent):void{
+				var dt:Date=new Date();
+				dfDateFilter.selectedDate=new Date(dt.fullYear,dt.month,dt.date);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup gap="10" width="100%" height="100%">
+		<s:VGroup gap="5" width="200" height="100%">
+			<s:Label text="Заказов - {ordTotal}" left="0" verticalCenter="0"/>
+			<s:Label text="Групп печати - {pgTotal}"/>
+			<s:Label text="Фото - {phTotal}"/>
+			<s:Spacer height="5"/>
+			<s:Label text="Лаборатория"/>
+			<s:List id="lstLabFilter" width="100%" height="100%"
+					dataProvider="{labFilterList}" labelField="name" change="{applyFilter()}"/>
+		</s:VGroup>
+		<s:VGroup gap="5" width="100%" height="100%">
+			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+				<s:Label text="Фильтрация" fontWeight="bold"/>
+				
+				<!--<s:Spacer width="5"/>
+				<s:Label text="Лаборатория"/>
+				<s:DropDownList id="ddLabFilter" dataProvider="{labFilterList}" labelField="name" change="{applyFilter()}" width="100"/>-->
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Источник"/>
+				<s:DropDownList id="ddSourceFilter" dataProvider="{sourceFilterList}" labelField="name" change="{applyFilter()}" width="100"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="ID"/>
+				<s:TextInput id="tiOrderFilter" width="80" change="{applyFilter()}"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Статус"/>
+				<s:DropDownList id="ddStateFilter" dataProvider="{statesFilterList}" width="150" labelField="name" change="{applyFilter()}"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Размер"/>
+				<s:TextInput id="tiSizeFilter" restrict="0123456789" width="60" change="{applyFilter()}"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Бумага"/>
+				<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyFilter()}" width="100"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Дата с"/>
+				<mx:DateField id="dfDateFilter" change="{refresh()}" 
+							  formatString="DD.MM.YY" monthNames="{['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']}" 
+							  creationComplete="dfDateFilter_creationCompleteHandler(event)"/>
+				
+				<s:Spacer width="100%"/>
+				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:DataGrid id="dgPGroups" selectionMode="multipleRows"
+						width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
+						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.gridColumns(true)}"/>
+		</s:VGroup>
+	</s:HGroup>
+	
+</s:Group>

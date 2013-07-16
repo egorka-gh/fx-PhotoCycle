@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true" 
+				xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+				width="200">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.Source;
+			
+			[Bindable]
+			private var source:Source;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				source = value as Source;
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Rect radiusX="3" top="1" left="0" right="0" bottom="1">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup gap="5" paddingBottom="5" paddingTop="5" paddingLeft="5" paddingRight="5" width="100%">
+		<s:Label text="{source.name}" fontWeight="bold"/>
+		<itemRenderer:ProcessStateIR data="{source.syncState}" width="100%"/>
+	</s:VGroup>	
+	
+</s:ItemRenderer>

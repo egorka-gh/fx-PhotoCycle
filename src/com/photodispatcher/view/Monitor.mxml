@@ -1,0 +1,483 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:view="com.photodispatcher.view.*"
+		 xmlns:views="com.jxl.chatserver.views.*" 
+		 xmlns:services="com.jxl.chatserver.mvcs.services.*" 
+		 xmlns:remote="com.photodispatcher.view.remote.*"
+		 creationComplete="{init()}"
+		 keyDown="onKey(event)" >
+	
+	<fx:Declarations>
+		<services:ChatServerService id="chatServer" />
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.OrderState;
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.dao.OrderStateDAO;
+			import com.photodispatcher.model.dao.SourcesDAO;
+			import com.photodispatcher.model.dao.StateLogDAO;
+			import com.photodispatcher.provider.ftp.FtpManager;
+			import com.photodispatcher.provider.preprocess.PreprocessManager;
+			import com.photodispatcher.service.SyncService;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			public static const REFRESH_INTERVAL:int=10;//min
+			public static const FORCE_START_INTERVAL:int=10;//min
+
+			[Bindable]
+			private var isRuning:Boolean=false;
+			[Bindable]
+			private var sources:ArrayCollection;
+			
+			private var syncService:SyncService;
+			[Bindable]
+			private var ftpManager:FtpManager;
+
+			[Bindable]
+			private var sourcesFList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var statesFList:ArrayCollection= new ArrayCollection();
+			
+			[Bindable]
+			private var ordersPendingList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var ordersErrLimitList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var logList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var preprocessManager:PreprocessManager;
+			
+			private var timer:Timer;
+			private var ordersGridMenu:GridContexMenu;
+			private var ordersQueueGridMenu:GridContexMenu;
+			private var ordersWriteQueueGridMenu:GridContexMenu;
+			private var ordersErrLimitGridMenu:GridContexMenu;
+			private var logGridMenu:GridContexMenu;
+
+			private var forceStarHour:int=0;
+			private var forceStarMinute:int=0;
+			private var forceStarTimer:Timer;
+
+			public function init():void{
+				var dao:SourcesDAO= new SourcesDAO();
+				sources=dao.findAll();
+				
+				buildFilterLists();
+				
+				syncService= new SyncService();
+				syncService.sources=sources.source;
+				
+				if(!preprocessManager){
+					preprocessManager= new PreprocessManager();
+					preprocessManager.init();
+				}
+
+				if(!ftpManager) ftpManager=new FtpManager();
+				ftpManager.sources=sources.source;
+				ftpManager.preprocessManager=preprocessManager;
+
+				ordersErrLimitList.filterFunction=filterOrdersErrLimitList;
+				ordersPendingList.filterFunction=filterOrdersList;
+				fillOrdersPendingList();
+				
+				//TODO refactor, incorrect implementation
+				//startForceStarTimer();
+				
+				focusManager.setFocus(focusHolder);
+			}
+
+			private function startForceStarTimer():void{
+				forceStarHour=Context.getAttribute('forceStarHour');
+				forceStarMinute=Context.getAttribute('forceStarMinute');
+				if(forceStarHour || forceStarMinute){
+					if(forceStarTimer){
+						if(forceStarTimer.running) forceStarTimer.stop();
+						forceStarTimer.removeEventListener(TimerEvent.TIMER,onForceStarTimer);
+					}
+					forceStarTimer= new Timer(FORCE_START_INTERVAL*60*1000,0);
+					forceStarTimer.addEventListener(TimerEvent.TIMER,onForceStarTimer);
+					forceStarTimer.start();
+				}
+			}
+
+			private function onForceStarTimer(e:TimerEvent):void{
+				var dt:Date=new Date();
+				if(dt.hours>=forceStarHour && dt.minutes>= forceStarMinute){
+					if(forceStarTimer.running) forceStarTimer.stop();
+					forceStarTimer.removeEventListener(TimerEvent.TIMER,onForceStarTimer);
+					forceStarTimer=null;
+					start();
+					ftpManager.start(true);
+				}
+			}
+
+			private function onKey(e:KeyboardEvent):void{
+				if(e.ctrlKey && e.keyCode==70){
+					//order lookup
+					var pop:OrderSearchPopup=new OrderSearchPopup();
+					pop.open(null);
+				}
+			}
+			
+
+			private function buildFilterLists():void{
+				var a:Array;
+				//sources filter
+				if(sources){
+					a=sources.source.slice();
+					var s:Source= new Source(); s.id=0; s.name='-';
+					a.unshift(s);
+					sourcesFList.source=a;
+				}
+				//state filter
+				switch(currentState){
+					case 'ordersPending':
+					default:
+						a=OrderStateDAO.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_WAITE+1);
+						var os:OrderState=new OrderState(); os.id=0; os.name='-';
+						a.unshift(os);
+						os=new OrderState(); os.id=-1; os.name='Ошибки';
+						a.push(os);
+						statesFList.source=a;
+						break;
+				}
+				if(ddSourceFilter) ddSourceFilter.selectedIndex=0;
+				if(ddStateFilter) ddStateFilter.selectedIndex=0;
+			}
+			
+			public function start():void{
+				if(isRuning) return;
+				isRuning=true;
+				resync();
+			}
+			private function onTimer(e:TimerEvent):void{
+				resync();
+			}
+			private function resync():void{
+				if(timer) timer.stop();
+				syncService.addEventListener(Event.COMPLETE,resyncCompleted);
+				syncService.sync();
+			}
+			private function resyncCompleted(e:Event):void{
+				syncService.removeEventListener(Event.COMPLETE,resyncCompleted);
+				trace('resyncCompleted');
+				fillOrdersPendingList();
+				
+				if(!timer){
+					var interval:int=Context.getAttribute('syncInterval');
+					if(!interval) interval=REFRESH_INTERVAL;
+					timer=new Timer(interval*60*1000,0);
+					timer.addEventListener(TimerEvent.TIMER,onTimer);
+				}
+				timer.start();
+			}
+			
+			
+			public function ftpStart():void{
+				if(!ftpManager) return;
+				if(!sources) init();
+				ftpManager.start();
+			}
+			public function ftpStop():void{
+				if(ftpManager) ftpManager.stop();
+				startForceStarTimer();
+			}
+
+			public function stop(force:Boolean=false):void{
+				if(timer){
+					timer.stop();
+					timer.removeEventListener(TimerEvent.TIMER,onTimer);
+					timer=null;
+				}
+				isRuning=false;
+				startForceStarTimer();
+			}
+			
+			private function detectState():void{
+				switch(tbView.selectedIndex){
+					case 0:
+						currentState='stateView';
+						break;
+					case 1:
+						currentState='ordersPending';
+						break;
+					case 2:
+						currentState='printDeploy';
+						break;
+					case 3:
+						currentState='printPrint';
+						break;
+					case 4:
+						currentState='printReady';
+						break;
+					case 5:
+						currentState='logView';
+						break;
+				}
+				focusManager.setFocus(focusHolder);
+			}
+			private function fillOrdersPendingList():void{
+				var dao:OrderDAO= new OrderDAO();
+				var a:Array=dao.findAllArray(-1,OrderState.WAITE_FTP,OrderState.PRN_WAITE+1);
+				if(a){
+					if(ftpManager) ftpManager.resync(a);
+					ordersPendingList.source=a;
+					applyOrdersFilter();
+					ordersErrLimitList.source=a;
+					ordersErrLimitList.refresh();
+				}
+			}
+
+			private function filterOrdersErrLimitList(item:Object):Boolean {
+				var o:Order=item as Order;
+				if(!o) return false;
+				return o.exceedErrLimit;
+			}
+
+			private function filterOrdersList(item:Object):Boolean {
+				var o:Order=item as Order;
+				if(!o) return false;
+				if(ddSourceFilter && ddSourceFilter.selectedIndex>0 && o.source!=ddSourceFilter.selectedItem.id) return false;
+				if(ddStateFilter && ddStateFilter.selectedIndex>0){
+					if(ddStateFilter.selectedItem.id==-1){
+						if(o.state>0) return false;
+					}else if(o.state!=ddStateFilter.selectedItem.id){
+						return false;
+					}
+				}
+				if(tiOrderFilter && tiOrderFilter.text && o.id.indexOf(tiOrderFilter.text)==-1) return false;
+				return true;
+			}
+			
+			private function applyOrdersFilter():void{
+				ordersPendingList.refresh();
+				if(dgOrders){
+					dgOrders.clearSelection();
+					dgOrders.dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+				}
+			}
+			
+			protected function dgOrders_creationCompleteHandler(event:FlexEvent):void{
+				ordersGridMenu= new GridContexMenu(dgOrders,[GridContexMenu.CANCEL_ORDER,GridContexMenu.FORVARD_FTP,GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
+			}
+			private function callBack(dg:DataGrid,newState:int):void{
+				Alert.show('callBack '+newState.toString());
+			}
+			
+			protected function dgErrors_creationCompleteHandler(event:FlexEvent):void{
+				logGridMenu= new GridContexMenu(dgLog,[GridContexMenu.SHOW_ORDER]);
+			}
+			
+			private function fillLogList():void{
+				//TODO implement filter
+				var date:Date=new Date;
+				if (errDateFilter) date=errDateFilter.selectedDate;
+				var dao:StateLogDAO=new StateLogDAO();
+				var a:Array=dao.findeAllArray(date);
+				if(a) logList.source=a;
+				logList.refresh();
+			}
+			protected function dfDateFilter_creationCompleteHandler(event:FlexEvent):void{
+				var dt:Date=new Date();
+				errDateFilter.selectedDate=new Date(dt.fullYear,dt.month,dt.date);
+			}
+
+			protected function dgPrepocessQueue_creationCompleteHandler(event:FlexEvent):void{
+				ordersQueueGridMenu= new GridContexMenu(dgPrepocessQueue,[GridContexMenu.SHOW_ORDER]);
+			}
+			
+			protected function dgWriteQueue_creationCompleteHandler(event:FlexEvent):void{
+				ordersWriteQueueGridMenu= new GridContexMenu(dgWriteQueue,[GridContexMenu.SHOW_ORDER]);
+			}
+			
+			protected function dgErrLimit_creationCompleteHandler(event:FlexEvent):void{
+				ordersErrLimitGridMenu= new GridContexMenu(dgErrLimit,[GridContexMenu.SHOW_ORDER,GridContexMenu.RESET_ERRLIMIT]);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="stateView"/>
+		<s:State name="ordersPending"/>
+		<s:State name="printDeploy"/>
+		<s:State name="printPrint"/>
+		<s:State name="printReady"/>
+		<s:State name="logView"/>
+	</s:states>
+
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
+		<mx:ArrayCollection>
+			<fx:String>Состояние</fx:String> 
+			<fx:String>Загрузка заказов</fx:String> 
+			<fx:String>Заказы ожидающие распределения</fx:String> 
+			<fx:String>Печать</fx:String> 
+			<fx:String>Напечатаны</fx:String> 
+			<fx:String>Лог</fx:String> 
+		</mx:ArrayCollection>
+	</s:TabBar>
+
+	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
+	<s:Group top="30" left="10" right="10" bottom="10">
+		<s:HGroup id="gState" includeIn="stateView" gap="10" top="0" left="0" right="0" bottom="0">
+			<s:VGroup gap="10">
+				<s:Label text="Web синхронизация"/>
+				<s:HGroup gap="10">
+					<s:Button id="btStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить синхронизацию" 
+							  click="{start()}" enabled="{!isRuning}"/>
+					<s:Button id="btStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить синхронизацию"
+							  click="{stop()}" enabled="{isRuning}"/>
+				</s:HGroup>
+				<s:DataGroup dataProvider="{sources}" itemRenderer="com.photodispatcher.view.itemRenderer.SourceItemRenderer"
+							 width="220">
+					<s:layout>
+						<s:VerticalLayout gap="0"/>
+					</s:layout>
+				</s:DataGroup>
+			</s:VGroup>
+			<s:VGroup gap="10" width="510" height="100%">
+				<s:Label text="FTP"/>
+				<s:HGroup gap="10">
+					<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить FTP загрузку" 
+							  click="{ftpStart()}"/>
+					<s:Button id="btFtpStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить FTP загрузку"
+							  click="{ftpStop()}"/>
+				</s:HGroup>
+				<s:Scroller width="100%" height="100%">
+					<s:DataGroup width="100%" height="100%" dataProvider="{ftpManager.servicesList}" 
+								 itemRenderer="com.photodispatcher.view.itemRenderer.QueueManagerRenderer">
+							 <!--itemRenderer="com.photodispatcher.view.itemRenderer.FtpServiceRenderer">-->
+						<s:layout>
+							<s:VerticalLayout gap="0"/>
+						</s:layout>
+					</s:DataGroup>
+				</s:Scroller>
+			</s:VGroup>
+			<s:VGroup gap="0" width="400" height="100%">
+				<s:Label text="Очереди"/>
+				<s:Spacer height="5"/>
+				<s:TabBar id="tbQueue" top="0" left="0" height="20" dataProvider="{vsQueue}"/>
+				<mx:ViewStack id="vsQueue" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+					<s:NavigatorContent label="Двойная ошибка" backgroundAlpha="0" width="100%" height="100%">
+						<s:DataGrid id="dgErrLimit" selectionMode="multipleRows"
+									width="100%" height="100%" creationComplete="dgErrLimit_creationCompleteHandler(event)"
+									dataProvider="{ordersErrLimitList}" locale="ru_RU" columns="{OrderDAO.shortGridColumns()}"/>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Обработка" backgroundAlpha="0" width="100%" height="100%">
+						<s:VGroup id="vPrepocess" width="100%" height="100%" gap="5">
+							<s:DataGrid id="dgPrepocessQueue" selectionMode="singleRow"
+										width="100%" height="100%" creationComplete="dgPrepocessQueue_creationCompleteHandler(event)"
+										dataProvider="{preprocessManager.orderList}" locale="ru_RU" columns="{OrderDAO.shortGridColumns()}"/>
+							<s:HGroup width="100%" gap="5">
+								<s:Label text="Очередь {preprocessManager.queueLenth}({preprocessManager.errorOrdersLenth})"/>
+								<s:Label text="{preprocessManager.lastError}" color="#ff0000"/>
+							</s:HGroup>
+							<!--<s:Label text="{preprocessManager.progressCaption}"/>-->
+							<mx:ProgressBar mode="event" source="{preprocessManager}" labelPlacement="top" width="100%"
+											fontWeight="normal" labelWidth="{vPrepocess.width-20}"
+											label="{preprocessManager.progressCaption} %1 из %2"/>
+
+						</s:VGroup>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Запись" backgroundAlpha="{ftpManager.isWriting?1:0}" backgroundColor="#00ff00" width="100%" height="100%">
+						<s:DataGrid id="dgWriteQueue" selectionMode="singleRow"
+									width="100%" height="100%" creationComplete="dgWriteQueue_creationCompleteHandler(event)"
+									dataProvider="{ftpManager.writeOrdersList}" locale="ru_RU" columns="{OrderDAO.shortGridColumns()}"/>
+					</s:NavigatorContent>
+				</mx:ViewStack>
+			</s:VGroup>
+			<s:VGroup gap="10" width="400" height="100%" visible="true">
+				<s:Label text="Загрузчиков: {ftpManager.remoteLoadManager.connectionsLimit}. Обработчиков: {preprocessManager.remoteBuildersCount}" 
+						 width="100%" maxDisplayedLines="1"/>
+				<remote:ChatServerView width="100%" height="100%" chatService="{chatServer}"/>
+			</s:VGroup>
+		</s:HGroup>
+		
+		<s:VGroup id="gGrid" includeIn="ordersPending" gap="5" top="0" left="0" right="0" bottom="0">
+			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+				<s:Label text="Фильтрация" fontWeight="bold"/>
+				<s:Spacer width="5"/>
+				<s:Label text="Источник"/>
+				<s:DropDownList id="ddSourceFilter" dataProvider="{sourcesFList}" labelField="name" change="{applyOrdersFilter()}"/>
+				<s:Spacer width="5"/>
+				<s:Label text="Статус"/>
+				<s:DropDownList id="ddStateFilter" dataProvider="{statesFList}" labelField="name" width="150" change="{applyOrdersFilter()}"/>
+				<s:Spacer width="5"/>
+				<s:Label text="ID"/>
+				<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>
+				<s:Spacer width="100%"/>
+				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{fillOrdersPendingList()}"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:DataGrid id="dgOrders" selectionMode="multipleRows"
+						width="100%" height="100%" creationComplete="dgOrders_creationCompleteHandler(event)"
+						dataProvider="{ordersPendingList}" locale="ru_RU" columns="{OrderDAO.gridColumns()}"/>
+		</s:VGroup>
+		<view:PrintDistribute id="printDistribute" top="0" left="0" right="0" bottom="0" includeIn="printDeploy"/>
+		<view:PrintMonitor id="printMonitor" top="0" left="0" right="0" bottom="0" 
+						   includeIn="printPrint,printReady"
+						   modePrinted.printPrint="false" modePrinted.printReady="true"/>
+		<s:VGroup id="logGrid" includeIn="logView" gap="5" top="0" left="0" right="0" bottom="0">
+			<s:HGroup id="errFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+				<s:Label text="Фильтрация" fontWeight="bold"/>
+				<!--<s:Spacer width="5"/>
+				<s:Label text="Источник"/>
+				<s:DropDownList id="ddSourceFilter" dataProvider="{sourcesFList}" labelField="name" change="{applyOrdersFilter()}"/>
+				<s:Spacer width="5"/>
+				<s:Label text="Статус"/>
+				<s:DropDownList id="ddStateFilter" dataProvider="{statesFList}" labelField="name" width="150" change="{applyOrdersFilter()}"/>-->
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Дата"/>
+				<mx:DateField id="errDateFilter" change="{fillLogList()}" 
+							  formatString="DD.MM.YY" monthNames="{['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']}" 
+							  creationComplete="dfDateFilter_creationCompleteHandler(event)"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="ID"/>
+				<s:TextInput id="errOrderFilter" width="100" enabled="false"/>
+
+				<s:Spacer width="5"/>
+				<s:CheckBox id="errOnlyErrFilter" selected="true" enabled="false"/>
+				<s:Label text="Только ошибки"/>
+				<!--<s:DropDownList id="errStateFilter" dataProvider="{statesFList}" labelField="name" width="150" change="{applyOrdersFilter()}"/>-->
+
+				<s:Spacer width="5"/>
+				<s:Label text="Статус"/>
+				<s:DropDownList id="errStateFilter" dataProvider="{statesFList}" labelField="name" width="150" enabled="false"/>
+
+				<s:Spacer width="100%"/>
+				<s:Button id="btLogRefresh" icon="assets/icon-refresh.gif" click="{fillLogList()}"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:DataGrid id="dgLog" selectionMode="singleRow"
+						width="100%" height="100%" creationComplete="dgErrors_creationCompleteHandler(event)"
+						dataProvider="{logList}" locale="ru_RU" columns="{StateLogDAO.gridColumns(true)}"/>
+		</s:VGroup>
+
+	</s:Group>
+	
+</s:Group>

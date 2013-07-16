@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="100%" 
+		 creationComplete="{init()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.OrderState;
+			import com.photodispatcher.model.PrintGroup;
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.dao.OrderStateDAO;
+			import com.photodispatcher.model.dao.PrintGroupDAO;
+			import com.photodispatcher.model.dao.SourcesDAO;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+
+			private var _modePrinted:Boolean;
+			[Bindable]
+			public function get modePrinted():Boolean{
+				return _modePrinted;
+			}
+
+			public function set modePrinted(value:Boolean):void{
+				_modePrinted = value;
+				currentState=_modePrinted?'printed':'inPrint';
+				refresh();
+			}
+
+
+			[Bindable]
+			private var pgList:ArrayCollection=new ArrayCollection();
+
+			[Bindable]
+			private var labFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var sourceFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var statesFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var paperFilterList:ArrayCollection;
+			[Bindable]
+			private var booleanFilterList:ArrayCollection= new ArrayCollection();
+			
+			private var gridMenu:GridContexMenu;
+
+			private function init():void{
+				var a:Array=Context.getSources();
+				if(!a) a=[];
+				var s:Source=new Source(); s.id=0; s.name='-';
+				a.unshift(s);
+				sourceFilterList.source=a;
+
+				var lDao:SourcesDAO= new SourcesDAO();
+				a=lDao.findAllArray(2);
+				a.unshift(s);
+				labFilterList.source=a;
+
+				a=OrderStateDAO.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_COMPLETE+1,true);
+				var os:OrderState=new OrderState(); os.id=0; os.name='-';
+				a.unshift(os);
+				statesFilterList.source=a;
+
+				Context.initAttributeLists();
+				paperFilterList=Context.getAttribute('paperList');
+				booleanFilterList=Context.getAttribute('booleanList');
+				
+				refresh();
+				pgList.filterFunction=filterPGList;
+				pgList.refresh();
+			}
+
+			public function refresh():void{
+				var pgDao:PrintGroupDAO=new PrintGroupDAO();
+				var a:Array;
+				if(currentState=='inPrint'){
+					a=pgDao.findInPrint(); 
+				}else{
+					var dt:Date;
+					if (dfDateFilter && dfDateFilter.selectedDate){
+						dt=dfDateFilter.selectedDate;
+					}else{
+						dt= new Date();
+						dt= new Date(dt.fullYear,dt.month, dt.date);
+					}
+					a=pgDao.findPrinted(dt); 
+				}
+				if(a){
+					pgList.source=a;
+				}
+			}
+
+			private function filterPGList(item:Object):Boolean {
+				var pg:PrintGroup=item as PrintGroup;
+				if(!pg) return false;
+				if(lstLabs && lstLabs.selectedIndex>0 && pg.destination!=lstLabs.selectedItem.id) return false;
+				if(ddSourceFilter && ddSourceFilter.selectedIndex>0 && pg.source_id!=ddSourceFilter.selectedItem.id) return false;
+				if(currentState=='inPrint' && ddStateFilter && ddStateFilter.selectedIndex>0 && pg.state!=ddStateFilter.selectedItem.id) return false;
+				//if(tiOrderFilter && tiOrderFilter.text && pg.id.substr(0,tiOrderFilter.text.length)!=tiOrderFilter.text) return false;
+				if(tiOrderFilter && tiOrderFilter.text && pg.id.indexOf(tiOrderFilter.text)==-1) return false;
+				if(tiSizeFilter && tiSizeFilter.text){
+					if(pg.width!=int(tiSizeFilter.text) && pg.height!=int(tiSizeFilter.text)) return false;
+				}
+				if(ddPaperFilter && ddPaperFilter.selectedIndex>0 && pg.paper!=ddPaperFilter.selectedItem.value) return false;
+				if(ddIsBookFilter && ddIsBookFilter.selectedIndex>0){
+					if(ddIsBookFilter.selectedItem.value && pg.book_type==0) return false;
+					if(!ddIsBookFilter.selectedItem.value && pg.book_type!=0) return false;
+				}
+				if(ddIsPdfFilter && ddIsPdfFilter.selectedIndex>0 && ddIsPdfFilter.selectedItem.value != pg.is_pdf) return false;
+
+				return true;
+			}
+			
+			private function applyFilter():void{
+				pgList.refresh();
+				if(dgPGroups){
+					dgPGroups.clearSelection();
+					dgPGroups.dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+				}
+			}
+			
+			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
+				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER]);
+			}
+
+			protected function dfDateFilter_creationCompleteHandler(event:FlexEvent):void{
+				var dt:Date=new Date();
+				dfDateFilter.selectedDate=new Date(dt.fullYear,dt.month,dt.date);
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="inPrint"/>
+		<s:State name="printed"/>
+	</s:states>
+
+	<s:HGroup gap="10" width="100%" height="100%">
+		<s:VGroup gap="5" width="150" height="100%">
+			<s:Label text="Лаборатории"/>
+			<s:List id="lstLabs" width="100%" height="100%"
+					dataProvider="{labFilterList}" labelField="name" change="{applyFilter()}"/>
+		</s:VGroup>
+		<s:VGroup gap="5" width="100%" height="100%">
+			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+				<s:Label text="Фильтрация" fontWeight="bold"/>
+
+				<s:Spacer width="5"/>
+				<s:Label text="Источник"/>
+				<s:DropDownList id="ddSourceFilter" dataProvider="{sourceFilterList}" labelField="name" change="{applyFilter()}"/>
+
+				<s:Spacer width="5" includeIn="inPrint"/>
+				<s:Label text="Статус" includeIn="inPrint"/>
+				<s:DropDownList id="ddStateFilter" includeIn="inPrint" dataProvider="{statesFilterList}" width="170" labelField="name" change="{applyFilter()}"/>
+
+				<s:Spacer width="5"/>
+				<s:Label text="ID"/>
+				<s:TextInput id="tiOrderFilter" width="100" change="{applyFilter()}"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Размер"/>
+				<s:TextInput id="tiSizeFilter" restrict="0123456789" width="100" change="{applyFilter()}"/>
+
+				<s:Spacer width="5"/>
+				<s:Label text="Бумага"/>
+				<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyFilter()}"/>
+
+				<s:Spacer width="5" includeIn="printed"/>
+				<s:Label text="Дата с" includeIn="printed"/>
+				<mx:DateField id="dfDateFilter" change="{refresh()}" includeIn="printed" 
+							  formatString="DD.MM.YY" monthNames="{['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']}" 
+							  creationComplete="dfDateFilter_creationCompleteHandler(event)"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Книга"/>
+				<s:DropDownList id="ddIsBookFilter" dataProvider="{booleanFilterList}" change="{applyFilter()}" width="60"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="PDF"/>
+				<s:DropDownList id="ddIsPdfFilter" dataProvider="{booleanFilterList}" change="{applyFilter()}" width="60"/>
+
+				<s:Spacer width="100%"/>
+				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:DataGrid id="dgPGroups" selectionMode="singleRow"
+						width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
+						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.gridColumns(true)}"/>
+		</s:VGroup>
+	</s:HGroup>
+</s:Group>

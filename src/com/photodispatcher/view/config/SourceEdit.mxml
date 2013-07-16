@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:config="com.photodispatcher.view.config.*">
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.SourceService;
+			import com.photodispatcher.model.dao.SourceTypeDAO;
+			import com.photodispatcher.util.ArrayUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			private var _currentItem:Source;
+			[Bindable]
+			public function get currentItem():Source{
+				return _currentItem;
+			}
+			public function set currentItem(value:Source):void{
+				_currentItem = value;
+				typeListIdx=-1;
+				if(_currentItem){
+					currentState=(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE)?'source':'lab';
+					var stDao:SourceTypeDAO=new SourceTypeDAO();
+					typeList=stDao.findAll(_currentItem.loc_type);
+					typeListIdx=ArrayUtil.searchItemIdx('id',_currentItem.type_id,typeList.toArray());
+					webService=_currentItem.webService;
+					ftpService=_currentItem.ftpService;
+					fbookService=_currentItem.fbookService;
+					hotFolder=_currentItem.hotFolder;
+				}
+			}
+			
+			[Bindable]
+			private var typeList:IList;
+			[Bindable]
+			private var typeListIdx:int;
+			[Bindable]
+			private var webService:SourceService;
+			[Bindable]
+			private var ftpService:SourceService;
+			[Bindable]
+			private var fbookService:SourceService;
+			[Bindable]
+			private var hotFolder:SourceService;
+
+			protected function ddType_changeHandler(event:IndexChangeEvent):void{
+				if(currentItem && ddType.selectedItem){
+					currentItem.type_id=ddType.selectedItem.id;
+					currentItem.changed=true;
+				}
+			}
+			
+			protected function tiCod_changeHandler(event:TextOperationEvent):void{
+				//var newCode:String=tiCod.text;
+				//if(!newCode) newCode='';
+				if(currentItem.code.length>1) currentItem.code=currentItem.code.charAt(0);
+				currentItem.changed=true
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="source"/>
+		<s:State name="lab"/>
+	</s:states>
+	
+	<s:Form width="100%" height="100%">
+		<s:layout>
+			<s:FormLayout gap="-12"/>
+		</s:layout>
+		
+		<s:FormItem label="Наименование">
+			<s:TextInput id="tiName" text="@{currentItem.name}" change="{currentItem.changed=true}" width="200"/>
+		</s:FormItem> 
+		<s:FormItem label="Тип" required="true">
+			<s:DropDownList id="ddType" labelField="name" dataProvider="{typeList}" selectedIndex="{typeListIdx}" change="ddType_changeHandler(event)" width="200"/>
+		</s:FormItem> 
+		<s:FormItem label="Online">
+			<s:CheckBox id="chbOnline" selected="@{currentItem.online}" change="{currentItem.changed=true}"/>
+		</s:FormItem> 
+		<s:FormItem label="Код" includeIn="source">
+			<s:TextInput id="tiCod" text="@{currentItem.code}" change="tiCod_changeHandler(event)" width="20"/>
+		</s:FormItem> 
+		<s:FormItem label="Сайт" enabled="{currentItem.loaded}" includeIn="source">
+			<config:SourceServiceEdit data="{webService}"/>
+		</s:FormItem> 
+		<s:FormItem label="FTP" enabled="{currentItem.loaded}" includeIn="source">
+			<config:SourceServiceEdit data="{ftpService}"/>
+		</s:FormItem> 
+		<s:FormItem label="FBook" enabled="{currentItem.loaded}" includeIn="source">
+			<config:SourceServiceEdit data="{fbookService}"/>
+		</s:FormItem> 
+		<s:FormItem label="Hot folder" enabled="{currentItem.loaded}" includeIn="lab">
+			<config:SourceServiceEdit data="{hotFolder}"/>
+		</s:FormItem> 
+	</s:Form>
+</s:Group>

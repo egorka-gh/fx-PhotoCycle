@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.SourceService;
+			
+			private var _data:SourceService;
+			[Bindable]
+			public function get data():SourceService{
+				return _data;
+			}
+			public function set data(value:SourceService):void{
+				_data = value;
+				if(_data){
+					currentState=(_data.loc_type==Source.LOCATION_TYPE_SOURCE)?'service':'lab';
+				}else{
+					currentState='nulldata';
+				}
+			}
+
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="nulldata"/>
+		<s:State name="service"/>
+		<s:State name="lab"/>
+	</s:states>
+
+	<s:HGroup gap="5" verticalAlign="baseline">
+		<s:Label text.service="Url:" text.lab="Папка"/>
+		<s:TextInput id="tiUrl" includeIn="service,lab" text="@{data.url}" change="{data.changed=true}" width="200"/>
+		<s:Spacer width="5" includeIn="service"/>
+		<s:Label text="Пользователь:" includeIn="service"/>
+		<s:TextInput id="tiUser" text="@{data.user}" change="{data.changed=true}" includeIn="service"/>
+		<s:Spacer width="5" includeIn="service"/>
+		<s:Label text="Пароль:" includeIn="service"/>
+		<s:TextInput id="tiPass" text="@{data.pass}" change="{data.changed=true}" includeIn="service"/>
+		<s:Spacer width="5" includeIn="service"/>
+		<s:Label text="Подключений:" includeIn="service"/>
+		<s:TextInput id="tiCnn" text="{data.connections}" restrict="0-9" change="{data.connections=int(tiCnn.text); data.changed=true;}" includeIn="service"/>
+	</s:HGroup>
+</s:Group>
+

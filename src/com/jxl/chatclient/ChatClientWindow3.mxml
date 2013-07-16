@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Window 
+	maximizable="false"
+	minimizable="true"
+	resizable="false"
+	showStatusBar="false"
+	systemChrome="none"
+	transparent="true"
+	showFlexChrome="false"
+	horizontalScrollPolicy="off"
+	verticalScrollPolicy="off"
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	layout="absolute"
+	currentState="configure_state"
+	width="512" height="408"
+	creationComplete="init()"
+	xmlns:jxl="http://jessewarden.com/projects/chat/">
+	
+	<mx:Metadata>
+		[Event(name="login", type="com.jxl.chatclient.events.LoginEvent")]
+		[Event(name="chatMessage", type="com.jxl.chatclient.events.ChatEvent")]
+		[Event(name="complete", type="com.jxl.chatskins.events.ConnectingAnimeEvent")]
+		[Event(name="ready", type="com.jxl.chatskins.events.ConnectingAnimeEvent")]
+		[Event(name="disconnect", type="com.jxl.chatclient.events.ChatEvent")]
+	</mx:Metadata>
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.effects.easing.Exponential;
+			import com.jxl.chatskins.events.ConnectingAnimeEvent;
+			
+			
+			import com.jxl.chatclient.events.ChatEvent;
+			import com.jxl.chatclient.mvcs.controllers.ChatClientController;
+			import mx.collections.ArrayCollection;
+			import com.jxl.chat.vo.messages.ChatMessageVO;
+			import com.jxl.chatclient.events.LoginEvent;
+			import mx.core.Window;
+			
+			
+			private static const SERVER_COLOR:String = "#660000";
+			
+			[Bindable]
+			public var failMessage:String = "";
+			
+			[Bindable]
+			public var chatText:String = "";
+			
+			[Bindable]
+			public var users:ArrayCollection;
+			
+			private var debugWin:Window;
+			private var presenter:ChatClientController;
+			private var socket:Socket;
+			private var timer:Timer;
+			
+			private function init():void
+			{
+				move((Screen.mainScreen.bounds.width / 2) - ((width + 40)/ 2), (Screen.mainScreen.bounds.height / 2) - (height / 2));
+				if(x < 0) x = 0;
+				if(y < 0) y = 0;
+				//openDebugWindow();
+				presenter = new ChatClientController(this);
+				if(timer == null)
+				{
+					timer = new Timer(500);
+					timer.addEventListener(TimerEvent.TIMER, onTick, false, 0, true);
+				}				
+				timer.reset();
+				timer.start();
+			}
+			
+			private function onLogin():void
+			{
+				if(usernameTextInput.text.toLowerCase().indexOf("server") == -1)
+				{
+					usernameTextInput.errorString = "";
+					
+					var evt:LoginEvent 		= new LoginEvent(LoginEvent.LOGIN);
+					evt.host				= addressTextInput.text;
+					evt.port				= portNumericStepper.value;
+					evt.username			= usernameTextInput.text;
+					dispatchEvent(evt);
+				}
+				else
+				{
+					usernameTextInput.errorString = "You cannot have 'server' in your user name.";
+				}
+			}
+			
+			private function onTick(event:TimerEvent):void
+			{
+				if(chatTextArea) this.chatTextArea.verticalScrollPosition = this.chatTextArea.maxVerticalScrollPosition;
+			}
+			
+			public function usernameTaken():void
+			{
+				currentState = "configure_state";
+				usernameTextInput.errorString = "Username is taken.";
+			}
+			
+			public function addChatMessage(chatMessage:ChatMessageVO):void
+			{
+				if(chatMessage.username.toLowerCase() != "server")
+				{
+					chatText += "<b>" + chatMessage.username + "</b> &gt; " + chatMessage.message + "<br />";
+				}
+				else
+				{
+					chatText += "<font color='" + SERVER_COLOR + "'><b>" + chatMessage.message + "</b></font><br />";
+				}
+			}
+			
+			public function addServerMessage(message:String):void
+			{
+				chatText += "<font color='" + SERVER_COLOR + "'><b>" + message + "</b></font><br />";
+			}
+			
+			public function showConnectingState():void
+			{
+				//DebugMax.info("ChatClientWindow::showConnectingState");
+				currentState = "connecting_state";
+				connectingSkin.playCreate();
+			}
+			
+			private function onConnectAnimeReady(event:ConnectingAnimeEvent):void
+			{
+				if(currentState == "connecting_state")
+					dispatchEvent(event);
+			}
+			
+			public function showConnected():void
+			{
+				//DebugMax.info("ChatClientWindow::showConnected");
+				connectingSkin.playDestroy();
+			}
+			
+			private function onConnectAnimeComplete(event:ConnectingAnimeEvent):void
+			{
+				if(currentState == "connecting_state")
+					dispatchEvent(event);
+			}
+			
+			private function openDebugWindow():void
+			{
+				if(debugWin == null)
+				{
+					debugWin = new Window();
+					debugWin.addEventListener(Event.CLOSE, onDebugClosed);
+					debugWin.addChild(new DebugMax());
+					debugWin.open();
+					debugWin.width = 556;
+					debugWin.height = 418;
+					debugWin.move(Screen.mainScreen.bounds.width - debugWin.width, 0);
+				}
+				else
+				{
+					debugWin.activate();
+				}
+			}
+			
+			private function onDebugClosed(event:Event):void
+			{
+				if(debugWin)
+				{
+					debugWin.removeEventListener(Event.CLOSE, onDebugClosed);
+					debugWin = null;
+				}
+			}
+			
+			private function onAcceptFailure():void
+			{
+				currentState = "configure_state";
+			}
+			
+			private function onSay():void
+			{
+				if(sayTextInput.text.length > 0)
+				{
+					var evt:ChatEvent = new ChatEvent(ChatEvent.CHAT_MESSAGE);
+					evt.message = sayTextInput.text;
+					dispatchEvent(evt);
+					sayTextInput.text = "";
+				}
+			}
+			
+			private function onDisconnect():void
+			{
+				dispatchEvent(new ChatEvent(ChatEvent.DISCONNECT));
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:states>
+		<mx:State name="configure_state">
+			<mx:AddChild position="lastChild">
+				<jxl:FormOutline x="94" y="72" width="329" height="236"
+					creationCompleteEffect="wipeDown"
+					mouseDown="nativeWindow.startMove()"/>
+					
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<mx:Form horizontalCenter="0" verticalCenter="-8">
+					<mx:FormItem>
+						<jxl:TechLabel text="CHAT" />
+					</mx:FormItem>
+					<jxl:TechFormItem label="Username:">
+						<mx:Canvas horizontalScrollPolicy="off" verticalScrollPolicy="off">
+							<jxl:TextFieldBackground />
+							<mx:TextInput id="usernameTextInput" borderStyle="none" focusAlpha="0" enter="onLogin()"/>
+						</mx:Canvas>
+					</jxl:TechFormItem>
+					<jxl:TechFormItem label="Port:">
+						<mx:NumericStepper minimum="0" maximum="100000" value="8087" id="portNumericStepper"/>
+					</jxl:TechFormItem>
+					<jxl:TechFormItem label="Address:">
+						<mx:Canvas horizontalScrollPolicy="off" verticalScrollPolicy="off">
+							<jxl:TextFieldBackground />
+							<mx:TextInput text="127.0.0.1" id="addressTextInput" borderStyle="none" focusAlpha="0" enter="onLogin()"/>
+						</mx:Canvas>
+					</jxl:TechFormItem>
+					<jxl:TechFormItem>
+						<jxl:TechButton label="Login" click="onLogin()"/>
+					</jxl:TechFormItem>
+				</mx:Form>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:CloseButton x="391" y="86" click="close()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:MinimizeButton x="367" y="86" click="minimize()"/>
+			</mx:AddChild>
+			
+		</mx:State>
+		<mx:State name="connecting_state">
+			<mx:AddChild position="lastChild">
+				<jxl:ConnectingSkin id="connectingSkin" horizontalCenter="0" verticalCenter="0"
+					ready="onConnectAnimeReady(event as ConnectingAnimeEvent)"
+					complete="onConnectAnimeComplete(event as ConnectingAnimeEvent)"
+					mouseDown="nativeWindow.startMove()"/>
+			</mx:AddChild>
+		</mx:State>
+		<mx:State name="fail_state">
+			<mx:AddChild position="lastChild">
+				<jxl:ErrorSkin x="139.5" y="94"
+					mouseDown="nativeWindow.startMove()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<mx:Text text="{failMessage}" horizontalCenter="1" verticalCenter="-24" color="#980000"  id="text1" width="185" height="72" textAlign="center" fontWeight="bold"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechButton x="256" y="253" label="OK" click="onAcceptFailure()" />
+			</mx:AddChild>
+			
+			
+		</mx:State>
+		<mx:State name="chat_state">
+			
+			<mx:AddChild position="lastChild">
+				<jxl:WindowSkin x="0" y="0" mouseDown="nativeWindow.startMove()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TextFieldBackground x="30" y="339" width="315" height="28"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:SubPanel x="21" y="92" width="336" height="239"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:SubPanel x="365" y="92" width="124" height="239"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechTextArea id="chatTextArea" editable="false" htmlText="{chatText}" alpha="1.0" borderColor="#00FFFF" borderStyle="solid" width="315" height="219" y="102" x="30"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<mx:List width="106" x="374" dataProvider="{users}" borderColor="#00FFFF" borderStyle="solid" height="219" y="102" selectable="false"></mx:List>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<mx:TextInput id="sayTextInput" enter="onSay()" width="313" x="32" y="341" maxChars="255"  borderStyle="none" focusAlpha="0"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechButton label="Send" right="36" bottom="27" click="onSay()"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{chatTextArea}" position="before">
+				<jxl:CloseButton x="473" y="29" click="close()"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{chatTextArea}" position="before">
+				<jxl:MinimizeButton x="449" y="29" click="minimize()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechLinkButton x="281" y="70" width="68" label="Disconnect" click="onDisconnect()"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechLabel x="30" y="70" text="Chat"/>
+			</mx:AddChild>
+			<mx:AddChild position="lastChild">
+				<jxl:TechLabel x="374" y="70" text="Users"/>
+			</mx:AddChild>
+			
+			
+			
+		</mx:State>
+	</mx:states>
+	
+	<mx:WipeDown id="wipeDown" duration="500" moveEasingFunction="{Exponential.easeIn}" />
+	
+	
+	
+</mx:Window>

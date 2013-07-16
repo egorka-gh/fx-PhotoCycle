@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemEditor xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				  xmlns:s="library://ns.adobe.com/flex/spark" 
+				  xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			private var hOffset:String='0';
+			[Bindable]
+			private var vOffset:String='0';
+			
+			private var _value:Object;
+			override public function get value():Object{
+				return _value;            
+			}
+			override public function set value(newValue:Object):void{
+				_value = newValue;
+			}
+
+			override public function prepare():void{
+				super.prepare();
+				var str:String=value as String;
+				if(str){
+					var arr:Array=str.split('+');
+					hOffset=arr.length>1?arr[1]:'';
+					vOffset=arr.length>2?arr[2]:'';
+				}
+			}
+			
+			override public function save():Boolean{
+				data[column.dataField]='+'+(hOffset?hOffset:'0')+'+'+(vOffset?vOffset:'0'); 
+				return true;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:Rect id="bg" top="2" left="2" right="2" bottom="2">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+	</s:Rect>
+	<s:HGroup gap="1" verticalAlign="baseline" verticalCenter="0">
+		<s:Label text="+"/>
+		<s:TextInput id="tiVOffset" text="@{hOffset}" widthInChars="4"
+					 toolTip="Смещение по горизонтали"
+					 restrict="0-9" maxChars="4"  borderAlpha="0.5"/>
+		<s:Spacer width="3"/>
+		<s:Label text="+"/>
+		<s:TextInput id="tiНOffset" text="@{vOffset}" widthInChars="4"
+					 toolTip="Смещение по вертикали"
+					 restrict="0-9" maxChars="4" borderAlpha="0.5"/>
+	</s:HGroup>
+</s:GridItemEditor>

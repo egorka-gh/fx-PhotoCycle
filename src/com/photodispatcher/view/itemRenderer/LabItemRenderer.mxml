@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				enabled="{lab.enabled}">
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.view.ErrorPopup;
+			
+			import mx.utils.StringUtil;
+			
+			private static const ERR_TOOL_TIP_TIME:int=10000;
+			
+			[Bindable]
+			private var lab:LabBase;
+			
+			
+			override public function get data():Object{
+				return super.data;
+			}
+			override public function set data(value:Object):void{
+				super.data = value;
+				if(lab) lab.removeEventListener(ErrorEvent.ERROR,labErrHandler);
+				lab=value as LabBase;
+				if(lab) lab.addEventListener(ErrorEvent.ERROR,labErrHandler);
+			}
+			
+			private var errPopUp:ErrorPopup;
+			private var timer:Timer;
+			private function labErrHandler(e:ErrorEvent):void{
+				//if (!this.selected) return;
+				var txt:String='';
+				if (errPopUp && errPopUp.isOpen) txt=errPopUp.alert+'\n';
+				txt=txt+e.text;
+				if (!errPopUp){
+					errPopUp=new ErrorPopup();
+				}
+				if(!timer){
+					timer=new Timer(ERR_TOOL_TIP_TIME,1);
+					timer.addEventListener(TimerEvent.TIMER,destroyErrorTip);
+					
+				}else{
+					timer.reset();
+				}
+				timer.start();
+				errPopUp.alert=txt;
+				errPopUp.show(true);
+			}
+
+			private function destroyErrorTip(e:Event=null):void {
+				if (errPopUp) {
+					errPopUp.close();
+				}
+			}
+				
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="hovered"/>
+		<s:State name="selected"/>
+	</s:states>
+	
+	<s:Rect radiusX="4" top="2" left="2" right="2" bottom="2">
+		<s:stroke>
+			<s:SolidColorStroke color="#cccccc" weight="2"/>
+		</s:stroke>
+	</s:Rect>
+		
+	<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
+		<!--<s:Image source="assets/Noritsu_logo_24.png" height="16" smooth="true" scaleMode="letterbox" horizontalAlign="left"/>-->
+		<s:Label text="{lab.name}" fontSize="18" fontWeight="bold"/>
+		<s:Label text="{lab.stateCaption}"/>
+	</s:VGroup>
+	
+</s:ItemRenderer>

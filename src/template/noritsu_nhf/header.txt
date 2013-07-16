@@ -1,0 +1,6 @@
+[Order]
+JobID=~~~job_id~~~
+PaperFittingFlag=~~~img_resize~~~
+CmsFlag=ON
+BackPrint1=~~~group_id~~~
+

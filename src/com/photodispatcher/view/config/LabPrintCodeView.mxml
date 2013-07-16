@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:config="com.photodispatcher.view.config.*"
+		 creationComplete="{init()}">
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.AttrType;
+			import com.photodispatcher.model.LabPrintCode;
+			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.dao.AttrTypeDAO;
+			import com.photodispatcher.model.dao.LabPrintCodeDAO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var currentList:ArrayCollection=new ArrayCollection();
+			[Bindable]
+			private var labTypeList:ArrayCollection=new ArrayCollection();
+
+			[Bindable]
+			private var currentLabType:int;
+
+			[Bindable]
+			private var widthFilterList:ArrayCollection;
+			[Bindable]
+			private var heightFilterList:ArrayCollection;
+			[Bindable]
+			private var paperFilterList:ArrayCollection;
+			[Bindable]
+			private var frameFilterList:ArrayCollection;
+			[Bindable]
+			private var correctionFilterList:ArrayCollection;
+			[Bindable]
+			private var cuttingFilterList:ArrayCollection;
+
+			private function addItem():void{
+				//get lab type
+				var type:int=0;
+				if(ddLabType && ddLabType.selectedIndex!=-1) type=ddLabType.selectedItem.value;
+				if(type==0) return; 
+
+				var newCode:LabPrintCode= new LabPrintCode();
+				newCode.src_type=type;
+				newCode.is_pdf=type==SourceType.LAB_XEROX;
+
+				//fill vs filter vals
+				if(tiWidthFilter && tiWidthFilter.text) newCode.width=int(tiWidthFilter.text);
+				if(tiHeightFilter && tiHeightFilter.text) newCode.height=int(tiHeightFilter.text);
+				if (type==SourceType.LAB_NORITSU_NHF) newCode.prt_code='nhf';
+				if (type==SourceType.LAB_PLOTTER) newCode.prt_code='plotter';
+				if (type!=SourceType.LAB_NORITSU_NHF){
+					if(ddPaperFilter && ddPaperFilter.selectedIndex>0){
+						newCode.paper=ddPaperFilter.selectedItem.value;
+						newCode.paper_name=ddPaperFilter.selectedItem.label;
+					}
+					if (type!=SourceType.LAB_PLOTTER){
+						if(tiCodeFilter && tiCodeFilter.text) newCode.prt_code=tiCodeFilter.text;
+						if(ddCorrectionFilter && ddCorrectionFilter.selectedIndex>0){
+							newCode.correction=ddCorrectionFilter.selectedItem.value;
+							newCode.correction_name=ddCorrectionFilter.selectedItem.label;
+						}
+						if(ddCuttingFilter && ddCuttingFilter.selectedIndex>0){
+							newCode.cutting=ddCuttingFilter.selectedItem.value;
+							newCode.cutting_name=ddCuttingFilter.selectedItem.label;
+						}
+						if(ddFrameFilter && ddFrameFilter.selectedIndex>0){
+							newCode.frame=ddFrameFilter.selectedItem.value;
+							newCode.frame=ddFrameFilter.selectedItem.label;
+						}
+					}
+				}
+
+				itemsGrid.addItem(newCode);
+			}
+			
+			private var itemsToSave:Array=[];
+			private var saveRunning:Boolean=false;
+			private function saveAll():void{
+				var code:LabPrintCode;
+				for each (var o:Object in currentList){
+					code=o as LabPrintCode;
+					if(code && (!code.loaded || code.changed)){
+						itemsToSave.push(code);
+					}
+				}
+				if(!saveRunning) saveNext();
+			}
+			
+			private function saveNext():void{
+				if(!itemsToSave || itemsToSave.length==0){
+					//completed
+					return;
+				}
+				saveRunning=true;
+				var o:Object=itemsToSave.shift();
+				var dao:LabPrintCodeDAO=new LabPrintCodeDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
+				dao.save(o);
+			}
+			private function onSave(e:AsyncSQLEvent):void{
+				var dao:LabPrintCodeDAO=e.target as LabPrintCodeDAO;
+				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
+				saveRunning=itemsToSave && itemsToSave.length>0;
+				if(e.result==AsyncSQLEvent.RESULT_COMLETED){
+					saveNext();
+				}else{
+					saveRunning=false;
+				}
+			}
+			
+			private function refresh():void{
+				/*
+				var dao:PdfTemplateDAO=new PdfTemplateDAO();
+				currentList.source=dao.findAllArr();
+				*/
+				var ldao:LabPrintCodeDAO= new LabPrintCodeDAO();
+				var type:int=0;
+				if(ddLabType && ddLabType.selectedIndex!=-1) type=ddLabType.selectedItem.value;
+				btAdd.enabled=type!=SourceType.LAB_VIRTUAL;
+				btSave.enabled=type!=SourceType.LAB_VIRTUAL;
+				
+				currentList=ldao.findAll(type);
+				currentList.filterFunction=gridFilter;
+				applyFilter();
+
+				currentLabType=type;
+			}
+			
+			private function init():void{
+				initCbLists();
+				labTypeList=Context.getAttribute('lab_typeList');
+				if(labTypeList && labTypeList.length>0){
+					var a:Array=labTypeList.source.concat();
+					//remove default '-'
+					a.shift();
+					labTypeList.source=a;
+					if(ddLabType && ddLabType.dataProvider && a.length>0){
+						ddLabType.selectedIndex=0;
+					}
+				}
+				currentList.filterFunction=gridFilter;
+				refresh();
+			}
+			private function initCbLists():void{
+				var at:AttrType;
+				var field:String;
+				var atDao:AttrTypeDAO=new AttrTypeDAO();
+				//var dDao:DictionaryDAO=new DictionaryDAO();
+				Context.initAttributeLists();
+				for each (var o:Object in atDao.findAll()){
+					at=o as AttrType;
+					if(at){
+						field=at.field;
+						this[field+'FilterList']=Context.getAttribute(field+'List');
+					}
+				}
+			}
+			
+			private function applyFilter():void{
+				currentList.refresh();
+			}
+			
+			private function gridFilter(item:Object):Boolean{
+				var code:LabPrintCode=item as LabPrintCode;
+				if(!code) return false;
+				if(tiWidthFilter && tiWidthFilter.text && code.width.toString().substr(0,tiWidthFilter.text.length)!=tiWidthFilter.text) return false;
+				if(tiHeightFilter && tiHeightFilter.text && code.height.toString().substr(0,tiHeightFilter.text.length)!=tiHeightFilter.text) return false;
+				if(currentLabType== SourceType.LAB_NORITSU_NHF) return true;
+
+				if(ddPaperFilter && ddPaperFilter.selectedIndex>0 && code.paper!=ddPaperFilter.selectedItem.value) return false;
+				if(currentLabType== SourceType.LAB_PLOTTER) return true;
+
+				if(tiCodeFilter && tiCodeFilter.text && code.prt_code.substr(0,tiCodeFilter.text.length)!=tiCodeFilter.text) return false;
+				if(ddCorrectionFilter && ddCorrectionFilter.selectedIndex>0 && code.correction!=ddCorrectionFilter.selectedItem.value) return false;
+				if(ddCuttingFilter && ddCuttingFilter.selectedIndex>0 && code.cutting!=ddCuttingFilter.selectedItem.value) return false;
+				if(ddFrameFilter && ddFrameFilter.selectedIndex>0 && code.frame!=ddFrameFilter.selectedItem.value) return false;
+				return true;
+			}
+			
+			
+			protected function ddLabType_creationCompleteHandler(event:FlexEvent):void{
+				if(ddLabType.dataProvider && ddLabType.dataProvider.length>0){
+					ddLabType.selectedIndex=0;
+					currentLabType=ddLabType.selectedItem.value;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="10" width="100%" height="100%">
+		<s:HGroup width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			<s:Label text="Тип лаборатории"/>
+			<s:DropDownList id="ddLabType" dataProvider="{labTypeList}" change="{refresh()}" creationComplete="ddLabType_creationCompleteHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			<s:Label text="Фильтрация" fontWeight="bold"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Канал"/>
+			<s:TextInput id="tiCodeFilter" width="100" change="{applyFilter()}" enabled="{!(currentLabType==SourceType.LAB_NORITSU_NHF || currentLabType==SourceType.LAB_PLOTTER)}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Ширина"/>
+			<s:TextInput id="tiWidthFilter" width="100" restrict="0123456789" change="{applyFilter()}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Длина"/>
+			<s:TextInput id="tiHeightFilter" width="100" restrict="0123456789" change="{applyFilter()}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Бумага"/>
+			<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyFilter()}" enabled="{currentLabType!=SourceType.LAB_NORITSU_NHF}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Рамка"/>
+			<s:DropDownList id="ddFrameFilter" dataProvider="{frameFilterList}" change="{applyFilter()}" enabled="{!(currentLabType==SourceType.LAB_NORITSU_NHF || currentLabType==SourceType.LAB_PLOTTER)}"/>
+			<s:Spacer width="5"/>
+			
+			<s:Label text="Коррекция"/>
+			<s:DropDownList id="ddCorrectionFilter" dataProvider="{correctionFilterList}" change="{applyFilter()}" enabled="{!(currentLabType==SourceType.LAB_NORITSU_NHF || currentLabType==SourceType.LAB_PLOTTER)}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Обрезка"/>
+			<s:DropDownList id="ddCuttingFilter" dataProvider="{cuttingFilterList}" change="{applyFilter()}" enabled="{!(currentLabType==SourceType.LAB_NORITSU_NHF || currentLabType==SourceType.LAB_PLOTTER)}"/>
+			
+			<s:Spacer width="100%"/>
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<config:ItemsGrid id="itemsGrid" editable="true"
+						  currentData="{currentList}" currentColumns="{LabPrintCodeDAO.gridColumns(currentLabType)}" 
+						  width="100%" height="100%"/>
+		<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="left">
+			<!--TODO implement DELETE-->
+			<s:Button id="btAdd" label="Добавить" click="{addItem()}"/>
+			<s:Button id="btSave" label="Сохранить" click="{saveAll()}"/>
+			<s:Button id="btCancel" label="Отмена" click="{refresh()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>
+

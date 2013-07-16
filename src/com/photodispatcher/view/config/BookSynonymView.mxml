@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:config="com.photodispatcher.view.config.*"
+		 creationComplete="{init()}">
+	
+<fx:Script>
+	<![CDATA[
+		import com.photodispatcher.context.Context;
+		import com.photodispatcher.event.AsyncSQLEvent;
+		import com.photodispatcher.model.BookPgTemplate;
+		import com.photodispatcher.model.BookSynonym;
+		import com.photodispatcher.model.SourceType;
+		import com.photodispatcher.model.dao.BaseDAO;
+		import com.photodispatcher.model.dao.BookPgTemplateDAO;
+		import com.photodispatcher.model.dao.BookSynonymDAO;
+		
+		import mx.collections.ArrayCollection;
+		import mx.controls.Alert;
+		
+		[Bindable]
+		private var currentList:ArrayCollection=new ArrayCollection();
+		[Bindable]
+		private var bookTypeFilterList:ArrayCollection;
+
+		[Bindable]
+		private var currentBook:BookSynonym;
+		[Bindable]
+		private var templatesList:ArrayCollection=new ArrayCollection();
+
+		private function refresh():void{
+			var dao:BookSynonymDAO=new BookSynonymDAO();
+			currentList.source=dao.findAllArray(SourceType.SRC_FOTOKNIGA);
+		}
+		
+		private function init():void{
+			Context.initAttributeLists();
+			bookTypeFilterList=Context.getAttribute('book_typeList');
+			currentList.filterFunction=gridFilter;
+			refresh();
+		}
+
+		private function addItem():void{
+			if(currentState=='list'){
+				var newPgs:BookSynonym= new BookSynonym();
+				newPgs.src_type=SourceType.SRC_FOTOKNIGA;
+				//fill vs filter vals
+				if(tiSynonymFilter && tiSynonymFilter.text) newPgs.synonym=tiSynonymFilter.text;
+				if(ddBookTypeFilter && ddBookTypeFilter.selectedIndex>0){
+					newPgs.book_type=ddBookTypeFilter.selectedItem.value;
+					newPgs.book_type_name=ddBookTypeFilter.selectedItem.label;
+				}
+				itemsGrid.addItem(newPgs);
+			}else if(currentState=='itemEdit'){
+				var newTemp:BookPgTemplate=new BookPgTemplate();
+				newTemp.book=currentBook.id;
+				tempGrid.addItem(newTemp);
+			}
+		}
+
+		private var itemsToSave:Array=[];
+		private var saveRunning:Boolean=false;
+		private function saveAll():void{
+			var item:BookSynonym;
+			var temp:BookPgTemplate;
+			for each (item in currentList){
+				if(item){
+					if(!item.loaded || item.changed){
+						itemsToSave.push(item);
+					}
+					if(item.templates){
+						for each(temp in item.templates){
+							if(temp && (!temp.loaded || temp.changed)){
+								itemsToSave.push(temp);
+							}
+						}
+					}
+				}
+			}
+			if(!saveRunning) saveNext();
+			currentState='list';
+		}
+		private function saveNext():void{
+			if(!itemsToSave || itemsToSave.length==0){
+				//completed
+				return;
+			}
+			saveRunning=true;
+			var o:Object=itemsToSave.shift();
+			var dao:BaseDAO;
+			if(o is BookSynonym){
+				dao=new BookSynonymDAO();
+			}else if(o is BookPgTemplate){
+				dao=new BookPgTemplateDAO();
+			}
+			if(dao){
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
+				dao.save(o);
+			}
+		}
+		private function onSave(e:AsyncSQLEvent):void{
+			var dao:BaseDAO=e.target as BaseDAO;
+			if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
+			saveRunning=itemsToSave && itemsToSave.length>0;
+			if(e.result==AsyncSQLEvent.RESULT_COMLETED){
+				saveNext();
+			}else{
+				saveRunning=false;
+			}
+		}
+
+		private function applyFilter():void{
+			currentList.refresh();
+		}
+
+		private function gridFilter(item:Object):Boolean{
+			var synonym:BookSynonym=item as BookSynonym;
+			if(!synonym) return false;
+			if(tiSynonymFilter && tiSynonymFilter.text && synonym.synonym.substr(0,tiSynonymFilter.text.length)!=tiSynonymFilter.text) return false;
+			if(ddBookTypeFilter && ddBookTypeFilter.selectedIndex>0 && synonym.book_type!=ddBookTypeFilter.selectedItem.value) return false;
+			return true;
+		}
+
+		protected function btEdit_clickHandler(event:MouseEvent):void{
+			currentBook = itemsGrid.currentItem as BookSynonym;
+			templatesList.source=null;
+			if(currentBook){
+				if(!currentBook.loaded){
+					Alert.show('Необходимо сохранить новую запись.');
+					return;
+				}
+				if (!currentBook.templates){
+					if(!currentBook.loadTemplates()) return;
+				}
+				if (!currentBook.templates) currentBook.templates=[];
+				templatesList.source=currentBook.templates;
+				currentState='itemEdit';
+			}
+		}
+		
+	]]>
+</fx:Script>
+	<s:states>
+		<s:State name="list"/>
+		<s:State name="itemEdit"/>
+	</s:states>
+	
+	<s:VGroup gap="10" width="100%" height="100%">
+		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline" includeIn="list">
+			<s:Label text="Фильтрация" fontWeight="bold"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Имя папки"/>
+			<s:TextInput id="tiSynonymFilter" width="100" change="{applyFilter()}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Тип книги"/>
+			<s:DropDownList id="ddBookTypeFilter" dataProvider="{bookTypeFilterList}" change="{applyFilter()}"/>
+			
+			<s:Spacer width="100%"/>
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<config:ItemsGrid id="itemsGrid" editable="true" includeIn="list"
+						  currentData="{currentList}" currentColumns="{BookSynonymDAO.gridColumns()}" 
+						  width="100%" height="100%"/>
+		<s:Label includeIn="itemEdit" text="{currentBook.synonym}" width="100%" fontWeight="bold"/>
+		<s:Label includeIn="itemEdit" text="{currentBook.book_type_name}" width="100%"/>
+		<config:ItemsGrid id="tempGrid" editable="true" includeIn="itemEdit"
+						  currentData="{templatesList}" currentColumns="{BookPgTemplateDAO.gridColumns()}" 
+						  width="100%" height="100%"/>
+		<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="left">
+			<!--TODO implement DELETE-->
+			<s:Button id="btAdd" label="Добавить" click="{addItem()}"/>
+			<s:Button id="btEdit" enabled="true" enabled.itemEdit="false" label="Состав книги" click="btEdit_clickHandler(event)"/>
+			<s:Button id="btSave" label="Сохранить" click="{saveAll()}"/>
+			<s:Button id="btCancel" label="Отмена" click="{currentState='list';refresh();}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

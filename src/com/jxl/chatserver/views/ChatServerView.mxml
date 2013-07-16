@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.jxl.chatserver.events.ServiceEvent;
+			import com.jxl.chatserver.mvcs.services.ChatServerService;
+			
+			import mx.collections.ArrayCollection;
+			
+			private var _chatServerService:ChatServerService;
+			[Bindable]
+			public function get chatServerService():ChatServerService{
+				return _chatServerService;
+			}
+			public function set chatServerService(value:ChatServerService):void{
+				if(_chatServerService){
+					_chatServerService.removeEventListener(ServiceEvent.CHAT_SERVER_SERVICE_CONNECTED, onChatConnected);
+					_chatServerService.removeEventListener(ServiceEvent.CHAT_SERVER_SERVICE_ERROR, onChatServerError);
+					_chatServerService.removeEventListener(ServiceEvent.CHAT_SERVER_SERVICE_DISCONNECTED, onChatServerOffline);
+					
+				}
+				_chatServerService = value;
+				if(_chatServerService){
+					connectedClients = _chatServerService.clientsModel.clients;
+					_chatServerService.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_CONNECTED, onChatConnected);
+					_chatServerService.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_ERROR, onChatServerError);
+					_chatServerService.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_DISCONNECTED, onChatServerOffline);
+
+				}
+			}
+
+
+			[Bindable]
+			[ArrayElementType("com.jxl.chatserver.vo.ClientVO")]
+			public var connectedClients:ArrayCollection;
+			
+			[Bindable]
+			public var failMessage:String = "";
+			
+			private function onChatServerError(event:ServiceEvent):void{
+				failMessage 	= event.lastError;
+				currentState = "fail";
+			}
+			
+			private function onChatConnected(event:ServiceEvent):void{
+				currentState = "onLine";
+			}
+			private function onChatServerOffline(event:ServiceEvent):void{
+				currentState = "offLine";
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(chatServerService) chatServerService.startServer();
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="offLine" stateGroups="disconnected"/>
+		<s:State name="fail"  stateGroups="disconnected"/>
+		<s:State name="onLine"/>
+	</s:states>
+	
+	<s:VGroup width="100%" height="100%">
+		<s:Label width="100%" text="{chatServerService.isOnline?'connected':'offline'}" maxDisplayedLines="3"/>
+		<s:Label includeIn="fail" width="100%" text="{failMessage}" maxDisplayedLines="3"/>
+		<s:HGroup width="100%" height="100%">
+			<!--clients list-->
+			<s:List dataProvider="{connectedClients}" labelField="username" height="100%" width="50%"/>
+			<!--chat win-->
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle" horizontalAlign="right">
+			<s:Button label="Connect" click="button1_clickHandler(event)" enabled="{!chatServerService.isOnline}"/>
+			<s:Button label="disConnect" click="{chatServerService.close()}" enabled="{chatServerService.isOnline}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

@@ -1,0 +1,170 @@
+package com.photodispatcher.util{
+	import com.google.zxing.oned.Code128Writer;
+	import com.photodispatcher.shell.IMCommand;
+	
+	import flash.display.Bitmap;
+	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
+	import flash.utils.ByteArray;
+	
+	import mx.graphics.codec.PNGEncoder;
+
+	public class IMCommandUtil{
+
+		public static function annotateImage(command:IMCommand,font_size:int,undercolor:String, text:String, offset:String, double:Boolean=false):void{
+			if(!command || !text) return;
+			if(!undercolor) undercolor='white';
+			if(!offset) offset='+0+0';
+			if(font_size){
+				//calc points 4 density 300
+				var points:int=font_size*300/72;
+				//( -pointsize 33 -undercolor "white" label:" 123456-1 1/10 " -trim +repage -bordercolor white -border 10x3 -repage "+23+23" ) -flatten
+				//( -pointsize 33 -undercolor "white" label:" 123456-1 1/10 " -trim +repage -bordercolor white -border 10x3 -repage "+500+0" -write mpr:label ) -flatten -gravity southwest mpr:label -geometry +500+0 -composite
+				command.add('(');
+				command.add('-strokewidth'); command.add('0');
+				command.add('-pointsize'); command.add(points.toString());
+				command.add('-undercolor'); command.add(undercolor);
+				var label:String='label:'+text;
+				command.add(label);
+				command.add('-trim');
+				command.add('+repage');
+				command.add('-bordercolor'); command.add(undercolor);
+				command.add('-border'); command.add('10x3');
+				command.add('-repage'); command.add(offset);
+				if(double) command.add('-write'); command.add('mpr:label');
+				command.add(')');
+				command.add('-flatten');
+				if(double){
+					command.add('-gravity'); command.add('southwest');
+					command.add('mpr:label');
+					command.add('-geometry'); command.add(offset);
+					command.add('-composite');
+				}
+			}
+		}
+
+		public static function drawNotching(command:IMCommand,notching:int,length:int,width:int,buttPix:int=0):void{
+			var line:String;
+			if(notching>0){
+				if(buttPix){
+					//-stroke white -strokewidth 9 -draw "line 1000,0 1000,50 line 1500,0 1500,50" -stroke black -strokewidth 3 -draw "line 1000,0 1000,50 line 1500,0 1500,50"
+					var xl:int=(length-buttPix)/2;
+					var xr:int=xl+buttPix;
+					line='line '+xl.toString()+',0 '+xl.toString()+','+notching.toString()+' line '+xr.toString()+',0 '+xr.toString()+','+notching.toString()+
+						' line '+xl.toString()+','+(width-notching).toString()+' '+xl.toString()+','+width.toString()+' line '+xr.toString()+','+(width-notching).toString()+' '+xr.toString()+','+width.toString();
+					command.add('-stroke'); command.add('white');
+					command.add('-strokewidth'); command.add('9');
+					command.add('-draw'); command.add(line);
+					command.add('-stroke'); command.add('black');
+					command.add('-strokewidth'); command.add('3');
+					command.add('-draw'); command.add(line);
+				}else{
+					//-stroke white -strokewidth 9 -draw "line 1000,0 1000,50" -stroke black -strokewidth 3 -draw "line 1000,0 1000,50"
+					var x:int=(length)/2;
+					line='line '+x.toString()+',0 '+x.toString()+','+notching.toString()+
+						' line '+x.toString()+','+(width-notching).toString()+' '+x.toString()+','+width.toString();
+					command.add('-stroke'); command.add('white');
+					command.add('-strokewidth'); command.add('9');
+					command.add('-draw'); command.add(line);
+					command.add('-stroke'); command.add('black');
+					command.add('-strokewidth'); command.add('3');
+					command.add('-draw'); command.add(line);
+				}
+			}
+		}
+
+		public static function drawBarcodeTTF(command:IMCommand,font_size:int, text:String, offset:String, gravity:String='southwest'):void{
+			if(!command || !text) return;
+			var undercolor:String='white';
+			if(!offset) offset='+0+0';
+			if(font_size){
+				//calc points 4 density 300
+				var points:int=font_size*300/72;
+				//convert img.jpg ( -font Code-128 -pointsize 33 -undercolor "white" label:"O,BXI-1 1/10EO" -trim +repage -bordercolor white -border 10x3 -write mpr:label +delete ) -gravity southeast mpr:label -geometry +500+100 -composite labeled.jpg
+				command.add('(');
+				command.add('-font'); command.add('Code-128');
+				command.add('-pointsize'); command.add(points.toString());
+				command.add('-undercolor'); command.add(undercolor);
+				var label:String='label:'+Code128.codeIt(text);
+				command.add(label);
+				command.add('-trim');
+				command.add('+repage');
+				command.add('-bordercolor'); command.add(undercolor);
+				command.add('-border'); command.add('10x3');
+				command.add('-write'); command.add('mpr:label');
+				command.add('+delete');
+				command.add(')');
+				command.add('-gravity'); command.add(gravity);
+				command.add('mpr:label');
+				command.add('-geometry'); command.add(offset);
+				command.add('-composite');
+			}
+		}
+
+		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, offset:String, rotate:int=0, gravity:String='southwest'):void{
+			if(!command || !barcode || !wrkDir || height<=0) return;
+			var undercolor:String='white';
+			if(!offset) offset='+0+0';
+			
+			//create barcode image
+			var c128Writer:Code128Writer= new Code128Writer();
+			var bmp:Bitmap=c128Writer.draw(barcode,height,3);
+			if (!bmp) return;
+			var encoder:PNGEncoder= new PNGEncoder();
+			var imgByteArr:ByteArray = encoder.encode(bmp.bitmapData);
+			var file:File=new File(wrkDir);
+			if(!file.exists) return;
+			var fileName:String=StrUtil.toFileName('brc_'+barcode)+'.png';
+			file=file.resolvePath(fileName);
+			var fs:FileStream = new FileStream();
+			try{
+				fs.open(file, FileMode.WRITE);
+				fs.writeBytes(imgByteArr);
+				fs.close();
+			}catch(e:Error){
+				return;
+			}
+			
+			//fill command
+			//convert img.jpg ( barcode.png ( -pointsize 30 -undercolor "white" label:"R12345-7" -trim +repage -bordercolor white -border 2x2 ) -gravity center +append -write mpr:label +delete ) -gravity SouthWest mpr:label -geometry +500+50 -composite labeled.jpg
+			//convert "img.jpg" "(" "barcode.png" "(" "-pointsize" "30" "-undercolor" "white" "label:R12345-7" "-trim" "+repage" "-bordercolor" "white" "-border" "2x2" ")" "-gravity" "center" "+append" "-rotate" "-90" "-write" "mpr:label" "+delete" ")" "-gravity" "east" "mpr:label" "-geometry" "+100+100" "-composite" "labeled.jpg"
+			//convert "img.jpg" ( -pointsize 30 -undercolor white label:R12345-7 -trim +repage -bordercolor white -border "2x2" barcode.png +swap -gravity "center" "+append" "-rotate" "-90" "-write" "mpr:label" "+delete" ")" "-gravity" "east" mpr:label -geometry "+100+100" -composite labeled.jpg
+			command.add('(');
+			//command.add(fileName);
+			if(text && height>4){
+				//var points:int=Math.ceil((height-4)*72/300); //pix to point  
+				//command.add('-density'); command.add('300x300');
+				//command.add('(');
+				command.add('-strokewidth'); command.add('0');
+				command.add('-pointsize'); command.add((height-4).toString());
+				command.add('-undercolor'); command.add(undercolor);
+				var label:String='label:'+text;
+				command.add(label);
+				command.add('-trim');
+				command.add('+repage');
+				command.add('-bordercolor'); command.add(undercolor);
+				command.add('-border'); command.add('2x2');
+				//command.add(')');
+				//command.add('-gravity'); command.add('center');
+				//command.add('+append');
+			}
+			command.add(fileName);
+			if(text){
+				command.add('+swap');
+				command.add('-gravity'); command.add('center');
+				command.add('+append');
+			}
+			if(rotate!=0){
+				command.add('-rotate'); command.add(rotate.toString());
+			}
+			command.add('-write'); command.add('mpr:barcode');
+			command.add('+delete');
+			command.add(')');
+			command.add('-gravity'); command.add(gravity);
+			command.add('mpr:barcode');
+			command.add('-geometry'); command.add(offset);
+			command.add('-composite');
+		}
+	}
+}

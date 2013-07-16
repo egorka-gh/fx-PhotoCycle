@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemEditor xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				  xmlns:s="library://ns.adobe.com/flex/spark" 
+				  xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			override public function set value(newValue:Object):void {
+				checkBox.selected = newValue as Boolean;
+			}
+			
+			override public function get value():Object {
+				return checkBox.selected;
+			}
+			
+			// Override setFocus() to shift focus to the NumericStepper.
+			override public function setFocus():void {
+				checkBox.setFocus();
+			}
+		]]>
+	</fx:Script>
+	<s:Rect id="bg" top="2" left="2" right="2" bottom="2">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+	</s:Rect>
+	<s:CheckBox id="checkBox" verticalCenter="0" horizontalCenter="0"/>
+</s:GridItemEditor>

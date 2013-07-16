@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+
+	<fx:Metadata>
+		[Event(name="change", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import spark.events.TextOperationEvent;
+			[Bindable]
+			private var hSign:String='+';
+			[Bindable]
+			private var hOffset:String='0';
+			[Bindable]
+			private var vSign:String='+';
+			[Bindable]
+			private var vOffset:String='0';
+			
+			[Bindable]
+			public function set data(offset:String):void{
+				if(!offset) return;
+				var subStr:String=offset.charAt(0);
+				if(subStr=='+' || subStr=='-'){
+					hSign=subStr;
+					offset=offset.substr(1);
+				}else{
+					hSign='+';
+				}
+				var idx:int=offset.indexOf('+');
+				if(idx==-1) idx=offset.indexOf('-');
+				if(idx==-1){
+					hOffset='0';
+					vSign='+';
+					vOffset='0';
+					return;
+				}
+				vSign=offset.charAt(idx);
+				hOffset=int(offset.substring(0,idx)).toString();
+				vOffset=int(offset.substring(idx+1)).toString();
+			}
+			public function get data():String{
+				return hSign+hOffset+vSign+vOffset;
+			}
+
+			
+			protected function tiHSign_changeHandler(event:TextOperationEvent):void{
+				dispatchEvent(new Event(Event.CHANGE));
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect id="bg" top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:HGroup gap="0" verticalAlign="baseline" verticalCenter="0">
+		<!--<s:Label text="+"/>-->
+		<s:TextInput id="tiHSign" text="@{hSign}" widthInChars="1" change="tiHSign_changeHandler(event)"
+					 textAlign="right" restrict="+\-" maxChars="1"  borderAlpha="0"/>
+		<s:TextInput id="tiHOffset" text="@{hOffset}" widthInChars="4" change="tiHSign_changeHandler(event)"
+					 toolTip="Смещение по горизонтали"
+					 restrict="0-9" maxChars="3"  borderAlpha="0"/>
+		<!--<s:Label text="+"/>-->
+		<s:TextInput id="tiVSign" text="@{vSign}" widthInChars="1" change="tiHSign_changeHandler(event)"
+					 textAlign="right" restrict="+\-" maxChars="1"  borderAlpha="0"/>
+		<s:TextInput id="tiVOffset" text="@{vOffset}" widthInChars="4" change="tiHSign_changeHandler(event)"
+					 toolTip="Смещение по вертикали"
+					 restrict="0-9" maxChars="3" borderAlpha="0"/>
+	</s:HGroup>
+
+	
+</s:Group>

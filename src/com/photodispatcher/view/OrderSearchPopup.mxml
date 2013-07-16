@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   width="400" minHeight="30"
+						   keyDown="skinnablepopupcontainer1_keyDownHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.dao.OrderDAO;
+			
+			import flash.globalization.DateTimeStyle;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.formatters.DateTimeFormatter;
+			
+			[Bindable]
+			private var ordersList:ArrayCollection;
+			[Bindable]
+			private var columnsList:ArrayList=new ArrayList();
+			
+			override public function open(owner:DisplayObjectContainer, modal:Boolean=false):void{
+				super.open(FlexGlobals.topLevelApplication as DisplayObjectContainer, true);
+				PopUpManager.centerPopUp(this);
+				focusManager.setFocus(tiOrderId);
+				
+				var a:Array=[];
+				var col:GridColumn;
+				col= new GridColumn('id'); col.headerText='ID'; col.width=85; a.push(col);
+				col= new GridColumn('source_name'); col.headerText='Источник'; col.width=70; a.push(col);
+				col= new GridColumn('state_name'); col.headerText='Статус'; col.width=90; a.push(col); 
+				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('state_date'); col.headerText='Дата'; col.formatter=fmt;  col.width=110; a.push(col);
+				columnsList.source=a;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if (tiOrderId.text){
+					var dao:OrderDAO=new OrderDAO();
+					ordersList= dao.findeById(tiOrderId.text);
+					if(ordersList && ordersList.length>0){
+						if(ordersList.length==1){
+							showOrder((ordersList.getItemAt(0) as Order).id);
+							return;
+						}else{
+							currentState='found';
+						}
+					}else{
+						currentState='notFound';
+					}
+				}
+			}
+			
+			protected function showOrder(id:String):void{
+				var pop:OrderInfoPopup=new OrderInfoPopup();
+				pop.show(id);
+				close();
+			}
+			
+			protected function skinnablepopupcontainer1_keyDownHandler(event:KeyboardEvent):void{
+				if(event.keyCode==27){
+					close();
+					return;
+				}
+				if(event.keyCode==13){
+					button1_clickHandler(null);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="search"/>
+		<s:State name="found"/>
+		<s:State name="notFound"/>
+	</s:states>
+
+	<s:Rect  radiusX="6" radiusY="6" top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+
+	<s:VGroup gap="5" width="100%" horizontalAlign="center" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="5">
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+			<s:Label text="ID заказа"/>
+			<s:TextInput id="tiOrderId"/>
+			<s:Spacer width="100%"/>
+			<s:Button label="Найти" click="button1_clickHandler(event)"/>
+			<s:Button label="Отмена" click="{close()}"/>
+		</s:HGroup>
+		<s:Label text="Заказ не найден." includeIn="notFound"/>
+		<s:DataGrid id="dgOrders" selectionMode="singleRow" includeIn="found" width="100%" 
+					dataProvider="{ordersList}" locale="ru_RU" columns="{columnsList}" click="{showOrder((dgOrders.selectedItem as Order).id)}"/>
+	</s:VGroup>
+
+</s:SkinnablePopUpContainer>

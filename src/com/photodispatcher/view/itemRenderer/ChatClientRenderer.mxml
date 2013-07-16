@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true"
+				creationComplete="itemrenderer1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.jxl.chatserver.mvcs.services.ChatServerService;
+			import com.jxl.chatserver.vo.ClientVO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Menu;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			[Bindable]
+			private var username:String;
+			[Bindable]
+			private var client:ClientVO;
+			
+			override public function set data(value:Object):void{
+				// TODO Auto Generated method stub
+				super.data = value;
+				client=value as ClientVO;
+				if(client){
+					username=client.username;
+				}
+			}
+			
+			private function detectMode(mode:Object):String{
+				if(client){
+					return ClientVO.modeName(client.userType);
+				}
+				return '';
+			}
+			
+			private var menu:Menu;
+			protected function itemrenderer1_creationCompleteHandler(event:FlexEvent):void{
+				menu=Menu.createMenu(null,ClientVO.HELPER_MODES);
+				menu.addEventListener(MenuEvent.ITEM_CLICK, onMenu);
+				addEventListener(MouseEvent.RIGHT_CLICK,onRightClick);
+			}
+			
+			private function onRightClick(event:MouseEvent):void{
+				if(menu) menu.show(event.stageX,event.stageY);
+			}
+
+			private function onMenu(event:MenuEvent):void{
+				var newMode:int=event.item.id;
+				if(!newMode) return;
+				if(!client) return;
+				var chatServer:ChatServerService=ChatServerService.instance;
+				if(!chatServer.isOnline) return;
+				chatServer.setUserTypeRequest(client,newMode);
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:Rect top="2" left="2" right="2" bottom="2" radiusX="2">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>		
+	</s:Rect>
+	
+	<s:VGroup width="150" gap="5" paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5">
+		<s:Label text="{username}" width="100%" maxDisplayedLines="1"/>
+		<!--<s:DropDownList id="ddMode" dataProvider="{new ArrayCollection(ClientVO.HELPER_MODES)}" selectedItem="{detectMode(client.userType)}"/>-->
+		<s:Label text="Режим: {detectMode(client.userType)}"
+				 textAlign="right"
+				 width="100%" maxDisplayedLines="1"/>
+	</s:VGroup>
+	
+</s:ItemRenderer>

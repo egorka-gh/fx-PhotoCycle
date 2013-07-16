@@ -1,0 +1,10 @@
+[Frame]
+FrameNum=~~~img_num~~~
+FileName=~~~img_file~~~
+ImageFormat=~~~img_format~~~
+RepeatNum=~~~prt_qty~~~
+PaperWidth=~~~img_width~~~
+PaperLength=~~~img_length~~~
+Surface=~~~img_pape~~~
+BackPrint2=~~~img_backprint2~~~
+

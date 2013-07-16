@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
+			
+			private var _manager:FBookDownloadManager;
+			[Bindable]
+			public function get manager():FBookDownloadManager{
+				return _manager;
+			}
+			public function set manager(value:FBookDownloadManager):void{
+				_manager = value;
+				if(_manager){
+					currentState='has_manager';
+				}else{
+					currentState='default';
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="default"/>
+		<s:State name="has_manager"/>
+	</s:states>
+	<s:HGroup id="content" includeIn="has_manager" verticalAlign="middle" 
+			  gap="5" left="0" top="0" right="0">
+		<s:Label text="Http ({manager.queueLenth}) {manager.currentOrder.src_id}:"/>
+		<mx:ProgressBar mode="event" source="{manager}" width="100%"
+						labelPlacement="left" fontWeight="normal" label="%1/%2"/>
+	</s:HGroup>
+			  
+</s:Group>

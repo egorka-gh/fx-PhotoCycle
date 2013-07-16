@@ -1,0 +1,13 @@
+[JOB]
+PRT PID=~~~img_num~~~
+PRT TYP=STD
+PRT QTY=~~~prt_qty~~~
+IMG FMT=UNDEF
+<IMG SRC="..\DCIM\~~~img_file~~~">
+VUQ RGN=BGN
+VUQ VNM="NORITSU KOKI" -ATR "QSSPrint"
+VUQ VER=01.00
+PRT CVP1=1 -STR "~~~group_id~~~"
+PRT CVP2=1 -STR "~~~img_backprint2~~~"
+VUQ RGN=END
+

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.ProcessState;
+
+			[Bindable]
+			private var ps:ProcessState;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				ps = value as ProcessState;
+			}
+			
+			private function detectState(processState:int):uint{
+				switch(processState){
+					case ProcessState.STATE_ERROR:
+						currentState='error';
+						break;
+					case ProcessState.STATE_OK_WAITE:
+						currentState='ok_wait';
+						break;
+					case ProcessState.STATE_RUNINNG:
+						currentState='process';
+						break;
+					default:
+						currentState='offline';
+						break;
+				}	
+				return 0;
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="offline"/>
+		<s:State name="ok_wait"/>
+		<s:State name="process"/>
+		<s:State name="error"/>
+	</s:states>
+	<s:Image id="icon" scaleMode="letterbox"
+			 source.offline="assets/offLine2.png" 
+			 source.ok_wait="assets/wait24.png" 
+			 source.process="assets/sync24.png" 
+			 source.error="assets/error.png" 
+			 top="0" left="0" width="24" height="24"/>
+	<s:Label id="caption" text="{ps.caption}" color="{detectState(ps.state)}"
+			 top="0" left="30" width="100%" minHeight="24" verticalAlign="middle"
+			 maxDisplayedLines="2"/>
+	
+</s:ItemRenderer>

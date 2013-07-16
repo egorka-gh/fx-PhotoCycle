@@ -1,0 +1,5 @@
+[OutDevice]
+DeviceName=PICsRGB
+
+[ImageList]
+ImageCnt=~~~img_cnt~~~

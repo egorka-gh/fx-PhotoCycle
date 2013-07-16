@@ -1,0 +1,9 @@
+
+[~~~img_file~~~]
+SizeName=~~~prt_code~~~
+PrintCnt=~~~prt_qty~~~
+BackPrint=FREE
+BackPrintLine1=~~~group_id~~~
+BackPrintLine2="~~~img_backprint2~~~"
+Resize=~~~img_resize~~~
+DSC_Chk=~~~img_corr~~~

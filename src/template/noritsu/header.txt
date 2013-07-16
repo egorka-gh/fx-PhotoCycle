@@ -1,0 +1,11 @@
+[HDR]
+GEN REV=01.00
+GEN CRT="NORITSU KOKI" -01.00
+GEN DTM=~~~print_date~~~
+VUQ RGN=BGN
+VUQ VNM="NORITSU KOKI" -ATR "QSSPrint"
+VUQ VER=01.00
+PRT PCH=~~~prt_code~~~
+GEN INP="Other"
+VUQ RGN=END
+

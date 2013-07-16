@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:config="com.photodispatcher.view.config.*"
+					   xmlns:view="com.photodispatcher.view.*"
+					   showStatusBar="false"
+					   creationComplete="{initApp()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.AppConfig;
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.dao.AppConfigDAO;
+			import com.photodispatcher.model.dao.OrderStateDAO;
+			import com.photodispatcher.model.dao.SourcesDAO;
+			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.config.DatabasePopup;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+
+			private var bdPopup:DatabasePopup;
+			
+			[Bindable]
+			private var labList:ArrayCollection;
+			[Bindable]
+			private var labMap:Object;
+			//private var labIdx:int=-1;
+
+			private function initApp():void{
+				bdPopup= new DatabasePopup();
+				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
+				bdPopup.chekConnect(SQLMode.UPDATE,false);
+			}
+			private function bdPopClose(e:PopUpEvent):void{
+				if(e.commit){
+					//connected
+					fillContext();
+					fillLabList();
+					if(labMap){
+						currentState='workplace';
+					}else{
+						currentState='config';
+					}
+				}else{
+					//no connection
+					currentState='disconnected';
+					bdPopup.open(null);
+				}
+			}
+
+			private function fillContext():void{
+				var appConfDAO:AppConfigDAO=new AppConfigDAO();
+				var appConf:AppConfig=appConfDAO.getItem();
+				//Context.setAttribute('workFolder',appConf.wrk_path);
+				Context.setAttribute('syncInterval',appConf.monitor_interval);
+
+				Context.initSourceLists();
+				//init static maps 
+				OrderStateDAO.initStateMap();
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				//var imPath:String;
+				var workFolder:String;
+				var prtPath:String;
+				//var serverIP:String;
+				if (so.size>0){
+					workFolder = so.data.workFolder;
+					//imPath = so.data.imPath;
+					prtPath = so.data.prtPath;
+					//serverIP=so.data.serverIP;
+				}
+
+				if(!workFolder) workFolder=appConf.wrk_path; //backward compatibility
+				Context.setAttribute('workFolder',workFolder);
+				
+				if(!prtPath) prtPath=workFolder;
+				Context.setAttribute('prtPath',prtPath);
+
+			}
+
+			private function fillLabList():void{
+				var lDAO:SourcesDAO=new SourcesDAO();
+				labList=lDAO.findAll(2);
+
+				//detect lab ids
+				var oId:Object;
+				var aId:Array;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				oId=so.data.labId;
+				if (oId is Array){
+					aId=oId as Array;
+				}else{
+					aId=[int(oId)];
+				}
+				fillLabMap(aId);
+				/*
+				if (lId){
+					Context.setAttribute('applabId',lId);
+					//Context.setAttribute('appLab',ArrayUtil.searchItem('id',lId,labList.source));
+					labIdx=ArrayUtil.searchItemIdx('id',lId,labList.source);
+				}
+				*/
+			}
+			
+			private function fillLabMap(arrId:Array):void{
+				if(!arrId || arrId.length==0){
+					labMap= null;
+					return;
+				}else{
+					labMap= new Object();
+				}
+				var lId:int;
+				var arrlab:Array;
+				var lab:LabBase;
+				if(labList) arrlab=labList.source;
+				for each(lId in arrId){
+					lab=LabBuilder.build(ArrayUtil.searchItem('id',lId,arrlab) as Source);
+					if(lab) lab.isSelected=true;
+					labMap[lId.toString()]=lab?lab:lId;
+				}
+				Context.setAttribute('appLabMap',labMap);
+			}
+
+			/*
+			protected function ddLabs_changeHandler(event:IndexChangeEvent):void{
+				
+				var lab:Source=ddLabs.selectedItem as Source;
+				if(lab){
+					Context.setAttribute('applabId',lab.id);
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.labId=lab.id;  
+					so.flush();  
+				}
+			}
+			*/
+			
+			protected function button3_clickHandler(event:MouseEvent):void{
+				FlexGlobals.topLevelApplication.exit();
+			}
+
+			protected function lstLbs_clickHandler(event:MouseEvent):void{
+				if(event.target.id=='cbox'){
+					var lab:Source;
+					var arr:Array=[];
+					for each (lab in labList){
+						if(lab && lab.isSelected){
+							arr.push(lab.id);
+						}
+					}
+					fillLabMap(arr);
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.labId=arr;  
+					so.flush();  
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+
+	<s:states>
+		<s:State name="disconnected"/>
+		<s:State name="config"/>
+		<s:State name="workplace"/>
+	</s:states>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#eeeeee"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:VGroup gap="10" top="5" left="5" right="5" bottom="30"
+			  top.workplace="0" left.workplace="0" right.workplace="0">
+		<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"/>
+		<s:Label text="Уражите лаборатории для данной рабочей станции" includeIn="config" color="#FF0000" visible="{!labMap}" includeInLayout="{!labMap}"/>
+		<s:VGroup gap="5" includeIn="config" paddingLeft="50">
+			<s:Label text="Лаборатории"/>
+			<!--<s:DropDownList id="ddLabs" dataProvider="{labList}" labelField="name" 
+							selectedIndex="@{labIdx}" change="ddLabs_changeHandler(event)"/>-->
+			<s:List id="lstLbs" dataProvider="{labList}" click="lstLbs_clickHandler(event)">
+				<s:itemRenderer>
+					<fx:Component>
+						<s:ItemRenderer>
+							<s:HGroup gap="0" verticalAlign="baseline" paddingTop="2" paddingBottom="2" paddingLeft="3" paddingRight="3">
+								<s:CheckBox id="cbox" selected="@{data.isSelected}"/>
+								<s:Label id="lbl" text="{data.name}"/>
+							</s:HGroup>
+						</s:ItemRenderer>
+					</fx:Component>
+				</s:itemRenderer>
+			</s:List>
+		</s:VGroup>	
+		<view:LabWorkplace id="labWorkplace" includeIn="workplace"
+						   width="100%" height="100%"/>
+	</s:VGroup>
+	<s:HGroup bottom="5" horizontalAlign="right" width="100%" gap="10" paddingRight="10">
+		<s:Button label="Настройки" includeIn="workplace" click="currentState='config'"/>
+		<s:Button label="Лаборатория" includeIn="config" enabled="{labMap}"/>
+		<s:Button label="Выход" click="button3_clickHandler(event)"/>
+	</s:HGroup>
+	
+</s:WindowedApplication>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}" xmlns:view="com.photodispatcher.view.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.dao.OrderStateDAO;
+			import com.photodispatcher.model.dao.PrintGroupDAO;
+			
+			import mx.collections.IList;
+			
+			[Bindable]
+			public var sourseList:IList
+
+			[Bindable]
+			private var stateList:IList
+
+			[Bindable]
+			private var currentData:ArrayCollection;
+			[Bindable]
+			private var currentColumns:IList;
+
+			
+			public function init():void{
+				//var osDao:OrderStateDAO= new OrderStateDAO();
+				stateList=OrderStateDAO.getStateList();
+				detectState();
+			}
+			
+			private function detectState():void{
+				switch(tbView.selectedIndex){
+					case 0:
+						currentState='orders';
+						refresh();
+						break;
+					case 1:
+						currentState='printGroups';
+						refresh();
+						break;
+					case 2:
+						currentState='printDeploy';
+						break;
+				}
+			}
+			
+			public function refresh():void{
+				switch(tbView.selectedIndex){
+					case 0:
+						currentData=getOrdersList();
+						currentColumns=OrderDAO.gridColumns();
+						break;
+					case 1:
+						currentData=getPGList();
+						currentColumns=PrintGroupDAO.gridColumns();
+						break;
+				}
+				if (printDistribute) printDistribute.refresh();
+			}
+			
+			private function getOrdersList():ArrayCollection{
+				var oDao:OrderDAO=new OrderDAO();
+				var stateId:int=-1;
+				var sourceId:int=-1;
+				if(ddSourceFilter && ddSourceFilter.selectedIndex!=-1){
+					sourceId=ddSourceFilter.selectedItem.id;
+				}
+				if(ddStateFilter && ddStateFilter.selectedIndex!=-1){
+					stateId=ddStateFilter.selectedItem.id;
+				}
+				return oDao.findAll(stateId,sourceId);
+			}
+
+			private function getPGList():ArrayCollection{
+				var oDao:PrintGroupDAO= new PrintGroupDAO();
+				var stateId:int=-1;
+				var sourceId:int=-1;
+				if(ddSourceFilter && ddSourceFilter.selectedIndex!=-1){
+					sourceId=ddSourceFilter.selectedItem.id;
+				}
+				if(ddStateFilter && ddStateFilter.selectedIndex!=-1){
+					stateId=ddStateFilter.selectedItem.id;
+				}
+				return oDao.findAll(stateId,sourceId);
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="orders"/>
+		<s:State name="printGroups"/>
+		<s:State name="order_det"/>
+		<s:State name="printDeploy"/>
+	</s:states>
+	<s:Rect top="20" left="0" right="0" bottom="0"
+			topLeftRadiusX="0" topRightRadiusX="4" bottomLeftRadiusX="4" bottomRightRadiusX="4">
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
+		<mx:ArrayCollection>
+			<fx:String>Заказы</fx:String> 
+			<fx:String>Группы печати</fx:String> 
+			<fx:String>Размещение на печать</fx:String> 
+		</mx:ArrayCollection>
+	</s:TabBar>
+	
+	<s:VGroup gap="5" top="30" left="10" right="10" bottom="10" includeIn="orders,printGroups">
+		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			<s:Label text="Фильтрация" fontWeight="bold"/>
+			<s:Spacer width="5"/>
+			<s:Label text="Источник"/>
+			<s:DropDownList id="ddSourceFilter" dataProvider="{sourseList}" labelField="name" change="{refresh()}"/>
+			<s:Label text="Статус"/>
+			<s:DropDownList id="ddStateFilter" dataProvider="{stateList}" labelField="name" change="{refresh()}"/>
+			<s:Spacer width="100%"/>
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<s:DataGrid id="dgOrders"
+					width="100%" height="100%"
+					dataProvider="{currentData}" locale="ru_RU" columns="{currentColumns}"/>
+	</s:VGroup>
+	<view:PrintDistribute id="printDistribute" top="30" left="10" right="20" bottom="10" includeIn="printDeploy"/>
+</s:Group>

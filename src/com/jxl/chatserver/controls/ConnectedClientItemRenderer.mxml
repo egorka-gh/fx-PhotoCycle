@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	width="200" height="40" 
+	horizontalScrollPolicy="off" verticalScrollPolicy="off" 
+	xmlns:jxl="http://jessewarden.com/projects/chat/">
+
+	<mx:Metadata>
+		[Event(name="boot", type="com.jxl.chatserver.events.BootUserEvent")]
+	</mx:Metadata>
+
+	<mx:Script>
+		<![CDATA[
+			import com.jxl.chatserver.vo.ClientVO;
+			
+			import com.jxl.chatserver.events.BootUserEvent;
+			
+			[Bindable]
+			public var userName:String;
+			
+			public override function set data(value:Object):void
+			{
+				super.data = value;
+							
+				if(value == null)
+				{
+					userName = "";
+					return;
+				}
+				
+				var vo:ClientVO = value as ClientVO;
+				if(vo == null)
+				{
+					userName = "";
+					return;
+				}
+				
+				userName = vo.username;
+			}
+			
+			private function onDasBoot():void
+			{
+				if(super.data == null || (super.data is ClientVO) == false) return;
+				
+				var evt:BootUserEvent = new BootUserEvent(BootUserEvent.BOOT, true);
+				evt.user = super.data as ClientVO;
+				dispatchEvent(evt);
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<jxl:TechLabel text="{userName}" width="160" fontFamily="uni 05_53_8pt_st" />
+	<jxl:TechButton visible="{userName != ''}" label="Boot" click="onDasBoot()" right="6" />
+	
+</mx:Canvas>

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 creationComplete="{init()}" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.AppConfig;
+			import com.photodispatcher.model.dao.AppConfigDAO;
+
+			[Bindable]
+			private var conf:AppConfig;
+			private var confDAO:AppConfigDAO;
+		
+			private function init():void{
+				confDAO=new AppConfigDAO();
+				conf=confDAO.getItem();
+
+			}
+
+			private function save():void{
+				//set fbook params
+				//block
+				Context.setAttribute('fbook.block.font.size',conf.fbblok_font);
+				Context.setAttribute('fbook.block.notching',conf.fbblok_notching);
+				//cover
+				Context.setAttribute('fbook.cover.font.size',conf.fbcover_font);
+				Context.setAttribute('fbook.cover.notching',conf.fbcover_notching);
+				Context.setAttribute('fbook.cover.barcode.size',conf.fbcover_bar);
+				Context.setAttribute('fbook.cover.barcode.offset',conf.fbcover_bar_offset);
+				
+				//set tech params
+				Context.setAttribute('tech.add',conf.tech_add);
+				Context.setAttribute('tech.barcode.size',conf.tech_bar);
+				Context.setAttribute('tech.barcode.offset',conf.tech_bar_offset);
+
+				confDAO.save(conf);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<s:Form>
+			<s:layout>
+				<s:FormLayout gap="-10" />
+			</s:layout>
+			<s:FormHeading label="Разметка розничных книг (fbook)"/>
+			<s:FormItem label="Блок шрифт">
+				<s:TextInput id="tiFbBlFont" text="{conf.fbblok_font}" change="{conf.fbblok_font=int(tiFbBlFont.text)}" restrict="0-9" width="50"/>
+			</s:FormItem> 
+			<s:FormItem label="Блок насечка (pix)">
+				<s:TextInput id="tiFbBlNotching" text="{conf.fbblok_notching}" change="{conf.fbblok_notching=int(tiFbBlNotching.text)}" restrict="0-9" width="50"/>
+			</s:FormItem> 
+			<s:FormItem label="Обложка шрифт">
+				<s:TextInput id="tiFbCvFont" text="{conf.fbcover_font}" change="{conf.fbcover_font=int(tiFbCvFont.text)}" restrict="0-9" width="50"/>
+			</s:FormItem> 
+			<s:FormItem label="Обложка насечка (pix)">
+				<s:TextInput id="tiFbCvNotching" text="{conf.fbcover_notching}" change="{conf.fbcover_notching=int(tiFbCvNotching.text)}" restrict="0-9" width="50"/>
+			</s:FormItem> 
+			<s:FormItem label="Обложка высота штрих кода (pix)">
+				<s:TextInput id="tiFbCvBarSize" text="{conf.fbcover_bar}" change="{conf.fbcover_bar=int(tiFbCvBarSize.text)}" restrict="0-9" width="50"/>
+				<!--<s:HGroup gap="2" verticalAlign="middle">
+					<s:Label text="Высота (pix)"/>
+					<s:TextInput id="tiFbCvBarSize" text="{conf.fbcover_bar}" change="{conf.fbcover_bar=int(tiFbCvBarSize.text)}" restrict="0-9" width="50"/>
+					<s:Spacer width="3"/>
+					<s:Label text="Смещение (pix)"/>
+					<itemRenderer:OffsetEditor id="tiFbCvBarOffs" data="{conf.fbcover_bar_offset}" change="{conf.fbcover_bar_offset=tiFbCvBarOffs.data}"/>
+				</s:HGroup>-->
+			</s:FormItem>
+			<s:FormItem label="Обложка смещение штрих кода (pix)">
+				<itemRenderer:OffsetEditor id="tiFbCvBarOffs" data="{conf.fbcover_bar_offset}" change="{conf.fbcover_bar_offset=tiFbCvBarOffs.data}"/>
+			</s:FormItem>
+			<s:FormHeading label="Технологическая разметка книг (фотопечать)" />
+			<s:FormItem label="Увеличение длинны формата (мм)">
+				<s:TextInput id="tiTechAdd" text="{conf.tech_add}" change="{conf.tech_add=int(tiTechAdd.text)}" restrict="0-9" width="50"/>
+			</s:FormItem> 
+			<s:FormItem label="Высота штрихкода (мм)">
+				<s:TextInput id="tiTechBarSize" text="{conf.tech_bar}" change="{conf.tech_bar=int(tiTechBarSize.text)}" restrict="0-9" width="50"/>
+			</s:FormItem> 
+			<s:FormItem label="Смещение штрихкода (pix)">
+				<itemRenderer:OffsetEditor id="tiTechBarOffs" data="{conf.tech_bar_offset}" change="{conf.tech_bar_offset=tiTechBarOffs.data}"/>
+			</s:FormItem> 
+		</s:Form>
+		<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
+			<s:Button id="btSave" label="Сохранить" click="{save()}"/>
+		</s:HGroup>
+	</s:VGroup>
+
+</s:Group>
