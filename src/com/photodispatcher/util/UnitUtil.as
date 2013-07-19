@@ -14,5 +14,16 @@ package com.photodispatcher.util{
 			}
 			return 0;
 		}
+
+		/**
+		 * переводит пиксели в миллиметры для 300 dpi
+		 */
+		public static function pixels2mm300(value:Number):int{
+			if(value){
+				return Math.ceil(value/MM2PIXELS_300);
+			}
+			return 0;
+		}
+
 	}
 }

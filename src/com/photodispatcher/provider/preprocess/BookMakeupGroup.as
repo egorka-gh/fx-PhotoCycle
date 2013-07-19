@@ -126,16 +126,19 @@ package com.photodispatcher.provider.preprocess{
 			var len:int=printGroup.bookTemplate.sheet_len;
 			var command:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			command.folder=folder;
-			var sheetCrop:String=len.toString()+'x'+width.toString()+'+0+0!';
-			var line:String;
+
 			//crop
+			var sheetCrop:String=len.toString()+'x'+width.toString()+'+0+0!';
+			//var line:String;
 			command.add('-gravity'); command.add('Center');
 			command.add('-background'); command.add('white');
 			command.add(file.file_name);
 			command.add('-crop'); command.add(sheetCrop);
 			command.add('-flatten');
+			
 			//annotate 
 			annotateCommand(command,file);
+			
 			//draw notching
 			if(printGroup.bookTemplate.notching>0){
 				var notching:int=printGroup.bookTemplate.notching;
@@ -147,6 +150,7 @@ package com.photodispatcher.provider.preprocess{
 					IMCommandUtil.drawNotching(command,notching,len,width,0);
 				}
 			}
+			
 			//draw farme
 			if(printGroup.bookTemplate.stroke>0){
 				//-fill none -stroke black -strokewidth 9 -draw "rectangle 0,0 500,500"
@@ -159,12 +163,14 @@ package com.photodispatcher.provider.preprocess{
 				var draw:String='rectangle '+rect.x.toString()+','+rect.y.toString()+' '+rect.width.toString()+','+rect.height.toString();
 				command.add('-draw'); command.add(draw);
 			}
+			
 			//draw barcode
 			var barcode:String
 			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER){
 				barcode=printGroup.barcodeText(file);
 				if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, barcode,printGroup.bookTemplate.bar_offset);
 			}
+			
 			//draw tech barcode
 			var barSize:int=Context.getAttribute('tech.barcode.size');
 			if(barSize && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){

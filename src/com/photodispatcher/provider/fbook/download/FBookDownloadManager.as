@@ -355,10 +355,10 @@ package com.photodispatcher.provider.fbook.download{
 			var project:FBookProject=projectLoader.lastFetchedProject;
 			var workFolder:File;
 			if(project){
-				currentSubOrder.ftp_folder=currentOrder.ftp_folder+File.separator+'fb'+project.id.toString();
+				//currentSubOrder.ftp_folder=currentOrder.ftp_folder+File.separator+'fb'+project.id.toString();
 				//chek create suborder folder
 				var file:File=new File(localFolder);
-				file=file.resolvePath(currentSubOrder.ftp_folder);
+				file=file.resolvePath(currentOrder.ftp_folder+File.separator+currentSubOrder.ftp_folder);
 				try{
 					if(file.exists){
 						if(file.isDirectory){

@@ -17,8 +17,11 @@ package com.photodispatcher.model{
 		}
 		public function set sub_id(value:int):void{
 			src_id=value.toString();
+			fillId();
 		}
 
+		[Bindable]
+		public var proj_type:int=1;
 		
 		[Bindable]
 		public var prt_qty:int=1;
@@ -36,8 +39,9 @@ package com.photodispatcher.model{
 			return result;
 		}
 
-		public function fillId():void{
+		private function fillId():void{
 			id=order_id+'.'+src_id;
+			ftp_folder='fb'+src_id;
 		}
 
 		/*

@@ -104,7 +104,7 @@ package com.photodispatcher.provider.preprocess{
 		private var sequenceNum:int;
 		
 		private function startPdfmakeup():void{
-			//TODO refactor 2 class
+			//TODO refactor 2 IMSequenceRuner
 			var pg:PrintGroup;
 			var mg:BookMakeupGroup;
 			hasErr=false;

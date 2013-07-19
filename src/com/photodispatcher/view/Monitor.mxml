@@ -193,7 +193,7 @@
 			}
 			public function ftpStop():void{
 				if(ftpManager) ftpManager.stop();
-				startForceStarTimer();
+				//startForceStarTimer();
 			}
 
 			public function stop(force:Boolean=false):void{
@@ -203,7 +203,7 @@
 					timer=null;
 				}
 				isRuning=false;
-				startForceStarTimer();
+				//startForceStarTimer();
 			}
 			
 			private function detectState():void{

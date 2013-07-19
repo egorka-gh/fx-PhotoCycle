@@ -41,7 +41,7 @@ package com.photodispatcher.model{
 		}
 
 		[Bindable]
-		public var state_date:Date;
+		public var state_date:Date= new Date();
 		/*
 		[Bindable]
 		public var format:int=0;
@@ -129,8 +129,17 @@ package com.photodispatcher.model{
 			return _files;
 		}
 
-		public function resetFiles():void{
+		private var originalFiles:Array;
+		public function resetFiles(keep:Boolean=true):void{
+			if(keep) originalFiles=_files; 
 			_files=null;
+		}
+
+		public function restoreFiles():void{
+			if(book_type!=0){ //only 4 books
+				_files=originalFiles;
+				file_num=_files?_files.length:0;
+			}
 		}
 
 		public function addFile(file:PrintGroupFile):void{

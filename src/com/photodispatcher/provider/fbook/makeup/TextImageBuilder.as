@@ -63,7 +63,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			//TODO check if top level app is visible
 
 			//if(!book || !book.pages || !renderContainer || !workFolder){
-			if(!book || !book.pages  || !workFolder){
+			if(!book || !book.bookPages  || !workFolder){
 				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FLOW_ERROR_EVENT,null,'Ошибка инициализации TextImageBuilder.build'));
 				return false;
 			}
@@ -131,7 +131,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			textItems=[];
 			var pageNum:int=0;
 			
-			for each (var page:ProjectBookPage in book.pages){
+			for each (var page:ProjectBookPage in book.bookPages){
 				for each (var contentElement:Object in page.content){
 					if (contentElement.type==CanvasText.TYPE){
 						if (contentElement.hasOwnProperty('index') 

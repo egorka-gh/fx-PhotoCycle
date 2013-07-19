@@ -49,14 +49,14 @@ package com.photodispatcher.provider.fbook.makeup{
 
 		public function build():Boolean{
 			_pages=[];
-			if(!_book || !_book.pages){
+			if(!_book || !_book.bookPages){
 				return false;
 			}
 			
 			var pageNum:int=0;
 			var page:ProjectBookPage;
-			for (pageNum = 0; pageNum < _book.pages.length; pageNum++){
-				page=_book.pages[pageNum];
+			for (pageNum = 0; pageNum < _book.bookPages.length; pageNum++){
+				page=_book.bookPages[pageNum];
 				trace('Page '+pageNum);
 				if (_book.isPageEndPaper(pageNum)){
 					//skip endpaper
@@ -127,6 +127,7 @@ package com.photodispatcher.provider.fbook.makeup{
 					//complite page
 					pageData.postprocess();
 					pages.push(pageData);
+					_book.projectPages.push(pageData);
 				}
 			}
 			return true;

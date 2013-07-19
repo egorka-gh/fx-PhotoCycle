@@ -1,6 +1,8 @@
 package com.photodispatcher.factory{
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotokniga.book.data.Book;
+	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.BookPgTemplate;
 	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.FieldValue;
 	import com.photodispatcher.model.Order;
@@ -18,6 +20,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.util.StrUtil;
 	import com.photodispatcher.util.UnitUtil;
 	
+	import flash.filesystem.File;
 	import flash.utils.Dictionary;
 
 	public class PrintGroupBuilder{
@@ -308,40 +311,107 @@ package com.photodispatcher.factory{
 			if(dst.getFiles()) dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
 		}
 
-		public function buildFromSuborders(order:Order):void{
-			if(!order || !order.suborders || order.suborders.length==0) return;
+		public function buildFromSuborders(order:Order):Array{
+			var result:Array=[];
+			if(!order || !order.suborders || order.suborders.length==0) return result;
 			var pgNum:int=1;
 			if(order.printGroups) pgNum=order.printGroups.length+1;
 			var so:Suborder;
 			var proj:FBookProject;
 			var page:PageData;
 			var paper:int;
+			
+			var pgCover:PrintGroup;
+			var pgBody:PrintGroup;
+			var pg:PrintGroup;
+			var pgf:PrintGroupFile;
 			for each(so in order.suborders){
-				if(so){
-					proj=so.project;
-					if(proj){
-						//TODO detect paper
-						//TODO add try catch 
-						var fv:FieldValue;
-						if(proj.type==FotocalendarProject.PROJECT_TYPE){
-							//hardcoded matovaia
-							fv=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,'1','paper');
-						}else if(proj.type==Book.PROJECT_TYPE){
-							var prj:Book=proj.project as Book;
-							if(prj){
-								fv=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,prj.template.paper.id.toString(),'paper');
+				proj=so.project;
+				if(proj){
+					//set suborder project type
+					so.proj_type= so.project.type==FotocalendarProject.PROJECT_TYPE?BookSynonym.BOOK_TYPE_CALENDAR:BookSynonym.BOOK_TYPE_BOOK;
+					//detect paper
+					var fv:FieldValue;
+					if(proj.type==FotocalendarProject.PROJECT_TYPE){
+						//hardcoded matovaia
+						fv=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,'1','paper');
+					}else if(proj.type==Book.PROJECT_TYPE){
+						var prj:Book=proj.project as Book;
+						if(prj){
+							fv=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,prj.template.paper.id.toString(),'paper');
+						}
+					}
+					if(fv) paper=int(fv.value);
+					
+					//create print groups
+					pg= new PrintGroup();
+					pg.order_id=order.id;
+					pg.path=so.ftp_folder;
+					pg.book_type=BookSynonym.BOOK_TYPE_BOOK; //TODO can be BOOK_TYPE_JOURNAL?
+					pg.book_num=so.prt_qty;
+					pg.paper=paper;
+					
+					pgCover=pg.clone();
+					pgCover.butt=UnitUtil.pixels2mm300(proj.buttWidth());
+					pgCover.book_part=BookSynonym.BOOK_PART_COVER;
+					pgCover.bookTemplate=new BookPgTemplate();
+					//set template
+					if(Context.getAttribute('fbook.cover.notching')) pgCover.bookTemplate.notching=Context.getAttribute('fbook.cover.notching');
+					if(Context.getAttribute('fbook.cover.font.size')) pgCover.bookTemplate.font_size=Context.getAttribute('fbook.cover.font.size');
+					if(Context.getAttribute('fbook.cover.barcode.size')) pgCover.bookTemplate.bar_size=Context.getAttribute('fbook.cover.barcode.size');
+					if(Context.getAttribute('fbook.cover.barcode.offset')) pgCover.bookTemplate.bar_offset=Context.getAttribute('fbook.cover.barcode.offset');
+					
+					pgBody=pg.clone();
+					pgBody.book_part=BookSynonym.BOOK_PART_BLOCK;
+					pgBody.bookTemplate=new BookPgTemplate();
+					//set template
+					if(Context.getAttribute('fbook.block.notching')) pgBody.bookTemplate.notching=Context.getAttribute('fbook.block.notching');
+					if(Context.getAttribute('fbook.block.font.size')) pgBody.bookTemplate.font_size=Context.getAttribute('fbook.block.font.size');
+					
+					for each(page in proj.projectPages){
+						if(page){
+							//detect pg type
+							if(proj.isPageCover(page.pageNum)){
+								if(proj.isPageSliced(page.pageNum)) pgCover.book_part=BookSynonym.BOOK_PART_INSERT; //TODO not implemented
+								pg=pgCover;
+							}else{
+								pg=pgBody;
 							}
+							//set format
+							pg.width=UnitUtil.pixels2mm300(Math.min(page.pageSize.x,page.pageSize.y));
+							pg.height=UnitUtil.pixels2mm300(Math.max(page.pageSize.x,page.pageSize.y));
+							//set template size
+							pg.bookTemplate.sheet_len=page.pageSize.x;
+							pg.bookTemplate.sheet_width=page.pageSize.y;
+							//TODO implement slices to print group by format
+							//add file
+							pgf= new PrintGroupFile();
+							pgf.file_name=page.outFileName(); 
+							pgf.page_num=page.pageNum;
+							pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.pageNum.toString(),2);
+							pgf.book_num=0;
+							pg.addFile(pgf);
 						}
-						if(fv) paper=int(fv.value);
-						for each(page in proj.pages){
-							//TODO generate pg
-							
-						}
+					}
+					
+					//add to order
+					if(pgCover.getFiles() && pgCover.getFiles().length>0){
+						pgCover.id=order.id+'_'+pgNum.toString();
+						if(!order.printGroups) order.printGroups=[];
+						order.printGroups.push(pgCover);
+						result.push(pgCover);
+						pgNum++;
+					}
+					if(pgBody.getFiles() && pgBody.getFiles().length>0){
+						pgBody.id=order.id+'_'+pgNum.toString();
+						if(!order.printGroups) order.printGroups=[];
+						order.printGroups.push(pgBody);
+						result.push(pgBody);
+						pgNum++;
 					}
 				}
 			}
-			
-			
+			return result;
 		}
 	}
 }

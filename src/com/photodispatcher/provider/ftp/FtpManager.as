@@ -218,7 +218,7 @@ package com.photodispatcher.provider.ftp{
 			var oDAO:OrderDAO= new OrderDAO();
 			oDAO.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
 			trace('FtpManager write order to db '+ order.id);
-			oDAO.createPrintGroups(order);
+			oDAO.createChilds(order);
 		}
 		private function onWrite(e:AsyncSQLEvent):void{
 			var oDAO:OrderDAO=e.target as OrderDAO;

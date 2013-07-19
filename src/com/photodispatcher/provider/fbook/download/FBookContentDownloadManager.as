@@ -79,7 +79,7 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			book.log='Book id:'+book.id+'.Prepare download.';
 
-			for each (var bp:ProjectBookPage in book.pages){
+			for each (var bp:ProjectBookPage in book.bookPages){
 				//TODO element as Class?
 				for each (var contentElement:Object in bp.content){
 					if(contentElement.hasOwnProperty('type')){

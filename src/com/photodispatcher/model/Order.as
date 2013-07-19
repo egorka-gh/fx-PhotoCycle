@@ -121,7 +121,25 @@ package com.photodispatcher.model{
 		public function get hasSuborders():Boolean{
 			return (suborders && suborders.length>0);
 		}
-		
+
+		/*
+		public function resetPreprocess():void{
+			var pg:PrintGroup;
+			if(printGroups){
+				for each(pg in printGroups){
+					if(pg.book_type!=0) pg.restoreFiles();
+				}
+			}
+			
+			var so:Suborder;
+			if(suborders){
+				for each(so in suborders){
+					so.printGroups=null;
+				}
+			}
+		}
+		*/
+
 		public function addSuborder(so:Suborder):void{
 			if(!suborders){
 				suborders=[];
@@ -143,6 +161,24 @@ package com.photodispatcher.model{
 		public function resetSuborders():void{
 			suborders=[];
 		}
+
+		/*
+		public function mergeSuborders():void{
+			var so:Suborder;
+			var pg:PrintGroup;
+			if(suborders && suborders.length>0){
+				for each(so in suborders){
+					if(so.printGroups){
+						for each(pg in so.printGroups){
+							pg.id=id+'_'+(printGroups.length+1).toString();
+							printGroups.push(pg);
+						}
+						so.printGroups=null;
+					}
+				}
+			}
+		}
+		*/
 		
 		//ref
 		[Bindable]

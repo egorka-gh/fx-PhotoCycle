@@ -48,6 +48,7 @@ package com.photodispatcher.provider.fbook{
 		//public var workFolder:String;
 		
 		public var notLoadedItems:Array; //DownloadErrorItem
+		public var projectPages:Array=[]; //PageData, has data after IMScrip.build 
 
 		
 		private var _log:String;
@@ -149,7 +150,7 @@ package com.photodispatcher.provider.fbook{
 			}
 		}
 		
-		public function get pages():ArrayCollection{
+		public function get bookPages():ArrayCollection{
 			if(!project) return null;
 			switch(type){
 				case Book.PROJECT_TYPE:
@@ -192,6 +193,14 @@ package com.photodispatcher.provider.fbook{
 			}
 		}
 		
+		public function isPageCover(pageNum:int):Boolean{
+			if(!project || type!=Book.PROJECT_TYPE) return false;
+			var bp:Book=(project as Book);
+			var bookPage:BookPage=bp.pages[pageNum] as BookPage;
+			if(!bookPage) return false;
+			return bookPage.isCover;
+		}
+		
 		public function isPageSliced(pageNum:int):Boolean{
 			if(!project || type!=Book.PROJECT_TYPE) return false;
 			var bp:Book=(project as Book);
@@ -206,6 +215,12 @@ package com.photodispatcher.provider.fbook{
 			var bookPage:BookPage=bp.pages[pageNum] as BookPage;
 			if(!bookPage) return false;
 			return pageNum==1 && bp.template.endpaper &&  bp.template.endpaper.inBook;
+		}
+
+		public function buttWidth():int{
+			if(!project || type!=Book.PROJECT_TYPE) return 0;
+			var bp:Book=(project as Book);
+			return bp.bindingWidth;
 		}
 
 		/*

@@ -7,6 +7,7 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
 	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.Suborder;
 	
 	import flash.data.SQLStatement;
 	import flash.globalization.DateTimeStyle;
@@ -250,6 +251,9 @@ package com.photodispatcher.model.dao{
 			sql="DELETE FROM print_group WHERE order_id = ?";
 			sequence.push(prepareStatement(sql,[order.id]));
 
+			sql="DELETE FROM suborders WHERE order_id = ?";
+			sequence.push(prepareStatement(sql,[order.id]));
+			
 			sql='UPDATE orders SET state = ?, state_date = ? WHERE id = ?';
 			var params:Array=[OrderState.WAITE_FTP, new Date(), order.id];
 			sequence.push(prepareStatement(sql,params));
@@ -263,7 +267,7 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
-		public function createPrintGroups(order:Order):void{
+		public function createChilds(order:Order):void{
 			if(!order) return;
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -275,8 +279,26 @@ package com.photodispatcher.model.dao{
 			var sql:String;
 			var params:Array;
 			var dt:Date=new Date();
+			var so:Suborder;
 			
 			order.state=order.is_preload?OrderState.PRN_WAITE_ORDER_STATE:OrderState.PRN_WAITE;
+			
+			//fill sub orders
+			if(order.suborders){
+				for each(so in order.suborders){
+					sql='INSERT INTO suborders (id, order_id, src_type, sub_id, ftp_folder, prt_qty, proj_type)' +
+						' VALUES (?, ?, ?, ?, ?, ?, ?)';
+					params=[so.id,
+							order.id,
+							so.src_type,
+							so.sub_id,
+							so.ftp_folder,
+							so.prt_qty,
+							so.proj_type];
+					sequence.push(prepareStatement(sql,params));
+				}
+			}
+			//fill print groups
 			if(order.printGroups){
 				for each(o in order.printGroups){
 					pg= o as PrintGroup;

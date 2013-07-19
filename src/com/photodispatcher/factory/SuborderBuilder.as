@@ -61,7 +61,8 @@ package com.photodispatcher.factory{
 					o.order_id=order.id;
 					o.sub_id=subId;
 					o.src_type=SourceType.SRC_FBOOK;
-					o.ftp_folder=order.ftp_folder;
+					//o.ftp_folder=order.ftp_folder;
+					//o.ftp_folder='';
 					if(!result) result=[];
 					result.push(o);
 				}
@@ -120,7 +121,7 @@ package com.photodispatcher.factory{
 										if(subId){
 											newSo=so.clone();
 											newSo.sub_id=subId;
-											newSo.fillId();
+											//newSo.fillId();
 											//newSo.fillFolder();
 											order.addSuborder(newSo);
 										}else{

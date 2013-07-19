@@ -7,6 +7,7 @@ package com.photodispatcher.model{
 		public static const BOOK_TYPE_BOOK:int=1;
 		public static const BOOK_TYPE_JOURNAL:int=2;
 		public static const BOOK_TYPE_LEATHER:int=3;
+		public static const BOOK_TYPE_CALENDAR:int=4;
 
 		public static const BOOK_PART_COVER:int=1;
 		public static const BOOK_PART_BLOCK:int=2;

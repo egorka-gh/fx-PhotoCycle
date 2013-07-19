@@ -255,7 +255,10 @@ package com.photodispatcher.provider.preprocess{
 			if(idx!=-1) queue.splice(idx,1);
 			if(evt.err<0){
 				//completed vs error
-				if(evt.order) errOrders.push(evt.order);
+				if(evt.order){
+					//evt.order.resetPreprocess();
+					errOrders.push(evt.order);
+				}
 			}else{
 				dispatchEvent(evt.clone());
 			}
