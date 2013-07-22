@@ -15,10 +15,12 @@
 			import com.photodispatcher.model.PrintGroupFile;
 			import com.photodispatcher.model.Source;
 			import com.photodispatcher.model.StateLog;
+			import com.photodispatcher.model.Suborder;
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.PrintGroupFileDAO;
 			import com.photodispatcher.model.dao.StateLogDAO;
+			import com.photodispatcher.model.dao.SuborderDAO;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.itemRenderer.PGFileReprintItemRenderer;
 			
@@ -35,6 +37,11 @@
 			private var pgList:ArrayCollection= new ArrayCollection();
 			[Bindable]
 			private var pgFilterList:ArrayCollection= new ArrayCollection();;
+			[Bindable]
+			private var soList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var soFilterList:ArrayCollection= new ArrayCollection();;
+
 			[Bindable]
 			private var logFilterList:ArrayCollection= new ArrayCollection();;
 			[Bindable]
@@ -61,6 +68,7 @@
 					var pDao:PrintGroupDAO=new PrintGroupDAO();
 					var a:Array=pDao.getByOrder(order.id);
 					pgList.source=a;
+					pgList.filterFunction=filterPgList;
 					
 					var pg:PrintGroup= new PrintGroup(); pg.id='-';
 					var aa:Array=a.slice();
@@ -74,10 +82,19 @@
 					aa.unshift(pg);
 					logFilterList.source=aa;
 					
+					var soDAO:SuborderDAO= new SuborderDAO();
+					a=soDAO.getByOrder(order.id);
+					soList.source=a;
+					aa=a.slice();
+					var so:Suborder= new Suborder(); so.ftp_folder=so.src_id='-';
+					aa.unshift(so);
+					soFilterList.source=aa;
+					
 					var pfDao:PrintGroupFileDAO=new PrintGroupFileDAO();
 					a=pfDao.getByOrder(order.id);
 					fileList.source=a;
 					fileList.filterFunction=filterFileList;
+					
 					a=pfDao.getTechByOrder(order.id);
 					techList.source=a;
 					techList.filterFunction=filterTechList;
@@ -102,6 +119,16 @@
 				
 			}
 			
+			private function filterPgList(item:Object):Boolean {
+				var pg:PrintGroup=item as PrintGroup;
+				if(!pg) return false;
+				if(lstFilterPg && lstFilterPg.selectedIndex>0 && lstFilterPg.selectedItem.ftp_folder!=pg.path) return false;
+				return true;
+			}
+			private function applyPgFilter():void{
+				pgList.refresh();
+			}
+
 			private function filterFileList(item:Object):Boolean {
 				var f:PrintGroupFile=item as PrintGroupFile;
 				if(!f) return false;
@@ -376,9 +403,17 @@
 						</s:stroke>
 					</s:Rect>
 					<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+						<s:NavigatorContent label="Подзаказы" backgroundAlpha="0" width="100%" height="100%">
+							<s:DataGrid id="dgSuborders" selectionMode="none" top="10" left="10" right="10" bottom="10"
+										dataProvider="{soList}" locale="ru_RU" columns="{Suborder.gridColumns()}"/>
+						</s:NavigatorContent>
 						<s:NavigatorContent label="Группы печати" backgroundAlpha="0" width="100%" height="100%">
-							<s:DataGrid id="dgPGroups" selectionMode="none" top="10" left="10" right="10" bottom="10"
-										dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.shortGridColumns()}"/>
+							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
+								<s:List id="lstFilterPg" dataProvider="{soFilterList}" labelField="src_id"
+										width="100" height="100%" change="{applyPgFilter()}"/>
+								<s:DataGrid id="dgPGroups" selectionMode="none" width="100%" height="100%"
+											dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.shortGridColumns()}"/>
+							</s:HGroup>
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Файлы" width="100%" height="100%">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">

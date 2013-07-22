@@ -41,7 +41,7 @@ package com.photodispatcher.factory{
 						if(t){
 							o= new Suborder();
 							o.order_id=order.id;
-							o.src_type=t.src_type;
+							o.src_type=t.sub_src_type;
 							o.ftp_folder=path;
 							if(!result) result=[];
 							result.push(o);

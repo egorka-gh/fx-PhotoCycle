@@ -77,7 +77,8 @@ package com.photodispatcher.provider.ftp{
 				case InstructionConstants.CLIENT_LOAD_COMPLETE:
 					_order.state=msg.order.state;
 					_order.printGroups=msg.order.printGroups;
-					//TODO suborders && so on
+					_order.suborders=msg.order.suborders;
+					
 					StateLogDAO.logState(_order.state,_order.id,'',msg.errorMsg);
 					lastUsageDate= new Date();
 					var order:Order=currentOrder;

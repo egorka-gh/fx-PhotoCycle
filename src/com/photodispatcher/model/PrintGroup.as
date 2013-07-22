@@ -580,7 +580,7 @@ package com.photodispatcher.model{
 			raw.id=id;
 			raw.order_id=order_id;
 			raw.state=_state;
-			raw.state_date=state_date;
+			//raw.state_date=state_date;
 			raw.width=width;
 			raw.height=height;
 			raw.paper=paper;
@@ -622,7 +622,7 @@ package com.photodispatcher.model{
 			pg.id=raw.id;
 			pg.order_id=raw.order_id;
 			pg._state=raw.state;
-			pg.state_date=raw.state_date;
+			//pg.state_date=raw.state_date;
 			pg.width=raw.width;
 			pg.height=raw.height;
 			pg.paper=raw.paper;

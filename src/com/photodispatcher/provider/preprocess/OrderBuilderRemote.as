@@ -52,6 +52,7 @@ package com.photodispatcher.provider.preprocess{
 				case InstructionConstants.CLIENT_BUILD_COMPLETE:
 					lastOrder.state=msg.order.state;
 					lastOrder.printGroups=msg.order.printGroups;
+					lastOrder.suborders=msg.order.suborders;
 					if(msg.hasError){
 						releaseWithError(lastOrder.state,msg.errorMsg);
 					}else{

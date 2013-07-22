@@ -7,7 +7,7 @@ package com.photodispatcher.provider.fbook.download{
 		public var used:int=0;
 		private var _pages:Array=[];
 		
-		public function DownloadErrorItem(err:int){
+		public function DownloadErrorItem(err:int=0){
 			this.err=err;
 		}
 		
@@ -22,5 +22,33 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			return '';
 		}
+		
+		public function toRaw():Object{
+			var raw:Object= new Object;
+			
+			raw.id=id;
+			raw.content_type=content_type;
+			raw.path=path;
+			raw.err=err;
+			raw.used=used;
+			raw.pages=_pages;
+			
+			return raw;
+		}
+
+		public static function fromRaw(raw:Object):DownloadErrorItem{
+			if(!raw) return null;
+			var errItem:DownloadErrorItem= new DownloadErrorItem();
+
+			errItem.id=raw.id;
+			errItem.content_type=raw.content_type;
+			errItem.path=raw.path;
+			errItem.err=raw.err;
+			errItem.used=raw.used;
+			errItem._pages=raw.pages;
+
+			return errItem;
+		}
+
 	}
 }

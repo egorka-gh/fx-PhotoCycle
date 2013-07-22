@@ -99,17 +99,9 @@ package com.photodispatcher.provider.ftp{
 		
 		
 		override public function start(resetErrors:Boolean=false):void{
-			//if(!chatServer || !chatServer.isOnline) flowError('ChatServer не подключен');
 			//reset
-			/*
-			webErrCounter=0;
-			lastWebErrSource=-1;
-			webApplicant=null;
-			*/
 			lastError='';
 			downloadCaption='';
-
-			// TODO implement
 
 			if(!chatServer) init();
 			_isStarted=true;
@@ -141,15 +133,6 @@ package com.photodispatcher.provider.ftp{
 			chatServer.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_USER_OFFLINE,onHelperDisconnect);
 			chatServer.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_USER_MESSAGE,onChatMessage);
 			
-			/*TODO start at application level
-			if(!chatServer.isOnline){
-				var servIp:String;
-				servIp=Context.getAttribute("serverIP");
-				if(servIp){
-					chatServer.startServer(servIp);
-				}
-			}
-			*/
 			helpersMap=new Dictionary();
 			if(chatServer.isOnline){
 				var arr:Array=chatServer.getClientsByType(ClientVO.TYPE_LOADER);
@@ -266,12 +249,7 @@ package com.photodispatcher.provider.ftp{
 			helper.removeEventListener(Event.CHANGE, onProgress);
 		}
 
-		//private var webApplicant:Order;
-		//private var webErrCounter:int=0;
-		//private var lastWebErrSource:int=-1;
-
 		private function startNext():void{
-			//if(webApplicant || !isStarted || forceStop) return;
 			if(!isStarted || forceStop) return;
 			var helper:LoadHelper=freeHelper;
 			if(helper){
@@ -279,19 +257,6 @@ package com.photodispatcher.provider.ftp{
 				helper.post(newOrder);
 			}
 			loadCaption();
-			/*
-			//TODO implement
-			//TODO fix & skip source ws web error
-			if(newOrder && !webApplicant){
-				trace('LoadHelpersManager web request '+newOrder.ftp_folder);
-				//check state on site
-				webApplicant=newOrder;
-				webApplicant.state=OrderState.FTP_WEB_CHECK;
-				var w:BaseWeb= WebServiceBuilder.build(source);
-				w.addEventListener(Event.COMPLETE,getOrderHandle);
-				w.getOrder(newOrder);
-			}
-			*/
 		}
 		
 		private function get freeHelper():LoadHelper{
@@ -335,14 +300,6 @@ package com.photodispatcher.provider.ftp{
 			//get longest local queue
 			for each (q in localQueues){
 				if(q && q.queueLenth>0){
-					/*
-					if(q.source.id==lastWebErrSource){
-						//reset & skip
-						lastWebErrSource=-1;
-					}else if(!queue || q.queueLenth>queue.queueLenth){
-						queue=q;
-					}
-					*/
 					if(!queue || q.queueLenth>queue.queueLenth){
 						queue=q;
 					}
@@ -368,59 +325,6 @@ package com.photodispatcher.provider.ftp{
 			if(queue) queue.unFetch(order);
 		}
 
-		/*
-		private function getOrderHandle(e:Event):void{
-			var pw:BaseWeb=e.target as BaseWeb;
-			pw.removeEventListener(Event.COMPLETE,getOrderHandle);
-			if(!webApplicant){
-				//removed by sync or some else
-				//start next?
-				startNext();
-				return;
-			}
-			if(webApplicant.state!=OrderState.FTP_WEB_CHECK;) return; //wrong sequence
-			
-			if(pw.hasError){
-				trace('LoadHelpersManager getOrderHandle web check order err: '+pw.errMesage);
-				webErrCounter++;
-				lastWebErrSource=webApplicant.source;
-				webApplicant.state=OrderState.ERR_WEB;
-				StateLogDAO.logState(OrderState.ERR_WEB,webApplicant.id,'','Ошибка проверки на сайте: '+pw.errMesage);
-				unFetch(webApplicant);
-				webApplicant=null;
-				//to prevent cycle web check when network error or offline
-				if(webErrCounter>WEB_ERRORS_LIMIT){
-					flowError('Ошибка web: '+pw.errMesage);
-				}else{
-					startNext();
-				}
-				return;
-			}
-			webErrCounter=0;
-			if(pw.isValidLastOrder(true)){
-				//post
-				trace('LoadHelpersManager.getOrderHandle; web check Ok; attempt post to remote loader '+webApplicant.ftp_folder);
-				webApplicant.state=OrderState.FTP_WEB_OK;
-				var helper:LoadHelper=freeHelper;
-				if(!helper){
-					unFetch(webApplicant);
-					webApplicant=null;
-					return;
-				}
-				helper.post(webApplicant);
-				webApplicant=null;
-				loadCaption();
-				return;
-			}else{
-				//mark as canceled
-				trace('LoadHelpersManager.getOrderHandle; web check fault; order canceled '+webApplicant.ftp_folder);
-				webApplicant.state=OrderState.CANCELED;
-				webApplicant=null;
-				startNext();
-			}
-		}
-		*/
-		
 		private function loadCaption():void{
 			//TODO show helpers usege & order list & show files progres & speed
 			var newDownloadCaption:String='';

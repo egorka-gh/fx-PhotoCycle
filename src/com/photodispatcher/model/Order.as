@@ -231,7 +231,16 @@ package com.photodispatcher.model{
 				}
 			}
 			raw.printGroups=arr;
-			//TODO implement suborders
+
+			//suborders
+			var so:Suborder;
+			arr=[];
+			if(suborders){
+				for each(so in suborders){
+					if(so) arr.push(so.toRaw());
+				}
+			}
+			raw.suborders=arr;
 
 			return raw;
 		}
@@ -246,7 +255,7 @@ package com.photodispatcher.model{
 			order.state=raw.state;
 			order.errCount=raw.errCount;
 			//raw.state_date=state_date;
-			var arr:Array=[];
+			
 			var pgRaw:Object;
 			var pg:PrintGroup;
 			if(raw.hasOwnProperty('printGroups') && raw.printGroups is Array){
@@ -256,7 +265,16 @@ package com.photodispatcher.model{
 					if(pg) order.printGroups.push(pg);
 				}
 			}
-			//TODO implement suborders
+			
+			//suborders
+			var so:Suborder;
+			if(raw.hasOwnProperty('suborders') && raw.suborders is Array){
+				order.suborders=[];
+				for each(pgRaw in raw.suborders){
+					so=Suborder.fromRaw(pgRaw);
+					if(so) order.suborders.push(so);
+				}
+			}
 			
 			return order; 
 		}
