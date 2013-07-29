@@ -47,8 +47,8 @@ package com.photodispatcher.provider.ftp{
 		/*
 		*orders Queue
 		*/
-		private var queue:Array=[];
-		private var localFolder:String;
+		protected var queue:Array=[];
+		protected var localFolder:String;
 		
 		private var downloadManager:FTPDownloadManager;
 		[Bindable]
@@ -57,7 +57,7 @@ package com.photodispatcher.provider.ftp{
 		private var webErrCounter:int=0;
 		private var webApplicant:Order;
 		
-		private var _remoteMode:Boolean;
+		protected var _remoteMode:Boolean;
 		public function get remoteMode():Boolean{
 			return _remoteMode;
 		}
@@ -188,7 +188,7 @@ package com.photodispatcher.provider.ftp{
 				//listen
 				fbDownloadManager.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onFBDownloadManagerLoad);
 				fbDownloadManager.addEventListener(ImageProviderEvent.LOAD_FAULT_EVENT,onDownloadFault);
-				//fbDownloadManager.addEventListener(ProgressEvent.PROGRESS,onFBLoadProgress);
+				fbDownloadManager.addEventListener(ProgressEvent.PROGRESS,onFBLoadProgress);
 				fbDownloadManager.addEventListener(ImageProviderEvent.FLOW_ERROR_EVENT,onFlowErr);
 			}
 			if(fbDownloadManager) fbDownloadManager.start();
@@ -236,6 +236,7 @@ package com.photodispatcher.provider.ftp{
 		public function stop():void{
 			_isStarted=false;
 			forceStop=true;
+			speed=0;
 			resetOrderState(webApplicant);
 			webApplicant=null;
 			if(webTimer) webTimer.stop();
@@ -245,7 +246,7 @@ package com.photodispatcher.provider.ftp{
 			var stopedOrders:Array=[];
 			if(downloadManager) stopedOrders=downloadManager.stop();
 			//TODO close 4 debug
-			//if(fbDownloadManager) stopedOrders=stopedOrders.concat(fbDownloadManager.stop());
+			if(fbDownloadManager) stopedOrders=stopedOrders.concat(fbDownloadManager.stop());
 			for each(order in stopedOrders){
 				if(order){
 					resetOrder(order);
@@ -385,7 +386,7 @@ package com.photodispatcher.provider.ftp{
 			if(isStarted && downloadManager && !downloadManager.isRunning) checkQueue();
 		}
 
-		private function fetch(forceReset:Boolean=false):Order{
+		protected function fetch(forceReset:Boolean=false):Order{
 			var newOrder:Order;
 			var ord:Order;
 			//chek queue
@@ -579,7 +580,7 @@ package com.photodispatcher.provider.ftp{
 
 		}
 
-		private function resetOrder(order:Order):void{
+		protected function resetOrder(order:Order):void{
 			if(!order) return;
 			order.printGroups=[];
 			order.suborders=[];
@@ -591,7 +592,7 @@ package com.photodispatcher.provider.ftp{
 			order.state=order.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
 		}
 
-		private function getOrderById(orderId:String, pop:Boolean=false):Order{
+		protected function getOrderById(orderId:String, pop:Boolean=false):Order{
 			var result:Order;
 			var idx:int;
 			if(pop){
@@ -608,13 +609,13 @@ package com.photodispatcher.provider.ftp{
 			return result;
 		}
 
-		private function removeOrder(order:Order):void{
+		protected function removeOrder(order:Order):void{
 			if(!order || !queue) return;
 			var idx:int=queue.indexOf(order);
 			if(idx!=-1) queue.splice(idx,1);
 		}
 
-		private function onFlowErr(evt:ImageProviderEvent):void{
+		protected function onFlowErr(evt:ImageProviderEvent):void{
 			flowError(evt.error);
 		}
 		
@@ -623,10 +624,17 @@ package com.photodispatcher.provider.ftp{
 			dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FLOW_ERROR_EVENT,null,errMsg));
 		}
 
+		private var ftpSpeed:Number=0;
 		private function onLoadProgress(evt:LoadProgressEvent):void{
 			downloadCaption=evt.caption;
-			speed=evt.speed;
+			ftpSpeed=evt.speed;
+			speed=ftpSpeed;
+			if(fbDownloadManager) speed+=fbDownloadManager.speed;
 			dispatchEvent(evt.clone());
+		}
+		
+		private function onFBLoadProgress(evt:ProgressEvent):void{
+			speed=ftpSpeed+fbDownloadManager.speed;
 		}
 		
 		private function onConnProgress(evt:ConnectionsProgressEvent):void{

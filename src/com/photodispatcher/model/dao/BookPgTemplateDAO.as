@@ -126,8 +126,8 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('font_size'); col.headerText='Шрифт'; col.width=60; result.addItem(col);
 			col= new GridColumn('notching'); col.headerText='Насечка pix'; result.addItem(col);
 			col= new GridColumn('stroke'); col.headerText='Рамка pix'; result.addItem(col);
-			col= new GridColumn('bar_size'); col.headerText='Высота штихкода'; result.addItem(col);
-			col= new GridColumn('bar_offset'); col.headerText='Смещение штихкода'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
+			col= new GridColumn('bar_size'); col.headerText='Подпись книги высота pix'; result.addItem(col);
+			col= new GridColumn('bar_offset'); col.headerText='Подпись книги смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
 			return result;
 		}
 

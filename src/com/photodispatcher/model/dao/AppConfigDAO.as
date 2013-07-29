@@ -29,12 +29,15 @@ package com.photodispatcher.model.dao{
 		public function update(item:AppConfig):void{
 			//addEventListener("asyncSQLEvent",onUpdate);
 			execute(
-				'UPDATE config.app_config SET wrk_path=?, monitor_interval=?, fbblok_font=?, fbblok_notching=?'+
-				', fbcover_bar=?, fbcover_bar_offset=?, fbcover_font=?, fbcover_notching=?, tech_bar=?, tech_bar_offset=?, tech_add=? WHERE id=?',
+				'UPDATE config.app_config SET wrk_path=?, monitor_interval=?,'+
+				' fbblok_font=?, fbblok_notching=?, fbblok_bar=?, fbblok_bar_offset=?,'+
+				' fbcover_bar=?, fbcover_bar_offset=?, fbcover_font=?, fbcover_notching=?, tech_bar=?, tech_bar_offset=?, tech_add=? WHERE id=?',
 				[	item.wrk_path,
 					item.monitor_interval,
 					item.fbblok_font,
 					item.fbblok_notching,
+					item.fbblok_bar,
+					item.fbblok_bar_offset,
 					item.fbcover_bar,
 					item.fbcover_bar_offset,
 					item.fbcover_font,

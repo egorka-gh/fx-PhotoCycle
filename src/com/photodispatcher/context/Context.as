@@ -47,6 +47,8 @@ package com.photodispatcher.context{
 				//block
 				Context.setAttribute('fbook.block.font.size',appConf.fbblok_font);
 				Context.setAttribute('fbook.block.notching',appConf.fbblok_notching);
+				Context.setAttribute('fbook.block.barcode.size',appConf.fbblok_bar);
+				Context.setAttribute('fbook.block.barcode.offset',appConf.fbblok_bar_offset);
 				//cover
 				Context.setAttribute('fbook.cover.font.size',appConf.fbcover_font);
 				Context.setAttribute('fbook.cover.notching',appConf.fbcover_notching);
@@ -66,6 +68,8 @@ package com.photodispatcher.context{
 				//block
 				Context.setAttribute('fbook.block.font.size',0);
 				Context.setAttribute('fbook.block.notching',0);
+				Context.setAttribute('fbook.block.barcode.size',0);
+				Context.setAttribute('fbook.block.barcode.offset','+0+0');
 				//cover
 				Context.setAttribute('fbook.cover.font.size',0);
 				Context.setAttribute('fbook.cover.notching',0);

@@ -20,7 +20,7 @@ package com.photodispatcher.util{
 		 */
 		public static function pixels2mm300(value:Number):int{
 			if(value){
-				return Math.ceil(value/MM2PIXELS_300);
+				return Math.round(value/MM2PIXELS_300);
 			}
 			return 0;
 		}

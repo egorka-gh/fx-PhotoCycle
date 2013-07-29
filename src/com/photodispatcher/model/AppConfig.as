@@ -9,6 +9,8 @@ package com.photodispatcher.model{
 		//2013-07-05
 		public var fbblok_font:int=0;
 		public var fbblok_notching:int=0;
+		public var fbblok_bar:int=0;
+		public var fbblok_bar_offset:String='+0+0';
 		
 		public var fbcover_font:int=0;
 		public var fbcover_notching:int=0;

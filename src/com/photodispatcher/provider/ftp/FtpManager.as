@@ -9,6 +9,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.preprocess.CaptionSetter;
@@ -65,14 +66,17 @@ package com.photodispatcher.provider.ftp{
 			if(_sources){
 				var s:Source;
 				for each(s in sources){
-					if(s && s.ftpService && s.online){
-						/*
-						f= new FtpService(s);
-						f.addEventListener(OrderLoadedEvent.ORDER_LOADED_EVENT,onOrderLoaded);
-						*/
-						f= new QueueManager(s);
-						f.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onOrderLoaded);
-						services.push(f);
+					if(s && s.online){
+						f=null;
+						if(s.type_id==SourceType.SRC_FBOOK_MANUAL){
+							f= new QueueManagerFBManual(s);
+						}else if(s.ftpService){
+							f= new QueueManager(s);
+						}
+						if(f){
+							f.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onOrderLoaded);
+							services.push(f);
+						}
 					}
 				}
 			}

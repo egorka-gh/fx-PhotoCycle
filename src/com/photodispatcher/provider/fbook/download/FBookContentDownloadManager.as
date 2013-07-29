@@ -58,6 +58,9 @@ package com.photodispatcher.provider.fbook.download{
 		private var errType:String;
 		private var errText:String;
 		//private var numConnections:int;
+		private var bytesLoaded:int=0;
+		private var startTime:Date;
+		private var lastItemsLoaded:int=0;
 
 		public function FBookContentDownloadManager(service:SourceService, book:FBookProject){
 			//TODO implement cache
@@ -198,6 +201,8 @@ package com.photodispatcher.provider.fbook.download{
 			listenLoader=true;
 			lastItemsLoaded=0;
 			_totalLoaded=0;
+			bytesLoaded=0;
+			startTime= new Date();
 			book.notLoadedItems=[];
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,_totalLoaded, _itemsToLoad));
 			loader.start();
@@ -205,6 +210,7 @@ package com.photodispatcher.provider.fbook.download{
 		
 		public function stop():void{
 			listenLoader=false;
+			bytesLoaded=0;
 			loader.pauseAll();
 			loader.clear();
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0, 0));
@@ -265,7 +271,6 @@ package com.photodispatcher.provider.fbook.download{
 			return;
 		}
 		
-		private var lastItemsLoaded:int=0;
 		private function onLoadProgress(event:BulkProgressEvent):void{
 			var itmsLoaded:int= loader.itemsLoaded;
 			var item:LoadingItem;
@@ -326,6 +331,7 @@ package com.photodispatcher.provider.fbook.download{
 			try{
 				var ba:ByteArray=item.content;
 				if(ba.length>0){
+					bytesLoaded+=ba.length;
 					var file:File=workFolder.resolvePath(item.id);
 					trace('Save downloaded file: '+file.nativePath+'.');
 					var fs:FileStream = new FileStream();
@@ -383,6 +389,7 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			listenLoader=false;
 			loader.clear();
+			bytesLoaded=0;
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0, 0));
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
@@ -416,6 +423,15 @@ package com.photodispatcher.provider.fbook.download{
 		public function get errorText():String{
 			if (!errType && !errText) return '';
 			return errType+':'+errText;
+		}
+
+		public function get speed():Number{
+			if (!bytesLoaded) return 0;
+			var now:Date=new Date();
+			var speed:Number=0;
+			speed=bytesLoaded/((now.time-startTime.time)/1000);//byte /sek
+			speed=Math.round(speed/1024);//Kb /sek
+			return speed;
 		}
 
 	}

@@ -50,6 +50,7 @@ package com.photodispatcher.provider.fbook.download{
 		private var currentSubOrder:Suborder;
 
 		private var projectLoader:FBookProjectLoader;
+		private var _speed:Number=0;
 		
 		[Bindable(event="queueLenthChange")]
 		public function get queueLenth():int{
@@ -412,9 +413,14 @@ package com.photodispatcher.provider.fbook.download{
 		}
 
 		private function contentLoadProgress(event:ProgressEvent):void{
+			_speed=contentLoader.speed;
 			dispatchEvent(event.clone());
 		}
 
+		public function get speed():Number{
+			return _speed;
+		}
+		
 		private function contentLoaded(event:Event):void{
 			contentLoader.removeEventListener(Event.COMPLETE,contentLoaded);
 			contentLoader.removeEventListener(ProgressEvent.PROGRESS,contentLoadProgress);

@@ -25,6 +25,8 @@
 				//block
 				Context.setAttribute('fbook.block.font.size',conf.fbblok_font);
 				Context.setAttribute('fbook.block.notching',conf.fbblok_notching);
+				Context.setAttribute('fbook.block.barcode.size',conf.fbblok_bar);
+				Context.setAttribute('fbook.block.barcode.offset',conf.fbblok_bar_offset);
 				//cover
 				Context.setAttribute('fbook.cover.font.size',conf.fbcover_font);
 				Context.setAttribute('fbook.cover.notching',conf.fbcover_notching);
@@ -54,23 +56,22 @@
 			<s:FormItem label="Блок насечка (pix)">
 				<s:TextInput id="tiFbBlNotching" text="{conf.fbblok_notching}" change="{conf.fbblok_notching=int(tiFbBlNotching.text)}" restrict="0-9" width="50"/>
 			</s:FormItem> 
+			<s:FormItem label="Блок подпись книги высота(pix)">
+				<s:TextInput id="tiFbBlBarSize" text="{conf.fbblok_bar}" change="{conf.fbblok_bar=int(tiFbBlBarSize.text)}" restrict="0-9" width="50"/>
+			</s:FormItem>
+			<s:FormItem label="Блок подпись книги смещение(pix)">
+				<itemRenderer:OffsetEditor id="tiFbBlBarOffs" data="{conf.fbblok_bar_offset}" change="{conf.fbblok_bar_offset=tiFbBlBarOffs.data}"/>
+			</s:FormItem>
 			<s:FormItem label="Обложка шрифт">
 				<s:TextInput id="tiFbCvFont" text="{conf.fbcover_font}" change="{conf.fbcover_font=int(tiFbCvFont.text)}" restrict="0-9" width="50"/>
 			</s:FormItem> 
 			<s:FormItem label="Обложка насечка (pix)">
 				<s:TextInput id="tiFbCvNotching" text="{conf.fbcover_notching}" change="{conf.fbcover_notching=int(tiFbCvNotching.text)}" restrict="0-9" width="50"/>
 			</s:FormItem> 
-			<s:FormItem label="Обложка высота штрих кода (pix)">
+			<s:FormItem label="Обложка подпись книги высота(pix)">
 				<s:TextInput id="tiFbCvBarSize" text="{conf.fbcover_bar}" change="{conf.fbcover_bar=int(tiFbCvBarSize.text)}" restrict="0-9" width="50"/>
-				<!--<s:HGroup gap="2" verticalAlign="middle">
-					<s:Label text="Высота (pix)"/>
-					<s:TextInput id="tiFbCvBarSize" text="{conf.fbcover_bar}" change="{conf.fbcover_bar=int(tiFbCvBarSize.text)}" restrict="0-9" width="50"/>
-					<s:Spacer width="3"/>
-					<s:Label text="Смещение (pix)"/>
-					<itemRenderer:OffsetEditor id="tiFbCvBarOffs" data="{conf.fbcover_bar_offset}" change="{conf.fbcover_bar_offset=tiFbCvBarOffs.data}"/>
-				</s:HGroup>-->
 			</s:FormItem>
-			<s:FormItem label="Обложка смещение штрих кода (pix)">
+			<s:FormItem label="Обложка подпись книги смещение(pix)">
 				<itemRenderer:OffsetEditor id="tiFbCvBarOffs" data="{conf.fbcover_bar_offset}" change="{conf.fbcover_bar_offset=tiFbCvBarOffs.data}"/>
 			</s:FormItem>
 			<s:FormHeading label="Технологическая разметка книг (фотопечать)" />

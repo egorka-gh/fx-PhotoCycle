@@ -164,13 +164,19 @@ package com.photodispatcher.provider.preprocess{
 				command.add('-draw'); command.add(draw);
 			}
 			
-			//draw barcode
+			//draw cover barcode
 			var barcode:String
 			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER){
 				barcode=printGroup.barcodeText(file);
 				if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, barcode,printGroup.bookTemplate.bar_offset);
 			}
-			
+
+			//draw body caption
+			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK && file.page_num==printGroup.pageNumber){
+				barcode=printGroup.barcodeText(file);
+				if(barcode) IMCommandUtil.annotateTransparent(command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookTemplate.bar_offset,-90);
+			}
+
 			//draw tech barcode
 			var barSize:int=Context.getAttribute('tech.barcode.size');
 			if(barSize && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){

@@ -367,6 +367,8 @@ package com.photodispatcher.factory{
 					//set template
 					if(Context.getAttribute('fbook.block.notching')) pgBody.bookTemplate.notching=Context.getAttribute('fbook.block.notching');
 					if(Context.getAttribute('fbook.block.font.size')) pgBody.bookTemplate.font_size=Context.getAttribute('fbook.block.font.size');
+					if(Context.getAttribute('fbook.block.barcode.size')) pgBody.bookTemplate.bar_size=Context.getAttribute('fbook.block.barcode.size');
+					if(Context.getAttribute('fbook.block.barcode.offset')) pgBody.bookTemplate.bar_offset=Context.getAttribute('fbook.block.barcode.offset');
 					
 					for each(page in proj.projectPages){
 						if(page){

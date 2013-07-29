@@ -3,6 +3,7 @@ package com.photodispatcher.service{
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.ProcessState;
 	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.view.ModalPopUp;
@@ -46,7 +47,7 @@ package com.photodispatcher.service{
 			waitWebSync=new Array();
 			isRunning=true;
 			for each (var src:Source in sources){
-				if(src && src.online){
+				if(src && src.online && src.type_id!=SourceType.SRC_FBOOK_MANUAL){
 					var syncSvc:BaseWeb=WebServiceBuilder.build(src);
 					if(syncSvc){
 						src.syncState.setState(ProcessState.STATE_RUNINNG,'Синхронизация.');

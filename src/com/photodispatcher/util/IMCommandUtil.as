@@ -11,6 +11,7 @@ package com.photodispatcher.util{
 	import mx.graphics.codec.PNGEncoder;
 
 	public class IMCommandUtil{
+		private static const SHADOWED_TEXT_FORE_COLOR:String='#eeeeee';
 
 		public static function annotateImage(command:IMCommand,font_size:int,undercolor:String, text:String, offset:String, double:Boolean=false):void{
 			if(!command || !text) return;
@@ -101,6 +102,44 @@ package com.photodispatcher.util{
 				command.add('-composite');
 			}
 		}
+		
+		public static function annotateTransparent(command:IMCommand, height:int, text:String, offset:String, rotate:int=0, gravity:String='southeast'):void{
+			if(!command || !text || height<=0) return;
+			if(!offset) offset='+0+0';
+			
+			//convert img.jpg ( -pointsize 30 -undercolor none -background transparent label:R12345-7 ( +clone +negate ) -geometry "+1+1" -composite -trim +repage -rotate -90 ) -gravity east -geometry "+0+0" -composite labeled.jpg
+			command.add('(');
+			command.add('-background'); command.add('none');
+			command.add('-undercolor'); command.add('none');
+			command.add('-stroke'); command.add('none');
+			command.add('-strokewidth'); command.add('0');
+			command.add('-fill'); command.add('black');
+			command.add('-pointsize'); command.add(height.toString());
+			var label:String='label:'+text;
+			command.add(label);
+			/*
+			command.add('(');
+			command.add('+clone');
+			command.add('+negate');
+			command.add(')');
+			command.add('-gravity'); command.add('center');
+			command.add('-geometry'); command.add('+2+2');
+			command.add('-composite');
+			*/
+			//-gravity center -fill "#eeeeee" -annotate "+1+1" "R12345:7" 
+			command.add('-gravity'); command.add('center');
+			command.add('-fill'); command.add(SHADOWED_TEXT_FORE_COLOR);
+			command.add('-annotate'); command.add('+2-2'); command.add(text);
+			command.add('-trim');
+			command.add('+repage');
+			if(rotate!=0){
+				command.add('-rotate'); command.add(rotate.toString());
+			}
+			command.add(')');
+			command.add('-gravity'); command.add(gravity);
+			command.add('-geometry'); command.add(offset);
+			command.add('-composite');
+		}
 
 		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, offset:String, rotate:int=0, gravity:String='southwest'):void{
 			if(!command || !barcode || !wrkDir || height<=0) return;
@@ -130,6 +169,8 @@ package com.photodispatcher.util{
 			//convert img.jpg ( barcode.png ( -pointsize 30 -undercolor "white" label:"R12345-7" -trim +repage -bordercolor white -border 2x2 ) -gravity center +append -write mpr:label +delete ) -gravity SouthWest mpr:label -geometry +500+50 -composite labeled.jpg
 			//convert "img.jpg" "(" "barcode.png" "(" "-pointsize" "30" "-undercolor" "white" "label:R12345-7" "-trim" "+repage" "-bordercolor" "white" "-border" "2x2" ")" "-gravity" "center" "+append" "-rotate" "-90" "-write" "mpr:label" "+delete" ")" "-gravity" "east" "mpr:label" "-geometry" "+100+100" "-composite" "labeled.jpg"
 			//convert "img.jpg" ( -pointsize 30 -undercolor white label:R12345-7 -trim +repage -bordercolor white -border "2x2" barcode.png +swap -gravity "center" "+append" "-rotate" "-90" "-write" "mpr:label" "+delete" ")" "-gravity" "east" mpr:label -geometry "+100+100" -composite labeled.jpg
+			
+			/*
 			command.add('(');
 			//command.add(fileName);
 			if(text && height>4){
@@ -163,6 +204,32 @@ package com.photodispatcher.util{
 			command.add(')');
 			command.add('-gravity'); command.add(gravity);
 			command.add('mpr:barcode');
+			command.add('-geometry'); command.add(offset);
+			command.add('-composite');
+			*/
+			
+			//convert img.jpg ( barcode.png -gravity South -background none -splice 0x30 -pointsize 28 -fill black -annotate "0" "R12345:7" -fill white -annotate "+1+1" "R12345:7" -rotate -90 ) -gravity east mpr:label -geometry "+100+100" -composite labeled.jpg
+			//convert img.jpg ( barcode.png -rotate -90 ) -gravity east -geometry "+100+100" -composite labeled.jpg
+			command.add('(');
+			command.add(fileName);
+			if(text && height>8){
+				command.add('-gravity'); command.add('south');
+				command.add('-background'); command.add('none');
+				command.add('-splice'); command.add('0x'+height.toString());
+				command.add('-undercolor'); command.add('none');
+				command.add('-stroke'); command.add('none');
+				command.add('-strokewidth'); command.add('0');
+				command.add('-pointsize'); command.add((height-2).toString());
+				command.add('-fill'); command.add('black');
+				command.add('-annotate'); command.add('0'); command.add(text);
+				command.add('-fill'); command.add(SHADOWED_TEXT_FORE_COLOR);
+				command.add('-annotate'); command.add('+2+2'); command.add(text);
+			}
+			if(rotate!=0){
+				command.add('-rotate'); command.add(rotate.toString());
+			}
+			command.add(')');
+			command.add('-gravity'); command.add(gravity);
 			command.add('-geometry'); command.add(offset);
 			command.add('-composite');
 		}

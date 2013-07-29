@@ -9,6 +9,11 @@ package com.photodispatcher.model{
 	import spark.components.gridClasses.GridColumn;
 
 	public class Suborder extends Order{
+		
+		public function Suborder(){
+			super();
+			state=OrderState.FTP_WAITE_SUBORDER;
+		}
 		//database props
 		[Bindable]
 		public var order_id:String;

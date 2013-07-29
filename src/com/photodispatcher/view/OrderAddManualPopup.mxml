@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="300">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.dao.OrderDAO;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var order:Order;
+			[Bindable]
+			private var srcList:ArrayCollection;
+			
+			public function show():void{
+				order= new Order();
+				order.fotos_num=1;
+				srcList=new ArrayCollection(Context.getSources());
+				srcList.filterFunction=filterSrc;
+				srcList.refresh();
+				
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				//this.width=FlexGlobals.topLevelApplication.width-50;
+				//this.height=FlexGlobals.topLevelApplication.height-100;
+				PopUpManager.centerPopUp(this);
+			}
+
+			private function filterSrc(item:Object):Boolean {
+				var s:Source=item as Source;
+				if(!s) return false;
+				return s.type_id==SourceType.SRC_FBOOK_MANUAL;
+			}
+
+			protected function ddSource_changeHandler(event:IndexChangeEvent):void{
+				if(!ddSource.selectedItem) return;
+				var s:Source=ddSource.selectedItem as Source;
+				if(!s) return;
+				order.source=s.id;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if (!order.source){
+					Alert.show('Не указан Источник');
+					return;
+				}
+				if (!order.src_id){
+					Alert.show('Не указан Id заказа');
+					return;
+				}
+				if(order.fotos_num<=0)order.fotos_num=1;
+				
+				order.id=order.source.toString()+'_'+order.src_id;
+				order.ftp_folder=order.src_id;
+				
+				//save
+				var dao:OrderDAO= new OrderDAO();
+				dao.addManual(order);
+				
+				close(true);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Form id="frmOrder" top="10" left="10" right="10" bottom="30">
+		<s:layout>
+			<s:FormLayout gap="-12"/>
+		</s:layout>
+		<s:FormItem label="Источник">
+			<s:DropDownList id="ddSource" dataProvider="{srcList}" labelField="name" change="ddSource_changeHandler(event)"/>
+		</s:FormItem> 
+		<s:FormItem label="Id заказа">
+			<s:TextInput id="tiSourceId" text="@{order.src_id}" width="150" restrict="0-9"/>
+		</s:FormItem> 
+		<s:FormItem label="Кол экземпляров">
+			<s:NumericStepper id="nsFotosNum" value="@{order.fotos_num}" snapInterval="1" />
+		</s:FormItem> 
+	</s:Form>
+	<s:HGroup gap="5" bottom="10" right="10">
+		<s:Button label="Создать" click="button1_clickHandler(event)"/>
+		<s:Button label="Отмена" click="{close()}"/>
+	</s:HGroup>
+</s:SkinnablePopUpContainer>

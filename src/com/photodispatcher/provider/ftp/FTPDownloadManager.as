@@ -2,13 +2,13 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.ConnectionsProgressEvent;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.LoadProgressEvent;
-	//import com.photodispatcher.event.SpeedEvent;
 	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceService;
+	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -61,7 +61,7 @@ package com.photodispatcher.provider.ftp{
 			//TODO reset state
 			
 			//check
-			if(!source || !source.ftpService){
+			if(!source || (!source.ftpService && source.type_id!=SourceType.SRC_FBOOK_MANUAL)){
 				flowError('Ошибка инициализации');
 				return false;
 			}

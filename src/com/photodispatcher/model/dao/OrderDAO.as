@@ -63,6 +63,22 @@ package com.photodispatcher.model.dao{
 			//addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSetState,false,int.MAX_VALUE);
 			//execute(sql,params);
 		}
+		
+		public function addManual(order:Order):void{
+			if(!order) return;
+			var sql:String='INSERT INTO orders (id, source, src_id, state, state_date, ftp_folder, fotos_num)' + 
+							' SELECT ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS(SELECT 1 from orders o WHERE o.id=?)';
+			var params:Array=[order.id,
+								order.source,
+								order.src_id,
+								order.state,
+								order.state_date,
+								order.ftp_folder,
+								order.fotos_num,
+								order.id];
+			execute(sql,params);
+		}
+		
 		/*
 		private function onSetState(e:AsyncSQLEvent):void{
 			//log state

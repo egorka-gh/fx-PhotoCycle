@@ -33,6 +33,7 @@
 			import mx.events.FlexEvent;
 			
 			import spark.events.GridSelectionEvent;
+			import spark.events.PopUpEvent;
 			
 			public static const REFRESH_INTERVAL:int=10;//min
 			public static const FORCE_START_INTERVAL:int=10;//min
@@ -307,6 +308,19 @@
 				ordersErrLimitGridMenu= new GridContexMenu(dgErrLimit,[GridContexMenu.SHOW_ORDER,GridContexMenu.RESET_ERRLIMIT]);
 			}
 			
+			private var addPopup:OrderAddManualPopup;
+			protected function btAddOrder_clickHandler(event:MouseEvent):void{
+				addPopup= new OrderAddManualPopup();
+				addPopup.addEventListener(PopUpEvent.CLOSE,onAddPopupClose);
+				addPopup.show();
+			}
+			private function onAddPopupClose(evt:PopUpEvent):void{
+				addPopup.removeEventListener(PopUpEvent.CLOSE,onAddPopupClose);
+				addPopup= null;
+				//refresh & start load if added
+				if(evt.commit) fillOrdersPendingList();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -435,6 +449,7 @@
 			<s:DataGrid id="dgOrders" selectionMode="multipleRows"
 						width="100%" height="100%" creationComplete="dgOrders_creationCompleteHandler(event)"
 						dataProvider="{ordersPendingList}" locale="ru_RU" columns="{OrderDAO.gridColumns()}"/>
+			<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)"/>
 		</s:VGroup>
 		<view:PrintDistribute id="printDistribute" top="0" left="0" right="0" bottom="0" includeIn="printDeploy"/>
 		<view:PrintMonitor id="printMonitor" top="0" left="0" right="0" bottom="0" 

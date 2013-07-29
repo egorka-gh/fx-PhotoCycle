@@ -91,7 +91,7 @@ package com.photodispatcher.model{
 		public var bill_type:int=BILL_TYPE_TXT;
 		
 		
-		protected var _state:int=OrderState.FTP_WAITE_SUBORDER;
+		protected var _state:int=OrderState.WAITE_FTP;
 		[Bindable]
 		public function get state():int{
 			return _state;

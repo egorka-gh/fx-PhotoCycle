@@ -11,7 +11,9 @@ package com.photodispatcher.provider.ftp.remote{
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.provider.ftp.QueueManager;
+	import com.photodispatcher.provider.ftp.QueueManagerFBManual;
 	
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
@@ -95,8 +97,14 @@ package com.photodispatcher.provider.ftp.remote{
 				_chatService.sendLoadMessage(InstructionConstants.CLIENT_LOAD_REJECT,'Ошибка инициализации. Не задан источник (null)');
 			}
 			isRunning=true;
+			//create loader
+			if(source.type_id==SourceType.SRC_FBOOK_MANUAL){
+				loader=new QueueManagerFBManual(source,true);
+			}else{
+				loader=new QueueManager(source,true);
+			}
+
 			//listen
-			loader=new QueueManager(source,true);
 			loader.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onOrderLoaded);
 			loader.addEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onFlowErr);
 			loader.addEventListener(ImageProviderEvent.LOAD_FAULT_EVENT,onDownloadFault);
