@@ -53,9 +53,10 @@
 				var pageNum:int=int(barcode.substr(6,2));
 				//log to data base
 				var tl:TechLog= new TechLog();
-				tl.book_num=bookNum;
 				tl.log_date=new Date();
-				tl.page_num=pageNum;
+				//tl.page_num=pageNum;
+				//tl.book_num=bookNum;
+				tl.setSheet(bookNum,pageNum);
 				tl.print_group=pgId;
 				tl.src_id= techPoint;
 				var dao:TechLogDAO= new TechLogDAO();

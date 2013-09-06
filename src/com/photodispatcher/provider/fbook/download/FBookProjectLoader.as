@@ -5,15 +5,16 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotakrama.net.ProjectService;
 	import com.akmeful.fotakrama.net.events.ProjectServiceErrorEvent;
 	import com.akmeful.fotakrama.net.events.ProjectServiceEvent;
+	import com.akmeful.fotakrama.net.vo.project.ProjectViewVO;
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotocalendar.net.vo.project.FotocalendarViewVO;
 	import com.akmeful.fotokniga.book.data.Book;
-	import com.akmeful.fotokniga.net.vo.project.ProjectViewVO;
+	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.model.Source;
+	import com.photodispatcher.provider.fbook.FBookProject;
 	
 	import flash.events.Event;
 	import flash.events.IEventDispatcher;
-	import com.photodispatcher.provider.fbook.FBookProject;
 
 	[Event(name="complete", type="flash.events.Event")]
 	public class FBookProjectLoader extends Library	{
@@ -70,13 +71,20 @@ package com.photodispatcher.provider.fbook.download{
 				case Book.PROJECT_TYPE:
 					var bvo:ProjectViewVO = new ProjectViewVO();
 					var b:Book=new Book({id:projId});
-					bvo.book = b;
+					bvo.project = b;
 					service.execute(bvo);
 					break;
 				case FotocalendarProject.PROJECT_TYPE:
 					var cvo:FotocalendarViewVO=new FotocalendarViewVO();
 					var c:FotocalendarProject=new FotocalendarProject({id:projId});
 					cvo.project=c;
+					service.execute(cvo);
+					break;
+				case MagnetProject.PROJECT_TYPE:
+					var mvo:ProjectViewVO= new ProjectViewVO();
+					mvo.updateTargetUrl(pathAlias.getPath('/magnet/view/', false));
+					var mp:MagnetProject = new MagnetProject({id:projId});
+					mvo.project=mp;
 					service.execute(cvo);
 					break;
 			}

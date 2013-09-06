@@ -16,11 +16,13 @@
 			import com.photodispatcher.model.Source;
 			import com.photodispatcher.model.StateLog;
 			import com.photodispatcher.model.Suborder;
+			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.PrintGroupFileDAO;
 			import com.photodispatcher.model.dao.StateLogDAO;
 			import com.photodispatcher.model.dao.SuborderDAO;
+			import com.photodispatcher.model.dao.TechLogDAO;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.itemRenderer.PGFileReprintItemRenderer;
 			
@@ -95,7 +97,8 @@
 					fileList.source=a;
 					fileList.filterFunction=filterFileList;
 					
-					a=pfDao.getTechByOrder(order.id);
+					var tDao:TechLogDAO= new TechLogDAO();
+					a=tDao.getTechByOrder(order.id);
 					techList.source=a;
 					techList.filterFunction=filterTechList;
 					
@@ -139,7 +142,7 @@
 				fileList.refresh();
 			}
 			private function filterTechList(item:Object):Boolean {
-				var f:PrintGroupFile=item as PrintGroupFile;
+				var f:TechLog=item as TechLog;
 				if(!f) return false;
 				if(lstFilterTech && lstFilterTech.selectedIndex>0 && lstFilterTech.selectedItem.id!=f.print_group) return false;
 				return true;
@@ -436,7 +439,7 @@
 								<s:List id="lstFilterTech" dataProvider="{pgFilterList}" labelField="id"
 										width="100" height="100%" change="{applyTechFilter()}"/>
 								<s:DataGrid id="dgTech" selectionMode="none" width="100%" height="100%"
-											dataProvider="{techList}" locale="ru_RU" columns="{PrintGroupFileDAO.gridColumnsTech()}"/>
+											dataProvider="{techList}" locale="ru_RU" columns="{TechLog.gridColumnsTech()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
 					</mx:ViewStack>

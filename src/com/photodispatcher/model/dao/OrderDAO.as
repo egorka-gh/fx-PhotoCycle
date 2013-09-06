@@ -321,8 +321,8 @@ package com.photodispatcher.model.dao{
 					if(pg){
 						//create print group
 						sql='INSERT INTO print_group (id, order_id, state, state_date, width, height, frame, paper, path, correction, cutting, file_num,'+
-													' book_type, book_part, book_num, is_pdf, is_duplex)' +
-													' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+													' book_type, book_part, book_num, sheet_num, is_pdf, is_duplex)' +
+													' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 						params=[pg.id,
 								order.id,
 								order.state,
@@ -338,6 +338,7 @@ package com.photodispatcher.model.dao{
 								pg.book_type,
 								pg.book_part,
 								pg.book_num,
+								pg.sheet_num,
 								pg.is_pdf?1:0,
 								pg.is_duplex?1:0];
 						sequence.push(prepareStatement(sql,params));

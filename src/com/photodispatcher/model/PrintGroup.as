@@ -70,6 +70,11 @@ package com.photodispatcher.model{
 		public var book_part:int=0;
 		[Bindable]
 		public var book_num:int=0;
+		/**
+		 *количество печатных листов в книге
+		 */		
+		[Bindable]
+		public var sheet_num:int=0;
 		[Bindable]
 		public var is_pdf:Boolean=false;
 		[Bindable]
@@ -234,7 +239,7 @@ package com.photodispatcher.model{
 		private var _pageStart:int;
 
 		/**
-		 * runtime
+		 * runtime max page number, use sheet_num if need pages number
 		 * valid after preparePrint or direct set
 		 * @return number of page in book 
 		 */

@@ -926,6 +926,7 @@ package com.photodispatcher.model.dao{
 			stmt.sqlConnection=asyncCnn;
 			stmt.execute();
 
+			/*
 			//tech log temp table
 			sql="CREATE TEMP TABLE tmp_tech_log (" +
 				   " id          INTEGER         PRIMARY KEY AUTOINCREMENT," +
@@ -941,6 +942,7 @@ package com.photodispatcher.model.dao{
 			stmt.execute();
 			stmt.sqlConnection=asyncCnn;
 			stmt.execute();
+			*/
 		}
 
 		public function clearTempTables():void{
@@ -952,6 +954,15 @@ package com.photodispatcher.model.dao{
 			stmt.sqlConnection=asyncCnn;
 			stmt.execute();
 
+			sql='DELETE FROM tmp_print_group';
+			stmt= new SQLStatement();
+			stmt.sqlConnection = sqlConnection;
+			stmt.text = sql; 
+			stmt.execute();
+			stmt.sqlConnection=asyncCnn;
+			stmt.execute();
+
+			/*
 			sql='DELETE FROM tmp_tech_log';
 			stmt= new SQLStatement();
 			stmt.sqlConnection = sqlConnection;
@@ -959,6 +970,7 @@ package com.photodispatcher.model.dao{
 			stmt.execute();
 			stmt.sqlConnection=asyncCnn;
 			stmt.execute();
+			*/
 		}
 		
 		protected function processRow(row:Object):Object{

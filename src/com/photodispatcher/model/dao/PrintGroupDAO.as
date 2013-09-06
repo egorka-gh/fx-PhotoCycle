@@ -320,37 +320,21 @@ package com.photodispatcher.model.dao{
 
 			//get max state by tech
 			sql='INSERT INTO tmp_print_group(id, state)'+
-				' SELECT ?, MAX(state) FROM (' +
-					' SELECT st.state FROM print_group_file pgf'+
-						' LEFT OUTER JOIN tech_log tl ON pgf.id=tl.pgfile_id'+  
-						' LEFT OUTER JOIN config.src_type st ON tl.src_id= st.id'+
-						' WHERE pgf.print_group=?'+ 
-						' GROUP BY st.state'+
-						' HAVING COUNT(pgf.id)= COUNT(tl.id))';
-			params=[pgId, pgId];
+				' SELECT pg.id, MAX(st.state)'+ 
+				' FROM print_group pg'+
+					' INNER JOIN tech_log tl ON pg.id=tl.print_group'+  
+					' INNER JOIN config.sources s ON tl.src_id=s.id'+  
+					' INNER JOIN config.src_type st ON s.type_id=st.id'+ 
+				' WHERE pg.id=? AND st.state>pg.state'+  
+				' GROUP BY pg.id, pg.sheet_num'+
+				' HAVING COUNT(DISTINCT tl.sheet)=pg.sheet_num';
+			params=[pgId];
 			sequence.push(prepareStatement(sql,params));
-			/*
-			INSERT INTO tmp_print_group(id, state) 
-			select ?, max(state) from (
-			SELECT st.state , count(pgf.id), count(tl.id) 
-			FROM print_group_file pgf
-			left outer join tech_log tl on pgf.id=tl.pgfile_id  
-			left outer join config.src_type st on tl.src_id= st.id
-			WHERE pgf.print_group=? 
-			group by st.state
-			having count(pgf.id)= count(tl.id))
-			*/
 			
-			//remove if print group state same or above
-			sql='DELETE FROM tmp_print_group'+
-				' WHERE EXISTS(SELECT 1 FROM print_group pg WHERE pg.id=tmp_print_group.id AND pg.state>=tmp_print_group.state)';
-			sequence.push(prepareStatement(sql));
-
 			//set pg state
 			sql='UPDATE print_group'+
 				' SET state=(SELECT state FROM tmp_print_group t WHERE print_group.id=t.id), state_date = ?'
 				' WHERE id IN (SELECT id FROM tmp_print_group)';
-
 			var dt:Date=new Date();
 			params=[dt];
 			sequence.push(prepareStatement(sql,params));

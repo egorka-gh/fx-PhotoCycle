@@ -59,7 +59,6 @@ package com.photodispatcher.factory{
 					//get files
 					af=map[path] as Array;
 					//parse pg from path, exact synonym
-					//bookSynonym=synonymDAO.translatePath(path,source.type_id);
 					bookSynonym=BookSynonymDAO.translatePath(path,source.type_id);
 					if (bookSynonym){
 						//parse files & book params
@@ -282,6 +281,9 @@ package com.photodispatcher.factory{
 					dst.addFile(f);
 				}
 			}
+			//set sheets number
+			dst.sheet_num=1;
+			if(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf) dst.sheet_num=2;
 			//sort 
 			if(dst.getFiles()) dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
 		}
@@ -295,6 +297,8 @@ package com.photodispatcher.factory{
 					dst.addFile(f);
 				}
 			}
+			//set sheets number
+			dst.sheet_num=1;
 			//sort 
 			if(dst.getFiles()) dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
 		}
@@ -307,8 +311,25 @@ package com.photodispatcher.factory{
 					dst.addFile(f);
 				}
 			}
+			if(!dst.getFiles() || dst.getFiles().length==0) return; 
+			//detect sheets number
+			var pageMax:int=0;
+			var pageMin:int=int.MAX_VALUE;
+			for each(f in dst.getFiles()){
+				pageMax=Math.max(pageMax,f.page_num);
+				pageMin=Math.min(pageMin,f.page_num);
+			}
+			dst.sheet_num=pageMax-pageMin+1;
+			if (dst.is_pdf){
+				dst.sheet_num=dst.sheet_num/2;
+				if(dst.book_type==BookSynonym.BOOK_TYPE_BOOK){
+					//blank page
+					dst.sheet_num++;
+				}
+			}
+			
 			//sort by book / sheet
-			if(dst.getFiles()) dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
+			dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
 		}
 
 		public function buildFromSuborders(order:Order):Array{
@@ -399,6 +420,7 @@ package com.photodispatcher.factory{
 					//add to order
 					if(pgCover.getFiles() && pgCover.getFiles().length>0){
 						pgCover.id=order.id+'_'+pgNum.toString();
+						pgCover.sheet_num=pgCover.getFiles().length;
 						if(!order.printGroups) order.printGroups=[];
 						order.printGroups.push(pgCover);
 						result.push(pgCover);
@@ -406,6 +428,7 @@ package com.photodispatcher.factory{
 					}
 					if(pgBody.getFiles() && pgBody.getFiles().length>0){
 						pgBody.id=order.id+'_'+pgNum.toString();
+						pgBody.sheet_num=pgBody.getFiles().length;
 						if(!order.printGroups) order.printGroups=[];
 						order.printGroups.push(pgBody);
 						result.push(pgBody);

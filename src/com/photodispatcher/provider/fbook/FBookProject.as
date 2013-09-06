@@ -8,6 +8,7 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.fotokniga.book.data.BookCoverPrintType;
 	import com.akmeful.fotokniga.book.data.BookPage;
 	import com.akmeful.fotokniga.book.layout.BookLayout;
+	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
 	
 	import flash.filesystem.File;
@@ -60,6 +61,11 @@ package com.photodispatcher.provider.fbook{
 						}
 					}
 					break;
+				case MagnetProject.PROJECT_TYPE:
+					//magnet = createItem(rawData) as MagnetProject;
+					var mp:MagnetProject= new MagnetProject(raw);
+					_project=mp;
+					break;
 			}
 			//reindex content elements
 			var idx:int;
@@ -94,6 +100,9 @@ package com.photodispatcher.provider.fbook{
 				case FotocalendarProject.PROJECT_TYPE:
 					return 'Календарь';
 					break;
+				case MagnetProject.PROJECT_TYPE:
+					return 'Магнит';
+					break;
 				default:
 					return 'Неопределен';
 			}
@@ -123,6 +132,9 @@ package com.photodispatcher.provider.fbook{
 				case FotocalendarProject.PROJECT_TYPE:
 					return (project as FotocalendarProject).pages;
 					break;
+				case MagnetProject.PROJECT_TYPE:
+					return (project as MagnetProject).pages;
+					break;
 				default:
 					return null;
 			}
@@ -151,6 +163,13 @@ package com.photodispatcher.provider.fbook{
 					var cp:FotocalendarProject=(project as FotocalendarProject);
 					pageSize.x=cp.template.format.realWidth;
 					pageSize.y=cp.template.format.realHeight;
+					pageOffset.x=0;
+					pageOffset.y=0;
+					break;
+				case MagnetProject.PROJECT_TYPE:
+					var mp:MagnetProject=(project as MagnetProject);
+					pageSize.x=mp.template.format.cellWidth;
+					pageSize.y=mp.template.format.cellHeight;
 					pageOffset.x=0;
 					pageOffset.y=0;
 					break;
