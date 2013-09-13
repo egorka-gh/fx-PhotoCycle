@@ -13,6 +13,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.fotakrama.library.data.frame.FrameMaskInfo;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverFrameImage;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverPrintImage;
+	import com.akmeful.magnet.data.MagnetProject;
 	import com.akmeful.util.GeomUtil;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.data.FrameData;
@@ -130,7 +131,66 @@ package com.photodispatcher.provider.fbook.makeup{
 					_book.projectPages.push(pageData);
 				}
 			}
+			//compose to output format (MagnetProject)
+			postprocess();
 			return true;
+		}
+
+		private function postprocess():void{
+			function commplitePage():void{
+				if(!cmd) return;
+				sheetNum++;
+				var newPageData:PageData =new PageData(_book, sheetNum,outFolder);
+				cmd.add('-tile');cmd.add(cols.toString()+'x'+rows.toString());
+				cmd.add('-geometry');cmd.add('+0+0');
+				//set depth & quality
+				if(PageData.OUT_FILE_DEPTH){
+					cmd.add('-depth'); cmd.add(PageData.OUT_FILE_DEPTH);
+				}
+				if(PageData.OUT_FILE_DENSITY){
+					cmd.add('-density'); cmd.add(PageData.OUT_FILE_DENSITY);
+				}
+				if(PageData.OUT_FILE_QUALITY){
+					cmd.add('-quality'); cmd.add(PageData.OUT_FILE_QUALITY);
+				}
+				//out file path
+				//outFilePath=_outFolder+'/'+_book.id.toString()+'_'+PageData.OUT_FILE_PREFIX+StrUtil.lPad(sheetNum.toString(),2)+PageData.OUT_FILE_EXT;
+				cmd.add(outFolder+File.separator+newPageData.outFileName());
+				commands.push(cmd);
+				newPageData.msls=msls;
+				newPageData.commands=commands;
+				newPages.push(newPageData);
+			}
+			
+			if (_book.type!=MagnetProject.PROJECT_TYPE) return;
+			var proj:MagnetProject=_book.project as MagnetProject;
+			var cols:int=proj.template.format.cols;
+			var rows:int=proj.template.format.rows;
+			var newPages:Array=[];
+			var commands:Array=[];
+			var msls:Array=[];
+			var pageData:PageData;
+			var pgnum:int=0;
+			var sheetNum:int=0;
+			var outFilePath:String;
+			var cmd:IMCommand;
+			//join magnet pages to final page(s)
+			for each(pageData in pages){
+				if(pgnum==0 || pgnum==cols*rows){
+					commplitePage();
+					pgnum=0;
+					msls=[];
+					commands=[];
+					cmd=new IMCommand(IMCommand.IM_CMD_MONTAGE);
+				}
+				msls=msls.concat(pageData.msls);
+				commands=commands.concat(pageData.commands);
+				cmd.add(pageData.outFileName());
+				pgnum++;
+			}
+			commplitePage();
+			_pages=newPages;
+			return;
 		}
 
 		private function loadImageXML(id:String, filename:String):XML{
@@ -663,7 +723,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			group.appendChild(frameImage);
 			var imageFileName:String=scriptID+'_fr.png';
 			group.appendChild(saveImageXML(imageFileName));
-			pd.msls.push(group);
+			pd.msls.push(new IMMsl(group));
 		}
 		
 		private function isNotLoaded(elementId:String, pd:PageData):Boolean{

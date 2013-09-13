@@ -179,16 +179,19 @@ package com.photodispatcher.provider.fbook.makeup{
 			//save msl's
 			var i:int;
 			var file:File;
+			var msl:IMMsl;
+
 			dir=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
 			for each (p in pages){
 				if(p){
 					//save msl script
 					for (i=0;i<p.msls.length;i++){
-						file=dir.resolvePath(p.scriptFileName(i));
+						msl=p.msls[i] as IMMsl;
+						file=dir.resolvePath(msl.fileName);
 						try{
 							var fs:FileStream = new FileStream();
 							fs.open(file, FileMode.WRITE);
-							fs.writeUTFBytes(p.getMslString(i));
+							fs.writeUTFBytes(msl.getMslString());
 							fs.close();
 						} catch(err:Error){
 							releaseWithErr(OrderState.ERR_FILE_SYSTEM,err.message);

@@ -33,7 +33,8 @@ package com.photodispatcher.provider.fbook.download{
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="flowError", type="com.photodispatcher.event.ImageProviderEvent")]
 	public class FBookContentDownloadManager extends EventDispatcher{
-		public static const USER_MEDIA_PATH:String = 'book/photo/download/';
+		//public static const USER_MEDIA_PATH:String = 'book/photo/download/';
+		public static const USER_MEDIA_PATH:String = 'projectImage/download';
 		public static const CLIPART_PATH:String = 'admin/clipart/download/';
 		public static const CLIPART_FRAME_PATH:String = 'admin/frames/download/';
 

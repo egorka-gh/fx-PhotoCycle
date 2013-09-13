@@ -1,4 +1,5 @@
 package com.photodispatcher.provider.fbook.download{
+	import com.akmeful.fotakrama.cfg.PathAlias;
 	import com.akmeful.fotakrama.data.Project;
 	import com.akmeful.fotakrama.library.Library;
 	import com.akmeful.fotakrama.net.CommonHttpService;
@@ -31,6 +32,7 @@ package com.photodispatcher.provider.fbook.download{
 		public function FBookProjectLoader(source:Source){
 			super(null);
 			this.source=source;
+			this.pathAlias=PathAlias.instance;
 			service= new ProjectService();
 			if(source && source.fbookService){
 				(service as ProjectService).baseURL=source.fbookService.url;
@@ -85,7 +87,7 @@ package com.photodispatcher.provider.fbook.download{
 					mvo.updateTargetUrl(pathAlias.getPath('/magnet/view/', false));
 					var mp:MagnetProject = new MagnetProject({id:projId});
 					mvo.project=mp;
-					service.execute(cvo);
+					service.execute(mvo);
 					break;
 			}
 		}

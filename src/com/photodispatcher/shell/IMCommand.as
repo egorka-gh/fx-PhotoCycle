@@ -2,6 +2,7 @@ package com.photodispatcher.shell{
 	public class IMCommand{
 		public static const IM_CMD_CONVERT:String='convert.exe';
 		public static const IM_CMD_MSL:String='conjure.exe';
+		public static const IM_CMD_MONTAGE:String='montage.exe';
 
 		public static const STATE_WAITE:int=0;
 		public static const STATE_STARTED:int=1;

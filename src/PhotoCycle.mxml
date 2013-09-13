@@ -8,7 +8,7 @@
 					   xmlns:config2="com.akmeful.fotocalendar.config.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="{destroy()}" >
+					   closing="{destroy()}" xmlns:cfg="com.akmeful.fotakrama.cfg.*" >
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
@@ -160,6 +160,16 @@
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 		<config1:PathAlias />
 		<config2:PathAlias />
+		<cfg:PathAlias id="pathAlias">
+			<cfg:defaultAliases>
+				<fx:Array>
+					<fx:Object key="/magnet/" />
+					<fx:Object key="/magnet/?id=" />
+					<fx:Object key="/magnet/list/" />
+					<fx:Object key="/magnet/view/" />
+				</fx:Array>
+			</cfg:defaultAliases>
+		</cfg:PathAlias>
 	</fx:Declarations>
 
 	<fx:Style source="stylesFonts.css" />
