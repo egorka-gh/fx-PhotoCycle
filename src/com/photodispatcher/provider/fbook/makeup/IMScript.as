@@ -159,6 +159,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				commands.push(cmd);
 				newPageData.msls=msls;
 				newPageData.commands=commands;
+				newPageData.pageSize= new Point(proj.template.format.realWidth,proj.template.format.realHeight);
 				newPages.push(newPageData);
 			}
 			
@@ -190,6 +191,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 			commplitePage();
 			_pages=newPages;
+			_book.projectPages=_pages;
 			return;
 		}
 

@@ -30,12 +30,15 @@ package com.photodispatcher.provider.fbook.download{
 		private var source:Source;
 
 		public function FBookProjectLoader(source:Source){
+			var url:String; 
 			super(null);
 			this.source=source;
 			this.pathAlias=PathAlias.instance;
 			service= new ProjectService();
 			if(source && source.fbookService){
-				(service as ProjectService).baseURL=source.fbookService.url;
+				url=source.fbookService.url;
+				if(url.substr(-1,1)=='/') url=url.substr(0,url.length-1);
+				(service as ProjectService).baseURL=url;
 			}
 		}
 		
@@ -47,8 +50,23 @@ package com.photodispatcher.provider.fbook.download{
 		
 		override protected function serviceErrorHandler(event:ProjectServiceErrorEvent):void{
 			if(unknownType){
-				fetchProject(lastFetchedId,FotocalendarProject.PROJECT_TYPE);
-				return;
+				switch(lastFetchedType){
+					case Book.PROJECT_TYPE:
+						//try calendar
+						fetchProject(lastFetchedId,FotocalendarProject.PROJECT_TYPE);
+						return;
+						break;
+					case FotocalendarProject.PROJECT_TYPE:
+						//try magnet
+						fetchProject(lastFetchedId,MagnetProject.PROJECT_TYPE);
+						return;
+						break;
+					/*
+					case MagnetProject.PROJECT_TYPE:
+						//fetch new other proj type, default - error
+						break;
+					*/
+				}
 			}
 			lastErr='FBookProjectLoader: ' +event.text;
 			dispatchEvent(new Event(Event.COMPLETE));  
@@ -63,8 +81,8 @@ package com.photodispatcher.provider.fbook.download{
 				return;
 			}
 			if(!service) return;
-			unknownType=projType==-1;
-			if(unknownType){
+			if(projType==-1){
+				unknownType=true;
 				projType=Book.PROJECT_TYPE;
 			}
 			lastFetchedType=projType;

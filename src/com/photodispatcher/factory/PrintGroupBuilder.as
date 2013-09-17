@@ -1,6 +1,7 @@
 package com.photodispatcher.factory{
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotokniga.book.data.Book;
+	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.BookPgTemplate;
 	import com.photodispatcher.model.BookSynonym;
@@ -350,11 +351,28 @@ package com.photodispatcher.factory{
 				proj=so.project;
 				if(proj){
 					//set suborder project type
-					so.proj_type= so.project.type==FotocalendarProject.PROJECT_TYPE?BookSynonym.BOOK_TYPE_CALENDAR:BookSynonym.BOOK_TYPE_BOOK;
+					so.proj_type=proj.bookType;
+					/*
+					switch(proj.type){
+						case Book.PROJECT_TYPE:
+							so.proj_type=BookSynonym.BOOK_TYPE_BOOK;
+							paperId=(proj.project as Book).template.paper.id.toString();
+							break;
+						case FotocalendarProject.PROJECT_TYPE:
+							so.proj_type=BookSynonym.BOOK_TYPE_CALENDAR;
+							//paperId=(proj.project as FotocalendarProject).template.p .template.paper.id.toString();
+							break;
+						case MagnetProject.PROJECT_TYPE:
+							so.proj_type=BookSynonym.BOOK_TYPE_MAGNET;
+							paperId=(proj.project as MagnetProject).template.paperType .template.paper.id.toString();
+							break;
+					}
+					*/
 					//detect paper
-					var fv:FieldValue;
-					if(proj.type==FotocalendarProject.PROJECT_TYPE){
-						//hardcoded matovaia
+					var fv:FieldValue=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,proj.paperId,'paper');
+					/*
+					if(so.proj_type==BookSynonym.BOOK_TYPE_CALENDAR || so.proj_type==BookSynonym.BOOK_TYPE_MAGNET){
+						//TODO hardcoded matovaia
 						fv=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,'1','paper');
 					}else if(proj.type==Book.PROJECT_TYPE){
 						var prj:Book=proj.project as Book;
@@ -362,13 +380,14 @@ package com.photodispatcher.factory{
 							fv=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,prj.template.paper.id.toString(),'paper');
 						}
 					}
+					*/
 					if(fv) paper=int(fv.value);
 					
 					//create print groups
 					pg= new PrintGroup();
 					pg.order_id=order.id;
 					pg.path=so.ftp_folder;
-					pg.book_type=BookSynonym.BOOK_TYPE_BOOK; //TODO can be BOOK_TYPE_JOURNAL?
+					pg.book_type=proj.bookType; //BookSynonym.BOOK_TYPE_BOOK; //TODO can be BOOK_TYPE_JOURNAL?
 					pg.book_num=so.prt_qty;
 					pg.paper=paper;
 					
@@ -376,20 +395,24 @@ package com.photodispatcher.factory{
 					pgCover.butt=UnitUtil.pixels2mm300(proj.buttWidth());
 					pgCover.book_part=BookSynonym.BOOK_PART_COVER;
 					pgCover.bookTemplate=new BookPgTemplate();
-					//set template
-					if(Context.getAttribute('fbook.cover.notching')) pgCover.bookTemplate.notching=Context.getAttribute('fbook.cover.notching');
-					if(Context.getAttribute('fbook.cover.font.size')) pgCover.bookTemplate.font_size=Context.getAttribute('fbook.cover.font.size');
-					if(Context.getAttribute('fbook.cover.barcode.size')) pgCover.bookTemplate.bar_size=Context.getAttribute('fbook.cover.barcode.size');
-					if(Context.getAttribute('fbook.cover.barcode.offset')) pgCover.bookTemplate.bar_offset=Context.getAttribute('fbook.cover.barcode.offset');
+					if(so.proj_type==BookSynonym.BOOK_TYPE_BOOK){
+						//set template
+						if(Context.getAttribute('fbook.cover.notching')) pgCover.bookTemplate.notching=Context.getAttribute('fbook.cover.notching');
+						if(Context.getAttribute('fbook.cover.font.size')) pgCover.bookTemplate.font_size=Context.getAttribute('fbook.cover.font.size');
+						if(Context.getAttribute('fbook.cover.barcode.size')) pgCover.bookTemplate.bar_size=Context.getAttribute('fbook.cover.barcode.size');
+						if(Context.getAttribute('fbook.cover.barcode.offset')) pgCover.bookTemplate.bar_offset=Context.getAttribute('fbook.cover.barcode.offset');
+					}
 					
 					pgBody=pg.clone();
 					pgBody.book_part=BookSynonym.BOOK_PART_BLOCK;
 					pgBody.bookTemplate=new BookPgTemplate();
-					//set template
-					if(Context.getAttribute('fbook.block.notching')) pgBody.bookTemplate.notching=Context.getAttribute('fbook.block.notching');
-					if(Context.getAttribute('fbook.block.font.size')) pgBody.bookTemplate.font_size=Context.getAttribute('fbook.block.font.size');
-					if(Context.getAttribute('fbook.block.barcode.size')) pgBody.bookTemplate.bar_size=Context.getAttribute('fbook.block.barcode.size');
-					if(Context.getAttribute('fbook.block.barcode.offset')) pgBody.bookTemplate.bar_offset=Context.getAttribute('fbook.block.barcode.offset');
+					if(so.proj_type==BookSynonym.BOOK_TYPE_BOOK){
+						//set template
+						if(Context.getAttribute('fbook.block.notching')) pgBody.bookTemplate.notching=Context.getAttribute('fbook.block.notching');
+						if(Context.getAttribute('fbook.block.font.size')) pgBody.bookTemplate.font_size=Context.getAttribute('fbook.block.font.size');
+						if(Context.getAttribute('fbook.block.barcode.size')) pgBody.bookTemplate.bar_size=Context.getAttribute('fbook.block.barcode.size');
+						if(Context.getAttribute('fbook.block.barcode.offset')) pgBody.bookTemplate.bar_offset=Context.getAttribute('fbook.block.barcode.offset');
+					}
 					
 					for each(page in proj.projectPages){
 						if(page){

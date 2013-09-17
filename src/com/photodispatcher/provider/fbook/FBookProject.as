@@ -9,6 +9,7 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.fotokniga.book.data.BookPage;
 	import com.akmeful.fotokniga.book.layout.BookLayout;
 	import com.akmeful.magnet.data.MagnetProject;
+	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
 	
 	import flash.filesystem.File;
@@ -107,7 +108,41 @@ package com.photodispatcher.provider.fbook{
 					return 'Неопределен';
 			}
 		}
-		
+
+		public function get bookType():int{
+			if(!project) return 0;
+			switch(type){
+				case Book.PROJECT_TYPE:
+					return BookSynonym.BOOK_TYPE_BOOK;
+					break;
+				case FotocalendarProject.PROJECT_TYPE:
+					return BookSynonym.BOOK_TYPE_CALENDAR;
+					break;
+				case MagnetProject.PROJECT_TYPE:
+					return BookSynonym.BOOK_TYPE_MAGNET;
+					break;
+				default:
+					return 0;
+			}
+		}
+
+		public function get paperId():String{
+			if(!project) return '1';//matovaya
+			switch(type){
+				case Book.PROJECT_TYPE:
+					return (project as Book).template.paper.id.toString();
+					break;
+				case FotocalendarProject.PROJECT_TYPE:
+					return '1';
+					break;
+				case MagnetProject.PROJECT_TYPE:
+					return (project as MagnetProject).template.paperType.printId;
+					break;
+				default:
+					return '1';
+			}
+		}
+
 		public function bookInfo():String{
 			if(!project) return null;
 			switch(type){

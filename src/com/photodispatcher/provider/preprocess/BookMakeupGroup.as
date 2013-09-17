@@ -83,7 +83,8 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			printGroup.resetFiles();
-			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
+			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK 
+				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_CALENDAR && printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET){
 				//expand format len by tech len
 				var formatAdd:int=Context.getAttribute('tech.add');
 				if(formatAdd) printGroup.height+=formatAdd;
@@ -179,7 +180,8 @@ package com.photodispatcher.provider.preprocess{
 
 			//draw tech barcode
 			var barSize:int=Context.getAttribute('tech.barcode.size');
-			if(barSize && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
+			if(barSize && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK 
+				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_CALENDAR && printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET){
 				var barOffset:String=Context.getAttribute('tech.barcode.offset');
 				var formatAdd:int=Context.getAttribute('tech.add');
 				if(formatAdd){
