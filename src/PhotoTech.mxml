@@ -5,18 +5,23 @@
 					   xmlns:barcode="com.photodispatcher.service.barcode.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="windowedapplication1_closingHandler(event)" xmlns:view="com.photodispatcher.view.*"
+					   closing="windowedapplication1_closingHandler(event)" xmlns:view="com.photodispatcher.view.*" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
 					   >
 	
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
 			import com.photodispatcher.model.Source;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.config.DatabasePopup;
@@ -27,20 +32,30 @@
 			
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
-			
+		
+			/*
 			[Bindable]
 			private var suffixList:ArrayCollection;
 			[Bindable]
 			private var baudsList:ArrayCollection;
+			*/
 			[Bindable]
 			private var techPionts:ArrayCollection;
+			[Bindable]
+			private var coms:ArrayCollection= new ArrayCollection;
 			
+			/*
 			[Bindable]
 			private var comPort:int=1;
 			[Bindable]
 			private var comBaud:int=2400;
 			[Bindable]
 			private var comSuffix:int;
+			*/
+			[Bindable]
+			private var barcodeReader:ComReader;
+			[Bindable]
+			private var flap:ValveCom; 
 			
 			[Bindable]
 			private var techPointObj:Source;
@@ -89,12 +104,8 @@
 				//LabResizeDAO.initSizeMap();
 				OrderStateDAO.initStateMap();
 
-				suffixList=new ArrayCollection([13,10,3]);
 				/*
-				suffixList.addItem({label:'LF', keyCode:13});
-				suffixList.addItem({label:'CR', keyCode:10});
-				suffixList.addItem({label:'03', keyCode:3});
-				*/
+				suffixList=new ArrayCollection([13,10,3]);
 				if(barSuffix){
 					barSuffix.selectedIndex=0;
 				}
@@ -103,9 +114,12 @@
 				if(ddBaud){
 					ddBaud.selectedIndex=0;
 				}
+				*/
 
 				var sDao:SourcesDAO= new SourcesDAO(); 
 				techPionts=sDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
+				
+				coms.source=ComInfo.load();
 
 				//BookSynonymDAO.initSynonymMap();
 				//DictionaryDAO.initSynonymMap();
@@ -122,9 +136,11 @@
 					if(!prtPath) prtPath=workFolder;
 					*/
 					techPoint=so.data.techPoint;
+					/*
 					if(so.data.comBaud) comBaud=so.data.comBaud;
 					if(so.data.comPort) comPort=so.data.comPort;
 					if(so.data.comSuffix) comSuffix=so.data.comSuffix;
+					*/
 				}
 				
 				//if(!serverIP || !workFolder){
@@ -155,27 +171,53 @@
 			}
 			
 			private function start():void{
-				if(!techPoint){
+				if(!techPoint || coms.length==0){
 					Alert.show('Приложение не настроено');
 					currentState='config';
 					return;
 				}
-				if(techMonitor) techMonitor.start();
-				barcodeReader.sufix=comSuffix;
-				barcodeReader.start(comPort,comBaud);
-				
 				currentState='monitor';
+				if(techMonitor) techMonitor.start();
+				//barcodeReader.sufix=comSuffix;
+				//barcodeReader.start(comPort,comBaud);
+				serialProxy.start(coms.source);
+				if(serialProxy.isStarted){
+					//start barcode reader
+					if(barcodeReader){
+						barcodeReader.stop();
+						barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+						barcodeReader=null;
+					}
+					var pr:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
+					if(pr){
+						barcodeReader= new ComReader();
+						barcodeReader.comPort=pr;
+						barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+						barcodeReader.start();
+					}
+					pr=serialProxy.getProxy(ComInfo.COM_TYPE_VALVE);
+					if(pr){
+						flap= new ValveCom();
+						flap.comPort=pr;
+						flap.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+						flap.start();
+					}
+				}
 			}
 
 			private function stop():void{
 				//TODO implement
-				barcodeReader.stop();
+				if(flap) flap.stop();
+				if(barcodeReader) barcodeReader.stop();
+				serialProxy.stop();
 				currentState='config';
 			}
 
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				//TODO flush data
 				if(barcodeReader) barcodeReader.stop();
+				if(flap) flap.stop();
+				if(serialProxy) serialProxy.stop();
 			}
 			
 			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
@@ -187,6 +229,7 @@
 				so.flush();  
 			}
 			
+			/*
 			protected function nsComPort_changeHandler(event:Event):void{
 				comPort=int(nsComPort.value);
 				if(!comPort) return;
@@ -226,13 +269,30 @@
 				so.flush();  
 				Context.setAttribute("comSuffix", comSuffix);
 			}
-			
+			*/
 			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
-				barcodeReader.stop();
+				if(flap) flap.stop();
+				if(barcodeReader) barcodeReader.stop();
+				serialProxy.stop();
 				var bar:String=event.barcode;
 				bar = bar.replace(String.fromCharCode(13),'[LF]');
 				bar = bar.replace(String.fromCharCode(10),'[CR]');
-				Alert.show('Ошибка чтения штрих кода \n '+event.error+'; штрих код: '+bar,'Ошибка');
+				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
+				currentState='config';
+			}
+			
+			protected function btAddCom_clickHandler(event:MouseEvent):void{
+				var cp:ComInfo= new ComInfo();
+				coms.addItem(cp);
+				comList.selectedItem=cp;
+			}
+			
+			protected function btSaveComs_clickHandler(event:MouseEvent):void{
+				ComInfo.save(coms.source);
+			}
+			
+			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
+				Alert.show('Ошибка SerialProxy \n '+event.error,'Ошибка');
 				currentState='config';
 			}
 			
@@ -240,7 +300,8 @@
 	</fx:Script>
 	
 	<fx:Declarations>
-		<barcode:BarcodeReaderCom id="barcodeReader" barcodeError="barcodeReader_barcodeErrorHandler(event)"/> <!--barcodeReaded="barcodeReader_barcodeReadedHandler(event)" barcodeError=""/>-->
+		<!--<barcode:BarcodeReaderCom id="barcodeReader" barcodeError="barcodeReader_barcodeErrorHandler(event)"/>-->
+		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
 	</fx:Declarations>
 
 	<s:states>
@@ -262,23 +323,32 @@
 							labelField="name" change="ddTechPoint_changeHandler(event)"/>
 		</s:HGroup>
 
-		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="COM:"/>
-			<s:NumericStepper id="nsComPort" value="{comPort}" minimum="1" maximum="9" change="nsComPort_changeHandler(event)"/>
+		<s:VGroup gap="5">
+			<s:HGroup gap="10">
+				<s:List id="comList" dataProvider="{coms}" height="100%"/>
+				<itemRenderer:ComInfoRenderer data="{comList.selectedItem}"/>
+				<!--<s:Label text="COM:"/>
+				<s:NumericStepper id="nsComPort" value="{comPort}" minimum="1" maximum="9" change="nsComPort_changeHandler(event)"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="COM Baud:"/>
+				<s:DropDownList id="ddBaud" dataProvider="{baudsList}" selectedItem="{comBaud}" change="ddBaud_changeHandler(event)"/>-->
+			</s:HGroup>
+			<s:HGroup gap="10" width="100%" horizontalAlign="right">
+				<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
+				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
 			
-			<s:Spacer width="5"/>
-			<s:Label text="COM Baud:"/>
-			<s:DropDownList id="ddBaud" dataProvider="{baudsList}" selectedItem="{comBaud}" change="ddBaud_changeHandler(event)"/>
-		</s:HGroup>
-		
-		<s:HGroup gap="5" verticalAlign="baseline">
+		<!--<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Суфикс:"/>
 			<s:DropDownList id="barSuffix" dataProvider="{suffixList}" selectedItem="{comSuffix}" labelFunction="{sufixLabelFunction}" change="barSuffix_changeHandler(event)"/>
-		</s:HGroup>
+		</s:HGroup>-->
 	</s:VGroup>
 
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<view:TechMonitorView id="techMonitor" techPoint="{techPoint}" barcodeReader="{barcodeReader}" width="100%" height="100%"/>
+		<view:TechMonitorView id="techMonitor" techPoint="{techPoint}" barcodeReader="{barcodeReader}" flap="{flap}"
+							  width="100%" height="100%"/>
 	</s:VGroup>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">

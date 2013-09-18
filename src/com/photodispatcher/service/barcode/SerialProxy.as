@@ -2,6 +2,7 @@ package com.photodispatcher.service.barcode
 {
 	import com.photodispatcher.event.SerialProxyEvent;
 	import com.photodispatcher.shell.ProcessRunner;
+	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.desktop.NativeProcess;
 	import flash.events.Event;
@@ -15,30 +16,40 @@ package com.photodispatcher.service.barcode
 	import flash.filesystem.FileStream;
 	import flash.net.Socket;
 	
-	[Event(name="serialProxyData", type="com.photodispatcher.event.SerialProxyEvent")]
+	//[Event(name="serialProxyData", type="com.photodispatcher.event.SerialProxyEvent")]
 	[Event(name="serialProxyError", type="com.photodispatcher.event.SerialProxyEvent")]
-	[Event(name="connect", type="flash.events.Event")]
-	[Event(name="close", type="flash.events.Event")]
+	//[Event(name="connect", type="flash.events.Event")]
+	//[Event(name="close", type="flash.events.Event")]
 	public class SerialProxy extends EventDispatcher{
 		public static const PROXY_FOLDER:String='serial_proxy';
 		public static const PROXY_EXE:String='serproxy.exe';
 		public static const PROXY_CFG:String='serproxy.cfg';
 		public static const PROXY_PORT_BASE:int=5330;
 
-		private static const KEY_COM:String='~~com_num~~';
-		private static const KEY_BAUD:String='~~com_baud~~';
-		private static const KEY_PORT:String='~~proxy_port~~';
+		private static const KEY_COMS:String='~~comm_ports~~';
 
-		private var socket:Socket;
+		//private var socket:Socket;
 		private var process:ProcessRunner;
 		private var proc:NativeProcess;
-
+		//TODO refactor to map by type
+		private var comInfos:Array;
+		
+		private var _isStarted:Boolean=false;
+		public function get isStarted():Boolean{
+			return _isStarted;
+		}
+			
 		public function SerialProxy(){
 			super(null);
 		}
 		
-		public function start(com_port:int=1, com_baud:int=2400):void{
-			var proxy_port:int=PROXY_PORT_BASE+com_port;
+		public function start(comInfos:Array):void{
+			stop();
+			this.comInfos=comInfos;
+			if(!comInfos || comInfos.length==0){
+				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: Нет настроенных COM портов'));
+				return;
+			}
 			//check/copy serial_proxy
 			var srcDir:File=File.applicationDirectory;
 			srcDir=srcDir.resolvePath(PROXY_FOLDER);
@@ -54,20 +65,6 @@ package com.photodispatcher.service.barcode
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: source file not found '+srcFile.nativePath));
 				return;
 			}
-			/*
-			//copy exe
-			dstFile=File.applicationStorageDirectory;
-			dstFile=dstFile.resolvePath(PROXY_FOLDER);
-			dstFile=dstFile.resolvePath(PROXY_EXE);
-			if(!dstFile.exists){
-				try{
-					srcFile.copyTo(dstFile);
-				}catch(e:Error){
-					dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: '+e.message));
-					return;
-				}
-			}
-			*/
 			//create serproxy.cfg
 			srcFile=srcDir.resolvePath(PROXY_CFG);
 			if(!srcFile.exists || srcFile.isDirectory){
@@ -86,13 +83,26 @@ package com.photodispatcher.service.barcode
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: '+err.message));
 				return;
 			}
+			
+			//get potrs list
+			var ports:String;
+			var conf:String;
+			var ci:ComInfo;
+			for each(ci in comInfos){
+				if(ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
+					if(ports){
+						ports+=(','+ci.num);
+						conf+=ci.getCoonfig();
+					}else{
+						ports=ci.num;
+						conf=ci.getCoonfig();
+					}
+				}
+			}
 			var re:RegExp;
-			re= new RegExp(KEY_COM,'gi');
-			cfg=cfg.replace(re,com_port.toString());
-			re= new RegExp(KEY_BAUD,'gi');
-			cfg=cfg.replace(re,com_baud.toString());
-			re= new RegExp(KEY_PORT,'gi');
-			cfg=cfg.replace(re,proxy_port.toString());
+			re= new RegExp(KEY_COMS,'gi');
+			cfg=cfg.replace(re,ports);
+			cfg+=conf;
 			//write
 			dstFile=File.applicationStorageDirectory;
 			dstFile=dstFile.resolvePath(PROXY_FOLDER);
@@ -130,18 +140,7 @@ package com.photodispatcher.service.barcode
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: '+e.message));
 				return;
 			}
-			//connect to proxy
-			socket = new Socket();
-			socket.addEventListener( Event.CLOSE, onSocket );
-			socket.addEventListener( Event.CONNECT, onSocket );
-			socket.addEventListener( IOErrorEvent.IO_ERROR, onIOErrorEvent );
-			socket.addEventListener( SecurityErrorEvent.SECURITY_ERROR, onSecurityError );
-			socket.addEventListener( ProgressEvent.SOCKET_DATA, onSocketData );
-			try{
-				socket.connect('127.0.0.1',proxy_port);
-			}catch(err:Error){
-				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: '+err.message));
-			}
+			_isStarted=true;
 		}
 		
 		/*
@@ -156,49 +155,27 @@ package com.photodispatcher.service.barcode
 		}
 		*/
 		
-		private function onSocket(event:Event):void{
-			dispatchEvent(event.clone());
-		}
-		
-		private function onIOErrorEvent( event:IOErrorEvent ):void{
-			dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy error: '+event.text));
-		}
-		
-		private function onSecurityError( event:SecurityErrorEvent ):void{
-			dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy error: '+event.text));
-		}
-		
-		private function onSocketData( event:ProgressEvent ):void{
-			var res:String=socket.readUTFBytes(socket.bytesAvailable);
-			dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_DATA,res));
-		}
-		
-		public function get connected():Boolean{
-			return socket &&  socket.connected;
-		}
-
-		public function send( value:String ):void{			
-			socket.writeUTFBytes(value);
-			socket.flush();
-		}
-		
-		public function clean():void{
-			if(socket && socket.connected && socket.bytesAvailable){
-				socket.readUTFBytes(socket.bytesAvailable);
-			}
+		public function getProxy(type:int):Socket2Com{
+			if(!_isStarted) return null;
+			var ci:ComInfo;
+			ci = ArrayUtil.searchItem('type',type,comInfos) as ComInfo;
+			if(!ci) return null;
+			if (ci.proxy) return ci.proxy;
+			var proxy:Socket2Com= new Socket2Com(ci);
+			ci.proxy=proxy;
+			return proxy;
 		}
 
 		public function stop():void{
-			if(socket){
-				if(socket.connected) socket.close();
-				socket.removeEventListener(Event.CLOSE, onSocket );
-				socket.removeEventListener(Event.CONNECT, onSocket );
-				socket.removeEventListener(IOErrorEvent.IO_ERROR, onIOErrorEvent );
-				socket.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onSecurityError );
-				socket.removeEventListener(ProgressEvent.SOCKET_DATA, onSocketData );
-				
+			_isStarted=false;
+			var ci:ComInfo;
+			//disconnect clients
+			for each(ci in comInfos){
+				if(ci && ci.proxy){
+					ci.proxy.close();
+					ci.proxy=null;
+				}
 			}
-			socket=null;
 			if(process && process.isRunning){
 				process.stop(true);
 			}

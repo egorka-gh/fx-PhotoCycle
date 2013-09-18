@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.service.barcode.ComInfo;
+			
+			import mx.collections.ArrayCollection;
+			
+			[Bindable]
+			private var comTypes:ArrayCollection=new ArrayCollection(ComInfo.COM_TYPE_CAPTIONS);
+			[Bindable]
+			private var comNums:ArrayCollection=new ArrayCollection(ComInfo.COM_NUMS);
+			[Bindable]
+			private var bauds:ArrayCollection=new ArrayCollection(ComInfo.COM_BAUDS);
+			[Bindable]
+			private var databits:ArrayCollection=new ArrayCollection(ComInfo.COM_DATABITS);
+			[Bindable]
+			private var paritys:ArrayCollection=new ArrayCollection(ComInfo.COM_PARITYS);
+			[Bindable]
+			private var stopbits:ArrayCollection=new ArrayCollection(ComInfo.COM_STOPBITS);
+			[Bindable]
+			private var suffixes:ArrayCollection=new ArrayCollection(ComInfo.COM_SUFFIX);
+
+			[Bindable]
+			private var comport:ComInfo;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				if(value is ComInfo){
+					comport=value as ComInfo; 
+				}else{
+					comport=null;
+				}
+			}
+			
+			
+
+		]]>
+	</fx:Script>
+	<s:Form enabled="{comport!=null}">
+		<s:layout>
+			<s:FormLayout gap="-10"/>
+		</s:layout>
+		
+		<s:FormItem label="Тип:">
+			<s:DropDownList dataProvider="{comTypes}" selectedIndex="@{comport.type}"/>
+		</s:FormItem>
+		<s:FormItem label="Номер COM:">
+			<s:DropDownList dataProvider="{comNums}" selectedItem="@{comport.num}"/>
+		</s:FormItem>
+		<s:FormItem label="Скорость:">
+			<s:DropDownList dataProvider="{bauds}" selectedItem="@{comport.baud}"/>
+		</s:FormItem>
+		<s:FormItem label="Биты данных:">
+			<s:DropDownList dataProvider="{databits}" selectedItem="@{comport.databits}"/>
+		</s:FormItem>
+		<s:FormItem label="Четность:">
+			<s:DropDownList dataProvider="{paritys}" selectedItem="@{comport.parity}"/>
+		</s:FormItem>
+		<s:FormItem label="Стоповые биты:">
+			<s:DropDownList dataProvider="{stopbits}" selectedItem="@{comport.stopbits}"/>
+		</s:FormItem>
+		<s:FormItem label="Суфикс:">
+			<s:DropDownList dataProvider="{suffixes}" selectedItem="@{comport.suffix}"/>
+		</s:FormItem>
+	</s:Form>
+
+</s:ItemRenderer>

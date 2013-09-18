@@ -10,21 +10,47 @@
 			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.TechLogDAO;
-			import com.photodispatcher.service.barcode.BarcodeReaderCom;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.ValveCom;
 			
 			import spark.utils.TextFlowUtil;
 		
 			public var techPoint:int;
-			private var _barcodeReader:BarcodeReaderCom;
-			public function get barcodeReader():BarcodeReaderCom{
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
 				return _barcodeReader;
 			}
-			public function set barcodeReader(value:BarcodeReaderCom):void{
-				if(_barcodeReader) _barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+			public function set barcodeReader(value:ComReader):void{
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
 				_barcodeReader = value;
-				if(_barcodeReader) _barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
 			}
 
+			private var _flap:ValveCom;
+			[Bindable]
+			public function get flap():ValveCom{
+				return _flap;
+			}
+
+			public function set flap(value:ValveCom):void{
+				if(_flap){
+					_flap.removeEventListener(BarCodeEvent.BARCODE_READED,onFlapMsg);
+					_flap.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+				_flap = value;
+				if(_flap){
+					_flap.addEventListener(BarCodeEvent.BARCODE_READED,onFlapMsg);
+					_flap.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+			}
+
+			
 			private var logText:String = '';
 			private var curPG:String;
 			private var curBookNum:int;
@@ -38,6 +64,16 @@
 			[Bindable]
 			private var barText:String='';
 
+			private function onError(event:BarCodeEvent):void{
+				barText+=event.barcode+'\n';
+				logToScreen('Ошибка: '+event.error,true);
+				
+			}
+
+			private function onFlapMsg(event:BarCodeEvent):void{
+				logToScreen('Защелка: '+event.barcode,true);
+			}
+
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
 				//parce barcode
@@ -47,6 +83,7 @@
 				if(!pgId){
 					//TODO rise err
 					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
+					if(flap) flap.setOff();
 					return;
 				}
 				var bookNum:int=int(barcode.substr(0,3));
@@ -75,6 +112,7 @@
 							wrongOrder=true;
 							//show
 							logToScreen('Заказ: '+curPG+'. Не верная последовательность',true);
+							if(flap) flap.setOff();
 						}
 					}
 				}else{
@@ -86,6 +124,7 @@
 						//show
 						if(wrongEnd){
 							if(!wrongOrder) logToScreen('Заказ: '+curPG+'. Не верное завершение последовательности',true);
+							if(flap) flap.setOff();
 						}else{
 							if(!wrongOrder && !wrongStart) logToScreen('Заказ: '+curPG+' - Ok');
 						}
@@ -107,6 +146,7 @@
 						curPageNum=pageNum;
 						// show
 						logToScreen('Заказ: '+curPG+'. Не верный старт последовательности',true);
+						if(flap) flap.setOff();
 					}
 					if(writePg) flushPg(writePg);
 				}
@@ -157,7 +197,17 @@
 			private function cleanLog():void{
 				logText='';
 				logTextArea.text='';
+				if(flap) flap.setOn();
 			}
+			
+			protected function btFlapOn_clickHandler(event:MouseEvent):void{
+				if(flap) flap.setOn();
+			}
+			
+			protected function btFlapOff_clickHandler(event:MouseEvent):void{
+				if(flap) flap.setOff();
+			}
+			
 		]]>
 	</fx:Script>
 	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
@@ -166,7 +216,12 @@
 			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
 			<s:TextArea id="barTextArea" text="{barText}" fontSize="10" width="150" height="100%" editable="false"/>
 		</s:HGroup>
-		<s:Button label="Очистить" click="{cleanLog()}"/>
+		<s:HGroup gap="5" width="100%">
+			<s:Button label="Очистить" click="{cleanLog()}"/>
+			<s:Spacer width="100%"/>
+			<s:Button id="btFlapOn" label="Зщелка Вкл" click="btFlapOn_clickHandler(event)" enabled="{flap!=null}"/>
+			<s:Button id="btFlapOff" label="Зщелка Выкл" click="btFlapOff_clickHandler(event)" enabled="{flap!=null}"/>
+		</s:HGroup> 
 	</s:VGroup>
 	
 </s:Group>
