@@ -207,5 +207,25 @@ package com.photodispatcher.model.dao{
 			return itemsList;
 		}
 
+		public function getWeekDaysValueList(includeDefault:Boolean=true):ArrayCollection{
+			var sql:String;
+			sql='SELECT id value, name label FROM config.week_days ORDER BY id';
+			if(includeDefault){
+				sql="SELECT 0 value, ' ' label UNION "+sql;
+			}
+			runSelect(sql);
+			return itemsList;
+		}
+
+		public function getTechPointValueList(includeDefault:Boolean=true):ArrayCollection{
+			var sql:String;
+			sql='SELECT id value, name label FROM config.tech_point ORDER BY id';
+			if(includeDefault){
+				sql="SELECT null value, ' ' label UNION "+sql;
+			}
+			runSelect(sql);
+			return itemsList;
+		}
+
 	}
 }

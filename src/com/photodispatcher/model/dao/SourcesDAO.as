@@ -26,17 +26,6 @@ package com.photodispatcher.model.dao{
 			return result;
 		}
 
-		public static function gridColumnsTech():ArrayList{
-			var result:ArrayList= new ArrayList();
-			
-			var col:GridColumn= new GridColumn('id'); col.headerText='ID'; col.visible=false; result.addItem(col);
-			col= new GridColumn('name'); col.headerText='Наименование'; result.addItem(col); 
-			//col= new GridColumn('type_name'); col.headerText='Тип'; result.addItem(col);
-			col= new GridColumn('type_id'); col.headerText='Тип'; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
-			return result;
-			
-		}
-
 		public function findAll(locationType:int=1):ArrayCollection{
 			var res:Array=findAllArray(locationType);
 			return new ArrayCollection(res);

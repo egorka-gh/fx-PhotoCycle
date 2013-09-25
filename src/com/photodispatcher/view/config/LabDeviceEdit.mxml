@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="init()" xmlns:config="com.photodispatcher.view.config.*">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.LabDevice;
+			import com.photodispatcher.model.LabRoll;
+			import com.photodispatcher.model.LabTimetable;
+			import com.photodispatcher.model.dao.LabRollDAO;
+			import com.photodispatcher.model.dao.LabTimetableDAO;
+			import com.photodispatcher.util.ArrayUtil;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+			
+			private var _currentItem:LabDevice;
+			[Bindable]
+			public function get currentItem():LabDevice{
+				return _currentItem;
+			}
+			public function set currentItem(value:LabDevice):void{
+				var arr:Array;
+				_currentItem = value;
+				if(_currentItem){
+					if(techPointList && ddTechPoint && _currentItem.tech_point){
+						ddTechPoint.selectedIndex= ArrayUtil.searchItemIdx('value',_currentItem.tech_point,techPointList.source); 
+					}
+					if(!_currentItem.timetable) _currentItem.getTimetable();
+					if(!_currentItem.rolls) _currentItem.getRolls(true);
+					timeTable.source=_currentItem.timetable;
+					rolls.source=_currentItem.rolls;
+					applyRollsFilter();
+				}else{
+					timeTable.source=[];
+					rolls.source=[];
+				}
+			}
+
+			[Bindable]
+			private var techPointList:ArrayCollection;
+			[Bindable]
+			private var timeTable:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var rolls:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var paperFilterList:ArrayCollection= new ArrayCollection();
+			
+			private function init():void{
+				techPointList=Context.getAttribute('tech_pointList');
+				paperFilterList=Context.getAttribute('paperValueList');
+				rolls.filterFunction=rollsFilter;
+			}
+			private function applyRollsFilter():void{
+				rolls.refresh();
+			}
+			private function rollsFilter(item:Object):Boolean{
+				var r:LabRoll=item as LabRoll;
+				if(!r) return false;
+				if(ddPaperFilter.selectedIndex==-1) return false;
+				if(ddPaperFilter && r.paper!=ddPaperFilter.selectedItem.value) return false;
+				return true;
+			}
+
+			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
+				currentItem.changed=true;
+				currentItem.tech_point=ddTechPoint.selectedItem.value;
+			}
+			
+			protected function tiSpeed1_changeHandler(event:TextOperationEvent):void{
+				currentItem.changed=true;
+				currentItem.speed1= int(tiSpeed1.text);
+			}
+			
+			protected function tiSpeed2_changeHandler(event:TextOperationEvent):void{
+				currentItem.changed=true;
+				currentItem.speed2= int(tiSpeed2.text);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup width="100%" height="100%" gap="10">
+		<s:Label text="Параметры устройства"/>
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+			<s:Label text="Наименование"/>
+			<s:TextInput text="@{currentItem.name}" change="{currentItem.changed=true}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Тех. точка"/>
+			<s:DropDownList id="ddTechPoint" dataProvider="{techPointList}" change="ddTechPoint_changeHandler(event)"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Скорость (мм/сек)"/>
+			<s:Label text="До 203"/>
+			<s:TextInput id="tiSpeed1" text="{currentItem.speed1}" restrict="0-9" change="tiSpeed1_changeHandler(event)" width="50"/>
+			<s:Label text="От 203"/>
+			<s:TextInput id="tiSpeed2" text="{currentItem.speed2}" restrict="0-9" change="tiSpeed2_changeHandler(event)" width="50"/>
+		</s:HGroup>	
+		<s:HGroup width="100%" height="100%" gap="10">
+			<s:VGroup height="100%" gap="5">
+				<s:Label text="Расписание" height="21" verticalAlign="middle"/>
+				<config:ItemsGrid id="gridTimeTable" editable="true" currentData="{timeTable}" requestedRowCount="7" currentColumns="{LabTimetable.gridColumns()}" />
+			</s:VGroup>
+			<s:VGroup height="100%" width="100%" gap="5">
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="Картриджи" />
+					<s:Spacer width="10"/>
+					<s:Label text="Бумага"/>
+					<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyRollsFilter()}" width="150"/>
+				</s:HGroup>
+				<config:ItemsGrid id="gridRolls" editable="true" currentData="{rolls}" currentColumns="{LabRoll.gridColumns()}" requestedRowCount="8" width="400"/>
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+			 
+</s:Group>

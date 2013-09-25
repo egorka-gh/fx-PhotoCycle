@@ -356,14 +356,6 @@ package com.photodispatcher.model.dao{
 		protected var lastResult:Array;
 		private var isRunning:Boolean=false;
 
-		public static function idToLabel(item:Object, column:GridColumn):String{
-			return item[column.dataField+'_name'];
-		}
-		public static function booleanToLabel(item:Object, column:GridColumn):String{
-			return item[column.dataField]?'Да':'Нет';
-		}
-
-		
 		public function BaseDAO(){
 			sqlConnection = Context.getAttribute("sqlConnection");
 			asyncCnn = Context.getAttribute("asyncConnection");
@@ -375,6 +367,8 @@ package com.photodispatcher.model.dao{
 					if(prop.substr(0,3)=='is_'){
 						dest[prop]=Boolean(source[prop]);
 					}else if(prop.indexOf('date')!=-1){
+						dest[prop]=new Date(source[prop]);
+					}else if(prop.indexOf('time')!=-1){
 						dest[prop]=new Date(source[prop]);
 					}else{
 						dest[prop]=source[prop];

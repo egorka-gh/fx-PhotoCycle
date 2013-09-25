@@ -3,6 +3,7 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
 	
@@ -114,7 +115,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('paper'); col.headerText='Бумага'; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=visible; result.addItem(col);
 			
 			visible= visible && labType!=SourceType.LAB_PLOTTER;
-			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.visible= visible && labType==SourceType.LAB_XEROX; result.addItem(col);
+			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.visible= visible && labType==SourceType.LAB_XEROX; result.addItem(col);
 
 			visible= visible && labType!=SourceType.LAB_XEROX;
 			col= new GridColumn('frame'); col.headerText='Рамка'; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=visible; result.addItem(col);

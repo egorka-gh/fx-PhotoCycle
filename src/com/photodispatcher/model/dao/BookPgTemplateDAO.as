@@ -2,6 +2,7 @@ package com.photodispatcher.model.dao{
 	
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.BookPgTemplate;
+	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.OffsetGridItemEditor;
@@ -108,17 +109,17 @@ package com.photodispatcher.model.dao{
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
-			col= new GridColumn('book_part'); col.headerText='Часть книги';  col.width=100; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			col= new GridColumn('book_part'); col.headerText='Часть книги';  col.width=100; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.width=70; result.addItem(col);
 			col= new GridColumn('height'); col.headerText='Длина'; col.width=70; result.addItem(col);
-			col= new GridColumn('paper'); col.headerText='Бумага'; col.width=100; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			col= new GridColumn('paper'); col.headerText='Бумага'; col.width=100; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			/*
 			col= new GridColumn('frame'); col.headerText='Рамка'; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			col= new GridColumn('correction'); col.headerText='Коррекция'; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			col= new GridColumn('cutting'); col.headerText='Обрезка'; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			*/
-			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=60; result.addItem(col);
-			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
+			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=60; result.addItem(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
 			col= new GridColumn('sheet_width'); col.headerText='Ширина разворота pix'; result.addItem(col);
 			col= new GridColumn('sheet_len'); col.headerText='Длина разворота pix'; result.addItem(col);
 			col= new GridColumn('page_width'); col.headerText='Ширина страницы pix'; result.addItem(col);

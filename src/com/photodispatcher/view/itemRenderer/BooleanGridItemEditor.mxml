@@ -16,6 +16,12 @@
 			override public function setFocus():void {
 				checkBox.setFocus();
 			}
+
+			override public function save():Boolean{
+				data[column.dataField]=checkBox.selected; 
+				return true;
+			}
+
 		]]>
 	</fx:Script>
 	<s:Rect id="bg" top="2" left="2" right="2" bottom="2">

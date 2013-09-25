@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemEditor xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				  xmlns:s="library://ns.adobe.com/flex/spark" 
+				  xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.util.StrUtil;
+			
+			private var _value:Date;
+			
+
+			override public function get value():Object{
+				return _value;            
+			}
+			override public function set value(newValue:Object):void{
+				_value = newValue as Date;
+				nsHour.value=0;
+				nsMinute.value=0;
+				if(_value){
+					nsHour.value=_value.hours;
+					nsMinute.value=_value.minutes;
+				}
+			}
+
+			override public function setFocus():void {
+				nsHour.setFocus();
+			}
+			
+			private static function leadingZero(value:Number):String{
+				return StrUtil.lPad(value.toString(),2);
+			}
+			
+			private function setTime():void{
+				if(!_value) _value= new Date();
+				_value.hours=nsHour.value;
+				_value.minutes=nsMinute.value;
+			}
+			
+			override public function save():Boolean{
+				data[column.dataField]=_value; 
+				return true;
+			}
+
+		]]>
+	</fx:Script>
+	<s:HGroup gap="3" verticalAlign="baseline">
+		<s:NumericStepper id="nsHour" minimum="0" maximum="23" valueFormatFunction="{leadingZero}" width="40" 
+						  change="{setTime()}"/>
+		<s:Label text=":" fontWeight="bold"/>
+		<s:NumericStepper id="nsMinute" minimum="0" maximum="59" valueFormatFunction="{leadingZero}" snapInterval="10" width="40" 
+						  change="{setTime()}"/>
+	</s:HGroup>
+
+</s:GridItemEditor>

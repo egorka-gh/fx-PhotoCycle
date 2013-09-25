@@ -5,6 +5,7 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.util.GridUtil;
 	
 	import flash.data.SQLStatement;
 	import flash.globalization.DateTimeStyle;
@@ -69,7 +70,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('cutting_name'); col.headerText='Обрезка'; result.push(col);
 			col= new GridColumn('book_type_name'); col.headerText='Тип книги'; result.push(col);
 			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
-			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=booleanToLabel; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
 			//col= new GridColumn('cover_name'); col.headerText='Обложка'; result.addItem(col);
 			col= new GridColumn('file_num'); col.headerText='Кол файлов'; result.push(col);
@@ -85,7 +86,7 @@ package com.photodispatcher.model.dao{
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
 			col= new GridColumn('lab_name'); col.headerText='Лаборатория'; col.width=70; result.push(col);
-			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=booleanToLabel; result.push(col);
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			col= new GridColumn('path'); col.headerText='Папка'; result.push(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
 			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
@@ -95,7 +96,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('cutting_name'); col.headerText='Обрезка'; result.push(col);
 			col= new GridColumn('book_type_name'); col.headerText='Тип книги'; result.push(col);
 			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
-			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=booleanToLabel; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
 			col= new GridColumn('file_num'); col.headerText='Кол файлов'; result.push(col);
 			return new ArrayList(result);
@@ -115,7 +116,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('cutting_name'); col.headerText='Обрезка'; result.push(col);
 			col= new GridColumn('book_type_name'); col.headerText='Тип книги'; result.push(col);
 			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
-			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=booleanToLabel; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
 			return new ArrayList(result);
 		}

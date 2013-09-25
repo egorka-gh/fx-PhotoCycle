@@ -174,13 +174,33 @@ package com.photodispatcher.context{
 				Context.setAttribute('lab_typeList', a);
 			}
 			//tech_typeList !!!!
-			if(!Context.getAttribute('type_idList')){
+			if(!Context.getAttribute('tech_typeList')){
 				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT);
-				Context.setAttribute('type_idList', a);
+				Context.setAttribute('tech_typeList', a);
 				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT,false);
-				Context.setAttribute('type_idValueList', a);
+				Context.setAttribute('tech_typeValueList', a);
 			}
 
+			/*
+			//week days
+			if(!Context.getAttribute('day_idList')){
+				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT);
+				Context.setAttribute('day_idList', a);
+				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT,false);
+				Context.setAttribute('day_idValueList', a);
+			}
+			*/
+
+			//tech_points
+			if(!Context.getAttribute('tech_pointList')){
+				a=dDao.getTechPointValueList();
+				Context.setAttribute('tech_pointList', a);
+				/*
+				a=dDao.getTechPointValueList(false);
+				Context.setAttribute('tech_pointValueList', a);
+				*/
+			}
+			
 			if(!Context.getAttribute('booleanList')){
 				a=new ArrayCollection();
 				a.source=[{value:0,label:'-'},

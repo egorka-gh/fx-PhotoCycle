@@ -30,6 +30,8 @@
 			public var currentItem:Object;
 			[Bindable]
 			public var editable:Boolean;
+			[Bindable]
+			public var requestedRowCount:int=-1;
 		
 			protected function dgItems_gridItemEditorSessionSaveHandler(event:GridItemEditorEvent):void{
 				if(dgItems.selectedItem){
@@ -49,7 +51,7 @@
 		]]>
 	</fx:Script>
 
-	<s:DataGrid id="dgItems" editable="{editable}"
+	<s:DataGrid id="dgItems" editable="{editable}" requestedRowCount="{requestedRowCount}"
 				width="100%" height="100%" selectedItem="@{currentItem}"
 				dataProvider="{currentData}" locale="ru_RU" columns="{currentColumns}"
 				gridItemEditorSessionSave="dgItems_gridItemEditorSessionSaveHandler(event)">
