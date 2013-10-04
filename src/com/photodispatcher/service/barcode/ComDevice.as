@@ -8,7 +8,7 @@ package com.photodispatcher.service.barcode{
 	public class ComDevice extends ComReader{
 		
 		public function ComDevice(){
-			super();
+			super(0);
 		}
 		
 		override protected function onTimer(event:TimerEvent):void{

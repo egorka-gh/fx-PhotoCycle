@@ -83,7 +83,7 @@ package com.photodispatcher.print{
 			//4 noritsu
 			dtFmt.dateTimePattern='yyyy:MM:dd:HH:mm:ss';//2012:07:13:15:02:51
 			printContext[KEY_DATE]=dtFmt.format(new Date());
-			switch(lab.type_id){
+			switch(lab.src_type){
 				case SourceType.LAB_FUJI:
 					//4 fuji
 					printContext[KEY_IMG_CORRECTION]=FUJI_CORRECTIONS[printGrp.correction.toString()];
@@ -108,21 +108,23 @@ package com.photodispatcher.print{
 				dispatchErr('Не верные параметры запуска.');
 				return;
 			}
+			/*
 			//check channel 
 			if (!lab.canPrint(printGrp)){
 				printGrp.state=OrderState.ERR_PRINT_POST;
 				dispatchErr('Группа печати '+printGrp.id+' не может быть распечатана в '+lab.name+'.');
 				return;
 			}
-			printContext[KEY_CHANNEL]=lab.printChannel(printGrp);
+			*/
+			printContext[KEY_CHANNEL]=lab.printChannelCode(printGrp);
 
 			//check dest folder
 			try{
-				dstFolder= new File(lab.hotFolder.url);
+				dstFolder= new File(lab.hot);
 			}catch(e:Error){}
 			if(!dstFolder || !dstFolder.exists || !dstFolder.isDirectory){ 
 				printGrp.state=OrderState.ERR_PRINT_LAB_FOLDER_NOT_FOUND;
-				dispatchErr('Hot folder "'+lab.hotFolder.url+'" лаборатории "'+lab.name+'" не доступен.');
+				dispatchErr('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');
 				return;
 			}
 
@@ -166,13 +168,13 @@ package com.photodispatcher.print{
 			}
 			
 			var groupFolderName:String=lab.orderFolderName(printGrp);
-			var sufix:String=SourceProperty.getProperty(lab.type_id,SourceProperty.HF_SUFIX_NOREADY);
+			var sufix:String=SourceProperty.getProperty(lab.src_type,SourceProperty.HF_SUFIX_NOREADY);
 			if(sufix){
 				//add sufix
 				groupFolderName=groupFolderName+sufix;
 			}
 			if(groupFolderName) dstFolder=dstFolder.resolvePath(groupFolderName);
-			if(lab.type_id!=SourceType.LAB_XEROX && groupFolderName!=''){
+			if(lab.src_type!=SourceType.LAB_XEROX && groupFolderName!=''){
 				//attemt to create group folder in hot
 				try{
 					if(dstFolder.exists) dstFolder.deleteDirectory(true); 
@@ -196,9 +198,9 @@ package com.photodispatcher.print{
 			printGrp.destination=lab.id;
 			
 			//add printscript header
-			printBodyTemp01=loadFile(SourceProperty.getProperty(lab.type_id,SourceProperty.PRN_SCRIPT_BODY1));
-			printBodyTemp02=loadFile(SourceProperty.getProperty(lab.type_id,SourceProperty.PRN_SCRIPT_BODY2));
-			printScript=loadFile(SourceProperty.getProperty(lab.type_id,SourceProperty.PRN_SCRIPT_HEADER));
+			printBodyTemp01=loadFile(SourceProperty.getProperty(lab.src_type,SourceProperty.PRN_SCRIPT_BODY1));
+			printBodyTemp02=loadFile(SourceProperty.getProperty(lab.src_type,SourceProperty.PRN_SCRIPT_BODY2));
+			printScript=loadFile(SourceProperty.getProperty(lab.src_type,SourceProperty.PRN_SCRIPT_HEADER));
 			if (hasErr) return; //err in loadFile 
 			printScript=fillScript(printScript);
 			
@@ -221,7 +223,7 @@ package com.photodispatcher.print{
 				printScript=printScript+printBody01+printBody02;
 				if(printScript){
 					//save script
-					var scriptFileName:String=SourceProperty.getProperty(lab.type_id,SourceProperty.PRN_SCRIPT_FILE);
+					var scriptFileName:String=SourceProperty.getProperty(lab.src_type,SourceProperty.PRN_SCRIPT_FILE);
 					var scrFile:File=dstFolder.resolvePath(scriptFileName);
 					//printScript=printScript.replace(/\n/g,String.fromCharCode(13, 10));
 					try{
@@ -238,7 +240,7 @@ package com.photodispatcher.print{
 				//finalize
 				//rename folder (4 noritsu)
 				var newName:File;
-				var prefix:String=SourceProperty.getProperty(lab.type_id,SourceProperty.HF_PREFIX);
+				var prefix:String=SourceProperty.getProperty(lab.src_type,SourceProperty.HF_PREFIX);
 				if(prefix){
 					newName=dstFolder.parent.resolvePath(prefix+dstFolder.name);
 					try{
@@ -251,7 +253,7 @@ package com.photodispatcher.print{
 				}
 
 				//rename folder (4 noritsu nhf)
-				var sufix:String=SourceProperty.getProperty(lab.type_id,SourceProperty.HF_SUFIX_READY);
+				var sufix:String=SourceProperty.getProperty(lab.src_type,SourceProperty.HF_SUFIX_READY);
 				if(sufix){
 					var groupFolderName:String=lab.orderFolderName(printGrp);
 					newName=dstFolder.parent.resolvePath(groupFolderName+sufix);
@@ -265,7 +267,7 @@ package com.photodispatcher.print{
 				}
 
 				//copy end file (4 fuji)
-				var endFileName:String=SourceProperty.getProperty(lab.type_id,SourceProperty.PRN_SCRIPT_END_FILE);
+				var endFileName:String=SourceProperty.getProperty(lab.src_type,SourceProperty.PRN_SCRIPT_END_FILE);
 				if(endFileName){
 					var endFile:File=File.applicationDirectory;
 					endFile=endFile.resolvePath(endFileName);
@@ -302,14 +304,14 @@ package com.photodispatcher.print{
 				return;
 			}
 			var dstFileName:String;
-			if(lab.type_id==SourceType.LAB_XEROX || lab.type_id==SourceType.LAB_VIRTUAL){
+			if(lab.src_type==SourceType.LAB_XEROX || lab.src_type==SourceType.LAB_VIRTUAL){
 				dstFileName=StrUtil.getFileName(pf.file_name);
 			}else{
 				dstFileName=StrUtil.lPad(currCopyIdx.toString())+'.'+currCopyFile.extension;
 			}
 			
 			//fill print context
-			if (lab.type_id==SourceType.LAB_FUJI){
+			if (lab.src_type==SourceType.LAB_FUJI){
 				printContext[KEY_IMG_NUM]=(currCopyIdx+1).toString();
 			}else{
 				printContext[KEY_IMG_NUM]=StrUtil.lPad((currCopyIdx+1).toString(),3);
@@ -326,7 +328,7 @@ package com.photodispatcher.print{
 			}
 			printContext[KEY_IMG_BACKPRINT_LINE2]=caption;
 			
-			if(lab.type_id==SourceType.LAB_NORITSU_NHF){
+			if(lab.src_type==SourceType.LAB_NORITSU_NHF){
 				var img_fmt:String=NORITSU_NHF_IMG_FORMAT[StrUtil.getFileExtension(pf.file_name)];
 				if(!img_fmt){
 					printGrp.state=OrderState.ERR_PRINT_POST;
@@ -337,7 +339,7 @@ package com.photodispatcher.print{
 			}
 			
 			//dstFileName=SourceProperty.getProperty(lab.type_id,SourceProperty.HF_IMG_FOLDER)+File.separator+dstFileName;
-			var dstFileFolder:String=SourceProperty.getProperty(lab.type_id,SourceProperty.HF_IMG_FOLDER);
+			var dstFileFolder:String=SourceProperty.getProperty(lab.src_type,SourceProperty.HF_IMG_FOLDER);
 			if(dstFileFolder) dstFileFolder=dstFileFolder+File.separator;
 			dstFileName=dstFileFolder+dstFileName;
 			
@@ -385,7 +387,7 @@ package com.photodispatcher.print{
 		private function dispatchErr(msg:String):void{
 			hasErr=true;
 			errMsg=msg;
-			StateLogDAO.logState(printGrp.state, printGrp.order_id,printGrp.id,'Ошибка размещения на печать: '+msg); 
+			//StateLogDAO.logState(printGrp.state, printGrp.order_id,printGrp.id,'Ошибка размещения на печать: '+msg); 
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		

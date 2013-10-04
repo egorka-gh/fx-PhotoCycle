@@ -1,13 +1,13 @@
 package com.photodispatcher.print{
+	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.dao.LabPrintCodeDAO;
 	
 	public class LabFuji extends LabBase{
 		
-		public function LabFuji(s:Source){
-			super(s);
+		public function LabFuji(lab:Lab){
+			super(lab);
 		}
 		
 		override public function orderFolderName(printGroup:PrintGroup):String{
@@ -18,9 +18,9 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
-		override public function printChannel(printGroup:PrintGroup):String{
+		override public function printChannelCode(printGroup:PrintGroup):String{
 			if(!printGroup || printGroup.is_pdf) return '';
-			return super.printChannel(printGroup);
+			return super.printChannelCode(printGroup);
 		}
 	}
 }

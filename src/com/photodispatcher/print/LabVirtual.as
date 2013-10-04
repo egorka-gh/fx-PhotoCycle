@@ -1,15 +1,17 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.Lab;
+	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import mx.collections.ArrayCollection;
 	
 	public class LabVirtual extends LabBase{
 		
-		public function LabVirtual(s:Source){
-			super(s);
+		public function LabVirtual(lab:Lab){
+			super(lab);
 		}
 
 		override public function orderFolderName(printGroup:PrintGroup):String{
@@ -44,8 +46,29 @@ package com.photodispatcher.print{
 			return '_'+arr[idx].label;
 		}
 		
-		override public function printChannel(printGroup:PrintGroup):String{
+		override public function printChannelCode(printGroup:PrintGroup):String{
 			return 'virtual';
 		}
+		
+		override public function printChannel(printGroup:PrintGroup):LabPrintCode{
+			return channelFromPG(printGroup);
+		}
+		
+		private function channelFromPG(printGroup:PrintGroup):LabPrintCode{
+			if(!printGroup) return null;
+			var result:LabPrintCode=new LabPrintCode();
+			result.src_type=SourceType.LAB_VIRTUAL;
+			result.width=printGroup.width;
+			result.roll=printGroup.width;
+			result.height=printGroup.height;
+			result.paper=printGroup.paper;
+			result.frame=printGroup.frame;
+			result.correction=printGroup.correction;
+			result.cutting=printGroup.cutting;
+			result.is_duplex=printGroup.is_duplex;
+			result.is_pdf=printGroup.is_pdf;
+			return result; 
+		}
+
 	}
 }

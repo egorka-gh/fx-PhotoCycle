@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			
+			private var _seconds:int;
+
+			public function get seconds():int{
+				return _seconds;
+			}
+			public function set seconds(value:int):void{
+				_seconds = value;
+				if(_seconds<0){
+					minutesStr='--';
+					return;
+				}
+				var minutes:Number=Math.round(_seconds/60);
+				minutesStr=minutes.toString();
+			}
+
+			[Bindable]
+			public var caption:String='Очередь';
+			[Bindable]
+			private var minutesStr:String;
+		]]>
+	</fx:Script>
+	<s:HGroup gap="3" verticalAlign="baseline">
+		<s:Label text="{caption}:"/>
+		<s:Spacer width="5"/>
+		<s:Label text="{minutesStr}"/>
+		<s:Label text="мин"/>
+	</s:HGroup>
+</s:Group>

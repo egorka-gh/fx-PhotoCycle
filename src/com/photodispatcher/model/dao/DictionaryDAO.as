@@ -227,5 +227,15 @@ package com.photodispatcher.model.dao{
 			return itemsList;
 		}
 
+		public function getRollValueList(includeDefault:Boolean=true):ArrayCollection{
+			var sql:String;
+			sql='SELECT width value, width label FROM config.roll ORDER BY width';
+			if(includeDefault){
+				sql="SELECT null value, ' ' label UNION "+sql;
+			}
+			runSelect(sql);
+			return itemsList;
+		}
+
 	}
 }

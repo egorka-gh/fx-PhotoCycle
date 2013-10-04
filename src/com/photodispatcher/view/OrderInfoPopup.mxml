@@ -267,10 +267,12 @@
 				}
 				//get reprint files
 				var pgIdx:int=pgList.length;
+				var prints:int;
 				for each (pg in arrPG){
 					if(pg){
 						//set pg props
 						pgIdx++;
+						prints=0;
 						pg.order_id=order.id;
 						pg.id=order.id+'_'+pgIdx.toString();
 						pg.state=OrderState.PRN_WAITE;
@@ -282,9 +284,11 @@
 							if(pgf && pgf.reprint){
 								pgf.print_group=pg.id;
 								pg.addFile(pgf);
+								prints+=pgf.prt_qty>0?pgf.prt_qty:1;
 							}
 						}
 						pg.file_num=pg.getFiles().length;
+						pg.prints=prints;
 					}
 				}
 				var dao:PrintGroupDAO= new PrintGroupDAO();

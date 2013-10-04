@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.LabRoll;
+			[Bindable]
+			private var roll:LabRoll;
+			override public function get data():Object{
+				return super.data;
+			}
+			override public function set data(value:Object):void{
+				super.data = value;
+				roll=value as LabRoll;
+			}
+
+		]]>
+	</fx:Script>
+	<s:HGroup gap="5" verticalAlign="middle">
+		<itemRenderer:LabStateIndicator state="{int(roll.is_online)}"/>
+		<s:Label text="{roll.width.toString()}-{roll.paper_name}" width="110" maxDisplayedLines="1"/>
+		<itemRenderer:SecondToMinuteRenderer seconds="{roll.printQueueTime}" caption=""/>
+	</s:HGroup>
+</s:ItemRenderer>

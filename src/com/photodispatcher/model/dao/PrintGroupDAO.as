@@ -159,7 +159,7 @@ package com.photodispatcher.model.dao{
 			return itemsArray;
 		}
 
-		public function findInPrint():Array{ 
+		public function findAllInPrint():Array{ 
 			var sql:String;
 			sql='SELECT pg.*, o.source source_id, s.name source_name, o.ftp_folder order_folder, os.name state_name,'+
 				' p.value paper_name, fr.value frame_name, cr.value correction_name, cu.value cutting_name,'+
@@ -173,12 +173,37 @@ package com.photodispatcher.model.dao{
 				' INNER JOIN config.attr_value cu ON pg.cutting = cu.id'+
 				' INNER JOIN config.book_type bt ON pg.book_type = bt.id'+
 				' INNER JOIN config.book_part bp ON pg.book_part = bp.id'+
-				' LEFT OUTER JOIN config.sources lab ON pg.destination = lab.id'+
+				' LEFT OUTER JOIN config.lab lab ON pg.destination = lab.id'+
 				' WHERE o.state>=? AND o.state<?'+
 				' ORDER BY pg.state_date';
 			//trace(sql);
 			var params:Array=[OrderState.PRN_POST,OrderState.PRN_COMPLETE];
 			runSelect(sql,params);
+			return itemsArray;
+		}
+
+		public function findInPrint(labId:int):Array{ 
+			var sql:String;
+			sql='SELECT pg.*, o.source source_id, s.name source_name, o.ftp_folder order_folder, os.name state_name,'+
+				' p.value paper_name, fr.value frame_name, cr.value correction_name, cu.value cutting_name,'+
+				' bt.name book_type_name, bp.name book_part_name, COUNT(DISTINCT tl.sheet) prints_done'+
+				' FROM print_group pg'+
+				' INNER JOIN orders o ON pg.order_id = o.id'+
+				' INNER JOIN config.sources s ON o.source = s.id'+
+				' INNER JOIN config.order_state os ON pg.state = os.id'+
+				' INNER JOIN config.attr_value p ON pg.paper = p.id'+
+				' INNER JOIN config.attr_value fr ON pg.frame = fr.id'+
+				' INNER JOIN config.attr_value cr ON pg.correction = cr.id'+
+				' INNER JOIN config.attr_value cu ON pg.cutting = cu.id'+
+				' INNER JOIN config.book_type bt ON pg.book_type = bt.id'+
+				' INNER JOIN config.book_part bp ON pg.book_part = bp.id'+
+				' LEFT OUTER JOIN tech_log tl ON pg.id = tl.print_group'+
+				' WHERE pg.state=? AND pg.destination=?'+
+				' GROUP BY pg.id'+
+				' ORDER BY pg.state_date';
+			//trace(sql);
+			var params:Array=[OrderState.PRN_PRINT,labId];
+			runSelect(sql,params,true);
 			return itemsArray;
 		}
 
@@ -202,7 +227,7 @@ package com.photodispatcher.model.dao{
 				' INNER JOIN config.attr_value cu ON pg.cutting = cu.id'+
 				' INNER JOIN config.book_type bt ON pg.book_type = bt.id'+
 				' INNER JOIN config.book_part bp ON pg.book_part = bp.id'+
-				' LEFT OUTER JOIN config.sources lab ON pg.destination = lab.id'+
+				' LEFT OUTER JOIN config.lab lab ON pg.destination = lab.id'+
 				' WHERE o.state>=? AND o.state<?'+where+
 				' ORDER BY pg.state_date';
 			//trace(sql);
@@ -249,8 +274,8 @@ package com.photodispatcher.model.dao{
 					orderId=item.order_id;
 					//create print group
 					sql='INSERT INTO print_group (id, order_id, state, state_date, width, height, frame, paper, path, correction, cutting, file_num,'+
-						' book_type, book_part, book_num, is_pdf, is_duplex, is_reprint)' +
-						' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+						' book_type, book_part, book_num, is_pdf, is_duplex, is_reprint, prints)' +
+						' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 					params=[item.id,
 						item.order_id,
 						item.state,
@@ -268,7 +293,8 @@ package com.photodispatcher.model.dao{
 						item.book_num,
 						item.is_pdf?1:0,
 						item.is_duplex?1:0,
-						item.is_reprint?1:0
+						item.is_reprint?1:0,
+						item.prints
 					];
 					sequence.push(prepareStatement(sql,params));
 					
@@ -410,16 +436,19 @@ package com.photodispatcher.model.dao{
 		}
 		*/
 
-		private var writePrintStateOrder:String; 
+		//private var writePrintStateOrder:String; 
 		public function writePrintState(item:PrintGroup):void{
 			//TODO refactor to sequence
-
 			if(!item) return;
-			writePrintStateOrder=item.order_id;
 			var sequence:Array=[];
 			var stmt:SQLStatement;
 			var sql:String;
+			var subSql:String;
 			var params:Array;
+			var subParams:Array;
+
+			//writePrintStateOrder=item.order_id;
+
 			//update print group
 			sql='UPDATE print_group SET state=?, state_date=?, destination=? WHERE id=?';
 			params=[item.state, item.state_date, item.destination, item.id];
@@ -429,24 +458,46 @@ package com.photodispatcher.model.dao{
 			params=[item.order_id, item.id, item.state, item.state_date];
 			sequence.push(prepareStatement(sql,params));
 
+			//calc new order state
+			sql='DELETE FROM tmp_print_group';
+			sequence.push(prepareStatement(sql));
+			//get min/max order state by pg
+			sql='INSERT INTO tmp_print_group(id, state, state_max)'+
+				' SELECT ?, IFNULL(MIN(pg.state),0), IFNULL(MAX(pg.state),0)'+ 
+				' FROM print_group pg'+
+				' WHERE pg.order_id=?';
+			params=[item.order_id, item.order_id];
+			sequence.push(prepareStatement(sql,params));
+			//calc/set order state
+			subSql='SELECT (CASE WHEN (state<? AND state_max<?) THEN state' +
+					      ' CASE WHEN (state<?) THEN ?'+
+					      ' CASE WHEN (state<?) THEN ?'+ 
+					      ' ELSE ? END) as state'+       
+					' FROM tmp_print_group t WHERE t.id=?';
+			subParams=[OrderState.PRN_POST,OrderState.PRN_POST,
+						OrderState.PRN_PRINT,OrderState.PRN_POST,
+						OrderState.PRN_COMPLETE,OrderState.PRN_PRINT,
+						OrderState.PRN_COMPLETE,
+						item.order_id];
+			sql='UPDATE orders SET state = ('+subSql+'), state_date = ? WHERE id = ? AND state !=('+subSql+')';
+			params=subParams.concat();
+			var dt:Date=new Date();
+			params.push(dt);
+			params.push(item.order_id);
+			params=params.concat(subParams);
+			sequence.push(prepareStatement(sql,params));
+			//log sate
+			sql='INSERT INTO state_log ( order_id, state, state_date)'+
+				' SELECT o.id, o.state, o.state_date'+
+				' FROM orders o WHERE o.id = ? AND o.state_date = ?';
+			params=[item.order_id, dt];
+			sequence.push(prepareStatement(sql,params));
+
 			//start Sequence
-			//addEventListener(SqlSequenceEvent.SQL_SEQUENCE_EVENT, onWritePrintGropPrint);
-			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWritePrintGropPrint,false,int.MAX_VALUE);
+			//addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWritePrintGropPrint,false,int.MAX_VALUE);
 			executeSequence(sequence);
 		}
 		/*
-		private function onWritePrintGropPrint(e:SqlSequenceEvent):void{
-			removeEventListener(SqlSequenceEvent.SQL_SEQUENCE_EVENT, onWritePrintGropPrint);
-			if(e.result==SqlSequenceEvent.RESULT_COMLETED){
-				var oDao:OrderDAO=new OrderDAO();
-				oDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onWriteOrderPrint);
-				oDao.checkSetPrintState(writePrintStateOrder);
-			}else{
-				writePrintStateOrder='';
-				dispatchEvent(new AsyncSQLEvent(AsyncSQLEvent.RESULT_FAULT,0,0,null,e.error));
-			}
-		}
-		*/
 		private function onWritePrintGropPrint(e:AsyncSQLEvent):void{
 			removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWritePrintGropPrint);
 			if(e.result==AsyncSQLEvent.RESULT_COMLETED){
@@ -469,6 +520,7 @@ package com.photodispatcher.model.dao{
 				dispatchEvent(new AsyncSQLEvent(AsyncSQLEvent.RESULT_FAULT,0,0,null,e.error));
 			}
 		}
+		*/
 
 		public function cancelPrint(items:Array, nameMap:Object=null):void{ // labName:String=''):void{
 			if(!items || items.length==0){

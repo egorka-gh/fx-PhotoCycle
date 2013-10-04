@@ -12,9 +12,9 @@
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
-			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
@@ -56,8 +56,8 @@
 				a.unshift(s);
 				sourceFilterList.source=a;
 
-				var lDao:SourcesDAO= new SourcesDAO();
-				a=lDao.findAllArray(2);
+				var lDao:LabDAO= new LabDAO();
+				a=lDao.findAllArray();
 				a.unshift(s);
 				labFilterList.source=a;
 
@@ -79,7 +79,7 @@
 				var pgDao:PrintGroupDAO=new PrintGroupDAO();
 				var a:Array;
 				if(currentState=='inPrint'){
-					a=pgDao.findInPrint(); 
+					a=pgDao.findAllInPrint(); 
 				}else{
 					var dt:Date;
 					if (dfDateFilter && dfDateFilter.selectedDate){

@@ -1,13 +1,13 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.model.BookSynonym;
+	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Source;
 
 	public class LabNoritsuNHF extends LabBase{
 		
-		public function LabNoritsuNHF(s:Source){
-			super(s);
+		public function LabNoritsuNHF(lab:Lab){
+			super(lab);
 		}
 		
 		override public function orderFolderName(printGroup:PrintGroup):String{
@@ -18,22 +18,26 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
-		override public function printChannel(printGroup:PrintGroup):String{
-			if(!printGroup || printGroup.is_pdf || printGroup.is_duplex) return '';
+		override public function printChannelCode(printGroup:PrintGroup):String{
+			return printChannel(printGroup)?hot:'';
+		}
+		
+		override public function printChannel(printGroup:PrintGroup):LabPrintCode{
+			if(!printGroup || printGroup.is_pdf || printGroup.is_duplex) return null;
 			//if has correction or frame
-			if(printGroup.correction!=0 || printGroup.frame!=0) return '';
+			if(printGroup.correction!=0 || printGroup.frame!=0) return null;
 			//check paper
 			//TODO hardcoded
-			if (!PrintTask.NORITSU_NHF_PAPE[printGroup.paper.toString()]) return '';
-
+			if (!PrintTask.NORITSU_NHF_PAPE[printGroup.paper.toString()]) return null;
+			
 			var cm:Object=chanelMap;
-			if(!cm) return '';
+			if(!cm) return null;
 			
 			var result:LabPrintCode;
 			//exact check 4 non book & book insert
 			if(printGroup.book_type==0 || printGroup.book_part==BookSynonym.BOOK_PART_INSERT){
-				result=cm[printGroup.key(type_id)] as LabPrintCode;
-				return result?hotFolder.url:'';
+				result=fillChannelFromPG(cm[printGroup.key(src_type)] as LabPrintCode,printGroup);
+				return result;
 			}
 			//lookup channel by closest size
 			var ch:LabPrintCode;
@@ -47,9 +51,20 @@ package com.photodispatcher.print{
 					}
 				}
 			}
-
-			return result?hotFolder.url:'';
+						
+			return fillChannelFromPG(result,printGroup);
 		}
-
+		
+		private function fillChannelFromPG(channel:LabPrintCode, printGroup:PrintGroup):LabPrintCode{
+			if(!channel || !printGroup) return null;
+			var result:LabPrintCode=channel.clone();
+			result.paper=printGroup.paper;
+			result.frame=printGroup.frame;
+			result.correction=printGroup.correction;
+			result.cutting=printGroup.cutting;
+			result.is_duplex=printGroup.is_duplex;
+			result.is_pdf=printGroup.is_pdf;
+			return result; 
+		}
 	}
 }

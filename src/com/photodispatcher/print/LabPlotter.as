@@ -1,11 +1,11 @@
 package com.photodispatcher.print{
+	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Source;
 	
 	public class LabPlotter extends LabBase{
-		public function LabPlotter(s:Source){
-			super(s);
+		public function LabPlotter(lab:Lab){
+			super(lab);
 		}
 
 		override public function orderFolderName(printGroup:PrintGroup):String{
@@ -16,13 +16,17 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
-		override public function printChannel(printGroup:PrintGroup):String{
-			if(!printGroup || printGroup.is_pdf || printGroup.is_duplex) return '';
+		override public function printChannelCode(printGroup:PrintGroup):String{
+			return printChannel(printGroup)?hot:'';
+		}
+		
+		override public function printChannel(printGroup:PrintGroup):LabPrintCode{
+			if(!printGroup || printGroup.is_pdf || printGroup.is_duplex) return null;
 			//if has correction or frame
-			if(printGroup.correction!=0 || printGroup.frame!=0 || printGroup.cutting!=0) return '';
+			if(printGroup.correction!=0 || printGroup.frame!=0 || printGroup.cutting!=0) return null;
 			
 			var cm:Object=chanelMap;
-			if(!cm) return '';
+			if(!cm) return null;
 			
 			//lookup channel by closest size
 			var result:LabPrintCode;
@@ -37,8 +41,19 @@ package com.photodispatcher.print{
 					}
 				}
 			}
-			
-			return result?hotFolder.url:'';
+			return fillChannelFromPG(result,printGroup);
+		}
+		
+		private function fillChannelFromPG(channel:LabPrintCode, printGroup:PrintGroup):LabPrintCode{
+			if(!channel || !printGroup) return null;
+			var result:LabPrintCode=channel.clone();
+			result.paper=printGroup.paper;
+			result.frame=printGroup.frame;
+			result.correction=printGroup.correction;
+			result.cutting=printGroup.cutting;
+			result.is_duplex=printGroup.is_duplex;
+			result.is_pdf=printGroup.is_pdf;
+			return result; 
 		}
 
 	}

@@ -12,10 +12,21 @@ package com.photodispatcher.model.dao{
 		}
 		
 		public function findAllArray(silent:Boolean=false):Array{
-			var sql:String='SELECT s.id, s.name, s.src_type, s.hot, s.hot_nfs, s.queue_limit, s.is_active, st.name src_type_name'+
+			var sql:String='SELECT s.*, st.name src_type_name'+
 							' FROM config.lab s' +
 							' INNER JOIN config.src_type st ON st.id = s.src_type'+
 							' ORDER BY s.name';
+			runSelect(sql,null,silent);
+			var res:Array=itemsArray;
+			return res;
+		}
+
+		public function findActive(silent:Boolean=false):Array{
+			var sql:String='SELECT s.*, st.name src_type_name'+
+				' FROM config.lab s' +
+				' INNER JOIN config.src_type st ON st.id = s.src_type'+
+				' WHERE s.is_active=1'+
+				' ORDER BY s.name';
 			runSelect(sql,null,silent);
 			var res:Array=itemsArray;
 			return res;
@@ -46,12 +57,13 @@ package com.photodispatcher.model.dao{
 			var sequence:Array=[];
 			if(item.changed){
 				sequence.push(prepareStatement(
-					'UPDATE config.lab SET name=?, hot=?, hot_nfs=?, queue_limit=?, is_active=? WHERE id=?',
+					'UPDATE config.lab SET name=?, hot=?, hot_nfs=?, queue_limit=?, is_active=?, is_managed=? WHERE id=?',
 					[	item.name,
 						item.hot,
 						item.hot_nfs,
 						item.queue_limit,
 						item.is_active?1:0,
+						item.is_managed?1:0,
 						item.id]));
 			}
 			var ldDao:LabDeviceDAO= new LabDeviceDAO();
@@ -61,15 +73,16 @@ package com.photodispatcher.model.dao{
 		
 		public function create(item:Lab):void{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
-			execute("INSERT INTO config.lab (id, src_type, name, hot, hot_nfs, queue_limit, is_active)" +
-					"VALUES (?,?,?,?,?,?,?)",
+			execute("INSERT INTO config.lab (id, src_type, name, hot, hot_nfs, queue_limit, is_active, is_managed)" +
+					"VALUES (?,?,?,?,?,?,?,?)",
 				[	item.id > 0 ? item.id : null,
 					item.src_type,
 					item.name,
 					item.hot,
 					item.hot_nfs,
 					item.queue_limit,
-					item.is_active?1:0],item);
+					item.is_active?1:0,
+					item.is_managed?1:0],item);
 		}
 		private function onCreate(e:AsyncSQLEvent):void{
 			removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);

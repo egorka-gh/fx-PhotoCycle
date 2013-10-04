@@ -10,13 +10,13 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.factory.LabBuilder;
 			import com.photodispatcher.model.AppConfig;
-			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.Lab;
 			import com.photodispatcher.model.dao.AppConfigDAO;
+			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
-			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
@@ -32,7 +32,6 @@
 			private var labList:ArrayCollection;
 			[Bindable]
 			private var labMap:Object;
-			//private var labIdx:int=-1;
 
 			private function initApp():void{
 				bdPopup= new DatabasePopup();
@@ -44,7 +43,7 @@
 					//connected
 					fillContext();
 					fillLabList();
-					if(labMap){
+					if(PrintQueueManager.instance.initCompleted){
 						currentState='workplace';
 					}else{
 						currentState='config';
@@ -59,7 +58,6 @@
 			private function fillContext():void{
 				var appConfDAO:AppConfigDAO=new AppConfigDAO();
 				var appConf:AppConfig=appConfDAO.getItem();
-				//Context.setAttribute('workFolder',appConf.wrk_path);
 				Context.setAttribute('syncInterval',appConf.monitor_interval);
 
 				Context.initSourceLists();
@@ -67,13 +65,11 @@
 				OrderStateDAO.initStateMap();
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				//var imPath:String;
 				var workFolder:String;
 				var prtPath:String;
 				//var serverIP:String;
 				if (so.size>0){
 					workFolder = so.data.workFolder;
-					//imPath = so.data.imPath;
 					prtPath = so.data.prtPath;
 					//serverIP=so.data.serverIP;
 				}
@@ -87,8 +83,10 @@
 			}
 
 			private function fillLabList():void{
-				var lDAO:SourcesDAO=new SourcesDAO();
-				labList=lDAO.findAll(2);
+				labMap=null;
+
+				var lDAO:LabDAO= new LabDAO;
+				labList=lDAO.findAll();
 
 				//detect lab ids
 				var oId:Object;
@@ -101,55 +99,31 @@
 					aId=[int(oId)];
 				}
 				fillLabMap(aId);
-				/*
-				if (lId){
-					Context.setAttribute('applabId',lId);
-					//Context.setAttribute('appLab',ArrayUtil.searchItem('id',lId,labList.source));
-					labIdx=ArrayUtil.searchItemIdx('id',lId,labList.source);
-				}
-				*/
 			}
 			
 			private function fillLabMap(arrId:Array):void{
-				if(!arrId || arrId.length==0){
-					labMap= null;
-					return;
-				}else{
-					labMap= new Object();
-				}
 				var lId:int;
-				var arrlab:Array;
-				var lab:LabBase;
-				if(labList) arrlab=labList.source;
+				var arrlab:Array=[];
+				var lab:Lab;
+				if(!labList) return;
 				for each(lId in arrId){
-					lab=LabBuilder.build(ArrayUtil.searchItem('id',lId,arrlab) as Source);
-					if(lab) lab.isSelected=true;
-					labMap[lId.toString()]=lab?lab:lId;
+					lab=ArrayUtil.searchItem('id',lId,labList.source) as Lab;
+					if(lab){
+						lab.isSelected=true;
+						arrlab.push(lab);;
+					}
 				}
-				Context.setAttribute('appLabMap',labMap);
+				PrintQueueManager.instance.init(arrlab);
+				labMap=PrintQueueManager.instance.labMap;
 			}
 
-			/*
-			protected function ddLabs_changeHandler(event:IndexChangeEvent):void{
-				
-				var lab:Source=ddLabs.selectedItem as Source;
-				if(lab){
-					Context.setAttribute('applabId',lab.id);
-					//save last selection
-					var so:SharedObject = SharedObject.getLocal('appProps','/');
-					so.data.labId=lab.id;  
-					so.flush();  
-				}
-			}
-			*/
-			
 			protected function button3_clickHandler(event:MouseEvent):void{
 				FlexGlobals.topLevelApplication.exit();
 			}
 
 			protected function lstLbs_clickHandler(event:MouseEvent):void{
 				if(event.target.id=='cbox'){
-					var lab:Source;
+					var lab:LabBase;
 					var arr:Array=[];
 					for each (lab in labList){
 						if(lab && lab.isSelected){
@@ -161,6 +135,11 @@
 					so.data.labId=arr;  
 					so.flush();  
 				}
+			}
+			
+			protected function button4_clickHandler(event:MouseEvent):void{
+				fillLabList();
+				if(labMap) currentState='workplace';
 			}
 			
 		]]>
@@ -185,8 +164,6 @@
 		<s:Label text="Уражите лаборатории для данной рабочей станции" includeIn="config" color="#FF0000" visible="{!labMap}" includeInLayout="{!labMap}"/>
 		<s:VGroup gap="5" includeIn="config" paddingLeft="50">
 			<s:Label text="Лаборатории"/>
-			<!--<s:DropDownList id="ddLabs" dataProvider="{labList}" labelField="name" 
-							selectedIndex="@{labIdx}" change="ddLabs_changeHandler(event)"/>-->
 			<s:List id="lstLbs" dataProvider="{labList}" click="lstLbs_clickHandler(event)">
 				<s:itemRenderer>
 					<fx:Component>
@@ -205,7 +182,7 @@
 	</s:VGroup>
 	<s:HGroup bottom="5" horizontalAlign="right" width="100%" gap="10" paddingRight="10">
 		<s:Button label="Настройки" includeIn="workplace" click="currentState='config'"/>
-		<s:Button label="Лаборатория" includeIn="config" enabled="{labMap}"/>
+		<s:Button label="Лаборатория" includeIn="config" click="button4_clickHandler(event)" enabled="{labMap}"/>
 		<s:Button label="Выход" click="button3_clickHandler(event)"/>
 	</s:HGroup>
 	

@@ -46,7 +46,7 @@
 				if (!selectedItem) return false;
 				data[column.dataField]=selectedItem.value; 
 				//data['changed']=true;
-				data[column.dataField+'_name']=selectedItem.label;
+				if(data.hasOwnProperty(column.dataField+'_name')) data[column.dataField+'_name']=selectedItem.label;
 				return true;
 			}
 			

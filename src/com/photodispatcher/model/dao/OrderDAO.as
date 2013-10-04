@@ -37,11 +37,15 @@ package com.photodispatcher.model.dao{
 			execute(sql,params);
 		}
 
-		private var stateToLog:int; 
-		private var idToLog:String; 
 		public function setState(id:String, newState:int):void{
-			var sequence:Array=[];
 			asyncFaultMode=FAULT_REPIT;
+			//start Sequence
+			executeSequence(setStateSequence(id, newState));
+		}
+		private function setStateSequence(id:String, newState:int):Array{
+			var stateToLog:int; 
+			var idToLog:String; 
+			var sequence:Array=[];
 			stateToLog=newState;
 			idToLog=id;
 			var sql:String='UPDATE orders SET state = ?, state_date = ? WHERE id = ? AND state != ?';
@@ -52,16 +56,13 @@ package com.photodispatcher.model.dao{
 			params.push(id);
 			params.push(newState);
 			sequence.push(prepareStatement(sql,params));
-
+			
 			sql='INSERT INTO state_log ( order_id, state, state_date)'+
 				' SELECT o.id, o.state, o.state_date'+
 				' FROM orders o WHERE o.id = ? AND o.state = ? AND o.state_date = ?';
 			params=[id, newState, dt];
 			sequence.push(prepareStatement(sql,params));
-			//start Sequence
-			executeSequence(sequence);
-			//addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSetState,false,int.MAX_VALUE);
-			//execute(sql,params);
+			return sequence;
 		}
 		
 		public function addManual(order:Order):void{
@@ -79,24 +80,6 @@ package com.photodispatcher.model.dao{
 			execute(sql,params);
 		}
 		
-		/*
-		private function onSetState(e:AsyncSQLEvent):void{
-			//log state
-			removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSetState);
-			if(e.result==AsyncSQLEvent.RESULT_COMLETED){
-				if(e.affected!=0){
-					e.stopImmediatePropagation();
-					var sql:String='INSERT INTO state_log (order_id, state, state_date) VALUES (?, ?, ?)';
-					var params:Array=[];
-					params.push(idToLog);
-					params.push(stateToLog);
-					params.push(new Date());
-					asyncFaultMode=FAULT_IGNORE;
-					execute(sql,params);
-				}
-			}
-		}
-		*/
 		public function setStateBatch(newState:int,orderIds:Array, updateGroups:Boolean=true):void{
 			if(!orderIds || orderIds.length==0) return;
 			var id:String;
@@ -134,10 +117,10 @@ package com.photodispatcher.model.dao{
 				}
 			}
 			//start Sequence
-			//addEventListener(SqlSequenceEvent.SQL_SEQUENCE_EVENT, onSequenceComplite);
 			executeSequence(sequence);
 		}
 
+		/*
 		public function checkSetPrintState(id:String):int{
 			//TODO refactor to sequence
 			var order:Order;
@@ -160,6 +143,7 @@ package com.photodispatcher.model.dao{
 			}
 			return newState;
 		}
+		*/
 		
 		public function getItem(id:String):Order{
 			var sql:String='SELECT o.*, s.name source_name, os.name state_name'+
@@ -321,8 +305,8 @@ package com.photodispatcher.model.dao{
 					if(pg){
 						//create print group
 						sql='INSERT INTO print_group (id, order_id, state, state_date, width, height, frame, paper, path, correction, cutting, file_num,'+
-													' book_type, book_part, book_num, sheet_num, is_pdf, is_duplex)' +
-													' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+													' book_type, book_part, book_num, sheet_num, is_pdf, is_duplex, prints)' +
+													' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 						params=[pg.id,
 								order.id,
 								order.state,
@@ -340,7 +324,8 @@ package com.photodispatcher.model.dao{
 								pg.book_num,
 								pg.sheet_num,
 								pg.is_pdf?1:0,
-								pg.is_duplex?1:0];
+								pg.is_duplex?1:0,
+								pg.prints];
 						sequence.push(prepareStatement(sql,params));
 
 						//log print group state

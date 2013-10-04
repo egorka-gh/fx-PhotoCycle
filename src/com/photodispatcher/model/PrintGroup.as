@@ -80,11 +80,14 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var is_duplex:Boolean=false;
 		public var is_reprint:Boolean=false;
+		//prints number
+		public var prints:int;
 
 		//runtime
 		public var bookTemplate:BookPgTemplate;
 		public var butt:int=0;
 		public var is_horizontal:Boolean;
+		public var prints_done:int;
 		
 		//ref
 		public var source_id:int;

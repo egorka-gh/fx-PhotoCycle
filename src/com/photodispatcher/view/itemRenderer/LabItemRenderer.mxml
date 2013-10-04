@@ -3,7 +3,7 @@
 				xmlns:s="library://ns.adobe.com/flex/spark" 
 				xmlns:mx="library://ns.adobe.com/flex/mx" 
 				autoDrawBackground="true"
-				enabled="{lab.enabled}">
+				enabled="{lab.enabled}" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
 
 	<fx:Script>
 		<![CDATA[
@@ -16,8 +16,6 @@
 			
 			[Bindable]
 			private var lab:LabBase;
-			
-			
 			override public function get data():Object{
 				return super.data;
 			}
@@ -56,8 +54,16 @@
 				}
 			}
 				
+			protected function secondtominuterenderer1_doubleClickHandler(event:MouseEvent):void{
+				lab.refreshPrintQueue();
+			}
+			
 		]]>
 	</fx:Script>
+	
+	<fx:Declarations>
+		<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>
+	</fx:Declarations>
 	
 	<s:states>
 		<s:State name="normal"/>
@@ -70,11 +76,18 @@
 			<s:SolidColorStroke color="#cccccc" weight="2"/>
 		</s:stroke>
 	</s:Rect>
-		
-	<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
-		<!--<s:Image source="assets/Noritsu_logo_24.png" height="16" smooth="true" scaleMode="letterbox" horizontalAlign="left"/>-->
-		<s:Label text="{lab.name}" fontSize="18" fontWeight="bold"/>
-		<s:Label text="{lab.stateCaption}"/>
-	</s:VGroup>
-	
+		<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
+			<!--<s:Image source="assets/Noritsu_logo_24.png" height="16" smooth="true" scaleMode="letterbox" horizontalAlign="left"/>-->
+			<s:HGroup gap="5" verticalAlign="middle">
+				<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
+				<s:Label text="{lab.name}" fontSize="14" fontWeight="bold"/>
+			</s:HGroup>
+			<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}" doubleClickEnabled="true" doubleClick="secondtominuterenderer1_doubleClickHandler(event)"/>
+			<s:DataGroup itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" dataProvider="{aclRolls}">
+				<s:layout>
+					<s:VerticalLayout gap="2"/>
+				</s:layout> 
+			</s:DataGroup>
+			<s:Label text="{lab.stateCaption}"/>
+		</s:VGroup>
 </s:ItemRenderer>

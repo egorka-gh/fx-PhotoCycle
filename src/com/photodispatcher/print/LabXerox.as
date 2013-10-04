@@ -1,21 +1,21 @@
 package com.photodispatcher.print{
+	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Source;
 	
 	public class LabXerox extends LabBase{
 
-		public function LabXerox(s:Source){
-			super(s);
+		public function LabXerox(lab:Lab){
+			super(lab);
 		}
 		
 		override public function orderFolderName(printGroup:PrintGroup):String{
 			if(!printGroup || !printGroup.id) return '';
-			return printChannel(printGroup);
+			return printChannelCode(printGroup);
 		}
 		
-		override public function printChannel(printGroup:PrintGroup):String{
+		override public function printChannelCode(printGroup:PrintGroup):String{
 			if(!printGroup || !printGroup.is_pdf) return '';
-			return super.printChannel(printGroup);
+			return super.printChannelCode(printGroup);
 		}
 
 	}

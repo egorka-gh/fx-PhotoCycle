@@ -28,6 +28,13 @@ package com.photodispatcher.model{
 		//db drived
 		[Bindable]
 		public var paper_name:String;
+		
+		//run time
+		[Bindable]
+		public var printQueueLen:int=0;
+		[Bindable]
+		public var printQueueTime:int=0;//sec
+		public var speed:int=0;//mm/sec
 
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
@@ -39,5 +46,14 @@ package com.photodispatcher.model{
 			return result;
 		}
 
+		public function clone():LabRoll{
+			var result:LabRoll= new LabRoll();
+			result.lab_device=lab_device;
+			result.paper=paper;
+			result.len_std=len_std;
+			result.len=len;
+			result.is_online=is_online;
+			return result;
+		}
 	}
 }

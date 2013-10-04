@@ -144,11 +144,22 @@ package com.photodispatcher.factory{
 			//completed
 			var resultArr:Array=[];
 			var i:int=1;
+			var prints:int;
 			for each (o in resultMap){
 				pg= o as PrintGroup;
 				if(pg){
 					pg.order_id=orderId;
 					pg.id=orderId+'_'+i.toString();
+					//calc prints qtt
+					prints=0;
+					if(pg.book_type==0){
+						//photo print
+						for each(pgf in pg) prints+=pgf.prt_qty>0?pgf.prt_qty:1;
+					}else{
+						//book
+						prints=pg.book_num*pg.sheet_num;
+					}
+					pg.prints=prints;
 					resultArr.push(pg);
 					i++;
 				}
@@ -241,12 +252,6 @@ package com.photodispatcher.factory{
 					f.prt_qty=1;//f.book_num==0?res.book_num:1;
 					//add caption 4 annotate
 					var txt:String;
-					/*
-					//book
-					txt=(f.book_num==0?PrintGroupFile.CAPTION_BOOK_NUM_HOLDER:StrUtil.lPad(f.book_num.toString(),2))+'/'+StrUtil.lPad(res.book_num.toString(),2);
-					//sheet
-					txt=txt+'-'+StrUtil.lPad(f.page_num.toString(),2)+'/'+StrUtil.lPad(res.pageNumber.toString(),2);
-					*/
 					//book
 					txt=(f.book_num==0?PrintGroupFile.CAPTION_BOOK_NUM_HOLDER:StrUtil.lPad(f.book_num.toString(),2))+'('+StrUtil.lPad(res.book_num.toString(),2)+')';
 					//sheet
@@ -255,16 +260,6 @@ package com.photodispatcher.factory{
 					if(res.butt && f.page_num==0){
 						txt=txt+' t'+res.butt.toString();
 					}
-					/*
-					//book
-					var txt:String=(f.book_num==0?PrintGroupFile.CAPTION_BOOK_NUM_HOLDER:StrUtil.lPad(f.book_num.toString(),3));
-					//sheet
-					txt=txt+'-'+StrUtil.lPad(f.page_num.toString(),2);
-					//butt
-					if(res.butt && f.page_num==0){
-						txt=txt+' t'+res.butt.toString();
-					}
-					*/
 					f.caption=txt;
 				}
 				//sort by book / sheet
@@ -275,7 +270,6 @@ package com.photodispatcher.factory{
 
 		private function fillCovers(pg:PrintGroup, dst:PrintGroup):void{
 			if(!pg.getFiles()) return;
-			//var res:Array=[];
 			var f:PrintGroupFile;
 			for each(f in pg.getFiles()){
 				if (f && (f.page_num==0 || (dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && (f.page_num==1 || f.page_num==pg.pageNumber)))){
@@ -444,6 +438,7 @@ package com.photodispatcher.factory{
 					if(pgCover.getFiles() && pgCover.getFiles().length>0){
 						pgCover.id=order.id+'_'+pgNum.toString();
 						pgCover.sheet_num=pgCover.getFiles().length;
+						pgCover.prints=pgCover.book_num*pgCover.sheet_num;
 						if(!order.printGroups) order.printGroups=[];
 						order.printGroups.push(pgCover);
 						result.push(pgCover);
@@ -452,6 +447,7 @@ package com.photodispatcher.factory{
 					if(pgBody.getFiles() && pgBody.getFiles().length>0){
 						pgBody.id=order.id+'_'+pgNum.toString();
 						pgBody.sheet_num=pgBody.getFiles().length;
+						pgBody.prints=pgBody.book_num*pgBody.sheet_num;
 						if(!order.printGroups) order.printGroups=[];
 						order.printGroups.push(pgBody);
 						result.push(pgBody);

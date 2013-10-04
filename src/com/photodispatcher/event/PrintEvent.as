@@ -3,24 +3,24 @@ package com.photodispatcher.event{
 	
 	import flash.events.Event;
 	
-	public class PostCompleteEventKill extends Event{
+	public class PrintEvent extends Event{
+		public static const MANAGER_ERROR_EVENT:String='managerError';
 		public static const POST_COMPLETE_EVENT:String='postComplete';
+		
 		public var printGroup:PrintGroup;
 		public var hasErr:Boolean; 
 		public var errMsg:String; 
-		
-		public function PostCompleteEventKill(pg:PrintGroup, hasErr:Boolean=false, errMsg:String=''){
+
+		public function PrintEvent(type:String, pg:PrintGroup=null, errMsg:String=''){
+			super(type);
 			printGroup=pg;
-			this.hasErr=hasErr;
 			this.errMsg=errMsg;
-			super(POST_COMPLETE_EVENT);
+			if(errMsg) this.hasErr=true;
 		}
 		
 		override public function clone():Event{
-			var evt:PostCompleteEvent= new PostCompleteEvent(printGroup,hasErr,errMsg);
-			return evt;
+			return new PrintEvent(type, printGroup, errMsg);
 		}
-		
 		
 	}
 }

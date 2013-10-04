@@ -2,12 +2,27 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.LabRoll;
 	
 	public class LabRollDAO extends BaseDAO{
-		
+
+		/*
+		public function getByLab(lab:int, silent:Boolean=true):Array {
+			var sql:String;
+			sql='SELECT r.width, r.pixels, lr.lab_device, av.id paper, av.value paper_name,'+
+				' lr.len_std, lr.len, lr.is_online, 1 is_used'+  
+				' FROM config.roll r'+
+				' INNER JOIN config.lab_rolls lr ON r.width=lr.width'+
+				' INNER JOIN config.attr_value av ON lr.paper=av.id AND av.attr_tp=2'+
+				' INNER JOIN config.lab_device ld ON lr.lab_device=ld.id'+
+				' WHERE ld.lab=?'+
+				' ORDER BY r.width';
+			runSelect(sql,[lab],silent );
+			return itemsArray ;
+		}
+		*/
 		
 		public function getByDevice(device:int, forEdit:Boolean=false, silent:Boolean=true):Array {
 			var sql:String;
 			if(!forEdit){
-				sql='SELECT r.width, r.pixels, lr.lab_device, av.id paper, av.value paper_name,'+
+				sql='SELECT r.width, r.pixels, ? lab_device, av.id paper, av.value paper_name,'+
 						' lr.len_std, lr.len, lr.is_online, 1 is_used'+  
 					' FROM config.roll r'+
 					' INNER JOIN config.lab_rolls lr ON r.width=lr.width'+
@@ -24,6 +39,17 @@ package com.photodispatcher.model.dao{
 			}
 			runSelect(sql,[device, device],silent );
 			return itemsArray ;
+		}
+		
+		public function fillByChannels(device:int):void{
+			var sql:String='INSERT INTO config.lab_rolls (lab_device, width, paper)'+
+							' SELECT d.id, lr.roll, lr.paper'+
+							' FROM config.lab_device d'+
+							' INNER JOIN config.lab l ON d.lab=l.id'+
+							' INNER JOIN (SELECT DISTINCT lpc.src_type, lpc.roll, lpc.paper FROM config.lab_print_code lpc'+ 
+							                  ' WHERE lpc.roll IS NOT NULL AND lpc.roll!=0) lr ON lr.src_type=l.src_type'+                   
+							' WHERE d.id=? AND NOT EXISTS(SELECT 1 FROM config.lab_rolls dr WHERE dr.lab_device=d.id AND dr.width=lr.roll AND dr.paper=lr.paper)';
+			execute(sql,[device]);
 		}
 		
 		public function saveSequence(items:Array):Array{

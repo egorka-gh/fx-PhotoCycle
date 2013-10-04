@@ -911,7 +911,8 @@ package com.photodispatcher.model.dao{
 			//print groups temp table
 			sql="CREATE TEMP TABLE tmp_print_group (" +
 				" id         VARCHAR( 50 )  PRIMARY KEY," +
-				" state      INT            DEFAULT ( 100 )" +
+				" state      INT            DEFAULT ( 100 )," +
+				" state_max   INT            DEFAULT ( 0 )" +
 				")";
 			stmt= new SQLStatement();
 			stmt.sqlConnection = sqlConnection;

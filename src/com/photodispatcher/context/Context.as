@@ -200,7 +200,15 @@ package com.photodispatcher.context{
 				Context.setAttribute('tech_pointValueList', a);
 				*/
 			}
-			
+
+			//lab rolls
+			if(!Context.getAttribute('rollList')){
+				a=dDao.getRollValueList();
+				Context.setAttribute('rollList', a);
+				a=dDao.getRollValueList(false);
+				Context.setAttribute('rollValueList', a);
+			}
+
 			if(!Context.getAttribute('booleanList')){
 				a=new ArrayCollection();
 				a.source=[{value:0,label:'-'},

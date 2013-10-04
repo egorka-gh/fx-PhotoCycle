@@ -113,8 +113,12 @@
 			<s:FormItem label="Hot folder NHF" enabled="{isNoritsu}">
 				<s:TextInput id="tiHotNsf" text="@{currentItem.hot_nfs}" change="{currentItem.changed=true}" width="200"/>
 			</s:FormItem> 
+			<s:FormItem label="Автораспределение">
+				<s:CheckBox selected="@{currentItem.is_managed}" change="{currentItem.changed=true}"/>
+			</s:FormItem> 
 			<s:FormItem label="Очередь печати (мин)" >
-				<s:NumericStepper value="@{currentItem.queue_limit}" minimum="0" maximum="240" stepSize="10" change="{currentItem.changed=true}"/>
+				<s:NumericStepper value="@{currentItem.queue_limit}" minimum="0" maximum="240" stepSize="10"
+								  enabled="{currentItem.is_managed}" change="{currentItem.changed=true}"/>
 			</s:FormItem> 
 			<s:FormItem label="Активна">
 				<s:CheckBox id="chbOnline" selected="@{currentItem.is_active}" change="{currentItem.changed=true}"/>

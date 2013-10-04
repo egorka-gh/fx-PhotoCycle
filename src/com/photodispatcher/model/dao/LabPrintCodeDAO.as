@@ -33,7 +33,7 @@ package com.photodispatcher.model.dao{
 		
 		public function update(item:LabPrintCode):void{
 			execute(
-				"UPDATE config.lab_print_code SET src_type=?, src_id=?, prt_code=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=? WHERE id=?",
+				"UPDATE config.lab_print_code SET src_type=?, src_id=?, prt_code=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, roll=? WHERE id=?",
 				[	item.src_type,
 					item.src_id,
 					item.prt_code,
@@ -44,14 +44,15 @@ package com.photodispatcher.model.dao{
 					item.correction,
 					item.cutting,
 					item.is_duplex?1:0,
+					item.roll,
 					item.id],item);
 		}
 		
 		public function create(item:LabPrintCode):void{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
 			execute(
-				"INSERT INTO config.lab_print_code (src_type, src_id, prt_code, width, height, paper, frame, correction, cutting, is_duplex) " +
-					"VALUES (?,?,?,?,?,?,?,?,?,?)",
+				"INSERT INTO config.lab_print_code (src_type, src_id, prt_code, width, height, paper, frame, correction, cutting, is_duplex, roll) " +
+					"VALUES (?,?,?,?,?,?,?,?,?,?,?)",
 						[item.src_type,
 						item.src_id,
 						item.prt_code,
@@ -61,7 +62,8 @@ package com.photodispatcher.model.dao{
 						item.frame,
 						item.correction,
 						item.cutting,
-						item.is_duplex?1:0],item);
+						item.is_duplex?1:0,
+						item.roll],item);
 		}
 		private function onCreate(e:AsyncSQLEvent):void{
 			removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
@@ -112,6 +114,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('width'); col.headerText='Ширина'; result.addItem(col);
 			col= new GridColumn('height'); col.headerText='Длина'; result.addItem(col);
 			
+			col= new GridColumn('roll'); col.headerText='Рулон'; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=labType!=SourceType.LAB_PLOTTER && labType!=SourceType.LAB_XEROX; result.addItem(col);
 			col= new GridColumn('paper'); col.headerText='Бумага'; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=visible; result.addItem(col);
 			
 			visible= visible && labType!=SourceType.LAB_PLOTTER;

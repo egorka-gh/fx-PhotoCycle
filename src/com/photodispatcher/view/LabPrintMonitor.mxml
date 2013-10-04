@@ -7,15 +7,18 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.Lab;
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.print.LabBase;
-			import com.photodispatcher.print.PrintManager;
+			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -52,10 +55,13 @@
 			private var pgTotal:int;
 			[Bindable]
 			private var phTotal:int;
-	
+
+			private var printManager:PrintQueueManager;
+
 			public function init():void{
 				//labId=Context.getAttribute('applabId');
-				labMap=Context.getAttribute('appLabMap');
+				
+				labMap=PrintQueueManager.instance.labMap;
 
 				var lDao:SourcesDAO= new SourcesDAO();
 				var a:Array=lDao.findAllArray();
@@ -64,10 +70,11 @@
 				a.unshift(s);
 				sourceFilterList.source=a;
 
-				a=lDao.findAllArray(2);
+				var labDao:LabDAO= new LabDAO();
+				a=labDao.findAllArray();
 				if(!a) a=[];
-				//lab=LabBuilder.build(ArrayUtil.searchItem('id',labId,a) as Source);
-				a.unshift(s);
+				var lab:Lab= new Lab(); lab.id=0; lab.name='-';
+				a.unshift(lab);
 				labFilterList.source=a;
 
 				Context.initAttributeLists();
@@ -81,32 +88,27 @@
 				pgList.filterFunction=filterPGList;
 				
 				refresh();
-
 			}
 
 			public function refresh():void{
+				if(!printManager){
+					printManager=PrintQueueManager.instance;
+					printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
+				}
+				//printManager.init();
 				var pgDao:PrintGroupDAO=new PrintGroupDAO();
-				var a:Array=pgDao.findInPrint(); 
+				var a:Array=pgDao.findAllInPrint(); 
 				if(a){
-					//can lost unsaved states, make some join
-					var write:Array;
-					if(printManager) write=printManager.getWriteQueue();
-					//TODO do the same for unsaved canceled  
-					if(write && write.length>0){
-						for each(var o:Object in write){
-							var pg:PrintGroup= o as PrintGroup;
-							if(pg){
-								var idx:int=ArrayUtil.searchItemIdx('id',pg.id,a);
-								if(idx!=-1) a[idx]=pg;
-							}
-						}
-						printManager.flushWriteQueue(); 
-					}
+					//TODO can lost unsaved states (in write queue)
 					pgList.source=a;
 				}
 				calcTotals(a);
 			}
 			
+			private function onManagerError(e:PrintEvent):void{
+				lbManagerError.text=e.errMsg;
+			}
+
 			private function calcTotals(pintGroups:Array):void{
 				var pgArray:Array=pintGroups.filter(totalsFilter);
 				ordTotal=0;
@@ -218,14 +220,12 @@
 				gridMenu.addItem('Напечатан',setPrintedCallBack);
 			}
 			
-			private var printManager:PrintManager;
 			
 			private function cancelPrintCallBack(grid:DataGrid,param:int):void{
 				//if(!lab) return;
 				if(!labMap) return;
-				if(!printManager){
-					printManager=new PrintManager();
-				}else if(printManager.isRunning){
+				if(!printManager) return;
+				if (printManager.isBusy){
 					Alert.show('Не завершена предыдущая операция. Повторите отмену позже.');
 					return;
 				}
@@ -239,26 +239,18 @@
 					}
 				}
 				if(a.length>0){
-					printManager.cancelPost(a,labMap);
+					printManager.cancelPost(a);
 				}
 			}
 			
 			private function setPrintedCallBack(grid:DataGrid,param:int):void{
 				//if(!lab) return;
 				if(!labMap) return;
-				if(!printManager){
-					printManager=new PrintManager();
-				}
-				/*
-				else if(printManager.isRunning){
-					Alert.show('Не завершена предыдущая операция. Повторите попытку позже.');
-					return;
-				}*/
+				if(!printManager) return;
 				var a:Array=[];
 				var pg:PrintGroup;
 				for each(var o:Object in grid.selectedItems){
 					pg= o as PrintGroup;
-					//if(pg && pg.state==OrderState.PRN_PRINT && pg.destination==labId){
 					if(pg && pg.state==OrderState.PRN_PRINT && labMap[pg.destination.toString()]){
 						pg.state=OrderState.PRN_COMPLETE;
 						a.push(pg);
@@ -295,6 +287,7 @@
 					change="lstSizes_changeHandler(event)"/>
 		</s:VGroup>
 		<s:VGroup gap="5" width="100%" height="100%">
+			<s:Label id="lbManagerError" color="#ff0000" width="100%" maxDisplayedLines="1"/>
 			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
 				<s:Label text="Фильтрация" fontWeight="bold"/>
 				

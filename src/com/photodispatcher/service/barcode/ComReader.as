@@ -7,11 +7,13 @@ package com.photodispatcher.service.barcode{
 	import flash.events.IEventDispatcher;
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
+	import flash.utils.getTimer;
 	
 	[Event(name="barcodeReaded", type="com.photodispatcher.event.BarCodeEvent")]
 	[Event(name="barcodeError", type="com.photodispatcher.event.BarCodeEvent")]
 	public class ComReader extends EventDispatcher{
 		public static const TIMEUOT:int=500;
+		public static const DOUBLE_SCAN_GAP:int=200;
 
 		[Bindable]
 		public var isStarted:Boolean=false;
@@ -20,6 +22,10 @@ package com.photodispatcher.service.barcode{
 
 		protected var buffer:String='';
 		protected var timer:Timer;
+		
+		protected var doubleScanGap:int;
+		protected var lastBarcode:String;
+		protected var lastBarcodeTime:int=getTimer();
 
 		//private var comPort:SerialProxy;
 		protected var _comPort:Socket2Com;
@@ -41,8 +47,9 @@ package com.photodispatcher.service.barcode{
 			}
 		}
 
-		public function ComReader(){
+		public function ComReader(doubleScanGap:int=DOUBLE_SCAN_GAP){
 			super(null);
+			this.doubleScanGap=doubleScanGap;
 		}
 
 		public function get connected():Boolean{
@@ -114,6 +121,13 @@ package com.photodispatcher.service.barcode{
 					barcode = barcode.replace(String.fromCharCode(10),'');
 					barcode = barcode.replace(String.fromCharCode(02),'');
 					buffer=buffer.substr(idx+1);
+					if(doubleScanGap>0){
+						var now:int=getTimer();
+						var skip:Boolean=lastBarcode && now-lastBarcodeTime<doubleScanGap && lastBarcode==barcode;
+						lastBarcode=barcode;
+						lastBarcodeTime=now;	
+						if (skip) return;
+					}
 					dispatchEvent(new BarCodeEvent(BarCodeEvent.BARCODE_READED,barcode));
 				}
 			} while(idx>-1);

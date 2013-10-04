@@ -1,21 +1,24 @@
 package com.photodispatcher.print{
+	import com.akmeful.util.Exception;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.event.PrintEvent;
+	import com.photodispatcher.factory.LabBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
+	import com.photodispatcher.model.Lab;
+	import com.photodispatcher.model.LabDevice;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.dao.LabDAO;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
-	import com.photodispatcher.view.ModalPopUp;
 	
-	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
@@ -23,35 +26,128 @@ package com.photodispatcher.print{
 	import flash.events.SecurityErrorEvent;
 	import flash.filesystem.File;
 	
-	import mx.controls.Alert;
-	import mx.managers.CursorManager;
-
-	[Event(name="complete", type="flash.events.Event")]
-	public class PrintManager_Kill extends EventDispatcher{
-		//[Bindable]
-		public var isRunning:Boolean=false;
-
+	import mx.collections.ArrayCollection;
+	
+	[Event(name="managerError", type="com.photodispatcher.event.PrintEvent")]
+	public class PrintQueueManager extends EventDispatcher{
+		
 		[Bindable]
-		public var isWriting:Boolean=false;
-
+		public var isBusy:Boolean=false;
 		//map by source.id->map by order.id->Order 
 		private var webQueue:Object=new Object;
-		
-		//PrintGroups in post 
-		private var postQueue:Array=[];
-
-		/*
-		*complited not saved pg
-		*/
-		protected var writeQueue:Array=[];
-
 		//map by source->web service
 		private var webServices:Object=new Object;
-
-		public function PrintManager_Kill(){
-			super(null);
+		//PrintGroups in post 
+		private var postQueue:Array=[];
+		private var labNamesMap:Object;
+		
+		private var _initCompleted:Boolean=false;
+		public function get initCompleted():Boolean{
+			return _initCompleted;
 		}
 
+		
+		private static var _instance:PrintQueueManager;
+		public static function get instance():PrintQueueManager{
+			if(_instance == null) var t:PrintQueueManager=new PrintQueueManager();
+			return _instance;
+		}
+		
+		private var _labs:ArrayCollection=new ArrayCollection();
+		[Bindable(event="labsChange")]
+		public function get labs():ArrayCollection{
+			return _labs;
+		}
+
+		public function PrintQueueManager(){
+			super(null);
+			if(_instance == null){
+				_instance = this;
+			} else {
+				throw new Exception(Exception.SINGLETON);
+			}
+		}
+		
+		public function init(rawLabs:Array=null):void{
+			if(!rawLabs && initCompleted) return; 
+			//TODO 4 print cancel need full lab list (not only active)
+			if(rawLabs){//init from labaratory
+				if(rawLabs.length==0){
+					_initCompleted=false;
+					return;
+				}
+			}
+			if(!rawLabs){ //default init
+				var dao:LabDAO= new LabDAO();
+				var rawLabs:Array=dao.findActive(true);
+				if(rawLabs==null){
+					initErr('Блокировка чтения при инициализации менеджера печати');
+					return;
+				}
+			}
+			//fill labs from db
+			var lab:Lab;
+			var dev:LabDevice;
+			var result:Array=[];
+			labNamesMap= new Object();
+			for each(lab in rawLabs){
+				labNamesMap[lab.id.toString()]=lab.name;
+				lab.getDevices(true);
+				if(!lab.devices){
+					initErr('Блокировка чтения при инициализации менеджера печати');
+					return;
+				}
+				for each(dev in lab.devices){
+					dev.getRolls(false,true);
+					dev.getTimetable(true);
+					if(!dev.rolls || !dev.timetable){
+						initErr('Блокировка чтения при инициализации менеджера печати');
+						return;
+					}
+				}
+				var lb:LabBase=LabBuilder.build(lab);
+				lb.refreshOnlineState();
+				lb.refreshPrintQueue();
+				result.push(lb);
+			}
+			_labs.source=result;
+			_initCompleted=true;
+			dispatchEvent(new Event("labsChange"));
+			/*
+			//fill lab names (4 cancel print)
+			rawLabs=dao.findAllArray(true);
+			if(rawLabs==null){
+				initErr('Блокировка чтения при инициализации менеджера печати');
+				return;
+			}
+			labNamesMap= new Object();
+			for each(lab in rawLabs){
+				labNamesMap[lab.id.toString()]=lab.name;
+			}
+			*/
+		}
+		
+		private function initErr(msg:String):void{
+			_labs.source=[];
+			dispatchEvent(new Event("labsChange"));
+			dispatchManagerErr(msg);
+		}
+		private function dispatchManagerErr(msg:String):void{
+			dispatchEvent(new PrintEvent(PrintEvent.MANAGER_ERROR_EVENT,null,msg));
+		}
+
+		public function get labMap():Object{
+			if(!initCompleted) return null;
+			var result:Object= new Object();
+			var lab:LabBase;
+			for each(lab in _labs.source){
+				if(lab){
+					result[lab.id.toString()]=lab;
+				}
+			}
+			return result;
+		}
+		
 		public function reSync(printGrps:Array):void{
 			//PrintGroup to save
 			var inProcess:Array=[];
@@ -60,7 +156,7 @@ package com.photodispatcher.print{
 			var oMap:Object;
 			var order:Order;
 			var pg:PrintGroup;
-
+			
 			if(!printGrps) printGrps=[];
 			//add from web queue
 			for each(oMap in webQueue){
@@ -75,8 +171,6 @@ package com.photodispatcher.print{
 			}
 			//add from post queue
 			inProcess=inProcess.concat(postQueue);
-			//add from write queue
-			inProcess=inProcess.concat(writeQueue);
 			
 			var idx:int;
 			for each(o in inProcess){
@@ -96,19 +190,12 @@ package com.photodispatcher.print{
 					}
 				}
 			}
-
+			
 		}
-
-		/*
-		protected function reSyncFilter(element:*, index:int, arr:Array):Boolean {
-			var pg:PrintGroup=element as PrintGroup;
-			return pg!=null && (pg.state==OrderState.PRN_WAITE || pg.state==OrderState.PRN_CANCEL);
-		}
-		*/
 
 		public function post(printGrps:Vector.<Object>,lab:LabBase):void{
 			var pg:PrintGroup;
-			if(isWriting || !lab || !printGrps || printGrps.length==0) return;
+			if(!lab || !printGrps || printGrps.length==0) return;
 			lab.addEventListener(PrintEvent.POST_COMPLETE_EVENT,onPostComplete);
 			
 			//fill webQueue
@@ -151,7 +238,7 @@ package com.photodispatcher.print{
 				}
 			}
 			checkOrders();
-
+			
 			//start check web state
 			//scan sources
 			var orderId:String;
@@ -169,7 +256,7 @@ package com.photodispatcher.print{
 			}
 			checkWebComplite();
 		}
-		
+
 		private function checkOrders():void{
 			var oMap:Object;
 			//first check in database
@@ -207,8 +294,8 @@ package com.photodispatcher.print{
 							}
 						}
 					}
-					if(!dbReadOk) Alert.show('Часть заказов не размещена из-за блокировки чтения.');
-					if(!dbStateOk) Alert.show('Часть заказов не размещена из-за не сответствия статуса заказа.');
+					if(!dbReadOk) dispatchManagerErr('Часть заказов не размещена из-за блокировки чтения.');
+					if(!dbStateOk) dispatchManagerErr('Часть заказов не размещена из-за не сответствия статуса заказа.');
 				}
 			}
 			//clean up webQueue, remove empty orders map
@@ -236,20 +323,19 @@ package com.photodispatcher.print{
 			var result:Boolean=true;
 			src_id='';
 			for(src_id in webQueue){
-					result=false;
-					break;
+				result=false;
+				break;
 			}
 			if(result){
 				//all sources completed
 				trace('PrintManager: web check completed.');
-				//dispatchEvent(new Event(Event.COMPLETE));
 			}
 			return result;
 		}
-
+		
 		private function serviceCheckNext(service:BaseWeb):void{
 			if(service.isRunning) return;
-
+			
 			var oMap:Object;
 			var src_id:String=service.source.id.toString();
 			oMap=webQueue[src_id];
@@ -281,7 +367,7 @@ package com.photodispatcher.print{
 				var order:Order=oMap[svc.lastOrderId] as Order;
 				//check web service err
 				if(svc.hasError){
-					Alert.show('Ошибка web сервиса: '+svc.errMesage);
+					dispatchManagerErr('Ошибка web сервиса: '+svc.errMesage);
 					for each (pg in order.printGroups){
 						pg.state=OrderState.ERR_WEB;
 						StateLogDAO.logState(OrderState.ERR_WEB,order.id,pg.id,'Ошибка проверки на сайте: '+svc.errMesage);
@@ -301,7 +387,7 @@ package com.photodispatcher.print{
 							}
 						}
 					}else{
-						Alert.show('Заказ #'+svc.lastOrderId+' отменен на сайте. Обновите данные. Размещение заказа на печать отменено.');
+						dispatchManagerErr('Заказ #'+svc.lastOrderId+' отменен на сайте. Обновите данные. Размещение заказа на печать отменено.');
 						//mark as canceled
 						for each (pg in order.printGroups){
 							pg.state=OrderState.CANCELED;
@@ -324,11 +410,6 @@ package com.photodispatcher.print{
 			//check if any source in process
 			checkWebComplite();
 		}
-		
-
-		public function getWriteQueue():Array{
-			return writeQueue;
-		}
 
 		private function onPostComplete(e:PrintEvent):void{
 			//remove from postQueue
@@ -337,78 +418,53 @@ package com.photodispatcher.print{
 			if(idx!=-1){
 				postQueue.splice(idx,1);
 			}
+			if(postQueue.length==0){
+				//complited refresh lab
+				refreshLabs();
+			}
 			if(!e.hasErr){
 				//save
-				writeQueue.push(e.printGroup);
-				flushWriteQueue();
+				var dao:PrintGroupDAO=new PrintGroupDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
+				dao.writePrintState(e.printGroup);
+			}
+		}
+		
+		public function refreshLabs():void{
+			var lab:LabBase;
+			for each(lab in _labs.source){
+				lab.refresh();
 			}
 		}
 		
 		public function savePrintState(printGroups:Array):void{
-			if(printGroups) writeQueue=writeQueue.concat(printGroups);
-			flushWriteQueue();
+			var dao:PrintGroupDAO=new PrintGroupDAO();
+			dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
+			var pg:PrintGroup;
+			for each(pg in printGroups) dao.writePrintState(pg);
 		}
 
-		private var writePg:PrintGroup;
-		public function flushWriteQueue():void{
-			if(isWriting) return;
-			if(writeQueue) writeNext();
-		}
-		private function writeNext():void{
-			if(writeQueue.length==0){
-				if(!writePg) isWriting=false;
-				return;
-			}
-			var pg:PrintGroup= writeQueue.shift() as PrintGroup;
-			if(!pg || (pg.state!=OrderState.PRN_PRINT && pg.state!=OrderState.PRN_COMPLETE && pg.state!=OrderState.ERR_WRITE_LOCK)){
-				//isWriting=false;
-				writeNext();
-				return;
-			}
-			if(pg.state==OrderState.ERR_WRITE_LOCK) pg.restoreState();//pg.state=OrderState.PRN_PRINT;
-			isWriting=true;
-			writePg=pg;
-			var dao:PrintGroupDAO= new PrintGroupDAO();
-			dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
-			trace('PrintManager write PrintGroup to db '+ pg.id);
-			dao.writePrintState(pg);
-		}
 		private function onWrite(e:AsyncSQLEvent):void{
 			var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
 			if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
-			if(e.result==AsyncSQLEvent.RESULT_COMLETED){
-				trace('PrintManager write completed '+ writePg.id);
-				writePg=null;
-				writeNext();
-			}else{
-				trace('PrintManager write locked '+ writePg.id+'; err: '+e.error);
-				isWriting=false;
-				writePg.state=OrderState.ERR_WRITE_LOCK;
-				writeQueue.push(writePg);
-				writePg=null;
+			if(e.result!=AsyncSQLEvent.RESULT_COMLETED){
+				dispatchManagerErr('Блокировка записи при сохранении статуса группы печати');
 			}
 		}
 
+		/************ cancel print ***********/
 		private var cancelPostPrintGrps:Array;
-		//private var currentLab:LabBase;
-		private var currentLabMap:Object;
-
-		public function cancelPost(printGrps:Array,labMap:Object):void{
-			//if(isRunning ||!printGrps || !lab) return;
-			if(isRunning ||!printGrps || !labMap) return;
-			isRunning=true;
+		
+		public function cancelPost(printGrps:Array):void{
+			if(isBusy ||!printGrps || !labNamesMap) return;
+			isBusy=true;
 			//currentLab=lab;
-			currentLabMap=labMap;
 			cancelPostPrintGrps=printGrps;
 			var dao:PrintGroupDAO= new PrintGroupDAO();
 			dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCancelPostWrite);
 			trace('PrintManager cancel print, '+printGrps.length+' print groups');
-			var nameMap:Object= new Object();
 			var l:LabBase;
-			for each(l in labMap){
-				if(l) nameMap[l.id.toString()]=l.name; 
-			}
-			dao.cancelPrint(printGrps,nameMap);
+			dao.cancelPrint(printGrps,labNamesMap);
 		}
 		private function onCancelPostWrite(e:AsyncSQLEvent):void{
 			var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
@@ -418,9 +474,9 @@ package com.photodispatcher.print{
 				clearHotFolder();
 			}else{
 				trace('PrintManager cancel print write db locked '+ '; err: '+e.error);
-				Alert.show('Отмена печати не выполнена.');
+				dispatchManagerErr('Отмена печати не выполнена.');
 				cancelPostPrintGrps=null;
-				isRunning=false;
+				isBusy=false;
 			}
 		}
 		private function clearHotFolder():void{
@@ -434,17 +490,15 @@ package com.photodispatcher.print{
 		private function deleteNextFolder():void{
 			if(!cancelPostPrintGrps || cancelPostPrintGrps.length==0){
 				//complited
-				isRunning=false;
-				//currentLab=null;
-				currentLabMap=null;
+				isBusy=false;
 				cancelPostPrintGrps=null;
 				return;
 			}
 			var pg:PrintGroup=cancelPostPrintGrps.pop() as PrintGroup;
 			//build path
-			var currentLab:LabBase=currentLabMap[pg.destination.toString()] as LabBase;
+			var currentLab:LabBase=ArrayUtil.searchItem('id',pg.destination,labs.source) as LabBase;
 			if(!currentLab){
-				Alert.show('Не определена лаборатория id:'+pg.destination.toString()+'. Файлы заказа '+pg.id+' не удалены.');
+				dispatchManagerErr('Не определена лаборатория id:'+pg.destination.toString()+'. Файлы заказа '+pg.id+' не удалены.');
 				deleteNextFolder();
 				return;
 			}
@@ -462,14 +516,26 @@ package com.photodispatcher.print{
 			var prefix:String=SourceProperty.getProperty(currentLab.src_type,SourceProperty.HF_PREFIX);
 			var sufix:String=SourceProperty.getProperty(currentLab.src_type,SourceProperty.HF_SUFIX_READY);
 			var path:String=currentLab.hot+File.separator+prefix+currentLab.orderFolderName(pg)+sufix;
-				
+			var pathNHF:String;
+			if(currentLab.src_type==SourceType.LAB_NORITSU && currentLab.hot_nfs){
+				prefix=SourceProperty.getProperty(SourceType.LAB_NORITSU_NHF,SourceProperty.HF_PREFIX);
+				sufix=SourceProperty.getProperty(SourceType.LAB_NORITSU_NHF,SourceProperty.HF_SUFIX_READY);
+				pathNHF=currentLab.hot_nfs+File.separator+prefix+(currentLab as LabNoritsu).orderFolderNameNHF(pg)+sufix;
+			}
+			
 			var dstFolder:File;
 			//check dest folder
 			try{
 				dstFolder= new File(path);
 			}catch(e:Error){}
+			
+			if((!dstFolder || !dstFolder.exists || !dstFolder.isDirectory) && pathNHF){
+				try{
+					dstFolder= new File(pathNHF);
+				}catch(e:Error){}
+			}
 			if(!dstFolder || !dstFolder.exists || !dstFolder.isDirectory){
-				Alert.show('Не найдена папка "'+path+'". Файлы заказа '+pg.id+' не удалены.');
+				dispatchManagerErr('Не найдена папка "'+path+'". Файлы заказа '+pg.id+' не удалены.');
 				deleteNextFolder();
 			}
 			dstFolder.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onDelFault);
@@ -482,7 +548,7 @@ package com.photodispatcher.print{
 			dstFolder.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onDelFault);
 			dstFolder.removeEventListener(IOErrorEvent.IO_ERROR, onDelIoFault);
 			dstFolder.removeEventListener(Event.COMPLETE,onDelete);
-			Alert.show('Ошибка при удалении папки.'+e.text);
+			dispatchManagerErr('Ошибка при удалении папки.'+e.text);
 			deleteNextFolder();
 		}
 		private function onDelIoFault(e:IOErrorEvent):void{
@@ -490,7 +556,7 @@ package com.photodispatcher.print{
 			dstFolder.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onDelFault);
 			dstFolder.removeEventListener(IOErrorEvent.IO_ERROR, onDelIoFault);
 			dstFolder.removeEventListener(Event.COMPLETE,onDelete);
-			Alert.show('Ошибка при удалении папки.'+e.text);
+			dispatchManagerErr('Ошибка при удалении папки.'+e.text);
 			deleteNextFolder();
 		}
 		private function onDelete(e:Event):void{
@@ -500,6 +566,6 @@ package com.photodispatcher.print{
 			dstFolder.removeEventListener(Event.COMPLETE,onDelete);
 			deleteNextFolder();
 		}
-		
+
 	}
 }

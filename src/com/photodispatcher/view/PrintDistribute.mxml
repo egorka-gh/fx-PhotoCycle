@@ -7,6 +7,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
@@ -16,7 +17,7 @@
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.print.LabBase;
-			import com.photodispatcher.print.PrintManager;
+			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
@@ -34,9 +35,7 @@
 			[Bindable]
 			private var pgList:ArrayCollection=new ArrayCollection();
 			[Bindable]
-			private var labList:ArrayCollection;
-			[Bindable]
-			private var printManager:PrintManager= new PrintManager();
+			private var printManager:PrintQueueManager;
 
 			//filters
 			[Bindable]
@@ -76,11 +75,18 @@
 			}
 			
 			public function refresh(afterDistribute:Boolean=false):void{
+				if(!printManager){
+					printManager= PrintQueueManager.instance;
+					printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
+				}
+				printManager.init();
 				refreshPgList();
 				//refresh lab list
 				if(afterDistribute) return;
-				var lDao:SourcesDAO= new SourcesDAO();
-				labList=LabBuilder.buildList(lDao.findAll(2).source);
+			}
+
+			private function onManagerError(e:PrintEvent):void{
+				lbManagerError.text=e.errMsg;
 			}
 			
 			private function refreshPgList():void{
@@ -132,22 +138,6 @@
 					//fill paper filter list
 					paperFilterMap[size.paper_id.toString()]={id:size.paper_id, name:size.paper};
 					if(pg.width!=pg.height){
-						/*by height
-						key=pg.height.toString()+'~'+pg.paper.toString();
-						size=sizeMap[key] as PhotoSizeAccum;
-						if(!size){
-							size= new PhotoSizeAccum();
-							size.size=pg.height;
-							size.paper_id=pg.paper;
-							size.paper=pg.paper_name;
-							sizeMap[key]=size;
-						}
-						size.pg_num++;
-						size.file_num+=pg.file_num;
-						size.len+=pg.file_num*pg.width;
-						*/
-						//fill size filter list
-						//sizeFilterMap[size.size.toString()]={id:size.size, name:size.size.toString()};
 						sizeFilterMap[pg.height.toString()]={id:pg.height, name:pg.height.toString()};
 					}
 				}
@@ -177,7 +167,6 @@
 			}
 			
 			private function sizesListLabel(item:Object):String{
-				//return item.size+' '+item.paper+' (групп: '+item.pg_num+' фото: '+item.file_num+' длина: '+item.len+')';
 				if(item.size!=-1){
 					return item.size+' '+item.paper+' (фото: '+item.file_num+'; длина: '+ Math.round(item.len/1000).toString()+'м)';
 				}else{
@@ -187,15 +176,9 @@
 			
 			protected function btPost_clickHandler(event:MouseEvent):void{
 				if(!dgPGroups.selectedItem || !lstLabs.selectedItem) return;
+				lbManagerError.text='';
 				var l:LabBase=lstLabs.selectedItem as LabBase;
-				//var pm:PrintManager= new PrintManager();
 				printManager.post(dgPGroups.selectedItems,l);
-				//if(l) l.post(dgPGroups.selectedItems);
-				//printManager.post(dgPGroups.selectedItems,lstLabs.selectedItem as LabBase);
-				/*
-				var pt:PrintTask=new PrintTask(dgPGroups.selectedItem as PrintGroup,lstLabs.selectedItem as LabBase);
-				pt.post();
-				*/
 			}
 			
 			private function filterPGList(item:Object):Boolean {
@@ -204,11 +187,9 @@
 				if(ddSourceFilter && ddSourceFilter.selectedIndex>0 && pg.source_id!=ddSourceFilter.selectedItem.id){
 					return false;
 				}
-				//if(tiOrderFilter && tiOrderFilter.text && pg.id.substr(0,tiOrderFilter.text.length)!=tiOrderFilter.text) return false;
 				if(tiOrderFilter && tiOrderFilter.text && pg.id.indexOf(tiOrderFilter.text)==-1) return false;
 				if(lstSizes && lstSizes.selectedIndex>0){
 					var ps:PhotoSizeAccum=lstSizes.selectedItem as PhotoSizeAccum;
-					//if((pg.width!=ps.size && pg.height!=ps.size) ||(pg.paper!=ps.paper_id)) return false; 
 					if((pg.width!=ps.size) ||(pg.paper!=ps.paper_id)) return false;
 				}else{
 					if(ddStateFilter && ddStateFilter.selectedIndex>0 && pg.state!=ddStateFilter.selectedItem.id) return false;
@@ -246,6 +227,10 @@
 				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.CANCEL_ORDER,GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
 			}
 			
+			protected function btRefreshLab_clickHandler(event:MouseEvent):void{
+				printManager.refreshLabs();
+			}
+			
 		]]>
 	</fx:Script>
 	<s:HGroup gap="10" width="100%" height="100%">
@@ -260,6 +245,7 @@
 					change="lstSizes_changeHandler(event)"/>
 		</s:VGroup>
 		<s:VGroup gap="5" width="100%" height="100%">
+			<s:Label id="lbManagerError" color="#ff0000" width="100%" maxDisplayedLines="1"/>
 			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
 				<s:Label text="Фильтрация" fontWeight="bold"/>
 				
@@ -300,13 +286,19 @@
 						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.gridColumns()}"/>
 		</s:VGroup>
 		<s:Group height="100%">
-			<s:Button id="btPost" label="{printManager.isWriting?'!':'>'}" width="30" fontWeight="bold" verticalCenter="0" 
-					  enabled="{printManager.isWriting?false:true}" click="btPost_clickHandler(event)"/>
+			<s:Button id="btPost" label="{printManager.isBusy?'!':'>'}" width="30" fontWeight="bold" verticalCenter="0" 
+					  enabled="{printManager.isBusy?false:true}" click="btPost_clickHandler(event)"/>
 		</s:Group>
 		<s:VGroup gap="5" width="200" height="100%">
-			<s:Label text="Лаборатории"/>
+			<s:HGroup gap="10" verticalAlign="middle" width="100%">
+				<s:Label text="Лаборатории"/>
+				<s:Spacer width="100%"/>
+				<s:Button id="btRefreshLab" icon="assets/icon-refresh.gif" click="btRefreshLab_clickHandler(event)"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+
+			</s:HGroup>
 			<s:List id="lstLabs" width="100%" height="100%"
-					dataProvider="{labList}" useVirtualLayout="false"
+					dataProvider="{printManager.labs}" useVirtualLayout="false"
 					itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRenderer"/>
 		</s:VGroup>
 	</s:HGroup>

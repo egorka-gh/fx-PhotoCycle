@@ -8,14 +8,16 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.Lab;
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.print.LabBase;
-			import com.photodispatcher.print.PrintManager;
+			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -55,7 +57,7 @@
 			
 			public function init():void{
 				//labId=Context.getAttribute('applabId');
-				labMap=Context.getAttribute('appLabMap');
+				labMap=PrintQueueManager.instance.labMap;
 				
 				var lDao:SourcesDAO= new SourcesDAO();
 				var a:Array=lDao.findAllArray();
@@ -64,10 +66,11 @@
 				a.unshift(s);
 				sourceFilterList.source=a;
 				
-				a=lDao.findAllArray(2);
+				var labDao:LabDAO=new LabDAO();
+				a=labDao.findAllArray();
 				if(!a) a=[];
-				//lab=LabBuilder.build(ArrayUtil.searchItem('id',labId,a) as Source);
-				a.unshift(s);
+				var lab:Lab= new Lab(); lab.id=0; lab.name='-';
+				a.unshift(lab);
 				labFilterList.source=a;
 				
 				Context.initAttributeLists();
@@ -81,7 +84,6 @@
 				pgList.filterFunction=filterPGList;
 				
 				refresh();
-				
 			}
 			
 			public function refresh():void{

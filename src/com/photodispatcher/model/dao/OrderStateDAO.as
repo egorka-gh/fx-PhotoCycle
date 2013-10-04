@@ -58,22 +58,14 @@ package com.photodispatcher.model.dao{
 				}
 			}
 		}
+		
 		/*
-		public function getItem(id:int):OrderState{
-			runSelect("SELECT * FROM order_state WHERE id=?", [id]);
-			return item as OrderState;
-		}
-		
-		public function findAll():ArrayCollection{
-			return getList("SELECT * FROM order_state ORDER BY id");
-		}
-		*/
-		
 		public function getOrderStateByPrintGroups(order_id:String, silent:Boolean=false):OrderState{
 			var sql:String='SELECT ifnull(min(pg.state),0) id FROM print_group pg WHERE pg.order_id = ?';
 			runSelect(sql, [order_id],silent);
 			return item as OrderState;
 		}
+		*/
 		
 		override protected function processRow(o:Object):Object{
 			var a:OrderState = new OrderState();

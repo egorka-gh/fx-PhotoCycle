@@ -23,13 +23,16 @@ package com.photodispatcher.model{
 		public var queue_limit:int;
 		[Bindable]
 		public var is_active:Boolean;
+		[Bindable]
+		public var is_managed:Boolean;
+		
 		
 		//db drived
 		[Bindable]
 		public var src_type_name:String;
 
 		//db childs
-		private var _devices:Array;
+		protected var _devices:Array;
 
 		public function get devices():Array{
 			return _devices;
@@ -45,7 +48,21 @@ package com.photodispatcher.model{
 			return _devices;
 		}
 
-
+		public function cloneTo(lab:Lab):void{
+			if(!lab) return;
+			lab.id=this.id;
+			lab.src_type=this.src_type;
+			lab.name=this.name;
+			lab.hot=this.hot;
+			lab.hot_nfs=this.hot_nfs;
+			lab.queue_limit=this.queue_limit;
+			lab.is_active=this.is_active;
+			lab.is_managed=this.is_managed;
+			lab.src_type_name=this.src_type_name;
+			lab._devices=this._devices;
+			lab.isSelected=this.isSelected;
+		}
+		
 		//runtime, 4 Laboratory config
 		[Bindable]
 		public var isSelected:Boolean;
@@ -57,7 +74,9 @@ package com.photodispatcher.model{
 			col= new GridColumn('name'); col.headerText='Наименование'; result.addItem(col); 
 			col= new GridColumn('hot'); col.headerText='Hot folder'; result.addItem(col); 
 			col= new GridColumn('hot_nfs'); col.headerText='Hot folder NHF'; result.addItem(col); 
+			col= new GridColumn('is_managed'); col.headerText='Автораспределение'; result.addItem(col); 
 			col= new GridColumn('queue_limit'); col.headerText='Очередь печати (мин)'; result.addItem(col); 
+			col= new GridColumn('is_managed'); col.headerText='Автораспределение'; result.addItem(col); 
 			col= new GridColumn('is_active'); col.headerText='Активна'; result.addItem(col); 
 			return result;
 		}

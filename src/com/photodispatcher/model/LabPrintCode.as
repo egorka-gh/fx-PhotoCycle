@@ -25,6 +25,8 @@ package com.photodispatcher.model{
 		public var is_duplex:Boolean=false;
 		[Bindable]
 		public var is_pdf:Boolean=false;
+		[Bindable]
+		public var roll:int;
 		
 		//ref
 		[Bindable]
@@ -77,5 +79,25 @@ package com.photodispatcher.model{
 			return result;
 		}
 		
+		public function clone():LabPrintCode{
+			var result:LabPrintCode= new LabPrintCode();
+			result.src_type=src_type;
+			result.src_id=src_id;
+			result.prt_code=prt_code;
+			result.width=width;
+			result.height=height;
+			result.paper=paper;
+			result.frame=frame;
+			result.correction=correction;
+			result.cutting=cutting;
+			result.is_duplex=is_duplex;
+			result.is_pdf=is_pdf;
+			result.roll=roll;
+			result.paper_name=paper_name;
+			result.frame_name=frame_name;
+			result.correction_name=correction_name;
+			result.cutting_name=cutting_name;
+			return result; 
+		}
 	}
 }

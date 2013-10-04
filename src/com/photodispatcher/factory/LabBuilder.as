@@ -1,5 +1,5 @@
 package com.photodispatcher.factory{
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.print.LabBase;
 	import com.photodispatcher.print.LabFuji;
@@ -13,26 +13,26 @@ package com.photodispatcher.factory{
 
 	public class LabBuilder	{
 
-		public static function build(source:Source):LabBase{
-			if (!source) return null;
-			switch(source.type_id){
+		public static function build(lab:Lab):LabBase{
+			if (!lab) return null;
+			switch(lab.src_type){
 				case SourceType.LAB_NORITSU:
-					return new LabNoritsu(source);
+					return new LabNoritsu(lab);
 					break;
 				case SourceType.LAB_FUJI:
-					return new LabFuji(source);
+					return new LabFuji(lab);
 					break;
 				case SourceType.LAB_XEROX:
-					return new LabXerox(source);
+					return new LabXerox(lab);
 					break;
 				case SourceType.LAB_PLOTTER:
-					return new LabPlotter(source);
+					return new LabPlotter(lab);
 					break;
 				case SourceType.LAB_NORITSU_NHF:
-					return new LabNoritsuNHF(source);
+					return new LabNoritsuNHF(lab);
 					break;
 				case SourceType.LAB_VIRTUAL:
-					return new LabVirtual(source);
+					return new LabVirtual(lab);
 					break;
 				default:
 					return null;
@@ -40,6 +40,7 @@ package com.photodispatcher.factory{
 			}
 		}
 
+		/*
 		public static function buildList(sources:Array):ArrayCollection{
 			var arr:Array=[];
 			if(sources){
@@ -50,6 +51,7 @@ package com.photodispatcher.factory{
 			}
 			return new ArrayCollection(arr);
 		}
+		*/
 
 	}
 }

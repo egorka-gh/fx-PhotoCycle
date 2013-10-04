@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.print.LabBase;
+			
+			[Bindable]
+			public var label:String;
+			
+			private var _state:int;
+			public function get state():int{
+				return _state;
+			}
+			public function set state(value:int):void{
+				_state=value;
+				switch(_state){
+					case LabBase.STATE_MANUAL:
+						stateColor.color=0x0000ff;
+						break;
+					case LabBase.STATE_ON_WARN:
+						stateColor.color=0xf9f900;
+						break;
+					case LabBase.STATE_ON:
+						stateColor.color=0x00DD00;
+						break;
+					case LabBase.STATE_ERROR:
+						stateColor.color=0xDD0000;
+						break;
+					default:
+						stateColor.color=0xbbbbbb;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+<!--	<s:VGroup gap="0">
+		<s:Label text="{label}"/>-->
+		<s:Rect top="0" left="0" width="6" height="6" radiusX="3" verticalCenter="-2">
+			<s:stroke>
+				<s:SolidColorStroke  weight="1" color="#999999"/>
+			</s:stroke>
+			<s:fill>
+				<s:SolidColor id="stateColor" color="0"/>
+			</s:fill>
+		</s:Rect>
+	<!--</s:VGroup>-->
+</s:Group>
