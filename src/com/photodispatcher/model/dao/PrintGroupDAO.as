@@ -73,7 +73,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
 			//col= new GridColumn('cover_name'); col.headerText='Обложка'; result.addItem(col);
-			col= new GridColumn('file_num'); col.headerText='Кол файлов'; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
 			return result;
 		}
 
@@ -98,7 +98,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
 			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
-			col= new GridColumn('file_num'); col.headerText='Кол файлов'; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
 			return new ArrayList(result);
 		}
 

@@ -26,17 +26,22 @@ package com.photodispatcher.model{
 		public function get isOnline():Boolean{
 			return onlineState==LabBase.STATE_ON || onlineState==LabBase.STATE_ON_WARN;
 		}
+		//db drived
+		[Bindable]
+		public var tech_point_name:String;
 
 		//db childs
 		private var _rolls:Array;
 		private var _timetable:Array;
 
+		[Bindable]
 		public function get timetable():Array{
 			return _timetable;
 		}
 		public function set timetable(value:Array):void{
 			_timetable = value;
 		}
+		
 		public function getTimetable(silent:Boolean=false):Array{
 			if(!loaded) return _timetable;
 			var dao:LabTimetableDAO=new LabTimetableDAO();
@@ -44,13 +49,14 @@ package com.photodispatcher.model{
 			return _timetable;
 		}
 
-
+		[Bindable]
 		public function get rolls():Array{
 			return _rolls;
 		}
 		public function set rolls(value:Array):void{
 			_rolls = value;
 		}
+		
 		public function getRolls(forEdit:Boolean=false, silent:Boolean=false):Array{
 			if(!loaded) return _rolls;
 			var dao:LabRollDAO=new LabRollDAO();

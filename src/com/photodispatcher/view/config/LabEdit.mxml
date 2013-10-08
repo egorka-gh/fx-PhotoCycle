@@ -30,6 +30,7 @@
 				_currentItem = value;
 				typeListIdx=-1;
 				isNoritsu=false;
+				lstDevices.selectedIndex=-1;
 				if(_currentItem){
 					isNoritsu=_currentItem.src_type==SourceType.LAB_NORITSU;
 					var stDao:SourceTypeDAO=new SourceTypeDAO();
@@ -113,7 +114,7 @@
 			<s:FormItem label="Hot folder NHF" enabled="{isNoritsu}">
 				<s:TextInput id="tiHotNsf" text="@{currentItem.hot_nfs}" change="{currentItem.changed=true}" width="200"/>
 			</s:FormItem> 
-			<s:FormItem label="Автораспределение">
+			<s:FormItem label="Автопечать">
 				<s:CheckBox selected="@{currentItem.is_managed}" change="{currentItem.changed=true}"/>
 			</s:FormItem> 
 			<s:FormItem label="Очередь печати (мин)" >

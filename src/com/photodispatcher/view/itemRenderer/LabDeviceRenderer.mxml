@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*" 
+				xmlns:config="com.photodispatcher.view.config.*"
+				autoDrawBackground="false"
+				creationComplete="{init()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.LabDevice;
+			import com.photodispatcher.model.LabRoll;
+			import com.photodispatcher.model.LabTimetable;
+			import com.photodispatcher.model.dao.LabRollDAO;
+			import com.photodispatcher.view.AddOnlineRollPopup;
+			import com.photodispatcher.view.LabInfo;
+			
+			import spark.events.PopUpEvent;
+			
+
+			[Bindable]
+			private var dev:LabDevice;
+			[Bindable]
+			private var paperFilterList:ArrayCollection= new ArrayCollection();
+
+			override public function get data():Object{
+				return super.data;
+			}
+			override public function set data(value:Object):void{
+				super.data = value;
+				dev= value as LabDevice;
+				if(dev){
+					if(!dev.rolls) dev.getRolls(false,true);
+					if(!dev.timetable) dev.getTimetable(true);
+				}
+			}
+
+			private function init():void{
+				paperFilterList=Context.getAttribute('paperValueList');
+			}
+
+			private function filterActiveRolls(item:Object):Boolean {
+				var r:LabRoll=item as LabRoll;
+				if (!r) return false;
+				return r.is_online;
+			}
+
+			private function rollsFilter(item:Object):Boolean{
+				var r:LabRoll=item as LabRoll;
+				if(!r) return false;
+				if(ddPaperFilter.selectedIndex==-1) return false;
+				if(ddPaperFilter && r.paper!=ddPaperFilter.selectedItem.value) return false;
+				return true;
+			}
+
+			private function applyActiveRollsFilter():void{
+				aclActiveRolls.refresh();
+			}
+
+			private function applyRollsFilter():void{
+				aclRolls.refresh();
+			}
+
+			protected function btDelActRoll_clickHandler(event:MouseEvent):void{
+				var item:LabRoll= gridActRolls.currentItem as LabRoll;
+				if (!item) return;
+				item.is_online= false;
+				applyActiveRollsFilter();
+				refreshParentOnlineRolls();
+				var dao:LabRollDAO= new LabRollDAO();
+				dao.saveOnlineState(item);
+				applyActiveRollsFilter();
+			}
+			
+			
+			private function getPreferRolls():ArrayCollection{
+				var parent:LabInfo=getParentLabInfo();
+				if(parent){
+					return parent.aclRolls;
+				}else{
+					return null;
+				}
+			}
+
+			private function refreshParentOnlineRolls():void{
+				var parent:LabInfo=getParentLabInfo();
+				if(parent){
+					parent.lab.printQueue.refreshOnlineRolls();
+				}
+			}
+
+			private function getParentLabInfo():LabInfo{
+				var parent:Object=this;
+				do{
+					if(parent.hasOwnProperty("parent")){
+						parent=parent.parent;
+						if(parent && parent is LabInfo){
+							return (parent as LabInfo);
+						}
+					}else{
+						parent=null;
+					}
+				}while(parent);
+				return null;
+			}
+			
+			private var addPopup:AddOnlineRollPopup;
+			protected function btAddActRoll_clickHandler(event:MouseEvent):void{
+				addPopup= new AddOnlineRollPopup();
+				addPopup.rolls=aclRolls;
+				addPopup.preferRolls=getPreferRolls();
+				addPopup.addEventListener(PopUpEvent.CLOSE,onAddPopupClose);
+				addPopup.show();
+			}
+			private function onAddPopupClose(evt:PopUpEvent):void{
+				addPopup.removeEventListener(PopUpEvent.CLOSE,onAddPopupClose);
+				addPopup= null;
+				if(evt.commit){
+					var item:LabRoll=evt.data as LabRoll;
+					if(item){
+						item.is_online=true;
+						applyActiveRollsFilter();
+						refreshParentOnlineRolls();
+						var dao:LabRollDAO= new LabRollDAO();
+						dao.saveOnlineState(item,true);
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<s:ArrayCollection id="aclActiveRolls" source="{dev.rolls}" filterFunction="{filterActiveRolls}"/>
+		<s:ArrayCollection id="aclRolls" source="{dev.rolls}" filterFunction="{rollsFilter}"/>
+		<s:ArrayCollection id="aclTimeTable" source="{dev.timetable}"/>
+	</fx:Declarations>
+
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="2">
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:HGroup gap="10" top="4" left="4" right="4" bottom="4" paddingLeft="5" paddingRight="5" paddingBottom="5">
+		<s:VGroup gap="10">
+			<s:HGroup gap="5" verticalAlign="middle" paddingTop="5" paddingLeft="5">
+				<s:Label text="{dev.name}" fontSize="14" fontWeight="bold"/>
+				<itemRenderer:LabStateIndicator state="{dev.onlineState}"/>
+			</s:HGroup>
+			<s:Label text="Тех. точка: {dev.tech_point_name?dev.tech_point_name:'-'}"/>
+			<s:Label text="Скорость  : До 203: {dev.speed1.toString()}мм/сек; От 203: {dev.speed2.toString()}мм/сек"/>
+			<s:Label text="Активные рулоны:"/>
+			<config:ItemsGrid id="gridActRolls" editable="false" currentData="{aclActiveRolls}" currentColumns="{LabRoll.gridColumnsView(true)}" requestedRowCount="4" width="300"/>
+			<s:HGroup gap="10" width="100%" horizontalAlign="right">
+				<s:Button id="btAddActRoll" label="+" click="btAddActRoll_clickHandler(event)" width="30"/>
+				<s:Button id="btDelActRoll" label="-" click="btDelActRoll_clickHandler(event)" width="30"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup gap="5">
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Картриджи" />
+				<s:Spacer width="10"/>
+				<s:Label text="Бумага"/>
+				<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyRollsFilter()}" width="150"/>
+				<s:Spacer width="10"/>
+			</s:HGroup>
+			<config:ItemsGrid id="gridRolls" editable="false" currentData="{aclRolls}" currentColumns="{LabRoll.gridColumnsView()}" requestedRowCount="8" width="400"/>
+		</s:VGroup>
+		<s:VGroup gap="5">
+			<s:Label text="Расписание" height="21" verticalAlign="middle"/>
+			<config:ItemsGrid id="gridTimeTable" editable="false" currentData="{aclTimeTable}" requestedRowCount="7" currentColumns="{LabTimetable.gridColumns()}" />
+		</s:VGroup>
+	</s:HGroup>
+</s:ItemRenderer>

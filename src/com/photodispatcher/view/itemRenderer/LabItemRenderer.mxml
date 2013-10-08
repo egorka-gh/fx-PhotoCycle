@@ -9,8 +9,13 @@
 		<![CDATA[
 			import com.photodispatcher.print.LabBase;
 			import com.photodispatcher.view.ErrorPopup;
+			import com.photodispatcher.view.LabInfo;
 			
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
 			import mx.utils.StringUtil;
+			
+			import spark.components.WindowedApplication;
 			
 			private static const ERR_TOOL_TIP_TIME:int=10000;
 			
@@ -58,6 +63,16 @@
 				lab.refreshPrintQueue();
 			}
 			
+			protected function btLabInfo_clickHandler(event:MouseEvent):void{
+				if(!lab) return;
+				var pop:LabInfo= new LabInfo;
+				pop.lab=lab;
+				pop.width=FlexGlobals.topLevelApplication.width-50;
+				pop.height=FlexGlobals.topLevelApplication.height-70;
+				PopUpManager.addPopUp(pop,FlexGlobals.topLevelApplication as WindowedApplication);
+				PopUpManager.centerPopUp(pop);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -78,11 +93,13 @@
 	</s:Rect>
 		<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
 			<!--<s:Image source="assets/Noritsu_logo_24.png" height="16" smooth="true" scaleMode="letterbox" horizontalAlign="left"/>-->
-			<s:HGroup gap="5" verticalAlign="middle">
+			<s:HGroup gap="5" verticalAlign="middle" width="100%">
 				<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
 				<s:Label text="{lab.name}" fontSize="14" fontWeight="bold"/>
+				<s:Spacer width="100%"/>
+				<s:Image id="btLabInfo" source="assets/info.png" buttonMode="true" verticalCenter="-2" click="btLabInfo_clickHandler(event)"/>
 			</s:HGroup>
-			<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}" doubleClickEnabled="true" doubleClick="secondtominuterenderer1_doubleClickHandler(event)"/>
+			<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}"/>
 			<s:DataGroup itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" dataProvider="{aclRolls}">
 				<s:layout>
 					<s:VerticalLayout gap="2"/>

@@ -36,13 +36,23 @@ package com.photodispatcher.model{
 		public var printQueueTime:int=0;//sec
 		public var speed:int=0;//mm/sec
 
-		public static function gridColumns():ArrayList{
+		public static function gridColumnsEdit():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
 			col= new GridColumn('is_used'); col.headerText=' '; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.width=30; result.addItem(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.editable=false; result.addItem(col);
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.addItem(col);
-			col= new GridColumn('len_std'); col.headerText='Длинна (мм)'; result.addItem(col);
+			col= new GridColumn('len_std'); col.headerText='Стандартная длинна (мм)'; result.addItem(col);
+			return result;
+		}
+
+		public static function gridColumnsView(brief:Boolean=false):ArrayList{
+			var result:ArrayList= new ArrayList();
+			var col:GridColumn;
+			if(!brief){ col= new GridColumn('is_online'); col.headerText='Активный'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.width=70; result.addItem(col);}
+			col= new GridColumn('width'); col.headerText='Ширина'; col.editable=false; result.addItem(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.addItem(col);
+			col= new GridColumn('len'); col.headerText='Длинна (мм)'; result.addItem(col);
 			return result;
 		}
 
@@ -50,6 +60,8 @@ package com.photodispatcher.model{
 			var result:LabRoll= new LabRoll();
 			result.lab_device=lab_device;
 			result.paper=paper;
+			result.width=width;
+			result.paper_name=paper_name;
 			result.len_std=len_std;
 			result.len=len;
 			result.is_online=is_online;

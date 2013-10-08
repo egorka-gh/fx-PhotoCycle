@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+		 cornerRadius="4" borderWeight="1" borderColor="#555555" backgroundColor="#ffffff">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.print.LabBase;
+			
+			import mx.managers.PopUpManager;
+			
+			private var _lab:LabBase;
+
+			[Bindable]
+			public var isPopup:Boolean=true;
+
+			[Bindable]
+			public function get lab():LabBase{
+				return _lab;
+			}
+			public function set lab(value:LabBase):void{
+				_lab = value;
+			}
+
+			
+			protected function btClose_clickHandler(event:MouseEvent):void{
+				if(isPopup)	PopUpManager.removePopUp(this);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>
+		<s:ArrayCollection id="aclDevices" source="{lab.devices}"/>
+	</fx:Declarations>
+
+	<s:Image id="btClose" visible="{isPopup}" source="assets/offLine.png" 
+			 buttonMode="true" top="-5" right="-5" width="28" height="28" click="btClose_clickHandler(event)"/>
+
+	<s:Scroller left="4" top="4" right="4" bottom="4">
+		<s:HGroup gap="10">
+			<s:VGroup gap="5">
+				<s:HGroup gap="5" verticalAlign="middle" paddingTop="10" paddingLeft="20">
+					<s:Label text="{lab.name}" fontSize="14" fontWeight="bold"/>
+					<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
+				</s:HGroup>
+				<s:Form>
+					<s:layout>
+						<s:FormLayout gap="-16"/>
+					</s:layout>
+					
+					<s:FormItem label="Тип">
+						<s:TextInput text="{lab.src_type_name}" editable="false" width="200"/>
+					</s:FormItem>
+					<s:FormItem label="Hot folder">
+						<s:TextInput id="tiHot" text="{lab.hot}"  editable="false" width="200"/>
+					</s:FormItem>
+					<s:FormItem label="Hot folder NHF">
+						<s:TextInput id="tiHotNsf" text="{lab.hot_nfs}"  editable="false" width="200"/>
+					</s:FormItem> 
+					<s:FormItem label="Автопечать">
+						<s:CheckBox selected="@{lab.is_managed}" change="{lab.changed=true}"/>
+					</s:FormItem> 
+					<s:FormItem label="Ограничение очереди (мин)" >
+						<s:TextInput text="{lab.queue_limit.toString()}"  editable="false" width="200"/>
+					</s:FormItem> 
+					<s:FormItem label="Активна">
+						<s:CheckBox id="chbOnline" selected="{lab.is_active}" enabled="false"/>
+					</s:FormItem> 
+					<s:FormItem label="Очередь печати" >
+						<s:VGroup gap="5">
+							<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}" caption="Общая"/>
+							<s:Label text="По картриджам"/>
+							<s:DataGroup itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" dataProvider="{aclRolls}">
+								<s:layout>
+									<s:VerticalLayout gap="2"/>
+								</s:layout> 
+							</s:DataGroup>
+						</s:VGroup>
+					</s:FormItem> 
+				</s:Form>
+			</s:VGroup>
+			<s:VGroup gap="5">
+				<s:Label text="Устройства"/>
+				<s:DataGroup dataProvider="{aclDevices}" itemRenderer="com.photodispatcher.view.itemRenderer.LabDeviceRenderer">
+					<s:layout>
+						<s:VerticalLayout gap="5"/>
+					</s:layout>
+				</s:DataGroup>
+			</s:VGroup>
+		</s:HGroup>
+	</s:Scroller>
+</s:BorderContainer>

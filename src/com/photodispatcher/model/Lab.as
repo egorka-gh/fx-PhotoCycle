@@ -34,6 +34,7 @@ package com.photodispatcher.model{
 		//db childs
 		protected var _devices:Array;
 
+		[Bindable]
 		public function get devices():Array{
 			return _devices;
 		}
@@ -76,7 +77,7 @@ package com.photodispatcher.model{
 			col= new GridColumn('hot_nfs'); col.headerText='Hot folder NHF'; result.addItem(col); 
 			col= new GridColumn('is_managed'); col.headerText='Автораспределение'; result.addItem(col); 
 			col= new GridColumn('queue_limit'); col.headerText='Очередь печати (мин)'; result.addItem(col); 
-			col= new GridColumn('is_managed'); col.headerText='Автораспределение'; result.addItem(col); 
+			col= new GridColumn('is_managed'); col.headerText='Автопечать'; result.addItem(col); 
 			col= new GridColumn('is_active'); col.headerText='Активна'; result.addItem(col); 
 			return result;
 		}

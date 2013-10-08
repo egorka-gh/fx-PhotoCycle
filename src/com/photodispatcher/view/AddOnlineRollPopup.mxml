@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   minWidth="100" minHeight="100">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.LabRoll;
+			import com.photodispatcher.util.ArrayUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
+
+			private var rollMap:Object;
+			private var _rolls:ArrayCollection;
+			[Bindable]
+			public function get rolls():ArrayCollection{
+				return _rolls;
+			}
+			public function set rolls(value:ArrayCollection):void{
+				_rolls = new ArrayCollection(); 
+				if(value && value.source) _rolls.source=value.source;
+				rollMap= new Object();
+				var r:LabRoll;
+				if(_rolls){
+					for each (r in _rolls){
+						rollMap[r.paper.toString()+'~'+r.width.toString()]=r;
+					}
+					_rolls.filterFunction=rollsFilter;
+					_rolls.refresh();
+				}
+			}
+			
+			private var _preferRolls:ArrayCollection;
+			[Bindable]
+			public function get preferRolls():ArrayCollection{
+				return _preferRolls;
+			}
+			public function set preferRolls(value:ArrayCollection):void{
+				_preferRolls= new ArrayCollection();
+				if(value && value.source) _preferRolls.source=value.source;
+			}
+
+			
+			[Bindable]
+			private var paperFilterList:ArrayCollection= new ArrayCollection();
+			
+			public function show():void{
+				paperFilterList=Context.getAttribute('paperValueList');
+				if(preferRolls){
+						preferRolls.filterFunction=preferRollsFilter;
+						var sortA:Sort = new Sort();
+						sortA.fields=[new SortField("printQueueLen",true,true)];
+						preferRolls.sort=sortA;
+						preferRolls.refresh();
+				}
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				PopUpManager.centerPopUp(this);
+			}
+
+			private function getRoll(paper:int,width:int):LabRoll{
+				return rollMap[paper.toString()+'~'+width.toString()] as LabRoll;
+			}
+			
+			private function preferRollsFilter(item:Object):Boolean{
+				var r:LabRoll=item as LabRoll; 
+				if(!r || r.is_online || !getRoll(r.paper,r.width)) return false;
+				return true;
+			}
+			
+			private function rollsFilter(item:Object):Boolean{
+				var r:LabRoll=item as LabRoll;
+				if(!r) return false;
+				if(!ddPaperFilter || ddPaperFilter.selectedIndex==-1) return false;
+				if(!ddPaperFilter || r.paper!=ddPaperFilter.selectedItem.value) return false;
+				return true;
+			}
+			private function applyRollsFilter():void{
+				_rolls.refresh();
+			}
+
+			protected function tiLen_changeHandler(event:TextOperationEvent):void{
+				if(ddRoll.selectedIndex==-1) return
+				var r:LabRoll=ddRoll.selectedItem as LabRoll;
+				if(!r) return;
+				r.len=int(tiLen.text);
+			}
+			
+			protected function lstPrefe_changeHandler(event:IndexChangeEvent):void{
+				if(lstPrefe.selectedIndex==-1) return;
+				var pr:LabRoll=lstPrefe.selectedItem as LabRoll;
+				if(!pr) return;
+				var r:LabRoll=rollMap[pr.paper.toString()+'~'+pr.width.toString()] as LabRoll;
+				if(!r) return;
+				ddPaperFilter.selectedIndex=ArrayUtil.searchItemIdx('value', r.paper,paperFilterList.source);
+				applyRollsFilter();
+				ddRoll.selectedItem=r;
+			}
+			
+			protected function btAdd_clickHandler(event:MouseEvent):void{
+				if(ddRoll.selectedIndex==-1) return;
+				var r:LabRoll=ddRoll.selectedItem as LabRoll;
+				if(!r) return;
+				close(true,r);
+			}
+			
+			protected function btCancel_clickHandler(event:MouseEvent):void{
+				close(false);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup gap="5" top="10" left="10" right="10" bottom="10">
+		<s:Label text="В очереди"/>
+		<s:List id="lstPrefe" itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" 
+				dataProvider="{preferRolls}" change="lstPrefe_changeHandler(event)" width="100%">
+			<s:layout>
+				<s:VerticalLayout useVirtualLayout="false" requestedRowCount="4"/>
+			</s:layout>
+		</s:List>
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Бумага:"/>
+			<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyRollsFilter()}" width="150"/>
+		</s:HGroup>
+		<s:Spacer width="5"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Ширина:"/>
+			<s:DropDownList id="ddRoll" dataProvider="{rolls}" labelField="width" width="80"/>
+		</s:HGroup>
+
+		<s:Spacer width="5"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Длина:"/>
+			<s:TextInput id="tiLen" text="{ddRoll.selectedItem.len}" enabled="{ddRoll.selectedIndex!=-1}"
+						 restrict="0-9" change="tiLen_changeHandler(event)" width="80"/>
+		</s:HGroup>
+
+		<s:Spacer height="5"/>
+		<s:HGroup width="100%" horizontalAlign="right" gap="10">
+			<s:Button id="btAdd" label="Ok" enabled="{ddRoll.selectedIndex!=-1}" click="btAdd_clickHandler(event)"/>
+			<s:Button id="btCancel" label="Отмена" click="btCancel_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

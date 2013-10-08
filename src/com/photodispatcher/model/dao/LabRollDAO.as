@@ -81,6 +81,17 @@ package com.photodispatcher.model.dao{
 			return sequence;
 		}
 
+		public function saveOnlineState(item:LabRoll, saveLen:Boolean=false):void{
+			var sql:String;
+			if(!saveLen){
+				sql='UPDATE config.lab_rolls SET is_online=? WHERE lab_device=? AND width=? AND paper=?';
+				execute(sql,[item.is_online?1:0, item.lab_device, item.width, item.paper]);
+			}else{
+				sql='UPDATE config.lab_rolls SET is_online=?, len=? WHERE lab_device=? AND width=? AND paper=?';
+				execute(sql,[item.is_online?1:0, item.len, item.lab_device, item.width, item.paper]);
+			}
+		}
+
 		override protected function processRow(o:Object):Object{
 			var a:LabRoll= new LabRoll();
 			fillRow(o,a);

@@ -9,8 +9,9 @@ package com.photodispatcher.model.dao{
 	public class LabDeviceDAO extends BaseDAO{
 
 		public function getByLab(labId:int, silent:Boolean=false):Array{
-			var sql:String='SELECT s.id, s.lab, s.name, s.speed1, s.speed2, tech_point'+
+			var sql:String='SELECT s.id, s.lab, s.name, s.speed1, s.speed2, tech_point, tp.name tech_point_name'+
 							' FROM config.lab_device s' +
+							' LEFT OUTER JOIN config.tech_point tp ON tp.id = s.tech_point'+
 							' WHERE s.lab=?'
 			runSelect(sql,[labId],silent);
 			var res:Array=itemsArray;

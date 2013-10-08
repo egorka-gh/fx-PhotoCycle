@@ -129,7 +129,7 @@
 					<s:Spacer width="10"/>
 				</s:HGroup>
 				<s:Button id="btAutoFill" label="Заполнить из каналов печати" click="btAutoFill_clickHandler(event)"/>
-				<config:ItemsGrid id="gridRolls" editable="true" currentData="{rolls}" currentColumns="{LabRoll.gridColumns()}" requestedRowCount="8" width="400"/>
+				<config:ItemsGrid id="gridRolls" editable="true" currentData="{rolls}" currentColumns="{LabRoll.gridColumnsEdit()}" requestedRowCount="8" width="400"/>
 			</s:VGroup>
 		</s:HGroup>
 	</s:VGroup>

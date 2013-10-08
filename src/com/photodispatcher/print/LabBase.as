@@ -20,11 +20,11 @@ package com.photodispatcher.print{
 	public class LabBase extends Lab implements IEventDispatcher{
 		public static const STATE_ERROR:int=-1;
 		public static const STATE_OFF:int=0;
-		public static const STATE_MANUAL:int=1;
+		public static const STATE_ON:int=1;
 		public static const STATE_SCHEDULED_ON:int=2;
 		public static const STATE_SCHEDULED_OFF:int=3;
 		public static const STATE_ON_WARN:int=4;
-		public static const STATE_ON:int=10;
+		public static const STATE_MANUAL:int=10;
 		
 		[Bindable]
 		public var enabled:Boolean=true;
@@ -170,7 +170,23 @@ package com.photodispatcher.print{
 			}
 			return result;
 		}
-		
+
+		public function getOnlineRoll(paper:int,width:int):LabRoll{
+			var dev:LabDevice;
+			var roll:LabRoll;
+			if(!devices) return null;
+			for each(dev in devices){
+				if(dev.isOnline){
+					if(dev.rolls){
+						for each(roll in dev.rolls){
+							if (roll.is_online && roll.paper==paper && roll.width==width) return roll.clone();
+						}
+					}
+				}
+			}
+			return null;
+		}
+
 		/*
 		public function calcQueueTime(rolls:Array):int{
 			if (!rolls || rolls.length==0) return -1;

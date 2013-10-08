@@ -22,7 +22,31 @@ package com.photodispatcher.print{
 		public function PrintQueue(lab:LabBase){
 			this.lab=lab;
 		}
-		
+
+		public function refreshOnlineRolls():void{
+			var roll:LabRoll;
+			var temp:LabRoll;
+			for each(roll in rolls){
+				temp=lab.getOnlineRoll(roll.paper, roll.width);
+				if(roll.is_online){
+					if(!temp){
+						roll.is_online=false;
+						roll.lab_device=0;
+						roll.len=0;
+						lab.setRollSpeed(roll);
+					}
+				}else{
+					if(temp){
+						roll.is_online=temp.is_online;
+						roll.lab_device=temp.lab_device;
+						roll.len=temp.len;
+						lab.setRollSpeed(roll);
+					}
+				}
+			}
+			recalc();
+		}
+
 		public function refresh():void{
 			if(!lab) return;
 			//TODO inplement refresh late on read lock
@@ -39,7 +63,10 @@ package com.photodispatcher.print{
 			var height:int;
 			//add online rolls
 			newRolls=lab.getOnlineRolls();
-			for each(roll in newRolls) rMap[roll.width.toString()+'~'+roll.paper.toString()]=roll;
+			for each(roll in newRolls){
+				lab.setRollSpeed(roll);
+				rMap[roll.width.toString()+'~'+roll.paper.toString()]=roll;
+			}
 			//fuill rolls queue
 			for each(pg in pgs){
 				channel=lab.printChannel(pg);
