@@ -33,6 +33,10 @@ package com.photodispatcher.print{
 		
 		[Bindable]
 		public var isBusy:Boolean=false;
+		
+		//print queue (printgroups)
+		private var queue:Array;
+		
 		//map by source.id->map by order.id->Order 
 		private var webQueue:Object=new Object;
 		//map by source->web service
@@ -148,7 +152,14 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
-		public function reSync(printGrps:Array):void{
+		public function reSync(printGrps:Array=null):void{
+			if (!printGrps){
+				var pgDao:PrintGroupDAO=new PrintGroupDAO();
+				printGrps=pgDao.findAllArray(OrderState.PRN_WAITE,OrderState.PRN_PRINT);
+
+			}
+			if (!printGrps) return; //read lock
+			
 			//PrintGroup to save
 			var inProcess:Array=[];
 			
@@ -190,7 +201,9 @@ package com.photodispatcher.print{
 					}
 				}
 			}
-			
+			//set print queue 
+			queue=printGrps.concat();
+			//TODO recalc totals
 		}
 
 		public function post(printGrps:Vector.<Object>,lab:LabBase):void{

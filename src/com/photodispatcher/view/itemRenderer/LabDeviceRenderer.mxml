@@ -39,6 +39,7 @@
 
 			private function init():void{
 				paperFilterList=Context.getAttribute('paperValueList');
+				applyRollsFilter();
 			}
 
 			private function filterActiveRolls(item:Object):Boolean {
@@ -158,19 +159,24 @@
 				<s:Button id="btDelActRoll" label="-" click="btDelActRoll_clickHandler(event)" width="30"/>
 			</s:HGroup>
 		</s:VGroup>
-		<s:VGroup gap="5">
-			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Картриджи" />
-				<s:Spacer width="10"/>
-				<s:Label text="Бумага"/>
-				<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyRollsFilter()}" width="150"/>
-				<s:Spacer width="10"/>
-			</s:HGroup>
-			<config:ItemsGrid id="gridRolls" editable="false" currentData="{aclRolls}" currentColumns="{LabRoll.gridColumnsView()}" requestedRowCount="8" width="400"/>
-		</s:VGroup>
-		<s:VGroup gap="5">
-			<s:Label text="Расписание" height="21" verticalAlign="middle"/>
-			<config:ItemsGrid id="gridTimeTable" editable="false" currentData="{aclTimeTable}" requestedRowCount="7" currentColumns="{LabTimetable.gridColumns()}" />
+		<s:VGroup gap="0" width="400">
+			<s:ButtonBar dataProvider="{vsGrids}"/>
+			<mx:ViewStack id="vsGrids" width="100%"
+						  backgroundColor="#eeeeee"
+						  borderStyle="solid" paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5">
+				<s:NavigatorContent label="Картриджи" width="100%">
+					<s:VGroup gap="5"  width="100%">
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Бумага"/>
+							<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyRollsFilter()}" width="150"/>
+						</s:HGroup>
+						<config:ItemsGrid id="gridRolls" editable="false" currentData="{aclRolls}" currentColumns="{LabRoll.gridColumnsView()}" requestedRowCount="8" width="100%"/>
+					</s:VGroup>
+				</s:NavigatorContent>
+				<s:NavigatorContent label="Расписание" width="100%">
+					<config:ItemsGrid id="gridTimeTable" editable="false" currentData="{aclTimeTable}" requestedRowCount="7" currentColumns="{LabTimetable.gridColumns()}" width="100%"/>
+				</s:NavigatorContent>
+			</mx:ViewStack>
 		</s:VGroup>
 	</s:HGroup>
 </s:ItemRenderer>

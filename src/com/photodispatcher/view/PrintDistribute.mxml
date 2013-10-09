@@ -11,6 +11,7 @@
 			import com.photodispatcher.factory.LabBuilder;
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
+			import com.photodispatcher.model.Roll;
 			import com.photodispatcher.model.Source;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
@@ -91,7 +92,8 @@
 			
 			private function refreshPgList():void{
 				var pgDao:PrintGroupDAO=new PrintGroupDAO();
-				var a:Array=pgDao.findAllArray(OrderState.PRN_WAITE,OrderState.PRN_PRINT); 
+				var a:Array=pgDao.findAllArray(OrderState.PRN_WAITE,OrderState.PRN_PRINT);
+				if(!a) return;//read lock
 				if(printManager) printManager.reSync(a); 
 				pgList.source=a;
 				calcTotals(a);
@@ -148,6 +150,119 @@
 				for each (o in sizeMap) a.push(o);
 				a.sortOn('file_num',Array.DESCENDING | Array.NUMERIC);
 				size=new PhotoSizeAccum(); size.size=-1;
+				a.unshift(size);
+				sizesList.source=a;
+				//sizesFilterList
+				a=[];
+				for each (o in sizeFilterMap) a.push(o);
+				a.sortOn('id',Array.NUMERIC);
+				a.unshift({id:-1,name:'-'});
+				sizesFilterList.source=a;
+				//paper FilterList
+				a=[];
+				for each (o in paperFilterMap){
+					if(o.id) a.push(o);
+				}
+				a.sortOn('id',Array.NUMERIC);
+				a.unshift({id:-1,name:'-'});
+				paperFilterList.source=a;
+			}
+
+			
+			private function _calcTotals(pgArray:Array):void{
+				if(!pgArray){
+					//sizesList.source=[];
+					return;
+				}
+				ordTotal=0;
+				pgTotal=0;
+				phTotal=0;
+				var standartSize:Object=Roll.itemsMap();
+				var pg:PrintGroup; 
+				var orderMap:Object=new Object();
+				var sizeMap:Object= new Object();
+				var sizeFilterMap:Object= new Object();
+				var paperFilterMap:Object= new Object();
+				var key:String;
+				var size:PhotoSizeAccum;
+				
+				for each(pg in pgArray){
+					orderMap[pg.order_id]=pg.order_id;
+					//total printgroups
+					pgTotal++;
+					//total files
+					phTotal+=pg.prints?pg.prints:pg.file_num;
+
+					//fill paper filter list
+					paperFilterMap[pg.paper.toString()]={id:pg.paper, name:pg.paper_name};
+
+					//fill sizesList
+					key='';
+					//by width
+					//check if standart
+					if(standartSize[pg.width.toString()]){
+						key=pg.width.toString()+'~'+pg.paper.toString();
+						size=sizeMap[key] as PhotoSizeAccum;
+						if(!size){
+							size= new PhotoSizeAccum();
+							size.size=pg.width;
+							size.paper_id=pg.paper;
+							size.paper=pg.paper_name;
+							sizeMap[key]=size;
+						}
+						size.pg_num++;
+						size.file_num+=pg.prints?pg.prints:pg.file_num;
+						size.len+=(pg.prints?pg.prints:pg.file_num)*pg.height;
+						size.items.push(pg);
+						//fill size filter list
+						sizeFilterMap[size.size.toString()]={id:size.size, name:size.caption};
+					}
+					
+					//by height
+					if(pg.width!=pg.height){
+						if(standartSize[pg.width.toString()]){
+							key=pg.height.toString()+'~'+pg.paper.toString();
+							size=sizeMap[key] as PhotoSizeAccum;
+							if(!size){
+								size= new PhotoSizeAccum();
+								size.size=pg.height;
+								size.paper_id=pg.paper;
+								size.paper=pg.paper_name;
+								sizeMap[key]=size;
+							}
+							size.pg_num++;
+							size.file_num+=pg.prints?pg.prints:pg.file_num;
+							size.len+=(pg.prints?pg.prints:pg.file_num)*pg.width;
+							size.items.push(pg);
+							//fill size filter list
+							sizeFilterMap[size.size.toString()]={id:size.size, name:size.caption};
+						}
+					}
+					//not standart
+					if(!key){
+						key='0~0';
+						size=sizeMap[key] as PhotoSizeAccum;
+						if(!size){
+							size= new PhotoSizeAccum();
+							size.caption='Не стандарт';
+							sizeMap[key]=size;
+						}
+						size.pg_num++;
+						size.file_num+=pg.prints?pg.prints:pg.file_num;
+						size.items.push(pg);
+						//fill size filter list
+						sizeFilterMap[pg.width.toString()]={id:pg.width, name:pg.width.toString()};
+						if(pg.width!=pg.height) sizeFilterMap[pg.height.toString()]={id:pg.height, name:pg.height.toString()};
+					}
+				}
+				//total orders
+				var o:Object;
+				for (o in orderMap) ordTotal++;
+				//sizesList
+				var a:Array=[];
+				for each (o in sizeMap) a.push(o);
+				a.sortOn('len',Array.DESCENDING | Array.NUMERIC);
+				size=new PhotoSizeAccum(); size.size=-1; size.caption='-';
 				a.unshift(size);
 				sizesList.source=a;
 				//sizesFilterList

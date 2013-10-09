@@ -14,6 +14,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.AppConfig;
+			import com.photodispatcher.model.Roll;
 			import com.photodispatcher.model.dao.AppConfigDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.BookSynonymDAO;
@@ -91,6 +92,7 @@
 				OrderStateDAO.initStateMap();
 				BookSynonymDAO.initSynonymMap();
 				DictionaryDAO.initSynonymMap();
+				Roll.initItemsMap();
 
 				//detect local setings
 				Context.setAttribute('imThreads',0);

@@ -12,6 +12,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.AppConfig;
 			import com.photodispatcher.model.Lab;
+			import com.photodispatcher.model.Roll;
 			import com.photodispatcher.model.dao.AppConfigDAO;
 			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
@@ -59,11 +60,13 @@
 				var appConfDAO:AppConfigDAO=new AppConfigDAO();
 				var appConf:AppConfig=appConfDAO.getItem();
 				Context.setAttribute('syncInterval',appConf.monitor_interval);
-
+				Context.setAttribute('hideLabInfoButton',true);
+				
 				Context.initSourceLists();
 				//init static maps 
 				OrderStateDAO.initStateMap();
-				
+				Roll.initItemsMap();
+
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var workFolder:String;
 				var prtPath:String;

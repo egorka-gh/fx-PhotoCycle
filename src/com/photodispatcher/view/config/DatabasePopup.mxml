@@ -241,11 +241,16 @@
 		]]>
 	</fx:Script>
 	
-	<fx:Declarations>
-		<!-- Place non-visual elements (e.g., services, value objects) here -->
-	</fx:Declarations>
-
-	<s:VGroup>
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="3">
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+	</s:Rect>	
+	
+	<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="База данных"/>
 			<s:TextInput id="tiBDPath" width="300" enabled="false"/>

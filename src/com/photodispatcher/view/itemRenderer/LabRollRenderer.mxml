@@ -20,7 +20,7 @@
 	</fx:Script>
 	<s:HGroup gap="5" verticalAlign="middle" paddingTop="5" paddingLeft="5">
 		<itemRenderer:LabStateIndicator state="{int(roll.is_online)}"/>
-		<s:Label text="{roll.width.toString()}-{roll.paper_name}" width="110" maxDisplayedLines="1"/>
+		<s:Label text="{roll.width.toString()}-{roll.paper_name}" width="100" maxDisplayedLines="1"/>
 		<itemRenderer:SecondToMinuteRenderer seconds="{roll.printQueueTime}" caption=""/>
 	</s:HGroup>
 </s:ItemRenderer>

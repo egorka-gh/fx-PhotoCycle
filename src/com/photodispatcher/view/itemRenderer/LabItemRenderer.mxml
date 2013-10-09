@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
 				xmlns:s="library://ns.adobe.com/flex/spark" 
-				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
 				autoDrawBackground="true"
-				enabled="{lab.enabled}" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
+				enabled="{lab.enabled}"
+				creationComplete="{init()}">
 
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.context.Context;
 			import com.photodispatcher.print.LabBase;
 			import com.photodispatcher.view.ErrorPopup;
 			import com.photodispatcher.view.LabInfo;
@@ -30,6 +33,16 @@
 				lab=value as LabBase;
 				if(lab) lab.addEventListener(ErrorEvent.ERROR,labErrHandler);
 			}
+			
+			[Bindable]
+			private var showInfoButton:Boolean=true;
+			
+			private function init():void{
+				if(Context.getAttribute('hideLabInfoButton')){
+					showInfoButton=false;
+				}
+			}
+			
 			
 			private var errPopUp:ErrorPopup;
 			private var timer:Timer;
@@ -67,7 +80,7 @@
 				if(!lab) return;
 				var pop:LabInfo= new LabInfo;
 				pop.lab=lab;
-				pop.width=FlexGlobals.topLevelApplication.width-50;
+				//pop.width=FlexGlobals.topLevelApplication.width-50;
 				pop.height=FlexGlobals.topLevelApplication.height-70;
 				PopUpManager.addPopUp(pop,FlexGlobals.topLevelApplication as WindowedApplication);
 				PopUpManager.centerPopUp(pop);
@@ -93,11 +106,13 @@
 	</s:Rect>
 		<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
 			<!--<s:Image source="assets/Noritsu_logo_24.png" height="16" smooth="true" scaleMode="letterbox" horizontalAlign="left"/>-->
-			<s:HGroup gap="5" verticalAlign="middle" width="100%">
+			<s:HGroup gap="0" verticalAlign="middle" width="100%">
 				<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
-				<s:Label text="{lab.name}" fontSize="14" fontWeight="bold"/>
+				<s:Spacer width="5"/>
+				<s:Label text="{lab.name}" fontSize="12" fontWeight="bold" maxWidth="140" maxDisplayedLines="1"/>
 				<s:Spacer width="100%"/>
-				<s:Image id="btLabInfo" source="assets/info.png" buttonMode="true" verticalCenter="-2" click="btLabInfo_clickHandler(event)"/>
+				<s:Image id="btLabInfo" source="assets/info.png" buttonMode="true" verticalCenter="-2" 
+						 visible="{showInfoButton}" click="btLabInfo_clickHandler(event)"/>
 			</s:HGroup>
 			<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}"/>
 			<s:DataGroup itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" dataProvider="{aclRolls}">
@@ -105,6 +120,6 @@
 					<s:VerticalLayout gap="2"/>
 				</s:layout> 
 			</s:DataGroup>
-			<s:Label text="{lab.stateCaption}"/>
+			<s:Label text="{lab.stateCaption}" maxWidth="180" maxDisplayedLines="1"/>
 		</s:VGroup>
 </s:ItemRenderer>

@@ -12,8 +12,8 @@
 			
 			
 			public function init():void{
-				
 				focusManager.setFocus(focusHolder);
+				Context.initAttributeLists();
 			}
 			
 			private function onKey(e:KeyboardEvent):void{
