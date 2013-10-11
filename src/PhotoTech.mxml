@@ -13,11 +13,11 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
-			import com.photodispatcher.model.Source;
 			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
-			import com.photodispatcher.model.dao.SourcesDAO;
+			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
@@ -58,7 +58,7 @@
 			private var flap:ValveCom; 
 			
 			[Bindable]
-			private var techPointObj:Source;
+			private var techPointObj:TechPoint;
 			private var _techPoint:int;
 			[Bindable]
 			protected function get techPoint():int{
@@ -74,7 +74,7 @@
 			
 			private function setTechPointObj(id:int):void{
 				if(!techPionts) return;
-				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as Source;
+				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
 			}
 			
 			private var bdPopup:DatabasePopup;
@@ -116,8 +116,11 @@
 				}
 				*/
 
-				var sDao:SourcesDAO= new SourcesDAO(); 
-				techPionts=sDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
+				var dao:TechPointDAO=new TechPointDAO();
+				var a:Array=dao.findByType(SourceType.TECH_PRINT);
+				if(a){
+					techPionts=new ArrayCollection(a);
+				}
 				
 				coms.source=ComInfo.load();
 
@@ -221,7 +224,7 @@
 			}
 			
 			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
-				var tp:Source= ddTechPoint.selectedItem as Source;
+				var tp:TechPoint= ddTechPoint.selectedItem as TechPoint;
 				if (!tp) return;
 				techPoint=tp.id;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');

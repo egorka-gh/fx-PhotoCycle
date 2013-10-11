@@ -890,10 +890,11 @@ package com.photodispatcher.model.dao{
 			//orders temp table
 			var sql:String="CREATE TEMP TABLE tmp_orders (" +
 				" id         VARCHAR( 50 )  PRIMARY KEY," +
-				" source     INTEGER        NOT NULL DEFAULT ( 0 )," +
-				" src_id     VARCHAR( 50 )  NOT NULL DEFAULT ( ' ' )," +
+				" source     INTEGER        DEFAULT ( 0 )," +
+				" src_id     VARCHAR( 50 )  DEFAULT ( ' ' )," +
 				" src_date   DATETIME," +
 				" state      INT            DEFAULT ( 100 )," +
+				" state_max  INT            DEFAULT ( 0 )," +
 				" state_date DATETIME," +
 				" ftp_folder VARCHAR( 50 )," +
 				" fotos_num  INTEGER( 5 )," +
@@ -911,8 +912,9 @@ package com.photodispatcher.model.dao{
 			//print groups temp table
 			sql="CREATE TEMP TABLE tmp_print_group (" +
 				" id         VARCHAR( 50 )  PRIMARY KEY," +
-				" state      INT            DEFAULT ( 100 )," +
-				" state_max   INT            DEFAULT ( 0 )" +
+				" order_id   VARCHAR( 50 ) ,"+
+				" state      INT	DEFAULT ( 100 )," +
+				" state_max  INT	DEFAULT ( 0 )" +
 				")";
 			stmt= new SQLStatement();
 			stmt.sqlConnection = sqlConnection;

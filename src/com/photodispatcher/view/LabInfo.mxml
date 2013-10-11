@@ -70,7 +70,7 @@
 				<s:FormItem label="Очередь печати" >
 					<s:VGroup gap="5">
 						<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}" caption="Общая"/>
-						<s:Label text="По картриджам"/>
+						<s:Label text="По магазинам"/>
 						<s:DataGroup itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" dataProvider="{aclRolls}">
 							<s:layout>
 								<s:VerticalLayout gap="2"/>

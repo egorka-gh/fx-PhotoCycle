@@ -11,7 +11,14 @@ package com.photodispatcher.print{
 		public var printQueueLen:int=-1;//sek
 		[Bindable]
 		public var printQueueLimit:int;//sek
-		
+
+		public var queueOrders:int;
+		public var queuePGs:int;
+		public var queuePrints:int;
+
+		[Bindable]
+		public var printQueueLenM:int=0;//metre
+
 		[Bindable]
 		public  var rolls:Array=[];
 		
@@ -48,13 +55,19 @@ package com.photodispatcher.print{
 		}
 
 		public function refresh():void{
+			queueOrders=0;
+			queuePGs=0;
+			queuePrints=0;
+
 			if(!lab) return;
 			//TODO inplement refresh late on read lock
 			//read print groups in Print state
+			var ordersMap:Object=new Object();
 			var pgDao:PrintGroupDAO= new PrintGroupDAO();
 			var pgs:Array=pgDao.findInPrint(lab.id);
 			if(!pgs) return;//read lock
-			printGroups=pgs; 
+			printGroups=pgs;
+			queuePGs=printGroups.length;
 			var newRolls:Array;
 			var pg:PrintGroup;
 			var roll:LabRoll;
@@ -69,6 +82,7 @@ package com.photodispatcher.print{
 			}
 			//fuill rolls queue
 			for each(pg in pgs){
+				ordersMap[pg.order_id]=pg.order_id;
 				channel=lab.printChannel(pg);
 				//TODO more then 1 online rolls vs same width/papper?????? 
 				if(channel){
@@ -82,9 +96,13 @@ package com.photodispatcher.print{
 						rMap[channel.roll.toString()+'~'+channel.paper.toString()]=roll;
 					}
 					height=pg.width==channel.width?pg.height:pg.width;
+					queuePrints+=(pg.prints-pg.prints_done);
 					roll.printQueueLen+=height*(pg.prints-pg.prints_done);
+					roll.printGroups.push(pg);
 				}
 			}
+			var key:String;
+			for (key in ordersMap) queueOrders++;
 			newRolls=[];
 			for each(roll in rMap){
 				if(roll){
@@ -106,10 +124,12 @@ package com.photodispatcher.print{
 			if(devs.length>1) streems=devs.length;
 			if(rolls.length==0){
 				printQueueLen=-1;
+				printQueueLenM=0;
 				return;
 			}
 			var roll:LabRoll;
 			var result:int=0;
+			var resultM:int=0;
 			//calc rolls time
 			for each(roll in rolls){
 				if(roll.speed==0){
@@ -121,6 +141,7 @@ package com.photodispatcher.print{
 			//serial print
 			for each(roll in rolls){
 				if(roll.printQueueTime>0) result+=roll.printQueueTime;
+				resultM+=roll.printQueueLen;
 			}
 			if(streems>1){
 				//parallel
@@ -128,6 +149,7 @@ package com.photodispatcher.print{
 				result=Math.round(result/(Number(streems)-0.5));
 			}
 			printQueueLen=result;
+			printQueueLenM=Math.round(resultM/1000);
 		}
 	}
 }

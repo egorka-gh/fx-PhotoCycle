@@ -345,16 +345,16 @@ package com.photodispatcher.model.dao{
 			sql='DELETE FROM tmp_print_group';
 			sequence.push(prepareStatement(sql));
 
-			//get max state by tech
-			sql='INSERT INTO tmp_print_group(id, state)'+
-				' SELECT pg.id, MAX(st.state)'+ 
+			//get state by tech
+			sql='INSERT INTO tmp_print_group(id, order_id, state)'+
+				' SELECT pg.id, pg.order_id, MIN(st.state)'+ 
 				' FROM print_group pg'+
 					' INNER JOIN tech_log tl ON pg.id=tl.print_group'+  
-					' INNER JOIN config.sources s ON tl.src_id=s.id'+  
-					' INNER JOIN config.src_type st ON s.type_id=st.id'+ 
+					' INNER JOIN config.tech_point tp ON tl.src_id=tp.id'+  
+					' INNER JOIN config.src_type st ON tp.tech_type=st.id'+ 
 				' WHERE pg.id=? AND st.state>pg.state'+  
-				' GROUP BY pg.id, pg.sheet_num'+
-				' HAVING COUNT(DISTINCT tl.sheet)=pg.sheet_num';
+				' GROUP BY pg.order_id, pg.id, pg.prints'+
+				' HAVING COUNT(DISTINCT tl.sheet)=pg.prints';
 			params=[pgId];
 			sequence.push(prepareStatement(sql,params));
 			
@@ -373,24 +373,26 @@ package com.photodispatcher.model.dao{
 				' WHERE pg.id IN (SELECT id FROM tmp_print_group)';
 			sequence.push(prepareStatement(sql));
 
-			/*
 			//forvard order state
 			sql='INSERT INTO tmp_orders(id, state, state_date)'+
-					' SELECT  pg.order_id, max(pg.state), ?'+
-					' FROM print_group pg'+
-					' WHERE pg.order_id IN (SELECT DISTINCT pg3.order_id FROM print_group pg3 INNER JOIN tmp_print_group t ON pg3.id=t.id)'+ 
-					' AND NOT EXISTS(SELECT 1 FROM print_group pg1 WHERE pg.order_id=pg1.order_id AND pg.state>pg1.state)'+
-					' GROUP BY pg.order_id';
+					' SELECT o.id, MIN(pg.state), ?'+
+					' FROM orders o'+ 
+					' INNER JOIN print_group pg on o.id=pg.order_id'+ 
+					' WHERE o.id IN(SELECT DISTINCT order_id FROM tmp_print_group)'+
+					' GROUP BY o.id HAVING o.state< MIN(pg.state)';
 			params=[dt];
 			sequence.push(prepareStatement(sql,params));
 
-			//remove if order state same or above
-			sql='DELETE FROM tmp_orders'+
-				' WHERE EXISTS (SELECT 1 FROM orders o WHERE o.id=tmp_orders.id AND o.state>=tmp_orders.state)';
-			sequence.push(prepareStatement(sql));
+			//update & log
+			sql='UPDATE orders SET state = (SELECT t.state FROM tmp_orders t WHERE t.id=orders.id), state_date = ?'+
+				' WHERE id IN(SELECT id FROM tmp_orders)';
+			sequence.push(prepareStatement(sql,params));
 
-			//TODO update & log
-			*/
+			sql='INSERT INTO state_log (order_id, state, state_date)'+
+				' SELECT id, state, state_date FROM tmp_orders';
+			params=[item.order_id, dt];
+			sequence.push(prepareStatement(sql,params));
+
 			executeSequence(sequence);
 		}
 

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
-		 xmlns:mx="library://ns.adobe.com/flex/mx">
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%">
 	<fx:Script>
 		<![CDATA[
 			
@@ -21,15 +21,15 @@
 			}
 
 			[Bindable]
-			public var caption:String='Очередь';
+			public var caption:String='Очередь:';
 			[Bindable]
 			private var minutesStr:String;
 		]]>
 	</fx:Script>
-	<s:HGroup gap="0" verticalAlign="baseline">
-		<s:Label text="{caption}:"/>
-		<s:Spacer width="5"/>
+<!--	<s:HGroup gap="0" verticalAlign="baseline">-->
+		<s:Label text="{caption} {minutesStr}мин" width="100%" maxDisplayedLines="1"/>
+		<!--<s:Spacer width="5"/>
 		<s:Label text="{minutesStr}"/>
 		<s:Label text="мин"/>
-	</s:HGroup>
+	</s:HGroup>-->
 </s:Group>

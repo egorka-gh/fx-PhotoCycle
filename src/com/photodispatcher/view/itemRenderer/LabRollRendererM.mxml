@@ -3,8 +3,7 @@
 				xmlns:s="library://ns.adobe.com/flex/spark" 
 				xmlns:mx="library://ns.adobe.com/flex/mx" 
 				xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
-				width="100%"
-				autoDrawBackground="false" >
+				width="100%">
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.model.LabRoll;
@@ -20,9 +19,18 @@
 
 		]]>
 	</fx:Script>
-	<s:HGroup gap="5" verticalAlign="middle" paddingTop="5" paddingLeft="5">
+	<s:Rect top="1" left="1" right="1" bottom="1" radiusX="2">
+		<s:fill>
+			<s:SolidColor color="#ffffff" alpha="0.5"/>
+		</s:fill>
+	</s:Rect>
+	<s:HGroup gap="0" verticalAlign="middle" paddingTop="5" paddingLeft="5" >
 		<itemRenderer:LabStateIndicator state="{int(roll.is_online)}"/>
-		<s:Label text="{roll.width.toString()}-{roll.paper_name}" width="105" maxDisplayedLines="1"/>
-		<itemRenderer:SecondToMinuteRenderer seconds="{roll.printQueueTime}" caption="" width="100%"/>
+		<s:Spacer width="3"/>
+		<s:Label text="{roll.width.toString()}-{roll.paper_name}" width="100%" maxDisplayedLines="1"/>
+		<s:HGroup gap="3" verticalAlign="baseline">
+			<itemRenderer:SecondToMinuteRenderer seconds="{roll.printQueueTime}" caption=""/>
+			<s:Label text="({Math.round(roll.printQueueLen/1000)}м)"/>
+		</s:HGroup>
 	</s:HGroup>
 </s:ItemRenderer>

@@ -122,7 +122,7 @@
 			</s:VGroup>
 			<s:VGroup height="100%" width="100%" gap="5">
 				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:Label text="Картриджи" />
+					<s:Label text="Магазины" />
 					<s:Spacer width="10"/>
 					<s:Label text="Бумага"/>
 					<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyRollsFilter()}" width="150"/>

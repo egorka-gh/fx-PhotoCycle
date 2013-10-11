@@ -32,6 +32,13 @@ package com.photodispatcher.print{
 	public class PrintQueueManager extends EventDispatcher{
 		
 		[Bindable]
+		public var queueOrders:int;
+		[Bindable]
+		public var queuePGs:int;
+		[Bindable]
+		public var queuePrints:int;
+
+		[Bindable]
 		public var isBusy:Boolean=false;
 		
 		//print queue (printgroups)
@@ -115,6 +122,7 @@ package com.photodispatcher.print{
 				result.push(lb);
 			}
 			_labs.source=result;
+			refreshLabs(true);
 			_initCompleted=true;
 			dispatchEvent(new Event("labsChange"));
 			/*
@@ -443,11 +451,20 @@ package com.photodispatcher.print{
 			}
 		}
 		
-		public function refreshLabs():void{
+		public function refreshLabs(recalcOnly:Boolean=false):void{
+			var newqueueOrders:int;
+			var newqueuePGs:int;
+			var newqueuePrints:int;
 			var lab:LabBase;
 			for each(lab in _labs.source){
-				lab.refresh();
+				if(!recalcOnly) lab.refresh();
+				newqueueOrders+=lab.printQueue.queueOrders;
+				newqueuePGs+=lab.printQueue.queuePGs;
+				newqueuePrints+=lab.printQueue.queuePrints;
 			}
+			queueOrders=newqueueOrders;
+			queuePGs=newqueuePGs;
+			queuePrints=newqueuePrints;
 		}
 		
 		public function savePrintState(printGroups:Array):void{

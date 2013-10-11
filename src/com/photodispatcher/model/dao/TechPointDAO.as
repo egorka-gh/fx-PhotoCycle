@@ -21,6 +21,16 @@ package com.photodispatcher.model.dao{
 			return res;
 		}
 		
+		public function findByType(type:int, silent:Boolean=false):Array{
+			var sql:String='SELECT s.id, s.name, s.tech_type, st.name tech_type_name'+
+				' FROM config.tech_point s' +
+				' INNER JOIN config.src_type st ON st.id = s.tech_type'+
+				' WHERE s.tech_type=?'+
+				' ORDER BY s.name';
+			runSelect(sql,[type],silent);
+			var res:Array=itemsArray;
+			return res;
+		}
 		
 		override public function save(item:Object):void{
 			var it:TechPoint=item as TechPoint;

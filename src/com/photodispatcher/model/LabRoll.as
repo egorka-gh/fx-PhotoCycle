@@ -35,6 +35,7 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var printQueueTime:int=0;//sec
 		public var speed:int=0;//mm/sec
+		public var printGroups:Array=[];
 
 		public static function gridColumnsEdit():ArrayList{
 			var result:ArrayList= new ArrayList();

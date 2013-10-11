@@ -10,6 +10,7 @@
 			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
 			import com.photodispatcher.model.Lab;
+			import com.photodispatcher.model.LabRoll;
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.Source;
@@ -56,10 +57,16 @@
 			[Bindable]
 			private var phTotal:int;
 
+			[Bindable]
 			private var printManager:PrintQueueManager;
+			
+			private var viewPrintgroups:Array=[];
 
 			public function init():void{
-				//labId=Context.getAttribute('applabId');
+				if(!printManager){
+					printManager=PrintQueueManager.instance;
+					printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
+				}
 				
 				labMap=PrintQueueManager.instance.labMap;
 
@@ -91,24 +98,24 @@
 			}
 
 			public function refresh():void{
-				if(!printManager){
-					printManager=PrintQueueManager.instance;
-					printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
-				}
-				//printManager.init();
+				if(printManager) printManager.refreshLabs();
 				var pgDao:PrintGroupDAO=new PrintGroupDAO();
-				var a:Array=pgDao.findAllInPrint(); 
+				var a:Array=pgDao.findAllInPrint();
+				lstLabs.selectedIndex=-1;
+				lstLabRolls.selectedIndex=-1;
 				if(a){
-					//TODO can lost unsaved states (in write queue)
+					viewPrintgroups=a;
 					pgList.source=a;
+					pgList.refresh();
 				}
-				calcTotals(a);
+				//calcTotals(a);
 			}
 			
 			private function onManagerError(e:PrintEvent):void{
 				lbManagerError.text=e.errMsg;
 			}
 
+			/*
 			private function calcTotals(pintGroups:Array):void{
 				var pgArray:Array=pintGroups.filter(totalsFilter);
 				ordTotal=0;
@@ -142,22 +149,6 @@
 					size.pg_num++;
 					size.file_num+=pg.file_num;
 					size.len+=pg.file_num*pg.height;
-					/*by height
-					if(pg.width!=pg.height){
-						key=pg.height.toString()+'~'+pg.paper.toString();
-						size=sizeMap[key] as PhotoSizeAccum;
-						if(!size){
-							size= new PhotoSizeAccum();
-							size.size=pg.height;
-							size.paper_id=pg.paper;
-							size.paper=pg.paper_name;
-							sizeMap[key]=size;
-						}
-						size.pg_num++;
-						size.file_num+=pg.file_num;
-						size.len+=pg.file_num*pg.width;
-					}
-					*/
 				}
 				//total orders
 				for (o in orderMap) ordTotal++;
@@ -175,6 +166,7 @@
 				//return o!=null && o.destination==labId && o.state==OrderState.PRN_PRINT;
 				return o!=null && labMap && labMap[o.destination.toString()] && o.state==OrderState.PRN_PRINT;
 			}
+			*/
 
 			private function filterPGList(item:Object):Boolean {
 				var pg:PrintGroup=item as PrintGroup;
@@ -182,12 +174,7 @@
 
 				if(ddSourceFilter && ddSourceFilter.selectedIndex>0 && pg.source_id!=ddSourceFilter.selectedItem.id) return false;
 				if(tiOrderFilter && tiOrderFilter.text && pg.id.indexOf(tiOrderFilter.text)==-1) return false;
-				if(lstSizes && lstSizes.selectedIndex>0){
-					var ps:PhotoSizeAccum=lstSizes.selectedItem as PhotoSizeAccum;
-					//if(pg.destination!=labId || pg.state!=OrderState.PRN_PRINT || (pg.width!=ps.size && pg.height!=ps.size) ||(pg.paper!=ps.paper_id)) return false; 
-					//if(pg.destination!=labId || pg.state!=OrderState.PRN_PRINT || (pg.width!=ps.size) ||(pg.paper!=ps.paper_id)) return false;
-					if(!labMap || !labMap[pg.destination.toString()] || pg.state!=OrderState.PRN_PRINT || (pg.width!=ps.size) ||(pg.paper!=ps.paper_id)) return false;
-				}else{
+				if(!lstLabs || lstLabs.selectedIndex==-1){
 					if(ddLabFilter && ddLabFilter.selectedIndex>0 && pg.destination!=ddLabFilter.selectedItem.id) return false;
 					if(ddStateFilter && ddStateFilter.selectedIndex>0 && pg.state!=ddStateFilter.selectedItem.id) return false;
 					if(tiSizeFilter && tiSizeFilter.text){
@@ -262,6 +249,31 @@
 				}
 			}
 
+			protected function lstLab_changeHandler(event:IndexChangeEvent):void{
+				var enabled:Boolean=lstLabs.selectedIndex==-1;
+				ddLabFilter.enabled=enabled;
+				ddStateFilter.enabled=enabled;
+				tiSizeFilter.enabled=enabled;
+				ddPaperFilter.enabled=enabled;
+				
+				if(lstLabRolls.selectedIndex!=-1){
+					pgList.source=(lstLabRolls.selectedItem as LabRoll).printGroups;
+				}else if(lstLabs.selectedIndex!=-1){
+					var a:Array=[];
+					var l:LabBase= lstLabs.selectedItem as LabBase;
+					var lr:LabRoll;
+					for each(lr in l.printQueue.rolls){
+						a=a.concat(lr.printGroups);
+					}
+					pgList.source=a;
+				}else{
+					pgList.source=viewPrintgroups;
+				}
+				
+				applyFilter();				
+			}
+
+			/*
 			protected function lstSizes_changeHandler(event:IndexChangeEvent):void{
 				var enabled:Boolean=lstSizes.selectedIndex<1;
 				ddLabFilter.enabled=enabled;
@@ -271,20 +283,52 @@
 				
 				applyFilter();				
 			}
+			*/
+			
+			protected function btResetLabFilter_clickHandler(event:MouseEvent):void{
+				lstLabRolls.selectedIndex=-1;
+				lstLabs.selectedIndex=-1;
+				lstLab_changeHandler(null);
+			}
 			
 		]]>
 	</fx:Script>
 	
+	<fx:Declarations>
+		<s:ArrayCollection id="acLabRolls" source="{lstLabs.selectedItem.printQueue.rolls}"/>	
+	</fx:Declarations>
+	
 	<s:HGroup gap="10" width="100%" height="100%">
 		<s:VGroup gap="5" width="250" height="100%">
-			<s:Label text="Заказов - {ordTotal}" left="0" verticalCenter="0"/>
+			<s:Label text="Заказов: {printManager.queueOrders.toString()}"/>
+			<s:Label text="Групп печати: {printManager.queuePGs.toString()}"/>
+			<s:Label text="Кол. отпечатков: {printManager.queuePrints.toString()}"/>
+			<s:HGroup width="100%" verticalAlign="baseline">
+				<s:Label text="Очередь печати" fontWeight="bold" width="100%"/>
+				<s:Button id="btResetLabFilter" label="Показать все" click="btResetLabFilter_clickHandler(event)"/>
+			</s:HGroup>
+			<s:Label text="По лабораториям" />
+			<s:List id="lstLabs" dataProvider="{printManager.labs}" contentBackgroundAlpha="0" borderAlpha="0" 
+					itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRendererShort" width="100%"
+					change="{lstLabRolls.selectedIndex=-1;lstLab_changeHandler(event);}">
+				<s:layout>
+					<s:VerticalLayout gap="0" requestedRowCount="{printManager.labs.length}"/>
+				</s:layout>
+			</s:List>
+			<s:Label text="По магазинам" />
+			<s:List id="lstLabRolls" dataProvider="{acLabRolls}"
+					itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRendererM" 
+					width="100%" height="100%" contentBackgroundAlpha="0" borderAlpha="0"
+					change="lstLab_changeHandler(event)"/>
+			
+<!--			<s:Label text="Заказов - {ordTotal}" left="0" verticalCenter="0"/>
 			<s:Label text="Групп печати - {pgTotal}"/>
 			<s:Label text="Фото - {phTotal}"/>
 			<s:Spacer height="5"/>
 			<s:Label text="Варианты ширины"/>
 			<s:List id="lstSizes" width="100%" height="100%"
 					labelFunction="sizesListLabel" dataProvider="{sizesList}"
-					change="lstSizes_changeHandler(event)"/>
+					change="lstSizes_changeHandler(event)"/>--> 
 		</s:VGroup>
 		<s:VGroup gap="5" width="100%" height="100%">
 			<s:Label id="lbManagerError" color="#ff0000" width="100%" maxDisplayedLines="1"/>

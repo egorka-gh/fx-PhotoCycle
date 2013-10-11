@@ -5,12 +5,10 @@
 				xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
 				autoDrawBackground="true"
 				enabled="{lab.enabled}"
-				width="100%"
-				creationComplete="{init()}">
+				width="100%">
 
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.context.Context;
 			import com.photodispatcher.print.LabBase;
 			import com.photodispatcher.view.ErrorPopup;
 			import com.photodispatcher.view.LabInfo;
@@ -35,14 +33,6 @@
 				if(lab) lab.addEventListener(ErrorEvent.ERROR,labErrHandler);
 			}
 			
-			[Bindable]
-			private var showInfoButton:Boolean=true;
-			
-			private function init():void{
-				if(Context.getAttribute('hideLabInfoButton')){
-					showInfoButton=false;
-				}
-			}
 			
 			
 			private var errPopUp:ErrorPopup;
@@ -73,10 +63,6 @@
 				}
 			}
 				
-			protected function secondtominuterenderer1_doubleClickHandler(event:MouseEvent):void{
-				lab.refreshPrintQueue();
-			}
-			
 			protected function btLabInfo_clickHandler(event:MouseEvent):void{
 				if(!lab) return;
 				var pop:LabInfo= new LabInfo;
@@ -90,10 +76,6 @@
 		]]>
 	</fx:Script>
 	
-	<fx:Declarations>
-		<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>
-	</fx:Declarations>
-	
 	<s:states>
 		<s:State name="normal"/>
 		<s:State name="hovered"/>
@@ -104,22 +86,20 @@
 		<s:stroke>
 			<s:SolidColorStroke color="#cccccc" weight="2"/>
 		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#ffffff" alpha="0.6"/>
+		</s:fill>
 	</s:Rect>
 	<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
-		<!--<s:Image source="assets/Noritsu_logo_24.png" height="16" smooth="true" scaleMode="letterbox" horizontalAlign="left"/>-->
 		<s:HGroup gap="0" verticalAlign="middle" width="100%">
 			<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
 			<s:Spacer width="5"/>
 			<s:Label text="{lab.name}" fontSize="12" fontWeight="bold" width="100%" maxDisplayedLines="1"/>
-			<s:Image id="btLabInfo" source="assets/info.png" buttonMode="true" verticalCenter="-2" 
-					 visible="{showInfoButton}" click="btLabInfo_clickHandler(event)"/>
+			<s:Image id="btLabInfo" source="assets/info.png" buttonMode="true" verticalCenter="-2" click="btLabInfo_clickHandler(event)"/>
 		</s:HGroup>
-		<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}" width="100%"/>
-		<s:DataGroup itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" dataProvider="{aclRolls}" width="100%">
-			<s:layout>
-				<s:VerticalLayout gap="2"/>
-			</s:layout> 
-		</s:DataGroup>
-		<s:Label text="{lab.stateCaption}" width="100%" maxDisplayedLines="1"/>
+		<s:HGroup gap="3" verticalAlign="baseline">
+			<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}"/>
+			<s:Label text="({lab.printQueue.printQueueLenM}м)"/>
+		</s:HGroup>
 	</s:VGroup>
 </s:ItemRenderer>
