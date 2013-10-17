@@ -95,13 +95,12 @@ package com.photodispatcher.service.web{
 		}
 		override public function getOrder(order:Order):void{
 			lastOrder=null;
-			/*
+			//DO NOT KILL used in print check web state 
 			if(order && !order.src_id && order.id){
 				//create src_id from order.id
 				var arr:Array= order.id.split('_');
 				if(arr && arr.length>1) order.src_id=arr[1];
 			}
-			*/
 			if(!source || source.type_id!=SourceType.SRC_FOTOKNIGA || !order || !order.src_id){
 				abort('Не верная иннициализация команды');
 				return;

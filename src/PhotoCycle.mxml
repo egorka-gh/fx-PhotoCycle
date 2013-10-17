@@ -21,6 +21,7 @@
 			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.LabResizeDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
+			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.view.OrderSearchPopup;
 			import com.photodispatcher.view.config.DatabasePopup;
@@ -88,12 +89,15 @@
 				
 				//init static maps
 				Context.initSourceLists();
+				Context.initAttributeLists();
 				LabResizeDAO.initSizeMap();
 				OrderStateDAO.initStateMap();
 				BookSynonymDAO.initSynonymMap();
 				DictionaryDAO.initSynonymMap();
 				Roll.initItemsMap();
-
+				//init print manager
+				PrintQueueManager.instance.init();
+				
 				//detect local setings
 				Context.setAttribute('imThreads',0);
 				var so:SharedObject = SharedObject.getLocal('appProps','/');

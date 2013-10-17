@@ -471,9 +471,9 @@ package com.photodispatcher.model.dao{
 			params=[item.order_id, item.order_id];
 			sequence.push(prepareStatement(sql,params));
 			//calc/set order state
-			subSql='SELECT (CASE WHEN (state<? AND state_max<?) THEN state' +
-					      ' CASE WHEN (state<?) THEN ?'+
-					      ' CASE WHEN (state<?) THEN ?'+ 
+			subSql='SELECT (CASE WHEN (t.state<? AND t.state_max<?) THEN t.state' +
+					      ' WHEN (t.state<?) THEN ?'+
+					      ' WHEN (t.state<?) THEN ?'+ 
 					      ' ELSE ? END) as state'+       
 					' FROM tmp_print_group t WHERE t.id=?';
 			subParams=[OrderState.PRN_POST,OrderState.PRN_POST,

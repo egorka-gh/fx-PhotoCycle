@@ -439,10 +439,6 @@ package com.photodispatcher.print{
 			if(idx!=-1){
 				postQueue.splice(idx,1);
 			}
-			if(postQueue.length==0){
-				//complited refresh lab
-				refreshLabs();
-			}
 			if(!e.hasErr){
 				//save
 				var dao:PrintGroupDAO=new PrintGroupDAO();
@@ -479,6 +475,10 @@ package com.photodispatcher.print{
 			if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
 			if(e.result!=AsyncSQLEvent.RESULT_COMLETED){
 				dispatchManagerErr('Блокировка записи при сохранении статуса группы печати');
+			}
+			if(postQueue.length==0){
+				//complited refresh lab
+				refreshLabs();
 			}
 		}
 

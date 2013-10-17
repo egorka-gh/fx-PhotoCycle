@@ -1,6 +1,7 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.model.Lab;
+	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.Source;
@@ -43,6 +44,19 @@ package com.photodispatcher.print{
 			if(!printGroup || printGroup.is_pdf) return '';
 			return super.printChannelCode(printGroup);
 		}
+		
+		override public function printChannel(printGroup:PrintGroup):LabPrintCode{
+			var result:LabPrintCode=super.printChannel(printGroup);
+			if(!result && nhfLab) result=nhfLab.printChannel(printGroup);
+			return result;
+		}
+		
+		override protected function canPrint(printGroup:PrintGroup):Boolean{
+			//check itself only (nhf not checked), use in post only
+			var result:LabPrintCode=super.printChannel(printGroup);
+			return result?true:false;
+		}
+		
 		
 		override public function post(pg:PrintGroup):void{
 			if(!pg) return;
