@@ -9,6 +9,7 @@ package com.photodispatcher.model{
 		public static const BOOK_TYPE_LEATHER:int=3;
 		public static const BOOK_TYPE_CALENDAR:int=4;
 		public static const BOOK_TYPE_MAGNET:int=5;
+		public static const BOOK_TYPE_BCARD:int=6;
 
 		public static const BOOK_PART_COVER:int=1;
 		public static const BOOK_PART_BLOCK:int=2;
@@ -21,7 +22,9 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var src_type:int;
 		[Bindable]
-		public var synonym:String;
+		public var synonym:String="";
+		[Bindable]
+		public var fb_alias:String;
 		[Bindable]
 		public var book_type:int;
 		[Bindable]

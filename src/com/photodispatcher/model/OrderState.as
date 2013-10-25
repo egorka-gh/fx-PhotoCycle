@@ -39,6 +39,7 @@ package com.photodispatcher.model{
 		public static const PRN_WEB_OK:int=206;
 		public static const PRN_POST:int=210;
 		public static const PRN_CANCEL:int=215;
+		public static const PRN_POST_FORWARD:int=220;
 		public static const PRN_PRINT:int=250;
 		public static const PRN_COMPLETE:int=300;
 		public static const CANCELED_OLD:int=310;

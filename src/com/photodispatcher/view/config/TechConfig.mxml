@@ -49,7 +49,8 @@
 			<s:layout>
 				<s:FormLayout gap="-10" />
 			</s:layout>
-			<s:FormHeading label="Разметка розничных книг (fbook)"/>
+			
+			<!--<s:FormHeading label="Разметка розничных книг (fbook)"/>
 			<s:FormItem label="Блок шрифт">
 				<s:TextInput id="tiFbBlFont" text="{conf.fbblok_font}" change="{conf.fbblok_font=int(tiFbBlFont.text)}" restrict="0-9" width="50"/>
 			</s:FormItem> 
@@ -73,7 +74,8 @@
 			</s:FormItem>
 			<s:FormItem label="Обложка подпись книги смещение(pix)">
 				<itemRenderer:OffsetEditor id="tiFbCvBarOffs" data="{conf.fbcover_bar_offset}" change="{conf.fbcover_bar_offset=tiFbCvBarOffs.data}"/>
-			</s:FormItem>
+			</s:FormItem>-->
+			
 			<s:FormHeading label="Технологическая разметка книг (фотопечать)" />
 			<s:FormItem label="Увеличение длинны формата (мм)">
 				<s:TextInput id="tiTechAdd" text="{conf.tech_add}" change="{conf.tech_add=int(tiTechAdd.text)}" restrict="0-9" width="50"/>

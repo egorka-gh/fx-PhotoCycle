@@ -4,7 +4,7 @@ package com.photodispatcher.model{
 	public class Roll extends DBRecord{
 		private static var _itemsMap:Object;
 
-		public static function get itemsMap():Object{
+		public static function itemsMap():Object{
 			if(_itemsMap) return _itemsMap;
 			initItemsMap();
 			return _itemsMap;
@@ -21,6 +21,20 @@ package com.photodispatcher.model{
 					_itemsMap[s.width.toString()]=s;
 				}
 			}
+		}
+		
+		public static function getStandartWidth(pix:int):int{
+			var map:Object=itemsMap();
+			if(!map) return 0;
+			var r:Roll;
+			var result:Roll;
+			for each(r in map){
+				if(r.pixels==pix) return r.width;
+				if(r.pixels>pix){
+					if(!result || result.pixels>r.pixels) result=r;
+				}
+			}
+			return result?result.width:0;
 		}
 
 		//db fileds

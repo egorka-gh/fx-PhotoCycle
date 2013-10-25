@@ -1,4 +1,5 @@
 package com.photodispatcher.provider.fbook.download{
+	import com.akmeful.card.data.CardProject;
 	import com.akmeful.fotakrama.cfg.PathAlias;
 	import com.akmeful.fotakrama.data.Project;
 	import com.akmeful.fotakrama.library.Library;
@@ -61,8 +62,12 @@ package com.photodispatcher.provider.fbook.download{
 						fetchProject(lastFetchedId,MagnetProject.PROJECT_TYPE);
 						return;
 						break;
-					/*
 					case MagnetProject.PROJECT_TYPE:
+						fetchProject(lastFetchedId,FBookProject.PROJECT_TYPE_BCARD);
+						return;
+						break;
+					/*
+					case FBookProject.PROJECT_TYPE_BCARD:
 						//fetch new other proj type, default - error
 						break;
 					*/
@@ -87,11 +92,12 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			lastFetchedType=projType;
 			lastFetchedId=projId;
+			var bvo:ProjectViewVO = new ProjectViewVO();
+			var proj:Project;
 			switch(lastFetchedType){
 				case Book.PROJECT_TYPE:
-					var bvo:ProjectViewVO = new ProjectViewVO();
-					var b:Book=new Book({id:projId});
-					bvo.project = b;
+					proj=new Book({id:projId});
+					bvo.project = proj;
 					service.execute(bvo);
 					break;
 				case FotocalendarProject.PROJECT_TYPE:
@@ -101,11 +107,16 @@ package com.photodispatcher.provider.fbook.download{
 					service.execute(cvo);
 					break;
 				case MagnetProject.PROJECT_TYPE:
-					var mvo:ProjectViewVO= new ProjectViewVO();
-					mvo.updateTargetUrl(pathAlias.getPath('/magnet/view/', false));
-					var mp:MagnetProject = new MagnetProject({id:projId});
-					mvo.project=mp;
-					service.execute(mvo);
+					bvo.updateTargetUrl('/magnet/view/');
+					proj= new MagnetProject({id:projId});
+					bvo.project=proj;
+					service.execute(bvo);
+					break;
+				case FBookProject.PROJECT_TYPE_BCARD:
+					bvo.updateTargetUrl('/bcard/view/');
+					proj= new CardProject('','',{id:projId});
+					bvo.project=proj;
+					service.execute(bvo);
 					break;
 			}
 		}
@@ -138,7 +149,7 @@ package com.photodispatcher.provider.fbook.download{
 		}
 
 		override protected function createItem(data:Object):Object {
-			return new Project(data);
+			return new Project('','',data);
 		}
 		
 		protected function parseRawData(rawData:Object):void {

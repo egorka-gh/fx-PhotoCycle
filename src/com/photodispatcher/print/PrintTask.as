@@ -317,7 +317,7 @@ package com.photodispatcher.print{
 				printContext[KEY_IMG_NUM]=StrUtil.lPad((currCopyIdx+1).toString(),3);
 			}
 			printContext[KEY_IMG_FILE]=dstFileName;
-			printContext[KEY_IMG_PRT_QTTY]=pf.prt_qty.toString();
+			printContext[KEY_IMG_PRT_QTTY]=pf.prt_qty>0?pf.prt_qty.toString():'1';
 			
 			var caption:String=pf.caption;
 			if(caption){

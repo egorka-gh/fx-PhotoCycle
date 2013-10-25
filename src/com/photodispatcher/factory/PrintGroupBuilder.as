@@ -1,4 +1,5 @@
 package com.photodispatcher.factory{
+	import com.akmeful.card.data.CardProject;
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.magnet.data.MagnetProject;
@@ -10,6 +11,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.Roll;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
@@ -22,6 +24,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.util.UnitUtil;
 	
 	import flash.filesystem.File;
+	import flash.geom.Point;
 	import flash.utils.Dictionary;
 
 	public class PrintGroupBuilder{
@@ -336,7 +339,10 @@ package com.photodispatcher.factory{
 			var proj:FBookProject;
 			var page:PageData;
 			var paper:int;
-			
+			var coverPixels:Point;
+			var blockPixels:Point;
+			var bookSynonym:BookSynonym;
+
 			var pgCover:PrintGroup;
 			var pgBody:PrintGroup;
 			var pg:PrintGroup;
@@ -344,98 +350,142 @@ package com.photodispatcher.factory{
 			for each(so in order.suborders){
 				proj=so.project;
 				if(proj){
+					//reset vars
+					paper=0;
+					coverPixels=proj.getPixelSise(BookSynonym.BOOK_PART_COVER);
+					blockPixels=proj.getPixelSise(BookSynonym.BOOK_PART_BLOCK);
 					//set suborder project type
 					so.proj_type=proj.bookType;
-					/*
-					switch(proj.type){
-						case Book.PROJECT_TYPE:
-							so.proj_type=BookSynonym.BOOK_TYPE_BOOK;
-							paperId=(proj.project as Book).template.paper.id.toString();
-							break;
-						case FotocalendarProject.PROJECT_TYPE:
-							so.proj_type=BookSynonym.BOOK_TYPE_CALENDAR;
-							//paperId=(proj.project as FotocalendarProject).template.p .template.paper.id.toString();
-							break;
-						case MagnetProject.PROJECT_TYPE:
-							so.proj_type=BookSynonym.BOOK_TYPE_MAGNET;
-							paperId=(proj.project as MagnetProject).template.paperType .template.paper.id.toString();
-							break;
+
+					if (proj.bookType==BookSynonym.BOOK_TYPE_BCARD){
+						//set print qtty 4 Card project
+						var bcp:CardProject=proj.project as CardProject;
+						so.prt_qty= so.prt_qty*bcp.template.formatPageCount;
 					}
-					*/
-					//detect paper
-					var fv:FieldValue=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,proj.paperId,'paper');
-					/*
-					if(so.proj_type==BookSynonym.BOOK_TYPE_CALENDAR || so.proj_type==BookSynonym.BOOK_TYPE_MAGNET){
-						//TODO hardcoded matovaia
-						fv=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,'1','paper');
-					}else if(proj.type==Book.PROJECT_TYPE){
-						var prj:Book=proj.project as Book;
-						if(prj){
-							fv=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,prj.template.paper.id.toString(),'paper');
+					
+					//try to use print alias
+					bookSynonym=BookSynonymDAO.translateAlias(proj.printAlias);
+					if(!bookSynonym){
+						//detect paper
+						var fv:FieldValue=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,proj.paperId,'paper');
+						if(fv){
+							paper=int(fv.value);
+						}else{
+							//TODO hardcoded matovaja
+							paper=11;
 						}
 					}
-					*/
-					if(fv) paper=int(fv.value);
-					
-					//create print groups
-					pg= new PrintGroup();
-					pg.order_id=order.id;
-					pg.path=so.ftp_folder;
-					pg.book_type=proj.bookType; //BookSynonym.BOOK_TYPE_BOOK; //TODO can be BOOK_TYPE_JOURNAL?
-					pg.book_num=so.prt_qty;
-					pg.paper=paper;
-					
-					pgCover=pg.clone();
-					pgCover.butt=UnitUtil.pixels2mm300(proj.buttWidth());
-					pgCover.book_part=BookSynonym.BOOK_PART_COVER;
-					pgCover.bookTemplate=new BookPgTemplate();
-					if(so.proj_type==BookSynonym.BOOK_TYPE_BOOK){
-						//set template
-						if(Context.getAttribute('fbook.cover.notching')) pgCover.bookTemplate.notching=Context.getAttribute('fbook.cover.notching');
-						if(Context.getAttribute('fbook.cover.font.size')) pgCover.bookTemplate.font_size=Context.getAttribute('fbook.cover.font.size');
-						if(Context.getAttribute('fbook.cover.barcode.size')) pgCover.bookTemplate.bar_size=Context.getAttribute('fbook.cover.barcode.size');
-						if(Context.getAttribute('fbook.cover.barcode.offset')) pgCover.bookTemplate.bar_offset=Context.getAttribute('fbook.cover.barcode.offset');
+					//try to finde by pape & format 4 book
+					if(!bookSynonym && proj.bookType==BookSynonym.BOOK_TYPE_BOOK && !proj.isPageSliced(0)) bookSynonym=BookSynonymDAO.guess(paper, coverPixels, blockPixels);
+					if(!bookSynonym){
+						//build
+						bookSynonym= new BookSynonym();
+						bookSynonym.templates=[];
+						var pt:BookPgTemplate;
+						if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK){
+							//crete block template
+							pt= new BookPgTemplate();
+							pt.book_part=BookSynonym.BOOK_PART_BLOCK;
+							pt.paper=paper;
+							//get width by roll
+							pt.width=Roll.getStandartWidth(int(Math.min(blockPixels.x,blockPixels.y)));
+							//by real size
+							if(pt.width==0) pg.width=UnitUtil.pixels2mm300(Math.min(blockPixels.x,blockPixels.y));
+							pt.height=UnitUtil.pixels2mm300(Math.max(blockPixels.x,blockPixels.y));
+							//set template size
+							pt.sheet_len=blockPixels.x;
+							pt.sheet_width=blockPixels.y;
+							bookSynonym.templates.push(pt);
+							
+							//crete cover template
+							pt= new BookPgTemplate();
+							if(proj.isPageSliced(0)){
+								pt.book_part=BookSynonym.BOOK_PART_INSERT;
+								coverPixels=proj.getCoverPage().getSliceSize();
+							}else{
+								pt.book_part=BookSynonym.BOOK_PART_COVER;
+							}
+							pt.paper=paper;
+							//get width by roll
+							pt.width=Roll.getStandartWidth(int(Math.min(coverPixels.x,coverPixels.y)));
+							//by real size
+							if(pt.width==0) pg.width=UnitUtil.pixels2mm300(Math.min(coverPixels.x,coverPixels.y));
+							pt.height=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
+							//set template size
+							pt.sheet_len=coverPixels.x;
+							pt.sheet_width=coverPixels.y;
+							bookSynonym.templates.push(pt);
+						}else{
+							//crete block template by first page
+							pt= new BookPgTemplate();
+							pt.book_part=BookSynonym.BOOK_PART_BLOCK;
+							pt.paper=paper;
+							//get width by roll
+							pt.width=Roll.getStandartWidth(int(Math.min(coverPixels.x,coverPixels.y)));
+							//by real size
+							if(pt.width==0) pg.width=UnitUtil.pixels2mm300(Math.min(coverPixels.x,coverPixels.y));
+							pt.height=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
+							//set template size
+							pt.sheet_len=coverPixels.x;
+							pt.sheet_width=coverPixels.y;
+							bookSynonym.templates.push(pt);
+						}
+						
 					}
-					
-					pgBody=pg.clone();
-					pgBody.book_part=BookSynonym.BOOK_PART_BLOCK;
-					pgBody.bookTemplate=new BookPgTemplate();
-					if(so.proj_type==BookSynonym.BOOK_TYPE_BOOK){
-						//set template
-						if(Context.getAttribute('fbook.block.notching')) pgBody.bookTemplate.notching=Context.getAttribute('fbook.block.notching');
-						if(Context.getAttribute('fbook.block.font.size')) pgBody.bookTemplate.font_size=Context.getAttribute('fbook.block.font.size');
-						if(Context.getAttribute('fbook.block.barcode.size')) pgBody.bookTemplate.bar_size=Context.getAttribute('fbook.block.barcode.size');
-						if(Context.getAttribute('fbook.block.barcode.offset')) pgBody.bookTemplate.bar_offset=Context.getAttribute('fbook.block.barcode.offset');
+					//create print gruops
+					if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK){
+						//cover
+						pgCover=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_COVER, UnitUtil.pixels2mm300(proj.buttWidth()));
+						if(pgCover){
+							pgCover.order_id=order.id;
+							pgCover.path=so.ftp_folder;
+							pgCover.book_type=proj.bookType; 
+							pgCover.book_num=so.prt_qty;
+							pgCover.height=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
+							pgCover.bookTemplate.sheet_len=Math.max(coverPixels.x,coverPixels.y);
+						}else{
+							//insert? 
+							pgCover=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_INSERT);
+							if(pgCover){
+								pgCover.order_id=order.id;
+								pgCover.path=so.ftp_folder;
+								pgCover.book_type=proj.bookType; 
+								pgCover.book_num=so.prt_qty;
+							}
+						}
 					}
+					//block
+					pgBody=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_BLOCK);
+					pgBody.order_id=order.id;
+					pgBody.path=so.ftp_folder;
+					pgBody.book_type=proj.bookType; 
+					pgBody.book_num=so.prt_qty;
 					
+					//fill
+					//TODO implement slices?
 					for each(page in proj.projectPages){
 						if(page){
-							//detect pg type
-							if(proj.isPageCover(page.pageNum)){
-								if(proj.isPageSliced(page.pageNum)) pgCover.book_part=BookSynonym.BOOK_PART_INSERT; //TODO not implemented
-								pg=pgCover;
-							}else{
-								pg=pgBody;
-							}
-							//set format
-							pg.width=UnitUtil.pixels2mm300(Math.min(page.pageSize.x,page.pageSize.y));
-							pg.height=UnitUtil.pixels2mm300(Math.max(page.pageSize.x,page.pageSize.y));
-							//set template size
-							pg.bookTemplate.sheet_len=page.pageSize.x;
-							pg.bookTemplate.sheet_width=page.pageSize.y;
-							//TODO implement slices to print group by format
 							//add file
 							pgf= new PrintGroupFile();
-							pgf.file_name=page.outFileName(); 
+							if(!proj.isPageSliced(page.pageNum)){
+								pgf.file_name=page.outFileName();
+							}else{
+								pgf.file_name=page.outFileName(1); //first & only one slice
+							}
 							pgf.page_num=page.pageNum;
 							pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.pageNum.toString(),2);
 							pgf.book_num=0;
-							pg.addFile(pgf);
+							pgf.prt_qty=1;
+							if(proj.isPageCover(page.pageNum)){
+								if(pgCover) pgCover.addFile(pgf);
+							}else{
+								pgBody.addFile(pgf);
+							}
 						}
 					}
 					
 					//add to order
-					if(pgCover.getFiles() && pgCover.getFiles().length>0){
+					if(pgCover && pgCover.getFiles() && pgCover.getFiles().length>0){
 						pgCover.id=order.id+'_'+pgNum.toString();
 						pgCover.sheet_num=pgCover.getFiles().length;
 						pgCover.prints=pgCover.book_num*pgCover.sheet_num;
@@ -453,6 +503,98 @@ package com.photodispatcher.factory{
 						result.push(pgBody);
 						pgNum++;
 					}
+
+					/*
+					if(bookSynonym){
+					}else{
+						//try to guess
+						//detect paper
+						var fv:FieldValue=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,proj.paperId,'paper');
+						if(fv) paper=int(fv.value);
+						
+						//create print groups
+						pg= new PrintGroup();
+						pg.order_id=order.id;
+						pg.path=so.ftp_folder;
+						pg.book_type=proj.bookType; //BookSynonym.BOOK_TYPE_BOOK; //TODO can be BOOK_TYPE_JOURNAL?
+						pg.book_num=so.prt_qty;
+						pg.paper=paper;
+						
+						pgCover=pg.clone();
+						pgCover.butt=UnitUtil.pixels2mm300(proj.buttWidth());
+						pgCover.book_part=BookSynonym.BOOK_PART_COVER;
+						pgCover.bookTemplate=new BookPgTemplate();
+						if(so.proj_type==BookSynonym.BOOK_TYPE_BOOK){
+							//set template
+							if(Context.getAttribute('fbook.cover.notching')) pgCover.bookTemplate.notching=Context.getAttribute('fbook.cover.notching');
+							if(Context.getAttribute('fbook.cover.font.size')) pgCover.bookTemplate.font_size=Context.getAttribute('fbook.cover.font.size');
+							if(Context.getAttribute('fbook.cover.barcode.size')) pgCover.bookTemplate.bar_size=Context.getAttribute('fbook.cover.barcode.size');
+							if(Context.getAttribute('fbook.cover.barcode.offset')) pgCover.bookTemplate.bar_offset=Context.getAttribute('fbook.cover.barcode.offset');
+						}
+						
+						pgBody=pg.clone();
+						pgBody.book_part=BookSynonym.BOOK_PART_BLOCK;
+						pgBody.bookTemplate=new BookPgTemplate();
+						if(so.proj_type==BookSynonym.BOOK_TYPE_BOOK){
+							//set template
+							if(Context.getAttribute('fbook.block.notching')) pgBody.bookTemplate.notching=Context.getAttribute('fbook.block.notching');
+							if(Context.getAttribute('fbook.block.font.size')) pgBody.bookTemplate.font_size=Context.getAttribute('fbook.block.font.size');
+							if(Context.getAttribute('fbook.block.barcode.size')) pgBody.bookTemplate.bar_size=Context.getAttribute('fbook.block.barcode.size');
+							if(Context.getAttribute('fbook.block.barcode.offset')) pgBody.bookTemplate.bar_offset=Context.getAttribute('fbook.block.barcode.offset');
+						}
+						
+						for each(page in proj.projectPages){
+							if(page){
+								//detect pg type
+								if(proj.isPageCover(page.pageNum)){
+									if(proj.isPageSliced(page.pageNum)) pgCover.book_part=BookSynonym.BOOK_PART_INSERT; //TODO not implemented
+									pg=pgCover;
+								}else{
+									pg=pgBody;
+								}
+								//set format
+								//get width by roll
+								pg.width=Roll.getStandartWidth(Math.min(page.pageSize.x,page.pageSize.y));
+								//by real size
+								if(pg.width==0) pg.width=UnitUtil.pixels2mm300(Math.min(page.pageSize.x,page.pageSize.y));
+								//by real size
+								pg.height=UnitUtil.pixels2mm300(Math.max(page.pageSize.x,page.pageSize.y)); 
+								//set template size
+								pg.bookTemplate.sheet_len=page.pageSize.x;
+								pg.bookTemplate.sheet_width=page.pageSize.y;
+								//TODO implement slices to print group by format
+								//add file
+								pgf= new PrintGroupFile();
+								pgf.file_name=page.outFileName(); 
+								pgf.page_num=page.pageNum;
+								pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.pageNum.toString(),2);
+								pgf.book_num=0;
+								pgf.prt_qty=1;
+								pg.addFile(pgf);
+							}
+						}
+						
+						//add to order
+						if(pgCover.getFiles() && pgCover.getFiles().length>0){
+							pgCover.id=order.id+'_'+pgNum.toString();
+							pgCover.sheet_num=pgCover.getFiles().length;
+							pgCover.prints=pgCover.book_num*pgCover.sheet_num;
+							if(!order.printGroups) order.printGroups=[];
+							order.printGroups.push(pgCover);
+							result.push(pgCover);
+							pgNum++;
+						}
+						if(pgBody.getFiles() && pgBody.getFiles().length>0){
+							pgBody.id=order.id+'_'+pgNum.toString();
+							pgBody.sheet_num=pgBody.getFiles().length;
+							pgBody.prints=pgBody.book_num*pgBody.sheet_num;
+							if(!order.printGroups) order.printGroups=[];
+							order.printGroups.push(pgBody);
+							result.push(pgBody);
+							pgNum++;
+						}
+					}
+					*/
 				}
 			}
 			return result;

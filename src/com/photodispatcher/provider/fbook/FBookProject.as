@@ -1,4 +1,5 @@
 package com.photodispatcher.provider.fbook{
+	import com.akmeful.card.data.CardProject;
 	import com.akmeful.fotakrama.canvas.CanvasUtil;
 	import com.akmeful.fotakrama.data.Project;
 	import com.akmeful.fotakrama.data.ProjectBook;
@@ -10,7 +11,9 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.fotokniga.book.layout.BookLayout;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.model.BookSynonym;
+	import com.photodispatcher.provider.fbook.data.PageData;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
+	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.filesystem.File;
 	import flash.geom.Point;
@@ -23,6 +26,8 @@ package com.photodispatcher.provider.fbook{
 		public static const SUBDIR_WRK:String='wrk';
 		public static const SUBDIR_ART:String='art';
 		public static const SUBDIR_USER:String='usr';
+
+		public static const PROJECT_TYPE_BCARD:int=4;
 
 		public var notLoadedItems:Array; //DownloadErrorItem
 		public var projectPages:Array=[]; //PageData, has data after IMScrip.build 
@@ -43,7 +48,7 @@ package com.photodispatcher.provider.fbook{
 		
 		private function projectFromRaw(raw:Object):void{
 			projectRaw=raw;
-			var p:Project=new Project(raw);
+			var p:Project=new Project('','', raw);
 			var bp:ProjectBookPage;
 
 			if(!p) return;
@@ -66,6 +71,10 @@ package com.photodispatcher.provider.fbook{
 					//magnet = createItem(rawData) as MagnetProject;
 					var mp:MagnetProject= new MagnetProject(raw);
 					_project=mp;
+					break;
+				case PROJECT_TYPE_BCARD:
+					var bcp:CardProject= new CardProject('','',raw);
+					_project=bcp;
 					break;
 			}
 			//reindex content elements
@@ -104,6 +113,9 @@ package com.photodispatcher.provider.fbook{
 				case MagnetProject.PROJECT_TYPE:
 					return 'Магнит';
 					break;
+				case PROJECT_TYPE_BCARD:
+					return 'Визитка';
+					break;
 				default:
 					return 'Неопределен';
 			}
@@ -120,6 +132,9 @@ package com.photodispatcher.provider.fbook{
 					break;
 				case MagnetProject.PROJECT_TYPE:
 					return BookSynonym.BOOK_TYPE_MAGNET;
+					break;
+				case PROJECT_TYPE_BCARD:
+					return BookSynonym.BOOK_TYPE_BCARD;
 					break;
 				default:
 					return 0;
@@ -138,8 +153,31 @@ package com.photodispatcher.provider.fbook{
 				case MagnetProject.PROJECT_TYPE:
 					return (project as MagnetProject).template.paperType.printId;
 					break;
+				case PROJECT_TYPE_BCARD:
+					return (project as CardProject).template.paperType.printId;
+					break;
 				default:
 					return '1';
+			}
+		}
+
+		public function get printAlias():String{
+			if(!project) return '';
+			switch(type){
+				case Book.PROJECT_TYPE:
+					return (project as Book).template.printAlias;
+					break;
+				case FotocalendarProject.PROJECT_TYPE:
+					return (project as FotocalendarProject).template.printAlias;
+					break;
+				case MagnetProject.PROJECT_TYPE:
+					return (project as MagnetProject).template.printAlias;
+					break;
+				case PROJECT_TYPE_BCARD:
+					return (project as CardProject).template.printAlias;
+					break;
+				default:
+					return '';
 			}
 		}
 
@@ -162,13 +200,10 @@ package com.photodispatcher.provider.fbook{
 			if(!project) return null;
 			switch(type){
 				case Book.PROJECT_TYPE:
-					return (project as Book).pages;
-					break;
 				case FotocalendarProject.PROJECT_TYPE:
-					return (project as FotocalendarProject).pages;
-					break;
 				case MagnetProject.PROJECT_TYPE:
-					return (project as MagnetProject).pages;
+				case PROJECT_TYPE_BCARD:
+					return (project as ProjectBook).pages;
 					break;
 				default:
 					return null;
@@ -208,6 +243,13 @@ package com.photodispatcher.provider.fbook{
 					pageOffset.x=0;
 					pageOffset.y=0;
 					break;
+				case PROJECT_TYPE_BCARD:
+					var bcp:CardProject=(project as CardProject);
+					pageSize.x=bcp.template.format.cellWidth;
+					pageSize.y=bcp.template.format.cellHeight;
+					pageOffset.x=0;
+					pageOffset.y=0;
+					break;
 			}
 		}
 		
@@ -240,6 +282,25 @@ package com.photodispatcher.provider.fbook{
 			var bp:Book=(project as Book);
 			return bp.bindingWidth;
 		}
+
+		public function getPixelSise(bookPart:int=0):Point{
+			var result:Point;
+			var page:PageData;
+			if(bookType==BookSynonym.BOOK_TYPE_BOOK && bookPart==BookSynonym.BOOK_PART_BLOCK){
+				page=ArrayUtil.searchItem('pageNum',1,projectPages) as PageData;
+			}else{
+				page=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
+			}
+			if(page){
+				result= new Point(page.pageSize.x,page.pageSize.y);
+			}
+			return result;
+		}
+		
+		public function getCoverPage():PageData{
+			return ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
+		}
+		
 
 		[Bindable]
 		public function get log():String{

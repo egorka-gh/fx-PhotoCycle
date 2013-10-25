@@ -187,7 +187,7 @@
 				ordTotal=0;
 				pgTotal=0;
 				phTotal=0;
-				var standartSize:Object=Roll.itemsMap;
+				var standartSize:Object=Roll.itemsMap();
 				var pg:PrintGroup; 
 				var orderMap:Object=new Object();
 				var sizeMap:Object= new Object();

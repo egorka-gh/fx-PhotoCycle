@@ -206,7 +206,11 @@ package com.photodispatcher.provider.fbook.download{
 			startTime= new Date();
 			book.notLoadedItems=[];
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,_totalLoaded, _itemsToLoad));
-			loader.start();
+			if (_itemsToLoad==0){
+				allLoadCompleted(null);
+			}else{
+				loader.start();
+			}
 		}
 		
 		public function stop():void{
