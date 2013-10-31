@@ -4,8 +4,15 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.dao.LabRollDAO;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
+	
+	import flash.events.TimerEvent;
+	import flash.utils.Timer;
 
 	public class PrintQueue{
+		private static const READ_DELAY_MIN:int=400;
+		private static const READ_DELAY_MAX:int=1000;
+		private static const READ_MAX_WAITE:int=30000;
+
 
 		[Bindable]
 		public var printQueueLen:int=-1;//sek
@@ -55,17 +62,27 @@ package com.photodispatcher.print{
 		}
 
 		public function refresh():void{
+			if(isReading) return;
+			_refresh();
+		}
+		public function _refresh():void{
+			if(!lab) return;
 			queueOrders=0;
 			queuePGs=0;
 			queuePrints=0;
 
-			if(!lab) return;
 			//TODO inplement refresh late on read lock
 			//read print groups in Print state
 			var ordersMap:Object=new Object();
 			var pgDao:PrintGroupDAO= new PrintGroupDAO();
 			var pgs:Array=pgDao.findInPrint(lab.id);
-			if(!pgs) return;//read lock
+			if(!pgs){
+				//read lock
+				refreshLate();
+				return;
+			}
+			//read complited
+			isReading= false;
 			printGroups=pgs;
 			queuePGs=printGroups.length;
 			var newRolls:Array;
@@ -151,5 +168,51 @@ package com.photodispatcher.print{
 			printQueueLen=result;
 			printQueueLenM=Math.round(resultM/1000);
 		}
+		
+		private var isReading:Boolean=false;
+		private var readDelay:int=0;
+		private var timer:Timer;
+		private var readAttempt:int=0;
+		
+		private function getDelay():int{
+			var timeout:int=0;
+			while (timeout<READ_DELAY_MIN){
+				timeout=Math.random()*(READ_DELAY_MAX+READ_DELAY_MIN*readAttempt);
+			}
+			return timeout;
+		}
+
+		private function refreshLate():void{
+			if(!isReading){
+				isReading= true;
+				readDelay=0;
+				readAttempt=0;
+			}
+			if (readDelay>=READ_MAX_WAITE){
+				//max wait reached
+				//clean up
+				isReading= false;
+				readDelay=0;
+				readAttempt=0;
+				return;
+			}
+
+			if(!timer){
+				timer=new Timer(getDelay(),1);
+			}else{
+				timer.reset();
+				timer.delay=getDelay();
+			}
+			timer.addEventListener(TimerEvent.TIMER,onTimer);
+			readDelay+=timer.delay;
+			readAttempt++;
+			timer.start();
+		}
+
+		private function onTimer(e:TimerEvent):void{
+			timer.removeEventListener(TimerEvent.TIMER,onTimer);
+			_refresh();
+		}
+
 	}
 }

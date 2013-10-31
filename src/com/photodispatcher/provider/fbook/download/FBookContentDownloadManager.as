@@ -5,16 +5,19 @@ package com.photodispatcher.provider.fbook.download{
 	
 	import com.adobe.protocols.dict.events.ErrorEvent;
 	import com.akmeful.fotakrama.canvas.content.CanvasFrameImage;
+	import com.akmeful.fotakrama.canvas.content.CanvasFrameMaskedImage;
 	import com.akmeful.fotakrama.canvas.content.CanvasPhotoBackgroundImage;
 	import com.akmeful.fotakrama.canvas.content.CanvasText;
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.akmeful.fotakrama.library.data.ClipartType;
+	import com.akmeful.fotakrama.project.ProjectNS;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverFrameImage;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.SourceService;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
 	import com.photodispatcher.provider.fbook.data.FrameData;
+	import com.photodispatcher.util.JsonUtil;
 	
 	import flash.errors.IOError;
 	import flash.events.Event;
@@ -45,6 +48,7 @@ package com.photodispatcher.provider.fbook.download{
 		public static const CONTENT_FRAME_ELEMENT:String = 'frame_element';
 		public static const CONTENT_FRAME_IMG:String = 'frame_img';
 		public static const CONTENT_PHOTO_BG:String =  CanvasPhotoBackgroundImage.TYPE;
+		public static const CONTENT_FRAME_MASKED_IMAGE:String =  CanvasFrameMaskedImage.TYPE;
 
 		private var service:SourceService;
 		private var book:FBookProject;
@@ -141,6 +145,29 @@ package com.photodispatcher.provider.fbook.download{
 									}
 								}
 								break;
+							case CanvasFrameMaskedImage.TYPE:
+								if(contentElement.iId){
+									name=contentElement.iId;
+									//req=createRequest(name,MediaPath.userImagePath(),pageNum);
+									req=createRequest(name,userImagePath(),pageNum);
+									if(req){
+										//save to user subdir
+										name=FBookProject.userSubDir+name;
+										loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:contentElement.iId});
+									}
+									if(contentElement.size){
+										var maskElement:Object = JsonUtil.decode(contentElement.size);
+										name=maskElement.id;
+										req=createRequest(name,clipartPath(),pageNum);
+										//req=createClipartRequest(name,pageNum);
+										if(req){
+											//save to art subdir
+											name=FBookProject.artSubDir+name;
+											loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:maskElement.id});
+										}
+									}
+								}
+								break;
 							case CanvasText.TYPE: //BookText.TYPE:
 								break;
 							default:
@@ -160,7 +187,13 @@ package com.photodispatcher.provider.fbook.download{
 			if(!name){
 				return null;
 			}
-			var itemId:String=name.split('.')[0];
+			var itemId:String=name;
+			var arr:Array=itemId.split('::');
+			if(arr.length > 1 && arr[0]==ProjectNS.SUP){
+				itemId=arr[1];
+			}
+			
+			itemId=name.split('.')[0];
 			var param:URLVariables=new URLVariables;
 			param.id=itemId;
 			param.project_id=book.id;

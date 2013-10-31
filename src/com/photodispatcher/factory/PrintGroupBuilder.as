@@ -340,6 +340,7 @@ package com.photodispatcher.factory{
 			var page:PageData;
 			var paper:int;
 			var coverPixels:Point;
+			var slicePixels:Point;
 			var blockPixels:Point;
 			var bookSynonym:BookSynonym;
 
@@ -354,6 +355,11 @@ package com.photodispatcher.factory{
 					paper=0;
 					coverPixels=proj.getPixelSise(BookSynonym.BOOK_PART_COVER);
 					blockPixels=proj.getPixelSise(BookSynonym.BOOK_PART_BLOCK);
+					slicePixels=proj.getPixelSise(BookSynonym.BOOK_PART_INSERT);
+					pgCover=null;
+					pgBody=null;
+					bookSynonym=null;
+
 					//set suborder project type
 					so.proj_type=proj.bookType;
 
@@ -376,7 +382,8 @@ package com.photodispatcher.factory{
 						}
 					}
 					//try to finde by pape & format 4 book
-					if(!bookSynonym && proj.bookType==BookSynonym.BOOK_TYPE_BOOK && !proj.isPageSliced(0)) bookSynonym=BookSynonymDAO.guess(paper, coverPixels, blockPixels);
+					//if(!bookSynonym && proj.bookType==BookSynonym.BOOK_TYPE_BOOK && !proj.isPageSliced(0)) bookSynonym=BookSynonymDAO.guess(paper, coverPixels, blockPixels);
+					if(!bookSynonym) bookSynonym=BookSynonymDAO.guess(paper, coverPixels, blockPixels, slicePixels);
 					if(!bookSynonym){
 						//build
 						bookSynonym= new BookSynonym();
@@ -401,7 +408,7 @@ package com.photodispatcher.factory{
 							pt= new BookPgTemplate();
 							if(proj.isPageSliced(0)){
 								pt.book_part=BookSynonym.BOOK_PART_INSERT;
-								coverPixels=proj.getCoverPage().getSliceSize();
+								coverPixels=slicePixels;
 							}else{
 								pt.book_part=BookSynonym.BOOK_PART_COVER;
 							}
@@ -421,13 +428,13 @@ package com.photodispatcher.factory{
 							pt.book_part=BookSynonym.BOOK_PART_BLOCK;
 							pt.paper=paper;
 							//get width by roll
-							pt.width=Roll.getStandartWidth(int(Math.min(coverPixels.x,coverPixels.y)));
+							pt.width=Roll.getStandartWidth(int(Math.min(blockPixels.x,blockPixels.y)));
 							//by real size
-							if(pt.width==0) pg.width=UnitUtil.pixels2mm300(Math.min(coverPixels.x,coverPixels.y));
-							pt.height=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
+							if(pt.width==0) pg.width=UnitUtil.pixels2mm300(Math.min(blockPixels.x,blockPixels.y));
+							pt.height=UnitUtil.pixels2mm300(Math.max(blockPixels.x,blockPixels.y));
 							//set template size
-							pt.sheet_len=coverPixels.x;
-							pt.sheet_width=coverPixels.y;
+							pt.sheet_len=blockPixels.x;
+							pt.sheet_width=blockPixels.y;
 							bookSynonym.templates.push(pt);
 						}
 						
@@ -462,7 +469,6 @@ package com.photodispatcher.factory{
 					pgBody.book_num=so.prt_qty;
 					
 					//fill
-					//TODO implement slices?
 					for each(page in proj.projectPages){
 						if(page){
 							//add file

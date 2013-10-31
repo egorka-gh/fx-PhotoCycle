@@ -5,7 +5,7 @@ package com.photodispatcher.service.web{
 	import flash.net.URLRequest;
 
 	public class WebInvoker{
-		public static const INVOK_TIMEOUT:int=10;//sek
+		public static const INVOK_TIMEOUT:int=20;//sek
 
 		protected var client:WebClient;
 		

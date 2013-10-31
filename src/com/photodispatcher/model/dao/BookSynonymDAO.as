@@ -149,7 +149,63 @@ package com.photodispatcher.model.dao{
 			return aliasMap[alias] as BookSynonym; 
 		}
 
-		public static function guess(paper:int,coverSize:Point,blockSise:Point):BookSynonym{
+		public static function guess(paper:int,coverSize:Point,blockSise:Point,sliceSise:Point):BookSynonym{
+			if(!paper || !blockSise) return null;
+			if(!synonymMap){
+				if (!initSynonymMap()) throw new Error('Блокировка чтения (guess)',OrderState.ERR_READ_LOCK);
+			}
+			var bs:BookSynonym;
+			var it:BookPgTemplate;
+			var currCover:BookPgTemplate;
+			var currSlice:BookPgTemplate;
+			var currBlock:BookPgTemplate;
+			var fit:Boolean;
+			var resultCover:BookPgTemplate;
+			var resultSlice:BookPgTemplate;
+			var resultBlock:BookPgTemplate;
+			var result:BookSynonym;
+
+			for each(bs in aliasMap){
+				//init templetes
+				currCover=null;
+				currBlock=null;
+				currSlice=null;
+				for each(it in bs.templates){
+					if(it.book_part==BookSynonym.BOOK_PART_COVER && it.paper==paper && !it.is_pdf) currCover=it;
+					if(it.book_part==BookSynonym.BOOK_PART_INSERT && it.paper==paper && !it.is_pdf) currSlice=it;
+					if(it.book_part==BookSynonym.BOOK_PART_BLOCK && it.paper==paper && !it.is_pdf) currBlock=it;
+				}
+				//check template structure
+				if( ((currCover && coverSize) || (!currCover && !coverSize)) && 
+					((currSlice && sliceSise) || (!currSlice && !sliceSise)) 
+					&& currBlock){
+					//process synonym
+					fit=true;
+					//fit?
+					if(currCover) fit=currCover.sheet_width>=Math.min(coverSize.x,coverSize.y);
+					if(fit && currSlice) fit=(currSlice.sheet_width>=sliceSise.x && currSlice.sheet_len>=sliceSise.y) ||
+											 (currSlice.sheet_width>=sliceSise.y && currSlice.sheet_len>=sliceSise.x);
+					if(fit) fit=currBlock.sheet_width>=Math.min(blockSise.x,blockSise.y) && currBlock.sheet_len>=Math.max(blockSise.x,blockSise.y);
+					//set result
+					if(fit){
+						if(result){
+							//compare synonyms
+							if(currCover) fit=currCover.sheet_width<=resultCover.sheet_width;
+							if(fit && currSlice) fit=Math.min(currSlice.sheet_width,currSlice.sheet_len)<=Math.min(resultSlice.sheet_width,resultSlice.sheet_len) &&
+													 Math.max(currSlice.sheet_width,currSlice.sheet_len)<=Math.max(resultSlice.sheet_width,resultSlice.sheet_len);
+							if(fit) fit=currBlock.sheet_width<=resultBlock.sheet_width && currBlock.sheet_len<=resultBlock.sheet_len;
+						}
+						if(fit){
+							result=bs;
+							resultCover=currCover;
+							resultSlice=currSlice;
+							resultBlock=currBlock;
+						}
+					}
+				}
+			}
+			return result;
+			/*
 			if(!paper || !coverSize || !blockSise) return null;
 			if(!synonymMap){
 				if (!initSynonymMap()) throw new Error('Блокировка чтения (guess)',OrderState.ERR_READ_LOCK);
@@ -184,6 +240,7 @@ package com.photodispatcher.model.dao{
 				}
 			}
 			return result;
+			*/
 		}
 
 	}

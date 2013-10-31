@@ -286,11 +286,30 @@ package com.photodispatcher.provider.fbook{
 		public function getPixelSise(bookPart:int=0):Point{
 			var result:Point;
 			var page:PageData;
+			if(bookType==BookSynonym.BOOK_TYPE_BOOK){
+				page=getCoverPage();
+				if(bookPart==BookSynonym.BOOK_PART_BLOCK){
+					if(page){
+						page=ArrayUtil.searchItem('pageNum',1,projectPages) as PageData;
+					}else{
+						page=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
+					}
+				}else if(bookPart==BookSynonym.BOOK_PART_COVER){
+					if(isPageSliced(0)) page= null;
+				}else if(bookPart==BookSynonym.BOOK_PART_INSERT){
+					if(isPageSliced(0)) return page.getSliceSize();
+					page=null;
+				}
+			}else{
+				page=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
+			}
+			/*
 			if(bookType==BookSynonym.BOOK_TYPE_BOOK && bookPart==BookSynonym.BOOK_PART_BLOCK){
 				page=ArrayUtil.searchItem('pageNum',1,projectPages) as PageData;
 			}else{
 				page=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
 			}
+			*/
 			if(page){
 				result= new Point(page.pageSize.x,page.pageSize.y);
 			}
@@ -298,7 +317,9 @@ package com.photodispatcher.provider.fbook{
 		}
 		
 		public function getCoverPage():PageData{
-			return ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
+			var result:PageData=null;
+			if(isPageCover(0)) result=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
+			return result; 
 		}
 		
 
