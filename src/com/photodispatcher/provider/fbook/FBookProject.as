@@ -289,36 +289,27 @@ package com.photodispatcher.provider.fbook{
 			if(bookType==BookSynonym.BOOK_TYPE_BOOK){
 				page=getCoverPage();
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK){
-					if(page){
-						page=ArrayUtil.searchItem('pageNum',1,projectPages) as PageData;
-					}else{
-						page=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
-					}
+					page=ArrayUtil.searchItem('pageNum',1,projectPages) as PageData;
 				}else if(bookPart==BookSynonym.BOOK_PART_COVER){
 					if(isPageSliced(0)) page= null;
 				}else if(bookPart==BookSynonym.BOOK_PART_INSERT){
-					if(isPageSliced(0)) return page.getSliceSize();
+					if(page && isPageSliced(0)) return page.getSliceSize();
 					page=null;
 				}
-			}else{
-				page=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
+			}else if(bookPart==BookSynonym.BOOK_PART_BLOCK){
+				//set by first page in array
+				page=projectPages[0] as PageData;
 			}
-			/*
-			if(bookType==BookSynonym.BOOK_TYPE_BOOK && bookPart==BookSynonym.BOOK_PART_BLOCK){
-				page=ArrayUtil.searchItem('pageNum',1,projectPages) as PageData;
-			}else{
-				page=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
-			}
-			*/
 			if(page){
 				result= new Point(page.pageSize.x,page.pageSize.y);
 			}
 			return result;
 		}
 		
-		public function getCoverPage():PageData{
+		private function getCoverPage():PageData{
 			var result:PageData=null;
-			if(isPageCover(0)) result=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
+			var bp:Book=(project as Book);
+			if(isPageCover(0) && bp.template.cover.printType!=BookCoverPrintType.EMPTY) result=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
 			return result; 
 		}
 		

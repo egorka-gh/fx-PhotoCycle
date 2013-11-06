@@ -333,6 +333,37 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		public function setExtraStateByTech(pgId:String,tech_type:int):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			var dt:Date=new Date();
+
+			//set pg state
+			sql='UPDATE print_group'+
+				' SET state=(SELECT st.state FROM config.src_type st WHERE st.id=?), state_date = ?'+
+				' WHERE id=?';
+			params=[tech_type,dt,pgId];
+			sequence.push(prepareStatement(sql,params));
+			//log state
+			sql='INSERT INTO state_log (order_id, pg_id, state, state_date)'+
+				' SELECT pg.order_id, pg.id, pg.state, pg.state_date'+
+				' FROM print_group pg'+
+				' WHERE pg.id=?';
+			params=[pgId];
+			sequence.push(prepareStatement(sql,params));
+			//set order extra state
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, state_date)'+
+				' SELECT pg.order_id, pg.state, pg.state_date'+
+				' FROM print_group pg'+
+				' WHERE pg.id=?';
+			params=[pgId];
+			sequence.push(prepareStatement(sql,params));
+
+			executeSequence(sequence);
+		}
+
 		public function setStateByTech(pgId:String):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;

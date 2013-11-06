@@ -182,17 +182,24 @@ package com.photodispatcher.model.dao{
 					//process synonym
 					fit=true;
 					//fit?
-					if(currCover) fit=currCover.sheet_width>=Math.min(coverSize.x,coverSize.y);
+					if(currCover) fit=currCover.sheet_width>=coverSize.y;//Math.min(coverSize.x,coverSize.y);
+					/*
 					if(fit && currSlice) fit=(currSlice.sheet_width>=sliceSise.x && currSlice.sheet_len>=sliceSise.y) ||
 											 (currSlice.sheet_width>=sliceSise.y && currSlice.sheet_len>=sliceSise.x);
-					if(fit) fit=currBlock.sheet_width>=Math.min(blockSise.x,blockSise.y) && currBlock.sheet_len>=Math.max(blockSise.x,blockSise.y);
+					*/
+					if(fit && currSlice) fit= currSlice.sheet_width>=sliceSise.y && currSlice.sheet_len>=sliceSise.x;
+					//if(fit) fit=currBlock.sheet_width>=Math.min(blockSise.x,blockSise.y) && currBlock.sheet_len>=Math.max(blockSise.x,blockSise.y);
+					if(fit) fit=currBlock.sheet_width>=blockSise.y && currBlock.sheet_len>=blockSise.x;
 					//set result
 					if(fit){
 						if(result){
 							//compare synonyms
 							if(currCover) fit=currCover.sheet_width<=resultCover.sheet_width;
+							/*
 							if(fit && currSlice) fit=Math.min(currSlice.sheet_width,currSlice.sheet_len)<=Math.min(resultSlice.sheet_width,resultSlice.sheet_len) &&
 													 Math.max(currSlice.sheet_width,currSlice.sheet_len)<=Math.max(resultSlice.sheet_width,resultSlice.sheet_len);
+							*/
+							if(fit && currSlice) fit=currSlice.sheet_width<=resultSlice.sheet_width && currSlice.sheet_len<=resultSlice.sheet_len;
 							if(fit) fit=currBlock.sheet_width<=resultBlock.sheet_width && currBlock.sheet_len<=resultBlock.sheet_len;
 						}
 						if(fit){
@@ -205,42 +212,6 @@ package com.photodispatcher.model.dao{
 				}
 			}
 			return result;
-			/*
-			if(!paper || !coverSize || !blockSise) return null;
-			if(!synonymMap){
-				if (!initSynonymMap()) throw new Error('Блокировка чтения (guess)',OrderState.ERR_READ_LOCK);
-			}
-			var map:Object;
-			var bs:BookSynonym;
-			var it:BookPgTemplate;
-			var currCover:BookPgTemplate;
-			var currBlock:BookPgTemplate;
-			var resultCover:BookPgTemplate;
-			var resultBlock:BookPgTemplate;
-			var result:BookSynonym;
-			for each(map in synonymMap){//by src type
-				for each(bs in map){
-					currCover=null;
-					currBlock=null;
-					for each(it in bs.templates){
-						if(it.book_part==BookSynonym.BOOK_PART_COVER && it.paper==paper && !it.is_pdf) currCover=it;
-						if(it.book_part==BookSynonym.BOOK_PART_BLOCK && it.paper==paper && !it.is_pdf) currBlock=it;
-					}
-					if(currCover && currBlock 
-						&& currCover.sheet_width>=Math.min(coverSize.x,coverSize.y) //&& currCover.sheet_len>=Math.max(coverSize.x,coverSize.y)
-						&& currBlock.sheet_width>=Math.min(blockSise.x,blockSise.y) && currBlock.sheet_len>=Math.max(blockSise.x,blockSise.y) ){
-						if(!result || 
-							((currCover.sheet_width<=resultCover.sheet_width ) //|| currCover.sheet_len<=resultCover.sheet_len)
-								&& (currBlock.sheet_width<=resultBlock.sheet_width || currBlock.sheet_len<=resultBlock.sheet_len)) ){
-							result=bs;
-							resultCover=currCover;
-							resultBlock=currBlock;
-						}
-					}
-				}
-			}
-			return result;
-			*/
 		}
 
 	}

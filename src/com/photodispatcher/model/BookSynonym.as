@@ -11,6 +11,7 @@ package com.photodispatcher.model{
 		public static const BOOK_TYPE_MAGNET:int=5;
 		public static const BOOK_TYPE_BCARD:int=6;
 
+		public static const BOOK_PART_ANY:int=0;
 		public static const BOOK_PART_COVER:int=1;
 		public static const BOOK_PART_BLOCK:int=2;
 		public static const BOOK_PART_INSERT:int=3;

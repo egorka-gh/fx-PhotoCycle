@@ -3,9 +3,11 @@
 					   xmlns:s="library://ns.adobe.com/flex/spark" 
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
 					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   xmlns:view="com.photodispatcher.view.*" 
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="windowedapplication1_closingHandler(event)" xmlns:view="com.photodispatcher.view.*" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   closing="windowedapplication1_closingHandler(event)" 
 					   >
 	
 	<fx:Script>
@@ -33,25 +35,11 @@
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
 		
-			/*
-			[Bindable]
-			private var suffixList:ArrayCollection;
-			[Bindable]
-			private var baudsList:ArrayCollection;
-			*/
 			[Bindable]
 			private var techPionts:ArrayCollection;
 			[Bindable]
 			private var coms:ArrayCollection= new ArrayCollection;
 			
-			/*
-			[Bindable]
-			private var comPort:int=1;
-			[Bindable]
-			private var comBaud:int=2400;
-			[Bindable]
-			private var comSuffix:int;
-			*/
 			[Bindable]
 			private var barcodeReader:ComReader;
 			[Bindable]
@@ -59,22 +47,35 @@
 			
 			[Bindable]
 			private var techPointObj:TechPoint;
+
+			protected var _reversOrder:Boolean
+			[Bindable]
+			public function get reversOrder():Boolean{
+				return _reversOrder;
+			}
+			public function set reversOrder(value:Boolean):void{
+				_reversOrder = value;
+				Context.setAttribute("reversOrder", value);
+			}
+
+			
 			private var _techPoint:int;
 			[Bindable]
-			protected function get techPoint():int{
+			protected function get techPointID():int{
 				return _techPoint;
 			}
-			protected function set techPoint(value:int):void{
+			protected function set techPointID(value:int):void{
 				_techPoint = value;
 				if(_techPoint){
-					setTechPointObj(_techPoint);
 					Context.setAttribute("techPoint", _techPoint);
+					setTechPointObj(_techPoint);
 				}
 			}
 			
 			private function setTechPointObj(id:int):void{
 				if(!techPionts) return;
 				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
+				Context.setAttribute("tech.object", techPointObj);
 			}
 			
 			private var bdPopup:DatabasePopup;
@@ -96,93 +97,49 @@
 			}
 
 			private function init():void{
-				
-				//TODO implement some restart
-				//if (!Context.initSourceLists()) close();
-				
-				//init static maps 
-				//LabResizeDAO.initSizeMap();
 				OrderStateDAO.initStateMap();
-
-				/*
-				suffixList=new ArrayCollection([13,10,3]);
-				if(barSuffix){
-					barSuffix.selectedIndex=0;
-				}
-				
-				baudsList=new ArrayCollection([2400,4800,7200,9600,14400,19200,38400]);
-				if(ddBaud){
-					ddBaud.selectedIndex=0;
-				}
-				*/
-
 				var dao:TechPointDAO=new TechPointDAO();
+				/*
 				var a:Array=dao.findByType(SourceType.TECH_PRINT);
 				if(a){
 					techPionts=new ArrayCollection(a);
 				}
-				
+				*/
+				techPionts=dao.findAll();
 				coms.source=ComInfo.load();
-
-				//BookSynonymDAO.initSynonymMap();
-				//DictionaryDAO.initSynonymMap();
 				
 				//var serverIP:String;
-				//var workFolder:String;
-				//var prtPath:String;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					/*
 					serverIP=so.data.serverIP;
-					workFolder=so.data.workFolder;
-					prtPath = so.data.prtPath;
-					if(!prtPath) prtPath=workFolder;
 					*/
-					techPoint=so.data.techPoint;
-					/*
-					if(so.data.comBaud) comBaud=so.data.comBaud;
-					if(so.data.comPort) comPort=so.data.comPort;
-					if(so.data.comSuffix) comSuffix=so.data.comSuffix;
-					*/
+					techPointID=so.data.techPoint;
+					reversOrder=so.data.reversOrder; 
 				}
-				
-				//if(!serverIP || !workFolder){
-				if(!techPoint){
+
+				/*
+				if(!techPointID){
 					//Alert.show('Приложение не настроено');
 					currentState='config';
 					return;
 				}
+				*/
 				
 				/*
-				var f:File= new File(workFolder);
-				if(!f || !f.exists || !f.isDirectory){
-					Alert.show('Не настроена рабочая папка');
-					currentState='config';
-					return;
-				}
-				f= new File(prtPath);
-				if(!f || !f.exists || !f.isDirectory){
-					Alert.show('Не настроена папка подготовленных заказов');
-					currentState='config';
-					return;
-				}
-				Context.setAttribute('workFolder',workFolder);
-				Context.setAttribute('prtPath',prtPath);
 				Context.setAttribute('serverIP',serverIP);
 				*/
 				currentState='config';
 			}
 			
 			private function start():void{
-				if(!techPoint || coms.length==0){
+				if(!techPointObj || coms.length==0){
 					Alert.show('Приложение не настроено');
 					currentState='config';
 					return;
 				}
 				currentState='monitor';
 				if(techMonitor) techMonitor.start();
-				//barcodeReader.sufix=comSuffix;
-				//barcodeReader.start(comPort,comBaud);
 				serialProxy.start(coms.source);
 				if(serialProxy.isStarted){
 					//start barcode reader
@@ -209,8 +166,8 @@
 			}
 
 			private function stop():void{
-				//TODO implement
 				if(flap) flap.stop();
+				if(techMonitor) techMonitor.stop();
 				if(barcodeReader) barcodeReader.stop();
 				serialProxy.stop();
 				currentState='config';
@@ -218,61 +175,21 @@
 
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				//TODO flush data
-				if(barcodeReader) barcodeReader.stop();
 				if(flap) flap.stop();
+				if(barcodeReader) barcodeReader.stop();
 				if(serialProxy) serialProxy.stop();
+				if(techMonitor) techMonitor.stop();
 			}
 			
 			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
 				var tp:TechPoint= ddTechPoint.selectedItem as TechPoint;
 				if (!tp) return;
-				techPoint=tp.id;
+				techPointID=tp.id;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.techPoint = techPoint;
+				so.data.techPoint = techPointID;
 				so.flush();  
 			}
 			
-			/*
-			protected function nsComPort_changeHandler(event:Event):void{
-				comPort=int(nsComPort.value);
-				if(!comPort) return;
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.comPort = comPort;
-				so.flush();  
-				Context.setAttribute("comPort", comPort);
-			}
-			
-			protected function ddBaud_changeHandler(event:IndexChangeEvent):void{
-				comBaud=int(ddBaud.selectedItem);
-				if(!comBaud) return;
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.comBaud = comBaud;
-				so.flush();  
-				Context.setAttribute("comBaud", comBaud);
-			}
-			
-			private function sufixLabelFunction(item:Object):String{
-				var val:int=int(item);
-				var result:String='';
-				if(val==13){
-					result='LF';
-				}else if(val==10){
-					result='CR';
-				}else{
-					result=StrUtil.lPad(val.toString(),2);
-				}
-				return result;
-			}
-			
-			protected function barSuffix_changeHandler(event:IndexChangeEvent):void{
-				comSuffix=int(barSuffix.selectedItem);
-				if(!comSuffix) return;
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.comSuffix = comSuffix;
-				so.flush();  
-				Context.setAttribute("comSuffix", comSuffix);
-			}
-			*/
 			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
 				if(flap) flap.stop();
 				if(barcodeReader) barcodeReader.stop();
@@ -299,11 +216,17 @@
 				currentState='config';
 			}
 			
+			protected function chbRevers_changeHandler(event:Event):void{
+				reversOrder=chbRevers.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.reversOrder = reversOrder;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
-		<!--<barcode:BarcodeReaderCom id="barcodeReader" barcodeError="barcodeReader_barcodeErrorHandler(event)"/>-->
 		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
 	</fx:Declarations>
 
@@ -326,31 +249,25 @@
 							labelField="name" change="ddTechPoint_changeHandler(event)"/>
 		</s:HGroup>
 
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Обратный порядок:"/>
+			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
+		</s:HGroup>
+
 		<s:VGroup gap="5">
 			<s:HGroup gap="10">
 				<s:List id="comList" dataProvider="{coms}" height="100%"/>
 				<itemRenderer:ComInfoRenderer data="{comList.selectedItem}"/>
-				<!--<s:Label text="COM:"/>
-				<s:NumericStepper id="nsComPort" value="{comPort}" minimum="1" maximum="9" change="nsComPort_changeHandler(event)"/>
-				
-				<s:Spacer width="5"/>
-				<s:Label text="COM Baud:"/>
-				<s:DropDownList id="ddBaud" dataProvider="{baudsList}" selectedItem="{comBaud}" change="ddBaud_changeHandler(event)"/>-->
 			</s:HGroup>
 			<s:HGroup gap="10" width="100%" horizontalAlign="right">
 				<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
 				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
 			</s:HGroup>
 		</s:VGroup>
-			
-		<!--<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Суфикс:"/>
-			<s:DropDownList id="barSuffix" dataProvider="{suffixList}" selectedItem="{comSuffix}" labelFunction="{sufixLabelFunction}" change="barSuffix_changeHandler(event)"/>
-		</s:HGroup>-->
 	</s:VGroup>
 
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<view:TechMonitorView id="techMonitor" techPoint="{techPoint}" barcodeReader="{barcodeReader}" flap="{flap}"
+		<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" barcodeReader="{barcodeReader}" flap="{flap}"
 							  width="100%" height="100%"/>
 	</s:VGroup>
 	

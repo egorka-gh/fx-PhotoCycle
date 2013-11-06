@@ -139,7 +139,7 @@ package com.photodispatcher.provider.fbook.makeup{
 		private function postprocess():void{
 			function commplitePage():void{
 				if(!cmd) return;
-				sheetNum++;
+				sheetNum++;//pages starts from 1 (0- 4 cover only)
 				var newPageData:PageData =new PageData(_book, sheetNum,outFolder);
 				cmd.add('-tile');cmd.add(cols.toString()+'x'+rows.toString());
 				cmd.add('-geometry');cmd.add('+0+0');

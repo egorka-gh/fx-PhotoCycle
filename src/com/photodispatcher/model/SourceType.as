@@ -14,11 +14,14 @@ package com.photodispatcher.model{
 		public static const LAB_VIRTUAL:int=9;
 
 		public static const TECH_PRINT:int=10;
+		public static const TECH_FOLDING:int=12;
+		public static const TECH_LAMINATION:int=13;
 
 		//database props
 		public var id:int;
 		public var loc_type:int;
 		public var name:String;
 		public var state:int;
+		public var book_part:int;
 	}
 }

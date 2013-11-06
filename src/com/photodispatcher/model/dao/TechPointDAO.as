@@ -22,11 +22,11 @@ package com.photodispatcher.model.dao{
 		}
 		
 		public function findByType(type:int, silent:Boolean=false):Array{
-			var sql:String='SELECT s.id, s.name, s.tech_type, st.name tech_type_name'+
-				' FROM config.tech_point s' +
-				' INNER JOIN config.src_type st ON st.id = s.tech_type'+
-				' WHERE s.tech_type=?'+
-				' ORDER BY s.name';
+			var sql:String='SELECT s.id, s.name, s.tech_type, st.name tech_type_name, st.state tech_state, st.book_part tech_book_part'+
+							' FROM config.tech_point s' +
+							' INNER JOIN config.src_type st ON st.id = s.tech_type'+
+							' WHERE s.tech_type=?'+
+							' ORDER BY s.name';
 			runSelect(sql,[type],silent);
 			var res:Array=itemsArray;
 			return res;

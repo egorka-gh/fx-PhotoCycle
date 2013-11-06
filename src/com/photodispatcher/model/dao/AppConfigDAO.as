@@ -31,7 +31,7 @@ package com.photodispatcher.model.dao{
 			execute(
 				'UPDATE config.app_config SET wrk_path=?, monitor_interval=?,'+
 				' fbblok_font=?, fbblok_notching=?, fbblok_bar=?, fbblok_bar_offset=?,'+
-				' fbcover_bar=?, fbcover_bar_offset=?, fbcover_font=?, fbcover_notching=?, tech_bar=?, tech_bar_offset=?, tech_add=? WHERE id=?',
+				' fbcover_bar=?, fbcover_bar_offset=?, fbcover_font=?, fbcover_notching=?, tech_bar=?, tech_bar_offset=?, tech_add=?, tech_bar_step=? WHERE id=?',
 				[	item.wrk_path,
 					item.monitor_interval,
 					item.fbblok_font,
@@ -45,6 +45,7 @@ package com.photodispatcher.model.dao{
 					item.tech_bar,
 					item.tech_bar_offset,
 					item.tech_add,
+					item.tech_bar_step,
 					item.id],item);
 		}
 		/*

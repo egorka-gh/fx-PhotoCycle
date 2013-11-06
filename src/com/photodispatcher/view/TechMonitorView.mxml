@@ -7,15 +7,20 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechLog;
+			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.TechLogDAO;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.tech.TechRegisterBase;
+			import com.photodispatcher.tech.TechRegisterFolding;
+			import com.photodispatcher.tech.TechRegisterPrint;
 			
 			import spark.utils.TextFlowUtil;
 		
-			public var techPoint:int;
+			public var techPoint:TechPoint;
 			private var _barcodeReader:ComReader;
 			public function get barcodeReader():ComReader{
 				return _barcodeReader;
@@ -52,6 +57,7 @@
 
 			
 			private var logText:String = '';
+			/*
 			private var curPG:String;
 			private var curBookNum:int;
 			private var curPageNum:int;
@@ -60,6 +66,7 @@
 			private var wrongOrder:Boolean;
 			private var wrongStart:Boolean;
 			private var wrongEnd:Boolean;
+			*/
 
 			[Bindable]
 			private var barText:String='';
@@ -73,7 +80,55 @@
 			private function onFlapMsg(event:BarCodeEvent):void{
 				logToScreen('Защелка: '+event.barcode,true);
 			}
+			
+			private function createRegister(printGroup:String,books:int,sheets:int):void{
+				var result:TechRegisterBase;
+				if(!techPoint){
+					if(currRegister){
+						currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterMsg);
+						currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
+					}
+					currRegister=null;
+					return;
+				}
+				switch(techPoint.tech_type){
+					case SourceType.TECH_PRINT:
+						result= new TechRegisterPrint(printGroup,books,sheets);
+						break;
+					case SourceType.TECH_FOLDING:
+						result= new TechRegisterFolding(printGroup,books,sheets);
+						break;
+					case SourceType.TECH_LAMINATION:
+					default:
+						break;
+				}
+				if(result){
+					result.techPoint=techPoint;
+					result.flap=flap;
+					result.revers=Boolean(Context.getAttribute("reversOrder"));
+				}
+				//stop listen old one
+				if(currRegister){
+					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterMsg);
+					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
+				}
+				currRegister=result;
+				if(currRegister){
+					//listen
+					currRegister.addEventListener(ErrorEvent.ERROR,onRegisterMsg);
+					currRegister.addEventListener(Event.COMPLETE,onRegisterComplite);
+				}
+			}
+			
+			private function onRegisterMsg(event:ErrorEvent):void{
+				logToScreen(event.text,event.errorID>0);
+			}
 
+			private function onRegisterComplite(event:Event):void{
+			}
+
+			private var currRegister:TechRegisterBase;
+			
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
 				//parce barcode
@@ -86,18 +141,27 @@
 					if(flap) flap.setOff();
 					return;
 				}
+				
 				var bookNum:int=int(barcode.substr(0,3));
 				var pageNum:int=int(barcode.substr(6,2));
-				//log to data base
-				var tl:TechLog= new TechLog();
-				tl.log_date=new Date();
-				//tl.page_num=pageNum;
-				//tl.book_num=bookNum;
-				tl.setSheet(bookNum,pageNum);
-				tl.print_group=pgId;
-				tl.src_id= techPoint;
-				var dao:TechLogDAO= new TechLogDAO();
-				dao.addLog(tl);
+				
+				if(currRegister && currRegister.printGroupId==pgId){
+					currRegister.register(bookNum,pageNum);
+				}else{
+					if(currRegister && !currRegister.finalise()) return;
+					//create new
+					var bookTot:int=int(barcode.substr(3,3));
+					var pageTot:int=int(barcode.substr(8,2));
+					createRegister(pgId,bookTot,pageTot);
+					if(!currRegister){
+						logToScreen('---------- Не поддерживаемый режим регистрации ШК ----------',true);
+						return;
+					}
+					//start new
+					barText=barcode+'\n';
+					currRegister.register(bookNum,pageNum);
+				}
+				/*
 				if(curPG && curPG==pgId){
 					if(!wrongOrder){
 						//calc currents
@@ -150,6 +214,7 @@
 					}
 					if(writePg) flushPg(writePg);
 				}
+				*/
 			}
 
 			private function logToScreen(msg:String, isError:Boolean=false):void{
@@ -165,21 +230,23 @@
 				logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
 			}
 
+			/*
 			private function flushPg(pgId:String):void{
 				if(!pgId) return;
 				//TODO check/update print group state
 				var dao:PrintGroupDAO= new PrintGroupDAO();
 				dao.setStateByTech(pgId);
 			}
+			*/
 			
 			public function start():void{
 				cleanLog();
 				barText='';
-				techPoint=int(Context.getAttribute("techPoint"));
 				if(!techPoint){
 					//TODO rise err or log in screen
 					logToScreen('---------- Не задана технологическая точка ----------',true);
 				}
+				/*
 				curPG='';
 				curBookNum=0;
 				curPageNum=0;
@@ -188,16 +255,22 @@
 				wrongEnd=false;
 				wrongStart=false;
 				wrongOrder=false;
+				*/
 			}
 
 			public function stop():void{
 				cleanLog();
+				if(currRegister){
+					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterMsg);
+					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
+				}
+				currRegister=null;
 			}
 			
 			private function cleanLog():void{
 				logText='';
 				logTextArea.text='';
-				if(flap) flap.setOn();
+				//if(flap) flap.setOn();
 			}
 			
 			protected function btFlapOn_clickHandler(event:MouseEvent):void{

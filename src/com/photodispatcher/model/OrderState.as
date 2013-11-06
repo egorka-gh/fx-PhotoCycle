@@ -43,6 +43,8 @@ package com.photodispatcher.model{
 		public static const PRN_PRINT:int=250;
 		public static const PRN_COMPLETE:int=300;
 		public static const CANCELED_OLD:int=310;
+		public static const TECH_FOLDING:int=320;
+		public static const TECH_LAMINATION:int=330;
 		public static const CANCELED:int=510;
 
 		//database props
@@ -52,6 +54,8 @@ package com.photodispatcher.model{
 		public var name:String;
 		[Bindable]
 		public var runtime:int;
+		[Bindable]
+		public var extra:int;
 
 	}
 }

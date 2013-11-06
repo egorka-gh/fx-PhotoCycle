@@ -84,7 +84,9 @@ package com.photodispatcher.provider.preprocess{
 
 			printGroup.resetFiles();
 			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK 
-				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_CALENDAR && printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET){
+				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_CALENDAR 
+				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET
+				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_BCARD){
 				//expand format len by tech len
 				var formatAdd:int=Context.getAttribute('tech.add');
 				if(formatAdd) printGroup.height+=formatAdd;
@@ -181,7 +183,10 @@ package com.photodispatcher.provider.preprocess{
 			//draw tech barcode
 			var barSize:int=Context.getAttribute('tech.barcode.size');
 			if(barSize && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK 
-				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_CALENDAR && printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET){
+				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_CALENDAR 
+				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET
+				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_BCARD){
+				var barStep:int=Context.getAttribute('tech.barcode.step');
 				var barOffset:String=Context.getAttribute('tech.barcode.offset');
 				var formatAdd:int=Context.getAttribute('tech.add');
 				if(formatAdd){
@@ -197,7 +202,7 @@ package com.photodispatcher.provider.preprocess{
 				if(!barOffset) barOffset='+0+0';
 				barcode=printGroup.techBarcode(file);
 				var txt:String=printGroup.techBarcodeText(file);
-				if(barcode) IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,'east');
+				if(barcode) IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,'east',barStep);
 			}
 			
 			command.add('-density'); command.add('300x300');

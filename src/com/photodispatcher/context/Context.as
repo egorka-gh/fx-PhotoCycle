@@ -58,6 +58,7 @@ package com.photodispatcher.context{
 				//set tech params
 				Context.setAttribute('tech.add',appConf.tech_add);
 				Context.setAttribute('tech.barcode.size',appConf.tech_bar);
+				Context.setAttribute('tech.barcode.step',appConf.tech_bar_step);
 				Context.setAttribute('tech.barcode.offset',appConf.tech_bar_offset);
 			}else{
 				//set to defaults

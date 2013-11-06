@@ -36,6 +36,7 @@
 				//set tech params
 				Context.setAttribute('tech.add',conf.tech_add);
 				Context.setAttribute('tech.barcode.size',conf.tech_bar);
+				Context.setAttribute('tech.barcode.step',conf.tech_bar_step);
 				Context.setAttribute('tech.barcode.offset',conf.tech_bar_offset);
 
 				confDAO.save(conf);
@@ -82,6 +83,9 @@
 			</s:FormItem> 
 			<s:FormItem label="Высота штрихкода (мм)">
 				<s:TextInput id="tiTechBarSize" text="{conf.tech_bar}" change="{conf.tech_bar=int(tiTechBarSize.text)}" restrict="0-9" width="50"/>
+			</s:FormItem> 
+			<s:FormItem label="Шаг штрихкода (pix)">
+				<s:NumericStepper value="@{conf.tech_bar_step}" minimum="1" maximum="10" snapInterval="1"/>
 			</s:FormItem> 
 			<s:FormItem label="Смещение штрихкода (pix)">
 				<itemRenderer:OffsetEditor id="tiTechBarOffs" data="{conf.tech_bar_offset}" change="{conf.tech_bar_offset=tiTechBarOffs.data}"/>

@@ -20,6 +20,10 @@ package com.photodispatcher.model{
 		//db drived
 		[Bindable]
 		public var tech_type_name:String;
+		[Bindable]
+		public var tech_state:int;
+		[Bindable]
+		public var tech_book_part:int;
 
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();

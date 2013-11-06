@@ -72,7 +72,8 @@ package com.photodispatcher.model.dao{
 			a.id=o.id;
 			a.name=o.name;
 			a.runtime=o.runtime;
-			
+			a.extra=o.extra;
+				
 			a.loaded = true;
 			return a;
 		}

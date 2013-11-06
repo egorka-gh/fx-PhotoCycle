@@ -6,9 +6,10 @@
 					   xmlns:config="com.photodispatcher.view.config.*"
 					   xmlns:config1="com.akmeful.fotokniga.config.*"
 					   xmlns:config2="com.akmeful.fotocalendar.config.*"
+					   xmlns:cfg="com.akmeful.fotakrama.cfg.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="{destroy()}" xmlns:cfg="com.akmeful.fotakrama.cfg.*" >
+					   closing="{destroy()}" >
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;

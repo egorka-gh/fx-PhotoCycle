@@ -91,5 +91,8 @@ package com.photodispatcher.util{
 			return result.substr(-len);
 		}
 
+		public static function sheetName(book:int,sheet:int):String{
+			return StrUtil.lPad(book.toString(),3)+'_'+StrUtil.lPad(sheet.toString(),2);
+		}
 	}
 }
