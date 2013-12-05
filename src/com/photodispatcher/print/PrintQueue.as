@@ -67,11 +67,6 @@ package com.photodispatcher.print{
 		}
 		public function _refresh():void{
 			if(!lab) return;
-			queueOrders=0;
-			queuePGs=0;
-			queuePrints=0;
-
-			//TODO inplement refresh late on read lock
 			//read print groups in Print state
 			var ordersMap:Object=new Object();
 			var pgDao:PrintGroupDAO= new PrintGroupDAO();
@@ -82,6 +77,9 @@ package com.photodispatcher.print{
 				return;
 			}
 			//read complited
+			queueOrders=0;
+			queuePGs=0;
+			queuePrints=0;
 			isReading= false;
 			printGroups=pgs;
 			queuePGs=printGroups.length;

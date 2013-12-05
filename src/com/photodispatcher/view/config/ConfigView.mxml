@@ -112,11 +112,10 @@
 						var tpDao:TechPointDAO=new TechPointDAO();
 						currentList=tpDao.findAll();
 						currentColumns=TechPoint.gridColumns();
-						/*
-						dao= new SourcesDAO();
-						currentList=dao.findAll(Source.LOCATION_TYPE_TECH_POINT);
-						currentColumns=SourcesDAO.gridColumnsTech();
-						*/
+						break;
+					case 8:
+						currentState='tech_layers';
+						break;
 				}
 			}
 			
@@ -291,6 +290,7 @@
 		<s:State name="lab"/>
 		<s:State name="tech"/>
 		<s:State name="tech_point" stateGroups="listEdit"/>
+		<s:State name="tech_layers"/>
 	</s:states>
 
 	<s:VGroup gap="10" width="100%" height="100%" paddingBottom="20">
@@ -304,6 +304,7 @@
 				<fx:String>Книги</fx:String> 
 				<fx:String>Технологическая разметка</fx:String> 
 				<fx:String>Технологические точки</fx:String> 
+				<fx:String>Листоподборка</fx:String> 
 			</mx:ArrayCollection>
 		</s:TabBar>
 		<config:CommonConfig  includeIn="common" width="100%" height="100%"/>
@@ -327,5 +328,6 @@
 			<s:Button id="btSave" label="Сохранить" includeIn="edit,listEdit,lab" click="btSave_clickHandler(event)"/>
 			<s:Button id="btCancel" label="Отмена" includeIn="edit,listEdit,lab" click="{detectState()}"/>
 		</s:HGroup>
+		<config:TechLayerConfig includeIn="tech_layers" width="100%" height="100%"/>
 	</s:VGroup>
 </s:Group>

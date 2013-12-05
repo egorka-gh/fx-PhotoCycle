@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				width="100%"
+				>
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.LayerAllocation;
+			
+			[Bindable]
+			private var layerAlloc:LayerAllocation;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				layerAlloc=value as LayerAllocation;
+			}
+		]]>
+	</fx:Script>
+
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="hovered"/>
+		<s:State name="selected"/>
+	</s:states>
+
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke  weight="1" color="#eeeeee"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor id="stateColor" color="#ffffff" color.hovered="#eeeeee" color.selected="#87f7a6"/>
+		</s:fill>
+	</s:Rect>
+	<s:Label text="{layerAlloc.tray.toString()}: {layerAlloc.layer_name}" top="5" left="5" right="3" bottom="5"/>
+	
+</s:ItemRenderer>

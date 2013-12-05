@@ -187,6 +187,7 @@ package com.photodispatcher.provider.preprocess{
 				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET
 				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_BCARD){
 				var barStep:int=Context.getAttribute('tech.barcode.step');
+				var barColor:int=Context.getAttribute('tech.barcode.color');
 				var barOffset:String=Context.getAttribute('tech.barcode.offset');
 				var formatAdd:int=Context.getAttribute('tech.add');
 				if(formatAdd){
@@ -202,7 +203,7 @@ package com.photodispatcher.provider.preprocess{
 				if(!barOffset) barOffset='+0+0';
 				barcode=printGroup.techBarcode(file);
 				var txt:String=printGroup.techBarcodeText(file);
-				if(barcode) IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,'east',barStep);
+				if(barcode) IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,'east',barStep,barColor);
 			}
 			
 			command.add('-density'); command.add('300x300');

@@ -50,7 +50,7 @@ package com.google.zxing.oned
 		private static var CODE_FNC_3:int = 96;    // Code A, Code B
 		private static var CODE_FNC_4_B:int = 100; // Code B
 		
-		public function draw(contents:String, height:int, step:int=1):Bitmap{
+		public function draw(contents:String, height:int, step:int=1, color:int=0):Bitmap{
 			try{
 				var result:BitMatrix = drawMatrix(contents,1,step);
 			}catch(e:Error){
@@ -70,7 +70,8 @@ package com.google.zxing.oned
 						bmpd.setPixel(w,h, 0xFFFFFF);
 					} else {
 						// black pixel
-						bmpd.setPixel(w,h, 0x000000);
+						//bmpd.setPixel(w,h, 0x000000);
+						bmpd.setPixel(w,h, color);
 					}
 				}
 			}

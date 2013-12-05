@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:config="com.photodispatcher.view.config.*"
+		 creationComplete="{init()}"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.Layer;
+			import com.photodispatcher.model.LayerAllocation;
+			import com.photodispatcher.model.LayerSequence;
+			import com.photodispatcher.model.Layerset;
+			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.dao.LayerAllocationDAO;
+			import com.photodispatcher.model.dao.LayerDAO;
+			import com.photodispatcher.model.dao.LayerSequenceDAO;
+			import com.photodispatcher.model.dao.LayersetDAO;
+			
+			import flash.sampler.NewObjectSample;
+			
+			[Bindable]
+			private var layersAC:ArrayCollection;
+			[Bindable]
+			private var templatesAC:ArrayCollection;
+			[Bindable]
+			public var allocAC:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var lGroupAC:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var currLGroupIdx:int=-1;
+			[Bindable]
+			public var seqAC:ArrayCollection= new ArrayCollection();
+
+			[Bindable]
+			private var currTemplate:Object;
+
+			private function init():void{
+				var dao:LayerDAO= new LayerDAO();
+				layersAC= dao.findAll(false,true);
+				var tDao:LayersetDAO= new LayersetDAO();
+				templatesAC=tDao.findAll();
+				lGroupAC= Context.getAttribute('layer_groupList');
+				if(lGroupAC && lGroupAC.length>0) currLGroupIdx=0;
+				//seqAC.filterFunction= filterSeqAc;
+			}
+			
+			private function detectState():void{
+				switch(tbView.selectedIndex){
+					case 0:
+						currentState='templates';
+						break;
+					case 1:
+						currentState='layers';
+						break;
+				}
+			}
+			
+			protected function btAddLayer_clickHandler(event:MouseEvent):void{
+				var l:Layer= new Layer();
+				l.name='Новый слой';
+				layersAC.addItem(l);
+				layersGrid.currentItem=l;
+			}
+			
+			protected function btSaveLayers_clickHandler(event:MouseEvent):void{
+				var dao:LayerDAO;
+				var l:Layer;
+				for each(l in layersAC){
+					if ((l.changed || !l.loaded) && l.id!=0 && l.id!=1){
+						dao= new LayerDAO();
+						dao.save(l);
+					}
+				}
+				
+			}
+
+			protected function btAddLayerset_clickHandler(event:MouseEvent):void{
+				var ls:Layerset= new Layerset();
+				ls.name='Новый шаблон';
+				templatesAC.addItem(ls);
+				currTemplate=ls;
+			}
+
+			protected function btSaveLayersets_clickHandler(event:MouseEvent):void{
+				var dao:LayersetDAO;
+				var ls:Layerset;
+				for each(ls in templatesAC){
+					if (ls.changed || !ls.loaded){
+						dao= new LayersetDAO;
+						dao.save(ls);
+					}
+				}
+			}
+			
+			protected function btEditLayerset_clickHandler(event:MouseEvent):void{
+				var ls:Layerset= currTemplate as Layerset;
+				if (!ls){
+					allocAC.source=[];
+					return;
+				}
+				allocAC= new ArrayCollection(ls.getLayerAllocation(true));
+				//allocAC.source=ls.getLayerAllocation(true);
+				if(layerAllocationGrid) layerAllocationGrid.refresh();
+				if(!ls.loadSequence()) return;
+				showSequence();
+				chekTemplate();
+				currentState='template_edit';
+			}
+			
+			private function showSequence():void{
+				var a:Array=[];
+				var ls:Layerset= currTemplate as Layerset;
+				var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
+				if(ls){
+					switch(idx){
+						case 0:
+							a=ls.sequenceStart;
+							break;
+						case 1:
+							a=ls.sequenceMiddle;
+							break;
+						case 2:
+							a=ls.sequenceEnd;
+							break;
+					}
+				}
+				seqAC= new ArrayCollection(a);
+				//seqAC.source=a;
+			}
+			
+			protected function btAddSeq_clickHandler(event:MouseEvent):void{
+				var ls:Layerset= currTemplate as Layerset;
+				if(!ls) return;
+				var newIt:LayerSequence= new LayerSequence();
+				newIt.layerset=ls.id;
+				newIt.layer_group=currLGroupIdx+1;
+				var seq:int=1;
+				if(seqAC && seqAC.source && seqAC.source.length>0){
+					var it:LayerSequence=seqAC.source[seqAC.source.length-1] as LayerSequence; 
+					if(it) seq=it.seqorder+1;
+				}
+				newIt.seqorder=seq;
+				seqAC.addItem(newIt);
+				seqGrid.currentItem=newIt;
+			}
+			
+			/*
+			private function filterSeqAc(item:Object):Boolean {
+				var it:LayerSequence= item as  LayerSequence;
+				if(!it) return false;
+				return it.seqlayer!=0;
+			}
+			*/
+			
+			[Bindable]
+			private var templErr:String;
+			
+			private function chekTemplate():void{
+				var ls:Layerset= currTemplate as Layerset;
+				if(!ls) return;
+				var dao:LayerSequenceDAO= new LayerSequenceDAO();
+				templErr=dao.checkBySet(ls.id);
+			}
+			
+			protected function btSaveLayerAllocation_clickHandler(event:MouseEvent):void{
+				var dao:LayerAllocationDAO= new LayerAllocationDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
+				dao.updateBatch(allocAC.source);
+			}
+			
+			protected function btDelSeq_clickHandler(event:MouseEvent):void{
+				if(seqGrid && seqGrid.currentItem){
+					var idx:int= seqAC.getItemIndex(seqGrid.currentItem);
+					if(idx>-1){
+						seqAC.removeItemAt(idx);
+					}
+				}
+			}
+			
+			protected function btSaveSeq_clickHandler(event:MouseEvent):void{
+				var dao:LayerSequenceDAO= new LayerSequenceDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
+				dao.updateBatch(seqAC.source);
+			}
+			
+			private function onSeqComplie(evt:AsyncSQLEvent):void{
+				var dao:BaseDAO= evt.target as BaseDAO;
+				dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
+				chekTemplate();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="templates"/>
+		<s:State name="layers"/>
+		<s:State name="template_edit"/>
+	</s:states>
+
+	<s:VGroup width="100%" height="100%" gap="5">
+		<s:TabBar id="tbView" height="20" change="{detectState()}">
+			<mx:ArrayCollection>
+				<fx:String>Шаблоны</fx:String> 
+				<fx:String>Слои</fx:String> 
+			</mx:ArrayCollection>
+		</s:TabBar>
+		<s:Spacer height="5"/>
+		<config:ItemsGrid id="layersGrid" includeIn="layers" editable="true" currentData="{layersAC}" currentColumns="{Layer.gridColumns()}" 
+						  width="200" height="100%"/>
+		<s:HGroup gap="10" includeIn="layers" width="200" horizontalAlign="right">
+			<s:Button id="btAddLayer" label="Добавить" click="btAddLayer_clickHandler(event)"/>
+			<s:Button id="btSaveLayers" label="Сохранить" click="btSaveLayers_clickHandler(event)"/>
+		</s:HGroup>
+		<config:ItemsGrid id="templatesGrid" includeIn="templates" editable="true" 
+						  currentData="{templatesAC}" currentColumns="{Layerset.gridColumns()}"
+						  currentItem="@{currTemplate}"
+						  width="100%" height="100%"/>
+		<s:HGroup gap="10" includeIn="templates" width="100%" horizontalAlign="right">
+			<s:Button id="btAddLayerset" label="Добавить" click="btAddLayerset_clickHandler(event)"/>
+			<s:Button id="btSaveLayersets" label="Сохранить" click="btSaveLayersets_clickHandler(event)"/>
+			<s:Button id="btEditLayerset" label="Листоподборка" enabled="{currTemplate &amp;&amp; currTemplate.loaded}"
+					  click="btEditLayerset_clickHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup gap="15"  includeIn="template_edit" 
+				  paddingLeft="10" width="100%" height="450" verticalAlign="bottom">
+			<s:VGroup width="200" height="100%">
+				<s:Label text="Назначение лотков" fontWeight="bold"/>
+				<config:ItemsGrid id="layerAllocationGrid" editable="true" 
+								  currentData="{allocAC}" currentColumns="{LayerAllocation.gridColumns()}"
+								  width="200" requestedRowCount="8"/>
+				<s:Button id="btSaveLayerAllocation" label="Сохранить" click="btSaveLayerAllocation_clickHandler(event)"/>
+			</s:VGroup>
+			<s:VGroup height="100%" gap="10">
+				<s:Label text="Подборка" fontWeight="bold"/>
+				<s:HGroup gap="10" verticalAlign="baseline" height="100%">
+					<s:VGroup gap="5" height="100%">
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Группа"/>
+							<s:ComboBox id="cbGroup" dataProvider="{lGroupAC}" selectedIndex="@{currLGroupIdx}" change="{showSequence()}"/>
+						</s:HGroup>
+						<s:Spacer height="5"/>
+						<s:Label text="Ошибки" fontWeight="bold" width="100%"/>
+						<s:TextArea id="taErrors" text="{templErr}" width="100%" height="100%" editable="false" 
+									borderVisible="false"
+									contentBackgroundAlpha="0" color="red"/>
+					</s:VGroup>
+					<config:ItemsGrid id="seqGrid" editable="true" 
+									  currentData="{seqAC}" currentColumns="{LayerSequence.gridColumns()}"
+									  width="200" height="100%"/>
+				</s:HGroup>
+				<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
+					<s:Button id="btAddSeq" label="Добавить" click="btAddSeq_clickHandler(event)"/>
+					<s:Button id="btDelSeq" label="Удалить"  click="btDelSeq_clickHandler(event)"/>
+					<s:Button id="btSaveSeq" label="Сохранить"  click="btSaveSeq_clickHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+			<s:Button label="В список шаблонов"  click="detectState()"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

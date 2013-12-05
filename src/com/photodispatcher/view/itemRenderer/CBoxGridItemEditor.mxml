@@ -38,7 +38,7 @@
 			
 			override public function prepare():void{
 				super.prepare();
-				comboBox.selectedIndex=ArrayUtil.searchItemIdx('value',value,(comboBox.dataProvider as ArrayCollection).source);
+				if(this.dataProvider) comboBox.selectedIndex=ArrayUtil.searchItemIdx('value',value,(comboBox.dataProvider as ArrayCollection).source);
 			}
 			
 			override public function save():Boolean{

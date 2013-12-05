@@ -8,6 +8,7 @@ package com.photodispatcher.service.barcode{
 	import flash.events.ProgressEvent;
 	import flash.events.SecurityErrorEvent;
 	import flash.net.Socket;
+	import flash.utils.ByteArray;
 	
 	[Event(name="serialProxyData", type="com.photodispatcher.event.SerialProxyEvent")]
 	[Event(name="serialProxyError", type="com.photodispatcher.event.SerialProxyEvent")]
@@ -16,10 +17,12 @@ package com.photodispatcher.service.barcode{
 	public class Socket2Com extends EventDispatcher{
 		private var comInfo:ComInfo;
 		private var socket:Socket;
+		private var remoteIP:String;
 
-		public function Socket2Com(comInfo:ComInfo){
+		public function Socket2Com(comInfo:ComInfo, remoteIP:String=null){
 			super(null);
 			this.comInfo=comInfo;
+			this.remoteIP=remoteIP;
 		}
 
 		public function get sufix():uint{
@@ -41,7 +44,12 @@ package com.photodispatcher.service.barcode{
 			socket.addEventListener( SecurityErrorEvent.SECURITY_ERROR, onSecurityError );
 			socket.addEventListener( ProgressEvent.SOCKET_DATA, onSocketData );
 			try{
-				socket.connect('127.0.0.1',proxy_port);
+				if(remoteIP){
+					//remote mode
+					socket.connect(remoteIP,proxy_port);
+				}else{
+					socket.connect('127.0.0.1',proxy_port);
+				}
 			}catch(err:Error){
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','Connect error: '+err.message));
 			}
@@ -93,7 +101,20 @@ package com.photodispatcher.service.barcode{
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','Send error: '+err.message));
 			}
 		}
-		
+
+		public function sendBytes(buffer:ByteArray):void{
+			if(!socket || !socket.connected){
+				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','Send error: Not connected'));
+				return;
+			}
+			try{
+				socket.writeBytes(buffer);
+				socket.flush();
+			}catch(err:Error){
+				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','Send error: '+err.message));
+			}
+		}
+
 		public function clean():void{
 			if(socket && socket.connected && socket.bytesAvailable){
 				socket.readUTFBytes(socket.bytesAvailable);

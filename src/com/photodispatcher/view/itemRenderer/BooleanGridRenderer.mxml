@@ -27,7 +27,7 @@
 			protected function checkBox_changeHandler(event:Event):void{
 				isSelected=checkBox.selected;
 				data[column.dataField]=checkBox.selected;
-				if(data.hasOwnProperty('changed')) data['changed']=checkBox.selected;
+				if(data.hasOwnProperty('changed')) data['changed']=true;
 			}
 			
 		]]>
@@ -38,5 +38,4 @@
 		</s:fill>
 	</s:Rect>
 	<s:CheckBox id="checkBox" verticalCenter="0" horizontalCenter="0" selected="{isSelected}" change="checkBox_changeHandler(event)"/>
-
 </s:GridItemRenderer>

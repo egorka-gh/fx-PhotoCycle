@@ -19,6 +19,7 @@ package com.photodispatcher.model{
 		
 		public var tech_bar:int=0;
 		public var tech_bar_step:int=3;
+		public var tech_bar_color:int=0;
 		public var tech_bar_offset:String='+0+0';
 		public var tech_add:int=0;
 		

@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 creationComplete="{init()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.Layerset;
+			import com.photodispatcher.model.TechPoint;
+			import com.photodispatcher.model.dao.DictionaryDAO;
+			import com.photodispatcher.model.dao.LayersetDAO;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.ValveController;
+			import com.photodispatcher.tech.TechPicker;
+			
+			import flash.sampler.NewObjectSample;
+			import flash.security.RevocationCheckSettings;
+			
+			import mx.controls.Alert;
+			
+			import spark.events.IndexChangeEvent;
+			
+			public var techPoint:TechPoint;
+			public var reversOrder:Boolean;
+			public var turnInterval:int;
+		
+			[Bindable]
+			private var acTemplates:ArrayCollection;
+			[Bindable]
+			private var acGroups:ArrayCollection;
+			
+			private function init():void{
+				var ddao:DictionaryDAO=new DictionaryDAO()
+				acGroups=ddao.getLayerGroupValueList(false,true);
+			}
+			
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
+				return _barcodeReader;
+			}
+			public function set barcodeReader(value:ComReader):void{
+				/*
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}*/
+				_barcodeReader = value;
+				/*
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}*/
+			}
+			
+			private var _controller:ValveController;
+			[Bindable]
+			public function get controller():ValveController{
+				return _controller;
+			}
+			
+			public function set controller(value:ValveController):void{
+				/*
+				if(_controller){
+					_controller.removeEventListener(ErrorEvent.ERROR, onControllerErr);
+				}*/
+				_controller = value;
+				/*
+				if(_controller){
+					_controller.logger=this;
+					_controller.addEventListener(ErrorEvent.ERROR, onControllerErr);
+				}*/
+			}
+
+			
+			/*
+			public function onBarCode(evt:BarCodeEvent):void{
+				log('< Штихкод "'+evt.barcode+'"');
+			}
+			public function onError(evt:BarCodeEvent):void{
+				log('! Ошибка Сканера ШК: '+evt.error);				
+			}
+
+			public function onControllerErr(evt:ErrorEvent):void{
+				
+			}
+			*/
+
+			[Bindable]
+			private var logText:String = '';
+
+			public function log(mesage:String):void{
+				logText=logText+mesage+'\n';
+			}
+			public function clear():void{
+				logText='';
+			}
+			
+			[Bindable]
+			private var techPicker:TechPicker;
+			
+			public function start():void{
+				var dao:LayersetDAO=new LayersetDAO();
+				acTemplates=dao.findAll();
+				if (acTemplates.length==0) return;
+				controller.start();
+				barcodeReader.start();
+				techPicker= new TechPicker();
+				techPicker.barcodeReader=barcodeReader;
+				techPicker.controller=controller;
+				techPicker.reversOrder=reversOrder;
+				techPicker.techPoint=techPoint;
+				techPicker.turnInterval=turnInterval;
+				techPicker.logger=this;
+				techPicker.addEventListener(ErrorEvent.ERROR, onPickerErr);
+			}
+
+			public function stop():void{
+				controller.stop();
+				barcodeReader.stop();
+				if(techPicker){
+					techPicker.stop();
+					techPicker.removeEventListener(ErrorEvent.ERROR, onPickerErr);
+					techPicker.destroy();
+					//techPicker=null;
+				}
+
+			}
+			
+			private function onPickerErr(event:ErrorEvent):void{
+				Alert.show(event.text);	
+			}
+
+			/*
+			private function setVale(num:int, on:Boolean):void{
+				if(on){
+					controller.open(num);
+				}else{
+					controller.close(num);
+				}
+			}
+			*/
+			
+			protected function ddTemplate_changeHandler(event:IndexChangeEvent):void{
+				if(techPicker) techPicker.layerset= ddTemplate.selectedItem as Layerset;
+			}
+			
+			protected function preventChanging(event:IndexChangeEvent):void{
+				event.preventDefault();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:ArrayCollection id="acTrays" source="{techPicker.layerset.layerAllocation}"/>
+		<s:ArrayCollection id="acLatches" source="{techPicker.latches}"/>
+		<s:ArrayCollection id="acSequence" source="{techPicker.currentSequence}"/>
+	</fx:Declarations>
+	
+	<!--<s:HGroup gap="15" width="100%" height="100%">
+		<s:VGroup gap="10">
+			<s:ToggleButton id="v0" label="Лоток 1" change="{setVale(0,v0.selected)}"/>
+			<s:ToggleButton id="v1" label="Лоток 2" change="{v1.selected?controller.open(1):controller.close(1)}"/>
+			<s:ToggleButton id="v2" label="Лоток 3" change="{v2.selected?controller.open(2):controller.close(2)}"/>
+			<s:ToggleButton id="v3" label="Лоток 4" change="{v3.selected?controller.open(3):controller.close(3)}"/>
+			<s:ToggleButton id="v4" label="Лоток 5" change="{v4.selected?controller.open(4):controller.close(4)}"/>
+			<s:ToggleButton id="v5" label="Лоток 6" change="{v5.selected?controller.open(5):controller.close(5)}"/>
+			<s:ToggleButton id="v6" label="Лоток 7" change="{v6.selected?controller.open(6):controller.close(6)}"/>
+			<s:ToggleButton id="v7" label="Лоток 8" change="{v7.selected?controller.open(7):controller.close(7)}"/>
+			<s:Spacer height="20"/>
+			<s:ToggleButton id="vc" label="Вакуум" change="{vc.selected?controller.vacuumOn():controller.vacuumOff()}"/>
+			<s:ToggleButton id="en" label="Мотор" change="{en.selected?controller.engineOn():controller.engineOff()}"/>
+		</s:VGroup>
+		<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false" />
+	</s:HGroup>-->
+	
+	<s:VGroup gap="10" width="100%" height="100%">
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Шаблон"/>
+			<s:DropDownList id="ddTemplate" dataProvider="{acTemplates}" labelField="name"
+							enabled="{!techPicker.isRunning}"
+							change="ddTemplate_changeHandler(event)"
+							width="250"/>
+		</s:HGroup>
+		<s:HGroup gap="10">
+			<s:Label text="Заказ: {techPicker.currPgId}"/>
+			<s:Label text="Книга: {techPicker.currBookIdx.toString()}({techPicker.currBookTot.toString()})"/>
+			<s:Label text="Разворот: {techPicker.currSheetIdx.toString()}({techPicker.currSheetTot.toString()})"/>
+		</s:HGroup>
+		<s:HGroup gap="10" width="100%" height="100%">
+			<s:VGroup gap="5" width="200" height="100%">
+				<s:Label text="Лотки"/>
+				<s:List id="lstTrays" dataProvider="{acTrays}" width="100%"
+						selectedIndex="{techPicker.currentTray}" changing="preventChanging(event)"
+						itemRenderer="com.photodispatcher.view.itemRenderer.LayerAllocationRenderer">
+					<s:layout>
+						<s:VerticalLayout requestedRowCount="8" gap="0"/>
+					</s:layout>
+				</s:List>
+				<s:Spacer height="5"/>
+				<s:Label text="Блокировки"/>
+				<s:List id="lstLatches" dataProvider="{acLatches}" width="100%" changing="preventChanging(event)" 
+						itemRenderer="com.photodispatcher.view.itemRenderer.PickerLatchRenderer"/>
+			</s:VGroup>
+			<s:VGroup gap="5" width="200" height="100%">
+				<s:Label text="Раздел книги"/>
+				<!--<s:DropDownList id="ddGroup" dataProvider="{acGroups}" 
+								selectedIndex="{techPicker.currentGroup-1}"
+								width="100%"/>-->
+				<s:List id="lstGroups" dataProvider="{acGroups}" width="100%" changing="preventChanging(event)"
+						selectedIndex="{techPicker.currentGroup-1}">
+					<s:layout>
+						<s:VerticalLayout requestedRowCount="4" gap="2"/>
+					</s:layout>
+				</s:List>
+				
+				<s:Spacer height="5"/>
+				<s:Label text="Слои"/>
+				<s:List id="lstSequence" dataProvider="{acSequence}" width="100%" changing="preventChanging(event)"
+						selectedIndex="{techPicker.currentGroupStep}"
+						itemRenderer="com.photodispatcher.view.itemRenderer.LayerSequenceRenderer">
+					<s:layout>
+						<s:VerticalLayout requestedRowCount="10" gap="2"/>
+					</s:layout>
+				</s:List>
+			</s:VGroup>
+			<s:VGroup gap="5" width="300" height="100%">
+				<s:Label text="Консоль"/>
+				<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false" />
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup gap="10" width="100%" horizontalAlign="right">
+			<s:Button id="btStart" label="Старт" enabled="{!techPicker.isRunning}" click="techPicker.start()"/>
+			<s:Button id="btPause" label="Пауза" enabled="{techPicker.isRunning}"/>
+			<s:Button id="btResume" label="Продолжить" enabled="{techPicker.isPaused}" click="techPicker.resume()"/>
+			<s:Button id="btStop" label="Стоп" click="techPicker.stop()"/>
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:Group>

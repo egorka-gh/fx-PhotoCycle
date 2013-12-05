@@ -19,6 +19,12 @@
 				_currentData = value;
 			}
 
+			public function refresh():void{
+				//if(_currentData) _currentData.refresh();
+				//dgItems.invalidateDisplayList();
+				//dgItems.validateNow();
+			}
+
 			public function ensureSelectionVisible():void{
 				var i:int=dgItems.selectedIndex;
 				if (i!=-1) dgItems.ensureCellIsVisible(i);

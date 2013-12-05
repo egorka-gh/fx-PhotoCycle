@@ -26,6 +26,7 @@ package com.photodispatcher.service.barcode{
 		protected var doubleScanGap:int;
 		protected var lastBarcode:String;
 		protected var lastBarcodeTime:int=getTimer();
+		protected var cleanMsg:Boolean=true;
 
 		//private var comPort:SerialProxy;
 		protected var _comPort:Socket2Com;
@@ -116,10 +117,12 @@ package com.photodispatcher.service.barcode{
 				idx=buffer.indexOf(String.fromCharCode(sufix));
 				if(idx>-1){
 					barcode=buffer.substring(0,idx);
-					//clean
-					barcode = barcode.replace(String.fromCharCode(13),'');
-					barcode = barcode.replace(String.fromCharCode(10),'');
-					barcode = barcode.replace(String.fromCharCode(02),'');
+					if(cleanMsg){
+						//clean
+						barcode = barcode.replace(String.fromCharCode(13),'');
+						barcode = barcode.replace(String.fromCharCode(10),'');
+						barcode = barcode.replace(String.fromCharCode(02),'');
+					}
 					buffer=buffer.substr(idx+1);
 					if(doubleScanGap>0){
 						var now:int=getTimer();

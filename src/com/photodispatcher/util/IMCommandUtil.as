@@ -141,14 +141,14 @@ package com.photodispatcher.util{
 			command.add('-composite');
 		}
 
-		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, offset:String, rotate:int=0, gravity:String='southwest', step:int=3):void{
+		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, offset:String, rotate:int=0, gravity:String='southwest', step:int=3, color:int=0):void{
 			if(!command || !barcode || !wrkDir || height<=0) return;
 			var undercolor:String='white';
 			if(!offset) offset='+0+0';
 			
 			//create barcode image
 			var c128Writer:Code128Writer= new Code128Writer();
-			var bmp:Bitmap=c128Writer.draw(barcode,height,step);
+			var bmp:Bitmap=c128Writer.draw(barcode,height,step,color);
 			if (!bmp) return;
 			var encoder:PNGEncoder= new PNGEncoder();
 			var imgByteArr:ByteArray = encoder.encode(bmp.bitmapData);

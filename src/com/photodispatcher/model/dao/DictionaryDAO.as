@@ -227,6 +227,30 @@ package com.photodispatcher.model.dao{
 			return itemsList;
 		}
 
+		public function getTechLayerValueList(includeDefault:Boolean=true):ArrayCollection{
+			var sql:String;
+			
+			if(includeDefault){
+				sql='SELECT id value, name label FROM config.layer ORDER BY id';
+			}else{
+				sql='SELECT id value, name label FROM config.layer WHERE id!=1 ORDER BY id';
+			}
+			runSelect(sql);
+			return itemsList;
+		}
+
+		public function getLayerGroupValueList(includeDefault:Boolean=false, full:Boolean=false):ArrayCollection{
+			var sql:String;
+			sql='SELECT id value, name label FROM config.layer_group';
+			if(!full) sql+=' WHERE id!=2';//exclude sheet group 
+			sql+=' ORDER BY id';
+			if(includeDefault){
+				sql="SELECT null value, ' ' label UNION "+sql;
+			}
+			runSelect(sql);
+			return itemsList;
+		}
+
 		public function getRollValueList(includeDefault:Boolean=true):ArrayCollection{
 			var sql:String;
 			sql='SELECT width value, width label FROM config.roll ORDER BY width';

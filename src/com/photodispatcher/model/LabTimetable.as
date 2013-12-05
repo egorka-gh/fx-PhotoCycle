@@ -33,7 +33,7 @@ package com.photodispatcher.model{
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
-			col= new GridColumn('is_online'); col.headerText=' '; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.width=30; result.addItem(col);
+			col= new GridColumn('is_online'); col.headerText=' '; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=30; result.addItem(col);
 			col= new GridColumn('day_id_name'); col.headerText='День недели'; col.editable=false; result.addItem(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateTimePattern='HH:mm'; fmt.useUTC=false;
 			col= new GridColumn('time_from'); col.headerText='С'; col.formatter=fmt; col.itemEditor=new ClassFactory(TimeGridEditor); col.width=100; result.addItem(col);

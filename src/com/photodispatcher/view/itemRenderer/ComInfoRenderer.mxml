@@ -27,6 +27,11 @@
 			[Bindable]
 			private var comport:ComInfo;
 			
+			[Bindable]
+			public var lockType:Boolean=false;
+			[Bindable]
+			public var lockSuffix:Boolean=false;
+			
 			override public function set data(value:Object):void{
 				super.data = value;
 				if(value is ComInfo){
@@ -45,7 +50,7 @@
 			<s:FormLayout gap="-10"/>
 		</s:layout>
 		
-		<s:FormItem label="Тип:">
+		<s:FormItem label="Тип:" enabled="{!lockType}">
 			<s:DropDownList dataProvider="{comTypes}" selectedIndex="@{comport.type}"/>
 		</s:FormItem>
 		<s:FormItem label="Номер COM:">
@@ -63,7 +68,7 @@
 		<s:FormItem label="Стоповые биты:">
 			<s:DropDownList dataProvider="{stopbits}" selectedItem="@{comport.stopbits}"/>
 		</s:FormItem>
-		<s:FormItem label="Суфикс:">
+		<s:FormItem label="Суфикс:" enabled="{!lockSuffix}">
 			<s:DropDownList dataProvider="{suffixes}" selectedItem="@{comport.suffix}"/>
 		</s:FormItem>
 	</s:Form>

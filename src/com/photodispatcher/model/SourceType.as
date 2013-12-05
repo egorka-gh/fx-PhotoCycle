@@ -16,6 +16,7 @@ package com.photodispatcher.model{
 		public static const TECH_PRINT:int=10;
 		public static const TECH_FOLDING:int=12;
 		public static const TECH_LAMINATION:int=13;
+		public static const TECH_PICKING:int=14;
 
 		//database props
 		public var id:int;

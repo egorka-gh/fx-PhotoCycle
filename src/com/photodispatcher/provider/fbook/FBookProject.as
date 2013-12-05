@@ -289,7 +289,7 @@ package com.photodispatcher.provider.fbook{
 			if(bookType==BookSynonym.BOOK_TYPE_BOOK){
 				page=getCoverPage();
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK){
-					page=ArrayUtil.searchItem('pageNum',1,projectPages) as PageData;
+					page=projectPages[1] as PageData;
 				}else if(bookPart==BookSynonym.BOOK_PART_COVER){
 					if(isPageSliced(0)) page= null;
 				}else if(bookPart==BookSynonym.BOOK_PART_INSERT){

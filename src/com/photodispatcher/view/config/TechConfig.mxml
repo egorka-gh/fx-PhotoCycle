@@ -9,10 +9,14 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.AppConfig;
 			import com.photodispatcher.model.dao.AppConfigDAO;
+			
+			import mx.collections.ArrayCollection;
 
 			[Bindable]
 			private var conf:AppConfig;
 			private var confDAO:AppConfigDAO;
+			[Bindable]
+			private var barColors:Array= ['0x000000', '0xFF0000','0x00FF00', '0x0000FF', '0xFFFF00', '0x00FFFF', '0xFF00FF'];
 		
 			private function init():void{
 				confDAO=new AppConfigDAO();
@@ -37,6 +41,7 @@
 				Context.setAttribute('tech.add',conf.tech_add);
 				Context.setAttribute('tech.barcode.size',conf.tech_bar);
 				Context.setAttribute('tech.barcode.step',conf.tech_bar_step);
+				Context.setAttribute('tech.barcode.color',conf.tech_bar_color);
 				Context.setAttribute('tech.barcode.offset',conf.tech_bar_offset);
 
 				confDAO.save(conf);
@@ -86,6 +91,9 @@
 			</s:FormItem> 
 			<s:FormItem label="Шаг штрихкода (pix)">
 				<s:NumericStepper value="@{conf.tech_bar_step}" minimum="1" maximum="10" snapInterval="1"/>
+			</s:FormItem> 
+			<s:FormItem label="Цвет штрихкода">
+				<mx:ColorPicker id="cpBarColor" selectedColor="@{conf.tech_bar_color}" dataProvider="{barColors}"/>
 			</s:FormItem> 
 			<s:FormItem label="Смещение штрихкода (pix)">
 				<itemRenderer:OffsetEditor id="tiTechBarOffs" data="{conf.tech_bar_offset}" change="{conf.tech_bar_offset=tiTechBarOffs.data}"/>

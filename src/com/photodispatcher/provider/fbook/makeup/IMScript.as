@@ -11,6 +11,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.akmeful.fotakrama.library.data.frame.FrameInfo;
 	import com.akmeful.fotakrama.library.data.frame.FrameMaskInfo;
+	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverFrameImage;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverPrintImage;
 	import com.akmeful.magnet.data.MagnetProject;
@@ -55,6 +56,13 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 			
 			var pageNum:int=0;
+			var sheetNum:int=0;
+			if(_book.type==FBookProject.PROJECT_TYPE_BCARD
+				|| _book.type==FotocalendarProject.PROJECT_TYPE
+				|| _book.type==MagnetProject.PROJECT_TYPE){
+				//pages starts from 1 (0- 4 book cover only)
+				sheetNum=1;
+			}
 			var page:ProjectBookPage;
 			for (pageNum = 0; pageNum < _book.bookPages.length; pageNum++){
 				page=_book.bookPages[pageNum];
@@ -63,7 +71,8 @@ package com.photodispatcher.provider.fbook.makeup{
 					//skip endpaper
 					trace('Page skipped. Endpaper... ');
 				}else{
-					var pageData:PageData=new PageData(_book, pageNum, outFolder);
+					var pageData:PageData=new PageData(_book, pageNum, outFolder,sheetNum);
+					sheetNum++;
 					//process page
 					elementNumber=0;
 					solidColorBackground(pageData,'white');
@@ -139,8 +148,7 @@ package com.photodispatcher.provider.fbook.makeup{
 		private function postprocess():void{
 			function commplitePage():void{
 				if(!cmd) return;
-				sheetNum++;//pages starts from 1 (0- 4 cover only)
-				var newPageData:PageData =new PageData(_book, sheetNum,outFolder);
+				var newPageData:PageData =new PageData(_book, sheetNum,outFolder,sheetNum+1);//pages starts from 1 (0- 4 book cover only)
 				cmd.add('-tile');cmd.add(cols.toString()+'x'+rows.toString());
 				cmd.add('-geometry');cmd.add('+0+0');
 				//set depth & quality
@@ -161,6 +169,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				newPageData.commands=commands;
 				newPageData.pageSize= new Point(proj.template.format.realWidth,proj.template.format.realHeight);
 				newPages.push(newPageData);
+				sheetNum++;
 			}
 			
 			if (_book.type!=MagnetProject.PROJECT_TYPE) return;

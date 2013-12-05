@@ -45,6 +45,7 @@ package com.photodispatcher.model{
 		public static const CANCELED_OLD:int=310;
 		public static const TECH_FOLDING:int=320;
 		public static const TECH_LAMINATION:int=330;
+		public static const TECH_PICKING:int=340;
 		public static const CANCELED:int=510;
 
 		//database props

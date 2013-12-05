@@ -40,7 +40,7 @@ package com.photodispatcher.model{
 		public static function gridColumnsEdit():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
-			col= new GridColumn('is_used'); col.headerText=' '; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.width=30; result.addItem(col);
+			col= new GridColumn('is_used'); col.headerText=' '; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false; col.width=30; result.addItem(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.editable=false; result.addItem(col);
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.addItem(col);
 			col= new GridColumn('len_std'); col.headerText='Стандартная длинна (мм)'; result.addItem(col);
@@ -50,7 +50,7 @@ package com.photodispatcher.model{
 		public static function gridColumnsView(brief:Boolean=false):ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
-			if(!brief){ col= new GridColumn('is_online'); col.headerText='Активный'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.width=70; result.addItem(col);}
+			if(!brief){ col= new GridColumn('is_online'); col.headerText='Активный'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false; col.width=70; result.addItem(col);}
 			col= new GridColumn('width'); col.headerText='Ширина'; col.editable=false; result.addItem(col);
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.addItem(col);
 			col= new GridColumn('len'); col.headerText='Длинна (мм)'; result.addItem(col);

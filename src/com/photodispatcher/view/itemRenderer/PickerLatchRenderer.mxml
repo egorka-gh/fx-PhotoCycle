@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.tech.PickerLatch;
+
+			[Bindable]
+			private var latch:PickerLatch;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				latch=value as PickerLatch;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<!--<s:states>
+		<s:State name="normal"/>
+		<s:State name="hovered"/>
+		<s:State name="selected"/>
+	</s:states>-->
+	
+	<s:HGroup gap="5" paddingBottom="3" paddingLeft="3" paddingRight="3" paddingTop="3">
+		<s:Rect width="6" height="6" radiusX="3" verticalCenter="-2">
+			<s:stroke>
+				<s:SolidColorStroke  weight="1" color="#999999"/> 
+			</s:stroke>
+			<s:fill>
+				<s:SolidColor id="stateColor" color="{latch.isOn?0x00dd00:0xbbbbbb}"/>
+			</s:fill>
+		</s:Rect>
+		<s:Label text="{latch.label}: {latch.caption}"/>
+	</s:HGroup>
+</s:ItemRenderer>

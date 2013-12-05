@@ -7,7 +7,6 @@
 					   keyDown="windowedapplication1_keyDownHandler(event)">
 	<fx:Script>
 		<![CDATA[
-			
 			import com.adobe.serialization.json.JSONEncoder;
 			import com.photodispatcher.event.WebEvent;
 			import com.photodispatcher.factory.OrderBuilder;
@@ -15,6 +14,7 @@
 			import com.photodispatcher.model.dao.BookSynonymDAO;
 			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
+			import com.photodispatcher.service.barcode.ValveController;
 			import com.photodispatcher.service.web.ProfotoWeb;
 			import com.photodispatcher.service.web.WebClient;
 			import com.photodispatcher.util.Code128;
@@ -223,6 +223,9 @@
 			}
 			
 			protected function btTrans_clickHandler(event:MouseEvent):void{
+				var vc:ValveController= new ValveController();
+				lbOut.text= vc.calcLRC(tiIn.text).toString(16);
+				return;
 				var str:String='dfgsdfgsdfg fdg';
 				var str2:String='';
 				var b:Boolean=Boolean(str);

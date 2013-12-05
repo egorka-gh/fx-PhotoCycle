@@ -479,8 +479,10 @@ package com.photodispatcher.factory{
 							}else{
 								pgf.file_name=page.outFileName(1); //first & only one slice
 							}
-							pgf.page_num=page.pageNum;
-							pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.pageNum.toString(),2);
+							//pgf.page_num=page.pageNum;
+							//pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.pageNum.toString(),2);
+							pgf.page_num=page.sheetNum;
+							pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.sheetNum.toString(),2);
 							pgf.book_num=0;
 							pgf.prt_qty=1;
 							if(proj.isPageCover(page.pageNum)){

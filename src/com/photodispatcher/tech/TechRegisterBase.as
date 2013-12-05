@@ -27,6 +27,8 @@ package com.photodispatcher.tech{
 		private var lastSheet:int;
 		private var registred:int;
 		
+		protected var logOk:Boolean;
+		
 		public function TechRegisterBase(printGroup:String, books:int,sheets:int){
 			super(null);
 			printGroupId=printGroup;
@@ -35,6 +37,7 @@ package com.photodispatcher.tech{
 			regArray = new Array(books);
 			bookPart=BookSynonym.BOOK_PART_ANY;
 			registred=0;
+			logOk=true;
 			//complited=false;
 		}
 		
@@ -57,6 +60,7 @@ package com.photodispatcher.tech{
 				regArray[idx][sheet]=new Date();
 				registred++;
 			}
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
 		protected function get isComplete():Boolean{
@@ -93,7 +97,14 @@ package com.photodispatcher.tech{
 				}
 			}
 		}
-		
+
+		public function get currentBook():int{
+			return lastBook;
+		}
+		public function get currentSheet():int{
+			return lastSheet;
+		}
+
 		public function get canInterrupt():Boolean{
 			return false;
 		}
@@ -114,7 +125,7 @@ package com.photodispatcher.tech{
 				if (bookPart!=BookSynonym.BOOK_PART_COVER) sheet=revers?1:sheets;
 				logSequeceErr('Не верное завершение последовательности: '+ StrUtil.sheetName(lastBook,lastSheet) +' вместо '+ StrUtil.sheetName(book,sheet));
 			}else{
-				logMsg('Ok');
+				if(logOk) logMsg('Ok');
 			}
 			return result;
 		}

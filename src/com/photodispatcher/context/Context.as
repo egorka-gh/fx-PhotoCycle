@@ -59,6 +59,7 @@ package com.photodispatcher.context{
 				Context.setAttribute('tech.add',appConf.tech_add);
 				Context.setAttribute('tech.barcode.size',appConf.tech_bar);
 				Context.setAttribute('tech.barcode.step',appConf.tech_bar_step);
+				Context.setAttribute('tech.barcode.color',appConf.tech_bar_color);
 				Context.setAttribute('tech.barcode.offset',appConf.tech_bar_offset);
 			}else{
 				//set to defaults
@@ -196,6 +197,35 @@ package com.photodispatcher.context{
 			if(!Context.getAttribute('tech_pointList')){
 				a=dDao.getTechPointValueList();
 				Context.setAttribute('tech_pointList', a);
+				/*
+				a=dDao.getTechPointValueList(false);
+				Context.setAttribute('tech_pointValueList', a);
+				*/
+			}
+
+			//tech layers
+			if(!Context.getAttribute('layerList')){
+				a=dDao.getTechLayerValueList();
+				//Context.setAttribute('layerList', a);
+				Context.setAttribute('layerValueList', a);
+				/*
+				a=dDao.getTechPointValueList(false);
+				Context.setAttribute('tech_pointValueList', a);
+				*/
+			}
+
+			//tech seq layers
+			if(!Context.getAttribute('seqlayerList')){
+				a=dDao.getTechLayerValueList(false);
+				//Context.setAttribute('seqlayerList', a);
+				Context.setAttribute('seqlayerValueList', a);
+			}
+
+			//tech layer group
+			if(!Context.getAttribute('layer_groupList')){
+				a=dDao.getLayerGroupValueList();
+				Context.setAttribute('layer_groupList', a);
+				Context.setAttribute('layer_groupValueList', a);
 				/*
 				a=dDao.getTechPointValueList(false);
 				Context.setAttribute('tech_pointValueList', a);

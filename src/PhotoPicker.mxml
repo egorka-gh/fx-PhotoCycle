@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   xmlns:view="com.photodispatcher.view.*" 
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   showStatusBar="false"
+					   creationComplete="{initApp()}" 
+					   closing="windowedapplication1_closingHandler(event)" xmlns:config="com.photodispatcher.view.config.*" 
+					   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.TechPoint;
+			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.dao.OrderStateDAO;
+			import com.photodispatcher.model.dao.TechPointDAO;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.service.barcode.ValveController;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.config.DatabasePopup;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+		
+			[Bindable]
+			private var techPionts:ArrayCollection;
+			
+			[Bindable]
+			private var comBarcodeReader:ComInfo;
+			[Bindable]
+			private var comController:ComInfo; 
+
+			[Bindable]
+			private var barcodeReader:ComReader;
+			[Bindable]
+			private var controller:ValveController; 
+
+			[Bindable]
+			private var turnInterval:int;
+			
+			[Bindable]
+			private var techPointObj:TechPoint;
+
+			protected var _reversOrder:Boolean
+			[Bindable]
+			public function get reversOrder():Boolean{
+				return _reversOrder;
+			}
+			public function set reversOrder(value:Boolean):void{
+				_reversOrder = value;
+				Context.setAttribute("reversOrder", value);
+			}
+
+			
+			private var _techPoint:int;
+			[Bindable]
+			protected function get techPointID():int{
+				return _techPoint;
+			}
+			protected function set techPointID(value:int):void{
+				_techPoint = value;
+				if(_techPoint){
+					Context.setAttribute("techPoint", _techPoint);
+					setTechPointObj(_techPoint);
+				}
+			}
+			
+			private function setTechPointObj(id:int):void{
+				if(!techPionts) return;
+				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
+				Context.setAttribute("tech.object", techPointObj);
+			}
+			
+			private var bdPopup:DatabasePopup;
+			private function initApp():void{
+				bdPopup= new DatabasePopup();
+				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
+				bdPopup.chekConnect(SQLMode.UPDATE,false);
+			}
+			private function bdPopClose(e:PopUpEvent):void{
+				if(e.commit){
+					//connected
+					init();
+					//if(vMonitor) vMonitor.start();
+				}else{
+					//no connection
+					currentState='disconnected';
+					bdPopup.open(null);
+				}
+			}
+
+			private function init():void{
+				OrderStateDAO.initStateMap();
+				var dao:TechPointDAO=new TechPointDAO();
+
+				techPionts=dao.findAll(false,SourceType.TECH_PICKING);
+				var coms:Array=ComInfo.load();
+				var ci:ComInfo;
+				for each (ci in coms){
+					if (ci.type==ComInfo.COM_TYPE_CONTROLLER) comController=ci;
+					if (ci.type==ComInfo.COM_TYPE_BARREADER) comBarcodeReader=ci;
+				}
+				if(!comController){
+					comController= new ComInfo(); comController.type=ComInfo.COM_TYPE_CONTROLLER; comController.suffix=ValveController.MSG_SUFIX;
+				}
+				if(!comBarcodeReader){
+					comBarcodeReader= new ComInfo(); comBarcodeReader.type=ComInfo.COM_TYPE_BARREADER;
+				}
+				//var serverIP:String;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					/*
+					serverIP=so.data.serverIP;
+					*/
+					techPointID=so.data.techPoint;
+					reversOrder=so.data.reversOrder; 
+					turnInterval=so.data.turnInterval;
+					if(turnInterval<=0) turnInterval=1000;
+				}
+				currentState='config';
+			}
+
+			private function showTemplates():void{
+				Context.initAttributeLists();
+				currentState='templates';
+			}
+
+			private function start():void{
+				if(!techPointObj || !comController.num || !comBarcodeReader.num){
+					Alert.show('Приложение не настроено');
+					currentState='config';
+					return;
+				}
+				serialProxy.start([comController,comBarcodeReader]);
+				if(!serialProxy.isStarted){
+					return;
+				}
+				var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_CONTROLLER);
+				if(proxy){
+					if(!controller) controller= new ValveController();
+					controller.comPort=proxy;
+				}else{
+					//TODO destoroy
+					controller=null;
+				}
+				proxy=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
+				if(proxy){
+					if(!barcodeReader){
+						barcodeReader= new ComReader(500);
+						barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					}
+					barcodeReader.comPort=proxy;
+				}else{
+					//TODO destoroy
+				}
+				
+				currentState='monitor';
+				if(techPickerView) techPickerView.start();
+			}
+
+			private function stop():void{
+				if(techPickerView) techPickerView.stop();
+				serialProxy.stop();
+				currentState='config';
+			}
+
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				//TODO flush data
+				if(serialProxy) serialProxy.stop();
+				if(techPickerView) techPickerView.stop();
+			}
+			
+			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
+				var tp:TechPoint= ddTechPoint.selectedItem as TechPoint;
+				if (!tp) return;
+				techPointID=tp.id;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.techPoint = techPointID;
+				so.flush();  
+			}
+			
+			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
+				if(barcodeReader) barcodeReader.stop();
+				serialProxy.stop();
+				var bar:String=event.barcode;
+				bar = bar.replace(String.fromCharCode(13),'[LF]');
+				bar = bar.replace(String.fromCharCode(10),'[CR]');
+				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
+				currentState='config';
+			}
+			
+			/*
+			protected function btAddCom_clickHandler(event:MouseEvent):void{
+				var cp:ComInfo= new ComInfo();
+				coms.addItem(cp);
+				comList.selectedItem=cp;
+			}
+			*/
+			protected function btSaveComs_clickHandler(event:MouseEvent):void{
+				ComInfo.save([comController,comBarcodeReader]);
+			}
+			
+			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
+				Alert.show('Ошибка SerialProxy \n '+event.error,'Ошибка');
+				currentState='config';
+			}
+			
+			protected function chbRevers_changeHandler(event:Event):void{
+				reversOrder=chbRevers.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.reversOrder = reversOrder;
+				so.flush();  
+			}
+			
+			protected function spTurnInterval_changeHandler(event:Event):void{
+				turnInterval=spTurnInterval.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.turnInterval = turnInterval;
+				so.flush();  
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
+	</fx:Declarations>
+
+	<s:states>
+		<s:State name="disconnected"/>
+		<s:State name="config"/>
+		<s:State name="monitor"/>
+		<s:State name="templates"/>
+	</s:states>
+
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Технологическая точка:"/>
+			<s:DropDownList id="ddTechPoint" dataProvider="{techPionts}" selectedItem="{techPointObj}" 
+							labelField="name" change="ddTechPoint_changeHandler(event)"
+							width="200"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Обратный порядок:"/>
+			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Время цикла(млсек):"/>
+			<s:NumericStepper id="spTurnInterval" minimum="500" maximum="10000" snapInterval="100" value="{turnInterval}" change="spTurnInterval_changeHandler(event)"/>
+		</s:HGroup>
+		<s:Spacer height="15"/>
+		<s:HGroup gap="10" width="100%">
+			<s:VGroup>
+				<s:Label text="Контроллер" fontWeight="bold"/>
+				<itemRenderer:ComInfoRenderer  data="{comController}" lockType="true" lockSuffix="true"/>
+			</s:VGroup>
+			<s:VGroup >
+				<s:Label text="Сканер ШК" fontWeight="bold"/>
+				<itemRenderer:ComInfoRenderer data="{comBarcodeReader}" lockType="true"/>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup gap="10" width="600" horizontalAlign="right">
+			<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+
+	<config:TechLayerConfig includeIn="templates" top="5" left="5" right="5" bottom="50"/>
+
+	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
+		<!--<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" barcodeReader="{barcodeReader}" flap="{flap}"
+							  width="100%" height="100%"/>-->
+		<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
+							 barcodeReader="{barcodeReader}" controller="{controller}"
+							 reversOrder="{reversOrder}" turnInterval="{turnInterval}"
+							 width="100%" height="100%"/>
+	</s:VGroup>
+	
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+		<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
+		<s:Group width="5">
+			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
+		</s:Group>
+		<s:Spacer width="100%"/>
+		<s:Button label="Настройки" includeIn="monitor" click="{stop()}"/>
+		<s:Button label="Шаблоны" includeIn="config" click="{showTemplates();}"/>
+		<s:Button label="Листоподборка" includeIn="config" click="{start()}"/>
+		<s:Button label="Закрыть" click="{stop(); FlexGlobals.topLevelApplication.exit();}"  excludeFrom="templates"/>
+		<s:Button label="Закрыть" click="{currentState='config';}"  includeIn="templates"/>
+	</s:HGroup>
+
+</s:WindowedApplication>

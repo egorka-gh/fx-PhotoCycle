@@ -57,16 +57,6 @@
 
 			
 			private var logText:String = '';
-			/*
-			private var curPG:String;
-			private var curBookNum:int;
-			private var curPageNum:int;
-			private var curBookTot:int;
-			private var curPageTot:int;
-			private var wrongOrder:Boolean;
-			private var wrongStart:Boolean;
-			private var wrongEnd:Boolean;
-			*/
 
 			[Bindable]
 			private var barText:String='';
@@ -161,60 +151,6 @@
 					barText=barcode+'\n';
 					currRegister.register(bookNum,pageNum);
 				}
-				/*
-				if(curPG && curPG==pgId){
-					if(!wrongOrder){
-						//calc currents
-						if(curPageNum==curPageTot){
-							curPageNum=1;
-							curBookNum++;
-						}else{
-							curPageNum++;
-						}
-						//check sequense
-						if(curBookNum!=bookNum || curPageNum!=pageNum){
-							wrongOrder=true;
-							//show
-							logToScreen('Заказ: '+curPG+'. Не верная последовательность',true);
-							if(flap) flap.setOff();
-						}
-					}
-				}else{
-					//check end
-					var writePg:String;
-					if(curPG){
-						writePg=curPG;
-						wrongEnd= curBookNum!=curBookTot || curPageNum!=curPageTot;
-						//show
-						if(wrongEnd){
-							if(!wrongOrder) logToScreen('Заказ: '+curPG+'. Не верное завершение последовательности',true);
-							if(flap) flap.setOff();
-						}else{
-							if(!wrongOrder && !wrongStart) logToScreen('Заказ: '+curPG+' - Ok');
-						}
-					}
-					//start new
-					barText=barcode+'\n';
-					wrongEnd=false;
-					wrongStart=false;
-					wrongOrder=false;
-					curPG=pgId;
-					curBookNum=1;
-					curPageNum=1;
-					curBookTot=int(barcode.substr(3,3));
-					curPageTot=int(barcode.substr(8,2));
-					//check start
-					wrongStart=curBookNum!=bookNum || curPageNum!=pageNum;
-					if(wrongStart){
-						curBookNum=bookNum;
-						curPageNum=pageNum;
-						// show
-						logToScreen('Заказ: '+curPG+'. Не верный старт последовательности',true);
-						if(flap) flap.setOff();
-					}
-					if(writePg) flushPg(writePg);
-				}
-				*/
 			}
 
 			private function logToScreen(msg:String, isError:Boolean=false):void{
@@ -230,15 +166,6 @@
 				logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
 			}
 
-			/*
-			private function flushPg(pgId:String):void{
-				if(!pgId) return;
-				//TODO check/update print group state
-				var dao:PrintGroupDAO= new PrintGroupDAO();
-				dao.setStateByTech(pgId);
-			}
-			*/
-			
 			public function start():void{
 				cleanLog();
 				barText='';
@@ -246,16 +173,6 @@
 					//TODO rise err or log in screen
 					logToScreen('---------- Не задана технологическая точка ----------',true);
 				}
-				/*
-				curPG='';
-				curBookNum=0;
-				curPageNum=0;
-				curBookTot=0;
-				curPageTot=0;
-				wrongEnd=false;
-				wrongStart=false;
-				wrongOrder=false;
-				*/
 			}
 
 			public function stop():void{
@@ -270,7 +187,6 @@
 			private function cleanLog():void{
 				logText='';
 				logTextArea.text='';
-				//if(flap) flap.setOn();
 			}
 			
 			protected function btFlapOn_clickHandler(event:MouseEvent):void{
@@ -283,6 +199,7 @@
 			
 		]]>
 	</fx:Script>
+	
 	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
 			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
 		<s:HGroup gap="5" width="100%" height="100%">

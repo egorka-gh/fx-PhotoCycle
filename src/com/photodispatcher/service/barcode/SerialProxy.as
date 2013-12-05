@@ -33,6 +33,8 @@ package com.photodispatcher.service.barcode
 		private var proc:NativeProcess;
 		//TODO refactor to map by type
 		private var comInfos:Array;
+
+		public var remoteIp:String;
 		
 		private var _isStarted:Boolean=false;
 		public function get isStarted():Boolean{
@@ -48,6 +50,10 @@ package com.photodispatcher.service.barcode
 			this.comInfos=comInfos;
 			if(!comInfos || comInfos.length==0){
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: Нет настроенных COM портов'));
+				return;
+			}
+			if(remoteIp){
+				_isStarted=true;
 				return;
 			}
 			//check/copy serial_proxy
@@ -159,9 +165,9 @@ package com.photodispatcher.service.barcode
 			if(!_isStarted) return null;
 			var ci:ComInfo;
 			ci = ArrayUtil.searchItem('type',type,comInfos) as ComInfo;
-			if(!ci) return null;
+			if(!ci || ci.type==ComInfo.COM_TYPE_NONE || !ci.num) return null;
 			if (ci.proxy) return ci.proxy;
-			var proxy:Socket2Com= new Socket2Com(ci);
+			var proxy:Socket2Com= new Socket2Com(ci,remoteIp);
 			ci.proxy=proxy;
 			return proxy;
 		}

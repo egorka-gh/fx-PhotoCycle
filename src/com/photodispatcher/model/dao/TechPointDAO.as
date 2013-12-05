@@ -6,15 +6,21 @@ package com.photodispatcher.model.dao{
 
 	public class TechPointDAO extends BaseDAO{
 		
-		public function findAll(silent:Boolean=false):ArrayCollection{
-			var res:Array=findAllArray(silent);
+		public function findAll(silent:Boolean=false, type:int=-1):ArrayCollection{
+			var res:Array;
+			if(type>0){
+				res=findByType(type,silent);
+			}else{
+				res=findAllArray(silent);
+			}
 			return new ArrayCollection(res);
 		}
 		
 		public function findAllArray(silent:Boolean=false):Array{
-			var sql:String='SELECT s.id, s.name, s.tech_type, st.name tech_type_name'+
+			var params:Array=null;
+			var sql:String='SELECT s.id, s.name, s.tech_type, st.name tech_type_name, st.state tech_state, st.book_part tech_book_part'+
 				' FROM config.tech_point s' +
-				' INNER JOIN config.src_type st ON st.id = s.tech_type'+
+				' INNER JOIN config.src_type st ON st.id = s.tech_type'
 				' ORDER BY s.name';
 			runSelect(sql,null,silent);
 			var res:Array=itemsArray;

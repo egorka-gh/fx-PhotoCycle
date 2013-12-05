@@ -3,8 +3,6 @@ package com.photodispatcher.tech{
 
 	public class TechRegisterFolding extends TechRegisterBase{
 		
-		//TODO implement login to database
-		
 		public function TechRegisterFolding(printGroup:String, books:int, sheets:int){
 			super(printGroup, books, sheets);
 		}

@@ -27,8 +27,8 @@ package com.photodispatcher.model.dao{
 	
 	[Event(name="asyncSQLEvent", type="com.photodispatcher.event.AsyncSQLEvent")]
 	[Event(name="sqlSequenceEvent", type="com.photodispatcher.event.SqlSequenceEvent")]
+	[Event(name="complete", type="flash.events.Event")]
 	public class BaseDAO extends EventDispatcher{
-
 		public static const RESULT_COMLETED:int=0;
 		public static const RESULT_FAULT:int=1;
 		public static const RESULT_FAULT_LOCKED:int=2;
