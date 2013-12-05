@@ -541,6 +541,7 @@ package com.photodispatcher.tech{
 			aclLatch.forward();
 		}
 		private function onControllerMsg(event:ControllerMesageEvent):void{
+			if(!isRunning || isPaused) return;
 			if(event.chanel==0){
 				if(!layerLatch.isOn){
 					pause('Не ожидаемое срабатывание датчика бумаги');
