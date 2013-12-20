@@ -12,6 +12,28 @@ package com.photodispatcher.model{
 		public static const PDF_FILENAME_SHEETS:String='blok';
 		public static const SUBFOLDER_PRINT:String='print';
 
+		public static function sourceIdFromId(pgId:String):int{
+			var arr:Array;
+			if(!pgId) return 0;
+			arr=pgId.split('_');
+			if(arr && arr.length>0)	return int(arr[0]);
+			return 0;
+		}
+		
+		public static function orderIdFromId(pgId:String):String{
+			var arr:Array;
+			var result:String='';
+			if(!pgId) return '';
+			
+			arr=pgId.split('_');
+			if(arr && arr.length>1){
+				result=arr[0]+'_'+arr[1];
+			}else{
+				result=pgId; 
+			}
+			return result;
+		}
+		
 		//database props
 		[Bindable]
 		public var id:String;

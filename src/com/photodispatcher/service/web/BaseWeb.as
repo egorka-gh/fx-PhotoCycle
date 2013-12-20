@@ -34,6 +34,9 @@ package com.photodispatcher.service.web{
 		protected var cmd:int;
 		//last order (from get order) 
 		protected var lastOrder:Order;
+		public function getLastOrder():Order{
+			return lastOrder;
+		}
 
 		protected var _hasError:Boolean;
 		public function get hasError():Boolean{

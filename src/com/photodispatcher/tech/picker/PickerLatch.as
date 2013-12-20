@@ -1,4 +1,4 @@
-package com.photodispatcher.tech{
+package com.photodispatcher.tech.picker{
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -9,9 +9,11 @@ package com.photodispatcher.tech{
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	public class PickerLatch extends EventDispatcher{
 		public static const TYPE_ACL:int			=0;
-		public static const TYPE_LAYER:int			=1;
-		public static const TYPE_BARCODE:int		=2;
-		public static const TYPE_REGISTER:int		=3;
+		public static const TYPE_LAYER_IN:int		=1;
+		public static const TYPE_LAYER_OUT:int		=2;
+		public static const TYPE_BARCODE:int		=3;
+		public static const TYPE_REGISTER:int		=4;
+		public static const TYPE_BD:int				=5;
 
 		
 		[Bindable]
@@ -101,7 +103,7 @@ package com.photodispatcher.tech{
 				dispatchEvent( new Event('isOnChange'));
 			}
 		}
-		
+
 		public function reset():void{
 			if(timer) timer.reset();
 			_step=0;

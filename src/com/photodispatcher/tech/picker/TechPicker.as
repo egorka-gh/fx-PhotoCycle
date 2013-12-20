@@ -1,28 +1,41 @@
-package com.photodispatcher.tech{
+package com.photodispatcher.tech.picker{
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.BarCodeEvent;
 	import com.photodispatcher.event.ControllerMesageEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
+	import com.photodispatcher.model.DBRecord;
+	import com.photodispatcher.model.Endpaper;
+	import com.photodispatcher.model.FieldValue;
 	import com.photodispatcher.model.Layer;
 	import com.photodispatcher.model.LayerSequence;
 	import com.photodispatcher.model.Layerset;
+	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.TechPoint;
+	import com.photodispatcher.model.dao.LayersetDAO;
+	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.service.barcode.ComReader;
 	import com.photodispatcher.service.barcode.ValveController;
+	import com.photodispatcher.tech.TechRegisterPicker;
+	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.events.TimerEvent;
+	import flash.net.SharedObject;
 	import flash.utils.Timer;
+	
+	import mx.collections.ArrayCollection;
+	import mx.controls.Alert;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	public class TechPicker extends EventDispatcher{
 		public static const COMMAND_GROUP_START:int			=-1;
-		public static const COMMAND_GROUP_BOOK_START:int	=1;
-		public static const COMMAND_GROUP_BOOK_SHEET:int	=2;
-		public static const COMMAND_GROUP_BOOK_BETWEEN_SHEET:int	=3;
-		public static const COMMAND_GROUP_BOOK_END:int		=4;
+		public static const COMMAND_GROUP_BOOK_START:int	=0;
+		public static const COMMAND_GROUP_BOOK_SHEET:int	=1;
+		public static const COMMAND_GROUP_BOOK_BETWEEN_SHEET:int	=2;
+		public static const COMMAND_GROUP_BOOK_END:int		=3;
 		public static const COMMAND_GROUP_STOP:int			=1000;
 		
 		private static const BD_TIMEOUT_MIN:int=300;
@@ -30,9 +43,65 @@ package com.photodispatcher.tech{
 		private static const BD_MAX_WAITE:int=10000;
 
  
+		[Bindable]
+		public var prepared:Boolean; 
+		[Bindable]
+		public var traySet:TraySet;
+		[Bindable]
+		public var interlayerSet:InterlayerSet; 
+		[Bindable]
+		public var endpaperSet:EndpaperSet; 
+		[Bindable]
+		public var currInerlayer:Layerset; 
+		[Bindable]
+		public var currEndpaperInTray:Endpaper; 
+		public var currEndpaper:Endpaper; 
+		[Bindable]
+		public var currBookTypeName:String=''; 
+
 		public var techPoint:TechPoint;
 		public var reversOrder:Boolean;
 		
+		[Bindable]
+		public var currentSequence:Array;
+		
+		private var engineOn:Boolean;
+		private var vacuumOn:Boolean;
+		[Bindable]
+		public var isRunning:Boolean;
+		[Bindable]
+		public var isPaused:Boolean;
+		
+		//Latches
+		[Bindable]
+		public var latches:Array;
+		private var aclLatch:PickerLatch;
+		private var layerInLatch:PickerLatch;
+		private var layerOutLatch:PickerLatch;
+		private var barLatch:PickerLatch;
+		private var registerLatch:PickerLatch;
+		private var bdLatch:PickerLatch;
+		
+		//print group params
+		[Bindable]
+		public var currOrder:Order;
+		[Bindable]
+		public var currPgId:String='';
+		private var currBarcode:String;
+		[Bindable]
+		public var currBookTot:int;
+		[Bindable]
+		public var currBookIdx:int;
+		[Bindable]
+		public var currSheetTot:int;
+		[Bindable]
+		public var currSheetIdx:int;
+		
+		private var currentLayer:int;
+		[Bindable]
+		public  var currentTray:int=-1;
+		private var waiteTraySwitch:Boolean;
+
 		private var _logger:ISimpleLogger;
 		public function get logger():ISimpleLogger{
 			return _logger;
@@ -50,28 +119,60 @@ package com.photodispatcher.tech{
 
 		public function set turnInterval(value:int):void{
 			_turnInterval = value;
-			layerLatch.setTimeout(_turnInterval);
-			barLatch.setTimeout(_turnInterval);
+			if(layerInLatch) layerInLatch.setTimeout(_turnInterval);
+			if(barLatch) barLatch.setTimeout(_turnInterval);
 		}
  
-		[Bindable]
-		public var prepared:Boolean; 
-
 		public function TechPicker(){
 			super(null);
 
+			//create & fill trays
+			traySet= new TraySet();
+			if (!traySet.prepared) return;
+			interlayerSet= new InterlayerSet();
+			if (!interlayerSet.prepared) return;
+			endpaperSet= new EndpaperSet();
+			if (!endpaperSet.prepared) return;
+			
+			currEndpaper=endpaperSet.emptyEndpaper;
+			currEndpaperInTray=endpaperSet.emptyEndpaper;
+			
 			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', ValveController.ACKNOWLEDGE_TIMEOUT*2);
-			layerLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
+			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
+			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',turnInterval);
+			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000); //1сек
 			barLatch = new PickerLatch(PickerLatch.TYPE_BARCODE, 1,'Сканер','Ожидание штрихкода',turnInterval);
 			registerLatch = new PickerLatch(PickerLatch.TYPE_REGISTER, 1,'Книга','Контроль очередности',ValveController.ACKNOWLEDGE_TIMEOUT*2);
-			latches=[aclLatch,layerLatch,barLatch,registerLatch];
+			bdLatch= new PickerLatch(PickerLatch.TYPE_BD, 2,'База данных','Получение параметров заказа',2*BD_MAX_WAITE); //callDbLate wl pause after BD_MAX_WAITE
+			
+			latches=[aclLatch,layerInLatch,layerOutLatch,barLatch,registerLatch,bdLatch];
 			var l:PickerLatch;
 			for each(l in latches){
 				l.addEventListener(ErrorEvent.ERROR, onLatchTimeout);
 				l.addEventListener(Event.COMPLETE, onLatchRelease);
 			}
+			checkPrepared();
 		}
 
+		private function checkPrepared(alert:Boolean=false):Boolean{
+			prepared=barcodeReader && controller && 
+				traySet && traySet.prepared && 
+				interlayerSet && interlayerSet.prepared && 
+				endpaperSet && endpaperSet.prepared && 
+				_layerset && _layerset.prepared;
+			if(!prepared && alert){
+				var msg:String='';
+				if(!barcodeReader) msg='Не инициализирован сканер ШК';
+				if(!controller) msg+='\n Не инициализирован контролер';
+				if(!traySet || !traySet.prepared) msg+='\n Не инициализирован набор лотков';
+				if(!interlayerSet ||!interlayerSet.prepared) msg+='\n Не инициализирован набор прослоек';
+				if(!endpaperSet || !endpaperSet.prepared) msg+='\n Не инициализирован набор форзацев';
+				if(!_layerset || !_layerset.prepared) msg+='\n Не инициализирован текущий шаблон';
+				Alert.show(msg);
+			}
+			return 	prepared;
+		}
+		
 		public function destroy():void{
 			var l:PickerLatch;
 			for each(l in latches){
@@ -97,45 +198,9 @@ package com.photodispatcher.tech{
 		}
 		public function set layerset(value:Layerset):void{
 			_layerset = value;
-			prepared=false;
 			if(_layerset) prepareTemplate();
 		}
-		[Bindable]
-		public var currentSequence:Array;
-
 		
-		private var engineOn:Boolean;
-		private var vacuumOn:Boolean;
-		[Bindable]
-		public var isRunning:Boolean;
-		[Bindable]
-		public var isPaused:Boolean;
-
-		//Latches
-		[Bindable]
-		public var latches:Array;
-		private var aclLatch:PickerLatch;
-		private var layerLatch:PickerLatch;
-		private var barLatch:PickerLatch;
-		private var registerLatch:PickerLatch;
-		
-		//print group params
-		[Bindable]
-		public var currPgId:String='';
-		private var currBarcode:String;
-		[Bindable]
-		public var currBookTot:int;
-		[Bindable]
-		public var currBookIdx:int;
-		[Bindable]
-		public var currSheetTot:int;
-		[Bindable]
-		public var currSheetIdx:int;
-		
-		private var currentLayer:Layer;
-		[Bindable]
-		public  var currentTray:int=-1;
-		private var waiteTraySwitch:Boolean;
 		
 
 		[Bindable]
@@ -183,7 +248,6 @@ package com.photodispatcher.tech{
 			_currentGroup = value;
 		}
 
-
 		private var _barcodeReader:ComReader;
 		public function get barcodeReader():ComReader{
 			return _barcodeReader;
@@ -198,6 +262,7 @@ package com.photodispatcher.tech{
 				_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 				_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
 			}
+			checkPrepared();
 		}
 
 		private var _controller:ValveController;
@@ -216,6 +281,7 @@ package com.photodispatcher.tech{
 				_controller.addEventListener(Event.COMPLETE, onControllerCommandComplite);
 				_controller.addEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 			}
+			checkPrepared();
 		}
 
 		private var _register:TechRegisterPicker;
@@ -236,10 +302,21 @@ package com.photodispatcher.tech{
 			}
 		}
 
+		private function prepare():Boolean{
+			return false;
+		}
+
 		private function prepareTemplate():void{
-			if(!_layerset) return;
-			prepared=_layerset.prepareTamplate();
-			if(!prepared) callDbLate(prepareTemplate); 
+			if(!_layerset){
+				prepared=false;
+				return;
+			}
+			_layerset.prepareTamplate();
+			if(!_layerset.prepared){
+				callDbLate(prepareTemplate);
+				return;
+			}
+			checkPrepared();
 		}
 		
 		private var bdWait:int=0;
@@ -252,7 +329,7 @@ package com.photodispatcher.tech{
 			bdFunction=func;
 			if (bdWait>=BD_MAX_WAITE){
 				//max wait reached
-				//TODO pause vs err
+				//pause vs err
 				pause('Блокировка при чтении базы данных');
 				log('!database locked');
 				//clean up
@@ -285,15 +362,17 @@ package com.photodispatcher.tech{
 
 
 		public function start():void{
-			if(!prepared) return;
+			if(!checkPrepared(true)) return;
 			if(isRunning) return;
 			if(!barcodeReader || ! controller){
 				//TODO err?
 				return;
 			}
+			if(logger) logger.clear();
 			log('start');
 			currBarcode=null;
 			currPgId='';
+			currOrder=null;
 			currBookTot=-1;
 			currBookIdx=-1;
 			currSheetTot=-1;
@@ -314,16 +393,17 @@ package com.photodispatcher.tech{
 		}
 
 		public function pause(alert:String):void{
+			if(isPaused) return;
+			isPaused=true;
 			log('pause: '+alert);
 			controller.close(currentTray);
 			currentTray=-1;
-			isPaused=true;
 			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,alert));
 		}
 
 		public function stop():void{
 			log('stop');
-			controller.close(currentTray);
+			if(controller) controller.close(currentTray);
 			currentTray=-1;
 			isRunning=false;
 			isPaused=false;
@@ -386,14 +466,18 @@ package com.photodispatcher.tech{
 					feedSheet();
 					break;
 				case COMMAND_GROUP_BOOK_BETWEEN_SHEET:
+					if(!currInerlayer){
+						pause('Не определена прослойка.');
+						return;
+					}
 					//check completed
-					if(currentGroupStep>=layerset.sequenceMiddle.length){
+					if(currentGroupStep>=currInerlayer.sequenceMiddle.length){
 						//complited
 						currentGroup= COMMAND_GROUP_BOOK_SHEET;
 						nextStep();
 						return;
 					}
-					feedLayer(layerset.sequenceMiddle[currentGroupStep] as LayerSequence);
+					feedLayer(currInerlayer.sequenceMiddle[currentGroupStep] as LayerSequence);
 					break;
 				case COMMAND_GROUP_BOOK_END:
 					//check completed
@@ -408,6 +492,9 @@ package com.photodispatcher.tech{
 							currSheetTot=-1;
 							currSheetIdx=-1;
 							pause('Заказ '+currPgId+' завершен.');
+							//reset
+							currPgId='';
+							currOrder=null;
 						}else{
 							//current book complited
 							currentGroup= COMMAND_GROUP_BOOK_START;
@@ -425,42 +512,44 @@ package com.photodispatcher.tech{
 		private function feedLayer(ls:LayerSequence):void{
 			if(!ls) return;
 			waiteTraySwitch=false;
-			currentLayer=layerset.getLayer(ls.seqlayer);
+			currentLayer=ls.seqlayer;
 			if(!currentLayer){
 				pause('Ошибка выполнения. Слой не определен.');
 				return;
 			}
-			var ct:int=currentLayer.currentTray;
-			if(ct<=0){
-				pause('Не назначен лоток для слоя '+ currentLayer.name);
+			if(currentLayer==Layer.LAYER_ENDPAPER && currEndpaper.isEmpty){
+				//skip 
+				currentGroupStep++;
+				nextStep();
 				return;
 			}
-			currentTray=ct-1;
+			var ct:int=traySet.getCurrentTray(currentLayer);//currentLayer.currentTray;
+			if(ct<0){
+				pause('Не назначен лоток для слоя '+traySet.getLayerName(currentLayer));// currentLayer.name);
+				return;
+			}
+			currentTray=ct;//-1;
 			//set latches
-			layerLatch.layer=currentLayer.id;
-			layerLatch.startingTray=currentTray;
-			layerLatch.setOn();
+			layerInLatch.layer=currentLayer;//currentLayer.id;
+			layerInLatch.startingTray=currentTray;
+			layerInLatch.setOn();
 			aclLatch.setOn();
 			controller.open(currentTray);
 		}
 
 		private function feedSheet():void{
 			waiteTraySwitch=false;
-			currentLayer=layerset.getLayer(Layer.LAYER_SHEET);
-			if(!currentLayer){
-				pause('Ошибка выполнения. Слой не определен.');
+			currentLayer=Layer.LAYER_SHEET;//layerset.getLayer(Layer.LAYER_SHEET);
+			var ct:int=traySet.getCurrentTray(currentLayer);//currentLayer.currentTray;
+			if(ct<0){
+				pause('Не назначен лоток для слоя '+traySet.getLayerName(currentLayer));// currentLayer.name);
 				return;
 			}
-			var ct:int=currentLayer.currentTray;
-			if(ct<=0){
-				pause('Не назначен лоток для слоя '+ currentLayer.name);
-				return;
-			}
-			currentTray=ct-1;
+			currentTray=ct;//-1;
 			//set latches
-			layerLatch.layer=currentLayer.id;
-			layerLatch.startingTray=currentTray;
-			layerLatch.setOn();
+			layerInLatch.layer=currentLayer;//.id;
+			layerInLatch.startingTray=currentTray;
+			layerInLatch.setOn();
 			barLatch.setOn();
 			aclLatch.setOn();
 			controller.open(currentTray);
@@ -472,22 +561,29 @@ package com.photodispatcher.tech{
 			if(!l) return; 
 			switch(l.type){
 				case PickerLatch.TYPE_ACL:
-				case PickerLatch.TYPE_BARCODE:
 				case PickerLatch.TYPE_REGISTER:
-					pause('Таймаут ожидания.');
+					pause('Таймаут ожидания. '+l.label+':'+l.caption);
 					break;
-				case PickerLatch.TYPE_LAYER:
-					if(layerLatch.step==0){
-						//layer not in
-						//close current
-						waiteTraySwitch=true;
-						aclLatch.setOn();
-						controller.close(currentTray);
-						currentTray=-1;
-					}else{
-						//layer not out
-						pause('Застрял слой '+currentLayer.name);
+				case PickerLatch.TYPE_BARCODE:
+					if(layerInLatch.isOn || layerOutLatch.isOn || waiteTraySwitch){
+						//sheet is not in or not out; restart
+						//also restart barLatch on waiteTraySwitch complite
+						barLatch.setOn();
+					}else{ 
+						pause('Таймаут ожидания. '+l.label+':'+l.caption);
 					}
+					break;
+				case PickerLatch.TYPE_LAYER_IN:
+					//layer not in
+					//close current
+					waiteTraySwitch=true;
+					aclLatch.setOn();
+					controller.close(currentTray);
+					currentTray=-1;
+					break;
+				case PickerLatch.TYPE_LAYER_OUT:
+					//layer not out
+					pause('Застрял слой '+traySet.getLayerName(currentLayer));// currentLayer.name);
 					break;
 			}
 		}
@@ -495,19 +591,31 @@ package com.photodispatcher.tech{
 		private function onLatchRelease(event:Event):void{
 			if(!isRunning || isPaused) return;
 			var l:PickerLatch=event.target as PickerLatch;
-			if(l && l.type==PickerLatch.TYPE_ACL && waiteTraySwitch){
-				//try next tray
-				waiteTraySwitch=false;
-				var ct:int=currentLayer.nextTray()-1;
-				if(layerLatch.startingTray==ct){
-					pause('Заполните лотки для слоя '+currentLayer.name);
+			if(!l) return; 
+			switch(l.type){
+				case PickerLatch.TYPE_ACL:
+					if(waiteTraySwitch){
+						//try next tray
+						waiteTraySwitch=false;
+						var ct:int=traySet.getNextTray(currentLayer); //currentLayer.nextTray()-1;
+						if(ct<0 || layerInLatch.startingTray==ct){
+							pause('Заполните лотки для слоя '+traySet.getLayerName(currentLayer));// currentLayer.name);
+							return;
+						}
+						currentTray=ct;
+						layerInLatch.setOn();
+						if(currentGroup==COMMAND_GROUP_BOOK_SHEET) barLatch.setOn(); //restart bar latch
+						aclLatch.setOn();
+						controller.open(currentTray);
+						return;
+						break;
+					}
+					/*
+				case PickerLatch.TYPE_LAYER_IN:
+					layerOutLatch.setOn();
 					return;
-				}
-				currentTray=ct;
-				layerLatch.setOn();
-				aclLatch.setOn();
-				controller.open(currentTray);
-				return;
+					break;
+					*/
 			}
 			checkLatches();
 		}
@@ -543,22 +651,27 @@ package com.photodispatcher.tech{
 		private function onControllerMsg(event:ControllerMesageEvent):void{
 			if(!isRunning || isPaused) return;
 			if(event.chanel==0){
-				if(!layerLatch.isOn){
-					pause('Не ожидаемое срабатывание датчика бумаги');
-					return;
-				}
 				if(event.state==1){
 					//layer in
-					if(layerLatch.step==0){
-						layerLatch.forward('Ожидание выхода листа');
+					if(layerInLatch.isOn){
 						aclLatch.setOn();
 						controller.close(currentTray);
 						currentTray=-1;
+						layerOutLatch.setOn();
+						layerInLatch.forward();
+					}else{
+						pause('Не ожидаемое срабатывание '+layerInLatch.label);
+						return;
 					}
-				}else if(layerLatch.step==1){
-					//layer out
-					if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
-					layerLatch.forward();
+				}else{
+					if(layerOutLatch.isOn){
+						//layer out
+						if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
+						layerOutLatch.forward();
+					}else{
+						pause('Не ожидаемое срабатывание '+layerOutLatch.label);
+						return;
+					}
 				}
 			}
 		}
@@ -583,11 +696,15 @@ package com.photodispatcher.tech{
 			var bookNum:int=int(barcode.substr(0,3));
 			var pageNum:int=int(barcode.substr(6,2));
 			if(currSheetIdx==-1){
-				//new register
-				//TODO add template check
 				currPgId=pgId;
 				currBookTot=int(barcode.substr(3,3));
 				currSheetTot=int(barcode.substr(8,2));
+				//template check
+				bdWait=0;
+				bdAttempt=0;
+				bdLatch.setOn();
+				checkOrderParams();
+				//new register
 				register= new TechRegisterPicker(pgId,currBookTot,currSheetTot);
 				register.techPoint=techPoint;
 				register.revers=reversOrder;
@@ -618,6 +735,83 @@ package com.photodispatcher.tech{
 		private function log(msg:String):void{
 			if(logger) logger.log(msg);
 		}
+		
+		private function checkOrderParams():void{
+			if(!currPgId) return;
+			var dao:OrderDAO= new OrderDAO();
+			var o:Order=dao.getExtraInfoByPG(currPgId,true);
+			if(!o){
+				//read lock
+				callDbLate(checkOrderParams);
+				return;
+			}
+			currOrder=o;
+			bdLatch.forward('Проверка заказа');
+			
+			currBookTypeName=getBookTypeName(currOrder.book_type)
+			//check book type
+			if(layerset.book_type!=currOrder.book_type){
+				pause('Тип книги "'+currBookTypeName+'" заказа не соответствует шаблону.');
+				log('! wrong book_type');
+				return;
+			}
+			//check interlayer
+			currInerlayer=interlayerSet.getBySynonym(currOrder.interlayer);
+			if(!currInerlayer){
+				pause('Неизвестный тип прослойки "'+currOrder.interlayer+'"');
+				log('! unknown interlayer');
+				return;
+			}
 
+			//check endpaper
+			var newEp:Endpaper=endpaperSet.getBySynonym(currOrder.endpaper);
+			if(!newEp){
+				pause('Не известный форзац "'+currOrder.endpaper+'"');
+				log('! unknown endpaper');
+				return;
+			}
+			if(newEp.isEmpty){
+				if(!currEndpaper.isEmpty){
+					pause('Уберите форзац "'+currEndpaper.name+'" в начале книги');
+					log('! wrong endpaper');
+					currEndpaper=newEp;
+					return;
+				}
+			}else{
+				var msg:String;
+				if(currEndpaperInTray.id!=newEp.id){
+					if(!currEndpaper.isEmpty) msg='Уберите форзац "'+currEndpaper.name+'" в начале книги'+'\n';
+					msg=msg+'Положите форзац "'+newEp.name+'" в начале книги'+'\n';
+					var tray:int=traySet.getCurrentTray(Layer.LAYER_ENDPAPER);
+					if(tray==-1){
+						msg=msg+'Укажите лоток для Форзацев и загрузите форзацем: "'+newEp.name+'"';
+					}else{
+						msg=msg+'Загрузите лоток № '+(tray+1).toString()+' форзацем: "'+newEp.name+'"';
+					}
+				}else if(currEndpaper.isEmpty){
+					msg='Положите форзац "'+newEp.name+'" в начале книги'+'\n';
+				}
+				if(msg){
+					pause(msg);
+					log('! wrong endpaper');
+					currEndpaper=newEp;
+					return;
+				}
+			}
+			currEndpaper=newEp;
+			bdLatch.forward();
+			//TODO implement check format
+		}
+
+		private function getBookTypeName(bookType:int):String{
+			var result:String;
+			var ac:ArrayCollection=Context.getAttribute('book_typeList') as ArrayCollection;
+			if(ac){
+				var fv:FieldValue=ArrayUtil.searchItem('value',bookType,ac.source) as FieldValue;
+				if(fv) result=fv.label;
+			}
+			if(!result) result='id:'+bookType;
+			return result;
+		}
 	}
 }

@@ -16,19 +16,13 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var id:int=-1;
 		[Bindable]
+		public var subset_type:int=0;
+		[Bindable]
 		public var name:String;
-		[Bindable]
-		public var width:int;
-		[Bindable]
-		public var len:int;
 		[Bindable]
 		public var book_type:int;
 		[Bindable]
 		public var is_pdf:Boolean;
-		[Bindable]
-		public var endpaper:String;
-		[Bindable]
-		public var interlayer:String;
 		[Bindable]
 		public var interlayer_thickness:int;
 
@@ -45,6 +39,7 @@ package com.photodispatcher.model{
 		public function set layerAllocation(value:Array):void{
 			_layerAllocation = value;
 		}
+		/*
 		public function getLayerAllocation(forEdit:Boolean=false, silent:Boolean=false):Array{
 			if(!loaded) return _layerAllocation;
 			if(!_layerAllocation){
@@ -53,7 +48,7 @@ package com.photodispatcher.model{
 			}
 			return _layerAllocation;
 		}
-
+*/
 		private var _sequence1:Array;
 		private var _sequence2:Array;
 		private var _sequence3:Array;
@@ -90,29 +85,38 @@ package com.photodispatcher.model{
 				var dao:LayerSequenceDAO= new LayerSequenceDAO();
 				var arr:Array=dao.getBySet(id,silent);
 				if(!arr) return false;
-				var ag:Array=[[],[],[]];
+				var ag:Array=[[],[],[],[]];
 				var ls:LayerSequence;
 				for each(ls in arr){
-					if(ls.seqlayer!=0 && ls.layer_group>0) (ag[ls.layer_group-1] as Array).push(ls); 
+					if(ls.seqlayer!=0 && ls.layer_group>=0) (ag[ls.layer_group] as Array).push(ls); 
 				}
 				//sort
 				(ag[0] as Array).sortOn('seqorder',Array.NUMERIC);
-				(ag[1] as Array).sortOn('seqorder',Array.NUMERIC);
+				//(ag[1] as Array).sortOn('seqorder',Array.NUMERIC);
 				(ag[2] as Array).sortOn('seqorder',Array.NUMERIC);
+				(ag[3] as Array).sortOn('seqorder',Array.NUMERIC);
 				//set
 				sequenceStart=(ag[0] as Array);
-				sequenceMiddle=(ag[1] as Array);
-				sequenceEnd=(ag[2] as Array);
+				sequenceMiddle=(ag[2] as Array);
+				sequenceEnd=(ag[3] as Array);
 			}
 			return true;
 		}
 
-		private var layersMap:Object;
+		//private var layersMap:Object;
+		private var _prepared:Boolean;
+		public function get prepared():Boolean{
+			return _prepared;
+		}
 		
-		public function prepareTamplate():Boolean{
-			if(!loaded) return false;
+		public function prepareTamplate():void{
+			_prepared=false
+			if(!loaded) return;
+			_prepared=loadSequence(true);
+			/*
 			if(getLayerAllocation(true,true) && loadSequence(true)){
 				layersMap= new Object;
+				//refactor
 				var la:LayerAllocation;
 				var l:Layer;
 				for each(la in layerAllocation){
@@ -130,26 +134,23 @@ package com.photodispatcher.model{
 				return true;
 			}
 			return false;
+			*/
 		}
 		
+		/*
 		public function getLayer(id:int):Layer{
 			return layersMap?(layersMap['l'+id.toString()] as Layer):null;
 		}
+		*/
 
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
 			col= new GridColumn('id'); col.headerText='ID'; col.visible=false; result.addItem(col);
-			col= new GridColumn('name'); col.headerText='Наименование'; result.addItem(col); 
-			col= new GridColumn('width'); col.headerText='Ширина (мм)'; result.addItem(col); 
-			col= new GridColumn('len'); col.headerText='Ширина (мм)'; result.addItem(col);
-			col= new GridColumn('book_type'); col.headerText='Тип книги'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
-			
-			col= new GridColumn('is_pdf'); col.headerText='Полиграфия'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false; result.addItem(col);
-			
-			col= new GridColumn('endpaper'); col.headerText='Форзац'; result.addItem(col); 
-			col= new GridColumn('interlayer'); col.headerText='Прослойка'; result.addItem(col); 
-			col= new GridColumn('interlayer_thickness'); col.headerText='Толщина прослойки (мм)'; result.addItem(col); 
+			col= new GridColumn('name'); col.headerText='Наименование'; col.width=150; result.addItem(col); 
+			col= new GridColumn('book_type'); col.headerText='Тип книги'; col.width=150; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			//col= new GridColumn('is_pdf'); col.headerText='Полиграфия'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false; result.addItem(col);
+			//col= new GridColumn('interlayer_thickness'); col.headerText='Толщина прослойки (мм)'; result.addItem(col); 
 			return result;
 		}
 

@@ -63,7 +63,7 @@
 					order=null;
 				}else{
 					var dao:OrderDAO= new OrderDAO();
-					order=dao.getItem(orderId);
+					order=dao.getItem(orderId,true);
 				}
 				
 				if(order){
@@ -85,7 +85,7 @@
 					logFilterList.source=aa;
 					
 					var soDAO:SuborderDAO= new SuborderDAO();
-					a=soDAO.getByOrder(order.id);
+					a=soDAO.getByOrder(order.id, true);
 					soList.source=a;
 					aa=a.slice();
 					var so:Suborder= new Suborder(); so.ftp_folder=so.src_id='-';
@@ -392,6 +392,27 @@
 					</s:FormItem> 
 					<s:FormItem label="Кол фото">
 						<s:TextInput id="tiFotosNum" text="{order.fotos_num.toString()}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Тип">
+						<s:TextInput text="{order.calc_type}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Обложка">
+						<s:TextInput text="{order.cover}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Формат">
+						<s:TextInput text="{order.format}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Форзац">
+						<s:TextInput text="{order.endpaper}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Прослойка">
+						<s:TextInput text="{order.interlayer}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Углы">
+						<s:TextInput text="{order.corner_type}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Каптал">
+						<s:TextInput text="{order.kaptal}" editable="false" width="150"/>
 					</s:FormItem> 
 				</s:Form>
 				<s:Button label="Сброс" bottom="10" right="10" click="button1_clickHandler(event)"/>

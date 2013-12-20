@@ -116,6 +116,25 @@ package com.photodispatcher.model{
 		public var sync:int;
 		public var is_preload:Boolean;
 
+		//DB extra info
+		[Bindable]
+		public var endpaper:String='';
+		[Bindable]
+		public var interlayer:String='';
+		[Bindable]
+		public var calc_type:String;
+		[Bindable]
+		public var cover:String;
+		[Bindable]
+		public var format:String;
+		[Bindable]
+		public var corner_type:String;
+		[Bindable]
+		public var kaptal:String;
+		//book_type from pringroup 4 TechPicker, filled in OrderDAO.getExtraInfoByPG
+		public var book_type:int; 
+		
+		//childs
 		public var suborders:Array;
 
 		public function get hasSuborders():Boolean{
@@ -222,6 +241,15 @@ package com.photodispatcher.model{
 			raw.ftp_folder=ftp_folder;
 			raw.state=state;
 			raw.errCount=errCount;
+			//extra
+			raw.calc_type=calc_type;
+			raw.corner_type=corner_type;
+			raw.cover=cover;
+			raw.endpaper=endpaper;
+			raw.format=format;
+			raw.interlayer=interlayer;
+			raw.kaptal=kaptal;
+
 			//raw.state_date=state_date;
 			var arr:Array=[];
 			var pg:PrintGroup;
@@ -255,7 +283,15 @@ package com.photodispatcher.model{
 			order.state=raw.state;
 			order.errCount=raw.errCount;
 			//raw.state_date=state_date;
-			
+			//extra
+			order.calc_type=raw.calc_type;
+			order.corner_type=raw.corner_type;
+			order.cover=raw.cover;
+			order.endpaper=raw.endpaper;
+			order.format=raw.format;
+			order.interlayer=raw.interlayer;
+			order.kaptal=raw.kaptal;
+
 			var pgRaw:Object;
 			var pg:PrintGroup;
 			if(raw.hasOwnProperty('printGroups') && raw.printGroups is Array){

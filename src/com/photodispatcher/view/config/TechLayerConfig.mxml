@@ -9,53 +9,56 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.Endpaper;
 			import com.photodispatcher.model.Layer;
 			import com.photodispatcher.model.LayerAllocation;
+			import com.photodispatcher.model.LayerGroup;
 			import com.photodispatcher.model.LayerSequence;
 			import com.photodispatcher.model.Layerset;
+			import com.photodispatcher.model.SynonymCommon;
 			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.dao.DictionaryCommonDAO;
+			import com.photodispatcher.model.dao.DictionaryDAO;
+			import com.photodispatcher.model.dao.EndpaperDAO;
 			import com.photodispatcher.model.dao.LayerAllocationDAO;
 			import com.photodispatcher.model.dao.LayerDAO;
 			import com.photodispatcher.model.dao.LayerSequenceDAO;
 			import com.photodispatcher.model.dao.LayersetDAO;
+			import com.photodispatcher.tech.picker.TechPicker;
 			
 			import flash.sampler.NewObjectSample;
+			
+			import spark.events.GridItemEditorEvent;
+			import spark.events.GridSelectionEvent;
 			
 			[Bindable]
 			private var layersAC:ArrayCollection;
 			[Bindable]
 			private var templatesAC:ArrayCollection;
 			[Bindable]
-			public var allocAC:ArrayCollection= new ArrayCollection();
+			private var endpaperAC:ArrayCollection;
 			[Bindable]
-			private var lGroupAC:ArrayCollection= new ArrayCollection();
+			private var endpaperSynAC:ArrayCollection;
+			[Bindable]
+			private var lGroupAC:ArrayCollection;//= new ArrayCollection();
 			[Bindable]
 			private var currLGroupIdx:int=-1;
 			[Bindable]
 			public var seqAC:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			public var synAC:ArrayCollection= new ArrayCollection();
 
 			[Bindable]
 			private var currTemplate:Object;
 
 			private function init():void{
 				var dao:LayerDAO= new LayerDAO();
-				layersAC= dao.findAll(false,true);
+				layersAC= dao.findAll();
 				var tDao:LayersetDAO= new LayersetDAO();
 				templatesAC=tDao.findAll();
 				lGroupAC= Context.getAttribute('layer_groupList');
 				if(lGroupAC && lGroupAC.length>0) currLGroupIdx=0;
 				//seqAC.filterFunction= filterSeqAc;
-			}
-			
-			private function detectState():void{
-				switch(tbView.selectedIndex){
-					case 0:
-						currentState='templates';
-						break;
-					case 1:
-						currentState='layers';
-						break;
-				}
 			}
 			
 			protected function btAddLayer_clickHandler(event:MouseEvent):void{
@@ -79,7 +82,12 @@
 
 			protected function btAddLayerset_clickHandler(event:MouseEvent):void{
 				var ls:Layerset= new Layerset();
-				ls.name='Новый шаблон';
+				if(currentState=='templates'){
+					ls.name='Новый шаблон';
+				}else{
+					ls.name='Новая прослойка';
+					ls.subset_type=1;
+				}
 				templatesAC.addItem(ls);
 				currTemplate=ls;
 			}
@@ -98,31 +106,49 @@
 			protected function btEditLayerset_clickHandler(event:MouseEvent):void{
 				var ls:Layerset= currTemplate as Layerset;
 				if (!ls){
-					allocAC.source=[];
+					//allocAC.source=[];
 					return;
 				}
-				allocAC= new ArrayCollection(ls.getLayerAllocation(true));
-				//allocAC.source=ls.getLayerAllocation(true);
-				if(layerAllocationGrid) layerAllocationGrid.refresh();
+				var arr:Array=[];
+				var lg:LayerGroup;
+				var newState:String;
+				if(currentState=='templates'){
+					newState='template_edit';
+					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_START; lg.name='Начало книги';
+					arr.push(lg);
+					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_END; lg.name='Конец книги';
+					arr.push(lg);
+				}else{
+					newState='interlayers_edit';
+					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_BETWEEN_SHEET; lg.name='Между разворотами';
+					arr.push(lg);
+					var dao:DictionaryCommonDAO= new DictionaryCommonDAO();
+					var sarr:Array= dao.getLayersetSynonyms(ls.id);
+					synAC=new ArrayCollection(sarr);
+				}
+				lGroupAC= new ArrayCollection(arr);
+				if(lGroupAC && lGroupAC.length>0) currLGroupIdx=0;
+				
 				if(!ls.loadSequence()) return;
 				showSequence();
-				chekTemplate();
-				currentState='template_edit';
+				//chekTemplate();
+				currentState=newState;
 			}
 			
 			private function showSequence():void{
 				var a:Array=[];
 				var ls:Layerset= currTemplate as Layerset;
 				var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
-				if(ls){
-					switch(idx){
-						case 0:
+				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup; 
+				if(ls && lg){
+					switch(lg.id){
+						case TechPicker.COMMAND_GROUP_BOOK_START:
 							a=ls.sequenceStart;
 							break;
-						case 1:
+						case TechPicker.COMMAND_GROUP_BOOK_BETWEEN_SHEET:
 							a=ls.sequenceMiddle;
 							break;
-						case 2:
+						case TechPicker.COMMAND_GROUP_BOOK_END:
 							a=ls.sequenceEnd;
 							break;
 					}
@@ -136,7 +162,10 @@
 				if(!ls) return;
 				var newIt:LayerSequence= new LayerSequence();
 				newIt.layerset=ls.id;
-				newIt.layer_group=currLGroupIdx+1;
+				var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
+				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup;
+				if(!lg) return;
+				newIt.layer_group=lg.id;
 				var seq:int=1;
 				if(seqAC && seqAC.source && seqAC.source.length>0){
 					var it:LayerSequence=seqAC.source[seqAC.source.length-1] as LayerSequence; 
@@ -155,6 +184,8 @@
 			}
 			*/
 			
+			/*
+
 			[Bindable]
 			private var templErr:String;
 			
@@ -170,6 +201,7 @@
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
 				dao.updateBatch(allocAC.source);
 			}
+			*/
 			
 			protected function btDelSeq_clickHandler(event:MouseEvent):void{
 				if(seqGrid && seqGrid.currentItem){
@@ -182,76 +214,224 @@
 			
 			protected function btSaveSeq_clickHandler(event:MouseEvent):void{
 				var dao:LayerSequenceDAO= new LayerSequenceDAO();
-				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
+				//dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
 				dao.updateBatch(seqAC.source);
 			}
 			
+			/*
 			private function onSeqComplie(evt:AsyncSQLEvent):void{
 				var dao:BaseDAO= evt.target as BaseDAO;
 				dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
 				chekTemplate();
+			}
+			*/
+			
+			private function detectState():void{
+				var tDao:LayersetDAO= new LayersetDAO();
+				switch(tbView.selectedIndex){
+					case 0:
+						templatesAC=tDao.findAll();
+						currentState='templates';
+						break;
+					case 1:
+						templatesAC=tDao.findAll(1);
+						currentState='interlayers';
+						break;
+					case 2:
+						var apDao:EndpaperDAO= new EndpaperDAO();
+						endpaperAC=apDao.findAll();
+						currentState='endpaper';
+						break;
+					case 3:
+						currentState='layers';
+						break;
+				}
+			}
+			
+			protected function btAddSynonym_clickHandler(event:MouseEvent):void{
+				var ls:Layerset= currTemplate as Layerset;
+				if(!ls) return;
+				var newIt:SynonymCommon= new SynonymCommon();
+				newIt.item_id=ls.id;
+				synAC.addItem(newIt);
+				synGrid.currentItem=newIt;
+			}
+			
+			protected function btSaveSynonym_clickHandler(event:MouseEvent):void{
+				var dao:DictionaryCommonDAO;
+				var ls:SynonymCommon;
+				for each (ls in synAC){
+					if(ls.changed || !ls.loaded){
+						dao= new DictionaryCommonDAO();
+						dao.saveLayersetSynonym(ls);
+					}
+				}
+			}
+			
+			protected function endpaperGrid_selectionChangeHandler(event:GridSelectionEvent):void{
+				var ep:Endpaper=endpaperGrid.currentItem as Endpaper;
+				var arr:Array;
+				if(ep && ep.loaded){
+					var dao:DictionaryCommonDAO= new DictionaryCommonDAO();
+					arr=dao.getEndpaperSynonyms(ep.id);
+				}
+				endpaperSynAC= new ArrayCollection(arr);
+			}
+			
+			protected function btAddEP_clickHandler(event:MouseEvent):void{
+				var ep:Endpaper= new Endpaper();
+				ep.name='Новый форзац';
+				endpaperAC.addItem(ep);
+				endpaperGrid.currentItem=ep;
+				endpaperSynAC= new ArrayCollection();
+			}
+			
+			protected function btSaveEP_clickHandler(event:MouseEvent):void{
+				var dao:EndpaperDAO;
+				var ep:Endpaper;
+				for each(ep in endpaperAC){
+					if(ep.changed || !ep.loaded){
+						dao = new EndpaperDAO();
+						dao.save(ep);
+					}
+				}
+			}
+			
+			protected function btAddEPSynonym_clickHandler(event:MouseEvent):void{
+				var ep:Endpaper=endpaperGrid.currentItem as Endpaper;
+				if(!ep || !ep.loaded) return;
+				var newIt:SynonymCommon= new SynonymCommon();
+				newIt.item_id=ep.id;
+				endpaperSynAC.addItem(newIt);
+				endpaperSynGrid.currentItem=newIt;
+			}
+			
+			protected function btSaveEPSynonym_clickHandler(event:MouseEvent):void{
+				var ep:Endpaper=endpaperGrid.currentItem as Endpaper;
+				if(!ep || !ep.loaded) return;
+				var dao:DictionaryCommonDAO;
+				var ls:SynonymCommon;
+				for each (ls in endpaperSynAC){
+					if(ls.changed || !ls.loaded){
+						dao= new DictionaryCommonDAO();
+						dao.saveEndpaperSynonym(ls);
+					}
+				}
 			}
 			
 		]]>
 	</fx:Script>
 	
 	<s:states>
-		<s:State name="templates"/>
+		<s:State name="templates" stateGroups="temp_view"/>
+		<s:State name="interlayers" stateGroups="temp_view"/>
 		<s:State name="layers"/>
-		<s:State name="template_edit"/>
+		<s:State name="endpaper"/>
+		<s:State name="template_edit" stateGroups="temp_edit"/>
+		<s:State name="interlayers_edit" stateGroups="temp_edit"/>
 	</s:states>
 
 	<s:VGroup width="100%" height="100%" gap="5">
 		<s:TabBar id="tbView" height="20" change="{detectState()}">
 			<mx:ArrayCollection>
 				<fx:String>Шаблоны</fx:String> 
+				<fx:String>Прослойки</fx:String> 
+				<fx:String>Форзацы</fx:String> 
 				<fx:String>Слои</fx:String> 
 			</mx:ArrayCollection>
 		</s:TabBar>
 		<s:Spacer height="5"/>
 		<config:ItemsGrid id="layersGrid" includeIn="layers" editable="true" currentData="{layersAC}" currentColumns="{Layer.gridColumns()}" 
-						  width="200" height="100%"/>
+						  width="200" height="100%" >
+			<config:lockRows>
+				<fx:Object >
+					<fx:parametr>id</fx:parametr>
+					<fx:values>[0,1,2]</fx:values>
+				</fx:Object>
+			</config:lockRows>
+		</config:ItemsGrid>
 		<s:HGroup gap="10" includeIn="layers" width="200" horizontalAlign="right">
 			<s:Button id="btAddLayer" label="Добавить" click="btAddLayer_clickHandler(event)"/>
 			<s:Button id="btSaveLayers" label="Сохранить" click="btSaveLayers_clickHandler(event)"/>
 		</s:HGroup>
-		<config:ItemsGrid id="templatesGrid" includeIn="templates" editable="true" 
-						  currentData="{templatesAC}" currentColumns="{Layerset.gridColumns()}"
-						  currentItem="@{currTemplate}"
-						  width="100%" height="100%"/>
-		<s:HGroup gap="10" includeIn="templates" width="100%" horizontalAlign="right">
-			<s:Button id="btAddLayerset" label="Добавить" click="btAddLayerset_clickHandler(event)"/>
-			<s:Button id="btSaveLayersets" label="Сохранить" click="btSaveLayersets_clickHandler(event)"/>
-			<s:Button id="btEditLayerset" label="Листоподборка" enabled="{currTemplate &amp;&amp; currTemplate.loaded}"
-					  click="btEditLayerset_clickHandler(event)"/>
+		
+		<s:VGroup gap="5" height="100%" includeIn="temp_view">
+			<config:ItemsGrid id="templatesGrid" editable="true" 
+							  currentData="{templatesAC}" currentColumns="{Layerset.gridColumns()}"
+							  currentItem="@{currTemplate}"
+							  height="100%"/>
+			<s:HGroup gap="10" width="100%" horizontalAlign="right">
+				<s:Button id="btAddLayerset" label="Добавить" click="btAddLayerset_clickHandler(event)"/>
+				<s:Button id="btSaveLayersets" label="Сохранить" click="btSaveLayersets_clickHandler(event)"/>
+				<s:Button id="btEditLayerset" label="Редактировать" enabled="{currTemplate &amp;&amp; currTemplate.loaded}"
+						  click="btEditLayerset_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:HGroup gap="10" height="100%" width="100%" includeIn="endpaper">
+			<s:VGroup gap="5" height="100%">
+				<config:ItemsGrid id="endpaperGrid" editable="true" currentColumns="{Endpaper.gridColumns()}" currentData="{endpaperAC}"
+								  selectionChange="endpaperGrid_selectionChangeHandler(event)"
+								  height="100%" width="250" >
+					<config:lockRows>
+						<fx:Object >
+							<fx:parametr>id</fx:parametr>
+							<fx:values>[0]</fx:values>
+						</fx:Object>
+					</config:lockRows>
+				</config:ItemsGrid>
+				<s:HGroup gap="10" width="100%" horizontalAlign="right">
+					<s:Button id="btAddEP" label="Добавить" click="btAddEP_clickHandler(event)"/>
+					<s:Button id="btSaveEP" label="Сохранить" click="btSaveEP_clickHandler(event)" />
+				</s:HGroup>
+			</s:VGroup>
+			<s:VGroup gap="5" height="100%">
+				<s:Label text="Синонимы" fontWeight="bold"/>
+				<config:ItemsGrid id="endpaperSynGrid" editable="true" 
+								  currentData="{endpaperSynAC}" currentColumns="{SynonymCommon.gridColumns()}"
+								  width="250" height="100%"/>
+				<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
+					<s:Button id="btAddEPSynonym" label="Добавить" click="btAddEPSynonym_clickHandler(event)"/>
+					<s:Button id="btSaveEPSynonym" label="Сохранить" click="btSaveEPSynonym_clickHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
 		</s:HGroup>
-		<s:HGroup gap="15"  includeIn="template_edit" 
-				  paddingLeft="10" width="100%" height="450" verticalAlign="bottom">
-			<s:VGroup width="200" height="100%">
+		<s:Label text="{currTemplate.name}" fontWeight="bold" includeIn="temp_edit"/>
+		<s:HGroup gap="15" includeIn="temp_edit"  paddingLeft="10" width="100%" height="450" verticalAlign="bottom">
+			<!--<s:VGroup width="200" height="100%">
 				<s:Label text="Назначение лотков" fontWeight="bold"/>
 				<config:ItemsGrid id="layerAllocationGrid" editable="true" 
 								  currentData="{allocAC}" currentColumns="{LayerAllocation.gridColumns()}"
 								  width="200" requestedRowCount="8"/>
 				<s:Button id="btSaveLayerAllocation" label="Сохранить" click="btSaveLayerAllocation_clickHandler(event)"/>
+			</s:VGroup>-->
+			<s:VGroup height="100%" width="250" gap="10" includeIn="interlayers_edit">
+				<s:Label text="Синонимы" fontWeight="bold"/>
+				<config:ItemsGrid id="synGrid" editable="true" 
+								  currentData="{synAC}" currentColumns="{SynonymCommon.gridColumns()}"
+								  width="100%" height="100%"/>
+				<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
+					<s:Button id="btAddSynonym" label="Добавить" click="btAddSynonym_clickHandler(event)"/>
+					<s:Button id="btSaveSynonym" label="Сохранить" click="btSaveSynonym_clickHandler(event)"/>
+				</s:HGroup>
 			</s:VGroup>
-			<s:VGroup height="100%" gap="10">
+			<s:VGroup height="100%" width="250" gap="10">
 				<s:Label text="Подборка" fontWeight="bold"/>
-				<s:HGroup gap="10" verticalAlign="baseline" height="100%">
-					<s:VGroup gap="5" height="100%">
-						<s:HGroup gap="5" verticalAlign="baseline">
+				<!--<s:HGroup gap="10" verticalAlign="baseline" height="100%">-->
+					<!--<s:VGroup gap="5" height="100%">-->
+						<s:HGroup gap="5" verticalAlign="baseline" width="100%">
 							<s:Label text="Группа"/>
-							<s:ComboBox id="cbGroup" dataProvider="{lGroupAC}" selectedIndex="@{currLGroupIdx}" change="{showSequence()}"/>
+							<s:ComboBox id="cbGroup" dataProvider="{lGroupAC}" selectedIndex="@{currLGroupIdx}" labelField="name" change="{showSequence()}" width="100%"/>
 						</s:HGroup>
-						<s:Spacer height="5"/>
+						<!--<s:Spacer height="5"/>
 						<s:Label text="Ошибки" fontWeight="bold" width="100%"/>
 						<s:TextArea id="taErrors" text="{templErr}" width="100%" height="100%" editable="false" 
 									borderVisible="false"
-									contentBackgroundAlpha="0" color="red"/>
-					</s:VGroup>
+									contentBackgroundAlpha="0" color="red"/>-->
+					<!--</s:VGroup>-->
 					<config:ItemsGrid id="seqGrid" editable="true" 
 									  currentData="{seqAC}" currentColumns="{LayerSequence.gridColumns()}"
-									  width="200" height="100%"/>
-				</s:HGroup>
+									  width="100%" height="100%"/>
+				<!--</s:HGroup>-->
 				<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
 					<s:Button id="btAddSeq" label="Добавить" click="btAddSeq_clickHandler(event)"/>
 					<s:Button id="btDelSeq" label="Удалить"  click="btDelSeq_clickHandler(event)"/>

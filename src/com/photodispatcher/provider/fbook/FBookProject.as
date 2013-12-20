@@ -5,6 +5,7 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.fotakrama.data.ProjectBook;
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
+	import com.akmeful.fotocanvas.data.FotocanvasProject;
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.fotokniga.book.data.BookCoverPrintType;
 	import com.akmeful.fotokniga.book.data.BookPage;
@@ -67,6 +68,10 @@ package com.photodispatcher.provider.fbook{
 						}
 					}
 					break;
+				case FotocanvasProject.PROJECT_TYPE:
+					var cc:FotocanvasProject= new FotocanvasProject('','',raw);
+					_project=cc;
+					break;
 				case MagnetProject.PROJECT_TYPE:
 					//magnet = createItem(rawData) as MagnetProject;
 					var mp:MagnetProject= new MagnetProject(raw);
@@ -113,6 +118,9 @@ package com.photodispatcher.provider.fbook{
 				case MagnetProject.PROJECT_TYPE:
 					return 'Магнит';
 					break;
+				case FotocanvasProject.PROJECT_TYPE:
+					return 'Холст';
+					break;
 				case PROJECT_TYPE_BCARD:
 					return 'Визитка';
 					break;
@@ -125,10 +133,23 @@ package com.photodispatcher.provider.fbook{
 			if(!project) return 0;
 			switch(type){
 				case Book.PROJECT_TYPE:
-					return BookSynonym.BOOK_TYPE_BOOK;
-					break;
+					switch((project as Book).template.cover.printType){
+						case BookCoverPrintType.PHOTO_EXTENDED:
+							return BookSynonym.BOOK_TYPE_JOURNAL;
+							break;
+						case BookCoverPrintType.EMPTY:
+						case BookCoverPrintType.PARTIAL:
+							return BookSynonym.BOOK_TYPE_LEATHER;
+							break;
+						default: //case BookCoverPrintType.PHOTO:
+							return BookSynonym.BOOK_TYPE_BOOK;
+							break;
+					}
 				case FotocalendarProject.PROJECT_TYPE:
 					return BookSynonym.BOOK_TYPE_CALENDAR;
+					break;
+				case FotocanvasProject.PROJECT_TYPE:
+					return BookSynonym.BOOK_TYPE_CANVAS;
 					break;
 				case MagnetProject.PROJECT_TYPE:
 					return BookSynonym.BOOK_TYPE_MAGNET;
@@ -156,6 +177,9 @@ package com.photodispatcher.provider.fbook{
 				case PROJECT_TYPE_BCARD:
 					return (project as CardProject).template.paperType.printId;
 					break;
+				case FotocanvasProject.PROJECT_TYPE:
+					return (project as FotocanvasProject).template.paperType.printId;
+					break;
 				default:
 					return '1';
 			}
@@ -175,6 +199,9 @@ package com.photodispatcher.provider.fbook{
 					break;
 				case PROJECT_TYPE_BCARD:
 					return (project as CardProject).template.printAlias;
+					break;
+				case FotocanvasProject.PROJECT_TYPE:
+					return (project as FotocanvasProject).template.printAlias;
 					break;
 				default:
 					return '';
@@ -198,17 +225,22 @@ package com.photodispatcher.provider.fbook{
 		
 		public function get bookPages():ArrayCollection{
 			if(!project) return null;
+			return (project as ProjectBook).pages;
+			/*
 			switch(type){
 				case Book.PROJECT_TYPE:
 				case FotocalendarProject.PROJECT_TYPE:
 				case MagnetProject.PROJECT_TYPE:
+				case FotocanvasProject.PROJECT_TYPE:
 				case PROJECT_TYPE_BCARD:
 					return (project as ProjectBook).pages;
 					break;
 				default:
 					return null;
 			}
+			*/
 		}
+		
 		
 		public function adjustPageSizes(pageNum:int,pageSize:Point,pageOffset:Point):void{
 			if(!project) return;
@@ -233,6 +265,13 @@ package com.photodispatcher.provider.fbook{
 					var cp:FotocalendarProject=(project as FotocalendarProject);
 					pageSize.x=cp.template.format.realWidth;
 					pageSize.y=cp.template.format.realHeight;
+					pageOffset.x=0;
+					pageOffset.y=0;
+					break;
+				case FotocanvasProject.PROJECT_TYPE:
+					var ccp:FotocanvasProject=(project as FotocanvasProject);
+					pageSize.x=ccp.template.format.realWidth;
+					pageSize.y=ccp.template.format.realHeight;
 					pageOffset.x=0;
 					pageOffset.y=0;
 					break;
@@ -286,12 +325,12 @@ package com.photodispatcher.provider.fbook{
 		public function getPixelSise(bookPart:int=0):Point{
 			var result:Point;
 			var page:PageData;
-			if(bookType==BookSynonym.BOOK_TYPE_BOOK){
+			if(bookType==BookSynonym.BOOK_TYPE_BOOK || bookType==BookSynonym.BOOK_TYPE_JOURNAL || bookType==BookSynonym.BOOK_TYPE_LEATHER){
 				page=getCoverPage();
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK){
 					page=projectPages[1] as PageData;
 				}else if(bookPart==BookSynonym.BOOK_PART_COVER){
-					if(isPageSliced(0)) page= null;
+					if(isPageSliced(0) || bookType==BookSynonym.BOOK_TYPE_LEATHER) page= null;
 				}else if(bookPart==BookSynonym.BOOK_PART_INSERT){
 					if(page && isPageSliced(0)) return page.getSliceSize();
 					page=null;
@@ -351,6 +390,73 @@ package com.photodispatcher.provider.fbook{
 			return '';
 		}
 		
+		public function get formatName():String{
+			if(!project) return '';
+			var result:String='';
+			switch(type){
+				case Book.PROJECT_TYPE:
+					result=(project as Book).template.format.name;
+					break;
+				case FotocalendarProject.PROJECT_TYPE:
+					result=(project as FotocalendarProject).template.format.name;
+					break;
+				case MagnetProject.PROJECT_TYPE:
+					result=(project as MagnetProject).template.format.name;
+					break;
+				case PROJECT_TYPE_BCARD:
+					result=(project as CardProject).template.format.name;
+					break;
+				case FotocanvasProject.PROJECT_TYPE:
+					result=(project as FotocanvasProject).template.format.name;
+					break;
+			}
+			return result?result:'';
+		}
+
+		public function get coverName():String{
+			if(!project) return '';
+			var result:String='';
+			switch(type){
+				case Book.PROJECT_TYPE:
+					result=(project as Book).template.cover.name;
+					break;
+			}
+			return result?result:'';
+		}
+
+		public function get interlayerName():String{
+			if(!project) return '';
+			var result:String='';
+			switch(type){
+				case Book.PROJECT_TYPE:
+					if((project as Book).template.interlayer) result=(project as Book).template.interlayer.name;
+					break;
+			}
+			return result?result:'';
+		}
+
+		public function get endpaperName():String{
+			if(!project) return '';
+			var result:String='';
+			switch(type){
+				case Book.PROJECT_TYPE:
+					if((project as Book).template.endpaper) result=(project as Book).template.endpaper.name;
+					break;
+			}
+			return result?result:'';
+		}
+
+		public function get cornerTypeName():String{
+			if(!project) return '';
+			var result:String='';
+			switch(type){
+				case Book.PROJECT_TYPE:
+					if((project as Book).template.corner) result=(project as Book).template.corner.name;
+					break;
+			}
+			return result?result:'';
+		}
+
 		public function toRaw():Object{
 			var raw:Object= new Object;
 			var arr:Array=[];

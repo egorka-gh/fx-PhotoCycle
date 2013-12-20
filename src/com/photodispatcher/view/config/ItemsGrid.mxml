@@ -2,12 +2,19 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Metadata>
+		[Event(name="selectionChange", type="spark.events.GridSelectionEvent")]
+	</fx:Metadata>
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.util.ArrayUtil;
+			
 			import mx.collections.ArrayCollection;
 			import mx.collections.IList;
 			
 			import spark.events.GridItemEditorEvent;
+			import spark.events.GridSelectionEvent;
+			import spark.events.GridSortEvent;
 			
 			private var _currentData:ArrayCollection;
 			[Bindable]
@@ -35,9 +42,15 @@
 			[Bindable]
 			public var currentItem:Object;
 			[Bindable]
+			public var currentIndex:int;
+			[Bindable]
 			public var editable:Boolean;
 			[Bindable]
 			public var requestedRowCount:int=-1;
+			[Bindable]
+			public var lockRows:Object;// obj  {parametr:'paramName', values:[array,of,vals]}
+			
+			public var disableSorting:Boolean=false;
 		
 			protected function dgItems_gridItemEditorSessionSaveHandler(event:GridItemEditorEvent):void{
 				if(dgItems.selectedItem){
@@ -54,13 +67,36 @@
 
 			}
 			
+			protected function dgItems_gridItemEditorSessionStartingHandler(event:GridItemEditorEvent):void{
+				if(lockRows && 
+					lockRows.hasOwnProperty('parametr') && 
+					lockRows.hasOwnProperty('values') && 
+					(lockRows['values']as Array) &&
+					dgItems.selectedItem &&
+					dgItems.selectedItem.hasOwnProperty(lockRows['parametr'])){
+						if((lockRows['values']as Array).indexOf(dgItems.selectedItem[lockRows['parametr']])!=-1) event.preventDefault();
+				}
+			}
+			
+			protected function dgItems_selectionChangeHandler(event:GridSelectionEvent):void{
+				dispatchEvent(event);
+			}
+			
+			protected function dgItems_sortChangingHandler(event:GridSortEvent):void{
+				if(disableSorting) event.preventDefault();
+			}
+			
 		]]>
 	</fx:Script>
 
 	<s:DataGrid id="dgItems" editable="{editable}" requestedRowCount="{requestedRowCount}"
-				width="100%" height="100%" selectedItem="@{currentItem}"
+				width="100%" height="100%" selectedItem="@{currentItem}" selectedIndex="@{currentIndex}"
 				dataProvider="{currentData}" locale="ru_RU" columns="{currentColumns}"
-				gridItemEditorSessionSave="dgItems_gridItemEditorSessionSaveHandler(event)">
+				gridItemEditorSessionSave="dgItems_gridItemEditorSessionSaveHandler(event)"
+				gridItemEditorSessionStarting="dgItems_gridItemEditorSessionStartingHandler(event)"
+				selectionChange="dgItems_selectionChangeHandler(event)"
+				sortChanging="dgItems_sortChangingHandler(event)"
+				>
 	</s:DataGrid>
 
 </s:Group>

@@ -16,6 +16,19 @@ package com.photodispatcher.model.dao{
 			return arr;
 		}
 
+		private static var extraJMap:Object; 
+		public static function getOrderExtraJson(sourceType:int):Array{
+			if(!extraJMap) extraJMap=new Object();
+			var arr:Array=extraJMap[sourceType.toString()] as Array;
+			if(!arr){
+				//load
+				var dao:AttrJsonMapDAO= new AttrJsonMapDAO();
+				arr=dao.getOrderExtraMapBySourceType(sourceType);
+				if(arr) extraJMap[sourceType.toString()]=arr;
+			}
+			return arr;
+		}
+
 		/**
 		 * 
 		 * @param sourceType
@@ -24,8 +37,15 @@ package com.photodispatcher.model.dao{
 		 */
 		private function getOrderMapBySourceType(sourceType:int,silent:Boolean=true):Array{
 			runSelect('SELECT jm.json_key, at.field, at.list, at.persist'+
-									' FROM config.attr_json_map jm INNER JOIN config.attr_type at ON jm.attr_pt=at.id'+
-									' WHERE jm.src_type=? AND at.attr_fml=2',[sourceType],silent);
+				' FROM config.attr_json_map jm INNER JOIN config.attr_type at ON jm.attr_pt=at.id'+
+				' WHERE jm.src_type=? AND at.attr_fml=2',[sourceType],silent);
+			return itemsArray;
+		}
+
+		private function getOrderExtraMapBySourceType(sourceType:int,silent:Boolean=true):Array{
+			runSelect('SELECT jm.json_key, at.field, at.list, at.persist'+
+				' FROM config.attr_json_map jm INNER JOIN config.attr_type at ON jm.attr_pt=at.id'+
+				' WHERE jm.src_type=? AND at.attr_fml=3',[sourceType],silent);
 			return itemsArray;
 		}
 

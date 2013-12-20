@@ -38,6 +38,8 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var font_size:int=0;
 		[Bindable]
+		public var font_offset:String='+500+0';
+		[Bindable]
 		public var notching:int=0;
 		[Bindable]
 		public var stroke:int=0;

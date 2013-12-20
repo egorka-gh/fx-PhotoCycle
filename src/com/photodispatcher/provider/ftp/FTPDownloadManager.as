@@ -282,7 +282,7 @@ package com.photodispatcher.provider.ftp{
 				if(order){
 					if(order.state==OrderState.FTP_WEB_OK && result!=0) result=1;//cnn 4 list
 					if(order.state<0 && !order.exceedErrLimit && result!=0) result=1;//cnn 4 list (reload)
-					if(order.state==OrderState.FTP_LIST && !listApplicant && result!=0) result=1;//cnn 4 list (list canceled)
+					if(order.state==OrderState.FTP_LIST && !listApplicant) result=1;//cnn 4 list (list canceled)
 					if(order.state==OrderState.FTP_LIST && listApplicant && listApplicant.id==order.id) result=0;//list in process (wait till comlite)
 					if(order.state==OrderState.FTP_LOAD && order.ftpQueue){
 						for each(ftpFile in order.ftpQueue){
@@ -306,7 +306,9 @@ package com.photodispatcher.provider.ftp{
 				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FETCH_NEXT_EVENT));
 			}
 			*/
-			if(!startTask(cnn)) checkQueue();
+			startTask(cnn);
+			/*if(!startTask(cnn))*/
+			checkQueue();
 		}
 
 		private function startTask(connection:FtpTask=null):Boolean{

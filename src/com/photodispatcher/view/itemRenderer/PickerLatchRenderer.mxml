@@ -5,7 +5,7 @@
 				>
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.tech.PickerLatch;
+			import com.photodispatcher.tech.picker.PickerLatch;
 
 			[Bindable]
 			private var latch:PickerLatch;

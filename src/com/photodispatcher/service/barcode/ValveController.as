@@ -246,7 +246,7 @@ package com.photodispatcher.service.barcode{
 			return result;
 		}
 		
-		private function log(msg:String):void{
+		protected function log(msg:String):void{
 			if(logger) logger.log(msg.replace(String.fromCharCode(sufix), "'hex:"+sufix.toString(16)+"'"));
 		}
 	}

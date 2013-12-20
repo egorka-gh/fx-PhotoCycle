@@ -1,8 +1,6 @@
 package com.photodispatcher.model.dao{
-	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.FieldValue;
 	import com.photodispatcher.model.OrderState;
-	import com.photodispatcher.model.Source;
 	
 	import mx.collections.ArrayCollection;
 
@@ -85,7 +83,7 @@ package com.photodispatcher.model.dao{
 		 */
 		public static function translateWord(sourceType:int, word:String, field:String):FieldValue{
 			if(!synonymMap){
-				if(!initSynonymMap()) throw new Error('Блокировка чтения (translatePath)',OrderState.ERR_READ_LOCK);
+				if(!initSynonymMap()) throw new Error('Блокировка чтения (translateWord)',OrderState.ERR_READ_LOCK);
 			}
 			//var result:FieldValue;
 			if(!word || !field) return null;
@@ -230,11 +228,11 @@ package com.photodispatcher.model.dao{
 		public function getTechLayerValueList(includeDefault:Boolean=true):ArrayCollection{
 			var sql:String;
 			
-			if(includeDefault){
+			//if(includeDefault){
 				sql='SELECT id value, name label FROM config.layer ORDER BY id';
-			}else{
-				sql='SELECT id value, name label FROM config.layer WHERE id!=1 ORDER BY id';
-			}
+			//}else{
+			//	sql='SELECT id value, name label FROM config.layer WHERE id!=1 ORDER BY id';
+			//}
 			runSelect(sql);
 			return itemsList;
 		}

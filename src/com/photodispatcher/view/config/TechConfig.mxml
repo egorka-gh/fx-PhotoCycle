@@ -16,7 +16,7 @@
 			private var conf:AppConfig;
 			private var confDAO:AppConfigDAO;
 			[Bindable]
-			private var barColors:Array= ['0x000000', '0xFF0000','0x00FF00', '0x0000FF', '0xFFFF00', '0x00FFFF', '0xFF00FF'];
+			private var barColors:Array= ['0x00a651','0x00aeef','0xfff200','0x000000', '0xFF0000','0x00FF00', '0x0000FF', '0xFFFF00', '0x00FFFF', '0xFF00FF'];
 		
 			private function init():void{
 				confDAO=new AppConfigDAO();

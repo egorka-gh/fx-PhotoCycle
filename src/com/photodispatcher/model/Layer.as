@@ -6,6 +6,7 @@ package com.photodispatcher.model{
 	public class Layer extends DBRecord{
 		public static const LAYER_EMPTY:int=0;
 		public static const LAYER_SHEET:int=1;
+		public static const LAYER_ENDPAPER:int=2;
 
 		
 		//db fileds
@@ -14,6 +15,7 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var name:String;
 		
+		/*
 		//runtime
 		private var currentTrayIdx:int=-1;
 		private var trays:Array;
@@ -35,7 +37,7 @@ package com.photodispatcher.model{
 			if(currentTrayIdx<0) currentTrayIdx=0;
 			trays.push(num);
 		}
-		
+		*/
 		
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();

@@ -483,6 +483,15 @@ package com.photodispatcher.provider.ftp{
 				//open cnn & get files list
 				trace('QueueManager.getOrderHandle; web check Ok; push to download manager '+startOrder.ftp_folder);
 				startOrder.state=OrderState.FTP_WEB_OK;
+
+				//fill extra info
+				startOrder.calc_type=pw.getLastOrder().calc_type;
+				startOrder.endpaper=pw.getLastOrder().endpaper;
+				startOrder.interlayer=pw.getLastOrder().interlayer;
+				startOrder.cover=pw.getLastOrder().cover;
+				startOrder.format=pw.getLastOrder().format;
+				startOrder.corner_type=pw.getLastOrder().corner_type;
+
 				//remove from queue
 				removeOrder(startOrder);
 				downloadManager.download(startOrder);

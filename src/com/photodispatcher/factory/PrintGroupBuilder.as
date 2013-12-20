@@ -389,7 +389,9 @@ package com.photodispatcher.factory{
 						bookSynonym= new BookSynonym();
 						bookSynonym.templates=[];
 						var pt:BookPgTemplate;
-						if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK){
+						if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK ||
+							proj.bookType==BookSynonym.BOOK_TYPE_JOURNAL ||
+							proj.bookType==BookSynonym.BOOK_TYPE_LEATHER){
 							//crete block template
 							pt= new BookPgTemplate();
 							pt.book_part=BookSynonym.BOOK_PART_BLOCK;
@@ -441,7 +443,9 @@ package com.photodispatcher.factory{
 						}
 					}
 					//create print gruops
-					if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK){
+					if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK ||
+						proj.bookType==BookSynonym.BOOK_TYPE_JOURNAL ||
+						proj.bookType==BookSynonym.BOOK_TYPE_LEATHER){
 						//cover
 						pgCover=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_COVER, UnitUtil.pixels2mm300(proj.buttWidth()));
 						if(pgCover){
@@ -486,7 +490,13 @@ package com.photodispatcher.factory{
 							pgf.book_num=0;
 							pgf.prt_qty=1;
 							if(proj.isPageCover(page.pageNum)){
-								if(pgCover) pgCover.addFile(pgf);
+								if(pgCover){
+									if(pgCover.butt){
+										//add butt to caption
+										pgf.caption=pgf.caption+' t'+pgCover.butt.toString();
+									}
+									pgCover.addFile(pgf);
+								}
 							}else{
 								pgBody.addFile(pgf);
 							}

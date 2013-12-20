@@ -145,12 +145,14 @@ package com.photodispatcher.model.dao{
 		}
 		*/
 		
-		public function getItem(id:String):Order{
-			var sql:String='SELECT o.*, s.name source_name, os.name state_name'+
-							' FROM orders o'+
+		public function getItem(id:String, extraInfo:Boolean=false):Order{
+			var sql:String='SELECT o.*, s.name source_name, os.name state_name';
+			if(extraInfo) sql+=', oei.endpaper, oei.interlayer, oei.calc_type, oei.cover, oei.format, oei.corner_type, oei.kaptal';
+			sql=sql+		' FROM orders o'+
 							' INNER JOIN config.order_state os ON o.state = os.id'+
-							' INNER JOIN config.sources s ON o.source = s.id'+
-							' WHERE o.id=?';
+							' INNER JOIN config.sources s ON o.source = s.id';
+			if(extraInfo) sql+=' LEFT OUTER JOIN order_extra_info oei ON o.id=oei.id';
+			sql+=			' WHERE o.id=?';
 			runSelect(sql, [id]);
 			return item as Order;
 		}
@@ -251,6 +253,12 @@ package com.photodispatcher.model.dao{
 			sql="DELETE FROM print_group WHERE order_id = ?";
 			sequence.push(prepareStatement(sql,[order.id]));
 
+			sql="DELETE FROM order_extra_info WHERE id = ?";
+			sequence.push(prepareStatement(sql,[order.id]));
+
+			sql="DELETE FROM order_extra_info WHERE id IN (SELECT id FROM suborders WHERE order_id = ?)";
+			sequence.push(prepareStatement(sql,[order.id]));
+
 			sql="DELETE FROM suborders WHERE order_id = ?";
 			sequence.push(prepareStatement(sql,[order.id]));
 			
@@ -296,8 +304,16 @@ package com.photodispatcher.model.dao{
 							so.prt_qty,
 							so.proj_type];
 					sequence.push(prepareStatement(sql,params));
+					//add sub orders extra info
+					if(so.endpaper || so.interlayer || so.cover || so.format || so.corner_type || so.kaptal){
+						sql='INSERT OR IGNORE INTO order_extra_info (id, endpaper, interlayer, calc_type, cover, format, corner_type, kaptal)' +
+							' VALUES (?,?,?,?,?,?,?,?)';
+						params=[so.id, so.endpaper, so.interlayer, so.calc_type, so.cover, so.format, so.corner_type, so.kaptal];
+						sequence.push(prepareStatement(sql,params));
+					}
 				}
 			}
+
 			//fill print groups
 			if(order.printGroups){
 				for each(o in order.printGroups){
@@ -350,6 +366,15 @@ package com.photodispatcher.model.dao{
 					}
 				}
 			}
+			
+			//add extra info
+			if(order.calc_type || order.endpaper || order.interlayer || order.cover || order.format || order.corner_type || order.kaptal){
+				sql='INSERT OR IGNORE INTO order_extra_info (id, endpaper, interlayer, calc_type, cover, format, corner_type, kaptal)' +
+					' VALUES (?,?,?,?,?,?,?,?)';
+				params=[order.id, order.endpaper, order.interlayer, order.calc_type, order.cover, order.format, order.corner_type,order.kaptal];
+				sequence.push(prepareStatement(sql,params));
+			}
+
 			
 			//set order state
 			sql='UPDATE orders SET state = ?, state_date = ? WHERE id = ?';
@@ -518,6 +543,8 @@ package com.photodispatcher.model.dao{
 			//addEventListener(SqlSequenceEvent.SQL_SEQUENCE_EVENT, onSyncComplite);
 			executeSequence(sequence);
 		}
+		
+		
 
 		private function getRawVal(key:String, jo:Object):Object{
 			if(!key) return null; 
@@ -561,6 +588,26 @@ package com.photodispatcher.model.dao{
 			return int(sId);
 		}
 
+		public function getExtraInfoByPG(pgId:String, silent:Boolean=false):Order{
+			var result:Order= new Order();
+			result.id=PrintGroup.orderIdFromId(pgId);
+			
+			var sql:String='SELECT oei.*, pg.book_type'+
+							' FROM print_group pg'+
+							' INNER JOIN order_extra_info oei ON oei.id=pg.order_id'+
+							' WHERE pg.id=?';
+			sql+=' UNION ALL';
+			sql= sql +' SELECT oei.*, pg.book_type'+  
+						' FROM print_group pg'+
+						' INNER JOIN suborders so ON pg.order_id=so.order_id AND pg.path=so.ftp_folder'+
+						' INNER JOIN order_extra_info oei ON oei.id=so.id'+
+						' WHERE pg.id=?';
+			runSelect(sql, [pgId,pgId],silent);
+			
+			if(!lastResult) return null;
+			if(lastResult.length==0) return result;
+			return processRow(lastResult[0]) as Order;
+		}
 
 	}
 }

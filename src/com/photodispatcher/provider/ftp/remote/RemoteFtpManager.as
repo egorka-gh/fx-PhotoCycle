@@ -73,11 +73,11 @@ package com.photodispatcher.provider.ftp.remote{
 						return;
 					}
 					currentOrder=msg.order;
-					currentOrder.state=OrderState.WAITE_FTP;
 					if(!currentOrder){
 						_chatService.sendLoadMessage(InstructionConstants.CLIENT_LOAD_REJECT,'Ошибка. Не задан заказ (null)',null,'null');
 						return;
 					}
+					currentOrder.state=OrderState.WAITE_FTP;
 					_chatService.sendLoadMessage(InstructionConstants.CLIENT_LOAD_CONFIRM,ChatPretender.postConfirmMessage()+currentOrder.id);
 					startLoad();
 					break;

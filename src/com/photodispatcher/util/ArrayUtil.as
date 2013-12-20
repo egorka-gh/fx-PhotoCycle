@@ -7,7 +7,7 @@ package com.photodispatcher.util{
 			if(end < 0) end = array.length;
 			var a:Array = array.slice(start, end);
 			a.some(function (element:Object, index:int, arr:Array):Boolean {
-				var res:Boolean = (element[propName] == propValue);
+				var res:Boolean = (element.hasOwnProperty(propName) && element[propName] == propValue);
 				if(res) found = index;
 				return res;
 			});

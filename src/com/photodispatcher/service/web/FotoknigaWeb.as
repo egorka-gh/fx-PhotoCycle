@@ -1,5 +1,6 @@
 package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
+	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceType;
@@ -29,6 +30,9 @@ package com.photodispatcher.service.web{
 
 		public static const COMMAND_GET_ORDER_STATE:String='status';
 		public static const PARAM_ORDER_ID:String='args[number]';
+
+		public static const COMMAND_GET_ORDER_INFO:String='order';
+		//public static const PARAM_ORDER_ID:String='args[number]';
 
 		public function FotoknigaWeb(source:Source){
 			super(source);
@@ -115,7 +119,9 @@ package com.photodispatcher.service.web{
 			var post:Object;
 			post= new Object();
 			post[PARAM_KEY]=API_KEY;
-			post[PARAM_COMMAND]=COMMAND_GET_ORDER_STATE;
+			//post[PARAM_COMMAND]=COMMAND_GET_ORDER_STATE;
+			//TODO use insted COMMAND_GET_ORDER_STATE
+			post[PARAM_COMMAND]=COMMAND_GET_ORDER_INFO;
 			post[PARAM_ORDER_ID]=cleanId(order.src_id);
 			client.getData( new InvokerUrl(baseUrl+URL_API),post);
 		}
@@ -162,11 +168,26 @@ package com.photodispatcher.service.web{
 					break;
 				case CMD_CHECK_STATE:
 					result=parseOrders(e.data);
-					if(!result || !result.hasOwnProperty('result') || !result.result.hasOwnProperty('status') || result.error){
+					if(!result || !result.hasOwnProperty('result') || !result.result || !result.result.hasOwnProperty('status') || result.error){
 						abort(result.error?result.error:'Ошибка структуры данных');
 						return;
 					}
 					_getOrder.src_state=result.result.status;
+					//parse extra data
+					var ob:OrderBuilder= new OrderBuilder();
+					var arr:Array=ob.build(source,[result.result]);
+					if(arr && arr.length>0){
+						var to:Order=arr[0] as Order;
+						if(to){
+							_getOrder.calc_type=to.calc_type;
+							_getOrder.endpaper=to.endpaper;
+							_getOrder.interlayer=to.interlayer;
+							_getOrder.cover=to.cover;
+							_getOrder.format=to.format;
+							_getOrder.corner_type=to.corner_type;
+							_getOrder.kaptal=to.kaptal;
+						}
+					}
 					endGetOrder();
 					break;
 			}

@@ -84,9 +84,9 @@ package com.photodispatcher.provider.preprocess{
 
 			printGroup.resetFiles();
 			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK 
-				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_CALENDAR 
-				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET
-				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_BCARD){
+				&& (printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK 
+				|| printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL
+				|| printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
 				//expand format len by tech len
 				var formatAdd:int=Context.getAttribute('tech.add');
 				if(formatAdd) printGroup.height+=formatAdd;
@@ -182,10 +182,10 @@ package com.photodispatcher.provider.preprocess{
 
 			//draw tech barcode
 			var barSize:int=Context.getAttribute('tech.barcode.size');
-			if(barSize && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK 
-				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_CALENDAR 
-				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_MAGNET
-				&& printGroup.book_type!=BookSynonym.BOOK_TYPE_BCARD){
+			if(barSize && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK &&
+				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+					printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
 				var barStep:int=Context.getAttribute('tech.barcode.step');
 				var barColor:int=Context.getAttribute('tech.barcode.color');
 				var barOffset:String=Context.getAttribute('tech.barcode.offset');
@@ -213,7 +213,9 @@ package com.photodispatcher.provider.preprocess{
 
 		private function annotateCommand(command:IMCommand,file:PrintGroupFile):void{
 			if(!command || !file) return;
-			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,printGroup.annotateText(file),TEXT_OFFSET,true);
+			var offset:String=printGroup.bookTemplate.font_offset;
+			if(!offset) offset=TEXT_OFFSET;
+			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,printGroup.annotateText(file),offset,true);
 		}
 
 	}

@@ -392,6 +392,16 @@ package com.photodispatcher.provider.fbook.download{
 					return;
 				}
 				currentSubOrder.project=project;
+				
+				//fill extra info
+				currentSubOrder.calc_type='Розница';
+				currentSubOrder.endpaper=project.endpaperName;
+				currentSubOrder.interlayer=project.interlayerName;
+				currentSubOrder.cover=project.coverName;
+				currentSubOrder.format=project.formatName;
+				currentSubOrder.corner_type=project.cornerTypeName;
+
+				
 				//load project content
 				startContentLoader(workFolder);
 			}else{

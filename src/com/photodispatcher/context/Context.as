@@ -204,8 +204,9 @@ package com.photodispatcher.context{
 			}
 
 			//tech layers
-			if(!Context.getAttribute('layerList')){
+			if(!Context.getAttribute('layerValueList')){
 				a=dDao.getTechLayerValueList();
+				//Context.setAttribute('layerList', a);
 				//Context.setAttribute('layerList', a);
 				Context.setAttribute('layerValueList', a);
 				/*
@@ -217,7 +218,7 @@ package com.photodispatcher.context{
 			//tech seq layers
 			if(!Context.getAttribute('seqlayerList')){
 				a=dDao.getTechLayerValueList(false);
-				//Context.setAttribute('seqlayerList', a);
+				Context.setAttribute('seqlayerList', a);
 				Context.setAttribute('seqlayerValueList', a);
 			}
 

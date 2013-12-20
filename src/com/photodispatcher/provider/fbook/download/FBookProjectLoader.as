@@ -10,6 +10,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotakrama.net.vo.project.ProjectViewVO;
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotocalendar.net.vo.project.FotocalendarViewVO;
+	import com.akmeful.fotocanvas.data.FotocanvasProject;
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.model.Source;
@@ -66,11 +67,16 @@ package com.photodispatcher.provider.fbook.download{
 						fetchProject(lastFetchedId,FBookProject.PROJECT_TYPE_BCARD);
 						return;
 						break;
-					/*
 					case FBookProject.PROJECT_TYPE_BCARD:
+						fetchProject(lastFetchedId,FotocanvasProject.PROJECT_TYPE);
+						return;
+						break;
+					/*
+					case FotocanvasProject.PROJECT_TYPE:
 						//fetch new other proj type, default - error
 						break;
 					*/
+
 				}
 			}
 			lastErr='FBookProjectLoader: ' +event.text;
@@ -115,6 +121,13 @@ package com.photodispatcher.provider.fbook.download{
 				case FBookProject.PROJECT_TYPE_BCARD:
 					bvo.updateTargetUrl('/bcard/view/');
 					proj= new CardProject('','',{id:projId});
+					bvo.project=proj;
+					service.execute(bvo);
+					break;
+				case FotocanvasProject.PROJECT_TYPE:
+					//viewUrl="{pathAlias.getPath('/bcard/view/', false)}"
+					bvo.updateTargetUrl('/canvas/view/');
+					proj= new FotocanvasProject('','',{id:projId});
 					bvo.project=proj;
 					service.execute(bvo);
 					break;

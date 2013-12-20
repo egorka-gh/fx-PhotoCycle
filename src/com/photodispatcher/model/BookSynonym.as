@@ -10,6 +10,7 @@ package com.photodispatcher.model{
 		public static const BOOK_TYPE_CALENDAR:int=4;
 		public static const BOOK_TYPE_MAGNET:int=5;
 		public static const BOOK_TYPE_BCARD:int=6;
+		public static const BOOK_TYPE_CANVAS:int=7;
 
 		public static const BOOK_PART_ANY:int=0;
 		public static const BOOK_PART_COVER:int=1;

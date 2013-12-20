@@ -34,7 +34,7 @@ package com.photodispatcher.model.dao{
 			execute(
 				'UPDATE config.book_pg_template'+
 				' SET book=?, book_part=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, is_pdf=?,'+
-					' sheet_width=?, sheet_len=?, page_width=?, page_len=?, font_size=?, notching=?, stroke=?, bar_offset=?, bar_size=?' + 
+					' sheet_width=?, sheet_len=?, page_width=?, page_len=?, font_size=?, font_offset=?, notching=?, stroke=?, bar_offset=?, bar_size=?' + 
 				' WHERE id=?',
 				[	item.book,
 					item.book_part,
@@ -51,6 +51,7 @@ package com.photodispatcher.model.dao{
 					item.page_width,
 					item.page_len,
 					item.font_size,
+					item.font_offset,
 					item.notching,
 					item.stroke,
 					item.bar_offset,
@@ -62,8 +63,8 @@ package com.photodispatcher.model.dao{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
 			execute(
 				'INSERT INTO config.book_pg_template (book, book_part, width, height, paper, frame, correction, cutting, is_duplex, is_pdf,'+
-					' sheet_width, sheet_len, page_width, page_len, font_size, notching, stroke, bar_offset, bar_size)' +
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+					' sheet_width, sheet_len, page_width, page_len, font_size, font_offset, notching, stroke, bar_offset, bar_size)' +
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[	item.book,
 					item.book_part,
 					item.width,
@@ -79,6 +80,7 @@ package com.photodispatcher.model.dao{
 					item.page_width,
 					item.page_len,
 					item.font_size,
+					item.font_offset,
 					item.notching,
 					item.stroke,
 					item.bar_offset,
@@ -125,6 +127,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('page_width'); col.headerText='Ширина страницы pix'; result.addItem(col);
 			col= new GridColumn('page_len'); col.headerText='Длина страницы pix'; result.addItem(col);
 			col= new GridColumn('font_size'); col.headerText='Шрифт'; col.width=60; result.addItem(col);
+			col= new GridColumn('font_offset'); col.headerText='Шрифт смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
 			col= new GridColumn('notching'); col.headerText='Насечка pix'; result.addItem(col);
 			col= new GridColumn('stroke'); col.headerText='Рамка pix'; result.addItem(col);
 			col= new GridColumn('bar_size'); col.headerText='Подпись книги высота pix'; result.addItem(col);

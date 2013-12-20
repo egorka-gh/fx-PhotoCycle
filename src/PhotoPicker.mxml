@@ -18,12 +18,14 @@
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveController;
+			import com.photodispatcher.service.barcode.ValveControllerEmulator;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.config.DatabasePopup;
@@ -104,8 +106,21 @@
 
 			private function init():void{
 				OrderStateDAO.initStateMap();
+				//load tech layers
+				if(!Context.getAttribute('layerValueList')){
+					var dDao:DictionaryDAO=new DictionaryDAO();
+					var a:ArrayCollection;
+					a=dDao.getTechLayerValueList();
+					Context.setAttribute('layerValueList', a);
+				}
+				if(!Context.getAttribute('book_typeList')){
+					a=dDao.getBookTypeValueList();
+					Context.setAttribute('book_typeList', a);
+					a=dDao.getBookTypeValueList(false);
+					Context.setAttribute('book_typeValueList', a);
+				}
+				
 				var dao:TechPointDAO=new TechPointDAO();
-
 				techPionts=dao.findAll(false,SourceType.TECH_PICKING);
 				var coms:Array=ComInfo.load();
 				var ci:ComInfo;
@@ -171,9 +186,36 @@
 				if(techPickerView) techPickerView.start();
 			}
 
+			private function startEmulator():void{
+				if(!techPointObj){
+					Alert.show('Приложение не настроено');
+					currentState='config';
+					return;
+				}
+				controller= new ValveControllerEmulator();
+				(controller as ValveControllerEmulator).pickerInterval=turnInterval;
+
+				serialProxy.start([comBarcodeReader]);
+				var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
+				if(proxy){
+					if(!barcodeReader){
+						barcodeReader= new ComReader(500);
+						barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					}
+					barcodeReader.comPort=proxy;
+				}else{
+					//TODO destoroy
+				}
+
+				
+				currentState='monitor';
+				if(techPickerView) techPickerView.start();
+			}
+
+			
 			private function stop():void{
 				if(techPickerView) techPickerView.stop();
-				serialProxy.stop();
+				if(serialProxy) serialProxy.stop();
 				currentState='config';
 			}
 
