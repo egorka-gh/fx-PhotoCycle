@@ -41,6 +41,28 @@ package com.photodispatcher.model.dao{
 			return itemsArray;
 		}
 
+		public function getByID(pgId:String):PrintGroup{
+			var sql:String;
+			sql='SELECT pg.*, o.source source_id, s.name source_name, o.ftp_folder order_folder, os.name state_name,'+
+				' p.value paper_name, fr.value frame_name, cr.value correction_name, cu.value cutting_name,'+
+				' lab.name lab_name, bt.name book_type_name, bp.name book_part_name'+
+				' FROM print_group pg INNER JOIN orders o ON pg.order_id = o.id'+
+				' INNER JOIN config.sources s ON o.source = s.id'+
+				' INNER JOIN config.order_state os ON pg.state = os.id'+
+				' INNER JOIN config.attr_value p ON pg.paper = p.id'+
+				' INNER JOIN config.attr_value fr ON pg.frame = fr.id'+
+				' INNER JOIN config.attr_value cr ON pg.correction = cr.id'+
+				' INNER JOIN config.attr_value cu ON pg.cutting = cu.id'+
+				' INNER JOIN config.book_type bt ON pg.book_type = bt.id'+
+				' INNER JOIN config.book_part bp ON pg.book_part = bp.id'+
+				' LEFT OUTER JOIN config.sources lab ON pg.destination = lab.id'+
+				' WHERE pg.id=?';
+			//trace(sql);
+			var params:Array=[pgId];
+			runSelect(sql,params);
+			return item as PrintGroup;
+		}
+
 		public static function gridColumns(withLab:Boolean=false):ArrayList{
 			var a:Array=baseGridColumns();
 			var col:GridColumn;

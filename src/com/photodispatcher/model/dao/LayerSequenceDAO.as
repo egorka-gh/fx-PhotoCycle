@@ -58,7 +58,7 @@ package com.photodispatcher.model.dao{
 			for (i=0;i<items.length;i++){
 				item= items[i] as LayerSequence;
 				if(item){
-					if(item.layer_group!=0 && item.seqlayer>1){
+					if(item.seqlayer>1){
 						arr.push(item);
 						seq++;//renum
 						item.seqorder=seq;

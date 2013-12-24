@@ -103,16 +103,6 @@
 				Alert.show(event.text);	
 			}
 
-			/*
-			private function setVale(num:int, on:Boolean):void{
-				if(on){
-					controller.open(num);
-				}else{
-					controller.close(num);
-				}
-			}
-			*/
-			
 			protected function ddTemplate_changeHandler(event:IndexChangeEvent):void{
 				if(techPicker) techPicker.layerset= ddTemplate.selectedItem as Layerset;
 			}
@@ -182,13 +172,6 @@
 		<s:HGroup gap="10" width="100%" height="100%">
 			<s:VGroup gap="5" width="350" height="100%">
 				<s:Label text="Загрузка лотков"/>
-				<!--<s:List id="lstTrays" dataProvider="{techPicker.traySet.tarys}" width="100%"
-						selectedIndex="{techPicker.currentTray}" changing="preventChanging(event)"
-						itemRenderer="com.photodispatcher.view.itemRenderer.LayerAllocationRenderer">
-					<s:layout>
-						<s:VerticalLayout requestedRowCount="8" gap="0"/>
-					</s:layout>
-				</s:List>-->
 				<config:ItemsGrid id="traysGrid" currentData="{techPicker.traySet.tarys}" width="100%" 
 								  currentIndex="{techPicker.currentTray}" editable="{!techPicker.isRunning || techPicker.isPaused}"
 								  currentColumns="{LayerAllocation.gridColumns()}" disableSorting="true"/>
@@ -204,11 +187,8 @@
 			</s:VGroup>
 			<s:VGroup gap="5" width="200" height="100%">
 				<s:Label text="Раздел книги"/>
-				<!--<s:DropDownList id="ddGroup" dataProvider="{acGroups}" 
-								selectedIndex="{techPicker.currentGroup-1}"
-								width="100%"/>-->
 				<s:List id="lstGroups" dataProvider="{acGroups}" width="100%" changing="preventChanging(event)"
-						selectedIndex="{techPicker.currentGroup-1}">
+						selectedIndex="{techPicker.currentGroup}">
 					<s:layout>
 						<s:VerticalLayout requestedRowCount="4" gap="2"/>
 					</s:layout>
@@ -230,6 +210,9 @@
 			</s:VGroup>
 		</s:HGroup>
 		<s:HGroup gap="10" width="100%" horizontalAlign="right">
+			<s:ToggleButton id="tgVacuum" label="Вакуум" change="{tgVacuum.selected?controller.vacuumOn():controller.vacuumOff()}"/>
+			<s:ToggleButton id="tgEngine" label="Мотор" change="{tgEngine.selected?controller.engineOn():controller.engineOff()}"/>
+			<s:Spacer width="50"/>
 			<s:Button id="btStart" label="Старт" enabled="{!techPicker.isRunning}" click="techPicker.start()"/>
 			<s:Button id="btPause" label="Пауза" enabled="{techPicker.isRunning}"/>
 			<s:Button id="btResume" label="Продолжить" enabled="{techPicker.isPaused}" click="techPicker.resume()"/>

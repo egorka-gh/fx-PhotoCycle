@@ -14,6 +14,7 @@ package com.photodispatcher.tech.picker{
 	import com.photodispatcher.model.dao.LayersetDAO;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.service.barcode.ComReader;
+	import com.photodispatcher.service.barcode.ComReaderEmulator;
 	import com.photodispatcher.service.barcode.ValveController;
 	import com.photodispatcher.tech.TechRegisterPicker;
 	import com.photodispatcher.util.ArrayUtil;
@@ -233,7 +234,11 @@ package com.photodispatcher.tech.picker{
 						currentSequence=[ls];
 						break;
 					case COMMAND_GROUP_BOOK_BETWEEN_SHEET:
-						currentSequence=layerset.sequenceMiddle;
+						if(currInerlayer){
+							currentSequence=currInerlayer.sequenceMiddle;
+						}else{
+							currentSequence=[];
+						}
 						break;
 					case COMMAND_GROUP_BOOK_END:
 						currentSequence=layerset.sequenceEnd;
@@ -550,6 +555,7 @@ package com.photodispatcher.tech.picker{
 			layerInLatch.layer=currentLayer;//.id;
 			layerInLatch.startingTray=currentTray;
 			layerInLatch.setOn();
+			if(barcodeReader && barcodeReader is ComReaderEmulator) (barcodeReader as ComReaderEmulator).emulateNext(); 
 			barLatch.setOn();
 			aclLatch.setOn();
 			controller.open(currentTray);

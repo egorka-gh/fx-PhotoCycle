@@ -23,6 +23,7 @@
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.ComReaderEmulator;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveController;
 			import com.photodispatcher.service.barcode.ValveControllerEmulator;
@@ -195,6 +196,7 @@
 				controller= new ValveControllerEmulator();
 				(controller as ValveControllerEmulator).pickerInterval=turnInterval;
 
+				/*
 				serialProxy.start([comBarcodeReader]);
 				var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
 				if(proxy){
@@ -205,6 +207,14 @@
 					barcodeReader.comPort=proxy;
 				}else{
 					//TODO destoroy
+				}
+				*/
+				if(!barcodeReader){
+					barcodeReader= new ComReaderEmulator();
+					(barcodeReader as ComReaderEmulator).pickerInterval=turnInterval;
+					(barcodeReader as ComReaderEmulator).pgId='5_15499_2';
+					
+					barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
 				}
 
 				
@@ -293,7 +303,10 @@
 			<s:SolidColor color="#cccccc"/>
 		</s:fill>
 	</s:Rect>
-	
+
+	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
+			  top="5" right="5"/>
+		
 	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Технологическая точка:"/>
@@ -346,6 +359,7 @@
 		<s:Button label="Настройки" includeIn="monitor" click="{stop()}"/>
 		<s:Button label="Шаблоны" includeIn="config" click="{showTemplates();}"/>
 		<s:Button label="Листоподборка" includeIn="config" click="{start()}"/>
+		<!--<s:Button label="Листоподборка" includeIn="config" click="{startEmulator()}"/>-->
 		<s:Button label="Закрыть" click="{stop(); FlexGlobals.topLevelApplication.exit();}"  excludeFrom="templates"/>
 		<s:Button label="Закрыть" click="{currentState='config';}"  includeIn="templates"/>
 	</s:HGroup>
