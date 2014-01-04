@@ -318,8 +318,7 @@
 						   width="100%" height="100%"/>
 		<config:LabEdit id="labEdit" includeIn="lab" currentItem="{currentLab}"
 						width="100%" height="100%"/>
-		<config:TechConfig id="techConfig" includeIn="tech"
-						   width="100%" height="100%"/>
+		<!--<config:TechConfig id="techConfig" includeIn="tech" width="100%" height="100%"/>-->
 		<s:HGroup gap="10" includeIn="list, edit,listEdit,lab" 
 				  verticalAlign="baseline" width="100%" horizontalAlign="left">
 			<!--TODO implement DELETE-->

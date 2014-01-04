@@ -34,7 +34,8 @@ package com.photodispatcher.model.dao{
 			execute(
 				'UPDATE config.book_pg_template'+
 				' SET book=?, book_part=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, is_pdf=?,'+
-					' sheet_width=?, sheet_len=?, page_width=?, page_len=?, font_size=?, font_offset=?, notching=?, stroke=?, bar_offset=?, bar_size=?' + 
+				' sheet_width=?, sheet_len=?, page_width=?, page_len=?, font_size=?, font_offset=?, notching=?, stroke=?, bar_offset=?, bar_size=?,' + 
+				' tech_bar=?, tech_add=?, tech_bar_color=?, tech_bar_gravity=?, tech_bar_offset=?, tech_bar_step=?' + 
 				' WHERE id=?',
 				[	item.book,
 					item.book_part,
@@ -56,6 +57,12 @@ package com.photodispatcher.model.dao{
 					item.stroke,
 					item.bar_offset,
 					item.bar_size,
+					item.tech_bar,
+					item.tech_add,
+					item.tech_bar_color,
+					item.tech_bar_gravity,
+					item.tech_bar_offset,
+					item.tech_bar_step,
 					item.id],item);
 		}
 		
@@ -63,8 +70,9 @@ package com.photodispatcher.model.dao{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
 			execute(
 				'INSERT INTO config.book_pg_template (book, book_part, width, height, paper, frame, correction, cutting, is_duplex, is_pdf,'+
-					' sheet_width, sheet_len, page_width, page_len, font_size, font_offset, notching, stroke, bar_offset, bar_size)' +
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+					' sheet_width, sheet_len, page_width, page_len, font_size, font_offset, notching, stroke, bar_offset, bar_size,'+
+					' tech_bar, tech_add, tech_bar_color, tech_bar_gravity, tech_bar_offset, tech_bar_step)' +
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[	item.book,
 					item.book_part,
 					item.width,
@@ -84,7 +92,13 @@ package com.photodispatcher.model.dao{
 					item.notching,
 					item.stroke,
 					item.bar_offset,
-					item.bar_size],item);
+					item.bar_size,
+					item.tech_bar,
+					item.tech_add,
+					item.tech_bar_color,
+					item.tech_bar_gravity,
+					item.tech_bar_offset,
+					item.tech_bar_step],item);
 		}
 		private function onCreate(e:AsyncSQLEvent):void{
 			removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);

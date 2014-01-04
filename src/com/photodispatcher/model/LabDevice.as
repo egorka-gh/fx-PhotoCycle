@@ -81,10 +81,60 @@ package com.photodispatcher.model{
 			tt.time_to.date=1; tt.time_to.fullYear=now.fullYear; tt.time_to.month=now.month; tt.time_to.date=now.date;
 			if(now.time>=tt.time_from.time && now.time<=tt.time_to.time){
 				onlineState=LabBase.STATE_ON;
+			}else if(now.time<tt.time_from.time && (tt.time_from.time-now.time)/(1000*60)<=30){ //30min till on
+				onlineState=LabBase.STATE_SCHEDULED_ON;
 			}else{
 				onlineState=LabBase.STATE_OFF;
 			}
 			return onlineState==LabBase.STATE_ON;
 		}
+		
+		//minutes till device on
+		public function timeToOn():int{
+			if(!_timetable) getTimetable(true);
+			if(!_timetable){
+				return 1440;
+			}
+			var now:Date=new Date();
+			var tt:LabTimetable=ArrayUtil.searchItem( 'day_id',now.day, _timetable) as LabTimetable;
+			if(!tt || !tt.is_online){
+				return 1440;
+			}
+			//reset to current date
+			tt.time_from.date=1; tt.time_from.fullYear=now.fullYear; tt.time_from.month=now.month; tt.time_from.date=now.date; 
+			tt.time_to.date=1; tt.time_to.fullYear=now.fullYear; tt.time_to.month=now.month; tt.time_to.date=now.date;
+			if(now.time>=tt.time_from.time && now.time<=tt.time_to.time){
+				return 0;
+			}else if(now.time<tt.time_from.time){
+				return Math.round((tt.time_from.time-now.time)/(1000*60));
+			}else{
+				return 1440;
+			}
+		}
+		//minutes till device off, or full work day if waite to on
+		public function timeToOff():int{
+			if(!_timetable) getTimetable(true);
+			if(!_timetable){
+				return 0;
+			}
+			var now:Date=new Date();
+			var tt:LabTimetable=ArrayUtil.searchItem( 'day_id',now.day, _timetable) as LabTimetable;
+			if(!tt || !tt.is_online){
+				return 0;
+			}
+			//reset to current date
+			tt.time_from.date=1; tt.time_from.fullYear=now.fullYear; tt.time_from.month=now.month; tt.time_from.date=now.date; 
+			tt.time_to.date=1; tt.time_to.fullYear=now.fullYear; tt.time_to.month=now.month; tt.time_to.date=now.date;
+			if(now.time>=tt.time_from.time && now.time<=tt.time_to.time){
+				// till off
+				return Math.round((tt.time_to.time-now.time)/(1000*60));
+			}else if(now.time<tt.time_from.time){
+				//work time
+				return Math.round((tt.time_to.time-tt.time_from.time)/(1000*60));
+			}else{
+				return 0;
+			}
+		}
+
 	}
 }

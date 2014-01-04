@@ -27,7 +27,7 @@ package com.photodispatcher.print{
 		public static const STATE_MANUAL:int=10;
 		
 		[Bindable]
-		public var enabled:Boolean=true;
+		public var enabled:Boolean=true;//??????
 		[Bindable]
 		public var stateCaption:String;
 		[Bindable]
@@ -79,6 +79,7 @@ package com.photodispatcher.print{
 			}
 			if(pt){
 				postRunning=true;
+				StateLogDAO.logState(OrderState.PRN_POST, pt.printGrp.order_id, pt.printGrp.id);
 				pt.addEventListener(Event.COMPLETE,taskComplete);
 				pt.post();
 			}else{
@@ -96,6 +97,7 @@ package com.photodispatcher.print{
 					dispatchErr(pt.printGrp, pt.errMsg);
 				}else{
 					dispatchEvent(new PrintEvent(PrintEvent.POST_COMPLETE_EVENT,pt.printGrp));
+					//StateLogDAO.logState(pt.printGrp.state, pt.printGrp.order_id, pt.printGrp.id,this.name?this.name:('id:'+this.id));
 				}
 			}
 			postNext();

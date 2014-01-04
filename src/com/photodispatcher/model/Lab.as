@@ -21,8 +21,10 @@ package com.photodispatcher.model{
 		public var hot_nfs:String;
 		[Bindable]
 		public var queue_limit:int;
+		//false - out of use (insted of del)
 		[Bindable]
 		public var is_active:Boolean;
+		//can auto post
 		[Bindable]
 		public var is_managed:Boolean;
 		

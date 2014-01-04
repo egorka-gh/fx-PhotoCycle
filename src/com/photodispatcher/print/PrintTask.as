@@ -6,7 +6,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.SourceType;
-	import com.photodispatcher.model.dao.StateLogDAO;
+	//import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.Event;

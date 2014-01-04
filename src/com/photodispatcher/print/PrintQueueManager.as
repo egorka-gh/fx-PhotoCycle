@@ -213,7 +213,44 @@ package com.photodispatcher.print{
 			queue=printGrps.concat();
 			//TODO recalc totals
 		}
+		
+		public function autoPost():void{
+			//labs is refreshed
+			//queue is in sync
+			
+			if(labs.length==0 || !queue || queue.length==0) return;
+			var avalLabs:Array=[];
+			//check labs
+			if (getAvailableLabs().length==0) return;
+			
+		}
 
+		private function getAvailableLabs():Array{
+			if(labs.length==0) return [];
+			var lab:LabBase;
+			var result:Array=[];
+			for each(lab in labs){
+				if(lab.is_active && lab.is_managed && 
+					(lab.onlineState==LabBase.STATE_ON || lab.onlineState==LabBase.STATE_SCHEDULED_ON) && 
+					lab.printQueue.printQueueLen<lab.queue_limit){
+					result.push(lab);
+				}
+			}
+			return result;
+		}
+		
+		private function getPrintApplicant():PrintGroup{
+			if(!queue || queue.length==0) return null;
+			var result:PrintGroup;
+			var pg:PrintGroup;
+			for each(pg in queue){
+				if(pg && (pg.state==OrderState.PRN_WAITE || pg.state==OrderState.PRN_CANCEL || pg.state<0) && pg.state!=OrderState.ERR_WRITE_LOCK && pg.order_folder){
+					//lock if cant print???????
+				}
+			}
+			return result;
+		}
+		
 		public function post(printGrps:Vector.<Object>,lab:LabBase):void{
 			var pg:PrintGroup;
 			if(!lab || !printGrps || printGrps.length==0) return;
@@ -254,7 +291,7 @@ package com.photodispatcher.print{
 							order.state=OrderState.PRN_QUEUE;
 							srcOrders[pg.order_id]=order;
 						}
-						order.printGroups.push(pg);
+						if(order.printGroups.length==0 || order.printGroups.indexOf(pg)==-1) order.printGroups.push(pg);
 					}
 				}
 			}
@@ -400,11 +437,15 @@ package com.photodispatcher.print{
 						for each (pg in order.printGroups){
 							prnGrp= pg as PrintGroup;
 							if(prnGrp){
-								prnGrp.state=OrderState.PRN_WEB_OK;
-								//add to postQueue
-								postQueue.push(prnGrp);
-								//post to lab
-								prnGrp.destinationLab.post(prnGrp);
+								if(prnGrp.state==OrderState.PRN_WEB_CHECK){
+									prnGrp.state=OrderState.PRN_WEB_OK;
+									//add to postQueue
+									postQueue.push(prnGrp);
+									//post to lab
+									prnGrp.destinationLab.post(prnGrp);
+								}else{
+									StateLogDAO.logState(OrderState.ERR_WEB,order.id,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
+								}
 							}
 						}
 					}else{

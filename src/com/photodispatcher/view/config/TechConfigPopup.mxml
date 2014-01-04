@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.BookPgTemplate;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			
+			[Bindable]
+			private var template:BookPgTemplate;
+			
+			[Bindable]
+			private var gravityAC:ArrayCollection= new ArrayCollection(['От центра','От нижнего края']);
+			
+			public function show(template:BookPgTemplate):void{
+				if(!template) return;
+				this.template=template;
+				
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				//this.width=FlexGlobals.topLevelApplication.width-50;
+				//this.height=FlexGlobals.topLevelApplication.height-100;
+				PopUpManager.centerPopUp(this);
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(template) template.changed=true;
+				close();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Form top="4" left="4" right="4" bottom="30">
+		<s:layout>
+			<s:FormLayout gap="-10" />
+		</s:layout>
+		<s:FormItem label="Увеличение длинны формата (мм)">
+			<s:TextInput id="tiTechAdd" text="{template.tech_add}" change="{template.tech_add=int(tiTechAdd.text)}" restrict="0-9" width="50"/>
+		</s:FormItem> 
+		<s:FormItem label="Высота штрихкода (мм)">
+			<s:TextInput id="tiTechBarSize" text="{template.tech_bar}" change="{template.tech_bar=int(tiTechBarSize.text)}" restrict="0-9" width="50"/>
+		</s:FormItem> 
+		<s:FormItem label="Ширина штриха (pix)">
+			<s:NumericStepper value="@{template.tech_bar_step}" minimum="1" maximum="10" snapInterval="1"/>
+		</s:FormItem> 
+		<s:FormItem label="Цвет штрихкода">
+			<!--<mx:ColorPicker id="cpBarColor" selectedColor="@{conf.tech_bar_color}" dataProvider="{barColors}"/>-->
+			<s:TextInput text="@{template.tech_bar_color}" restrict="a-f,A-F,0-9" width="50"/>
+		</s:FormItem> 
+		<s:FormItem label="Смещение штрихкода (pix)">
+			<itemRenderer:OffsetEditor id="tiTechBarOffs" data="{template.tech_bar_offset}" change="{template.tech_bar_offset=tiTechBarOffs.data}"/>
+			<s:DropDownList dataProvider="{gravityAC}" selectedIndex="@{template.tech_bar_gravity}" />
+		</s:FormItem> 
+	</s:Form>
+	<s:Button label="Закрыть" click="button1_clickHandler(event)" bottom="10" right="10"/>
+</s:SkinnablePopUpContainer>

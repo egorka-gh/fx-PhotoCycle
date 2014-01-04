@@ -139,6 +139,14 @@
 			}
 		}
 		
+		protected function btTech_clickHandler(event:MouseEvent):void{
+			if(!tempGrid || !tempGrid.currentItem) return;
+			var templ:BookPgTemplate= tempGrid.currentItem as BookPgTemplate;
+			if(!templ) return;
+			var pop:TechConfigPopup= new TechConfigPopup();
+			pop.show(templ);
+		}
+		
 	]]>
 </fx:Script>
 	<s:states>
@@ -176,6 +184,8 @@
 			<s:Button id="btEdit" enabled="true" enabled.itemEdit="false" label="Состав книги" click="btEdit_clickHandler(event)"/>
 			<s:Button id="btSave" label="Сохранить" click="{saveAll()}"/>
 			<s:Button id="btCancel" label="Отмена" click="{currentState='list';refresh();}"/>
+			<s:Spacer width="50"/>
+			<s:Button id="btTech" label="Технологический ШК" includeIn="itemEdit" click="btTech_clickHandler(event)"/>
 		</s:HGroup>
 	</s:VGroup>
 </s:Group>

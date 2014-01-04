@@ -95,7 +95,7 @@ package com.photodispatcher.print{
 				lab.setRollSpeed(roll);
 				rMap[roll.width.toString()+'~'+roll.paper.toString()]=roll;
 			}
-			//fuill rolls queue
+			//fill rolls queue
 			for each(pg in pgs){
 				ordersMap[pg.order_id]=pg.order_id;
 				channel=lab.printChannel(pg);

@@ -43,6 +43,7 @@ package com.photodispatcher.context{
 				
 				Context.setAttribute('syncInterval',appConf.monitor_interval);
 				
+				/*
 				//set fbook params
 				//block
 				Context.setAttribute('fbook.block.font.size',appConf.fbblok_font);
@@ -61,6 +62,7 @@ package com.photodispatcher.context{
 				Context.setAttribute('tech.barcode.step',appConf.tech_bar_step);
 				Context.setAttribute('tech.barcode.color',appConf.tech_bar_color);
 				Context.setAttribute('tech.barcode.offset',appConf.tech_bar_offset);
+				*/
 			}else{
 				//set to defaults
 				

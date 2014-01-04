@@ -47,7 +47,19 @@ package com.photodispatcher.model{
 		public var bar_size:int=0;
 		[Bindable]
 		public var bar_offset:String='+0+0';
-		
+		[Bindable]
+		public var tech_bar:int=0;
+		[Bindable]
+		public var tech_bar_gravity:int=0;
+		[Bindable]
+		public var tech_bar_step:int=4;
+		[Bindable]
+		public var tech_bar_color:String='200000';
+		[Bindable]
+		public var tech_bar_offset:String='+0-200';
+		[Bindable]
+		public var tech_add:int=4;
+
 		
 		//ref
 		[Bindable]
@@ -101,7 +113,13 @@ package com.photodispatcher.model{
 			raw.stroke=stroke;
 			raw.bar_size=bar_size;
 			raw.bar_offset=bar_offset;
-			
+			raw.tech_bar=tech_bar;
+			raw.tech_bar_gravity=tech_bar_gravity;
+			raw.tech_bar_step=tech_bar_step;
+			raw.tech_bar_color=tech_bar_color;
+			raw.tech_bar_offset=tech_bar_offset;
+			raw.tech_add=tech_add;
+
 			return raw;
 		}
 
@@ -128,6 +146,12 @@ package com.photodispatcher.model{
 			pgt.stroke=raw.stroke;
 			pgt.bar_size=raw.bar_size;
 			pgt.bar_offset=raw.bar_offset;
+			pgt.tech_bar=raw.tech_bar;
+			pgt.tech_bar_gravity=raw.tech_bar_gravity;
+			pgt.tech_bar_step=raw.tech_bar_step;
+			pgt.tech_bar_color=raw.tech_bar_color;
+			pgt.tech_bar_offset=raw.tech_bar_offset;
+			pgt.tech_add=raw.tech_add;
 			
 			return pgt;
 		}
