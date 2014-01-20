@@ -41,6 +41,7 @@ package com.photodispatcher.service.barcode{
 			_comPort = value;
 			if(_comPort){
 				sufix=_comPort.sufix;
+				doubleScanGap=_comPort.doubleScanGap;
 				_comPort.addEventListener(Event.CLOSE, onComClose);
 				_comPort.addEventListener(Event.CONNECT, onComConnect);
 				_comPort.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onComErr);

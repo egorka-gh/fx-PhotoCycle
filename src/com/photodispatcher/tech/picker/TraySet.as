@@ -118,9 +118,13 @@ package com.photodispatcher.tech.picker{
 			for(i=0;i<arr.length;i++){
 				//finde next
 				if(idx>=arr.length) idx=0;
-				if(arr[idx]['layer']==layer) return idx;
+				if(arr[idx]['layer']==layer){
+					curLayerTrayMap[layer.toString()]=idx;
+					return idx;
+				}
 				idx++;
 			}
+			curLayerTrayMap[layer.toString()]=-1;
 			return -1;
 		}
 		

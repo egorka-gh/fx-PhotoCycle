@@ -17,10 +17,10 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.akmeful.util.GeomUtil;
 	import com.photodispatcher.provider.fbook.FBookProject;
-	import com.photodispatcher.provider.fbook.data.FrameData;
-	import com.photodispatcher.provider.fbook.data.FrameDataCommon;
-	import com.photodispatcher.provider.fbook.data.FrameMaskedData;
-	import com.photodispatcher.provider.fbook.data.PageData;
+	import com.photodispatcher.provider.fbook.model.FrameData;
+	import com.photodispatcher.provider.fbook.model.FrameDataCommon;
+	import com.photodispatcher.provider.fbook.model.FrameMaskedData;
+	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
 	import com.photodispatcher.shell.IMCommand;
 	

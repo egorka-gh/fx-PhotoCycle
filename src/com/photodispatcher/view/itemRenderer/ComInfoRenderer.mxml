@@ -6,6 +6,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
 			
 			import mx.collections.ArrayCollection;
 			
@@ -52,6 +53,10 @@
 		
 		<s:FormItem label="Тип:" enabled="{!lockType}">
 			<s:DropDownList dataProvider="{comTypes}" selectedIndex="@{comport.type}"/>
+		</s:FormItem>
+		<s:FormItem label="Интервал сканирования (мкс):" 
+					visible="{comport.type==ComInfo.COM_TYPE_BARREADER}" includeInLayout="{comport.type==ComInfo.COM_TYPE_BARREADER}">
+			<s:NumericStepper value="@{comport.doubleScanGap}" minimum="0" maximum="30000" snapInterval="100"/>
 		</s:FormItem>
 		<s:FormItem label="Номер COM:">
 			<s:DropDownList dataProvider="{comNums}" selectedItem="@{comport.num}"/>

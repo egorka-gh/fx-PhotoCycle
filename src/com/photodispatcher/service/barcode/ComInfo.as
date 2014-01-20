@@ -24,6 +24,7 @@ package com.photodispatcher.service.barcode{
 		public static const KEY_STOPBITS:String='comm_stopbits';
 		public static const KEY_PARITY:String='comm_parity';
 		public static const KEY_SUFFIX:String='comm_suffix';
+		public static const KEY_DOUBLE_SCAN_GAP:String='comm_dblscangap';
 		
 		public var type:int=COM_TYPE_NONE;
 
@@ -43,6 +44,7 @@ package com.photodispatcher.service.barcode{
 		public var parity:String=COM_PARITYS[0];
 		public var suffix:int;
 		public var proxy:Socket2Com;
+		public var doubleScanGap:int=ComReader.DOUBLE_SCAN_GAP;
 
 		public static function save(arr:Array):void{
 			var so:SharedObject=SharedObject.getLocal('comm_ports','/');
@@ -107,6 +109,7 @@ package com.photodispatcher.service.barcode{
 				if(stopbits) result[KEY_STOPBITS]=stopbits;
 				if(parity) result[KEY_PARITY]=parity;
 				if(suffix) result[KEY_SUFFIX]=suffix;
+				if(doubleScanGap) result[KEY_DOUBLE_SCAN_GAP]=doubleScanGap;
 			}
 			return result;
 		}
@@ -119,6 +122,7 @@ package com.photodispatcher.service.barcode{
 			if(value.hasOwnProperty(KEY_STOPBITS)) stopbits=value[KEY_STOPBITS];
 			if(value.hasOwnProperty(KEY_PARITY)) parity=value[KEY_PARITY];
 			if(value.hasOwnProperty(KEY_SUFFIX)) suffix=value[KEY_SUFFIX];
+			if(value.hasOwnProperty(KEY_DOUBLE_SCAN_GAP)) doubleScanGap=value[KEY_DOUBLE_SCAN_GAP];
 		}
 
 	}

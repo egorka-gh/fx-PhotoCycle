@@ -241,7 +241,10 @@
 			<s:SolidColor color="#cccccc"/>
 		</s:fill>
 	</s:Rect>
-	
+
+	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
+			  top="5" right="5"/>
+
 	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Технологическая точка:"/>

@@ -30,6 +30,11 @@ package com.photodispatcher.service.barcode{
 			return uint(comInfo.suffix);
 		}
 
+		public function get doubleScanGap():int{
+			if(!comInfo || comInfo.type!=ComInfo.COM_TYPE_BARREADER || comInfo.doubleScanGap<=0) return 0;
+			return comInfo.doubleScanGap;
+		}
+		
 		public function connect():void{
 			if(!comInfo || comInfo.type==ComInfo.COM_TYPE_NONE && !comInfo.num){
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'' ,'Connect error: Порт не настроен'));

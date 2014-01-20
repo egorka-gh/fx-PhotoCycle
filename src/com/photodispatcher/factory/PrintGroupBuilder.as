@@ -19,7 +19,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.dao.DictionaryDAO;
 	import com.photodispatcher.model.dao.PrintGroupFileDAO;
 	import com.photodispatcher.provider.fbook.FBookProject;
-	import com.photodispatcher.provider.fbook.data.PageData;
+	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.util.StrUtil;
 	import com.photodispatcher.util.UnitUtil;
 	

@@ -10,7 +10,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.fbook.FBookProject;
-	import com.photodispatcher.provider.fbook.data.PageData;
+	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.provider.preprocess.BookMakeupGroup;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMMultiSequenceRuner;

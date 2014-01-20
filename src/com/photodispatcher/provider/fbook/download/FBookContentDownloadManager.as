@@ -16,7 +16,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.model.SourceService;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
-	import com.photodispatcher.provider.fbook.data.FrameData;
+	import com.photodispatcher.provider.fbook.model.FrameData;
 	import com.photodispatcher.util.JsonUtil;
 	
 	import flash.errors.IOError;
