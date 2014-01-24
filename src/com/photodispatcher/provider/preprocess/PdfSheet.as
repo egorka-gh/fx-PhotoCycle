@@ -2,6 +2,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
 	import com.photodispatcher.shell.IMCommand;
+	import com.photodispatcher.util.IMCommandUtil;
 	
 	import flash.geom.Point;
 
@@ -82,6 +83,12 @@ package com.photodispatcher.provider.preprocess{
 				command.add('-flatten');
 				//annotate
 				annotateCommand(printGroup,command,page);
+				//draw body caption
+				if(printGroup.bookTemplate.bar_size>0 && page.page_num==printGroup.pageNumber){
+					var barcode:String=printGroup.barcodeText(page);
+					if(barcode) IMCommandUtil.annotateTransparent(command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookTemplate.bar_offset,-90);
+				}
+
 			}
 			//-rotate 90
 			if (printGroup && printGroup.is_horizontal){

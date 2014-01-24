@@ -238,7 +238,7 @@ package com.photodispatcher.provider.preprocess{
 				barSize=UnitUtil.mm2Pixels300(barSize);
 				if(!barOffset) barOffset='+0+0';
 				barcode=printGroup.techBarcode(file);
-				var txt:String=printGroup.techBarcodeText(file);
+				//var txt:String=printGroup.techBarcodeText(file);
 				var gravity:String='east';
 				if(printGroup.bookTemplate.tech_bar_gravity!=0) gravity='SouthEast';
 				if(barcode) IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,barStep,barColor);

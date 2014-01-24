@@ -101,6 +101,15 @@ package com.photodispatcher.provider.preprocess{
 
 			printGroup.resetFiles();
 			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER){
+
+				//expand format by tech
+				if(printGroup.bookTemplate.tech_bar &&
+					(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+						printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+						printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
+					if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
+				}
+
 				command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
 				command2.folder=folder;
 				//create covers pdf
@@ -153,6 +162,8 @@ package com.photodispatcher.provider.preprocess{
 						//command=sh.getCommand(pageSize,sheetSize,printGroup);
 						command=sh.getCommand(pageSize,sheetSize,printGroup); 
 						command.folder=folder;
+						//expand (left side)
+						IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
 						//save file
 						command.add('-density'); command.add('300x300');
 						command.add('-quality'); command.add('100');
@@ -212,7 +223,8 @@ package com.photodispatcher.provider.preprocess{
 						command2.add(outName);
 						//create cover back
 						backName=FILENAME_COVER_BACK+(i+1).toString()+'.jpg';
-						command=createCoverBack(backName,it);
+						command=createCoverBack(backName,it,folder);
+						
 						command.folder=folder;
 						commands.push(command);
 						//add 2 final cmd
@@ -313,22 +325,6 @@ package com.photodispatcher.provider.preprocess{
 					sh.rightPage=files[files.length-1-i];
 					result.push(sh);
 				}
-				//if(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK){
-					//reorder sheets
-					//first is back for second
-					//and has to be printed after it
-				/*2013-04-08
-					i=0;
-					while(i<result.length){
-						if((i+1)<result.length){
-							sh=result[i] as PdfSheet;
-							result[i]=result[i+1];
-							result[i+1]=sh;
-						}
-						i+=2;
-					}
-				*/
-				//}
 			}else if(printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL){
 				//order inside book (no cutting)
 				var subSet:Array;
@@ -357,31 +353,10 @@ package com.photodispatcher.provider.preprocess{
 				sh.swapPages();
 				i+=2;
 			}
-			/*2013-04-08
-			//swap pages on odd sheets (back)
-			i=1;
-			while(i<result.length){
-				sh=result[i] as PdfSheet;
-				sh.swapPages();
-				i+=2;
-			}
-
-			//reorder sheets
-			//print back first
-			i=0;
-			while(i<result.length){
-				if((i+1)<result.length){
-					sh=result[i] as PdfSheet;
-					result[i]=result[i+1];
-					result[i+1]=sh;
-				}
-				i+=2;
-			}
-			*/
 			return result; 
 		}
 
-		private function createCoverBack(fileName:String,file:PrintGroupFile):IMCommand{
+		private function createCoverBack(fileName:String,file:PrintGroupFile, folder:String):IMCommand{
 			//create empty white sheet vs butt lines
 			var buttPix:int=UnitUtil.mm2Pixels300(printGroup.butt);
 			var width:int=printGroup.bookTemplate.sheet_width;
@@ -400,6 +375,20 @@ package com.photodispatcher.provider.preprocess{
 				command.add('-draw');
 				command.add('line '+xl.toString()+',0 '+xl.toString()+','+width.toString()+' line '+xr.toString()+',0 '+xr.toString()+','+width.toString());
 			}
+
+			//draw tech barcode
+			if(printGroup.bookTemplate.tech_bar){
+				var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
+				if(!barOffset) barOffset='+0+0';
+				//mm to pix
+				var barSize:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_bar);
+				//draw on left side
+				var gravity:String='West';
+				if(printGroup.bookTemplate.tech_bar_gravity!=0) gravity='SouthWest';
+				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
+				IMCommandUtil.drawBarcode(folder,command,barSize,printGroup.techBarcode(file),'', barOffset, -90, gravity, printGroup.bookTemplate.tech_bar_step, parseInt(printGroup.bookTemplate.tech_bar_color,16));
+			}
+
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add('100');
 			command.add(fileName);
@@ -427,6 +416,18 @@ package com.photodispatcher.provider.preprocess{
 			if(printGroup.bookTemplate.bar_size>0){
 				var barcode:String=printGroup.barcodeText(file);
 				if(barcode) IMCommandUtil.drawBarcode(folder,command,printGroup.bookTemplate.bar_size,barcode,barcode,printGroup.bookTemplate.bar_offset);
+			}
+			//draw tech barcode
+			if(printGroup.bookTemplate.tech_bar){
+				var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
+				if(!barOffset) barOffset='+0+0';
+				//mm to pix
+				var barSize:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_bar);
+				barcode=printGroup.techBarcode(file);
+				var gravity:String='east';
+				if(printGroup.bookTemplate.tech_bar_gravity!=0) gravity='SouthEast';
+				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add);
+				IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
 			}
 
 			command.add('-density'); command.add('300x300');

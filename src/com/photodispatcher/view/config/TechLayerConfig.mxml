@@ -30,6 +30,7 @@
 			
 			import spark.events.GridItemEditorEvent;
 			import spark.events.GridSelectionEvent;
+			import spark.events.IndexChangeEvent;
 			
 			[Bindable]
 			private var layersAC:ArrayCollection;
@@ -138,7 +139,8 @@
 			private function showSequence():void{
 				var a:Array=[];
 				var ls:Layerset= currTemplate as Layerset;
-				var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
+				//var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
+				var idx:int=currLGroupIdx;
 				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup; 
 				if(ls && lg){
 					switch(lg.id){
@@ -162,7 +164,9 @@
 				if(!ls) return;
 				var newIt:LayerSequence= new LayerSequence();
 				newIt.layerset=ls.id;
-				var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
+				//var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
+				var idx:int=currLGroupIdx;
+				if(idx==-1) return;
 				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup;
 				if(!lg) return;
 				newIt.layer_group=lg.id;
@@ -176,33 +180,6 @@
 				seqGrid.currentItem=newIt;
 			}
 			
-			/*
-			private function filterSeqAc(item:Object):Boolean {
-				var it:LayerSequence= item as  LayerSequence;
-				if(!it) return false;
-				return it.seqlayer!=0;
-			}
-			*/
-			
-			/*
-
-			[Bindable]
-			private var templErr:String;
-			
-			private function chekTemplate():void{
-				var ls:Layerset= currTemplate as Layerset;
-				if(!ls) return;
-				var dao:LayerSequenceDAO= new LayerSequenceDAO();
-				templErr=dao.checkBySet(ls.id);
-			}
-			
-			protected function btSaveLayerAllocation_clickHandler(event:MouseEvent):void{
-				var dao:LayerAllocationDAO= new LayerAllocationDAO();
-				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
-				dao.updateBatch(allocAC.source);
-			}
-			*/
-			
 			protected function btDelSeq_clickHandler(event:MouseEvent):void{
 				if(seqGrid && seqGrid.currentItem){
 					var idx:int= seqAC.getItemIndex(seqGrid.currentItem);
@@ -214,17 +191,8 @@
 			
 			protected function btSaveSeq_clickHandler(event:MouseEvent):void{
 				var dao:LayerSequenceDAO= new LayerSequenceDAO();
-				//dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
 				dao.updateBatch(seqAC.source);
 			}
-			
-			/*
-			private function onSeqComplie(evt:AsyncSQLEvent):void{
-				var dao:BaseDAO= evt.target as BaseDAO;
-				dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSeqComplie);
-				chekTemplate();
-			}
-			*/
 			
 			private function detectState():void{
 				var tDao:LayersetDAO= new LayersetDAO();
@@ -319,6 +287,11 @@
 				}
 			}
 			
+			protected function cbGroup_changeHandler(event:IndexChangeEvent):void{
+				currLGroupIdx=cbGroup.selectedIndex;
+				showSequence();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -397,13 +370,6 @@
 		</s:HGroup>
 		<s:Label text="{currTemplate.name}" fontWeight="bold" includeIn="temp_edit"/>
 		<s:HGroup gap="15" includeIn="temp_edit"  paddingLeft="10" width="100%" height="450" verticalAlign="bottom">
-			<!--<s:VGroup width="200" height="100%">
-				<s:Label text="Назначение лотков" fontWeight="bold"/>
-				<config:ItemsGrid id="layerAllocationGrid" editable="true" 
-								  currentData="{allocAC}" currentColumns="{LayerAllocation.gridColumns()}"
-								  width="200" requestedRowCount="8"/>
-				<s:Button id="btSaveLayerAllocation" label="Сохранить" click="btSaveLayerAllocation_clickHandler(event)"/>
-			</s:VGroup>-->
 			<s:VGroup height="100%" width="250" gap="10" includeIn="interlayers_edit">
 				<s:Label text="Синонимы" fontWeight="bold"/>
 				<config:ItemsGrid id="synGrid" editable="true" 
@@ -416,22 +382,14 @@
 			</s:VGroup>
 			<s:VGroup height="100%" width="250" gap="10">
 				<s:Label text="Подборка" fontWeight="bold"/>
-				<!--<s:HGroup gap="10" verticalAlign="baseline" height="100%">-->
-					<!--<s:VGroup gap="5" height="100%">-->
-						<s:HGroup gap="5" verticalAlign="baseline" width="100%">
-							<s:Label text="Группа"/>
-							<s:ComboBox id="cbGroup" dataProvider="{lGroupAC}" selectedIndex="@{currLGroupIdx}" labelField="name" change="{showSequence()}" width="100%"/>
-						</s:HGroup>
-						<!--<s:Spacer height="5"/>
-						<s:Label text="Ошибки" fontWeight="bold" width="100%"/>
-						<s:TextArea id="taErrors" text="{templErr}" width="100%" height="100%" editable="false" 
-									borderVisible="false"
-									contentBackgroundAlpha="0" color="red"/>-->
-					<!--</s:VGroup>-->
-					<config:ItemsGrid id="seqGrid" editable="true" 
-									  currentData="{seqAC}" currentColumns="{LayerSequence.gridColumns()}"
-									  width="100%" height="100%"/>
-				<!--</s:HGroup>-->
+				<s:HGroup gap="5" verticalAlign="baseline" width="100%">
+					<s:Label text="Группа"/>
+					<s:ComboBox id="cbGroup" dataProvider="{lGroupAC}" selectedIndex="{currLGroupIdx}" 
+								labelField="name" width="100%" change="cbGroup_changeHandler(event)"/>
+				</s:HGroup>
+				<config:ItemsGrid id="seqGrid" editable="true" 
+								  currentData="{seqAC}" currentColumns="{LayerSequence.gridColumns()}"
+								  width="100%" height="100%"/>
 				<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
 					<s:Button id="btAddSeq" label="Добавить" click="btAddSeq_clickHandler(event)"/>
 					<s:Button id="btDelSeq" label="Удалить"  click="btDelSeq_clickHandler(event)"/>
