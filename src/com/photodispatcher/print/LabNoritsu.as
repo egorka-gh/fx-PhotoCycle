@@ -58,10 +58,10 @@ package com.photodispatcher.print{
 		}
 		
 		
-		override public function post(pg:PrintGroup):void{
+		override public function post(pg:PrintGroup, revers:Boolean):void{
 			if(!pg) return;
 			if (canPrint(pg)){
-				var pt:PrintTask= new PrintTask(pg,this);
+				var pt:PrintTask= new PrintTask(pg,this,revers);
 				printTasks.push(pt);
 				//start post sequence
 				stateCaption='Копирование';
@@ -69,7 +69,7 @@ package com.photodispatcher.print{
 				return;
 			}
 			if(nhfLab){
-				nhfLab.post(pg);
+				nhfLab.post(pg,revers);
 			}else{
 				pg.state=OrderState.ERR_PRINT_POST;
 				dispatchErr(pg,'Группа печати '+pg.id+' не может быть распечатана в '+name+'.');

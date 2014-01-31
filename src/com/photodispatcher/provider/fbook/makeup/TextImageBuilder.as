@@ -14,6 +14,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
+	import flash.geom.Matrix;
 	import flash.utils.ByteArray;
 	
 	import mx.core.FlexGlobals;
@@ -141,6 +142,7 @@ package com.photodispatcher.provider.fbook.makeup{
 							if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
 								var bt:CanvasText= new CanvasText();
 								bt.importRaw(contentElement);
+								bt.transform.matrix = new Matrix();
 								//TODO hardcoded t_[pageNum]_[index].png
 								bt.fileName='t_'+pageNum.toString()+'_'+contentElement.index+'.png';
 								bt.x=0; bt.y=0; 

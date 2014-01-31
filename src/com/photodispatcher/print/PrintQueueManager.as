@@ -272,7 +272,8 @@ package com.photodispatcher.print{
 						//add to postQueue
 						postQueue.push(pg);
 						//post to lab
-						pg.destinationLab.post(pg);
+						var revers:Boolean=Context.getAttribute('reversPrint');
+						pg.destinationLab.post(pg,revers);
 						
 					}else{
 						//push to webQueue (check print group state) 
@@ -442,7 +443,8 @@ package com.photodispatcher.print{
 									//add to postQueue
 									postQueue.push(prnGrp);
 									//post to lab
-									prnGrp.destinationLab.post(prnGrp);
+									var revers:Boolean=Context.getAttribute('reversPrint');
+									prnGrp.destinationLab.post(prnGrp,revers);
 								}else{
 									StateLogDAO.logState(OrderState.ERR_WEB,order.id,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
 								}

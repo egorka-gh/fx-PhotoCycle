@@ -598,11 +598,35 @@ package com.photodispatcher.model{
 		 * 
 		 * @param file
 		 * @return 
-		 * книга(3символа)всегоКниг(3символа)страница(2символа)всегоСтраниц(2символа)IdГруппыПечати
+		 * книга(3символа)всегоКниг(3символа)страница(2символа)всегоСтраниц(2символа)IdГруппыПечати(первых 2а символа источник, полседние 2а символа подгруппа) 
 		 */		
 		public function techBarcode(file:PrintGroupFile):String{
-			var text:String=StrUtil.lPad(file.book_num.toString(),3)+StrUtil.lPad(book_num.toString(),3)+StrUtil.lPad(file.page_num.toString(),2)+StrUtil.lPad(pageNumber.toString(),2)+id;
+			var text:String=StrUtil.lPad(file.book_num.toString(),3)+StrUtil.lPad(book_num.toString(),3)
+							+StrUtil.lPad(file.page_num.toString(),2)+StrUtil.lPad(pageNumber.toString(),2)
+							+getDigitId();
 			return text;
+		}
+		private function getDigitId():String{
+			if(!id) return '';
+			var arr:Array=id.split('_');
+			if(!arr || arr.length!=3) return '';
+			var tStr:String=arr[0];
+			if (tStr.length>2) return '';
+			var result:String=StrUtil.lPad(tStr,2)+arr[1];
+			tStr=arr[2];
+			if (tStr.length>2) return '';
+			return result+StrUtil.lPad(tStr,2);
+		}
+		
+		public static function idFromDigitId(digitId:String):String{
+			if(!digitId || digitId.length<5) return '';
+			if(digitId.indexOf('_')!=-1) return digitId; //old barcode (x_xx_x)
+			var tInt:int= parseInt(digitId.substr(0,2));
+			if(isNaN(tInt)) return '';
+			var result:String=tInt.toString()+'_'+digitId.substr(2,digitId.length-4);
+			tInt=parseInt(digitId.substr(digitId.length-2,2));
+			if(isNaN(tInt)) return '';
+			return result+'_'+tInt.toString();
 		}
 
 		public function toRaw():Object{

@@ -3,9 +3,11 @@ package com.photodispatcher.util{
 	import com.photodispatcher.shell.IMCommand;
 	
 	import flash.display.Bitmap;
+	import flash.display.BitmapData;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
+	import flash.geom.Matrix;
 	import flash.utils.ByteArray;
 	
 	import mx.graphics.codec.PNGEncoder;
@@ -152,7 +154,7 @@ package com.photodispatcher.util{
 			}
 		}
 		
-		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, offset:String, rotate:int=0, gravity:String='southwest', step:int=3, color:int=0):void{
+		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, offset:String, rotate:int=0, gravity:String='southwest', step:Number=3, color:int=0):void{
 			if(!command || !barcode || !wrkDir || height<=0) return;
 			var undercolor:String='white';
 			if(!offset) offset='+0+0';
@@ -161,14 +163,26 @@ package com.photodispatcher.util{
 			if(!file.exists) return;
 			var fileName:String=StrUtil.toFileName('brc_'+barcode)+'.png';
 			file=file.resolvePath(fileName);
+			var drawStep:int= Math.ceil(step);
 
 			//create barcode image
 			if(!file.exists){
 				var c128Writer:Code128Writer= new Code128Writer();
-				var bmp:Bitmap=c128Writer.draw(barcode,height,step,color);
+				var bmp:Bitmap=c128Writer.draw(barcode,height,drawStep,color);
 				if (!bmp) return;
+				var data:BitmapData=bmp.bitmapData;
+				/*
+				if(drawStep>2 && step<drawStep){
+					//scale
+					var matrix:Matrix = new Matrix();
+					matrix.scale(step/drawStep, 1);
+					var w:int=Math.round(data.width*step/drawStep);
+					data= new BitmapData(w, height);
+					data.draw(bmp.bitmapData, matrix); 
+				}
+				*/
 				var encoder:PNGEncoder= new PNGEncoder();
-				var imgByteArr:ByteArray = encoder.encode(bmp.bitmapData);
+				var imgByteArr:ByteArray = encoder.encode(data);
 				
 				var fs:FileStream = new FileStream();
 				try{
@@ -184,49 +198,16 @@ package com.photodispatcher.util{
 			//convert img.jpg ( barcode.png ( -pointsize 30 -undercolor "white" label:"R12345-7" -trim +repage -bordercolor white -border 2x2 ) -gravity center +append -write mpr:label +delete ) -gravity SouthWest mpr:label -geometry +500+50 -composite labeled.jpg
 			//convert "img.jpg" "(" "barcode.png" "(" "-pointsize" "30" "-undercolor" "white" "label:R12345-7" "-trim" "+repage" "-bordercolor" "white" "-border" "2x2" ")" "-gravity" "center" "+append" "-rotate" "-90" "-write" "mpr:label" "+delete" ")" "-gravity" "east" "mpr:label" "-geometry" "+100+100" "-composite" "labeled.jpg"
 			//convert "img.jpg" ( -pointsize 30 -undercolor white label:R12345-7 -trim +repage -bordercolor white -border "2x2" barcode.png +swap -gravity "center" "+append" "-rotate" "-90" "-write" "mpr:label" "+delete" ")" "-gravity" "east" mpr:label -geometry "+100+100" -composite labeled.jpg
-			
-			/*
-			command.add('(');
-			//command.add(fileName);
-			if(text && height>4){
-				//var points:int=Math.ceil((height-4)*72/300); //pix to point  
-				//command.add('-density'); command.add('300x300');
-				//command.add('(');
-				command.add('-strokewidth'); command.add('0');
-				command.add('-pointsize'); command.add((height-4).toString());
-				command.add('-undercolor'); command.add(undercolor);
-				var label:String='label:'+text;
-				command.add(label);
-				command.add('-trim');
-				command.add('+repage');
-				command.add('-bordercolor'); command.add(undercolor);
-				command.add('-border'); command.add('2x2');
-				//command.add(')');
-				//command.add('-gravity'); command.add('center');
-				//command.add('+append');
-			}
-			command.add(fileName);
-			if(text){
-				command.add('+swap');
-				command.add('-gravity'); command.add('center');
-				command.add('+append');
-			}
-			if(rotate!=0){
-				command.add('-rotate'); command.add(rotate.toString());
-			}
-			command.add('-write'); command.add('mpr:barcode');
-			command.add('+delete');
-			command.add(')');
-			command.add('-gravity'); command.add(gravity);
-			command.add('mpr:barcode');
-			command.add('-geometry'); command.add(offset);
-			command.add('-composite');
-			*/
-			
 			//convert img.jpg ( barcode.png -gravity South -background none -splice 0x30 -pointsize 28 -fill black -annotate "0" "R12345:7" -fill white -annotate "+1+1" "R12345:7" -rotate -90 ) -gravity east mpr:label -geometry "+100+100" -composite labeled.jpg
 			//convert img.jpg ( barcode.png -rotate -90 ) -gravity east -geometry "+100+100" -composite labeled.jpg
 			command.add('(');
 			command.add(fileName);
+			if(drawStep>2 && step<drawStep){
+				//scale by width
+				//-resize 25%x100%
+				var geometry:String=Math.ceil(step*100/drawStep).toString()+'%x100%';
+				command.add('-resize'); command.add(geometry);
+			}
 			if(text && height>8){
 				command.add('-gravity'); command.add('south');
 				command.add('-background'); command.add('none');

@@ -51,14 +51,14 @@ package com.photodispatcher.print{
 			return printGroup?printGroup.id:'';
 		}
 
-		public function post(pg:PrintGroup):void{
+		public function post(pg:PrintGroup, revers:Boolean):void{
 			if(!pg) return;
 			if (!canPrint(pg)){
 				pg.state=OrderState.ERR_PRINT_POST;
 				dispatchErr(pg,'Группа печати '+pg.id+' не может быть распечатана в '+name+'.');
 				return;
 			}
-			var pt:PrintTask= new PrintTask(pg,this);
+			var pt:PrintTask= new PrintTask(pg,this, revers);
 			printTasks.push(pt);
 			//start post sequence
 			stateCaption='Копирование';

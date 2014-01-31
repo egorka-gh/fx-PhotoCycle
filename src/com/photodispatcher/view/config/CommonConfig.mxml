@@ -42,7 +42,8 @@
 			private var serverIP:String;
 			[Bindable]
 			private var pdfPageLimit:int=100;
-
+			[Bindable]
+			private var reversPrint:Boolean=false;
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
 				confDAO=new AppConfigDAO();
@@ -64,7 +65,7 @@
 				forceStarMinute=so.data.forceStarMinute;
 				if(so.data.pdfPageLimit) pdfPageLimit=so.data.pdfPageLimit;
 				if(!pdfPageLimit) pdfPageLimit=100;
-
+				reversPrint=so.data.reversPrint;
 			}
 			
 			private function pingIM():void{
@@ -184,19 +185,6 @@
 				so.flush();  
 				Context.setAttribute("serverIP", serverIP);
 			}
-
-			/*
-			protected function tiPdfPageLimit_changeHandler(event:TextOperationEvent):void{
-				var newVal:int=int(tiPdfPageLimit.text);
-				if(!newVal) return;
-				newVal=Math.ceil(newVal/2)*2;
-				pdfPageLimit=newVal;
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.pdfPageLimit = pdfPageLimit;
-				so.flush();  
-				Context.setAttribute("pdfPageLimit", pdfPageLimit);
-			}
-			*/
 				
 			protected function nsPdfPageLimit_changeHandler(event:Event):void{
 				var newVal:int=nsPdfPageLimit.value;
@@ -208,6 +196,14 @@
 				Context.setAttribute("pdfPageLimit", pdfPageLimit);
 			}
 
+			protected function tg_reversPrint_changeHandler(event:Event):void{
+				reversPrint=tg_reversPrint.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.reversPrint = reversPrint;
+				so.flush();  
+				Context.setAttribute('reversPrint', reversPrint);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -271,12 +267,12 @@
 			</s:FormItem> 
 
 			<s:FormItem label="Кол-во страниц в PDF файле">
-				<!--<s:TextInput id="tiPdfPageLimit" text="{pdfPageLimit}"
-							 restrict="0123456789"
-							 change="tiPdfPageLimit_changeHandler(event)"
-							 width="50"/>-->
 				<s:NumericStepper id="nsPdfPageLimit" value="@{pdfPageLimit}" 
 								  minimum="0" maximum="200" snapInterval="10" width="50" change="nsPdfPageLimit_changeHandler(event)"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Реверсная печать">
+				<s:CheckBox id="tg_reversPrint" selected="{reversPrint}" change="tg_reversPrint_changeHandler(event)"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Сжать базу данных">

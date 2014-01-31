@@ -386,7 +386,7 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
-		public function setStateByTech(pgId:String):void{
+		public function setPrintStateByTech(pgId:String):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
 			var sql:String;

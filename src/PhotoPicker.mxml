@@ -12,6 +12,7 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.akmeful.fotakrama.project.INamespaced;
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
@@ -53,6 +54,25 @@
 
 			[Bindable]
 			private var turnInterval:int;
+
+			[Bindable]
+			public var engineOnStartOn:Boolean=false;
+			[Bindable]
+			public var vacuumOnStartOn:Boolean=false;
+			[Bindable]
+			public var engineOnErrOff:Boolean=false;
+			[Bindable]
+			public var vacuumOnErrOff:Boolean=false;
+			[Bindable]
+			public var engineOnCompliteOff:Boolean=false;
+			[Bindable]
+			public var vacuumOnCompliteOff:Boolean=false;
+			[Bindable]
+			public var askOnComplite:Boolean=false;
+			[Bindable]
+			public var layerOnComplite:Boolean=false;
+			[Bindable]
+			public var layerOnCompliteTray:int=1;
 			
 			[Bindable]
 			private var techPointObj:TechPoint;
@@ -145,6 +165,16 @@
 					reversOrder=so.data.reversOrder; 
 					turnInterval=so.data.turnInterval;
 					if(turnInterval<=0) turnInterval=1000;
+					engineOnStartOn=so.data.engineOnStartOn;
+					vacuumOnStartOn=so.data.vacuumOnStartOn;
+					engineOnErrOff=so.data.engineOnErrOff;
+					vacuumOnErrOff=so.data.vacuumOnErrOff;
+					engineOnCompliteOff=so.data.engineOnCompliteOff;
+					vacuumOnCompliteOff=so.data.vacuumOnCompliteOff;
+					askOnComplite=so.data.askOnComplite;
+					layerOnComplite=so.data.layerOnComplite;
+					layerOnCompliteTray=so.data.layerOnCompliteTray;
+					if(layerOnCompliteTray<=0) layerOnCompliteTray=1;
 				}
 				currentState='config';
 			}
@@ -284,6 +314,24 @@
 				so.flush();  
 			}
 			
+			protected function setBool(prop:String):void{
+				if(!this.hasOwnProperty(prop)) return;
+				var checkb:CheckBox= this['tg_'+prop] as CheckBox;
+				if (!checkb) return;
+				var result:Boolean=checkb.selected;
+				this[prop]=checkb.selected; 
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data[prop] = result;
+				so.flush();  
+			}
+			
+			protected function ns_layerOnCompliteTray_changeHandler(event:Event):void{
+				layerOnCompliteTray=ns_layerOnCompliteTray.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.layerOnCompliteTray = layerOnCompliteTray;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -323,19 +371,59 @@
 			<s:Label text="Время цикла(млсек):"/>
 			<s:NumericStepper id="spTurnInterval" minimum="500" maximum="10000" snapInterval="100" value="{turnInterval}" change="spTurnInterval_changeHandler(event)"/>
 		</s:HGroup>
-		<s:Spacer height="15"/>
-		<s:HGroup gap="10" width="100%">
-			<s:VGroup>
+		<s:HGroup gap="0" verticalAlign="baseline">
+			<s:Label text="При старте включать:" width="150"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
+			<s:Label text="Привод"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_vacuumOnStartOn" selected="{vacuumOnStartOn}" change="{setBool('vacuumOnStartOn')}"/>
+			<s:Label text="Вакуум"/>
+		</s:HGroup>
+		<s:HGroup gap="0" verticalAlign="baseline">
+			<s:Label text="При ошибке выключать:" width="150"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
+			<s:Label text="Привод"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
+			<s:Label text="Вакуум"/>
+		</s:HGroup>
+		<s:VGroup gap="5">
+			<s:Label text="При завершении заказа"/>
+			<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
+				<s:Label text="Выключать:"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_engineOnCompliteOff" selected="{engineOnCompliteOff}"  change="{setBool('engineOnCompliteOff')}"/> 
+				<s:Label text="Привод"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_vacuumOnCompliteOff" selected="{vacuumOnCompliteOff}"  change="{setBool('vacuumOnCompliteOff')}"/>
+				<s:Label text="Вакуум"/>
+			</s:HGroup>
+			<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
+				<s:CheckBox id="tg_askOnComplite" selected="{askOnComplite}"  change="{setBool('askOnComplite')}"/> 
+				<s:Label text="Запрос на продолжение после завершения заказа"/>
+				<s:Spacer width="15"/>
+				<s:CheckBox id="tg_layerOnComplite" selected="{layerOnComplite}"  change="{setBool('layerOnComplite')}"/> 
+				<s:Label text="Между заказами выкладывать лист с лотка"/>
+				<s:Spacer width="10"/>
+				<s:NumericStepper id="ns_layerOnCompliteTray" minimum="1" maximum="8" snapInterval="1" 
+								  value="{layerOnCompliteTray}" enabled="{tg_layerOnComplite.selected}" change="ns_layerOnCompliteTray_changeHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:Spacer height="5"/>
+		<s:HGroup gap="0" width="100%">
+			<s:VGroup gap="0">
 				<s:Label text="Контроллер" fontWeight="bold"/>
 				<itemRenderer:ComInfoRenderer  data="{comController}" lockType="true" lockSuffix="true"/>
 			</s:VGroup>
-			<s:VGroup >
+			<s:VGroup gap="0">
 				<s:Label text="Сканер ШК" fontWeight="bold"/>
 				<itemRenderer:ComInfoRenderer data="{comBarcodeReader}" lockType="true"/>
 			</s:VGroup>
-		</s:HGroup>
-		<s:HGroup gap="10" width="600" horizontalAlign="right">
-			<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+			<s:VGroup gap="0" height="95%" verticalAlign="bottom">
+				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+			</s:VGroup>
 		</s:HGroup>
 	</s:VGroup>
 
@@ -347,6 +435,15 @@
 		<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
 							 barcodeReader="{barcodeReader}" controller="{controller}"
 							 reversOrder="{reversOrder}" turnInterval="{turnInterval}"
+							 engineOnStartOn="{engineOnStartOn}"
+							 vacuumOnStartOn="{vacuumOnStartOn}"
+							 engineOnErrOff="{engineOnErrOff}"
+							 vacuumOnErrOff="{vacuumOnErrOff}"
+							 engineOnCompliteOff="{engineOnCompliteOff}"
+							 vacuumOnCompliteOff="{vacuumOnCompliteOff}"
+							 askOnComplite="{askOnComplite}"
+							 layerOnComplite="{layerOnComplite}"
+							 layerOnCompliteTray="{layerOnCompliteTray}"
 							 width="100%" height="100%"/>
 	</s:VGroup>
 	

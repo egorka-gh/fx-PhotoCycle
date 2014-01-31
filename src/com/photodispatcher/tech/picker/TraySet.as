@@ -93,6 +93,11 @@ package com.photodispatcher.tech.picker{
 			so.flush();
 		}
 
+		public function getLayerInTray(tray:int):int{
+			if(tray==-1) return 0;
+			return tarys.getItemAt(tray)['layer'];
+		}
+
 		public function getCurrentTray(layer:int):int{
 			var tray:int=curLayerTrayMap[layer.toString()];
 			if(tray==-1 || tarys.getItemAt(tray)['layer']!=layer){

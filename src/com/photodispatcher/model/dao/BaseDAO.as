@@ -367,9 +367,9 @@ package com.photodispatcher.model.dao{
 					if(prop.substr(0,3)=='is_'){
 						dest[prop]=Boolean(source[prop]);
 					}else if(prop.indexOf('date')!=-1){
-						dest[prop]=new Date(source[prop]);
+						if(source[prop]) dest[prop]=new Date(source[prop]);
 					}else if(prop.indexOf('time')!=-1){
-						dest[prop]=new Date(source[prop]);
+						if(source[prop]) dest[prop]=new Date(source[prop]);
 					}else{
 						dest[prop]=source[prop];
 					}

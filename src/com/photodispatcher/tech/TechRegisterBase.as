@@ -63,7 +63,7 @@ package com.photodispatcher.tech{
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
-		protected function get isComplete():Boolean{
+		public function get isComplete():Boolean{
 			if(bookPart==BookSynonym.BOOK_PART_BLOCK && registred==books*sheets){
 				return true;
 			}
@@ -105,12 +105,14 @@ package com.photodispatcher.tech{
 			return lastSheet;
 		}
 
+		protected var _canInterrupt:Boolean=false;
 		public function get canInterrupt():Boolean{
-			return false;
+			return _canInterrupt;
 		}
-		
+
+		protected var _strictSequence:Boolean=false;
 		public function get strictSequence():Boolean{
-			return false;
+			return _strictSequence;
 		}
 		
 		public function finalise():Boolean{

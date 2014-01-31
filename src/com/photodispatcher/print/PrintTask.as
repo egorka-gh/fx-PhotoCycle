@@ -1,12 +1,12 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.SourceType;
-	//import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.Event;
@@ -54,6 +54,7 @@ package com.photodispatcher.print{
 		public var errMsg:String;
 		
 		public var printGrp:PrintGroup;
+		public var revers:Boolean;
 		private var lab:LabBase;
 		
 		private var dstFolder:File;
@@ -69,10 +70,11 @@ package com.photodispatcher.print{
 		private var printBodyTemp02:String;
 		
 
-		public function PrintTask(printGroup:PrintGroup, lab:LabBase){
+		public function PrintTask(printGroup:PrintGroup, lab:LabBase, revers:Boolean){
 			super(null);
 			this.printGrp=printGroup;
 			this.lab=lab;
+			this.revers=revers;
 			printContext= new Object();
 			printContext[KEY_ORDER_ID]=printGrp.order_id;
 			printContext[KEY_GROUP_ID]=printGrp.humanId;
@@ -291,6 +293,10 @@ package com.photodispatcher.print{
 				return;
 			}
 			var pf:PrintGroupFile=printGrp.printFiles[currCopyIdx] as PrintGroupFile;
+			if(revers && !printGrp.is_pdf && 
+				(printGrp.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+					printGrp.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+					printGrp.book_type==BookSynonym.BOOK_TYPE_LEATHER)) pf=printGrp.printFiles[printGrp.printFiles.length-1-currCopyIdx] as PrintGroupFile;
 			if(!pf){
 				printGrp.state=OrderState.ERR_PRINT_POST;
 				dispatchErr('Ошибка размещения. Пустой файл №'+currCopyIdx.toString());

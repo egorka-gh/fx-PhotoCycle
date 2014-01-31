@@ -35,7 +35,8 @@ package com.photodispatcher.model.dao{
 				'UPDATE config.book_pg_template'+
 				' SET book=?, book_part=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, is_pdf=?,'+
 				' sheet_width=?, sheet_len=?, page_width=?, page_len=?, font_size=?, font_offset=?, notching=?, stroke=?, bar_offset=?, bar_size=?,' + 
-				' tech_bar=?, tech_add=?, tech_bar_color=?, tech_bar_gravity=?, tech_bar_offset=?, tech_bar_step=?' + 
+				' tech_bar=?, tech_add=?, tech_bar_color=?, tech_bar_step=?,'+
+				' is_tech_center=?, tech_bar_offset=?, is_tech_top=?, tech_bar_toffset=?, is_tech_bot=?, tech_bar_boffset=?' + 
 				' WHERE id=?',
 				[	item.book,
 					item.book_part,
@@ -60,9 +61,13 @@ package com.photodispatcher.model.dao{
 					item.tech_bar,
 					item.tech_add,
 					item.tech_bar_color,
-					item.tech_bar_gravity,
-					item.tech_bar_offset,
 					item.tech_bar_step,
+					item.is_tech_center?1:0,
+					item.tech_bar_offset,
+					item.is_tech_top?1:0,
+					item.tech_bar_toffset,
+					item.is_tech_bot?1:0,
+					item.tech_bar_boffset,
 					item.id],item);
 		}
 		
@@ -71,8 +76,8 @@ package com.photodispatcher.model.dao{
 			execute(
 				'INSERT INTO config.book_pg_template (book, book_part, width, height, paper, frame, correction, cutting, is_duplex, is_pdf,'+
 					' sheet_width, sheet_len, page_width, page_len, font_size, font_offset, notching, stroke, bar_offset, bar_size,'+
-					' tech_bar, tech_add, tech_bar_color, tech_bar_gravity, tech_bar_offset, tech_bar_step)' +
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+					' tech_bar, tech_add, tech_bar_color, tech_bar_step, is_tech_center, tech_bar_offset, is_tech_top, tech_bar_toffset, is_tech_bot, tech_bar_boffset)' +
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[	item.book,
 					item.book_part,
 					item.width,
@@ -96,9 +101,14 @@ package com.photodispatcher.model.dao{
 					item.tech_bar,
 					item.tech_add,
 					item.tech_bar_color,
-					item.tech_bar_gravity,
+					item.tech_bar_step,
+					item.is_tech_center?1:0,
 					item.tech_bar_offset,
-					item.tech_bar_step],item);
+					item.is_tech_top?1:0,
+					item.tech_bar_toffset,
+					item.is_tech_bot?1:0,
+					item.tech_bar_boffset
+				],item);
 		}
 		private function onCreate(e:AsyncSQLEvent):void{
 			removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);

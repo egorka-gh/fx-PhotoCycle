@@ -49,17 +49,26 @@ package com.photodispatcher.model{
 		public var bar_offset:String='+0+0';
 		[Bindable]
 		public var tech_bar:int=0;
+		//[Bindable]
+		//public var tech_bar_gravity:int=0;
 		[Bindable]
-		public var tech_bar_gravity:int=0;
-		[Bindable]
-		public var tech_bar_step:int=4;
+		public var tech_bar_step:Number=4.0;
 		[Bindable]
 		public var tech_bar_color:String='200000';
 		[Bindable]
+		public var tech_add:int=4;
+		[Bindable]
+		public var is_tech_center:Boolean=true;
+		[Bindable]
 		public var tech_bar_offset:String='+0-200';
 		[Bindable]
-		public var tech_add:int=4;
-
+		public var is_tech_top:Boolean=false;
+		[Bindable]
+		public var tech_bar_toffset:String='+0+0';
+		[Bindable]
+		public var is_tech_bot:Boolean=false;
+		[Bindable]
+		public var tech_bar_boffset:String='+0+0';
 		
 		//ref
 		[Bindable]
@@ -114,12 +123,16 @@ package com.photodispatcher.model{
 			raw.bar_size=bar_size;
 			raw.bar_offset=bar_offset;
 			raw.tech_bar=tech_bar;
-			raw.tech_bar_gravity=tech_bar_gravity;
 			raw.tech_bar_step=tech_bar_step;
 			raw.tech_bar_color=tech_bar_color;
-			raw.tech_bar_offset=tech_bar_offset;
 			raw.tech_add=tech_add;
-
+			raw.is_tech_center=is_tech_center;
+			raw.tech_bar_offset=tech_bar_offset;
+			raw.is_tech_top=is_tech_top;
+			raw.tech_bar_toffset=tech_bar_toffset;
+			raw.is_tech_bot=is_tech_bot;
+			raw.tech_bar_boffset=tech_bar_boffset;
+			
 			return raw;
 		}
 
@@ -147,11 +160,15 @@ package com.photodispatcher.model{
 			pgt.bar_size=raw.bar_size;
 			pgt.bar_offset=raw.bar_offset;
 			pgt.tech_bar=raw.tech_bar;
-			pgt.tech_bar_gravity=raw.tech_bar_gravity;
 			pgt.tech_bar_step=raw.tech_bar_step;
 			pgt.tech_bar_color=raw.tech_bar_color;
-			pgt.tech_bar_offset=raw.tech_bar_offset;
 			pgt.tech_add=raw.tech_add;
+			pgt.is_tech_center=raw.is_tech_center;
+			pgt.tech_bar_offset=raw.tech_bar_offset;
+			pgt.is_tech_top=raw.is_tech_top;
+			pgt.tech_bar_toffset=raw.tech_bar_toffset;
+			pgt.is_tech_bot=raw.is_tech_bot;
+			pgt.tech_bar_boffset=raw.tech_bar_boffset;
 			
 			return pgt;
 		}

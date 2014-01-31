@@ -15,9 +15,11 @@
 			
 			[Bindable]
 			private var template:BookPgTemplate;
-			
+
+			/*
 			[Bindable]
 			private var gravityAC:ArrayCollection= new ArrayCollection(['От центра','От нижнего края']);
+			*/
 			
 			public function show(template:BookPgTemplate):void{
 				if(!template) return;
@@ -34,8 +36,19 @@
 				close();
 			}
 			
+			private function stepParse(value:String):Number{
+				return nf_step.parseNumber(value);
+			}
+			
+			private function stepFormat(value:Number):String{
+				return nf_step.format(value);
+			}
 		]]>
 	</fx:Script>
+	
+	<fx:Declarations>
+		<s:NumberFormatter id="nf_step" fractionalDigits="1" decimalSeparator="."/>
+	</fx:Declarations>
 	
 	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
 		<s:fill>
@@ -47,7 +60,7 @@
 	</s:Rect>
 	<s:Form top="4" left="4" right="4" bottom="30">
 		<s:layout>
-			<s:FormLayout gap="-10" />
+			<s:FormLayout gap="-15" />
 		</s:layout>
 		<s:FormItem label="Увеличение длинны формата (мм)">
 			<s:TextInput id="tiTechAdd" text="{template.tech_add}" change="{template.tech_add=int(tiTechAdd.text)}" restrict="0-9" width="50"/>
@@ -56,16 +69,48 @@
 			<s:TextInput id="tiTechBarSize" text="{template.tech_bar}" change="{template.tech_bar=int(tiTechBarSize.text)}" restrict="0-9" width="50"/>
 		</s:FormItem> 
 		<s:FormItem label="Ширина штриха (pix)">
-			<s:NumericStepper value="@{template.tech_bar_step}" minimum="1" maximum="10" snapInterval="1"/>
+			<s:NumericStepper id="ns_step" value="@{template.tech_bar_step}" minimum="1.00" maximum="10.00" stepSize="0.10" 
+							   valueFormatFunction="{stepFormat}" valueParseFunction="{stepParse}"/>
 		</s:FormItem> 
 		<s:FormItem label="Цвет штрихкода">
 			<!--<mx:ColorPicker id="cpBarColor" selectedColor="@{conf.tech_bar_color}" dataProvider="{barColors}"/>-->
 			<s:TextInput text="@{template.tech_bar_color}" restrict="a-f,A-F,0-9" width="50"/>
 		</s:FormItem> 
-		<s:FormItem label="Смещение штрихкода (pix)">
+		<!--<s:FormItem label="Смещение штрихкода (pix)">
 			<itemRenderer:OffsetEditor id="tiTechBarOffs" data="{template.tech_bar_offset}" change="{template.tech_bar_offset=tiTechBarOffs.data}"/>
 			<s:DropDownList dataProvider="{gravityAC}" selectedIndex="@{template.tech_bar_gravity}" />
-		</s:FormItem> 
+		</s:FormItem> -->
+		<s:FormItem label="Рисовать">
+			<s:HGroup gap="0" verticalAlign="middle">
+				<s:CheckBox selected="@{template.is_tech_center}"/>
+				<s:Label text="По центру" width="60"/>
+				<s:Spacer width="10"/>
+				<s:Label text="Смещение (pix):"/>
+				<s:Spacer width="5"/>
+				<itemRenderer:OffsetEditor id="tiTechBarOffs" enabled="{template.is_tech_center}"  
+										   data="{template.tech_bar_offset}" change="{template.tech_bar_offset=tiTechBarOffs.data}"/>
+			</s:HGroup>
+			<s:HGroup gap="0" verticalAlign="middle">
+				<s:CheckBox selected="@{template.is_tech_top}"/>
+				<s:Label text="В верху" width="60"/>
+				<s:Spacer width="10"/>
+				<s:Label text="Смещение (pix):"/>
+				<s:Spacer width="5"/>
+				<itemRenderer:OffsetEditor id="tiTechBarTOffs" 
+					data="{template.tech_bar_toffset}" enabled="{template.is_tech_top}"
+										   change="{template.tech_bar_toffset=tiTechBarTOffs.data}"/>
+			</s:HGroup>
+			<s:HGroup gap="0" verticalAlign="middle">
+				<s:CheckBox selected="@{template.is_tech_bot}"/>
+				<s:Label text="В низу" width="60"/>
+				<s:Spacer width="10"/>
+				<s:Label text="Смещение (pix):"/>
+				<s:Spacer width="5"/>
+				<itemRenderer:OffsetEditor id="tiTechBarBOffs" 
+					data="{template.tech_bar_boffset}" enabled="{template.is_tech_bot}"
+										   change="{template.tech_bar_boffset=tiTechBarBOffs.data}"/>
+			</s:HGroup>
+		</s:FormItem>
 	</s:Form>
 	<s:Button label="Закрыть" click="button1_clickHandler(event)" bottom="10" right="10"/>
 </s:SkinnablePopUpContainer>

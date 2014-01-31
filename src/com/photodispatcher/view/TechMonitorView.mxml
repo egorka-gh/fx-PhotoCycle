@@ -7,6 +7,7 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.TechPoint;
@@ -15,6 +16,7 @@
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.tech.TechRegisterBase;
+			import com.photodispatcher.tech.TechRegisterCommon;
 			import com.photodispatcher.tech.TechRegisterFolding;
 			import com.photodispatcher.tech.TechRegisterPrint;
 			
@@ -88,8 +90,8 @@
 					case SourceType.TECH_FOLDING:
 						result= new TechRegisterFolding(printGroup,books,sheets);
 						break;
-					case SourceType.TECH_LAMINATION:
 					default:
+						result= new TechRegisterCommon(printGroup,books,sheets);
 						break;
 				}
 				if(result){
@@ -124,7 +126,7 @@
 				//parce barcode
 				var pgId:String;
 				barText+=barcode+'\n';
-				if(barcode.length>10) pgId=barcode.substr(10);
+				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 				if(!pgId){
 					//TODO rise err
 					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
@@ -137,6 +139,7 @@
 				
 				if(currRegister && currRegister.printGroupId==pgId){
 					currRegister.register(bookNum,pageNum);
+					if (currRegister.isComplete) logToScreen('Группа печати "'+currRegister.printGroupId+'" завершена',false);
 				}else{
 					if(currRegister && !currRegister.finalise()) return;
 					//create new

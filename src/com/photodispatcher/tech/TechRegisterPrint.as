@@ -21,7 +21,7 @@ package com.photodispatcher.tech{
 			if(isComplete){
 				//set printgroup/order state
 				var pdao:PrintGroupDAO=new PrintGroupDAO();
-				pdao.setStateByTech(printGroupId);
+				pdao.setPrintStateByTech(printGroupId);
 			}
 		}
 		

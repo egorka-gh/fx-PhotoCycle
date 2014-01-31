@@ -377,7 +377,33 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			//draw tech barcode
-			if(printGroup.bookTemplate.tech_bar){
+			if(printGroup.bookTemplate.tech_bar && 
+				(printGroup.bookTemplate.is_tech_top || printGroup.bookTemplate.is_tech_center || printGroup.bookTemplate.is_tech_bot)){
+				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
+				//mm to pix
+				var barSize:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_bar);
+				var barcode:String=printGroup.techBarcode(file);
+				if(barcode){
+					var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
+					if(!barOffset) barOffset='+0+0';
+					var gravity:String='West';
+					if(printGroup.bookTemplate.is_tech_center){
+						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+					}
+					if(printGroup.bookTemplate.is_tech_top){
+						barOffset=printGroup.bookTemplate.tech_bar_toffset;
+						if(!barOffset) barOffset='+0+0';
+						gravity='NorthWest';
+						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+					}
+					if(printGroup.bookTemplate.is_tech_bot){
+						barOffset=printGroup.bookTemplate.tech_bar_boffset;
+						if(!barOffset) barOffset='+0+0';
+						gravity='SouthWest';
+						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+					}
+				}
+				/*
 				var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
 				if(!barOffset) barOffset='+0+0';
 				//mm to pix
@@ -387,6 +413,7 @@ package com.photodispatcher.provider.preprocess{
 				if(printGroup.bookTemplate.tech_bar_gravity!=0) gravity='SouthWest';
 				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
 				IMCommandUtil.drawBarcode(folder,command,barSize,printGroup.techBarcode(file),'', barOffset, -90, gravity, printGroup.bookTemplate.tech_bar_step, parseInt(printGroup.bookTemplate.tech_bar_color,16));
+				*/
 			}
 
 			command.add('-density'); command.add('300x300');
@@ -418,16 +445,39 @@ package com.photodispatcher.provider.preprocess{
 				if(barcode) IMCommandUtil.drawBarcode(folder,command,printGroup.bookTemplate.bar_size,barcode,barcode,printGroup.bookTemplate.bar_offset);
 			}
 			//draw tech barcode
-			if(printGroup.bookTemplate.tech_bar){
-				var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
-				if(!barOffset) barOffset='+0+0';
+			if(printGroup.bookTemplate.tech_bar && 
+				(printGroup.bookTemplate.is_tech_top || printGroup.bookTemplate.is_tech_center || printGroup.bookTemplate.is_tech_bot)){
 				//mm to pix
+				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add);
 				var barSize:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_bar);
 				barcode=printGroup.techBarcode(file);
+				if(barcode){
+					var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
+					if(!barOffset) barOffset='+0+0';
+					var gravity:String='east';
+					if(printGroup.bookTemplate.is_tech_center){
+						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+					}
+					if(printGroup.bookTemplate.is_tech_top){
+						barOffset=printGroup.bookTemplate.tech_bar_toffset;
+						if(!barOffset) barOffset='+0+0';
+						gravity='NorthEast';
+						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+					}
+					if(printGroup.bookTemplate.is_tech_bot){
+						barOffset=printGroup.bookTemplate.tech_bar_boffset;
+						if(!barOffset) barOffset='+0+0';
+						gravity='SouthEast';
+						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+					}
+				}
+				/*
+				var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
+				if(!barOffset) barOffset='+0+0';
 				var gravity:String='east';
 				if(printGroup.bookTemplate.tech_bar_gravity!=0) gravity='SouthEast';
-				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add);
 				IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+				*/
 			}
 
 			command.add('-density'); command.add('300x300');

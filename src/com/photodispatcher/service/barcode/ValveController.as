@@ -117,8 +117,9 @@ package com.photodispatcher.service.barcode{
 			log('< '+msg);
 			//check fo error
 			if(msg.substr(0,3)==MSG_CONTROLLER_ERROR_PREFIX){
-				if(resendCount>MAX_RESEND) {
+				if(resendCount>=MAX_RESEND) {
 					log('! Controller error ('+event.barcode+')');
+					_isBusy=false;
 					dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,'Ошибка контролера ('+event.barcode+')',ERROR_CONTROLLER_ERROR));
 				}else{
 					resendCount++;
@@ -203,7 +204,7 @@ package com.photodispatcher.service.barcode{
 			log('> '+msg);
 			lastCommand=msg;
 			if(!aclTimer){
-				aclTimer= new Timer(ACKNOWLEDGE_TIMEOUT,0);
+				aclTimer= new Timer(ACKNOWLEDGE_TIMEOUT,1);
 				aclTimer.addEventListener(TimerEvent.TIMER, onAclTimer);
 			}
 			aclTimer.start();
@@ -212,8 +213,9 @@ package com.photodispatcher.service.barcode{
 		
 		private function onAclTimer(evt:TimerEvent):void{
 			aclTimer.reset();
-			if(resendCount>MAX_RESEND) {
+			if(resendCount>=MAX_RESEND) {
 				log('! ACL timeout error');
+				_isBusy=false;
 				//dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,'Таймаут подтверждения команды от контролера',ERROR_ACKNOWLEDGE_TIMEOUT));
 			}else{
 				resendCount++;

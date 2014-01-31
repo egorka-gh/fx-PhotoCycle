@@ -10,6 +10,7 @@ package com.photodispatcher.tech.picker{
 	import com.photodispatcher.model.LayerSequence;
 	import com.photodispatcher.model.Layerset;
 	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.TechPoint;
 	import com.photodispatcher.model.dao.LayersetDAO;
 	import com.photodispatcher.model.dao.OrderDAO;
@@ -32,12 +33,14 @@ package com.photodispatcher.tech.picker{
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	public class TechPicker extends EventDispatcher{
-		public static const COMMAND_GROUP_START:int			=-1;
 		public static const COMMAND_GROUP_BOOK_START:int	=0;
 		public static const COMMAND_GROUP_BOOK_SHEET:int	=1;
 		public static const COMMAND_GROUP_BOOK_BETWEEN_SHEET:int	=2;
 		public static const COMMAND_GROUP_BOOK_END:int		=3;
-		public static const COMMAND_GROUP_STOP:int			=1000;
+		public static const COMMAND_GROUP_ORDER_END:int		=4;
+		public static const COMMAND_GROUP_START:int			=5;
+		public static const COMMAND_GROUP_PAUSE:int			=6;
+		public static const COMMAND_GROUP_STOP:int			=7;
 		
 		private static const BD_TIMEOUT_MIN:int=300;
 		private static const BD_TIMEOUT_MAX:int=1000;
@@ -59,6 +62,16 @@ package com.photodispatcher.tech.picker{
 		public var currEndpaper:Endpaper; 
 		[Bindable]
 		public var currBookTypeName:String=''; 
+		
+		public var engineOnStartOn:Boolean=false;
+		public var vacuumOnStartOn:Boolean=false;
+		public var engineOnErrOff:Boolean=false;
+		public var vacuumOnErrOff:Boolean=false;
+		public var engineOnCompliteOff:Boolean=false;
+		public var vacuumOnCompliteOff:Boolean=false;
+		public var askOnComplite:Boolean=false;
+		public var layerOnComplite:Boolean=false;
+		public var layerOnCompliteTray:int=1;
 
 		public var techPoint:TechPoint;
 		public var reversOrder:Boolean;
@@ -138,7 +151,7 @@ package com.photodispatcher.tech.picker{
 			currEndpaper=endpaperSet.emptyEndpaper;
 			currEndpaperInTray=endpaperSet.emptyEndpaper;
 			
-			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', ValveController.ACKNOWLEDGE_TIMEOUT*2);
+			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', ValveController.ACKNOWLEDGE_TIMEOUT*3);
 			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
 			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',turnInterval);
 			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000); //1сек
@@ -203,6 +216,8 @@ package com.photodispatcher.tech.picker{
 		}
 		
 		
+		private var pausedGroup:int=-1;
+		private var pausedGroupStep:int=-1;
 
 		[Bindable]
 		public var currentGroupStep:int;
@@ -216,7 +231,7 @@ package com.photodispatcher.tech.picker{
 			if(_currentGroup != value){
 				currentGroupStep=0;
 				//if(logger) logger.clear();
-				currentTray=-1;
+				if(!isServiceGroup(value)) currentTray=-1;
 				switch(value){
 					/*
 					case COMMAND_GROUP_START:
@@ -367,8 +382,12 @@ package com.photodispatcher.tech.picker{
 
 
 		public function start():void{
+			hasPauseRequest=false;
 			if(!checkPrepared(true)) return;
-			if(isRunning) return;
+			if(isRunning){
+				resume();
+				return;
+			}
 			if(!barcodeReader || ! controller){
 				//TODO err?
 				return;
@@ -382,69 +401,153 @@ package com.photodispatcher.tech.picker{
 			currBookIdx=-1;
 			currSheetTot=-1;
 			currSheetIdx=-1;
-
+			pausedGroup=-1;
+			pausedGroupStep=-1;
+			
 			currentGroup= COMMAND_GROUP_START;
 			isRunning=true;
 			isPaused=false;
 			nextStep();
 		}
 
-		public function resume():void{
-			if(!isRunning) return;
+		private function resume():void{
+			if(!isRunning || !isPaused) return;
 			log('resume');
 			resetLatches();
 			isPaused=false;
 			nextStep();
 		}
 
-		public function pause(alert:String):void{
+		private var hasPauseRequest:Boolean=false;
+		public function pauseRequest():void{
+			if(hasPauseRequest) return;
+			if(isServiceGroup(currentGroup)) return;
+			log('pause request');
+			hasPauseRequest=true;
+		}
+
+		private function pause(alert:String):void{
+			if(!isRunning) return;
 			if(isPaused) return;
-			isPaused=true;
-			log('pause: '+alert);
-			controller.close(currentTray);
-			currentTray=-1;
+			if(isServiceGroup(currentGroup)) return;
+			hasPauseRequest=false;
+			log('pause sequence: '+alert);
+			pausedGroup=currentGroup;
+			pausedGroupStep=currentGroupStep;
+			resetLatches();
+			currentGroup= COMMAND_GROUP_PAUSE;
+			nextStep();
 			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,alert));
+		}
+		private function pauseComplete():void{
+			hasPauseRequest=false;
+			isPaused=true;
+			currentTray=-1;
+			log('paused');
+			currentGroup=pausedGroup;
+			currentGroupStep=pausedGroupStep;
+			pausedGroup=-1;
+			pausedGroupStep=-1;
+		}
+		
+		private function isServiceGroup(group:int):Boolean{
+			return (group==COMMAND_GROUP_START || group==COMMAND_GROUP_STOP || group==COMMAND_GROUP_PAUSE);
 		}
 
 		public function stop():void{
-			log('stop');
-			if(controller) controller.close(currentTray);
+			if(!isRunning) return;
+			if(isPaused) isPaused=false;
+			log('stop sequence');
+			resetLatches();
+			currentGroup= COMMAND_GROUP_STOP;
+			nextStep();
+		}
+		private function stopComplite():void{
+			log('stoped');
 			currentTray=-1;
+			pausedGroup=-1;
+			pausedGroupStep=-1;
 			isRunning=false;
 			isPaused=false;
 			resetLatches();
 		}
 		
 		private function nextStep():void{
-			if(!isRunning || isPaused) return
+			if(!isRunning || isPaused) return;
+			if(hasPauseRequest){
+				hasPauseRequest=false;
+				pause('soft stop');
+				return;
+			}
+			var steps:int=0;
 			switch(currentGroup){
 				case COMMAND_GROUP_START:
-					/*
-					switch(currentGroupStep){
-						case 0:
-							//close all
-							aclLatch.setOn();
-							controller.closeAll();
-							break;
-						case 1:
-							//vacuum
-							aclLatch.setOn();
-							controller.vacuumOn();
-							break;
-						case 2:
-							//engine
-							aclLatch.setOn();
-							controller.engineOn();
-							break;
-						default:
-							currentGroup= COMMAND_GROUP_BOOK_START;
-							nextStep();
-							break;
+					if (vacuumOnStartOn) steps++;
+					if (engineOnStartOn) steps++;
+					if(currentGroupStep>=steps){
+						//complite
+						currentGroup= COMMAND_GROUP_BOOK_START;
+						nextStep();
+						return;
 					}
-					*/
-					currentGroup= COMMAND_GROUP_BOOK_START;
-					nextStep();
-					return;
+					if(currentGroupStep==0 && vacuumOnStartOn){
+						//log('vacuumOn');
+						aclLatch.setOn();
+						controller.vacuumOn();
+						return;
+					}
+					//log('engineOn');
+					aclLatch.setOn();
+					controller.engineOn();
+					break;
+				case COMMAND_GROUP_PAUSE:
+					if (vacuumOnErrOff) steps++;
+					if (engineOnErrOff) steps++;
+					if(currentTray!=-1) steps++;
+					if(currentGroupStep>=steps){
+						//complite
+						pauseComplete();
+						return;
+					}
+					if(currentGroupStep==0 && currentTray!=-1){
+						aclLatch.setOn();
+						controller.close(currentTray);
+						return;
+					}
+					if(currentGroupStep==0 || (currentGroupStep==1 && currentTray!=-1)){
+						if (vacuumOnErrOff){
+							aclLatch.setOn();
+							controller.vacuumOff();
+						}else{
+							aclLatch.setOn();
+							controller.engineOff();
+						}
+						return;
+					}
+					aclLatch.setOn();
+					controller.engineOff();
+					break;
+				case COMMAND_GROUP_STOP:
+					steps=2;
+					if(currentTray!=-1) steps=3;
+					if(currentGroupStep>=steps){
+						//complite
+						stopComplite();
+						return;
+					}
+					if(currentGroupStep==0 && steps==3){
+						aclLatch.setOn();
+						controller.close(currentTray);
+						return;
+					}
+					if(currentGroupStep==0 || (currentGroupStep==1 && steps==3)){
+						aclLatch.setOn();
+						controller.vacuumOff();
+						return;
+					}
+					aclLatch.setOn();
+					controller.engineOff();
+					break;
 				case COMMAND_GROUP_BOOK_START:
 					//check completed
 					if(currentGroupStep>=layerset.sequenceStart.length){
@@ -510,6 +613,7 @@ package com.photodispatcher.tech.picker{
 					feedLayer(layerset.sequenceEnd[currentGroupStep] as LayerSequence);
 					break;
 				default:
+					log('Не определена последовательность');
 					break;
 			}
 		}
@@ -567,6 +671,13 @@ package com.photodispatcher.tech.picker{
 			if(!l) return; 
 			switch(l.type){
 				case PickerLatch.TYPE_ACL:
+					if(isServiceGroup(currentGroup)){
+						//skip
+						//log('ACL Timeout - reset');
+						l.reset();
+						checkLatches();
+						break;
+					}
 				case PickerLatch.TYPE_REGISTER:
 					pause('Таймаут ожидания. '+l.label+':'+l.caption);
 					break;
@@ -643,6 +754,7 @@ package com.photodispatcher.tech.picker{
 				}
 			}
 			if(complite){
+				//log('checkLatches complite');
 				currentGroupStep++;
 				nextStep();
 			}
@@ -694,7 +806,7 @@ package com.photodispatcher.tech.picker{
 			currBarcode=barcode;
 			//parce barcode
 			var pgId:String;
-			if(barcode.length>10) pgId=barcode.substr(10);
+			if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 			if(!pgId){
 				pause('Не верный штрих код: '+barcode);
 				return;
