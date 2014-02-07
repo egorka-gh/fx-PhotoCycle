@@ -11,6 +11,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotocalendar.net.vo.project.FotocalendarViewVO;
 	import com.akmeful.fotocanvas.data.FotocanvasProject;
+	import com.akmeful.fotocup.data.FotocupProject;
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.model.Source;
@@ -71,12 +72,10 @@ package com.photodispatcher.provider.fbook.download{
 						fetchProject(lastFetchedId,FotocanvasProject.PROJECT_TYPE);
 						return;
 						break;
-					/*
 					case FotocanvasProject.PROJECT_TYPE:
-						//fetch new other proj type, default - error
+						fetchProject(lastFetchedId,FotocupProject.PROJECT_TYPE);
+						return;
 						break;
-					*/
-
 				}
 			}
 			lastErr='FBookProjectLoader: ' +event.text;
@@ -128,6 +127,13 @@ package com.photodispatcher.provider.fbook.download{
 					//viewUrl="{pathAlias.getPath('/bcard/view/', false)}"
 					bvo.updateTargetUrl('/canvas/view/');
 					proj= new FotocanvasProject('','',{id:projId});
+					bvo.project=proj;
+					service.execute(bvo);
+					break;
+				case FotocupProject.PROJECT_TYPE:
+					//viewUrl="{pathAlias.getPath('/bcard/view/', false)}"
+					bvo.updateTargetUrl('/cup/view/');
+					proj= new FotocupProject('','',{id:projId});
 					bvo.project=proj;
 					service.execute(bvo);
 					break;

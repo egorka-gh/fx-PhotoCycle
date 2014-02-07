@@ -36,10 +36,12 @@
 			private var layersAC:ArrayCollection;
 			[Bindable]
 			private var templatesAC:ArrayCollection;
+			/*
 			[Bindable]
 			private var endpaperAC:ArrayCollection;
 			[Bindable]
 			private var endpaperSynAC:ArrayCollection;
+			*/
 			[Bindable]
 			private var lGroupAC:ArrayCollection;//= new ArrayCollection();
 			[Bindable]
@@ -85,9 +87,12 @@
 				var ls:Layerset= new Layerset();
 				if(currentState=='templates'){
 					ls.name='Новый шаблон';
-				}else{
+				}else if(currentState=='interlayers'){
 					ls.name='Новая прослойка';
 					ls.subset_type=1;
+				}else{
+					ls.name='Новый форзац';
+					ls.subset_type=2;
 				}
 				templatesAC.addItem(ls);
 				currTemplate=ls;
@@ -113,18 +118,29 @@
 				var arr:Array=[];
 				var lg:LayerGroup;
 				var newState:String;
+				var dao:DictionaryCommonDAO;
+				var sarr:Array;
 				if(currentState=='templates'){
 					newState='template_edit';
 					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_START; lg.name='Начало книги';
 					arr.push(lg);
 					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_END; lg.name='Конец книги';
 					arr.push(lg);
-				}else{
+				}else if(currentState=='interlayers'){
 					newState='interlayers_edit';
 					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_BETWEEN_SHEET; lg.name='Между разворотами';
 					arr.push(lg);
-					var dao:DictionaryCommonDAO= new DictionaryCommonDAO();
-					var sarr:Array= dao.getLayersetSynonyms(ls.id);
+					dao= new DictionaryCommonDAO();
+					sarr= dao.getLayersetSynonyms(ls.id);
+					synAC=new ArrayCollection(sarr);
+				}else{
+					newState='endpaper_edit';
+					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_START; lg.name='Начало книги';
+					arr.push(lg);
+					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_END; lg.name='Конец книги';
+					arr.push(lg);
+					dao= new DictionaryCommonDAO();
+					sarr= dao.getLayersetSynonyms(ls.id);
 					synAC=new ArrayCollection(sarr);
 				}
 				lGroupAC= new ArrayCollection(arr);
@@ -206,8 +222,9 @@
 						currentState='interlayers';
 						break;
 					case 2:
-						var apDao:EndpaperDAO= new EndpaperDAO();
-						endpaperAC=apDao.findAll();
+						/* var apDao:EndpaperDAO= new EndpaperDAO();
+						endpaperAC=apDao.findAll(); */
+						templatesAC=tDao.findAll(2);
 						currentState='endpaper';
 						break;
 					case 3:
@@ -236,6 +253,7 @@
 				}
 			}
 			
+			/*
 			protected function endpaperGrid_selectionChangeHandler(event:GridSelectionEvent):void{
 				var ep:Endpaper=endpaperGrid.currentItem as Endpaper;
 				var arr:Array;
@@ -286,6 +304,7 @@
 					}
 				}
 			}
+			*/
 			
 			protected function cbGroup_changeHandler(event:IndexChangeEvent):void{
 				currLGroupIdx=cbGroup.selectedIndex;
@@ -299,9 +318,10 @@
 		<s:State name="templates" stateGroups="temp_view"/>
 		<s:State name="interlayers" stateGroups="temp_view"/>
 		<s:State name="layers"/>
-		<s:State name="endpaper"/>
+		<s:State name="endpaper"  stateGroups="temp_view"/>
 		<s:State name="template_edit" stateGroups="temp_edit"/>
 		<s:State name="interlayers_edit" stateGroups="temp_edit"/>
+		<s:State name="endpaper_edit" stateGroups="temp_edit"/>
 	</s:states>
 
 	<s:VGroup width="100%" height="100%" gap="5">
@@ -330,7 +350,10 @@
 		
 		<s:VGroup gap="5" height="100%" includeIn="temp_view">
 			<config:ItemsGrid id="templatesGrid" editable="true" 
-							  currentData="{templatesAC}" currentColumns="{Layerset.gridColumns()}"
+							  currentData="{templatesAC}" 
+							  currentColumns="{Layerset.gridColumns()}" 
+							  currentColumns.interlayers="{Layerset.gridColumns(1)}"
+							  currentColumns.endpaper="{Layerset.gridColumns(2)}"
 							  currentItem="@{currTemplate}"
 							  height="100%"/>
 			<s:HGroup gap="10" width="100%" horizontalAlign="right">
@@ -340,7 +363,7 @@
 						  click="btEditLayerset_clickHandler(event)"/>
 			</s:HGroup>
 		</s:VGroup>
-		<s:HGroup gap="10" height="100%" width="100%" includeIn="endpaper">
+		<!--<s:HGroup gap="10" height="100%" width="100%" includeIn="endpaper">
 			<s:VGroup gap="5" height="100%">
 				<config:ItemsGrid id="endpaperGrid" editable="true" currentColumns="{Endpaper.gridColumns()}" currentData="{endpaperAC}"
 								  selectionChange="endpaperGrid_selectionChangeHandler(event)"
@@ -367,10 +390,10 @@
 					<s:Button id="btSaveEPSynonym" label="Сохранить" click="btSaveEPSynonym_clickHandler(event)"/>
 				</s:HGroup>
 			</s:VGroup>
-		</s:HGroup>
+		</s:HGroup>-->
 		<s:Label text="{currTemplate.name}" fontWeight="bold" includeIn="temp_edit"/>
 		<s:HGroup gap="15" includeIn="temp_edit"  paddingLeft="10" width="100%" height="450" verticalAlign="bottom">
-			<s:VGroup height="100%" width="250" gap="10" includeIn="interlayers_edit">
+			<s:VGroup height="100%" width="250" gap="10" includeIn="interlayers_edit, endpaper_edit">
 				<s:Label text="Синонимы" fontWeight="bold"/>
 				<config:ItemsGrid id="synGrid" editable="true" 
 								  currentData="{synAC}" currentColumns="{SynonymCommon.gridColumns()}"
@@ -380,7 +403,7 @@
 					<s:Button id="btSaveSynonym" label="Сохранить" click="btSaveSynonym_clickHandler(event)"/>
 				</s:HGroup>
 			</s:VGroup>
-			<s:VGroup height="100%" width="250" gap="10">
+			<s:VGroup height="100%" width="250" gap="10" enabled="{currTemplate &amp;&amp; !currTemplate.is_passover}">
 				<s:Label text="Подборка" fontWeight="bold"/>
 				<s:HGroup gap="5" verticalAlign="baseline" width="100%">
 					<s:Label text="Группа"/>

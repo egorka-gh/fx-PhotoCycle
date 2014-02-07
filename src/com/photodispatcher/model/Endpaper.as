@@ -8,7 +8,7 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var id:int=-1;
 		[Bindable]
-		public var name:String;
+		public var name:String='';
 		
 		public function get isEmpty():Boolean{
 			return id==0;

@@ -34,11 +34,17 @@
 			public var vacuumOnStartOn:Boolean=false;
 			public var engineOnErrOff:Boolean=false;
 			public var vacuumOnErrOff:Boolean=false;
+
+			public var stopOnComplite:Boolean=false;
+			public var pauseOnComplite:Boolean=false;
+			public var layerOnComplite:int=0;
+			/*
 			public var engineOnCompliteOff:Boolean=false;
 			public var vacuumOnCompliteOff:Boolean=false;
 			public var askOnComplite:Boolean=false;
-			public var layerOnComplite:Boolean=false;
+			public var layerOnComplite:int=0;
 			public var layerOnCompliteTray:int=1;
+			*/
 
 			[Bindable]
 			private var acTemplates:ArrayCollection;
@@ -50,7 +56,7 @@
 				var ddao:DictionaryDAO=new DictionaryDAO();
 				acGroups=ddao.getLayerGroupValueList(false,true);
 				*/
-				acGroups=new ArrayCollection(['Начало книги','Разворот','Между разворотами','Конец книги','Конец заказа','Пуск','Пауза','Стоп']);
+				acGroups=new ArrayCollection(['Начало книги','Разворот','Между разворотами','Конец книги','Конец заказа','Пуск','Пауза','Продолжить','Стоп']);
 			}
 			
 			private var _barcodeReader:ComReader;
@@ -102,11 +108,16 @@
 				techPicker.vacuumOnStartOn=vacuumOnStartOn;
 				techPicker.engineOnErrOff=engineOnErrOff;
 				techPicker.vacuumOnErrOff=vacuumOnErrOff;
+				techPicker.stopOnComplite=stopOnComplite;
+				techPicker.pauseOnComplite=pauseOnComplite;
+				techPicker.layerOnComplite=layerOnComplite;
+				/*
 				techPicker.engineOnCompliteOff=engineOnCompliteOff;
 				techPicker.vacuumOnCompliteOff=vacuumOnCompliteOff;
 				techPicker.askOnComplite=askOnComplite;
 				techPicker.layerOnComplite=layerOnComplite;
 				techPicker.layerOnCompliteTray=layerOnCompliteTray;
+				*/
 				
 				techPicker.barcodeReader=barcodeReader;
 				techPicker.controller=controller;
@@ -161,19 +172,19 @@
 
 		<s:HGroup gap="10" width="100%">
 			<s:VGroup gap="5" width="100%">
-				<s:HGroup gap="10">
+				<s:HGroup gap="10" width="100%">
 					<s:Label text="Заказ: {techPicker.currPgId}"/>
 					<s:Label text="Тип книги: {techPicker.currBookTypeName}"/>
 					<s:Label text="Книга: {techPicker.currBookIdx.toString()}({techPicker.currBookTot.toString()})"/>
 					<s:Label text="Разворот: {techPicker.currSheetIdx.toString()}({techPicker.currSheetTot.toString()})"/>
 				</s:HGroup>
-				<s:HGroup gap="15">
+				<s:HGroup gap="15" width="100%">
 					<s:VGroup gap="7" width="200">
-						<s:Label text="Тип: {techPicker.currOrder.calc_type}"/>
-						<s:Label text="Обложка: {techPicker.currOrder.cover}"/>
-						<s:Label text="Углы/Каптал: {techPicker.currOrder.corner_type}"/>
+						<s:Label text="Тип: {techPicker.currOrder.calc_type}" width="100%" maxDisplayedLines="1"/>
+						<s:Label text="Обложка: {techPicker.currOrder.cover}" width="100%" maxDisplayedLines="1"/>
+						<s:Label text="Углы/Каптал: {techPicker.currOrder.corner_type}" width="100%" maxDisplayedLines="1"/>
 					</s:VGroup>
-					<s:VGroup gap="5">
+					<s:VGroup gap="5" width="100%">
 						<s:HGroup gap="5" verticalAlign="baseline">
 							<s:Label text="Формат заказа: {techPicker.currOrder.format}" width="200"/>
 							<s:Spacer width="5"/>
@@ -185,16 +196,17 @@
 							<s:Spacer width="5"/>
 							<s:Label text="Шаблон прослойки:" width="120" textAlign="right"/>
 							<s:DropDownList id="ddCurrInterlayer" labelField="name" width="150" 
-											dataProvider="{techPicker.interlayerSet.interlayers}" 
+											dataProvider="{techPicker.interlayerSet.layersets}" 
 											selectedItem="{techPicker.currInerlayer}"
 											changing="preventChanging(event)"/>
 						</s:HGroup>
 						<s:HGroup gap="5" verticalAlign="baseline">
 							<s:Label text="Форзац заказа: {techPicker.currOrder.endpaper}" width="200"/>
 							<s:Spacer width="5"/>
-							<s:Label text="Загружен форзац:" width="120" textAlign="right"/>
-							<s:DropDownList id="ddCurrEndpaper" width="150" labelField="name" enabled="{techPicker.traySet.hasEndpaperTray}"
-											dataProvider="{techPicker.endpaperSet.enpapers}" selectedItem="{techPicker.currEndpaperInTray}"/>
+							<s:Label text="Шаблон форзаца:" width="120" textAlign="right"/>
+							<s:DropDownList id="ddCurrEndpaper" width="150" labelField="name" 
+											enabled="{!techPicker.isRunning || techPicker.isPaused}"
+											dataProvider="{techPicker.endpaperSet.layersets}" selectedItem="@{techPicker.currEndpaper}"/>
 						</s:HGroup>
 					</s:VGroup>
 				</s:HGroup>

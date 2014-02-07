@@ -6,14 +6,15 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotocanvas.data.FotocanvasProject;
+	import com.akmeful.fotocup.data.FotocupProject;
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.fotokniga.book.data.BookCoverPrintType;
 	import com.akmeful.fotokniga.book.data.BookPage;
 	import com.akmeful.fotokniga.book.layout.BookLayout;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.model.BookSynonym;
-	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
+	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.filesystem.File;
@@ -81,6 +82,11 @@ package com.photodispatcher.provider.fbook{
 					var bcp:CardProject= new CardProject('','',raw);
 					_project=bcp;
 					break;
+				case FotocupProject.PROJECT_TYPE:
+					//magnet = createItem(rawData) as MagnetProject;
+					var fc:FotocupProject= new FotocupProject('','',raw);
+					_project=fc;
+					break;
 			}
 			//reindex content elements
 			var idx:int;
@@ -124,6 +130,9 @@ package com.photodispatcher.provider.fbook{
 				case PROJECT_TYPE_BCARD:
 					return 'Визитка';
 					break;
+				case FotocupProject.PROJECT_TYPE:
+					return 'Кружка';
+					break;
 				default:
 					return 'Неопределен';
 			}
@@ -157,6 +166,9 @@ package com.photodispatcher.provider.fbook{
 				case PROJECT_TYPE_BCARD:
 					return BookSynonym.BOOK_TYPE_BCARD;
 					break;
+				case FotocupProject.PROJECT_TYPE:
+					return BookSynonym.BOOK_TYPE_CUP;
+					break;
 				default:
 					return 0;
 			}
@@ -168,9 +180,11 @@ package com.photodispatcher.provider.fbook{
 				case Book.PROJECT_TYPE:
 					return (project as Book).template.paper.id.toString();
 					break;
+				/*
 				case FotocalendarProject.PROJECT_TYPE:
 					return '1';
 					break;
+				*/
 				case MagnetProject.PROJECT_TYPE:
 					return (project as MagnetProject).template.paperType.printId;
 					break;
@@ -202,6 +216,9 @@ package com.photodispatcher.provider.fbook{
 					break;
 				case FotocanvasProject.PROJECT_TYPE:
 					return (project as FotocanvasProject).template.printAlias;
+					break;
+				case FotocupProject.PROJECT_TYPE:
+					return (project as FotocupProject).template.printAlias;
 					break;
 				default:
 					return '';
@@ -286,6 +303,13 @@ package com.photodispatcher.provider.fbook{
 					var bcp:CardProject=(project as CardProject);
 					pageSize.x=bcp.template.format.cellWidth;
 					pageSize.y=bcp.template.format.cellHeight;
+					pageOffset.x=0;
+					pageOffset.y=0;
+					break;
+				case FotocupProject.PROJECT_TYPE:
+					var fc:FotocupProject=(project as FotocupProject);
+					pageSize.x=fc.template.format.realWidth;
+					pageSize.y=fc.template.format.realHeight;
 					pageOffset.x=0;
 					pageOffset.y=0;
 					break;
@@ -408,6 +432,9 @@ package com.photodispatcher.provider.fbook{
 					break;
 				case FotocanvasProject.PROJECT_TYPE:
 					result=(project as FotocanvasProject).template.format.name;
+					break;
+				case FotocupProject.PROJECT_TYPE:
+					result=(project as FotocupProject).template.format.name;
 					break;
 			}
 			return result?result:'';

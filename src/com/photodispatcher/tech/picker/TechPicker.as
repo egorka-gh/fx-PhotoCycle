@@ -4,7 +4,6 @@ package com.photodispatcher.tech.picker{
 	import com.photodispatcher.event.ControllerMesageEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
 	import com.photodispatcher.model.DBRecord;
-	import com.photodispatcher.model.Endpaper;
 	import com.photodispatcher.model.FieldValue;
 	import com.photodispatcher.model.Layer;
 	import com.photodispatcher.model.LayerSequence;
@@ -40,7 +39,8 @@ package com.photodispatcher.tech.picker{
 		public static const COMMAND_GROUP_ORDER_END:int		=4;
 		public static const COMMAND_GROUP_START:int			=5;
 		public static const COMMAND_GROUP_PAUSE:int			=6;
-		public static const COMMAND_GROUP_STOP:int			=7;
+		public static const COMMAND_GROUP_RESUME:int		=7;
+		public static const COMMAND_GROUP_STOP:int			=8;
 		
 		private static const BD_TIMEOUT_MIN:int=300;
 		private static const BD_TIMEOUT_MAX:int=1000;
@@ -54,12 +54,26 @@ package com.photodispatcher.tech.picker{
 		[Bindable]
 		public var interlayerSet:InterlayerSet; 
 		[Bindable]
-		public var endpaperSet:EndpaperSet; 
+		public var endpaperSet:EndpaperSet;//:EndpaperSetKill; 
 		[Bindable]
 		public var currInerlayer:Layerset; 
+		
+		/*
+		private var _currEndpaperInTray:Endpaper; 
 		[Bindable]
-		public var currEndpaperInTray:Endpaper; 
-		public var currEndpaper:Endpaper; 
+		public function get currEndpaperInTray():Endpaper{
+			return _currEndpaperInTray;
+		}
+		public function set currEndpaperInTray(value:Endpaper):void{
+			_currEndpaperInTray = value;
+			if(_currEndpaperInTray && (!isRunning || !currOrder)) currEndpaper=_currEndpaperInTray;//?
+		}
+		public var currEndpaper:Endpaper;
+		*/
+
+		[Bindable]
+		public var currEndpaper:Layerset;
+		
 		[Bindable]
 		public var currBookTypeName:String=''; 
 		
@@ -67,11 +81,17 @@ package com.photodispatcher.tech.picker{
 		public var vacuumOnStartOn:Boolean=false;
 		public var engineOnErrOff:Boolean=false;
 		public var vacuumOnErrOff:Boolean=false;
+		
+		public var stopOnComplite:Boolean=false;
+		public var pauseOnComplite:Boolean=false;
+		public var layerOnComplite:int=0;
+		/*
 		public var engineOnCompliteOff:Boolean=false;
 		public var vacuumOnCompliteOff:Boolean=false;
 		public var askOnComplite:Boolean=false;
 		public var layerOnComplite:Boolean=false;
 		public var layerOnCompliteTray:int=1;
+		*/
 
 		public var techPoint:TechPoint;
 		public var reversOrder:Boolean;
@@ -149,8 +169,7 @@ package com.photodispatcher.tech.picker{
 			if (!endpaperSet.prepared) return;
 			
 			currEndpaper=endpaperSet.emptyEndpaper;
-			currEndpaperInTray=endpaperSet.emptyEndpaper;
-			
+
 			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', ValveController.ACKNOWLEDGE_TIMEOUT*3);
 			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
 			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',turnInterval);
@@ -232,16 +251,21 @@ package com.photodispatcher.tech.picker{
 				currentGroupStep=0;
 				//if(logger) logger.clear();
 				if(!isServiceGroup(value)) currentTray=-1;
+				var ls:LayerSequence;
 				switch(value){
 					/*
 					case COMMAND_GROUP_START:
 						break;
 					*/
 					case COMMAND_GROUP_BOOK_START:
-						currentSequence=layerset.sequenceStart;
+						if(!currEndpaper || currEndpaper.is_passover){
+							currentSequence=layerset.sequenceStart;
+						}else{
+							currentSequence=currEndpaper.sequenceStart;
+						}
 						break;
 					case COMMAND_GROUP_BOOK_SHEET:
-						var ls:LayerSequence= new LayerSequence();
+						ls= new LayerSequence();
 						ls.layer_group=COMMAND_GROUP_BOOK_SHEET;
 						ls.seqlayer=Layer.LAYER_SHEET;
 						ls.seqlayer_name='Разворот';
@@ -256,7 +280,19 @@ package com.photodispatcher.tech.picker{
 						}
 						break;
 					case COMMAND_GROUP_BOOK_END:
-						currentSequence=layerset.sequenceEnd;
+						if(!currEndpaper || currEndpaper.is_passover){
+							currentSequence=layerset.sequenceEnd;
+						}else{
+							currentSequence=currEndpaper.sequenceEnd;
+						}
+						break;
+					case COMMAND_GROUP_ORDER_END:
+						ls= new LayerSequence();
+						ls.layer_group=COMMAND_GROUP_ORDER_END;
+						ls.seqlayer=layerOnComplite;
+						ls.seqlayer_name=traySet.getLayerName(layerOnComplite);
+						ls.seqorder=1;
+						currentSequence=[ls];
 						break;
 					default:
 						currentSequence=[];
@@ -412,9 +448,11 @@ package com.photodispatcher.tech.picker{
 
 		private function resume():void{
 			if(!isRunning || !isPaused) return;
-			log('resume');
+			if(pausedGroup==-1 || pausedGroupStep==-1) return;
+			log('start resume');
 			resetLatches();
 			isPaused=false;
+			currentGroup= COMMAND_GROUP_RESUME;
 			nextStep();
 		}
 
@@ -426,18 +464,20 @@ package com.photodispatcher.tech.picker{
 			hasPauseRequest=true;
 		}
 
-		private function pause(alert:String):void{
+		private function pause(alert:String, isError:Boolean=true):void{
 			if(!isRunning) return;
 			if(isPaused) return;
 			if(isServiceGroup(currentGroup)) return;
 			hasPauseRequest=false;
 			log('pause sequence: '+alert);
-			pausedGroup=currentGroup;
-			pausedGroupStep=currentGroupStep;
+			if(!isServiceGroup(currentGroup)){
+				pausedGroup=currentGroup;
+				pausedGroupStep=currentGroupStep;
+			}
 			resetLatches();
 			currentGroup= COMMAND_GROUP_PAUSE;
 			nextStep();
-			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,alert));
+			if(isError) dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,alert));
 		}
 		private function pauseComplete():void{
 			hasPauseRequest=false;
@@ -446,12 +486,10 @@ package com.photodispatcher.tech.picker{
 			log('paused');
 			currentGroup=pausedGroup;
 			currentGroupStep=pausedGroupStep;
-			pausedGroup=-1;
-			pausedGroupStep=-1;
 		}
 		
 		private function isServiceGroup(group:int):Boolean{
-			return (group==COMMAND_GROUP_START || group==COMMAND_GROUP_STOP || group==COMMAND_GROUP_PAUSE);
+			return (group==COMMAND_GROUP_START || group==COMMAND_GROUP_STOP || group==COMMAND_GROUP_PAUSE || group==COMMAND_GROUP_RESUME);
 		}
 
 		public function stop():void{
@@ -476,7 +514,7 @@ package com.photodispatcher.tech.picker{
 			if(!isRunning || isPaused) return;
 			if(hasPauseRequest){
 				hasPauseRequest=false;
-				pause('soft stop');
+				pause('Пауза по запросу пользователя',false);
 				return;
 			}
 			var steps:int=0;
@@ -501,62 +539,114 @@ package com.photodispatcher.tech.picker{
 					controller.engineOn();
 					break;
 				case COMMAND_GROUP_PAUSE:
-					if (vacuumOnErrOff) steps++;
-					if (engineOnErrOff) steps++;
-					if(currentTray!=-1) steps++;
+					steps=3;
 					if(currentGroupStep>=steps){
 						//complite
 						pauseComplete();
 						return;
 					}
-					if(currentGroupStep==0 && currentTray!=-1){
-						aclLatch.setOn();
-						controller.close(currentTray);
-						return;
+					switch(currentGroupStep){
+						case 0:
+							if(currentTray!=-1){
+								aclLatch.setOn();
+								controller.close(currentTray);
+							}else{
+								currentGroupStep++;
+								nextStep();
+							}
+							break;
+						case 1:
+							if (vacuumOnErrOff){
+								aclLatch.setOn();
+								controller.vacuumOff();
+							}else{
+								currentGroupStep++;
+								nextStep();
+							}
+							break;
+						case 2:
+							if (engineOnErrOff){
+								aclLatch.setOn();
+								controller.engineOff();
+							}else{
+								currentGroupStep++;
+								nextStep();
+							}
+							break;
 					}
-					if(currentGroupStep==0 || (currentGroupStep==1 && currentTray!=-1)){
-						if (vacuumOnErrOff){
-							aclLatch.setOn();
-							controller.vacuumOff();
-						}else{
-							aclLatch.setOn();
-							controller.engineOff();
+					break;
+				case COMMAND_GROUP_RESUME:
+					steps=2;
+					if(currentGroupStep>=steps){
+						//complite 
+						//restore paused step
+						if(pausedGroup!=-1 && pausedGroupStep!=-1){
+							log('Resume complited');
+							currentGroup=pausedGroup;
+							currentGroupStep=pausedGroupStep;
+							pausedGroup=-1;
+							pausedGroupStep=-1;
+							nextStep();
 						}
 						return;
 					}
-					aclLatch.setOn();
-					controller.engineOff();
+					switch(currentGroupStep){
+						case 0:
+							if (vacuumOnErrOff){
+								aclLatch.setOn();
+								controller.vacuumOn();
+							}else{
+								currentGroupStep++;
+								nextStep();
+							}
+							break;
+						case 1:
+							if (engineOnErrOff){
+								aclLatch.setOn();
+								controller.engineOn();
+							}else{
+								currentGroupStep++;
+								nextStep();
+							}
+							break;
+					}
 					break;
 				case COMMAND_GROUP_STOP:
-					steps=2;
-					if(currentTray!=-1) steps=3;
+					steps=3;
 					if(currentGroupStep>=steps){
 						//complite
 						stopComplite();
 						return;
 					}
-					if(currentGroupStep==0 && steps==3){
-						aclLatch.setOn();
-						controller.close(currentTray);
-						return;
+					switch(currentGroupStep){
+						case 0:
+							if(currentTray!=-1){
+								aclLatch.setOn();
+								controller.close(currentTray);
+							}else{
+								currentGroupStep++;
+								nextStep();
+							}
+							break;
+						case 1:
+							aclLatch.setOn();
+							controller.vacuumOff();
+							break;
+						case 2:
+							aclLatch.setOn();
+							controller.engineOff();
+							break;
 					}
-					if(currentGroupStep==0 || (currentGroupStep==1 && steps==3)){
-						aclLatch.setOn();
-						controller.vacuumOff();
-						return;
-					}
-					aclLatch.setOn();
-					controller.engineOff();
 					break;
 				case COMMAND_GROUP_BOOK_START:
 					//check completed
-					if(currentGroupStep>=layerset.sequenceStart.length){
+					if(currentGroupStep>=currentSequence.length){
 						//complited
 						currentGroup= COMMAND_GROUP_BOOK_SHEET;
 						nextStep();
 						return;
 					}
-					feedLayer(layerset.sequenceStart[currentGroupStep] as LayerSequence);
+					feedLayer(currentSequence[currentGroupStep] as LayerSequence);
 					break;
 				case COMMAND_GROUP_BOOK_SHEET:
 					//check completed
@@ -589,7 +679,7 @@ package com.photodispatcher.tech.picker{
 					break;
 				case COMMAND_GROUP_BOOK_END:
 					//check completed
-					if(currentGroupStep>=layerset.sequenceEnd.length){
+					if(currentGroupStep>=currentSequence.length){
 						if(logger) logger.clear();
 						if (currBookIdx>=currBookTot){ 
 							//order complited
@@ -599,10 +689,15 @@ package com.photodispatcher.tech.picker{
 							currBookIdx=-1;
 							currSheetTot=-1;
 							currSheetIdx=-1;
-							pause('Заказ '+currPgId+' завершен.');
-							//reset
+							log('Заказ '+currPgId+' завершен.');
 							currPgId='';
 							currOrder=null;
+							currentGroup= COMMAND_GROUP_ORDER_END;
+							nextStep();
+							//stop();
+							/*
+							pause('Заказ '+currPgId+' завершен.');
+							*/
 						}else{
 							//current book complited
 							currentGroup= COMMAND_GROUP_BOOK_START;
@@ -610,7 +705,24 @@ package com.photodispatcher.tech.picker{
 						}
 						return;
 					}
-					feedLayer(layerset.sequenceEnd[currentGroupStep] as LayerSequence);
+					feedLayer(currentSequence[currentGroupStep] as LayerSequence);
+					break;
+				case COMMAND_GROUP_ORDER_END:
+					if(currentGroupStep>=1){
+						//complite
+						if(stopOnComplite){
+							stop();
+							return;
+						}
+						currentGroup= COMMAND_GROUP_BOOK_START;
+						if(pauseOnComplite){
+							pause('Пауза между заказами',false);
+							return;
+						}
+						nextStep();
+						return;
+					}
+					feedLayer(currentSequence[0] as LayerSequence);
 					break;
 				default:
 					log('Не определена последовательность');
@@ -621,17 +733,25 @@ package com.photodispatcher.tech.picker{
 		private function feedLayer(ls:LayerSequence):void{
 			if(!ls) return;
 			waiteTraySwitch=false;
+			if(ls.seqlayer==Layer.LAYER_EMPTY){
+				//skip 
+				currentGroupStep++;
+				nextStep();
+				return;
+			}
 			currentLayer=ls.seqlayer;
 			if(!currentLayer){
 				pause('Ошибка выполнения. Слой не определен.');
 				return;
 			}
+			/*
 			if(currentLayer==Layer.LAYER_ENDPAPER && currEndpaper.isEmpty){
 				//skip 
 				currentGroupStep++;
 				nextStep();
 				return;
 			}
+			*/
 			var ct:int=traySet.getCurrentTray(currentLayer);//currentLayer.currentTray;
 			if(ct<0){
 				pause('Не назначен лоток для слоя '+traySet.getLayerName(currentLayer));// currentLayer.name);
@@ -882,12 +1002,18 @@ package com.photodispatcher.tech.picker{
 			}
 
 			//check endpaper
-			var newEp:Endpaper=endpaperSet.getBySynonym(currOrder.endpaper);
+			var newEp:Layerset=endpaperSet.getBySynonym(currOrder.endpaper);
 			if(!newEp){
 				pause('Не известный форзац "'+currOrder.endpaper+'"');
 				log('! unknown endpaper');
 				return;
 			}
+			if(newEp.id!=currEndpaper.id){
+				pause('Форзац заказа "'+newEp.name+'" не соответствует текущему шаблону "'+currEndpaper.name+'"');
+				log('! wrong endpaper');
+				return;
+			}
+			/*
 			if(newEp.isEmpty){
 				if(!currEndpaper.isEmpty){
 					pause('Уберите форзац "'+currEndpaper.name+'" в начале книги');
@@ -896,18 +1022,23 @@ package com.photodispatcher.tech.picker{
 					return;
 				}
 			}else{
-				var msg:String;
-				if(currEndpaperInTray.id!=newEp.id){
-					if(!currEndpaper.isEmpty) msg='Уберите форзац "'+currEndpaper.name+'" в начале книги'+'\n';
-					msg=msg+'Положите форзац "'+newEp.name+'" в начале книги'+'\n';
-					var tray:int=traySet.getCurrentTray(Layer.LAYER_ENDPAPER);
-					if(tray==-1){
-						msg=msg+'Укажите лоток для Форзацев и загрузите форзацем: "'+newEp.name+'"';
-					}else{
-						msg=msg+'Загрузите лоток № '+(tray+1).toString()+' форзацем: "'+newEp.name+'"';
+				var msg:String='';
+				//check if template uses Endpaper
+				if(!layerset.usesEndPaper){
+					msg='Текущий шаблон не настроен для сборки книг с форзацем';
+				}else{
+					if(currEndpaperInTray.id!=newEp.id){
+						if(!currEndpaper.isEmpty) msg='Уберите форзац "'+currEndpaper.name+'" в начале книги'+'\n';
+						msg=msg+'Положите форзац "'+newEp.name+'" в начале книги'+'\n';
+						var tray:int=traySet.getCurrentTray(Layer.LAYER_ENDPAPER);
+						if(tray==-1){
+							msg=msg+'Укажите лоток для Форзацев и загрузите форзацем: "'+newEp.name+'"';
+						}else{
+							msg=msg+'Загрузите лоток № '+(tray+1).toString()+' форзацем: "'+newEp.name+'"';
+						}
+					}else if(currEndpaper.isEmpty){
+						msg='Положите форзац "'+newEp.name+'" в начале книги'+'\n';
 					}
-				}else if(currEndpaper.isEmpty){
-					msg='Положите форзац "'+newEp.name+'" в начале книги'+'\n';
 				}
 				if(msg){
 					pause(msg);
@@ -915,7 +1046,7 @@ package com.photodispatcher.tech.picker{
 					currEndpaper=newEp;
 					return;
 				}
-			}
+			}*/
 			currEndpaper=newEp;
 			bdLatch.forward();
 			//TODO implement check format

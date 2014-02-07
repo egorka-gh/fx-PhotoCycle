@@ -24,7 +24,13 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var is_pdf:Boolean;
 		[Bindable]
+		public var is_passover:Boolean;
+		[Bindable]
 		public var interlayer_thickness:int;
+		
+		//run time
+		[Bindable]
+		public var usesEndPaper:Boolean=false;
 
 		//db drived
 		[Bindable]
@@ -88,7 +94,8 @@ package com.photodispatcher.model{
 				var ag:Array=[[],[],[],[]];
 				var ls:LayerSequence;
 				for each(ls in arr){
-					if(ls.seqlayer!=0 && ls.layer_group>=0) (ag[ls.layer_group] as Array).push(ls); 
+					if(ls.seqlayer!=0 && ls.layer_group>=0) (ag[ls.layer_group] as Array).push(ls);
+					if(ls.seqlayer==Layer.LAYER_ENDPAPER) usesEndPaper=true;
 				}
 				//sort
 				(ag[0] as Array).sortOn('seqorder',Array.NUMERIC);
@@ -143,12 +150,17 @@ package com.photodispatcher.model{
 		}
 		*/
 
-		public static function gridColumns():ArrayList{
+		public static function gridColumns(subSetType:int=0):ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
 			col= new GridColumn('id'); col.headerText='ID'; col.visible=false; result.addItem(col);
 			col= new GridColumn('name'); col.headerText='Наименование'; col.width=150; result.addItem(col); 
-			col= new GridColumn('book_type'); col.headerText='Тип книги'; col.width=150; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			if(subSetType==0){
+				col= new GridColumn('book_type'); col.headerText='Тип книги'; col.width=150; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			}
+			if(subSetType==2){
+				col= new GridColumn('is_passover'); col.headerText='Использовать шаблон книги'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
+			}
 			//col= new GridColumn('is_pdf'); col.headerText='Полиграфия'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false; result.addItem(col);
 			//col= new GridColumn('interlayer_thickness'); col.headerText='Толщина прослойки (мм)'; result.addItem(col); 
 			return result;

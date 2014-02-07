@@ -12,11 +12,11 @@ package com.photodispatcher.model.dao{
 		}
 		
 		public function findAllArray(type:int=0, silent:Boolean=false):Array{
-			var sql:String='SELECT s.id, s.subset_type, s.name, s.book_type, s.is_pdf, s.interlayer_thickness, bt.name book_type_name'+
+			var sql:String='SELECT s.id, s.subset_type, s.name, s.book_type, s.is_pdf, s.is_passover, s.interlayer_thickness, bt.name book_type_name'+
 				' FROM config.layerset s'+
 				' INNER JOIN config.book_type bt ON bt.id=s.book_type'+
 				' WHERE s.subset_type=?';
-			sql+=' ORDER BY s.name';
+			sql+=' ORDER BY s.is_passover DESC, s.name';
 			runSelect(sql,[type],silent);
 			var res:Array=itemsArray;
 			return res;
@@ -34,22 +34,24 @@ package com.photodispatcher.model.dao{
 		
 		public function update(item:Layerset):void{
 			execute(
-				'UPDATE config.layerset SET name=?, book_type=?, is_pdf=?, interlayer_thickness=? WHERE id=?',
+				'UPDATE config.layerset SET name=?, book_type=?, is_pdf=?, is_passover=?, interlayer_thickness=? WHERE id=?',
 				[	item.name,
 					item.book_type,
 					item.is_pdf?1:0,
+					item.is_passover?1:0,
 					item.interlayer_thickness,
 					item.id],item);
 		}
 		
 		public function create(item:Layerset):void{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
-			execute("INSERT INTO config.layerset (subset_type, name, book_type, is_pdf, interlayer_thickness)" +
-				"VALUES (?, ?, ?, ?, ?)",
+			execute("INSERT INTO config.layerset (subset_type, name, book_type, is_pdf, is_passover, interlayer_thickness)" +
+				" VALUES (?, ?, ?, ?, ?, ?)",
 				[	item.subset_type,
 					item.name,
 					item.book_type,
 					item.is_pdf?1:0,
+					item.is_passover?1:0,
 					item.interlayer_thickness],item);
 		}
 		private function onCreate(e:AsyncSQLEvent):void{

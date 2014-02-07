@@ -64,6 +64,17 @@
 			[Bindable]
 			public var vacuumOnErrOff:Boolean=false;
 			[Bindable]
+			public var stopOnComplite:Boolean=true;
+			[Bindable]
+			public var pauseOnComplite:Boolean=false;
+			[Bindable]
+			public var layerOnComplite:int=0;
+			[Bindable]
+			public var layerOnCompliteIdx:int=-1;
+			[Bindable]
+			public var layersAC:ArrayCollection;
+			/*
+			[Bindable]
 			public var engineOnCompliteOff:Boolean=false;
 			[Bindable]
 			public var vacuumOnCompliteOff:Boolean=false;
@@ -73,6 +84,7 @@
 			public var layerOnComplite:Boolean=false;
 			[Bindable]
 			public var layerOnCompliteTray:int=1;
+			*/
 			
 			[Bindable]
 			private var techPointObj:TechPoint;
@@ -128,11 +140,11 @@
 			private function init():void{
 				OrderStateDAO.initStateMap();
 				//load tech layers
+				var a:ArrayCollection;
 				if(!Context.getAttribute('layerValueList')){
 					var dDao:DictionaryDAO=new DictionaryDAO();
-					var a:ArrayCollection;
-					a=dDao.getTechLayerValueList();
-					Context.setAttribute('layerValueList', a);
+					layersAC=dDao.getTechLayerValueList();
+					Context.setAttribute('layerValueList', layersAC);
 				}
 				if(!Context.getAttribute('book_typeList')){
 					a=dDao.getBookTypeValueList();
@@ -169,12 +181,19 @@
 					vacuumOnStartOn=so.data.vacuumOnStartOn;
 					engineOnErrOff=so.data.engineOnErrOff;
 					vacuumOnErrOff=so.data.vacuumOnErrOff;
+					if(so.data.hasOwnProperty('stopOnComplite')) stopOnComplite=so.data.stopOnComplite;
+					pauseOnComplite=so.data.pauseOnComplite;
+					layerOnComplite=so.data.layerOnComplite;
+					if(!layerOnComplite) layerOnComplite=0;
+					layerOnCompliteIdx=ArrayUtil.searchItemIdx('value',layerOnComplite,layersAC.source);
+					/*
 					engineOnCompliteOff=so.data.engineOnCompliteOff;
 					vacuumOnCompliteOff=so.data.vacuumOnCompliteOff;
 					askOnComplite=so.data.askOnComplite;
 					layerOnComplite=so.data.layerOnComplite;
 					layerOnCompliteTray=so.data.layerOnCompliteTray;
 					if(layerOnCompliteTray<=0) layerOnCompliteTray=1;
+					*/
 				}
 				currentState='config';
 			}
@@ -325,10 +344,19 @@
 				so.flush();  
 			}
 			
+			/*
 			protected function ns_layerOnCompliteTray_changeHandler(event:Event):void{
 				layerOnCompliteTray=ns_layerOnCompliteTray.value;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.layerOnCompliteTray = layerOnCompliteTray;
+				so.flush();  
+			}
+			*/
+			
+			protected function cb_layerOnComplite_changeHandler(event:IndexChangeEvent):void{
+				layerOnComplite=cb_layerOnComplite.selectedItem.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.layerOnComplite = layerOnComplite;
 				so.flush();  
 			}
 			
@@ -372,7 +400,7 @@
 			<s:NumericStepper id="spTurnInterval" minimum="500" maximum="10000" snapInterval="100" value="{turnInterval}" change="spTurnInterval_changeHandler(event)"/>
 		</s:HGroup>
 		<s:HGroup gap="0" verticalAlign="baseline">
-			<s:Label text="При старте включать:" width="150"/>
+			<s:Label text="При старте включать:" width="180"/>
 			<s:Spacer width="10"/>
 			<s:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
 			<s:Label text="Привод"/>
@@ -381,7 +409,7 @@
 			<s:Label text="Вакуум"/>
 		</s:HGroup>
 		<s:HGroup gap="0" verticalAlign="baseline">
-			<s:Label text="При ошибке выключать:" width="150"/>
+			<s:Label text="При паузе/ошибке выключать:" width="180"/>
 			<s:Spacer width="10"/>
 			<s:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
 			<s:Label text="Привод"/>
@@ -392,6 +420,18 @@
 		<s:VGroup gap="5">
 			<s:Label text="При завершении заказа"/>
 			<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
+				<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
+				<s:Label text="Стоп"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
+				<s:Label text="Пауза"/>
+			</s:HGroup>
+			<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
+				<s:Label text="Между заказами выкладывать:"/>
+				<s:Spacer width="10"/>
+				<s:ComboBox id="cb_layerOnComplite" dataProvider="{layersAC}" selectedIndex="{layerOnCompliteIdx}" change="cb_layerOnComplite_changeHandler(event)"/>
+			</s:HGroup>
+			<!--<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
 				<s:Label text="Выключать:"/>
 				<s:Spacer width="10"/>
 				<s:CheckBox id="tg_engineOnCompliteOff" selected="{engineOnCompliteOff}"  change="{setBool('engineOnCompliteOff')}"/> 
@@ -409,7 +449,7 @@
 				<s:Spacer width="10"/>
 				<s:NumericStepper id="ns_layerOnCompliteTray" minimum="1" maximum="8" snapInterval="1" 
 								  value="{layerOnCompliteTray}" enabled="{tg_layerOnComplite.selected}" change="ns_layerOnCompliteTray_changeHandler(event)"/>
-			</s:HGroup>
+			</s:HGroup>-->
 		</s:VGroup>
 		<s:Spacer height="5"/>
 		<s:HGroup gap="0" width="100%">
@@ -439,11 +479,9 @@
 							 vacuumOnStartOn="{vacuumOnStartOn}"
 							 engineOnErrOff="{engineOnErrOff}"
 							 vacuumOnErrOff="{vacuumOnErrOff}"
-							 engineOnCompliteOff="{engineOnCompliteOff}"
-							 vacuumOnCompliteOff="{vacuumOnCompliteOff}"
-							 askOnComplite="{askOnComplite}"
+							 stopOnComplite="{stopOnComplite}"
+							 pauseOnComplite="{pauseOnComplite}"
 							 layerOnComplite="{layerOnComplite}"
-							 layerOnCompliteTray="{layerOnCompliteTray}"
 							 width="100%" height="100%"/>
 	</s:VGroup>
 	

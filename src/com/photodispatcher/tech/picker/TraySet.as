@@ -15,8 +15,8 @@ package com.photodispatcher.tech.picker{
 		[Bindable]
 		public var tarys:ArrayCollection;
 
-		[Bindable]
-		public var hasEndpaperTray:Boolean;
+		//[Bindable]
+		//public var hasEndpaperTray:Boolean;
 		
 		private var curLayerTrayMap:Object;
 		private var layers:Array;
@@ -54,7 +54,7 @@ package com.photodispatcher.tech.picker{
 				la= new LayerAllocation();
 				la.tray=i;
 				la.layer=arr[i];
-				if(la.layer==Layer.LAYER_ENDPAPER) hasEndpaperTray=true;
+				//if(la.layer==Layer.LAYER_ENDPAPER) hasEndpaperTray=true;
 				la.layer_name=getLayerName(arr[i]);
 				tarr[i]=la;
 				//tarr[i]=(ArrayUtil.searchItem('value',arr[i],layers) as FieldValue);
@@ -75,7 +75,7 @@ package com.photodispatcher.tech.picker{
 			//save
 			var so:SharedObject=SharedObject.getLocal('tech_tray','/');
 			var arr:Array=[0,0,0,0,0,0,0,0];
-			var hasEp:Boolean=false;
+			//var hasEp:Boolean=false;
 			//var fv:FieldValue;
 			var la:LayerAllocation;
 			var i:int;
@@ -85,10 +85,10 @@ package com.photodispatcher.tech.picker{
 				la=tarr[i] as LayerAllocation;
 				if(la){
 					arr[i]=la.layer;
-					if(la.layer==Layer.LAYER_ENDPAPER) hasEp=true;
+					//if(la.layer==Layer.LAYER_ENDPAPER) hasEp=true;
 				}
 			}
-			hasEndpaperTray=hasEp;
+			//hasEndpaperTray=hasEp;
 			so.data['tech_tray']=arr;
 			so.flush();
 		}

@@ -10,23 +10,23 @@ package com.photodispatcher.tech.picker{
 	public class InterlayerSet{
 		
 		[Bindable]
-		public var interlayers:ArrayCollection;
+		public var layersets:ArrayCollection;
 
-		private var _prepared:Boolean;
-		private var synonymMap:Object;
+		protected var _prepared:Boolean;
+		protected var synonymMap:Object;
 		
 		public function get prepared():Boolean{
 			return _prepared;
 		}
 			
 		public function InterlayerSet(){
-			_prepared=init();
+			_prepared=init(1);
 		}
 		
-		private function init():Boolean{
+		protected function init(type:int):Boolean{
 			//load
 			var ilDao:LayersetDAO= new LayersetDAO();
-			var arr:Array=ilDao.findAllArray(1,true);
+			var arr:Array=ilDao.findAllArray(type,true);
 			if(!arr) return false;
 			var ls:Layerset;
 			synonymMap=new Object;
@@ -47,7 +47,7 @@ package com.photodispatcher.tech.picker{
 					synonymMap[s.synonym]=ls;
 				}
 			}
-			interlayers= new ArrayCollection(arr);
+			layersets= new ArrayCollection(arr);
 			return true;
 		}
 		

@@ -2,6 +2,7 @@ package com.photodispatcher.provider.fbook.model{
 	import com.akmeful.card.data.CardProject;
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
+	import com.akmeful.fotocup.data.FotocupProject;
 	import com.akmeful.fotokniga.book.data.BookCoverPrintType;
 	import com.akmeful.fotokniga.book.data.BookPage;
 	import com.akmeful.fotokniga.book.layout.BookLayout;
@@ -106,20 +107,13 @@ package com.photodispatcher.provider.fbook.model{
 			}
 
 			finalMontageCommand.prepend(backgroundCommand);
-			//set depth & quality
-			setOutputParams(finalMontageCommand);
 
-			/*
-			if(book.type==FotocalendarProject.PROJECT_TYPE){
-				//pages starts from 1 (0- 4 cover only)
-				pageNum++;
-			}
-			*/
-
-			var outFilePath:String=outFileName();
+			var outFilePath:String=outFileName(); ////default output to wrk folder
 			
+			//specific processing
 			if(book.type==FBookProject.PROJECT_TYPE_BCARD){
 				//save tile template to wrk folder
+				setOutputParams(finalMontageCommand);
 				finalMontageCommand.add(outFilePath);
 				finalMontageCommand.setProfile('Сборка tile #'+pageNum,outFilePath);
 				commands.push(finalMontageCommand);
@@ -129,19 +123,34 @@ package com.photodispatcher.provider.fbook.model{
 				var bcp:CardProject=book.project as CardProject;
 				finalMontageCommand.add('-size'); finalMontageCommand.add(bcp.template.format.realWidth+'x'+bcp.template.format.realHeight);
 				finalMontageCommand.add('tile:'+outFilePath);
-				setOutputParams(finalMontageCommand);
-				////pages starts from 1 (0- 4 cover only)
-				//pageNum++;
-				outFilePath=outFileName(); //bug if !outFolder
+				//outFilePath=outFileName(); //bug if !outFolder
 				pageSize= new Point(bcp.template.format.realWidth,bcp.template.format.realHeight);
+			}else if(book.type==FotocupProject.PROJECT_TYPE){
+				var fc:FotocupProject=book.project as FotocupProject;
+				if (fc.template.printWidth>fc.template.format.realWidth){
+					//resize to fc.template.printWidth
+					//remove virtual canvas
+					finalMontageCommand.add('+repage'); finalMontageCommand.add('-flatten'); 
+					//crop
+					var sheetCrop:String=fc.template.printWidth.toString()+'x'+fc.template.format.realHeight.toString()
+						+'+'+fc.template.printShift.toString()+'+0!';
+					finalMontageCommand.add('-gravity'); finalMontageCommand.add('West');
+					finalMontageCommand.add('-background'); finalMontageCommand.add('white');
+					finalMontageCommand.add('-crop'); finalMontageCommand.add(sheetCrop);
+					finalMontageCommand.add('-flatten');
+					pageSize= new Point(fc.template.printWidth,fc.template.format.realHeight);
+				}
+				//Reflect in the horizontal direction
+				finalMontageCommand.add('-flop');
 			}
-			if(!(book.isPageSliced(pageNum) || book.type==MagnetProject.PROJECT_TYPE)){ //if sliced or magnet page put to current (wrk)
-				//put to out folder
+			if(!(book.isPageSliced(pageNum) || book.type==MagnetProject.PROJECT_TYPE)){ //Sliced & magnet will stay in wrk
+				//redirect to output folder
 				if(outFolder) outFilePath=outFolder+File.separator+outFilePath;
 			}
-
+			//set depth & quality
+			setOutputParams(finalMontageCommand);
+			//save
 			finalMontageCommand.add(outFilePath);
-
 			finalMontageCommand.setProfile('Сборка страницы #'+pageNum,outFilePath);
 			commands.push(finalMontageCommand);
 
