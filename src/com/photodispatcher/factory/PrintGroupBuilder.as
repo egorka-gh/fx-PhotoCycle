@@ -275,13 +275,14 @@ package com.photodispatcher.factory{
 			if(!pg.getFiles()) return;
 			var f:PrintGroupFile;
 			for each(f in pg.getFiles()){
-				if (f && (f.page_num==0 || (dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && (f.page_num==1 || f.page_num==pg.pageNumber)))){
+				if (f && (f.page_num==0 || 
+					(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && !dst.bookTemplate.is_sheet_ready && dst.is_pdf && (f.page_num==1 || f.page_num==pg.pageNumber)))){
 					dst.addFile(f);
 				}
 			}
 			//set sheets number
 			dst.sheet_num=1;
-			if(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf) dst.sheet_num=2;
+			if(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && !dst.bookTemplate.is_sheet_ready) dst.sheet_num=2;
 			//sort 
 			if(dst.getFiles()) dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
 		}
@@ -305,7 +306,8 @@ package com.photodispatcher.factory{
 			if(!pg.getFiles()) return;
 			var f:PrintGroupFile;
 			for each(f in pg.getFiles()){
-				if (f && f.page_num!=0 && !(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && (f.page_num==1 || f.page_num==pg.pageNumber))){
+				if (f && f.page_num!=0 
+					&& !(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && !dst.bookTemplate.is_sheet_ready && (f.page_num==1 || f.page_num==pg.pageNumber))){
 					dst.addFile(f);
 				}
 			}
@@ -318,7 +320,7 @@ package com.photodispatcher.factory{
 				pageMin=Math.min(pageMin,f.page_num);
 			}
 			dst.sheet_num=pageMax-pageMin+1;
-			if (dst.is_pdf){
+			if (dst.is_pdf && !dst.bookTemplate.is_sheet_ready){
 				dst.sheet_num=dst.sheet_num/2;
 				if(dst.book_type==BookSynonym.BOOK_TYPE_BOOK){
 					//blank page

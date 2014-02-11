@@ -28,6 +28,8 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var is_pdf:Boolean=false;
 		[Bindable]
+		public var is_sheet_ready:Boolean=false;
+		[Bindable]
 		public var sheet_width:int=0;
 		[Bindable]
 		public var sheet_len:int=0;
@@ -112,6 +114,7 @@ package com.photodispatcher.model{
 			raw.correction=correction;
 			raw.cutting=cutting;
 			raw.is_pdf=is_pdf?1:0;
+			raw.is_sheet_ready=is_sheet_ready?1:0;
 			raw.is_duplex=is_duplex?1:0;
 			raw.sheet_width=sheet_width;
 			raw.sheet_len=sheet_len;
@@ -149,6 +152,7 @@ package com.photodispatcher.model{
 			pgt.correction=raw.correction;
 			pgt.cutting=raw.cutting;
 			pgt.is_pdf=Boolean(raw.is_pdf);
+			pgt.is_sheet_ready=Boolean(raw.is_sheet_ready);
 			pgt.is_duplex=Boolean(raw.is_duplex);
 			pgt.sheet_width=raw.sheet_width;
 			pgt.sheet_len=raw.sheet_len;

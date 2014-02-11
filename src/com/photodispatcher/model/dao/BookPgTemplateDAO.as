@@ -33,7 +33,7 @@ package com.photodispatcher.model.dao{
 		public function update(item:BookPgTemplate):void{
 			execute(
 				'UPDATE config.book_pg_template'+
-				' SET book=?, book_part=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, is_pdf=?,'+
+				' SET book=?, book_part=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, is_pdf=?, is_sheet_ready=?,'+
 				' sheet_width=?, sheet_len=?, page_width=?, page_len=?, font_size=?, font_offset=?, notching=?, stroke=?, bar_offset=?, bar_size=?,' + 
 				' tech_bar=?, tech_add=?, tech_bar_color=?, tech_bar_step=?,'+
 				' is_tech_center=?, tech_bar_offset=?, is_tech_top=?, tech_bar_toffset=?, is_tech_bot=?, tech_bar_boffset=?' + 
@@ -48,6 +48,7 @@ package com.photodispatcher.model.dao{
 					item.cutting,
 					item.is_duplex?1:0,
 					item.is_pdf?1:0,
+					item.is_sheet_ready?1:0,
 					item.sheet_width,
 					item.sheet_len,
 					item.page_width,
@@ -74,10 +75,10 @@ package com.photodispatcher.model.dao{
 		public function create(item:BookPgTemplate):void{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
 			execute(
-				'INSERT INTO config.book_pg_template (book, book_part, width, height, paper, frame, correction, cutting, is_duplex, is_pdf,'+
+				'INSERT INTO config.book_pg_template (book, book_part, width, height, paper, frame, correction, cutting, is_duplex, is_pdf, is_sheet_ready,'+
 					' sheet_width, sheet_len, page_width, page_len, font_size, font_offset, notching, stroke, bar_offset, bar_size,'+
 					' tech_bar, tech_add, tech_bar_color, tech_bar_step, is_tech_center, tech_bar_offset, is_tech_top, tech_bar_toffset, is_tech_bot, tech_bar_boffset)' +
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[	item.book,
 					item.book_part,
 					item.width,
@@ -88,6 +89,7 @@ package com.photodispatcher.model.dao{
 					item.cutting,
 					item.is_duplex?1:0,
 					item.is_pdf?1:0,
+					item.is_sheet_ready?1:0,
 					item.sheet_width,
 					item.sheet_len,
 					item.page_width,
@@ -146,6 +148,7 @@ package com.photodispatcher.model.dao{
 			*/
 			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=60; result.addItem(col);
 			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
+			col= new GridColumn('is_sheet_ready'); col.headerText='Готовый разворот'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
 			col= new GridColumn('sheet_width'); col.headerText='Ширина разворота pix'; result.addItem(col);
 			col= new GridColumn('sheet_len'); col.headerText='Длина разворота pix'; result.addItem(col);
 			col= new GridColumn('page_width'); col.headerText='Ширина страницы pix'; result.addItem(col);

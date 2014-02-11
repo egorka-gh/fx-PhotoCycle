@@ -257,7 +257,10 @@ package com.photodispatcher.model{
 			res.is_duplex=is_duplex;
 			return res;
 		}
-		
+
+		//preprocess
+		private var _bookFiles:Array;
+
 		//print
 		private var _printFiles:Array;
 		private var _pageNum:int;
@@ -292,6 +295,8 @@ package com.photodispatcher.model{
 		public function preparePrint():void{
 			var fa:Array=files;
 			if(!fa) return;
+			_printFiles=fa.concat();
+			/*
 			if (book_type!=0 && is_pdf){
 				_printFiles=fa.concat();
 				return;
@@ -303,21 +308,35 @@ package com.photodispatcher.model{
 			}
 			//common book
 			prepareBookFiles();
+			*/
 		}
 
+		/*
 		public function preparePDF():void{
-			if(book_type==0 || !is_pdf) return;
+			if(book_type==0 || !is_pdf || (bookTemplate && bookTemplate.is_sheet_ready)) return;
 			prepareBookFiles(true);
 		}
+		*/
 
-		private function prepareBookFiles(forPdf:Boolean=false):void{
-			if(book_type==0) return;
-			var it:PrintGroupFile;
+		public function get bookFiles():Array{
+			if(!_bookFiles) prepareBookFiles();
+			return _bookFiles;
+		}
+
+		private function prepareBookFiles():void{
+			var fa:Array=files;
+			if(!fa) return;
+			
+			if(book_type==0){
+				_bookFiles=fa.concat();
+				return;
+			}
+			if(!bookTemplate) return;
 			
 			if(book_part==BookSynonym.BOOK_PART_COVER){
-				prepareCovers(forPdf);
+				prepareCovers();
 			}else if(book_part==BookSynonym.BOOK_PART_BLOCK){
-				prepareSheets(forPdf);
+				prepareSheets();
 			}else if(book_part==BookSynonym.BOOK_PART_INSERT){
 				prepareInserts();
 			}
@@ -335,7 +354,7 @@ package com.photodispatcher.model{
 			}
 		}
 
-		private function prepareSheets(forPdf:Boolean=false):void{
+		private function prepareSheets():void{
 			if(book_type==0 || book_part!=BookSynonym.BOOK_PART_BLOCK) return;
 			var i:int;
 			var j:int;
@@ -371,7 +390,7 @@ package com.photodispatcher.model{
 					it=getImage(i+1,j+_pageStart);
 					if(it) bookFiles[j]=it;
 				}
-				if(forPdf && is_pdf && book_type==BookSynonym.BOOK_TYPE_BOOK){
+				if(is_pdf && !bookTemplate.is_sheet_ready){
 					//add extra blank pages
 					bookFiles.unshift(null);
 					bookFiles.push(null);
@@ -380,23 +399,23 @@ package com.photodispatcher.model{
 			}
 			
 			//concat 
-			_printFiles=[];
+			_bookFiles=[];
 			for (i=0; i<books.length; i++){
-				_printFiles=_printFiles.concat(books[i]);
+				_bookFiles=_bookFiles.concat(books[i]);
 			}
 		}
 
-		private function prepareCovers(forPdf:Boolean=false):void{
+		private function prepareCovers():void{
 			if(book_type==0 || book_part!=BookSynonym.BOOK_PART_COVER) return;
 			var it:PrintGroupFile;
 			var i:int;
 			var imgFront:PrintGroupFile;
 			var imgBackLeft:PrintGroupFile;
 			var imgBackRight:PrintGroupFile;
-			if(is_pdf && book_type==BookSynonym.BOOK_TYPE_JOURNAL){
+			if(is_pdf && book_type==BookSynonym.BOOK_TYPE_JOURNAL && !bookTemplate.is_sheet_ready){
 				//pdf journal 
 				detectPagesNumber();
-				_printFiles=new Array(book_num*3);
+				_bookFiles=new Array(book_num*3);
 				//default cover
 				imgFront=getDefaultImage(0);
 				//default 1st page
@@ -408,45 +427,45 @@ package com.photodispatcher.model{
 					if(imgFront){
 						it=imgFront.clone();
 						it.book_num=i+1;
-						_printFiles[i*3]=it;
+						_bookFiles[i*3]=it;
 					}
 					if(imgBackLeft){
 						it=imgBackLeft.clone();
 						it.book_num=i+1;
-						_printFiles[i*3+1]=it;
+						_bookFiles[i*3+1]=it;
 					}
 					if(imgBackRight){
 						it=imgBackRight.clone();
 						it.book_num=i+1;
-						_printFiles[i*3+2]=it;
+						_bookFiles[i*3+2]=it;
 					}
 				}
 				//fill
 				for each(it in getFiles()){
 					if(it && (it.page_num<2 || it.page_num==pageNumber) && it.book_num!=0){
 						if(it.page_num<2){
-							_printFiles[(it.book_num-1)*3+it.page_num]=it;
+							_bookFiles[(it.book_num-1)*3+it.page_num]=it;
 						}else{
-							_printFiles[(it.book_num-1)*3+2]=it;
+							_bookFiles[(it.book_num-1)*3+2]=it;
 						}
 					}
 				}
 			}else{
 				//common
-				_printFiles=new Array(book_num);
+				_bookFiles=new Array(book_num);
 				//fill vs default cover
 				imgFront=getDefaultImage(0);
 				if(imgFront){
 					for (i=0; i<book_num; i++){
 						it=imgFront.clone();
 						it.book_num=i+1;
-						_printFiles[i]=it;
+						_bookFiles[i]=it;
 					}
 				}
 				//fill
 				for each(it in getFiles()){
 					if(it && it.page_num==0 && it.book_num!=0){
-						_printFiles[it.book_num-1]=it;
+						_bookFiles[it.book_num-1]=it;
 					}
 				}
 			}
@@ -460,20 +479,20 @@ package com.photodispatcher.model{
 			var imgBackLeft:PrintGroupFile;
 			var imgBackRight:PrintGroupFile;
 
-			_printFiles=new Array(book_num);
+			_bookFiles=new Array(book_num);
 			//fill vs default cover
 			imgFront=getDefaultImage(0);
 			if(imgFront){
 				for (i=0; i<book_num; i++){
 					it=imgFront.clone();
 					it.book_num=i+1;
-					_printFiles[i]=it;
+					_bookFiles[i]=it;
 				}
 			}
 			//fill
 			for each(it in getFiles()){
 				if(it && it.page_num==0 && it.book_num!=0){
-					_printFiles[it.book_num-1]=it;
+					_bookFiles[it.book_num-1]=it;
 				}
 			}
 		}

@@ -114,7 +114,11 @@ package com.photodispatcher.provider.preprocess{
 				if(pg && pg.book_type!=0){ 
 					if(order.state!=OrderState.PREPROCESS_PDF) order.state=OrderState.PREPROCESS_PDF;
 					if(pg.is_pdf){
-						mg=new PDFmakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
+						if(!pg.bookTemplate.is_sheet_ready){
+							mg=new PDFmakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
+						}else{
+							mg=new PDFsimpleMakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
+						}
 					}else{
 						mg=new BookMakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
 					}

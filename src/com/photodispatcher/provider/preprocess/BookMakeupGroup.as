@@ -73,8 +73,7 @@ package com.photodispatcher.provider.preprocess{
 			var command:IMCommand;
 			var outName:String;
 			
-			printGroup.preparePDF();//dummy call
-			files=printGroup.printFiles;
+			files=printGroup.bookFiles;
 			if(!files || files.length==0){
 				state=STATE_ERR;
 				err=OrderState.ERR_PREPROCESS;
@@ -83,17 +82,6 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			printGroup.resetFiles();
-			/*
-			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK 
-				&& (printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK 
-				|| printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL
-				|| printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
-				//expand format len by tech len
-				var formatAdd:int=Context.getAttribute('tech.add');
-				if(formatAdd) printGroup.height+=formatAdd;
-			}
-			*/
-
 			//expand format by tech
 			if(printGroup.bookTemplate.tech_bar &&
 				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
@@ -132,7 +120,7 @@ package com.photodispatcher.provider.preprocess{
 			return (commands && commands.length>0);// || (finalCommands && finalCommands.length>0); 
 		}
 
-		private function createCommand(file:PrintGroupFile, folder:String):IMCommand{
+		protected function createCommand(file:PrintGroupFile, folder:String):IMCommand{
 			
 			var buttPix:int=UnitUtil.mm2Pixels300(printGroup.butt);
 			var width:int=printGroup.bookTemplate.sheet_width;
@@ -181,7 +169,7 @@ package com.photodispatcher.provider.preprocess{
 			var barcode:String
 			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER){
 				barcode=printGroup.barcodeText(file);
-				if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, barcode,printGroup.bookTemplate.bar_offset);
+				if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, barcode,printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
 			}
 
 			//draw body caption
@@ -191,32 +179,6 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			//draw tech barcode
-			/*
-			var barSize:int=Context.getAttribute('tech.barcode.size');
-			if(barSize && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK &&
-				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
-					printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
-					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
-				var barStep:int=Context.getAttribute('tech.barcode.step');
-				var barColor:int=Context.getAttribute('tech.barcode.color');
-				var barOffset:String=Context.getAttribute('tech.barcode.offset');
-				var formatAdd:int=Context.getAttribute('tech.add');
-				if(formatAdd){
-					//expand to right
-					formatAdd=UnitUtil.mm2Pixels300(formatAdd);
-					//-gravity east -background white  -splice 20x0
-					command.add('-gravity'); command.add('east');
-					command.add('-background'); command.add('white');
-					command.add('-splice'); command.add(formatAdd.toString()+'x0');
-				}
-				//mm to pix
-				barSize=UnitUtil.mm2Pixels300(barSize);
-				if(!barOffset) barOffset='+0+0';
-				barcode=printGroup.techBarcode(file);
-				var txt:String=printGroup.techBarcodeText(file);
-				if(barcode) IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,'east',barStep,barColor);
-			}
-			*/
 			var barSize:int=printGroup.bookTemplate.tech_bar;
 			if(barSize &&
 				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 

@@ -1002,7 +1002,12 @@ package com.photodispatcher.tech.picker{
 			}
 
 			//check endpaper
-			var newEp:Layerset=endpaperSet.getBySynonym(currOrder.endpaper);
+			var newEp:Layerset;
+			if(currOrder.endpaper){
+				newEp=endpaperSet.getBySynonym(currOrder.endpaper);
+			}else{
+				newEp=endpaperSet.emptyEndpaper;
+			}
 			if(!newEp){
 				pause('Не известный форзац "'+currOrder.endpaper+'"');
 				log('! unknown endpaper');

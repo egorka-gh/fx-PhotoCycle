@@ -128,11 +128,12 @@ package com.photodispatcher.service.barcode{
 					var skip:Boolean=false;
 					if(doubleScanGap>0){
 						var now:int=getTimer();
-						skip=lastBarcode && now-lastBarcodeTime<doubleScanGap && lastBarcode==barcode;
-						lastBarcode=barcode;
+						skip=lastBarcode && (now-lastBarcodeTime)<doubleScanGap && lastBarcode==barcode;
+						//lastBarcode=barcode;
 						lastBarcodeTime=now;	
 						//if (skip) return;
 					}
+					lastBarcode=barcode;
 					if (!skip)dispatchEvent(new BarCodeEvent(BarCodeEvent.BARCODE_READED,barcode));
 				}
 			} while(idx>-1);

@@ -14,7 +14,8 @@ package com.photodispatcher.util{
 
 	public class IMCommandUtil{
 		private static const SHADOWED_TEXT_FORE_COLOR:String='#eeeeee';
-
+		private static const CODE128_QUIET_ZONE:int=60;
+		
 		public static function annotateImage(command:IMCommand,font_size:int,undercolor:String, text:String, offset:String, double:Boolean=false):void{
 			if(!command || !text) return;
 			if(!undercolor) undercolor='white';
@@ -154,7 +155,9 @@ package com.photodispatcher.util{
 			}
 		}
 		
-		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, offset:String, rotate:int=0, gravity:String='southwest', step:Number=3, color:int=0):void{
+		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, 
+										   offset:String, rotate:int=0, gravity:String='southwest',
+										   step:Number=3, color:int=0, quietZone:int=CODE128_QUIET_ZONE):void{
 			if(!command || !barcode || !wrkDir || height<=0) return;
 			var undercolor:String='white';
 			if(!offset) offset='+0+0';
@@ -168,7 +171,7 @@ package com.photodispatcher.util{
 			//create barcode image
 			if(!file.exists){
 				var c128Writer:Code128Writer= new Code128Writer();
-				var bmp:Bitmap=c128Writer.draw(barcode,height,drawStep,color);
+				var bmp:Bitmap=c128Writer.draw(barcode,height,drawStep,color,quietZone);
 				if (!bmp) return;
 				var data:BitmapData=bmp.bitmapData;
 				/*

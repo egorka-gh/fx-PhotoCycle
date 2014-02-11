@@ -1,5 +1,6 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
+	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.OrderState;
@@ -60,6 +61,17 @@ package com.photodispatcher.print{
 		
 		override public function post(pg:PrintGroup, revers:Boolean):void{
 			if(!pg) return;
+			
+			//try to post books to nhf first
+			if(pg.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+				pg.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+				pg.book_type==BookSynonym.BOOK_TYPE_LEATHER){
+				if(nhfLab && nhfLab.printChannel(pg)){
+					nhfLab.post(pg,revers);
+					return;
+				}
+			}
+			
 			if (canPrint(pg)){
 				var pt:PrintTask= new PrintTask(pg,this,revers);
 				printTasks.push(pt);

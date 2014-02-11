@@ -49,10 +49,10 @@ package com.google.zxing.oned
 		private static var CODE_FNC_2:int = 97;    // Code A, Code B
 		private static var CODE_FNC_3:int = 96;    // Code A, Code B
 		private static var CODE_FNC_4_B:int = 100; // Code B
-		
-		public function draw(contents:String, height:int, step:int=1, color:int=0):Bitmap{
+
+		public function draw(contents:String, height:int, step:int=1, color:int=0, quietZonePix:int=0):Bitmap{
 			try{
-				var result:BitMatrix = drawMatrix(contents,1,step);
+				var result:BitMatrix = drawMatrix(contents,1,step,quietZonePix);
 			}catch(e:Error){
 				return null;
 			}
@@ -78,13 +78,15 @@ package com.google.zxing.oned
 			return bmp;
 		}
 		
-		private function drawMatrix(contents:String, height:int, step:int=1):BitMatrix{
+		private function drawMatrix(contents:String, height:int, step:int=1, quietZonePix:int=0):BitMatrix{
 			if(step<=0) step=1;
+			if (quietZonePix<=0) quietZonePix=10*step;
 			var code:Array = encode(contents) as Array;
 			
 			var inputWidth:int = code.length;
 			// Add quiet zone on both sides
-			var outputWidth:int = (inputWidth + (UPCEANReader.START_END_PATTERN.length << 1))*step;
+			//var outputWidth:int = (inputWidth + (UPCEANReader.START_END_PATTERN.length << 1))*step;
+			var outputWidth:int = inputWidth*step+2*quietZonePix;
 			var outputHeight:int = Math.max(5, height);
 			//var multiple:int = step;
 			//var leftPadding:int = int((outputWidth - (inputWidth * multiple)) / 2);

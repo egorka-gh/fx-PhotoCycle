@@ -37,10 +37,9 @@ package com.photodispatcher.provider.preprocess{
 			commands=[];
 			finalCommands=[];
 			if(state==STATE_ERR) return;
-			if (!printGroup.is_pdf) return;
-
-			if (!printGroup.bookTemplate 
-				|| !printGroup.bookTemplate.sheet_width || !printGroup.bookTemplate.sheet_len
+			if (!printGroup.bookTemplate) return; 
+			if (!printGroup.is_pdf || printGroup.bookTemplate.is_sheet_ready) return;
+			if (!printGroup.bookTemplate.sheet_width || !printGroup.bookTemplate.sheet_len
 				|| ((!printGroup.bookTemplate.page_width || !printGroup.bookTemplate.page_len) 
 					&& (printGroup.book_part==BookSynonym.BOOK_PART_BLOCK || printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL))){
 				state=STATE_ERR;
@@ -65,8 +64,7 @@ package com.photodispatcher.provider.preprocess{
 			var pdfName:String;
 			var newFile:PrintGroupFile;
 			
-			printGroup.preparePDF();
-			files=printGroup.printFiles;
+			files=printGroup.bookFiles;
 			if(!files || files.length==0){
 				state=STATE_ERR;
 				err=OrderState.ERR_PREPROCESS;
@@ -221,16 +219,19 @@ package com.photodispatcher.provider.preprocess{
 						commands.push(command);
 						//add 2 final cmd
 						command2.add(outName);
+						pdfPageNum=pdfPageNum++;
+						
+						/*07.02.2014
 						//create cover back
 						backName=FILENAME_COVER_BACK+(i+1).toString()+'.jpg';
 						command=createCoverBack(backName,it,folder);
-						
 						command.folder=folder;
 						commands.push(command);
 						//add 2 final cmd
 						command2.add(backName);
 						//2 pages added
 						pdfPageNum=pdfPageNum+2;
+						*/
 					}
 					//finalyze pdf cmd
 					pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
@@ -442,7 +443,7 @@ package com.photodispatcher.provider.preprocess{
 			//draw barcode
 			if(printGroup.bookTemplate.bar_size>0){
 				var barcode:String=printGroup.barcodeText(file);
-				if(barcode) IMCommandUtil.drawBarcode(folder,command,printGroup.bookTemplate.bar_size,barcode,barcode,printGroup.bookTemplate.bar_offset);
+				if(barcode) IMCommandUtil.drawBarcode(folder,command,printGroup.bookTemplate.bar_size,barcode,barcode,printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
 			}
 			//draw tech barcode
 			if(printGroup.bookTemplate.tech_bar && 
