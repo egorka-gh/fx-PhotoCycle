@@ -99,15 +99,6 @@ package com.photodispatcher.provider.preprocess{
 
 			printGroup.resetFiles();
 			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER){
-
-				//expand format by tech
-				if(printGroup.bookTemplate.tech_bar &&
-					(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
-						printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
-						printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
-					if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
-				}
-
 				command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
 				command2.folder=folder;
 				//create covers pdf
@@ -154,10 +145,9 @@ package com.photodispatcher.provider.preprocess{
 						sh=new PdfSheet();
 						sh.leftPage=files[1+i*3];
 						sh.rightPage=files[2+i*3];
-						//sh.swapPages();
 						pageSize= new Point(printGroup.bookTemplate.page_len,printGroup.bookTemplate.page_width);
-						sheetSize= new Point(printGroup.bookTemplate.sheet_len,printGroup.bookTemplate.sheet_width);
-						//command=sh.getCommand(pageSize,sheetSize,printGroup);
+						//sheetSize= new Point(printGroup.bookTemplate.sheet_len,printGroup.bookTemplate.sheet_width);
+						sheetSize= new Point(UnitUtil.mm2Pixels300(printGroup.height),printGroup.bookTemplate.sheet_width);
 						command=sh.getCommand(pageSize,sheetSize,printGroup); 
 						command.folder=folder;
 						//expand (left side)
@@ -165,7 +155,6 @@ package com.photodispatcher.provider.preprocess{
 						//save file
 						command.add('-density'); command.add('300x300');
 						command.add('-quality'); command.add('100');
-						//outName=FILENAME_SHEET+'0.jpg';
 						outName=FILENAME_COVER_BACK+(i+1).toString()+'.jpg';
 						command.add(outName);
 						commands.push(command);
@@ -244,6 +233,13 @@ package com.photodispatcher.provider.preprocess{
 					newFile.prt_qty=1;
 					printGroup.addFile(newFile);
 				}
+				//expand format by tech
+				if(printGroup.bookTemplate.tech_bar &&
+					(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+						printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+						printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
+					if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
+				}
 			}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
 				//create sheets pdf
 				//check if pageNum is even
@@ -309,7 +305,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 		}
 
-		private function createSheets(files:Array, orderType:int=0):Array{
+		private function createSheets(files:Array):Array{
 			if(!files || files.length==0) return [];
 			var result:Array=[];
 			var len:int;
@@ -319,12 +315,22 @@ package com.photodispatcher.provider.preprocess{
 			//create sheets 
 			if(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER){
 				len=files.length/2;
-				//full set order (4 cutting) 
-				for (i=0; i<len;i++){
-					sh=new PdfSheet();
-					sh.leftPage=files[i];
-					sh.rightPage=files[files.length-1-i];
-					result.push(sh);
+				if(printGroup.is_duplex){
+					//full set order 4 cutting 
+					for (i=0; i<len;i++){
+						sh=new PdfSheet();
+						sh.leftPage=files[i];
+						sh.rightPage=files[files.length-1-i];
+						result.push(sh);
+					}
+				}else{
+					//no cutting
+					for (i=0; i<len;i++){
+						sh=new PdfSheet();
+						sh.leftPage=files[i];
+						sh.rightPage=files[i+1];
+						result.push(sh);
+					}
 				}
 			}else if(printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL){
 				//order inside book (no cutting)
@@ -347,12 +353,14 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 			
-			//swap pages on even sheets (back)
-			i=0;
-			while(i<result.length){
-				sh=result[i] as PdfSheet;
-				sh.swapPages();
-				i+=2;
+			if(printGroup.is_duplex || printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL){
+				//swap pages on even sheets (back)
+				i=0;
+				while(i<result.length){
+					sh=result[i] as PdfSheet;
+					sh.swapPages();
+					i+=2;
+				}
 			}
 			return result; 
 		}
@@ -361,7 +369,7 @@ package com.photodispatcher.provider.preprocess{
 			//create empty white sheet vs butt lines
 			var buttPix:int=UnitUtil.mm2Pixels300(printGroup.butt);
 			var width:int=printGroup.bookTemplate.sheet_width;
-			var len:int=printGroup.bookTemplate.sheet_len;
+			var len:int=UnitUtil.mm2Pixels300(printGroup.height);//printGroup.bookTemplate.sheet_len;
 			var command:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			//empty sheet
 			command.add('-size'); command.add(len.toString()+'x'+width.toString());
@@ -426,7 +434,7 @@ package com.photodispatcher.provider.preprocess{
 		private function createCoverCommand(file:PrintGroupFile, folder:String):IMCommand{
 			var buttPix:int=UnitUtil.mm2Pixels300(printGroup.butt);
 			var width:int=printGroup.bookTemplate.sheet_width;
-			var len:int=printGroup.bookTemplate.sheet_len;
+			var len:int=UnitUtil.mm2Pixels300(printGroup.height);//printGroup.bookTemplate.sheet_len;
 			var command:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			command.folder=folder;
 			var sheetCrop:String=len.toString()+'x'+width.toString()+'+0+0!';

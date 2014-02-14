@@ -54,7 +54,9 @@ package com.photodispatcher.service.barcode{
 		
 		public static const MSG_SUFIX:int=0x0D;
 		public static const MSG_CONTROLLER_INIT:String='start'; //'start+0x0d
+		public static const MSG_CONTROLLER_INIT2:String='*BOOT'; //'*BOOT0x0d
 		public static const MSG_CONTROLLER_ACKNOWLEDGE:String='ok'; //'ok+0x0d
+		public static const MSG_CONTROLLER_ACKNOWLEDGE2:String='*okey'; //'*okey0x0d
 		public static const MSG_CONTROLLER_SENSOR_PREFIXF:String='s'; //'*s';//*s0=1 + LRC + 0x0d
 
 		public static const MSG_CONTROLLER_ERROR_PREFIX:String='err';//err1+0x0d
@@ -128,12 +130,12 @@ package com.photodispatcher.service.barcode{
 				}
 				return;
 			}
-			if(msg==MSG_CONTROLLER_INIT){
+			if(msg==MSG_CONTROLLER_INIT || msg==MSG_CONTROLLER_INIT2){
 				log('! Controller Init');
 				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,'Реинициализация контролера',ERROR_REINIT));
 				return;
 			}
-			if(msg==MSG_CONTROLLER_ACKNOWLEDGE){
+			if(msg==MSG_CONTROLLER_ACKNOWLEDGE || msg==MSG_CONTROLLER_ACKNOWLEDGE2){
 				if(aclTimer) aclTimer.reset();
 				_isBusy=false;
 				dispatchEvent(new Event(Event.COMPLETE));

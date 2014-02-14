@@ -73,7 +73,9 @@ package com.photodispatcher.factory{
 							//cover group
 							if(pg.height){
 								cpg.height=pg.height;
-								cpg.bookTemplate.sheet_len=UnitUtil.mm2Pixels300(pg.height);
+								if(cpg.book_type==BookSynonym.BOOK_TYPE_BOOK) cpg.height+=8;
+								//BUGGGGG
+								//cpg.bookTemplate.sheet_len=UnitUtil.mm2Pixels300(cpg.height);
 							}
 							fillCovers(pg,cpg);
 							if(cpg.getFiles()){
@@ -164,6 +166,11 @@ package com.photodispatcher.factory{
 					}
 					pg.prints=prints;
 					resultArr.push(pg);
+					trace('pgBuilder:'+pg.id+
+						'; booktype-'+pg.book_type.toString()+
+						'; bookpart-'+pg.book_part.toString()+
+						'; heigh-'+pg.height.toString()+
+						'; sheet_len-'+(pg.bookTemplate?pg.bookTemplate.sheet_len.toString():'*'));
 					i++;
 				}
 			}
@@ -456,7 +463,7 @@ package com.photodispatcher.factory{
 							pgCover.book_type=proj.bookType; 
 							pgCover.book_num=so.prt_qty;
 							pgCover.height=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
-							pgCover.bookTemplate.sheet_len=Math.max(coverPixels.x,coverPixels.y);
+							//pgCover.bookTemplate.sheet_len=Math.max(coverPixels.x,coverPixels.y);
 						}else{
 							//insert? 
 							pgCover=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_INSERT);

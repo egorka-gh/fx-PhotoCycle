@@ -75,13 +75,6 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			printGroup.resetFiles();
-			//expand format by tech
-			if(printGroup.bookTemplate.tech_bar &&
-				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
-					printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
-					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
-				if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
-			}
 			//pack to pdf command
 			command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			command2.folder=folder;
@@ -129,6 +122,14 @@ package com.photodispatcher.provider.preprocess{
 			newFile.file_name=pdfName;
 			newFile.prt_qty=1;
 			printGroup.addFile(newFile);
+			
+			//expand format by tech
+			if(printGroup.bookTemplate.tech_bar &&
+				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+					printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
+				if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
+			}
 		}
 
 	}

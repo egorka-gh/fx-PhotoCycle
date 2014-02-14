@@ -145,13 +145,13 @@ package com.photodispatcher.util{
 		}
 
 		public static function expandImageH(command:IMCommand, amountMM:int, imageGravity:String='east'):void{
-			if(amountMM){
+			if(amountMM>0){
 				//expand to right
-				amountMM=UnitUtil.mm2Pixels300(amountMM);
+				var amount:int=UnitUtil.mm2Pixels300(amountMM);
 				//-gravity east -background white  -splice 20x0
 				command.add('-gravity'); command.add(imageGravity);
 				command.add('-background'); command.add('white');
-				command.add('-splice'); command.add(amountMM.toString()+'x0');
+				command.add('-splice'); command.add(amount.toString()+'x0');
 			}
 		}
 		

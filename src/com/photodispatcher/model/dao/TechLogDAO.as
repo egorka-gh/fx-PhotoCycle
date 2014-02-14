@@ -1,4 +1,6 @@
 package com.photodispatcher.model.dao{
+	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.TechLog;
 	
 	public class TechLogDAO extends BaseDAO{
@@ -18,6 +20,35 @@ package com.photodispatcher.model.dao{
 					item.sheet,
 					item.src_id,
 					item.log_date]
+				,item);
+		}
+
+		public function addPrintLog(item:TechLog):void{
+			asyncFaultMode=FAULT_IGNORE;
+			execute(
+				'INSERT INTO tech_log (print_group, sheet, src_id, log_date)'+
+				' SELECT pg.id, ?, ?, ?'+
+					' FROM print_group pg'+ 
+					' WHERE pg.id=? AND pg.state=?'+ 
+				' UNION ALL'+
+				' SELECT pg.id, ?, ?, ?'+
+					' FROM print_group pg'+ 
+					' INNER JOIN print_group_file pgf ON pg.id=pgf.print_group AND pgf.book_num=? AND pgf.page_num=?'+
+					' WHERE pg.order_id=? AND pg.state=? AND pg.is_reprint=1 AND pg.id!=?'+
+				' LIMIT 1',
+				[	item.sheet,
+					item.src_id,
+					item.log_date,
+					item.print_group,
+					OrderState.PRN_PRINT,
+					item.sheet,
+					item.src_id,
+					item.log_date,
+					item.book_num,
+					item.page_num,
+					PrintGroup.orderIdFromId(item.print_group),
+					OrderState.PRN_PRINT,
+					item.print_group ]
 				,item);
 		}
 

@@ -111,7 +111,7 @@ package com.photodispatcher.provider.preprocess{
 			//var path:String=orderFolder+File.separator+order.ftp_folder;
 			for each(pg in order.printGroups){
 				mg=null;
-				if(pg && pg.book_type!=0){ 
+				if(pg && pg.book_type!=0){
 					if(order.state!=OrderState.PREPROCESS_PDF) order.state=OrderState.PREPROCESS_PDF;
 					if(pg.is_pdf){
 						if(!pg.bookTemplate.is_sheet_ready){

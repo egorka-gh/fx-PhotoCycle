@@ -153,7 +153,7 @@
 				if(!f || !ft) return false;
 				if(ft.print_group==f.print_group && ft.src_id==f.src_id && ft.tech_state==f.tech_state) return true;
 				//if(lstFilterTech && lstFilterTech.selectedIndex>0 && lstFilterTech.selectedItem.id!=f.print_group) return false;
-				return true;
+				return false;
 			}
 			private function applyTechFilter():void{
 			    techList.refresh();
@@ -474,23 +474,6 @@
 								<s:DataGrid id="dgTech" selectionMode="none" height="100%"
 											dataProvider="{techList}" locale="ru_RU" columns="{TechLog.gridColumnsTech()}"/>
 							</s:HGroup>
-							<!--<s:VGroup top="10" left="10" right="10" bottom="10" gap="0">
-								<s:TabBar dataProvider="{vsTechInfo}"/>
-								<mx:ViewStack id="vsTechInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
-									<s:NavigatorContent label="Кратко" width="100%" height="100%">
-										<s:DataGrid id="dgTechAgg" selectionMode="none" width="100%" height="100%"
-													dataProvider="{techListAgg}" locale="ru_RU" columns="{TechLog.gridColumnsTechAgg()}"/>
-									</s:NavigatorContent>
-									<s:NavigatorContent label="Подробно" width="100%" height="100%">
-										<s:HGroup gap="10" width="100%" height="100%">
-											<s:List id="lstFilterTech" dataProvider="{pgFilterList}" labelField="id"
-													width="100" height="100%" change="{applyTechFilter()}"/>
-											<s:DataGrid id="dgTech" selectionMode="none" width="100%" height="100%"
-														dataProvider="{techList}" locale="ru_RU" columns="{TechLog.gridColumnsTech()}"/>
-										</s:HGroup>
-									</s:NavigatorContent>
-								</mx:ViewStack>
-							</s:VGroup>-->
 						</s:NavigatorContent>
 					</mx:ViewStack>
 				</s:Group>

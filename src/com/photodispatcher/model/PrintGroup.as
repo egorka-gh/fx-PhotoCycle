@@ -390,7 +390,7 @@ package com.photodispatcher.model{
 					it=getImage(i+1,j+_pageStart);
 					if(it) bookFiles[j]=it;
 				}
-				if(is_pdf && !bookTemplate.is_sheet_ready){
+				if(is_pdf && !bookTemplate.is_sheet_ready && book_type==BookSynonym.BOOK_TYPE_BOOK && is_duplex){
 					//add extra blank pages
 					bookFiles.unshift(null);
 					bookFiles.push(null);

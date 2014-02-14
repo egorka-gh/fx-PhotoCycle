@@ -82,13 +82,11 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			printGroup.resetFiles();
-			//expand format by tech
-			if(printGroup.bookTemplate.tech_bar &&
-				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
-					printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
-					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
-				if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
-			}
+			trace('BookMakeupGroup:'+printGroup.id+
+				'; booktype-'+printGroup.book_type.toString()+
+				'; part-'+printGroup.book_part.toString()+
+				'; heigh-'+printGroup.height.toString()+
+				'; sheet_len-'+printGroup.bookTemplate.sheet_len.toString());
 			//prepare sheets
 			for (i=0; i<files.length; i++){
 				it=files[i] as PrintGroupFile;
@@ -108,6 +106,14 @@ package com.photodispatcher.provider.preprocess{
 				command.add(outPath(outName));
 				commands.push(command);
 			}
+			
+			//expand format by tech
+			if(printGroup.bookTemplate.tech_bar &&
+				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+					printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
+				if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
+			}
 		}
 		
 		protected function outPath(path:String):String{
@@ -125,8 +131,15 @@ package com.photodispatcher.provider.preprocess{
 			var buttPix:int=UnitUtil.mm2Pixels300(printGroup.butt);
 			var width:int=printGroup.bookTemplate.sheet_width;
 			var len:int=printGroup.bookTemplate.sheet_len;
+			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER) len=UnitUtil.mm2Pixels300(printGroup.height);
 			var command:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			command.folder=folder;
+
+			trace('BookMakeupGroup.createCommand:'+printGroup.id+
+				'; booktype-'+printGroup.book_type.toString()+
+				'; bookpart-'+printGroup.book_part.toString()+
+				'; heigh-'+printGroup.height.toString()+
+				'; sheet_len-'+len.toString());
 
 			//crop
 			var sheetCrop:String=len.toString()+'x'+width.toString()+'+0+0!';
@@ -187,6 +200,9 @@ package com.photodispatcher.provider.preprocess{
 				(printGroup.bookTemplate.is_tech_top || printGroup.bookTemplate.is_tech_center || printGroup.bookTemplate.is_tech_bot)){
 				//var barStep:int=printGroup.bookTemplate.tech_bar_step;
 				var barColor:int=parseInt(printGroup.bookTemplate.tech_bar_color,16);
+				
+				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add);
+				/*
 				var formatAdd:int=printGroup.bookTemplate.tech_add;
 				if(formatAdd){
 					//expand to right
@@ -196,6 +212,8 @@ package com.photodispatcher.provider.preprocess{
 					command.add('-background'); command.add('white');
 					command.add('-splice'); command.add(formatAdd.toString()+'x0');
 				}
+				*/
+				
 				//mm to pix
 				barSize=UnitUtil.mm2Pixels300(barSize);
 				barcode=printGroup.techBarcode(file);

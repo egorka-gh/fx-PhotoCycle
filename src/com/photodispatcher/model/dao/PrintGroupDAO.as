@@ -5,6 +5,7 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.util.GridUtil;
 	
 	import flash.data.SQLStatement;
@@ -402,6 +403,18 @@ package com.photodispatcher.model.dao{
 			sql='INSERT INTO tmp_print_group(id, order_id, state)'+
 				' SELECT pg.id, pg.order_id, MIN(st.state)'+ 
 				' FROM print_group pg'+
+				' INNER JOIN tech_log tl ON pg.id=tl.print_group'+  
+				' INNER JOIN config.tech_point tp ON tl.src_id=tp.id AND tp.tech_type=?'+  
+				' INNER JOIN config.src_type st ON tp.tech_type=st.id'+ 
+				' WHERE pg.order_id=? AND st.state>pg.state'+  
+				' GROUP BY pg.order_id, pg.id, pg.prints'+
+				' HAVING COUNT(DISTINCT tl.sheet)=pg.prints';
+			params=[SourceType.TECH_PRINT, PrintGroup.orderIdFromId(pgId)];
+			sequence.push(prepareStatement(sql,params));
+			/*
+			sql='INSERT INTO tmp_print_group(id, order_id, state)'+
+				' SELECT pg.id, pg.order_id, MIN(st.state)'+ 
+				' FROM print_group pg'+
 					' INNER JOIN tech_log tl ON pg.id=tl.print_group'+  
 					' INNER JOIN config.tech_point tp ON tl.src_id=tp.id'+  
 					' INNER JOIN config.src_type st ON tp.tech_type=st.id'+ 
@@ -410,10 +423,11 @@ package com.photodispatcher.model.dao{
 				' HAVING COUNT(DISTINCT tl.sheet)=pg.prints';
 			params=[pgId];
 			sequence.push(prepareStatement(sql,params));
+			*/
 			
 			//set pg state
 			sql='UPDATE print_group'+
-				' SET state=(SELECT state FROM tmp_print_group t WHERE print_group.id=t.id), state_date = ?'
+				' SET state=(SELECT state FROM tmp_print_group t WHERE print_group.id=t.id), state_date = ?'+
 				' WHERE id IN (SELECT id FROM tmp_print_group)';
 			var dt:Date=new Date();
 			params=[dt];
@@ -443,7 +457,7 @@ package com.photodispatcher.model.dao{
 
 			sql='INSERT INTO state_log (order_id, state, state_date)'+
 				' SELECT id, state, state_date FROM tmp_orders';
-			params=[item.order_id, dt];
+			params=[];
 			sequence.push(prepareStatement(sql,params));
 
 			executeSequence(sequence);

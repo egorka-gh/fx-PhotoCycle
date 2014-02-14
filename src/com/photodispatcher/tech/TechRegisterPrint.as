@@ -17,12 +17,22 @@ package com.photodispatcher.tech{
 			tl.print_group=printGroupId;
 			tl.src_id= techPoint.id;
 			var dao:TechLogDAO=new TechLogDAO();
-			dao.addLog(tl);
+			//dao.addLog(tl);
+			dao.addPrintLog(tl);
 			if(isComplete){
 				//set printgroup/order state
 				var pdao:PrintGroupDAO=new PrintGroupDAO();
 				pdao.setPrintStateByTech(printGroupId);
 			}
+		}
+		
+		override public function finalise():Boolean{
+			if(!isComplete){
+				//4 reprint or partial print, set printgroup/order state 
+				var pdao:PrintGroupDAO=new PrintGroupDAO();
+				pdao.setPrintStateByTech(printGroupId);
+			}
+			return super.finalise();
 		}
 		
 	}

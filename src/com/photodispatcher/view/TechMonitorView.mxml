@@ -181,6 +181,7 @@
 			public function stop():void{
 				cleanLog();
 				if(currRegister){
+					currRegister.finalise();
 					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterMsg);
 					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
 				}
