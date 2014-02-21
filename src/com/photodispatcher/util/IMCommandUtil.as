@@ -120,21 +120,14 @@ package com.photodispatcher.util{
 			command.add('-pointsize'); command.add(height.toString());
 			var label:String='label:'+text;
 			command.add(label);
-			/*
-			command.add('(');
-			command.add('+clone');
-			command.add('+negate');
-			command.add(')');
-			command.add('-gravity'); command.add('center');
-			command.add('-geometry'); command.add('+2+2');
-			command.add('-composite');
-			*/
 			//-gravity center -fill "#eeeeee" -annotate "+1+1" "R12345:7" 
-			command.add('-gravity'); command.add('center');
+			//"(" "-background" "none" "-undercolor" "none" "-stroke" "none" "-strokewidth" "0" "-fill" "black" "-pointsize" "35" "label:R38534:2" 
+			//"-gravity" "NorthEast" "-splice" "2x2" "-fill" "#eeeeee" "label:R38534:2" "-flatten" "-rotate" "-90" ")"
+			command.add('-gravity'); command.add('NorthEast');
+			command.add('-splice'); command.add('2x2');
 			command.add('-fill'); command.add(SHADOWED_TEXT_FORE_COLOR);
-			command.add('-annotate'); command.add('+2-2'); command.add(text);
-			command.add('-trim');
-			command.add('+repage');
+			command.add(label);
+			command.add('-flatten');
 			if(rotate!=0){
 				command.add('-rotate'); command.add(rotate.toString());
 			}

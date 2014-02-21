@@ -59,6 +59,7 @@
 				acGroups=new ArrayCollection(['Начало книги','Разворот','Между разворотами','Конец книги','Конец заказа','Пуск','Пауза','Продолжить','Стоп']);
 			}
 			
+			/*
 			private var _barcodeReader:ComReader;
 			public function get barcodeReader():ComReader{
 				return _barcodeReader;
@@ -66,6 +67,8 @@
 			public function set barcodeReader(value:ComReader):void{
 				_barcodeReader = value;
 			}
+			*/
+			public var barcodeReaders:Array;
 			
 			private var _controller:ValveController;
 			[Bindable]
@@ -102,7 +105,10 @@
 				acTemplates=dao.findAll();
 				if (acTemplates.length==0) return;
 				controller.start();
-				barcodeReader.start();
+				var barReader:ComReader;
+				if (barcodeReaders){
+					for each(barReader in barcodeReaders) barReader.start();
+				}
 				techPicker= new TechPicker();
 				techPicker.engineOnStartOn=engineOnStartOn;
 				techPicker.vacuumOnStartOn=vacuumOnStartOn;
@@ -119,7 +125,7 @@
 				techPicker.layerOnCompliteTray=layerOnCompliteTray;
 				*/
 				
-				techPicker.barcodeReader=barcodeReader;
+				techPicker.barcodeReaders=barcodeReaders;
 				techPicker.controller=controller;
 				techPicker.reversOrder=reversOrder;
 				techPicker.techPoint=techPoint;
@@ -130,7 +136,10 @@
 
 			public function stop():void{
 				controller.stop();
-				barcodeReader.stop();
+				var barReader:ComReader;
+				if (barcodeReaders){
+					for each(barReader in barcodeReaders) barReader.stop();
+				}
 				if(techPicker){
 					techPicker.stop();
 					techPicker.removeEventListener(ErrorEvent.ERROR, onPickerErr);

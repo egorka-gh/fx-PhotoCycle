@@ -71,10 +71,17 @@ package com.photodispatcher.model.dao{
 		
 		public static function logState(state:int, orderId:String, pgId:String='', comment:String=''):void{
 			var dao:StateLogDAO= new StateLogDAO();
-			dao.log(state, orderId, pgId, comment.substr(0,250));
+			var comm:String=comment;
+			if(comm){
+				comm=comm.replace('\n',' ');
+				comm=comm.replace('\r',' ');
+				comm=comm.replace('  ',' ');
+				comm=comm.substr(0,250);
+			}
+			dao.log(state, orderId, pgId, comm);
 		}
 		
-		public function log(state:int, orderId:String, pgId:String='', comment:String=''):void{
+		private function log(state:int, orderId:String, pgId:String='', comment:String=''):void{
 			var dt:Date=new Date();
 			var sql:String='INSERT INTO state_log (state, order_id, pg_id, state_date, comment) VALUES (?, ?, ?, ?, ?)';
 			var params:Array=[state, orderId, (pgId?pgId:null), dt, comment];

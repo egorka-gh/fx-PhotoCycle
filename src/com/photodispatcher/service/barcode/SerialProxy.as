@@ -172,6 +172,23 @@ package com.photodispatcher.service.barcode
 			return proxy;
 		}
 
+		public function getProxiesByType(type:int):Array{
+			if(!_isStarted) return null;
+			var result:Array=[];
+			if(type==ComInfo.COM_TYPE_NONE) return result;
+			var ci:ComInfo;
+			for each (ci in comInfos){
+				if(ci && ci.type==type && ci.num){
+					if(!ci.proxy){
+						var proxy:Socket2Com= new Socket2Com(ci,remoteIp);
+						ci.proxy=proxy;
+					}
+					result.push(ci.proxy);
+				}
+			}
+			return result;
+		}
+
 		public function stop():void{
 			_isStarted=false;
 			var ci:ComInfo;

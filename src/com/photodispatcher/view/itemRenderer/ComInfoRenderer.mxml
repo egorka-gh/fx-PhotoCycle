@@ -48,7 +48,7 @@
 	</fx:Script>
 	<s:Form enabled="{comport!=null}">
 		<s:layout>
-			<s:FormLayout gap="-10" paddingTop="-15"/>
+			<s:FormLayout gap="-15" paddingTop="-20"/>
 		</s:layout>
 		
 		<s:FormItem label="Тип:" enabled="{!lockType}">

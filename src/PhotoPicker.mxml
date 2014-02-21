@@ -42,13 +42,20 @@
 			[Bindable]
 			private var techPionts:ArrayCollection;
 			
+			//[Bindable]
+			//private var comBarcodeReader:ComInfo;
 			[Bindable]
-			private var comBarcodeReader:ComInfo;
+			private var comReaders:ArrayCollection= new ArrayCollection;
+
 			[Bindable]
 			private var comController:ComInfo; 
 
+			/*
 			[Bindable]
 			private var barcodeReader:ComReader;
+			*/
+			[Bindable]
+			private var barcodeReaders:Array;
 			[Bindable]
 			private var controller:ValveController; 
 
@@ -155,18 +162,22 @@
 				
 				var dao:TechPointDAO=new TechPointDAO();
 				techPionts=dao.findAll(false,SourceType.TECH_PICKING);
+				
+				comReaders= new ArrayCollection();
 				var coms:Array=ComInfo.load();
 				var ci:ComInfo;
 				for each (ci in coms){
 					if (ci.type==ComInfo.COM_TYPE_CONTROLLER) comController=ci;
-					if (ci.type==ComInfo.COM_TYPE_BARREADER) comBarcodeReader=ci;
+					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReaders.addItem(ci); //comBarcodeReader=ci;
 				}
 				if(!comController){
 					comController= new ComInfo(); comController.type=ComInfo.COM_TYPE_CONTROLLER; comController.suffix=ValveController.MSG_SUFIX;
 				}
+				/*
 				if(!comBarcodeReader){
 					comBarcodeReader= new ComInfo(); comBarcodeReader.type=ComInfo.COM_TYPE_BARREADER;
 				}
+				*/
 				//var serverIP:String;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
@@ -204,12 +215,13 @@
 			}
 
 			private function start():void{
-				if(!techPointObj || !comController.num || !comBarcodeReader.num){
+				if(!techPointObj || !comController.num || comReaders.length==0){
 					Alert.show('Приложение не настроено');
 					currentState='config';
 					return;
 				}
-				serialProxy.start([comController,comBarcodeReader]);
+				var arr:Array=comReaders.source.concat(comController); 
+				serialProxy.start(arr);
 				if(!serialProxy.isStarted){
 					return;
 				}
@@ -221,16 +233,25 @@
 					//TODO destoroy
 					controller=null;
 				}
-				proxy=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
-				if(proxy){
-					if(!barcodeReader){
-						barcodeReader= new ComReader(500);
-						barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
-					}
-					barcodeReader.comPort=proxy;
-				}else{
-					//TODO destoroy
+				var barReader:ComReader;
+				if (barcodeReaders){
+					for each(barReader in barcodeReaders) barReader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
 				}
+				var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
+				if(!readers || readers.length==0){
+					Alert.show('Не настроены сканеры штрихкодов');
+					currentState='config';
+					barcodeReaders=[];
+					return;
+				}
+				var newBarcodeReaders:Array=[];
+				for each (proxy in readers){
+					barReader= new ComReader(500);
+					barReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					barReader.comPort=proxy;
+					newBarcodeReaders.push(barReader);
+				}
+				barcodeReaders=newBarcodeReaders;
 				
 				currentState='monitor';
 				if(techPickerView) techPickerView.start();
@@ -258,14 +279,10 @@
 					//TODO destoroy
 				}
 				*/
-				if(!barcodeReader){
-					barcodeReader= new ComReaderEmulator();
-					(barcodeReader as ComReaderEmulator).pickerInterval=turnInterval;
-					(barcodeReader as ComReaderEmulator).pgId='5_15499_2';
-					
-					barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
-				}
-
+				var barcodeReader:ComReaderEmulator= new ComReaderEmulator();
+				barcodeReader.pickerInterval=turnInterval;
+				barcodeReader.pgId='5_15499_2';
+				barcodeReaders=[barcodeReader];
 				
 				currentState='monitor';
 				if(techPickerView) techPickerView.start();
@@ -294,11 +311,13 @@
 			}
 			
 			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
+				var barcodeReader:ComReader= event.target as ComReader;
 				if(barcodeReader) barcodeReader.stop();
-				serialProxy.stop();
+				//serialProxy.stop();
 				var bar:String=event.barcode;
 				bar = bar.replace(String.fromCharCode(13),'[LF]');
 				bar = bar.replace(String.fromCharCode(10),'[CR]');
+				if(barcodeReader) bar=barcodeReader.comCaption+': '+bar;
 				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
 				currentState='config';
 			}
@@ -311,7 +330,8 @@
 			}
 			*/
 			protected function btSaveComs_clickHandler(event:MouseEvent):void{
-				ComInfo.save([comController,comBarcodeReader]);
+				var arr:Array=comReaders.source.concat(comController);
+				ComInfo.save(arr);
 			}
 			
 			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
@@ -358,6 +378,20 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.layerOnComplite = layerOnComplite;
 				so.flush();  
+			}
+			
+			protected function btAddCom_clickHandler(event:MouseEvent):void{
+				var cp:ComInfo= new ComInfo();
+				cp.type=ComInfo.COM_TYPE_BARREADER;
+				comReaders.addItem(cp);
+				comList.selectedItem=cp;
+			}
+			
+			protected function btDelCom_clickHandler(event:MouseEvent):void{
+				if(comList && comList.selectedIndex!=-1){
+					comReaders.removeItemAt(comList.selectedIndex);
+					comList.selectedIndex=-1
+				}
 			}
 			
 		]]>
@@ -417,40 +451,20 @@
 			<s:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
 			<s:Label text="Вакуум"/>
 		</s:HGroup>
-		<s:VGroup gap="5">
-			<s:Label text="При завершении заказа"/>
-			<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
-				<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
-				<s:Label text="Стоп"/>
-				<s:Spacer width="10"/>
-				<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
-				<s:Label text="Пауза"/>
-			</s:HGroup>
-			<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
-				<s:Label text="Между заказами выкладывать:"/>
-				<s:Spacer width="10"/>
-				<s:ComboBox id="cb_layerOnComplite" dataProvider="{layersAC}" selectedIndex="{layerOnCompliteIdx}" change="cb_layerOnComplite_changeHandler(event)"/>
-			</s:HGroup>
-			<!--<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
-				<s:Label text="Выключать:"/>
-				<s:Spacer width="10"/>
-				<s:CheckBox id="tg_engineOnCompliteOff" selected="{engineOnCompliteOff}"  change="{setBool('engineOnCompliteOff')}"/> 
-				<s:Label text="Привод"/>
-				<s:Spacer width="10"/>
-				<s:CheckBox id="tg_vacuumOnCompliteOff" selected="{vacuumOnCompliteOff}"  change="{setBool('vacuumOnCompliteOff')}"/>
-				<s:Label text="Вакуум"/>
-			</s:HGroup>
-			<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="30">
-				<s:CheckBox id="tg_askOnComplite" selected="{askOnComplite}"  change="{setBool('askOnComplite')}"/> 
-				<s:Label text="Запрос на продолжение после завершения заказа"/>
-				<s:Spacer width="15"/>
-				<s:CheckBox id="tg_layerOnComplite" selected="{layerOnComplite}"  change="{setBool('layerOnComplite')}"/> 
-				<s:Label text="Между заказами выкладывать лист с лотка"/>
-				<s:Spacer width="10"/>
-				<s:NumericStepper id="ns_layerOnCompliteTray" minimum="1" maximum="8" snapInterval="1" 
-								  value="{layerOnCompliteTray}" enabled="{tg_layerOnComplite.selected}" change="ns_layerOnCompliteTray_changeHandler(event)"/>
-			</s:HGroup>-->
-		</s:VGroup>
+		<s:HGroup gap="0" verticalAlign="baseline">
+			<s:Label text="При завершении заказа"  width="180"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
+			<s:Label text="Стоп"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
+			<s:Label text="Пауза"/>
+		</s:HGroup>
+		<s:HGroup gap="0" verticalAlign="baseline" >
+			<s:Label text="Между заказами выкладывать:" width="180"/>
+			<s:Spacer width="10"/>
+			<s:ComboBox id="cb_layerOnComplite" dataProvider="{layersAC}" selectedIndex="{layerOnCompliteIdx}" change="cb_layerOnComplite_changeHandler(event)"/>
+		</s:HGroup>
 		<s:Spacer height="5"/>
 		<s:HGroup gap="0" width="100%">
 			<s:VGroup gap="0">
@@ -458,10 +472,18 @@
 				<itemRenderer:ComInfoRenderer  data="{comController}" lockType="true" lockSuffix="true"/>
 			</s:VGroup>
 			<s:VGroup gap="0">
-				<s:Label text="Сканер ШК" fontWeight="bold"/>
-				<itemRenderer:ComInfoRenderer data="{comBarcodeReader}" lockType="true"/>
+				<s:Label text="Сканеры ШК" fontWeight="bold"/>
+				<!--<itemRenderer:ComInfoRenderer data="{comBarcodeReader}" lockType="true"/>-->
+				<s:HGroup gap="0">
+					<s:VGroup gap="5" height="92%">
+						<s:List id="comList" dataProvider="{comReaders}"  height="100%"/>
+						<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
+						<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
+					</s:VGroup> 
+					<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
+				</s:HGroup>
 			</s:VGroup>
-			<s:VGroup gap="0" height="95%" verticalAlign="bottom">
+			<s:VGroup gap="0" height="92%" verticalAlign="bottom">
 				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
 			</s:VGroup>
 		</s:HGroup>
@@ -473,7 +495,7 @@
 		<!--<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" barcodeReader="{barcodeReader}" flap="{flap}"
 							  width="100%" height="100%"/>-->
 		<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
-							 barcodeReader="{barcodeReader}" controller="{controller}"
+							 barcodeReaders="{barcodeReaders}" controller="{controller}"
 							 reversOrder="{reversOrder}" turnInterval="{turnInterval}"
 							 engineOnStartOn="{engineOnStartOn}"
 							 vacuumOnStartOn="{vacuumOnStartOn}"

@@ -148,8 +148,32 @@ package com.photodispatcher.factory{
 			}
 			//completed
 			var resultArr:Array=[];
-			var i:int=1;
+			for each (o in resultMap){
+				pg= o as PrintGroup;
+				if(pg) resultArr.push(pg);
+			}
+			//sort, 4 book preserve book_part order
+			resultArr.sortOn(['path','book_part'],[Array.CASEINSENSITIVE,Array.NUMERIC]);
+			//postprocess
 			var prints:int;
+			for (var i:int = 0; i < resultArr.length; i++){
+				pg= resultArr[i] as PrintGroup;
+				if(pg){
+					pg.order_id=orderId;
+					pg.id=orderId+'_'+(i+1).toString();
+					//calc prints qtt
+					prints=0;
+					if(pg.book_type==0){
+						//photo print
+						for each(pgf in pg) prints+=pgf.prt_qty>0?pgf.prt_qty:1;
+					}else{
+						//book
+						prints=pg.book_num*pg.sheet_num;
+					}
+					pg.prints=prints;
+				}
+			}
+			/*
 			for each (o in resultMap){
 				pg= o as PrintGroup;
 				if(pg){
@@ -166,14 +190,10 @@ package com.photodispatcher.factory{
 					}
 					pg.prints=prints;
 					resultArr.push(pg);
-					trace('pgBuilder:'+pg.id+
-						'; booktype-'+pg.book_type.toString()+
-						'; bookpart-'+pg.book_part.toString()+
-						'; heigh-'+pg.height.toString()+
-						'; sheet_len-'+(pg.bookTemplate?pg.bookTemplate.sheet_len.toString():'*'));
 					i++;
 				}
 			}
+				*/
 			return resultArr;
 		}
 

@@ -25,6 +25,10 @@ package com.photodispatcher.service.barcode{
 			this.remoteIP=remoteIP;
 		}
 
+		public function get comCaption():String{
+			return comInfo.label;
+		}
+
 		public function get sufix():uint{
 			if(!comInfo || !comInfo.suffix) return 0;
 			return uint(comInfo.suffix);

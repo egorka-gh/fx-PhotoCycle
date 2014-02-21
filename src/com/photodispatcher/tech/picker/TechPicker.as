@@ -188,14 +188,14 @@ package com.photodispatcher.tech.picker{
 		}
 
 		private function checkPrepared(alert:Boolean=false):Boolean{
-			prepared=barcodeReader && controller && 
+			prepared=barcodeReaders && barcodeReaders.length>0 && controller && 
 				traySet && traySet.prepared && 
 				interlayerSet && interlayerSet.prepared && 
 				endpaperSet && endpaperSet.prepared && 
 				_layerset && _layerset.prepared;
 			if(!prepared && alert){
 				var msg:String='';
-				if(!barcodeReader) msg='Не инициализирован сканер ШК';
+				if(!barcodeReaders || barcodeReaders.length==0) msg='Не инициализированы сканеры ШК';
 				if(!controller) msg+='\n Не инициализирован контролер';
 				if(!traySet || !traySet.prepared) msg+='\n Не инициализирован набор лотков';
 				if(!interlayerSet ||!interlayerSet.prepared) msg+='\n Не инициализирован набор прослоек';
@@ -214,7 +214,7 @@ package com.photodispatcher.tech.picker{
 			}
 			latches=null;
 			logger=null;
-			barcodeReader=null;
+			barcodeReaders=null;
 			controller=null;
 			register=null;
 			if(bdTimer){
@@ -304,19 +304,24 @@ package com.photodispatcher.tech.picker{
 			_currentGroup = value;
 		}
 
-		private var _barcodeReader:ComReader;
-		public function get barcodeReader():ComReader{
-			return _barcodeReader;
+		private var _barcodeReaders:Array;
+		public function get barcodeReaders():Array{
+			return _barcodeReaders;
 		}
-		public function set barcodeReader(value:ComReader):void{
-			if(_barcodeReader){
-				_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
-				_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
+		public function set barcodeReaders(value:Array):void{
+			var barReader:ComReader;
+			if(_barcodeReaders){
+				for each(barReader in _barcodeReaders){
+					barReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					barReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
+				}
 			}
-			_barcodeReader = value;
-			if(_barcodeReader){
-				_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
-				_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
+			_barcodeReaders = value;
+			if(_barcodeReaders){
+				for each(barReader in _barcodeReaders){
+					barReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					barReader.addEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
+				}
 			}
 			checkPrepared();
 		}
@@ -424,7 +429,7 @@ package com.photodispatcher.tech.picker{
 				resume();
 				return;
 			}
-			if(!barcodeReader || ! controller){
+			if(!barcodeReaders || barcodeReaders.length==0 || ! controller){
 				//TODO err?
 				return;
 			}
@@ -779,7 +784,7 @@ package com.photodispatcher.tech.picker{
 			layerInLatch.layer=currentLayer;//.id;
 			layerInLatch.startingTray=currentTray;
 			layerInLatch.setOn();
-			if(barcodeReader && barcodeReader is ComReaderEmulator) (barcodeReader as ComReaderEmulator).emulateNext(); 
+			if(barcodeReaders && barcodeReaders.length>0 && barcodeReaders[0] is ComReaderEmulator) (barcodeReaders[0] as ComReaderEmulator).emulateNext(); 
 			barLatch.setOn();
 			aclLatch.setOn();
 			controller.open(currentTray);

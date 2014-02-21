@@ -58,6 +58,7 @@ package com.photodispatcher.service.barcode{
 		public static const MSG_CONTROLLER_ACKNOWLEDGE:String='ok'; //'ok+0x0d
 		public static const MSG_CONTROLLER_ACKNOWLEDGE2:String='*okey'; //'*okey0x0d
 		public static const MSG_CONTROLLER_SENSOR_PREFIXF:String='s'; //'*s';//*s0=1 + LRC + 0x0d
+		public static const MSG_CONTROLLER_SENSOR_PREFIXF2:String='*s'; //'*s';//*s0=1 + LRC + 0x0d
 
 		public static const MSG_CONTROLLER_ERROR_PREFIX:String='err';//err1+0x0d
 		/*
@@ -157,12 +158,16 @@ package com.photodispatcher.service.barcode{
 			msg=msg.substr(0,msg.length-2);
 			*/
 			//parse
-			if(msg.substr(0,MSG_CONTROLLER_SENSOR_PREFIXF.length)!=MSG_CONTROLLER_SENSOR_PREFIXF){
+			if(msg.substr(0,MSG_CONTROLLER_SENSOR_PREFIXF.length)!=MSG_CONTROLLER_SENSOR_PREFIXF && msg.substr(0,MSG_CONTROLLER_SENSOR_PREFIXF2.length)!=MSG_CONTROLLER_SENSOR_PREFIXF2){
 				log('! Wrong message error: '+msg);
 				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,'Не верное сообщение: '+msg,ERROR_WRONG_MESAGE));
 				return;
 			}
-			msg=msg.substr(MSG_CONTROLLER_SENSOR_PREFIXF.length-1);
+			if(msg.substr(0,MSG_CONTROLLER_SENSOR_PREFIXF.length)==MSG_CONTROLLER_SENSOR_PREFIXF){
+				msg=msg.substr(MSG_CONTROLLER_SENSOR_PREFIXF.length);
+			}else{
+				msg=msg.substr(MSG_CONTROLLER_SENSOR_PREFIXF2.length);
+			}
 			//TODO parse?
 			//var arr:Array=msg.split(COMMAND_STATE_SEPARATOR);
 			dispatchEvent(new ControllerMesageEvent(int(msg.charAt(0)),int(msg.charAt(msg.length-1))));

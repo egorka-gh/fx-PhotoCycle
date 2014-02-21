@@ -79,6 +79,11 @@ package com.photodispatcher.service.barcode{
 			isStarted=false;
 		}
 		
+		public function get comCaption():String{
+			return _comPort.comCaption;
+		}
+
+		
 		protected function onComConnect(event:Event):void{
 			isStarted=true;
 			_comPort.clean();
