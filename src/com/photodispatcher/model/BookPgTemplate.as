@@ -38,9 +38,15 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var page_len:int=0;
 		[Bindable]
+		public var page_hoffset:int=0;
+		[Bindable]
 		public var font_size:int=0;
 		[Bindable]
 		public var font_offset:String='+500+0';
+		[Bindable]
+		public var fontv_size:int=0;
+		[Bindable]
+		public var fontv_offset:String='+0+500';
 		[Bindable]
 		public var notching:int=0;
 		[Bindable]

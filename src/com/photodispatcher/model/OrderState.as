@@ -48,6 +48,7 @@ package com.photodispatcher.model{
 		public static const TECH_PICKING:int=340;
 		public static const TECH_GLUING:int=350;
 		public static const CANCELED:int=510;
+		public static const SKIPPED:int=520;
 
 		//database props
 		[Bindable]

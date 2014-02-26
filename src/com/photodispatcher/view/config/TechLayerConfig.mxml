@@ -206,8 +206,15 @@
 			}
 			
 			protected function btSaveSeq_clickHandler(event:MouseEvent):void{
+				var ls:Layerset= currTemplate as Layerset;
+				if(!ls) return;
+				var idx:int=currLGroupIdx;
+				if(idx==-1) return;
+				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup;
+				if(!lg) return;
+
 				var dao:LayerSequenceDAO= new LayerSequenceDAO();
-				dao.updateBatch(seqAC.source);
+				dao.updateBatch(seqAC.source, ls.id, lg.id);
 			}
 			
 			private function detectState():void{

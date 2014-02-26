@@ -240,6 +240,10 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 			
+			if(printGroup.bookTemplate.fontv_size){
+				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
+			}
+			
 			//complete
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add('100');

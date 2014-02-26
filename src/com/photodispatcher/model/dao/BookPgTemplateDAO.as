@@ -34,7 +34,8 @@ package com.photodispatcher.model.dao{
 			execute(
 				'UPDATE config.book_pg_template'+
 				' SET book=?, book_part=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, is_pdf=?, is_sheet_ready=?,'+
-				' sheet_width=?, sheet_len=?, page_width=?, page_len=?, font_size=?, font_offset=?, notching=?, stroke=?, bar_offset=?, bar_size=?,' + 
+				' sheet_width=?, sheet_len=?, page_width=?, page_len=?, page_hoffset=?, font_size=?, font_offset=?, fontv_size=?, fontv_offset=?,'+
+				' notching=?, stroke=?, bar_offset=?, bar_size=?,' + 
 				' tech_bar=?, tech_add=?, tech_bar_color=?, tech_bar_step=?,'+
 				' is_tech_center=?, tech_bar_offset=?, is_tech_top=?, tech_bar_toffset=?, is_tech_bot=?, tech_bar_boffset=?' + 
 				' WHERE id=?',
@@ -53,8 +54,11 @@ package com.photodispatcher.model.dao{
 					item.sheet_len,
 					item.page_width,
 					item.page_len,
+					item.page_hoffset,
 					item.font_size,
 					item.font_offset,
+					item.fontv_size,
+					item.fontv_offset,
 					item.notching,
 					item.stroke,
 					item.bar_offset,
@@ -76,9 +80,10 @@ package com.photodispatcher.model.dao{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
 			execute(
 				'INSERT INTO config.book_pg_template (book, book_part, width, height, paper, frame, correction, cutting, is_duplex, is_pdf, is_sheet_ready,'+
-					' sheet_width, sheet_len, page_width, page_len, font_size, font_offset, notching, stroke, bar_offset, bar_size,'+
+					' sheet_width, sheet_len, page_width, page_len, page_hoffset, font_size, font_offset, fontv_size, fontv_offset,'+
+					' notching, stroke, bar_offset, bar_size,'+
 					' tech_bar, tech_add, tech_bar_color, tech_bar_step, is_tech_center, tech_bar_offset, is_tech_top, tech_bar_toffset, is_tech_bot, tech_bar_boffset)' +
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[	item.book,
 					item.book_part,
 					item.width,
@@ -94,8 +99,11 @@ package com.photodispatcher.model.dao{
 					item.sheet_len,
 					item.page_width,
 					item.page_len,
+					item.page_hoffset,
 					item.font_size,
 					item.font_offset,
+					item.fontv_size,
+					item.fontv_offset,
 					item.notching,
 					item.stroke,
 					item.bar_offset,
@@ -153,12 +161,15 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('sheet_len'); col.headerText='Длина разворота pix'; result.addItem(col);
 			col= new GridColumn('page_width'); col.headerText='Ширина страницы pix'; result.addItem(col);
 			col= new GridColumn('page_len'); col.headerText='Длина страницы pix'; result.addItem(col);
+			col= new GridColumn('page_hoffset'); col.headerText='Смещение страницы pix'; col.width=60; result.addItem(col);
 			col= new GridColumn('font_size'); col.headerText='Шрифт'; col.width=60; result.addItem(col);
 			col= new GridColumn('font_offset'); col.headerText='Шрифт смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
 			col= new GridColumn('notching'); col.headerText='Насечка pix'; result.addItem(col);
 			col= new GridColumn('stroke'); col.headerText='Рамка pix'; result.addItem(col);
 			col= new GridColumn('bar_size'); col.headerText='Подпись книги высота pix'; result.addItem(col);
 			col= new GridColumn('bar_offset'); col.headerText='Подпись книги смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
+			col= new GridColumn('fontv_size'); col.headerText='Вертикальная подпись шрифт'; col.width=60; result.addItem(col);
+			col= new GridColumn('fontv_offset'); col.headerText='Вертикальная подпись смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
 			return result;
 		}
 

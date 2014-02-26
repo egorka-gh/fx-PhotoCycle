@@ -159,7 +159,7 @@ package com.photodispatcher.model{
 				col= new GridColumn('book_type'); col.headerText='Тип книги'; col.width=150; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			}
 			if(subSetType==2){
-				col= new GridColumn('is_passover'); col.headerText='Использовать шаблон книги'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
+				col= new GridColumn('is_passover'); col.headerText='Без форзаца'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
 			}
 			//col= new GridColumn('is_pdf'); col.headerText='Полиграфия'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false; result.addItem(col);
 			//col= new GridColumn('interlayer_thickness'); col.headerText='Толщина прослойки (мм)'; result.addItem(col); 

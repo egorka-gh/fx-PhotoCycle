@@ -28,6 +28,7 @@ package com.photodispatcher.util{
 				command.add('(');
 				command.add('-strokewidth'); command.add('0');
 				command.add('-pointsize'); command.add(points.toString());
+				command.add('-fill'); command.add('black');
 				command.add('-undercolor'); command.add(undercolor);
 				var label:String='label:'+text;
 				command.add(label);
@@ -46,6 +47,31 @@ package com.photodispatcher.util{
 					command.add('-composite');
 				}
 			}
+		}
+
+		public static function annotateImageV(command:IMCommand,font_size:int, text:String, offset:String, undercolor:String='white', gravity:String='southeast'):void{
+			if(!command || !text || font_size<=0) return;
+			if(!offset) offset='+0+0';
+			if(!undercolor) undercolor='white';
+			if(!gravity) gravity='southeast';
+				//calc points 4 density 300
+				var points:int=font_size*300/72;
+				command.add('(');
+				command.add('-strokewidth'); command.add('0');
+				command.add('-pointsize'); command.add(points.toString());
+				command.add('-undercolor'); command.add(undercolor);
+				command.add('-fill'); command.add('black');
+				var label:String='label:'+text;
+				command.add(label);
+				command.add('-trim');
+				command.add('+repage');
+				command.add('-bordercolor'); command.add(undercolor);
+				command.add('-border'); command.add('10x3');
+				command.add('-rotate'); command.add('-90');
+				command.add(')');
+				command.add('-gravity'); command.add(gravity);
+				command.add('-geometry'); command.add(offset);
+				command.add('-composite');
 		}
 
 		public static function drawNotching(command:IMCommand,notching:int,length:int,width:int,buttPix:int=0):void{

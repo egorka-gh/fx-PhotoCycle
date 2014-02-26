@@ -63,10 +63,18 @@ package com.photodispatcher.provider.preprocess{
 		private function addPage(command:IMCommand, page:PrintGroupFile, pageSize:Point, printGroup:PrintGroup, isRightPage:Boolean=false):void{
 			var width:String=pageSize.x.toString();
 			var height:String=pageSize.y.toString();
-			if (printGroup && printGroup.is_horizontal){
+			
+			var offset:int=printGroup.bookTemplate.page_hoffset*-1;
+			var offsetSign:String=offset>=0?'+':'-';
+			if (isRightPage) offsetSign=offset>=0?'-':'+';
+			if (printGroup.is_horizontal){
 				width=pageSize.y.toString();
 				height=pageSize.x.toString();
+				offset=offset*-1;
+				offsetSign=offset>=0?'+':'-';
 			}
+			offset=Math.abs(offset);
+
 			if(!page){
 				//empty sheet
 				//command.add('-size'); command.add(pageSize.x.toString()+'x'+pageSize.y.toString());
@@ -75,7 +83,13 @@ package com.photodispatcher.provider.preprocess{
 			}else{
 				//( -gravity center -background "white" 001-01.jpg -crop "3650x2563+0+0!" -flatten -gravity NorthWest -pointsize "33" -undercolor "white" -annotate "+522+22"  "16938-1 01/01-01/26" -rotate "90" )
 				//var pageCrop:String=pageSize.x.toString()+'x'+pageSize.y.toString()+'+0+0!';
-				var pageCrop:String=width+'x'+height+'+0+0!';
+				var pageCrop:String=width+'x'+height;//+'+0+0!';
+				if (printGroup.is_horizontal){
+					pageCrop=pageCrop+'+0'+offsetSign+offset.toString()+'!';
+				}else{
+					pageCrop=pageCrop+offsetSign+offset.toString()+'+0!';
+				}
+
 				command.add('-gravity'); command.add('center');
 				command.add('-background'); command.add('white');
 				command.add(page.file_name);

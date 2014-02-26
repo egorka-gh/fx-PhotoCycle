@@ -160,7 +160,7 @@
 
 			<s:Spacer width="5"/>
 			<s:Label text="Имя папки"/>
-			<s:TextInput id="tiSynonymFilter" width="100" change="{applyFilter()}"/>
+			<s:TextInput id="tiSynonymFilter" width="300" change="{applyFilter()}"/>
 			
 			<s:Spacer width="5"/>
 			<s:Label text="Тип книги"/>

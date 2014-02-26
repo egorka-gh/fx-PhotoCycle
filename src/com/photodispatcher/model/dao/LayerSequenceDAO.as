@@ -39,14 +39,14 @@ package com.photodispatcher.model.dao{
 		}
 		
 		//save batch iside group
-		public function updateBatch(items:Array):void{
-			if(!items || items.length==0) return;
-			var sequence:Array=saveSequence(items);
+		public function updateBatch(items:Array, layerset:int, layerGroup:int):void{
+			if(!items) return;
+			var sequence:Array=saveSequence(items, layerset, layerGroup);
 			executeSequence(sequence);
 		}
 
 		//save sequence iside group
-		public function saveSequence(items:Array):Array{
+		public function saveSequence(items:Array, layerset:int, layerGroup:int):Array{
 			var sequence:Array=[];
 			var item:LayerSequence;
 			var sql:String;
@@ -74,7 +74,7 @@ package com.photodispatcher.model.dao{
 			}
 			//del unused
 			sql='DELETE FROM config.layer_sequence WHERE layerset=? AND layer_group=? AND seqorder>?';
-			params=[item.layerset, item.layer_group, seq];
+			params=[layerset, layerGroup, seq];
 			sequence.push(prepareStatement(sql,params));
 			
 			//compact
