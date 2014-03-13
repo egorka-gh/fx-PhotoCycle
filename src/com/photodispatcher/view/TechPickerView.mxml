@@ -89,7 +89,7 @@
 				if(!dtFmt){
 					dtFmt=new DateTimeFormatter();
 					dtFmt.timeStyle=DateTimeStyle.LONG;
-					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss:SS';
+					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
 				}
 				logText=logText+dtFmt.format(new Date())+' '+ mesage+'\n';
 			}
@@ -97,19 +97,31 @@
 				logText='';
 			}
 			
+			private var techGroup:int;
+			private function filterTemplates(item:Object):Boolean{
+				var s:Layerset=item as Layerset;
+				if(!s) return false;
+				if(s.layerset_group != techGroup) return false;
+				return true;
+			}
+
 			[Bindable]
 			private var techPicker:TechPicker;
 			
 			public function start():void{
+				techGroup=Context.getAttribute('techGroup.id');
 				var dao:LayersetDAO=new LayersetDAO();
 				acTemplates=dao.findAll();
+				acTemplates.filterFunction=filterTemplates;
+				acTemplates.refresh();
 				if (acTemplates.length==0) return;
+				
 				controller.start();
 				var barReader:ComReader;
 				if (barcodeReaders){
 					for each(barReader in barcodeReaders) barReader.start();
 				}
-				techPicker= new TechPicker();
+				techPicker= new TechPicker(techGroup);
 				techPicker.engineOnStartOn=engineOnStartOn;
 				techPicker.vacuumOnStartOn=vacuumOnStartOn;
 				techPicker.engineOnErrOff=engineOnErrOff;

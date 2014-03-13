@@ -42,7 +42,7 @@
 			[Bindable]
 			public var currentItem:Object;
 			[Bindable]
-			public var currentIndex:int;
+			public var currentIndex:int=-1;
 			[Bindable]
 			public var editable:Boolean;
 			[Bindable]

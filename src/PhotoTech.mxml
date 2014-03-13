@@ -119,17 +119,14 @@
 				}
 
 				/*
-				if(!techPointID){
-					//Alert.show('Приложение не настроено');
-					currentState='config';
-					return;
-				}
-				*/
-				
-				/*
 				Context.setAttribute('serverIP',serverIP);
 				*/
-				currentState='config';
+				
+				if(techPointObj && coms.length>0){
+					start();
+				}else{
+					currentState='config';
+				}
 			}
 			
 			private function start():void{

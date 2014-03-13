@@ -144,14 +144,16 @@ package com.photodispatcher.provider.fbook{
 				case Book.PROJECT_TYPE:
 					switch((project as Book).template.cover.printType){
 						case BookCoverPrintType.PHOTO_EXTENDED:
-							return BookSynonym.BOOK_TYPE_JOURNAL;
+							//return BookSynonym.BOOK_TYPE_JOURNAL;
+							return BookSynonym.BOOK_TYPE_BOOK;
 							break;
 						case BookCoverPrintType.EMPTY:
 						case BookCoverPrintType.PARTIAL:
 							return BookSynonym.BOOK_TYPE_LEATHER;
 							break;
 						default: //case BookCoverPrintType.PHOTO:
-							return BookSynonym.BOOK_TYPE_BOOK;
+							return BookSynonym.BOOK_TYPE_JOURNAL;
+							//return BookSynonym.BOOK_TYPE_BOOK;
 							break;
 					}
 				case FotocalendarProject.PROJECT_TYPE:
@@ -189,7 +191,7 @@ package com.photodispatcher.provider.fbook{
 					return (project as MagnetProject).template.paperType.printId;
 					break;
 				case PROJECT_TYPE_BCARD:
-					return (project as CardProject).template.paperType.printId;
+					return (project as CardProject).getTemplate().paperType.printId;
 					break;
 				case FotocanvasProject.PROJECT_TYPE:
 					return (project as FotocanvasProject).template.paperType.printId;
@@ -212,7 +214,7 @@ package com.photodispatcher.provider.fbook{
 					return (project as MagnetProject).template.printAlias;
 					break;
 				case PROJECT_TYPE_BCARD:
-					return (project as CardProject).template.printAlias;
+					return (project as CardProject).getTemplate().printAlias;
 					break;
 				case FotocanvasProject.PROJECT_TYPE:
 					return (project as FotocanvasProject).template.printAlias;
@@ -301,8 +303,8 @@ package com.photodispatcher.provider.fbook{
 					break;
 				case PROJECT_TYPE_BCARD:
 					var bcp:CardProject=(project as CardProject);
-					pageSize.x=bcp.template.format.cellWidth;
-					pageSize.y=bcp.template.format.cellHeight;
+					pageSize.x=bcp.getTemplate().getFormat().cellWidth;
+					pageSize.y=bcp.getTemplate().getFormat().cellHeight;
 					pageOffset.x=0;
 					pageOffset.y=0;
 					break;
@@ -428,7 +430,7 @@ package com.photodispatcher.provider.fbook{
 					result=(project as MagnetProject).template.format.name;
 					break;
 				case PROJECT_TYPE_BCARD:
-					result=(project as CardProject).template.format.name;
+					result=(project as CardProject).getTemplate().getFormat().name;
 					break;
 				case FotocanvasProject.PROJECT_TYPE:
 					result=(project as FotocanvasProject).template.format.name;

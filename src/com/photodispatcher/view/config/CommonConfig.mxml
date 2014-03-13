@@ -9,13 +9,16 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.AppConfig;
+			import com.photodispatcher.model.ContentFilter;
 			import com.photodispatcher.model.dao.AppConfigDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.StrUtil;
 			
+			import mx.collections.ArrayCollection;
 			import mx.events.FlexEvent;
 			
+			import spark.events.IndexChangeEvent;
 			import spark.events.TextOperationEvent;
 			
 			[Bindable]
@@ -44,6 +47,10 @@
 			private var pdfPageLimit:int=100;
 			[Bindable]
 			private var reversPrint:Boolean=false;
+			[Bindable]
+			private var contentFiltersAC:ArrayCollection;
+			[Bindable]
+			private var currCFilter:ContentFilter;
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
 				confDAO=new AppConfigDAO();
@@ -66,6 +73,8 @@
 				if(so.data.pdfPageLimit) pdfPageLimit=so.data.pdfPageLimit;
 				if(!pdfPageLimit) pdfPageLimit=100;
 				reversPrint=so.data.reversPrint;
+				contentFiltersAC=new ArrayCollection(ContentFilter.filters);
+				currCFilter=Context.getAttribute('contentFilter') as ContentFilter;
 			}
 			
 			private function pingIM():void{
@@ -204,6 +213,23 @@
 				Context.setAttribute('reversPrint', reversPrint);
 			}
 			
+			protected function cbCFilter_changeHandler(event:IndexChangeEvent):void{
+				currCFilter=cbCFilter.selectedItem as ContentFilter;
+				/*
+				if(currCFilter){
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.cFilterId=currCFilter.id;
+					so.flush();  
+				}
+				*/
+				if(currCFilter){
+					conf.content_filter=currCFilter.id;
+				}else{
+					conf.content_filter=0;
+				}
+				Context.setAttribute('contentFilter',currCFilter);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -226,6 +252,10 @@
 					<s:TextInput id="tiPrtFolder" text="{prtPath}" editable="false" width="400"/>
 					<s:Button id="btPrtFolder" label="..." click="btPrtFolder_clickHandler(event)"/>
 				</mx:HBox>
+			</s:FormItem> 
+
+			<s:FormItem label="Фильтр загрузки">
+				<s:ComboBox id="cbCFilter" selectedItem="{currCFilter}" dataProvider="{contentFiltersAC}" labelField="name" change="cbCFilter_changeHandler(event)"/>
 			</s:FormItem> 
 
 			<s:FormItem label="IP компьютера">

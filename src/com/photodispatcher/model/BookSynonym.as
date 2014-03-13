@@ -32,6 +32,10 @@ package com.photodispatcher.model{
 		public var book_type:int;
 		[Bindable]
 		public var is_horizontal:Boolean;
+
+		//content filter mark
+		[Bindable]
+		public var is_allow:Boolean;
 		
 		//ref
 		[Bindable]

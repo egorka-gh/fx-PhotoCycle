@@ -32,6 +32,8 @@ package com.photodispatcher.tech.picker{
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	public class TechPicker extends EventDispatcher{
+		public static const START_DELAY:int	=2000;
+
 		public static const COMMAND_GROUP_BOOK_START:int	=0;
 		public static const COMMAND_GROUP_BOOK_SHEET:int	=1;
 		public static const COMMAND_GROUP_BOOK_BETWEEN_SHEET:int	=2;
@@ -56,8 +58,9 @@ package com.photodispatcher.tech.picker{
 		[Bindable]
 		public var endpaperSet:EndpaperSet;//:EndpaperSetKill; 
 		[Bindable]
-		public var currInerlayer:Layerset; 
+		public var currInerlayer:Layerset;
 		
+		private var techGroup:int;
 		/*
 		private var _currEndpaperInTray:Endpaper; 
 		[Bindable]
@@ -157,15 +160,19 @@ package com.photodispatcher.tech.picker{
 			if(barLatch) barLatch.setTimeout(_turnInterval);
 		}
  
-		public function TechPicker(){
+		public function TechPicker(techGroup:int){
 			super(null);
-
+			this.techGroup=techGroup;
 			//create & fill trays
 			traySet= new TraySet();
 			if (!traySet.prepared) return;
+			
 			interlayerSet= new InterlayerSet();
+			interlayerSet.init(techGroup);
 			if (!interlayerSet.prepared) return;
+			
 			endpaperSet= new EndpaperSet();
+			endpaperSet.init(techGroup);
 			if (!endpaperSet.prepared) return;
 			
 			currEndpaper=endpaperSet.emptyEndpaper;
@@ -230,7 +237,11 @@ package com.photodispatcher.tech.picker{
 			return _layerset;
 		}
 		public function set layerset(value:Layerset):void{
-			_layerset = value;
+			if(value.layerset_group!=techGroup){
+				_layerset =null;
+			}else{
+				_layerset = value;
+			}
 			if(_layerset) prepareTemplate();
 		}
 		
@@ -515,6 +526,22 @@ package com.photodispatcher.tech.picker{
 			resetLatches();
 		}
 		
+		private var delayTimer:Timer;
+		
+		private function runDelayTimer():void{
+			log('Задержка старта (2сек)');
+			if(!delayTimer){
+				delayTimer=new Timer(START_DELAY,1);
+				delayTimer.addEventListener(TimerEvent.TIMER,onDelayTimer); 
+			}
+			delayTimer.reset();
+			delayTimer.start();
+		}
+		
+		private function onDelayTimer(evt:TimerEvent):void{
+			nextStep();
+		}
+		
 		private function nextStep():void{
 			if(!isRunning || isPaused) return;
 			if(hasPauseRequest){
@@ -530,7 +557,8 @@ package com.photodispatcher.tech.picker{
 					if(currentGroupStep>=steps){
 						//complite
 						currentGroup= COMMAND_GROUP_BOOK_START;
-						nextStep();
+						//nextStep();
+						runDelayTimer();
 						return;
 					}
 					if(currentGroupStep==0 && vacuumOnStartOn){
@@ -591,7 +619,8 @@ package com.photodispatcher.tech.picker{
 							currentGroupStep=pausedGroupStep;
 							pausedGroup=-1;
 							pausedGroupStep=-1;
-							nextStep();
+							//nextStep();
+							runDelayTimer();
 						}
 						return;
 					}
@@ -923,11 +952,12 @@ package com.photodispatcher.tech.picker{
 			var barcode:String=event.barcode;
 			log('barcod: '+barcode);
 			if(!isRunning || isPaused) return;
-			if(!barLatch.isOn && barcode!=currBarcode){
-				//currBarcode=barcode;
-				pause('Не ожидаемое срабатывание сканера ШК, код:' +barcode);
+			if(!barLatch.isOn){
+				//chek doublescan while barcode not covered vs next layer
+				if(barcode!=currBarcode) pause('Не ожидаемое срабатывание сканера ШК, код:' +barcode);
 				return;
 			}
+			if(barcode==currBarcode) return; //doublescan or more then 1 barreader
 			currBarcode=barcode;
 			//parce barcode
 			var pgId:String;
@@ -993,7 +1023,7 @@ package com.photodispatcher.tech.picker{
 			
 			currBookTypeName=getBookTypeName(currOrder.book_type)
 			//check book type
-			if(layerset.book_type!=currOrder.book_type){
+			if(!layerset.is_book_check_off && layerset.book_type!=currOrder.book_type){
 				pause('Тип книги "'+currBookTypeName+'" заказа не соответствует шаблону.');
 				log('! wrong book_type');
 				return;
@@ -1006,58 +1036,27 @@ package com.photodispatcher.tech.picker{
 				return;
 			}
 
-			//check endpaper
-			var newEp:Layerset;
-			if(currOrder.endpaper){
-				newEp=endpaperSet.getBySynonym(currOrder.endpaper);
-			}else{
-				newEp=endpaperSet.emptyEndpaper;
-			}
-			if(!newEp){
-				pause('Не известный форзац "'+currOrder.endpaper+'"');
-				log('! unknown endpaper');
-				return;
-			}
-			if(newEp.id!=currEndpaper.id){
-				pause('Форзац заказа "'+newEp.name+'" не соответствует текущему шаблону "'+currEndpaper.name+'"');
-				log('! wrong endpaper');
-				return;
-			}
-			/*
-			if(newEp.isEmpty){
-				if(!currEndpaper.isEmpty){
-					pause('Уберите форзац "'+currEndpaper.name+'" в начале книги');
-					log('! wrong endpaper');
-					currEndpaper=newEp;
-					return;
-				}
-			}else{
-				var msg:String='';
-				//check if template uses Endpaper
-				if(!layerset.usesEndPaper){
-					msg='Текущий шаблон не настроен для сборки книг с форзацем';
+			if(!layerset.is_epaper_check_off){
+				//check endpaper
+				var newEp:Layerset;
+				if(currOrder.endpaper){
+					newEp=endpaperSet.getBySynonym(currOrder.endpaper);
 				}else{
-					if(currEndpaperInTray.id!=newEp.id){
-						if(!currEndpaper.isEmpty) msg='Уберите форзац "'+currEndpaper.name+'" в начале книги'+'\n';
-						msg=msg+'Положите форзац "'+newEp.name+'" в начале книги'+'\n';
-						var tray:int=traySet.getCurrentTray(Layer.LAYER_ENDPAPER);
-						if(tray==-1){
-							msg=msg+'Укажите лоток для Форзацев и загрузите форзацем: "'+newEp.name+'"';
-						}else{
-							msg=msg+'Загрузите лоток № '+(tray+1).toString()+' форзацем: "'+newEp.name+'"';
-						}
-					}else if(currEndpaper.isEmpty){
-						msg='Положите форзац "'+newEp.name+'" в начале книги'+'\n';
-					}
+					newEp=endpaperSet.emptyEndpaper;
 				}
-				if(msg){
-					pause(msg);
-					log('! wrong endpaper');
-					currEndpaper=newEp;
+				if(!newEp){
+					pause('Не известный форзац "'+currOrder.endpaper+'"');
+					log('! unknown endpaper');
 					return;
 				}
-			}*/
-			currEndpaper=newEp;
+				if(newEp.id!=currEndpaper.id){
+					pause('Форзац заказа "'+newEp.name+'" не соответствует текущему шаблону "'+currEndpaper.name+'"');
+					log('! wrong endpaper');
+					return;
+				}
+				currEndpaper=newEp;
+			}
+			
 			bdLatch.forward();
 			//TODO implement check format
 		}

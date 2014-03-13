@@ -15,18 +15,23 @@ package com.photodispatcher.tech.picker{
 		protected var _prepared:Boolean;
 		protected var synonymMap:Object;
 		
+		protected var type:int;
+		protected var techGroup:int;
+		
 		public function get prepared():Boolean{
 			return _prepared;
 		}
 			
 		public function InterlayerSet(){
-			_prepared=init(1);
+			type=Layerset.LAYERSET_TYPE_INTERLAYER;
 		}
 		
-		protected function init(type:int):Boolean{
+		public function init(techGroup:int):Boolean{
+			_prepared=false;
+			this.techGroup=techGroup;
 			//load
 			var ilDao:LayersetDAO= new LayersetDAO();
-			var arr:Array=ilDao.findAllArray(type,true);
+			var arr:Array=ilDao.findAllArray(type,true,techGroup);
 			if(!arr) return false;
 			var ls:Layerset;
 			synonymMap=new Object;
@@ -48,7 +53,8 @@ package com.photodispatcher.tech.picker{
 				}
 			}
 			layersets= new ArrayCollection(arr);
-			return true;
+			_prepared=true;
+			return _prepared;
 		}
 		
 		public function getBySynonym(synonym:String):Layerset{

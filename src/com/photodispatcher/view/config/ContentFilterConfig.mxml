@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}" xmlns:config="com.photodispatcher.view.config.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.BookSynonym;
+			import com.photodispatcher.model.ContentFilter;
+			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.dao.BookSynonymDAO;
+			import com.photodispatcher.model.dao.ContentFilterDAO;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.events.GridSelectionEvent;
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var filtersAC:ArrayCollection;
+			[Bindable]
+			private var aliasAllowAC:ArrayCollection;
+			[Bindable]
+			private var aliasDisAllowAC:ArrayCollection;
+			[Bindable]
+			private var currFilter:ContentFilter;
+			
+			private var aliasesChenged:Boolean;
+			
+			public function init():void{
+				var fd:ContentFilterDAO= new ContentFilterDAO();
+				var arr:Array=fd.findAllArray();
+				if (arr) filtersAC= new ArrayCollection(arr);
+				if(filtersLst && filtersLst.currentIndex!=-1) filtersLst.currentIndex=-1;
+				aliasAllowAC= new ArrayCollection();
+				aliasDisAllowAC= new ArrayCollection();
+			}
+			
+			private function filterAllow(item:Object):Boolean{
+				var s:BookSynonym=item as BookSynonym;
+				if(!s) return false;
+				return s.is_allow;
+			}
+			private function filterDisAllow(item:Object):Boolean{
+				var s:BookSynonym=item as BookSynonym;
+				if(!s) return false;
+				if(tiSynonymFilter && tiSynonymFilter.text && s.synonym.indexOf(tiSynonymFilter.text)==-1 ) return false;
+				return !s.is_allow;
+			}
+
+			private function applyDisallowFilter():void{
+				if(aliasDisAllowAC) aliasDisAllowAC.refresh();
+				if(aliasAllowAC) aliasAllowAC.refresh();
+			}
+			
+			protected function btAdd_clickHandler(event:MouseEvent):void{
+				var f:ContentFilter= new ContentFilter();
+				f.name='Новый фильтр';
+				filtersAC.addItem(f);
+				filtersLst.currentItem=f;
+				filtersLst_selectionChangeHandler(null);
+				aliasesChenged=false;
+			}
+			
+			protected function btSave_clickHandler(event:MouseEvent):void{
+				if (!currFilter) return;
+				var fDao:ContentFilterDAO= new ContentFilterDAO();
+				if (!currFilter.loaded || currFilter.changed) fDao.save(currFilter);
+				if(aliasesChenged) fDao.saveAliasesBatch(currFilter.id,aliasAllowAC.source);	
+				aliasesChenged=false;
+			}
+			
+			private function markChanged():void{
+				if (currFilter) currFilter.changed=true; 
+			}
+			
+			protected function filtersLst_selectionChangeHandler(event:GridSelectionEvent):void{
+				var f:ContentFilter;
+				var arr:Array=[];
+				var d:BookSynonymDAO;
+				if(filtersLst && filtersLst.currentItem){
+					f=filtersLst.currentItem as ContentFilter;
+				}
+				currFilter=f;
+				fillAliases();
+			}
+			
+			private function fillAliases():void{
+				var arr:Array=[];
+				var d:BookSynonymDAO= new BookSynonymDAO();
+				if(currFilter && currFilter.loaded){
+					arr= d.findAllArray(SourceType.SRC_FOTOKNIGA,currFilter.id);
+				}else{
+					arr= d.findAllArray(SourceType.SRC_FOTOKNIGA,-1);
+				}
+				aliasAllowAC= new ArrayCollection(arr);
+				aliasAllowAC.filterFunction=filterAllow;
+				aliasAllowAC.refresh();
+				aliasDisAllowAC= new ArrayCollection(arr);
+				aliasDisAllowAC.filterFunction=filterDisAllow;
+				aliasDisAllowAC.refresh();
+				aliasesChenged=false;
+			}
+			
+			protected function btAddAli_clickHandler(event:MouseEvent):void{
+				var s:BookSynonym;
+				if(disAllowLst && disAllowLst.currentItem){
+					s=disAllowLst.currentItem as BookSynonym;
+					if(s) s.is_allow=true;
+				}
+				applyDisallowFilter();
+				aliasesChenged=true;
+			}
+			
+			protected function btAddAliAll_clickHandler(event:MouseEvent):void{
+				var s:BookSynonym;
+				if(aliasDisAllowAC){
+					aliasDisAllowAC.disableAutoUpdate();
+					for each(s in aliasDisAllowAC){
+						if(!s.is_allow) s.is_allow=true;
+					}
+					aliasDisAllowAC.enableAutoUpdate();
+				}
+				applyDisallowFilter();
+				aliasesChenged=true;
+			}
+			
+			protected function btDelAli_clickHandler(event:MouseEvent):void{
+				var s:BookSynonym;
+				if(allowLst && allowLst.selectedItem){
+					s=allowLst.selectedItem as BookSynonym;
+					if(s) s.is_allow=false;
+				}
+				applyDisallowFilter();
+				aliasesChenged=true;
+			}
+			
+			protected function btDelAliAll_clickHandler(event:MouseEvent):void{
+				var s:BookSynonym;
+				if(aliasAllowAC){
+					aliasAllowAC.disableAutoUpdate();
+					for each(s in aliasAllowAC){
+						if(s.is_allow) s.is_allow=false;
+					}
+					aliasAllowAC.enableAutoUpdate();
+				}
+				applyDisallowFilter();
+				aliasesChenged=true;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="100%" gap="10">
+		<s:VGroup width="200" height="100%">
+			<s:Label text="Фильтры"/>
+			<!--<s:List id="filtersLst" dataProvider="{filtersAC}" 
+					change="filtersLst_changeHandler(event)"
+					width="100%" height="100%" labelField="name"/>-->
+			<config:ItemsGrid id="filtersLst" width="100%" height="100%" editable="true"
+							  selectionChange="filtersLst_selectionChangeHandler(event)"
+							  currentData="{filtersAC}" currentColumns="{ContentFilter.gridColumns()}"/>
+			<s:HGroup gap="5" width="100%" horizontalAlign="right">
+				<s:Button id="btAdd" label="Добавить" click="btAdd_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:VGroup width="100%" height="100%" enabled="{Boolean(currFilter)}" paddingTop="15" >
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Фото"/>
+				<s:CheckBox selected="@{currFilter.is_photo_allow }" change="{markChanged()}"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Розничные книги"/>
+				<s:CheckBox selected="@{currFilter.is_retail_allow}" change="{markChanged()}"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Профики"/>
+				<s:CheckBox selected="@{currFilter.is_pro_allow}" change="{markChanged()}"/>
+			</s:HGroup>
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Фильтровать алиасы"/>
+				<s:CheckBox selected="@{currFilter.is_alias_filter}" change="{markChanged()}"/>
+			</s:HGroup>
+			<s:HGroup gap="10" width="100%" height="100%" 
+					  enabled="{Boolean(currFilter) &amp;&amp; currFilter.loaded &amp;&amp; currFilter.is_alias_filter &amp;&amp; (currFilter.is_pro_allow || currFilter.is_retail_allow)}">
+				<s:VGroup gap="5" width="250" height="100%">
+					<s:Label text="Загружать алиасы"/>
+					<s:List id="allowLst" width="100%" height="100%" dataProvider="{aliasAllowAC}" labelField="synonym"/>
+				</s:VGroup>
+				<s:VGroup height="100%" verticalAlign="middle">
+					<s:Button id="btAddAli" label="&#60;"  toolTip="Добавить" click="btAddAli_clickHandler(event)"/>
+					<s:Button id="btAddAliAll" label="&#60;&#60;" toolTip="Добавить все" click="btAddAliAll_clickHandler(event)"/>
+					<s:Button id="btDelAli" label="&#62;" toolTip="Удалить" click="btDelAli_clickHandler(event)"/>
+					<s:Button id="btDelAliAll" label="&#62;&#62;" toolTip="Удалить все" click="btDelAliAll_clickHandler(event)"/>
+				</s:VGroup>
+				<s:VGroup gap="5" width="100%" height="100%">
+					<s:Label text="Не загружать алиасы"/>
+					<s:HGroup width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+						<s:Label text="Фильтрация" fontWeight="bold"/>
+						<s:Spacer width="5"/>
+						<s:Label text="Имя папки"/>
+						<s:TextInput id="tiSynonymFilter" width="250" change="{applyDisallowFilter()}"/>
+					</s:HGroup>
+
+					<config:ItemsGrid id="disAllowLst" width="100%" height="100%" 
+									  editable="false" currentData="{aliasDisAllowAC}" currentColumns="{BookSynonymDAO.gridColumns()}"/>
+				</s:VGroup>
+			</s:HGroup>
+			<s:HGroup gap="5" width="100%" horizontalAlign="right">
+				<s:Button id="btSave" label="Сохранить" click="btSave_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+</s:Group>

@@ -78,7 +78,7 @@ package com.photodispatcher.provider.preprocess{
 			prepareItems=[];
 			resizeItems=[];
 			for each(pg in order.printGroups){
-				if(pg && pg.book_type==0){
+				if(pg && pg.book_type==0 && pg.state<OrderState.CANCELED){
 					files=pg.getFiles();
 					if(files && files.length>0){
 						for each(pgf in files){

@@ -1,11 +1,14 @@
 package com.photodispatcher.provider.ftp{
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ConnectionsProgressEvent;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.LoadProgressEvent;
 	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.factory.SuborderBuilder;
+	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceService;
 	import com.photodispatcher.model.SourceType;
@@ -449,14 +452,36 @@ package com.photodispatcher.provider.ftp{
 				return;
 			}
 			
+			var ftpQueue:Array=e.listing;
+			var ff:FTPFile;
+			
+			//check content filter
+			var cFilter:ContentFilter=Context.getAttribute('contentFilter') as ContentFilter;
+			var pg:PrintGroup;
+			if(pgArr && cFilter && cFilter.id!=0){
+				for each(pg in pgArr){
+					if(!cFilter.allowPrintGroup(pg)){
+						pg.state=OrderState.SKIPPED;
+						//remove files
+						var newFtpQueue:Array=[];
+						for each(ff in ftpQueue){
+							if(ff.parentDir!=pg.path){
+								newFtpQueue.push(ff);
+							}
+						}
+						ftpQueue=newFtpQueue;
+						if(!remoteMode) StateLogDAO.logState(pg.state ,order.id,pg.id ); 
+					}
+				}
+			}
+			
 			//check/create order local folder
 			var fl:File=new File(localFolder);
 			
 			//TODO check disk space
 			var avail:Number=fl.spaceAvailable;
 			var need:Number=0;
-			var ff:FTPFile;
-			for each(ff in e.listing){
+			for each(ff in ftpQueue){
 				if(ff){
 					need+=ff.size;
 				}
@@ -494,7 +519,7 @@ package com.photodispatcher.provider.ftp{
 			order.printGroups=pgArr;
 			order.suborders=soArr;
 			order.state=OrderState.FTP_LOAD;
-			order.ftpQueue=e.listing;
+			order.ftpQueue=ftpQueue;
 			order.resetErrCounter();
 			trace('FTPDownloadManager start download order '+order.ftp_folder+', printGroups:'+order.printGroups.length.toString()+', ftpQueue:'+order.ftpQueue.length.toString());
 			if(order.ftpQueue && order.ftpQueue.length>0){
@@ -502,12 +527,6 @@ package com.photodispatcher.provider.ftp{
 				loadProgress();
 			}else{
 				trace('FTPDownloadManager empty order '+order.ftp_folder);
-				/*
-				idx=downloadOrders.indexOf(listApplicant);
-				if(idx!=-1) downloadOrders.splice(idx,1);
-				listApplicant.state=OrderState.FTP_COMPLETE;
-				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,listApplicant));
-				*/
 				checkDownload();
 			}
 			if(DEBUG_TRACE) trace('FTPDownloadManager onList reuse connection '+orderId);

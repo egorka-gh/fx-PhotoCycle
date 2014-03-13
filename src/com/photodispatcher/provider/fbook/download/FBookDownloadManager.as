@@ -1,12 +1,16 @@
 package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotokniga.net.AuthService;
 	import com.akmeful.json.JsonUtil;
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
+	import com.photodispatcher.model.BookSynonym;
+	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
+	import com.photodispatcher.model.dao.BookSynonymDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
@@ -401,7 +405,24 @@ package com.photodispatcher.provider.fbook.download{
 				currentSubOrder.format=project.formatName;
 				currentSubOrder.corner_type=project.cornerTypeName;
 
-				
+				//check content filter
+				var cFilter:ContentFilter=Context.getAttribute('contentFilter') as ContentFilter;
+				var skip:Boolean=false;
+				if(cFilter && cFilter.id!=0){
+					skip=project.bookType==0 && !cFilter.is_photo_allow; 
+					skip=project.bookType!=0 && !cFilter.is_retail_allow;
+					if(!skip && project.bookType!=0 && cFilter.is_alias_filter){
+						var bs:BookSynonym=BookSynonymDAO.translateAlias(project.printAlias)
+						if(bs) skip=!cFilter.allowAlias(bs.id);
+					}
+					if(skip){
+						currentSubOrder.state=OrderState.SKIPPED;
+						if(!remoteMode) StateLogDAO.logState(currentSubOrder.state ,currentSubOrder.order_id); 
+						nextSubOrder();
+						return;
+					}
+				}
+
 				//load project content
 				startContentLoader(workFolder);
 			}else{

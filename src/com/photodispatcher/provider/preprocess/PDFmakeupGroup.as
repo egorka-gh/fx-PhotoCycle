@@ -327,8 +327,8 @@ package com.photodispatcher.provider.preprocess{
 					//no cutting
 					for (i=0; i<len;i++){
 						sh=new PdfSheet();
-						sh.leftPage=files[i];
-						sh.rightPage=files[i+1];
+						sh.leftPage=files[i*2];
+						sh.rightPage=files[i*2+1];
 						result.push(sh);
 					}
 				}

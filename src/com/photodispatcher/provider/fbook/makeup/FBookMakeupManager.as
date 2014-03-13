@@ -76,7 +76,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			if(logStates) StateLogDAO.logState(order.state,order.id,'','Подготовка подзаказов');
 			var so:Suborder;
 			for each(so in order.suborders){
-				if(so) so.state=OrderState.PREPROCESS_WAITE;
+				if(so && so.state<OrderState.CANCELED) so.state=OrderState.PREPROCESS_WAITE;
 			}
 			nextSuborder();
 		}
@@ -99,7 +99,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				var builder:PrintGroupBuilder= new PrintGroupBuilder();
 				var pgArr:Array;
 				try{
-					pgArr=builder.buildFromSuborders(order);//TODO double call !!!!
+					pgArr=builder.buildFromSuborders(order);
 				}catch (e:Error){
 					trace('FBookMakeupManager error while build print group'+order.id+', error: '+e.message);
 					releaseWithErr(OrderState.ERR_READ_LOCK,'Блокировка чтения при парсе групп печати.');

@@ -12,9 +12,15 @@ package com.photodispatcher.model{
 	import spark.components.gridClasses.GridColumn;
 
 	public class Layerset extends DBRecord{
+		public static const LAYERSET_TYPE_TEMPLATE:int=0;
+		public static const LAYERSET_TYPE_INTERLAYER:int=1;
+		public static const LAYERSET_TYPE_ENDPAPER:int=2;
+
 		//db fileds
 		[Bindable]
 		public var id:int=-1;
+		[Bindable]
+		public var layerset_group:int=0;
 		[Bindable]
 		public var subset_type:int=0;
 		[Bindable]
@@ -26,7 +32,10 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var is_passover:Boolean;
 		[Bindable]
-		public var interlayer_thickness:int;
+		public var is_book_check_off:Boolean;
+		[Bindable]
+		public var is_epaper_check_off:Boolean;
+		
 		
 		//run time
 		[Bindable]
@@ -45,16 +54,6 @@ package com.photodispatcher.model{
 		public function set layerAllocation(value:Array):void{
 			_layerAllocation = value;
 		}
-		/*
-		public function getLayerAllocation(forEdit:Boolean=false, silent:Boolean=false):Array{
-			if(!loaded) return _layerAllocation;
-			if(!_layerAllocation){
-				var dao:LayerAllocationDAO=new LayerAllocationDAO();
-				layerAllocation=dao.getBySet(id,forEdit,silent);
-			}
-			return _layerAllocation;
-		}
-*/
 		private var _sequence1:Array;
 		private var _sequence2:Array;
 		private var _sequence3:Array;
@@ -120,36 +119,8 @@ package com.photodispatcher.model{
 			_prepared=false
 			if(!loaded) return;
 			_prepared=loadSequence(true);
-			/*
-			if(getLayerAllocation(true,true) && loadSequence(true)){
-				layersMap= new Object;
-				//refactor
-				var la:LayerAllocation;
-				var l:Layer;
-				for each(la in layerAllocation){
-					if(la.layer!=Layer.LAYER_EMPTY){
-						l=layersMap['l'+la.layer.toString()] as Layer;
-						if(!l){
-							l=new Layer();
-							l.id=la.layer;
-							l.name=la.layer_name;
-							layersMap['l'+la.layer.toString()]=l;
-						}
-						l.addTray(la.tray);
-					}
-				}
-				return true;
-			}
-			return false;
-			*/
 		}
 		
-		/*
-		public function getLayer(id:int):Layer{
-			return layersMap?(layersMap['l'+id.toString()] as Layer):null;
-		}
-		*/
-
 		public static function gridColumns(subSetType:int=0):ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
@@ -157,12 +128,12 @@ package com.photodispatcher.model{
 			col= new GridColumn('name'); col.headerText='Наименование'; col.width=150; result.addItem(col); 
 			if(subSetType==0){
 				col= new GridColumn('book_type'); col.headerText='Тип книги'; col.width=150; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+				col= new GridColumn('is_book_check_off'); col.headerText='Отключить контроль типа книги'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
+				col= new GridColumn('is_epaper_check_off'); col.headerText='Отключить контроль форзаца'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
 			}
 			if(subSetType==2){
 				col= new GridColumn('is_passover'); col.headerText='Без форзаца'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
 			}
-			//col= new GridColumn('is_pdf'); col.headerText='Полиграфия'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false; result.addItem(col);
-			//col= new GridColumn('interlayer_thickness'); col.headerText='Толщина прослойки (мм)'; result.addItem(col); 
 			return result;
 		}
 

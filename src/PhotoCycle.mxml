@@ -15,6 +15,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.AppConfig;
+			import com.photodispatcher.model.ContentFilter;
 			import com.photodispatcher.model.Roll;
 			import com.photodispatcher.model.dao.AppConfigDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
@@ -24,6 +25,7 @@
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.shell.IMRuner;
+			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.OrderSearchPopup;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
@@ -106,13 +108,31 @@
 				var workFolder:String;
 				var prtPath:String;
 				var serverIP:String;
+				//var cFilterId:int;
 				if (so.size>0){
 					workFolder = so.data.workFolder;
 					imPath = so.data.imPath;
 					prtPath = so.data.prtPath;
 					serverIP=so.data.serverIP;
+					//cFilterId=so.data.cFilterId;
 				}
 				
+				/*
+				//load content filters
+				var cfilters:Array=ContentFilter.filters;
+				//current content filter
+				var currCFilter:ContentFilter;
+				if(cfilters) currCFilter=ArrayUtil.searchItem('id',cFilterId,cfilters) as ContentFilter;
+				if(!currCFilter){
+					currCFilter= new ContentFilter();
+					currCFilter.is_alias_filter=false;
+					currCFilter.is_photo_allow=true;
+					currCFilter.is_pro_allow=true;
+					currCFilter.is_retail_allow=true;
+				}
+				Context.setAttribute('contentFilter',currCFilter);
+				*/
+					
 				if(!workFolder){
 					workFolder=Context.getAttribute('workFolder'); //backward compatibility, get from config
 					if(workFolder){
@@ -180,7 +200,7 @@
 		</cfg:PathAlias>
 	</fx:Declarations>
 
-	<fx:Style source="stylesFonts.css" />
+	<fx:Style source="../src-book/stylesFonts.css" />
 
 	<s:states>
 		<s:State name="disconnected"/>

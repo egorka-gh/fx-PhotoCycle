@@ -123,7 +123,9 @@ package com.photodispatcher.provider.preprocess{
 			//-gravity NorthWest -pointsize 33 -undercolor "#ffffff80" -annotate "+23+23" " 123456_1 1/10 "
 			command.add('-gravity'); command.add('NorthWest');
 			command.add('-pointsize'); command.add(points.toString());
+			command.add('-strokewidth'); command.add('0');
 			command.add('-undercolor'); command.add(PDFmakeupGroup.TEXT_UNDERCOLOR);
+			command.add('-fill'); command.add('black');
 			var strOff:String='+'+(PDFmakeupGroup.TEXT_LEFT_OFFSET_PIX+hOffset).toString()+'+'+TEXT_TOP_OFFSET_PIX.toString();
 			command.add('-annotate'); command.add(strOff); command.add(printGroup.annotateText(file));
 			//command.add('-gravity'); command.add('Center');

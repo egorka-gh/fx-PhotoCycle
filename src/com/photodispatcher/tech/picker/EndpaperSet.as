@@ -4,13 +4,14 @@ package com.photodispatcher.tech.picker{
 	public class EndpaperSet extends InterlayerSet{
 		
 		public var emptyEndpaper:Layerset;
+
 		
 		public function EndpaperSet(){
-			_prepared=init(2);
+			type=Layerset.LAYERSET_TYPE_ENDPAPER;
 		}
 		
-		override protected function init(type:int):Boolean{
-			var result:Boolean=super.init(type);
+		override public function init(techGroup:int):Boolean{
+			var result:Boolean=super.init(techGroup);
 			var ls:Layerset;
 			if(result){
 				var arr:Array=layersets.source;
@@ -25,8 +26,8 @@ package com.photodispatcher.tech.picker{
 				emptyEndpaper= new Layerset();
 				emptyEndpaper.is_passover=true;
 				emptyEndpaper.name='Без форзаца';
-				if(synonymMap) synonymMap[ls.name]=ls;
-				if(layersets) layersets.addItem(ls); 
+				if(synonymMap) synonymMap[emptyEndpaper.name]=emptyEndpaper;
+				if(layersets) layersets.addItem(emptyEndpaper); 
 			}
 			return result;
 		}

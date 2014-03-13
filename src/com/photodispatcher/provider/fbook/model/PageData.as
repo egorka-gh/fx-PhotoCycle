@@ -121,10 +121,10 @@ package com.photodispatcher.provider.fbook.model{
 				finalMontageCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 				//tile vs template
 				var bcp:CardProject=book.project as CardProject;
-				finalMontageCommand.add('-size'); finalMontageCommand.add(bcp.template.format.realWidth+'x'+bcp.template.format.realHeight);
+				finalMontageCommand.add('-size'); finalMontageCommand.add(bcp.getTemplate().getFormat().realWidth+'x'+bcp.getTemplate().getFormat().realHeight);
 				finalMontageCommand.add('tile:'+outFilePath);
 				//outFilePath=outFileName(); //bug if !outFolder
-				pageSize= new Point(bcp.template.format.realWidth,bcp.template.format.realHeight);
+				pageSize= new Point(bcp.getTemplate().getFormat().realWidth,bcp.getTemplate().getFormat().realHeight);
 			}else if(book.type==FotocupProject.PROJECT_TYPE){
 				var fc:FotocupProject=book.project as FotocupProject;
 				if (fc.template.printWidth>fc.template.format.realWidth){

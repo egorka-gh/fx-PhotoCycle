@@ -70,7 +70,7 @@ package com.photodispatcher.provider.preprocess{
 			trace('PreprocessTask. start order: '+order.id);
 			//check create print subfolder
 			for each(pg in order.printGroups){
-				if (pg && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,true)){
+				if (pg && pg.state<OrderState.CANCELED && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,true)){
 					return;
 				}
 			}
@@ -111,7 +111,7 @@ package com.photodispatcher.provider.preprocess{
 			//var path:String=orderFolder+File.separator+order.ftp_folder;
 			for each(pg in order.printGroups){
 				mg=null;
-				if(pg && pg.book_type!=0){
+				if(pg && pg.book_type!=0 && pg.state<OrderState.CANCELED){
 					if(order.state!=OrderState.PREPROCESS_PDF) order.state=OrderState.PREPROCESS_PDF;
 					if(pg.is_pdf){
 						if(!pg.bookTemplate.is_sheet_ready){

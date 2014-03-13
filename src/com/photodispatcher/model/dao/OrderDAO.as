@@ -289,20 +289,22 @@ package com.photodispatcher.model.dao{
 			var dt:Date=new Date();
 			var so:Suborder;
 			
-			order.state=order.is_preload?OrderState.PRN_WAITE_ORDER_STATE:OrderState.PRN_WAITE;
+			if(order.state<OrderState.CANCELED) order.state=order.is_preload?OrderState.PRN_WAITE_ORDER_STATE:OrderState.PRN_WAITE;
 			
 			//fill sub orders
 			if(order.suborders){
 				for each(so in order.suborders){
-					sql='INSERT INTO suborders (id, order_id, src_type, sub_id, ftp_folder, prt_qty, proj_type)' +
-						' VALUES (?, ?, ?, ?, ?, ?, ?)';
+					sql='INSERT INTO suborders (id, order_id, src_type, sub_id, ftp_folder, prt_qty, proj_type, state, state_date)' +
+						' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
 					params=[so.id,
 							order.id,
 							so.src_type,
 							so.sub_id,
 							so.ftp_folder,
 							so.prt_qty,
-							so.proj_type];
+							so.proj_type,
+							so.state,
+							dt];
 					sequence.push(prepareStatement(sql,params));
 					//add sub orders extra info
 					if(so.endpaper || so.interlayer || so.cover || so.format || so.corner_type || so.kaptal){
@@ -319,13 +321,14 @@ package com.photodispatcher.model.dao{
 				for each(o in order.printGroups){
 					pg= o as PrintGroup;
 					if(pg){
+						if(pg.state<OrderState.CANCELED) pg.state=order.state;
 						//create print group
 						sql='INSERT INTO print_group (id, order_id, state, state_date, width, height, frame, paper, path, correction, cutting, file_num,'+
 													' book_type, book_part, book_num, sheet_num, is_pdf, is_duplex, prints)' +
 													' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 						params=[pg.id,
 								order.id,
-								order.state,
+								pg.state,
 								dt,
 								pg.width,
 								pg.height,

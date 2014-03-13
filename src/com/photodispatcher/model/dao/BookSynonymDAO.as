@@ -1,5 +1,6 @@
 package com.photodispatcher.model.dao{
 	
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.BookPgTemplate;
 	import com.photodispatcher.model.BookSynonym;
@@ -65,31 +66,58 @@ package com.photodispatcher.model.dao{
 				if(it) it.id=e.lastID;
 			}
 		}
-
-		public function findAllArray(src_type:int):Array{
+		
+		public function findAllArray(src_type:int, contentFilter:int=0):Array{
 			var sql:String;
-			sql='SELECT l.*, st.name src_type_name, bt.name book_type_name'+
-				' FROM config.book_synonym l'+
-				' INNER JOIN config.src_type st ON l.src_type = st.id'+
-				' INNER JOIN config.book_type bt ON l.book_type = bt.id'+
-				' WHERE l.src_type = ?'+
-				' ORDER BY l.synonym';
-			runSelect(sql,[src_type]);
+			if(contentFilter==0){
+				sql='SELECT l.*, st.name src_type_name, bt.name book_type_name, 1 is_allow'+
+					' FROM config.book_synonym l'+
+					' INNER JOIN config.src_type st ON l.src_type = st.id'+
+					' INNER JOIN config.book_type bt ON l.book_type = bt.id'+
+					' WHERE l.src_type = ?'+
+					' ORDER BY l.synonym';
+				runSelect(sql,[src_type]);
+			}else{
+				sql='SELECT l.*, st.name src_type_name, bt.name book_type_name, ifnull(fa.alias,0) is_allow'+
+					' FROM config.book_synonym l'+
+					' INNER JOIN config.src_type st ON l.src_type = st.id'+
+					' INNER JOIN config.book_type bt ON l.book_type = bt.id'+
+					' LEFT OUTER JOIN config.content_filter_alias fa ON fa.filter= ? AND l.id=fa.alias'+
+					' WHERE l.src_type = ?'+
+					' ORDER BY l.synonym';
+				runSelect(sql,[contentFilter, src_type]);
+			}
 			return itemsArray;
 		}
 
-		public static function gridColumns():ArrayList{
+		public function get4Layerset(src_type:int, layerset:int=0):Array{
+			var sql:String;
+			sql='SELECT l.*, st.name src_type_name, bt.name book_type_name, ifnull(la.alias,0) is_allow'+
+				' FROM config.book_synonym l'+
+				' INNER JOIN config.src_type st ON l.src_type = st.id'+
+				' INNER JOIN config.book_type bt ON l.book_type = bt.id'+
+				' LEFT OUTER JOIN config.layerset_alias la ON la.layerset=? AND la.alias=l.id'+
+				' WHERE l.src_type = ?'+
+				' ORDER BY l.synonym';
+			runSelect(sql,[layerset, src_type]);
+			return itemsArray;
+		}
+
+		public static function gridColumns(short:Boolean=false):ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
 			col= new GridColumn('synonym'); col.headerText='Имя папки'; result.addItem(col);
-			col= new GridColumn('fb_alias'); col.headerText='Алиас розницы'; result.addItem(col);
-			col= new GridColumn('book_type'); col.headerText='Тип книги'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
-			col= new GridColumn('is_horizontal'); col.headerText='Горизотальная'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col);
+			if(!short){
+				col= new GridColumn('fb_alias'); col.headerText='Алиас розницы'; result.addItem(col);
+				col= new GridColumn('book_type'); col.headerText='Тип книги'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+				col= new GridColumn('is_horizontal'); col.headerText='Горизотальная'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col);
+			}
 			return result;
 		}
 
 		private static var synonymMap:Object;
 		private static var aliasMap:Object;
+		private static var filter:int=0;
 		
 		public static function initSynonymMap():Boolean{
 			if(synonymMap) return true;

@@ -16,10 +16,12 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.LayersetGroup;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.DictionaryDAO;
+			import com.photodispatcher.model.dao.LayersetGroupDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.service.barcode.ComInfo;
@@ -41,6 +43,8 @@
 		
 			[Bindable]
 			private var techPionts:ArrayCollection;
+			[Bindable]
+			private var techGroupsAC:ArrayCollection;
 			
 			//[Bindable]
 			//private var comBarcodeReader:ComInfo;
@@ -95,6 +99,8 @@
 			
 			[Bindable]
 			private var techPointObj:TechPoint;
+			[Bindable]
+			private var currTechGroup:LayersetGroup;
 
 			protected var _reversOrder:Boolean
 			[Bindable]
@@ -124,6 +130,10 @@
 				if(!techPionts) return;
 				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
 				Context.setAttribute("tech.object", techPointObj);
+			}
+			private function setCurrTechGroup(id:int):void{
+				if(techGroupsAC) currTechGroup=ArrayUtil.searchItem('id',id,techGroupsAC.source) as LayersetGroup;
+				Context.setAttribute("techGroup.id", currTechGroup?currTechGroup.id:0);
 			}
 			
 			private var bdPopup:DatabasePopup;
@@ -162,6 +172,9 @@
 				
 				var dao:TechPointDAO=new TechPointDAO();
 				techPionts=dao.findAll(false,SourceType.TECH_PICKING);
+
+				var gdao:LayersetGroupDAO= new LayersetGroupDAO();
+				techGroupsAC=gdao.findAll();
 				
 				comReaders= new ArrayCollection();
 				var coms:Array=ComInfo.load();
@@ -179,12 +192,15 @@
 				}
 				*/
 				//var serverIP:String;
+				var techGroupId:int;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					/*
 					serverIP=so.data.serverIP;
 					*/
 					techPointID=so.data.techPoint;
+					techGroupId=so.data.techGroupId;
+					setCurrTechGroup(techGroupId);
 					reversOrder=so.data.reversOrder; 
 					turnInterval=so.data.turnInterval;
 					if(turnInterval<=0) turnInterval=1000;
@@ -215,7 +231,7 @@
 			}
 
 			private function start():void{
-				if(!techPointObj || !comController.num || comReaders.length==0){
+				if(!techPointObj || !comController.num || comReaders.length==0 || !currTechGroup){
 					Alert.show('Приложение не настроено');
 					currentState='config';
 					return;
@@ -394,6 +410,14 @@
 				}
 			}
 			
+			protected function ddTechGroup_changeHandler(event:IndexChangeEvent):void{
+				var tg:LayersetGroup= ddTechGroup.selectedItem as LayersetGroup;
+				setCurrTechGroup(tg.id);
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.techGroupId = tg.id;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -426,10 +450,18 @@
 		</s:HGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Технология:"/>
+			<s:DropDownList id="ddTechGroup" dataProvider="{techGroupsAC}" selectedItem="{currTechGroup}" 
+							labelField="name" change="ddTechGroup_changeHandler(event)"
+							width="200"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
-		</s:HGroup>
-		<s:HGroup gap="5" verticalAlign="baseline">
+		<!--</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">-->
+			<s:Spacer width="10"/>
 			<s:Label text="Время цикла(млсек):"/>
 			<s:NumericStepper id="spTurnInterval" minimum="500" maximum="10000" snapInterval="100" value="{turnInterval}" change="spTurnInterval_changeHandler(event)"/>
 		</s:HGroup>

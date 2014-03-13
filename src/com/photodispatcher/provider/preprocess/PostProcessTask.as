@@ -49,7 +49,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			for each(printGroup in order.printGroups){
-				if(printGroup){
+				if(printGroup && printGroup.state<OrderState.CANCELED){
 					if(printGroup.book_type==0 || !printGroup.is_pdf){
 						//TODO kill wrk dirs
 						a=printGroup.getFiles();

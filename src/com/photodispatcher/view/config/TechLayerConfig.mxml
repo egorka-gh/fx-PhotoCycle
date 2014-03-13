@@ -9,14 +9,18 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.BookSynonym;
 			import com.photodispatcher.model.Endpaper;
 			import com.photodispatcher.model.Layer;
 			import com.photodispatcher.model.LayerAllocation;
 			import com.photodispatcher.model.LayerGroup;
 			import com.photodispatcher.model.LayerSequence;
 			import com.photodispatcher.model.Layerset;
+			import com.photodispatcher.model.LayersetGroup;
+			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.SynonymCommon;
 			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.dao.BookSynonymDAO;
 			import com.photodispatcher.model.dao.DictionaryCommonDAO;
 			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.EndpaperDAO;
@@ -24,6 +28,7 @@
 			import com.photodispatcher.model.dao.LayerDAO;
 			import com.photodispatcher.model.dao.LayerSequenceDAO;
 			import com.photodispatcher.model.dao.LayersetDAO;
+			import com.photodispatcher.model.dao.LayersetGroupDAO;
 			import com.photodispatcher.tech.picker.TechPicker;
 			
 			import flash.sampler.NewObjectSample;
@@ -33,15 +38,13 @@
 			import spark.events.IndexChangeEvent;
 			
 			[Bindable]
+			private var groupsAC:ArrayCollection;
+			[Bindable]
+			private var currTechGroup:LayersetGroup;
+			[Bindable]
 			private var layersAC:ArrayCollection;
 			[Bindable]
 			private var templatesAC:ArrayCollection;
-			/*
-			[Bindable]
-			private var endpaperAC:ArrayCollection;
-			[Bindable]
-			private var endpaperSynAC:ArrayCollection;
-			*/
 			[Bindable]
 			private var lGroupAC:ArrayCollection;//= new ArrayCollection();
 			[Bindable]
@@ -55,13 +58,15 @@
 			private var currTemplate:Object;
 
 			private function init():void{
+				var gdao:LayersetGroupDAO= new LayersetGroupDAO();
+				groupsAC=gdao.findAll();
+				if(groupsAC && groupsAC.length>0) currTechGroup=groupsAC.getItemAt(0) as LayersetGroup;
 				var dao:LayerDAO= new LayerDAO();
 				layersAC= dao.findAll();
 				var tDao:LayersetDAO= new LayersetDAO();
 				templatesAC=tDao.findAll();
 				lGroupAC= Context.getAttribute('layer_groupList');
 				if(lGroupAC && lGroupAC.length>0) currLGroupIdx=0;
-				//seqAC.filterFunction= filterSeqAc;
 			}
 			
 			protected function btAddLayer_clickHandler(event:MouseEvent):void{
@@ -84,7 +89,9 @@
 			}
 
 			protected function btAddLayerset_clickHandler(event:MouseEvent):void{
+				if(!currTechGroup || !currTechGroup.loaded) return;
 				var ls:Layerset= new Layerset();
+				ls.layerset_group=currTechGroup.id;
 				if(currentState=='templates'){
 					ls.name='Новый шаблон';
 				}else if(currentState=='interlayers'){
@@ -112,7 +119,6 @@
 			protected function btEditLayerset_clickHandler(event:MouseEvent):void{
 				var ls:Layerset= currTemplate as Layerset;
 				if (!ls){
-					//allocAC.source=[];
 					return;
 				}
 				var arr:Array=[];
@@ -148,14 +154,12 @@
 				
 				if(!ls.loadSequence()) return;
 				showSequence();
-				//chekTemplate();
 				currentState=newState;
 			}
 			
 			private function showSequence():void{
 				var a:Array=[];
 				var ls:Layerset= currTemplate as Layerset;
-				//var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
 				var idx:int=currLGroupIdx;
 				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup; 
 				if(ls && lg){
@@ -172,7 +176,6 @@
 					}
 				}
 				seqAC= new ArrayCollection(a);
-				//seqAC.source=a;
 			}
 			
 			protected function btAddSeq_clickHandler(event:MouseEvent):void{
@@ -180,7 +183,6 @@
 				if(!ls) return;
 				var newIt:LayerSequence= new LayerSequence();
 				newIt.layerset=ls.id;
-				//var idx:int=cbGroup?cbGroup.selectedIndex:currLGroupIdx;
 				var idx:int=currLGroupIdx;
 				if(idx==-1) return;
 				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup;
@@ -221,25 +223,44 @@
 				var tDao:LayersetDAO= new LayersetDAO();
 				switch(tbView.selectedIndex){
 					case 0:
-						templatesAC=tDao.findAll();
-						currentState='templates';
+						currentState='tech_groups';
 						break;
 					case 1:
-						templatesAC=tDao.findAll(1);
-						currentState='interlayers';
+						currentState='layers';
 						break;
 					case 2:
-						/* var apDao:EndpaperDAO= new EndpaperDAO();
-						endpaperAC=apDao.findAll(); */
-						templatesAC=tDao.findAll(2);
-						currentState='endpaper';
+						templatesAC=tDao.findAll();
+						templatesAC.filterFunction=filterTemplates;
+						templatesAC.refresh();
+						currentState='templates';
 						break;
 					case 3:
-						currentState='layers';
+						templatesAC=tDao.findAll(1);
+						templatesAC.filterFunction=filterTemplates;
+						templatesAC.refresh();
+						currentState='interlayers';
+						break;
+					case 4:
+						templatesAC=tDao.findAll(2);
+						templatesAC.filterFunction=filterTemplates;
+						templatesAC.refresh();
+						currentState='endpaper';
 						break;
 				}
 			}
 			
+			private function filterTemplates(item:Object):Boolean{
+				if(!currTechGroup) return false;
+				var s:Layerset=item as Layerset;
+				if(!s) return false;
+				if(s.layerset_group != currTechGroup.id) return false;
+				return true;
+			}
+			
+			private function applyTemplatesFilter():void{
+				if(templatesAC) templatesAC.refresh();
+			}
+
 			protected function btAddSynonym_clickHandler(event:MouseEvent):void{
 				var ls:Layerset= currTemplate as Layerset;
 				if(!ls) return;
@@ -259,72 +280,127 @@
 					}
 				}
 			}
-			
-			/*
-			protected function endpaperGrid_selectionChangeHandler(event:GridSelectionEvent):void{
-				var ep:Endpaper=endpaperGrid.currentItem as Endpaper;
-				var arr:Array;
-				if(ep && ep.loaded){
-					var dao:DictionaryCommonDAO= new DictionaryCommonDAO();
-					arr=dao.getEndpaperSynonyms(ep.id);
-				}
-				endpaperSynAC= new ArrayCollection(arr);
-			}
-			
-			protected function btAddEP_clickHandler(event:MouseEvent):void{
-				var ep:Endpaper= new Endpaper();
-				ep.name='Новый форзац';
-				endpaperAC.addItem(ep);
-				endpaperGrid.currentItem=ep;
-				endpaperSynAC= new ArrayCollection();
-			}
-			
-			protected function btSaveEP_clickHandler(event:MouseEvent):void{
-				var dao:EndpaperDAO;
-				var ep:Endpaper;
-				for each(ep in endpaperAC){
-					if(ep.changed || !ep.loaded){
-						dao = new EndpaperDAO();
-						dao.save(ep);
-					}
-				}
-			}
-			
-			protected function btAddEPSynonym_clickHandler(event:MouseEvent):void{
-				var ep:Endpaper=endpaperGrid.currentItem as Endpaper;
-				if(!ep || !ep.loaded) return;
-				var newIt:SynonymCommon= new SynonymCommon();
-				newIt.item_id=ep.id;
-				endpaperSynAC.addItem(newIt);
-				endpaperSynGrid.currentItem=newIt;
-			}
-			
-			protected function btSaveEPSynonym_clickHandler(event:MouseEvent):void{
-				var ep:Endpaper=endpaperGrid.currentItem as Endpaper;
-				if(!ep || !ep.loaded) return;
-				var dao:DictionaryCommonDAO;
-				var ls:SynonymCommon;
-				for each (ls in endpaperSynAC){
-					if(ls.changed || !ls.loaded){
-						dao= new DictionaryCommonDAO();
-						dao.saveEndpaperSynonym(ls);
-					}
-				}
-			}
-			*/
-			
+		
 			protected function cbGroup_changeHandler(event:IndexChangeEvent):void{
 				currLGroupIdx=cbGroup.selectedIndex;
 				showSequence();
+			}
+			
+			/*
+			[Bindable]
+			private var aliasAllowAC:ArrayCollection;
+			[Bindable]
+			private var aliasDisAllowAC:ArrayCollection;
+			private var aliasesChenged:Boolean;
+			
+			private function filterAllow(item:Object):Boolean{
+				var s:BookSynonym=item as BookSynonym;
+				if(!s) return false;
+				return s.is_allow;
+			}
+			private function filterDisAllow(item:Object):Boolean{
+				var s:BookSynonym=item as BookSynonym;
+				if(!s) return false;
+				if(tiSynonymFilter && tiSynonymFilter.text && s.synonym.indexOf(tiSynonymFilter.text)==-1 ) return false;
+				return !s.is_allow;
+			}
+			
+			private function applyDisallowFilter():void{
+				if(aliasDisAllowAC) aliasDisAllowAC.refresh();
+				if(aliasAllowAC) aliasAllowAC.refresh();
+			}
+
+			private function fillAliases():void{
+				var arr:Array=[];
+				var d:BookSynonymDAO= new BookSynonymDAO();
+				if(currFilter && currFilter.loaded){
+					arr= d.get4Layerset(SourceType.SRC_FOTOKNIGA,currFilter.id);
+				}else{
+					arr= d.findAllArray(SourceType.SRC_FOTOKNIGA,-1);
+				}
+				aliasAllowAC= new ArrayCollection(arr);
+				aliasAllowAC.filterFunction=filterAllow;
+				aliasAllowAC.refresh();
+				aliasDisAllowAC= new ArrayCollection(arr);
+				aliasDisAllowAC.filterFunction=filterDisAllow;
+				aliasDisAllowAC.refresh();
+				aliasesChenged=false;
+			}
+			
+			protected function btAddAli_clickHandler(event:MouseEvent):void{
+				var s:BookSynonym;
+				if(disAllowLst && disAllowLst.currentItem){
+					s=disAllowLst.currentItem as BookSynonym;
+					if(s) s.is_allow=true;
+				}
+				applyDisallowFilter();
+				aliasesChenged=true;
+			}
+			
+			protected function btAddAliAll_clickHandler(event:MouseEvent):void{
+				var s:BookSynonym;
+				if(aliasDisAllowAC){
+					aliasDisAllowAC.disableAutoUpdate();
+					for each(s in aliasDisAllowAC){
+						if(!s.is_allow) s.is_allow=true;
+					}
+					aliasDisAllowAC.enableAutoUpdate();
+				}
+				applyDisallowFilter();
+				aliasesChenged=true;
+			}
+			
+			protected function btDelAli_clickHandler(event:MouseEvent):void{
+				var s:BookSynonym;
+				if(allowLst && allowLst.selectedItem){
+					s=allowLst.selectedItem as BookSynonym;
+					if(s) s.is_allow=false;
+				}
+				applyDisallowFilter();
+				aliasesChenged=true;
+			}
+			
+			protected function btDelAliAll_clickHandler(event:MouseEvent):void{
+				var s:BookSynonym;
+				if(aliasAllowAC){
+					aliasAllowAC.disableAutoUpdate();
+					for each(s in aliasAllowAC){
+						if(s.is_allow) s.is_allow=false;
+					}
+					aliasAllowAC.enableAutoUpdate();
+				}
+				applyDisallowFilter();
+				aliasesChenged=true;
+			}
+			*/
+
+
+			protected function btAddLayerGrp_clickHandler(event:MouseEvent):void{
+				var l:LayersetGroup= new LayersetGroup();
+				l.name='Новя группа';
+				groupsAC.addItem(l);
+				groupsGrid.currentItem=l;
+			}
+			
+			protected function btSaveLayersGrp_clickHandler(event:MouseEvent):void{
+				var dao:LayersetGroupDAO;
+				var l:LayersetGroup;
+				for each(l in groupsAC){
+					if ((l.changed || !l.loaded) && l.id!=0 ){
+						dao= new LayersetGroupDAO();
+						dao.save(l);
+					}
+				}
 			}
 			
 		]]>
 	</fx:Script>
 	
 	<s:states>
+		<s:State name="tech_groups"/>
+		<s:State name="layers"/>
 		<s:State name="templates" stateGroups="temp_view"/>
 		<s:State name="interlayers" stateGroups="temp_view"/>
-		<s:State name="layers"/>
 		<s:State name="endpaper"  stateGroups="temp_view"/>
 		<s:State name="template_edit" stateGroups="temp_edit"/>
 		<s:State name="interlayers_edit" stateGroups="temp_edit"/>
@@ -334,13 +410,29 @@
 	<s:VGroup width="100%" height="100%" gap="5">
 		<s:TabBar id="tbView" height="20" change="{detectState()}">
 			<mx:ArrayCollection>
+				<fx:String>Технологии</fx:String> 
+				<fx:String>Слои</fx:String> 
 				<fx:String>Шаблоны</fx:String> 
 				<fx:String>Прослойки</fx:String> 
 				<fx:String>Форзацы</fx:String> 
-				<fx:String>Слои</fx:String> 
 			</mx:ArrayCollection>
 		</s:TabBar>
 		<s:Spacer height="5"/>
+		
+		<config:ItemsGrid id="groupsGrid" includeIn="tech_groups" editable="true" currentData="{groupsAC}" currentColumns="{LayersetGroup.gridColumns()}" 
+						  width="200" height="100%" >
+			<config:lockRows>
+				<fx:Object >
+					<fx:parametr>id</fx:parametr>
+					<fx:values>[0]</fx:values>
+				</fx:Object>
+			</config:lockRows>
+		</config:ItemsGrid>
+		<s:HGroup gap="10" includeIn="tech_groups" width="200" horizontalAlign="right">
+			<s:Button id="btAddLayerGrp" label="Добавить" click="btAddLayerGrp_clickHandler(event)"/>
+			<s:Button id="btSaveLayersGrp" label="Сохранить" click="btSaveLayersGrp_clickHandler(event)"/>
+		</s:HGroup>
+		
 		<config:ItemsGrid id="layersGrid" includeIn="layers" editable="true" currentData="{layersAC}" currentColumns="{Layer.gridColumns()}" 
 						  width="200" height="100%" >
 			<config:lockRows>
@@ -356,6 +448,11 @@
 		</s:HGroup>
 		
 		<s:VGroup gap="5" height="100%" includeIn="temp_view">
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Технология"/>
+				<s:DropDownList dataProvider="{groupsAC}" selectedItem="@{currTechGroup}" change="{applyTemplatesFilter()}" 
+								labelField="name" width="100"/>
+			</s:HGroup>
 			<config:ItemsGrid id="templatesGrid" editable="true" 
 							  currentData="{templatesAC}" 
 							  currentColumns="{Layerset.gridColumns()}" 
@@ -370,34 +467,6 @@
 						  click="btEditLayerset_clickHandler(event)"/>
 			</s:HGroup>
 		</s:VGroup>
-		<!--<s:HGroup gap="10" height="100%" width="100%" includeIn="endpaper">
-			<s:VGroup gap="5" height="100%">
-				<config:ItemsGrid id="endpaperGrid" editable="true" currentColumns="{Endpaper.gridColumns()}" currentData="{endpaperAC}"
-								  selectionChange="endpaperGrid_selectionChangeHandler(event)"
-								  height="100%" width="250" >
-					<config:lockRows>
-						<fx:Object >
-							<fx:parametr>id</fx:parametr>
-							<fx:values>[0]</fx:values>
-						</fx:Object>
-					</config:lockRows>
-				</config:ItemsGrid>
-				<s:HGroup gap="10" width="100%" horizontalAlign="right">
-					<s:Button id="btAddEP" label="Добавить" click="btAddEP_clickHandler(event)"/>
-					<s:Button id="btSaveEP" label="Сохранить" click="btSaveEP_clickHandler(event)" />
-				</s:HGroup>
-			</s:VGroup>
-			<s:VGroup gap="5" height="100%">
-				<s:Label text="Синонимы" fontWeight="bold"/>
-				<config:ItemsGrid id="endpaperSynGrid" editable="true" 
-								  currentData="{endpaperSynAC}" currentColumns="{SynonymCommon.gridColumns()}"
-								  width="250" height="100%"/>
-				<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
-					<s:Button id="btAddEPSynonym" label="Добавить" click="btAddEPSynonym_clickHandler(event)"/>
-					<s:Button id="btSaveEPSynonym" label="Сохранить" click="btSaveEPSynonym_clickHandler(event)"/>
-				</s:HGroup>
-			</s:VGroup>
-		</s:HGroup>-->
 		<s:Label text="{currTemplate.name}" fontWeight="bold" includeIn="temp_edit"/>
 		<s:HGroup gap="15" includeIn="temp_edit"  paddingLeft="10" width="100%" height="450" verticalAlign="bottom">
 			<s:VGroup height="100%" width="250" gap="10" includeIn="interlayers_edit, endpaper_edit">
@@ -426,7 +495,38 @@
 					<s:Button id="btSaveSeq" label="Сохранить"  click="btSaveSeq_clickHandler(event)"/>
 				</s:HGroup>
 			</s:VGroup>
-			<s:Button label="В список шаблонов"  click="detectState()"/>
+			<!--<s:VGroup height="100%" width="100%" gap="10" includeIn="template_edit">
+				<s:HGroup width="100%" verticalAlign="baseline">
+					<s:Label text="Список алиасов"/>
+					<s:CheckBox/>
+				</s:HGroup>
+				<s:HGroup gap="10" width="100%" height="100%">
+					<s:VGroup gap="5" width="200" height="100%">
+						<s:Label text="Разрешен для алиасов"/>
+						<s:List id="allowLst" width="100%" height="100%" labelField="synonym"/>
+					</s:VGroup>
+					<s:VGroup height="100%" verticalAlign="middle">
+						<s:Button id="btAddAli" label="&#60;"  toolTip="Добавить" />
+						<s:Button id="btAddAliAll" label="&#60;&#60;" toolTip="Добавить все" />
+						<s:Button id="btDelAli" label="&#62;" toolTip="Удалить" />
+						<s:Button id="btDelAliAll" label="&#62;&#62;" toolTip="Удалить все" />
+					</s:VGroup>
+					<s:VGroup gap="5" width="100%" height="100%" maxWidth="300">
+						<s:Label text="Исключен для алиасов"/>
+						<s:HGroup width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+							<s:Label text="Фильтрация"/>
+							<s:TextInput id="tiSynonymFilter" width="100%"/>
+						</s:HGroup>
+						<config:ItemsGrid id="disAllowLst" width="100%" height="100%" 
+										  editable="false" currentColumns="{BookSynonymDAO.gridColumns(true)}"/>
+					</s:VGroup>
+				</s:HGroup>
+				<s:HGroup width="100%" maxWidth="600" gap="10" horizontalAlign="right">
+					<s:Button id="btSaveAlias" label="Сохранить"  />
+					<s:Button label="В список шаблонов" click="detectState()"/>
+				</s:HGroup>
+			</s:VGroup>-->
+			<s:Button label="В список шаблонов" click="detectState()"/>
 		</s:HGroup>
 	</s:VGroup>
 </s:Group>

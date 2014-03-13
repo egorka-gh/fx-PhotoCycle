@@ -5,6 +5,7 @@ package com.photodispatcher.model{
 		public var id:String;
 		public var wrk_path:String;
 		public var monitor_interval:int;
+		public var content_filter:int;
 		
 		//2013-07-05
 		public var fbblok_font:int=0;

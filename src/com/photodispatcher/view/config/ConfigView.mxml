@@ -104,7 +104,7 @@
 						currentState='bookSynonym';
 						break;
 					case 6:
-						currentState='tech';
+						currentState='contentFilters';
 						break;
 					case 7:
 						gridEditable=true;
@@ -288,7 +288,7 @@
 		<s:State name="bookSynonym"/>
 		<s:State name="source" stateGroups="edit"/>
 		<s:State name="lab"/>
-		<s:State name="tech"/>
+		<s:State name="contentFilters"/>
 		<s:State name="tech_point" stateGroups="listEdit"/>
 		<s:State name="tech_layers"/>
 	</s:states>
@@ -302,7 +302,7 @@
 				<fx:String>Каналы печати</fx:String> 
 				<fx:String>Ресайз</fx:String> 
 				<fx:String>Книги</fx:String> 
-				<fx:String>Технологическая разметка</fx:String> 
+				<fx:String>Фильтры загрузки</fx:String> 
 				<fx:String>Технологические точки</fx:String> 
 				<fx:String>Листоподборка</fx:String> 
 			</mx:ArrayCollection>
@@ -328,5 +328,6 @@
 			<s:Button id="btCancel" label="Отмена" includeIn="edit,listEdit,lab" click="{detectState()}"/>
 		</s:HGroup>
 		<config:TechLayerConfig includeIn="tech_layers" width="100%" height="100%"/>
+		<config:ContentFilterConfig includeIn="contentFilters" width="100%" height="100%"/>
 	</s:VGroup>
 </s:Group>

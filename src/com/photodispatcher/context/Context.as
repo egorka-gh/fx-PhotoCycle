@@ -1,11 +1,13 @@
 package com.photodispatcher.context{
 	import com.photodispatcher.model.AppConfig;
 	import com.photodispatcher.model.AttrType;
+	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.dao.AppConfigDAO;
 	import com.photodispatcher.model.dao.AttrTypeDAO;
 	import com.photodispatcher.model.dao.DictionaryDAO;
 	import com.photodispatcher.model.dao.SourcesDAO;
+	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.utils.Dictionary;
 	
@@ -42,6 +44,20 @@ package com.photodispatcher.context{
 				Context.setAttribute('workFolder',appConf.wrk_path);//backward compatibility, use local SharedObject .data.workFolder
 				
 				Context.setAttribute('syncInterval',appConf.monitor_interval);
+				//content filter
+				//load content filters
+				var cfilters:Array=ContentFilter.filters;
+				//current content filter
+				var currCFilter:ContentFilter;
+				if(cfilters) currCFilter=ArrayUtil.searchItem('id',appConf.content_filter,cfilters) as ContentFilter;
+				if(!currCFilter){
+					currCFilter= new ContentFilter();
+					currCFilter.is_alias_filter=false;
+					currCFilter.is_photo_allow=true;
+					currCFilter.is_pro_allow=true;
+					currCFilter.is_retail_allow=true;
+				}
+				Context.setAttribute('contentFilter',currCFilter);
 				
 				/*
 				//set fbook params

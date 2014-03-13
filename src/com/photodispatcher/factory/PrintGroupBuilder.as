@@ -379,7 +379,7 @@ package com.photodispatcher.factory{
 			var pgf:PrintGroupFile;
 			for each(so in order.suborders){
 				proj=so.project;
-				if(proj){
+				if(proj && so.state<OrderState.CANCELED){
 					//reset vars
 					paper=0;
 					coverPixels=proj.getPixelSise(BookSynonym.BOOK_PART_COVER);
@@ -395,7 +395,7 @@ package com.photodispatcher.factory{
 					if (proj.bookType==BookSynonym.BOOK_TYPE_BCARD){
 						//set print qtty 4 Card project
 						var bcp:CardProject=proj.project as CardProject;
-						so.prt_qty= so.prt_qty*bcp.template.formatPageCount;
+						so.prt_qty= so.prt_qty*bcp.getTemplate().formatPageCount;
 					}
 					
 					//try to use print alias

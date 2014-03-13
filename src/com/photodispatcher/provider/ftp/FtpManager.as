@@ -8,8 +8,10 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.preprocess.CaptionSetter;
@@ -256,13 +258,22 @@ package com.photodispatcher.provider.ftp{
 		}
 
 		private function preprocessOrder(order:Order):void{
-			order.state=OrderState.PREPROCESS_WAITE;
-			/*
-			resizeOrders.push(order);
-			resizeOrdersList.refresh();
-			flushResizeQueue();
-			*/
-			preprocessManager.build(order);
+			//chek if order skipped
+			var minState:int=OrderState.SKIPPED;
+			var pg:PrintGroup;
+			var so:Suborder;
+			if(order.printGroups){
+				for each(pg in order.printGroups) minState=Math.min(minState,pg.state);
+			}
+			if(order.suborders){
+				for each(so in order.suborders) minState=Math.min(minState,so.state);
+			}
+			if(minState<OrderState.CANCELED){
+				preprocessManager.build(order);
+			}else{
+				order.state=OrderState.SKIPPED;
+				saveOrder(order);
+			}
 		}
 		private function onOrderPreprocessed(evt:OrderBuildEvent):void{
 			saveOrder(evt.order);
