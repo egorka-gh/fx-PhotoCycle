@@ -619,10 +619,17 @@ package com.photodispatcher.model{
 		 * @return 
 		 * книга(3символа)всегоКниг(3символа)страница(2символа)всегоСтраниц(2символа)IdГруппыПечати(первых 2а символа источник, полседние 2а символа подгруппа) 
 		 */		
-		public function techBarcode(file:PrintGroupFile):String{
+		public function techBarcodeByFile(file:PrintGroupFile):String{
+			/*
 			var text:String=StrUtil.lPad(file.book_num.toString(),3)+StrUtil.lPad(book_num.toString(),3)
 							+StrUtil.lPad(file.page_num.toString(),2)+StrUtil.lPad(pageNumber.toString(),2)
-							+getDigitId();
+							+getDigitId();*/
+			return techBarcode(file.book_num, book_num, file.page_num, pageNumber);
+		}
+		public function techBarcode(book:int, bookTotal:int, sheet:int, sheetTotal:int):String{
+			var text:String=StrUtil.lPad(book.toString(),3)+StrUtil.lPad(bookTotal.toString(),3)
+				+StrUtil.lPad(sheet.toString(),2)+StrUtil.lPad(sheetTotal.toString(),2)
+				+getDigitId();
 			return text;
 		}
 		private function getDigitId():String{

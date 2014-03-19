@@ -8,6 +8,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotakrama.canvas.content.CanvasFrameMaskedImage;
 	import com.akmeful.fotakrama.canvas.content.CanvasPhotoBackgroundImage;
 	import com.akmeful.fotakrama.canvas.content.CanvasText;
+	import com.akmeful.fotakrama.canvas.text.CanvasTextStyle;
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.akmeful.fotakrama.library.data.ClipartType;
 	import com.akmeful.fotakrama.project.ProjectNS;
@@ -66,6 +67,7 @@ package com.photodispatcher.provider.fbook.download{
 		private var bytesLoaded:int=0;
 		private var startTime:Date;
 		private var lastItemsLoaded:int=0;
+		private var fontMap:Object;
 
 		public function FBookContentDownloadManager(service:SourceService, book:FBookProject){
 			//TODO implement cache
@@ -75,6 +77,7 @@ package com.photodispatcher.provider.fbook.download{
 		}
 
 		private function prepare():void{
+			fontMap= new Object();
 			var pageNum:int=0;
 			//chek and clear loader if exists vs same id
 			var loaderId:String=service.src_id.toString()+'.'+service.srvc_id+'.'+book.id.toString()
@@ -169,6 +172,35 @@ package com.photodispatcher.provider.fbook.download{
 								}
 								break;
 							case CanvasText.TYPE: //BookText.TYPE:
+								//fonts to load list 
+								if (contentElement.hasOwnProperty('index') 
+									&& contentElement.transform && contentElement.text 
+									&& contentElement.w>0 && contentElement.h){
+									//check text is not default, user made some changes or txt is calendar date
+									if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
+										var ts:CanvasTextStyle;
+										if(contentElement.hasOwnProperty('style')){
+											ts = new CanvasTextStyle(contentElement.style);
+										} else {
+											ts = CanvasTextStyle.defaultTextStyle();
+										}
+										if(ts.fontFamily){
+											if(!FontDownloadManager.instance.hasFont(ts.fontFamily, ts.isBold, ts.isItalic)){
+												fontMap[ts.fontFamily]=ts;
+												//book.log='Page# '+pageNum+'. Request font : '+ts.fontFamily;
+												//trace('Page# '+pageNum+'. Request font : '+ts.fontFamily);
+												req=createFontRequest(ts.fontFamily, pageNum);
+												if(req){
+													//save to user subdir
+													//name=MakeupConfig.userSubDir+ts.fontFamily+'.swf';
+													name=ts.fontFamily;
+													loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CanvasText.TYPE, content_id: name});
+												}
+												
+											}
+										}
+									}
+								}
 								break;
 							default:
 								trace('unrecognized contentElement: '+contentElement.type);
@@ -209,6 +241,18 @@ package com.photodispatcher.provider.fbook.download{
 			return result;
 		}
 
+		private function createFontRequest(name:String, pageNum:int):URLRequest{
+			if(!name){
+				return null;
+			}
+			var result:URLRequest;
+			var url:String=getBaseURL()+FontDownloadManager.instance.getPackUrl(name);
+			result=new URLRequest();
+			result.url = url;
+			book.log='Page# '+pageNum+'. Request font url: '+url;
+			trace('Page# '+pageNum+'. Request font url: '+url);
+			return result;
+		}
 
 		public function userImagePath():String {
 			return getBaseURL()+USER_MEDIA_PATH;
@@ -370,13 +414,18 @@ package com.photodispatcher.provider.fbook.download{
 				var ba:ByteArray=item.content;
 				if(ba.length>0){
 					bytesLoaded+=ba.length;
-					var file:File=workFolder.resolvePath(item.id);
-					trace('Save downloaded file: '+file.nativePath+'.');
-					var fs:FileStream = new FileStream();
-					fs.open(file, FileMode.WRITE);
-					fs.writeBytes(ba);
-					fs.close();
-					book.log='Book id:'+book.id+'. File downloaded: '+file.nativePath;
+					if(item.properties['content_type']==CanvasText.TYPE){
+						FontDownloadManager.instance.addPackpackBinary(item.id,ba);
+						book.log='Book id:'+book.id+'. Font bynary downloaded: '+item.id;
+					}else{
+						var file:File=workFolder.resolvePath(item.id);
+						trace('Save downloaded file: '+file.nativePath+'.');
+						var fs:FileStream = new FileStream();
+						fs.open(file, FileMode.WRITE);
+						fs.writeBytes(ba);
+						fs.close();
+						book.log='Book id:'+book.id+'. File downloaded: '+file.nativePath;
+					}
 				}else{
 					result=false;
 					trace('ContentDownloadManager empty response: '+item.id);
@@ -414,6 +463,40 @@ package com.photodispatcher.provider.fbook.download{
 		private function allLoadCompleted(event:Event):void{
 			book.log='Book id:'+book.id+'. Download complited.';
 			trace('Book id:'+book.id+'. Download complited.');
+			//finalizeLoad();
+			loadFonts();
+		}
+		
+		private function loadFonts():void{
+			book.log='Book id:'+book.id+'. Load fonts.';
+			var ts:CanvasTextStyle;
+			var fonts:Array=[];
+			for each (ts in fontMap){
+				if(ts) fonts.push(ts);
+			}
+			var fontLoader:FontDownloadManager=FontDownloadManager.instance;
+			fontLoader.addEventListener(Event.COMPLETE, fontsLoaded);
+			fontLoader.loadBatch(fonts);
+		}
+		
+		private function fontsLoaded(evt:Event):void{
+			var fontLoader:FontDownloadManager=FontDownloadManager.instance;
+			fontLoader.removeEventListener(Event.COMPLETE, fontsLoaded);
+			if (fontLoader.hasError){
+				trace('font load error. font:'+fontLoader.errorFont+'; err:'+fontLoader.errorString);
+				book.log='Book id:'+book.id+'. Font:"'+fontLoader.errorFont+'". Load error: '+fontLoader.errorString;
+				_hasError=true;
+				errType='IOError';
+				errText = fontLoader.errorString;
+				
+				var errItm:DownloadErrorItem= new DownloadErrorItem(ProcessingErrors.DOWNLOAD_FONT_ERROR);
+				errItm.path=fontLoader.errorFont;
+				errItm.content_type='Text';
+				errItm.id=fontLoader.errorFont;
+				book.notLoadedItems.push(errItm);
+			}else{
+				book.log='Book id:'+book.id+'. Fonts loaded.';
+			}
 			finalizeLoad();
 		}
 		

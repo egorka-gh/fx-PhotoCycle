@@ -1,9 +1,11 @@
 package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.fotakrama.canvas.content.CanvasText;
+	import com.akmeful.fotakrama.canvas.text.CanvasTextStyle;
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.provider.fbook.FBookProject;
+	import com.photodispatcher.provider.fbook.download.FontDownloadManager;
 	
 	import flash.display.BitmapData;
 	import flash.events.Event;
@@ -62,7 +64,6 @@ package com.photodispatcher.provider.fbook.makeup{
 		
 		public function build(workFolder:File):Boolean{
 			//TODO check if top level app is visible
-
 			//if(!book || !book.pages || !renderContainer || !workFolder){
 			if(!book || !book.bookPages  || !workFolder){
 				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FLOW_ERROR_EVENT,null,'Ошибка инициализации TextImageBuilder.build'));
@@ -80,7 +81,27 @@ package com.photodispatcher.provider.fbook.makeup{
 			this.workFolder=workFolder;
 
 			errNum=0;
+			errText='';
 			prepare();
+			
+			//TODO check fonts, can miss font if loaded in helper
+			var ts:CanvasTextStyle;
+			for(var key:String in fontMap){
+				ts = fontMap[key] as CanvasTextStyle;
+				if(ts && !FontDownloadManager.instance.hasFont(ts.fontFamily, ts.isBold, ts.isItalic)){
+					if(errText) errText+=', ';
+					errText+=ts.fontFamily;
+				}
+			}
+			if(errText){
+				errNum=OrderState.ERR_PREPROCESS;
+				errText = 'Не загружены шрифты '+errText;
+				book.log='Book id:'+book.id+'. '+errText;
+				destroyRender();
+				dispatchEvent(new Event(Event.COMPLETE));
+				return false;
+			}
+			
 			if (!textItems || !textItems.length){
 				destroyRender();
 				dispatchEvent(new Event(Event.COMPLETE));
@@ -128,9 +149,13 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 		}
 
+		private var fontMap:Object;
+		
 		private function prepare():void{
 			textItems=[];
 			var pageNum:int=0;
+			var ts:CanvasTextStyle;
+			fontMap= new Object();
 			
 			for each (var page:ProjectBookPage in book.bookPages){
 				for each (var contentElement:Object in page.content){
@@ -140,6 +165,12 @@ package com.photodispatcher.provider.fbook.makeup{
 							&& contentElement.w>0 && contentElement.h){
 							//check text is not default, user made some changes or txt is calendar date
 							if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
+								//collect fonts
+								ts =null;
+								if(contentElement.hasOwnProperty('style')) ts = new CanvasTextStyle(contentElement.style);
+								if(ts && ts.fontFamily) fontMap[ts.fontFamily]=ts;
+
+								//text to render
 								var bt:CanvasText= new CanvasText();
 								bt.importRaw(contentElement);
 								bt.transform.matrix = new Matrix();

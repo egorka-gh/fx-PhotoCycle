@@ -40,7 +40,7 @@ package com.photodispatcher.model.dao{
 		
 		private static const TIMEOUT_MIN:int=300;
 		private static const TIMEOUT_MAX:int=1000;
-		private static const MAX_WAITE:int=10000;
+		private static const MAX_WAITE:int=20000;
 
 		[ArrayElementType("com.photodispatcher.model.dao.TransactionUnit")]
 		private static var queue:Array=[];

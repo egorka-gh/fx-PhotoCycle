@@ -9,7 +9,7 @@
 					   xmlns:cfg="com.akmeful.fotakrama.cfg.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="{destroy()}" >
+					   closing="{destroy()}" xmlns:download="com.photodispatcher.provider.fbook.download.*" >
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
@@ -198,6 +198,7 @@
 				</fx:Array>
 			</cfg:defaultAliases>
 		</cfg:PathAlias>
+		<download:FontDownloadManager/>
 	</fx:Declarations>
 
 	<fx:Style source="../src-book/stylesFonts.css" />

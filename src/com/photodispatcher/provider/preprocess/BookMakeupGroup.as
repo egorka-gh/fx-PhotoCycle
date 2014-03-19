@@ -216,7 +216,7 @@ package com.photodispatcher.provider.preprocess{
 				
 				//mm to pix
 				barSize=UnitUtil.mm2Pixels300(barSize);
-				barcode=printGroup.techBarcode(file);
+				barcode=printGroup.techBarcodeByFile(file);
 				//var txt:String=printGroup.techBarcodeText(file);
 				if(barcode){
 					var barOffset:String=printGroup.bookTemplate.tech_bar_offset;

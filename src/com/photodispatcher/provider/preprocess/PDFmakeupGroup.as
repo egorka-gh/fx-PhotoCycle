@@ -280,6 +280,10 @@ package com.photodispatcher.provider.preprocess{
 					}
 
 					command=(sheets[i] as PdfSheet).getCommand(pageSize,sheetSize,printGroup);
+					
+					//draw tech barcode
+					drawSheetTechBar(command, i);
+					
 					command.folder=folder;
 					//save file
 					command.add('-density'); command.add('300x300');
@@ -292,6 +296,15 @@ package com.photodispatcher.provider.preprocess{
 					//page added
 					pdfPageNum++;
 				}
+				
+				//expand format by tech
+				if(printGroup.bookTemplate.tech_bar &&
+					(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+						printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+						printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
+					if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
+				}
+
 				//finalyze pdf cmd
 				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
 				command2.add('-compress'); command2.add('jpeg');
@@ -353,7 +366,7 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 			
-			if(printGroup.is_duplex || printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL){
+			if(printGroup.is_duplex || printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL){ //JOURNAL ???
 				//swap pages on even sheets (back)
 				i=0;
 				while(i<result.length){
@@ -365,6 +378,70 @@ package com.photodispatcher.provider.preprocess{
 			return result; 
 		}
 
+		private function drawSheetTechBar(command:IMCommand, sheetIndex:int):void{
+			if(!printGroup.bookTemplate.tech_bar) return;
+
+			var barSize:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_bar);
+			var sheet:int;
+			var book:int;
+			var barcode:String;
+			var drawBar:Boolean;
+			
+			if(printGroup.is_duplex){
+				//draw on even sheetIndex
+				drawBar=(sheetIndex % 2)==0;
+				//calc sheet/book
+				if(drawBar){
+					sheet=Math.floor(sheetIndex/2)+1;
+					book=Math.ceil(sheet/printGroup.sheet_num);
+					sheet=sheet-printGroup.sheet_num*(book-1);
+					barcode=printGroup.techBarcode(book, printGroup.book_num, sheet, printGroup.sheet_num);
+				}
+			}else{
+				//draw on all sheets
+				drawBar=true;
+				sheet=sheetIndex+1;
+				book=Math.ceil(sheet/printGroup.sheet_num);
+				sheet=sheet-printGroup.sheet_num*(book-1);
+				barcode=printGroup.techBarcode(book,printGroup.book_num,sheet,printGroup.sheet_num);
+			}
+			
+			var barOffset:String;
+			var gravity:String;
+			//draw 
+			if(drawBar){
+				//draw tech barcode
+				if(printGroup.bookTemplate.is_tech_top || printGroup.bookTemplate.is_tech_center || printGroup.bookTemplate.is_tech_bot){
+					//expand
+					IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add);
+					if(barcode){
+						barOffset=printGroup.bookTemplate.tech_bar_offset;
+						if(!barOffset) barOffset='+0+0';
+						gravity='east';
+						if(printGroup.bookTemplate.is_tech_center){
+							IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+						}
+						if(printGroup.bookTemplate.is_tech_top){
+							barOffset=printGroup.bookTemplate.tech_bar_toffset;
+							if(!barOffset) barOffset='+0+0';
+							gravity='NorthEast';
+							IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+						}
+						if(printGroup.bookTemplate.is_tech_bot){
+							barOffset=printGroup.bookTemplate.tech_bar_boffset;
+							if(!barOffset) barOffset='+0+0';
+							gravity='SouthEast';
+							IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
+						}
+					}
+				}
+			}else{
+				//expand (left side) for duplex
+				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
+			}
+	
+		}
+		
 		private function createCoverBack(fileName:String,file:PrintGroupFile, folder:String):IMCommand{
 			//create empty white sheet vs butt lines
 			var buttPix:int=UnitUtil.mm2Pixels300(printGroup.butt);
@@ -391,7 +468,7 @@ package com.photodispatcher.provider.preprocess{
 				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
 				//mm to pix
 				var barSize:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_bar);
-				var barcode:String=printGroup.techBarcode(file);
+				var barcode:String=printGroup.techBarcodeByFile(file);
 				if(barcode){
 					var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
 					if(!barOffset) barOffset='+0+0';
@@ -459,7 +536,7 @@ package com.photodispatcher.provider.preprocess{
 				//mm to pix
 				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add);
 				var barSize:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_bar);
-				barcode=printGroup.techBarcode(file);
+				barcode=printGroup.techBarcodeByFile(file);
 				if(barcode){
 					var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
 					if(!barOffset) barOffset='+0+0';

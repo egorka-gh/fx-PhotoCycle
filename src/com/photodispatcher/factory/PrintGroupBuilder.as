@@ -339,6 +339,7 @@ package com.photodispatcher.factory{
 				}
 			}
 			if(!dst.getFiles() || dst.getFiles().length==0) return; 
+			
 			//detect sheets number
 			var pageMax:int=0;
 			var pageMin:int=int.MAX_VALUE;
@@ -349,9 +350,10 @@ package com.photodispatcher.factory{
 			dst.sheet_num=pageMax-pageMin+1;
 			if (dst.is_pdf && !dst.bookTemplate.is_sheet_ready){
 				dst.sheet_num=dst.sheet_num/2;
-				if(dst.book_type==BookSynonym.BOOK_TYPE_BOOK){
-					//blank page
-					dst.sheet_num++;
+				if(dst.is_duplex){
+					if(dst.book_type==BookSynonym.BOOK_TYPE_BOOK) dst.sheet_num++; //blank page
+					//duplex so
+					dst.sheet_num=dst.sheet_num/2;
 				}
 			}
 			
