@@ -9,6 +9,7 @@ package com.photodispatcher.service.barcode
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.events.IOErrorEvent;
+	import flash.events.NativeProcessExitEvent;
 	import flash.events.ProgressEvent;
 	import flash.events.SecurityErrorEvent;
 	import flash.filesystem.File;
@@ -16,10 +17,12 @@ package com.photodispatcher.service.barcode
 	import flash.filesystem.FileStream;
 	import flash.net.Socket;
 	
-	//[Event(name="serialProxyData", type="com.photodispatcher.event.SerialProxyEvent")]
+	import flashx.textLayout.factory.TruncationOptions;
+	
+	[Event(name="serialProxyStart", type="com.photodispatcher.event.SerialProxyEvent")]
 	[Event(name="serialProxyError", type="com.photodispatcher.event.SerialProxyEvent")]
-	//[Event(name="connect", type="flash.events.Event")]
-	//[Event(name="close", type="flash.events.Event")]
+	[Event(name="serialProxyExit", type="com.photodispatcher.event.SerialProxyEvent")]
+	[Event(name="serialProxyConnected", type="com.photodispatcher.event.SerialProxyEvent")]
 	public class SerialProxy extends EventDispatcher{
 		public static const PROXY_FOLDER:String='serial_proxy';
 		public static const PROXY_EXE:String='serproxy.exe';
@@ -30,11 +33,17 @@ package com.photodispatcher.service.barcode
 
 		//private var socket:Socket;
 		private var process:ProcessRunner;
-		private var proc:NativeProcess;
+		//private var proc:NativeProcess;
 		//TODO refactor to map by type
 		private var comInfos:Array;
 
 		public var remoteIp:String;
+
+		private var _connected:Boolean=false;
+		public function get connected():Boolean{
+			return _connected;
+		}
+
 		
 		private var _isStarted:Boolean=false;
 		public function get isStarted():Boolean{
@@ -42,12 +51,24 @@ package com.photodispatcher.service.barcode
 		}
 			
 		public function SerialProxy(){
+			//TODO singleton
 			super(null);
 		}
 		
-		public function start(comInfos:Array):void{
+		public function restart():void{
+			addEventListener(SerialProxyEvent.SERIAL_PROXY_EXIT, onProxyExit);
 			stop();
-			this.comInfos=comInfos;
+		}
+		
+		private function onProxyExit(event:SerialProxyEvent):void{
+			removeEventListener(SerialProxyEvent.SERIAL_PROXY_EXIT, onProxyExit);
+			start(null);
+		}
+		
+		public function start(newComInfos:Array):void{
+			//stop();
+			if(_isStarted) return;
+			if(newComInfos) comInfos=newComInfos;
 			if(!comInfos || comInfos.length==0){
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: Нет настроенных COM портов'));
 				return;
@@ -130,8 +151,7 @@ package com.photodispatcher.service.barcode
 			dstFile=srcDir.resolvePath(PROXY_CFG);
 			var args:Vector.<String>=new Vector.<String>();
 			args.push(dstFile.nativePath);
-			proc=process.prepare(srcDir.nativePath,args);
-			if(!proc){
+			if(!process.prepare(srcDir.nativePath,args)){
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error'));
 				return;
 			}
@@ -147,6 +167,7 @@ package com.photodispatcher.service.barcode
 				return;
 			}
 			_isStarted=true;
+			dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_START));
 		}
 		
 		/*
@@ -188,21 +209,94 @@ package com.photodispatcher.service.barcode
 			}
 			return result;
 		}
+		
+		private var toConnect:Array;
+		public function connectAll():void{
+			var ci:ComInfo;
+			toConnect=[];
+			_connected=false;
+			for each (ci in comInfos){
+				if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
+					if(!ci.proxy){
+						var proxy:Socket2Com= new Socket2Com(ci,remoteIp);
+						ci.proxy=proxy;
+					}
+					if(!ci.proxy.connected) toConnect.push(ci.proxy);
+				}
+			}
+			connectNext();
+		}
+		private function connectNext():void{
+			if(toConnect.length==0){
+				//complited
+				_connected=true;
+				dispatchEvent(new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_CONNECTED));
+				return;
+			}
+			var proxy:Socket2Com= toConnect.pop() as Socket2Com;
+			if(proxy){
+				proxy.addEventListener(Event.CONNECT, onProxyConnect);
+				proxy.addEventListener(Event.CLOSE, onProxyDisconnect);
+				proxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyConnectErr);
+				proxy.connect();
+			}
+		}
+		private function onProxyConnect(evt:Event):void{
+			var proxy:Socket2Com=evt.target as Socket2Com;
+			if(proxy){
+				proxy.removeEventListener(Event.CONNECT, onProxyConnect);
+				proxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyConnectErr);
+			}
+			connectNext();
+		}
+		private function onProxyConnectErr(evt:SerialProxyEvent):void{
+			var proxy:Socket2Com=evt.target as Socket2Com;
+			if(proxy){
+				proxy.removeEventListener(Event.CONNECT, onProxyConnect);
+				proxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyConnectErr);
+			}
+			dispatchEvent(evt.clone());
+		}
+		private function onProxyDisconnect(evt:Event):void{
+			var proxy:Socket2Com=evt.target as Socket2Com;
+			if(proxy){
+				proxy.removeEventListener(Event.CLOSE, onProxyDisconnect);
+				var ci:ComInfo;
+				for each (ci in comInfos){
+					if(ci.proxy && ci.proxy===proxy){
+						_connected=false;
+						break
+					}
+				}
+			}
+		}
 
 		public function stop():void{
 			_isStarted=false;
 			var ci:ComInfo;
 			//disconnect clients
-			for each(ci in comInfos){
-				if(ci && ci.proxy){
-					ci.proxy.close();
-					ci.proxy=null;
+			if(comInfos){
+				for each(ci in comInfos){
+					if(ci && ci.proxy){
+						ci.proxy.close();
+						ci.proxy=null;
+					}
 				}
 			}
 			if(process && process.isRunning){
+				process.process.addEventListener(NativeProcessExitEvent.EXIT, onProcExit);
 				process.stop(true);
+				process=null;
+			}else{
+				process=null;
+				dispatchEvent(new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_EXIT));
 			}
-			process=null;
+		}
+		
+		private function onProcExit(evt:NativeProcessExitEvent):void{
+			var prc:NativeProcess= evt.target as NativeProcess;
+			if(prc) prc.removeEventListener(NativeProcessExitEvent.EXIT, onProcExit);
+			dispatchEvent(new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_EXIT));
 		}
 	}
 }

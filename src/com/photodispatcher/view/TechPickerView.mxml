@@ -15,6 +15,7 @@
 			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.LayersetDAO;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.service.barcode.ValveController;
 			import com.photodispatcher.tech.picker.TechPicker;
 			
@@ -38,13 +39,6 @@
 			public var stopOnComplite:Boolean=false;
 			public var pauseOnComplite:Boolean=false;
 			public var layerOnComplite:int=0;
-			/*
-			public var engineOnCompliteOff:Boolean=false;
-			public var vacuumOnCompliteOff:Boolean=false;
-			public var askOnComplite:Boolean=false;
-			public var layerOnComplite:int=0;
-			public var layerOnCompliteTray:int=1;
-			*/
 
 			[Bindable]
 			private var acTemplates:ArrayCollection;
@@ -52,33 +46,10 @@
 			private var acGroups:ArrayCollection;
 			
 			private function init():void{
-				/*
-				var ddao:DictionaryDAO=new DictionaryDAO();
-				acGroups=ddao.getLayerGroupValueList(false,true);
-				*/
 				acGroups=new ArrayCollection(['Начало книги','Разворот','Между разворотами','Конец книги','Конец заказа','Пуск','Пауза','Продолжить','Стоп']);
 			}
 			
-			/*
-			private var _barcodeReader:ComReader;
-			public function get barcodeReader():ComReader{
-				return _barcodeReader;
-			}
-			public function set barcodeReader(value:ComReader):void{
-				_barcodeReader = value;
-			}
-			*/
-			public var barcodeReaders:Array;
-			
-			private var _controller:ValveController;
-			[Bindable]
-			public function get controller():ValveController{
-				return _controller;
-			}
-			
-			public function set controller(value:ValveController):void{
-				_controller = value;
-			}
+			public var serialProxy:SerialProxy;
 			
 			[Bindable]
 			private var logText:String = '';
@@ -116,12 +87,8 @@
 				acTemplates.refresh();
 				if (acTemplates.length==0) return;
 				
-				controller.start();
-				var barReader:ComReader;
-				if (barcodeReaders){
-					for each(barReader in barcodeReaders) barReader.start();
-				}
 				techPicker= new TechPicker(techGroup);
+				techPicker.serialProxy=serialProxy;
 				techPicker.engineOnStartOn=engineOnStartOn;
 				techPicker.vacuumOnStartOn=vacuumOnStartOn;
 				techPicker.engineOnErrOff=engineOnErrOff;
@@ -129,16 +96,6 @@
 				techPicker.stopOnComplite=stopOnComplite;
 				techPicker.pauseOnComplite=pauseOnComplite;
 				techPicker.layerOnComplite=layerOnComplite;
-				/*
-				techPicker.engineOnCompliteOff=engineOnCompliteOff;
-				techPicker.vacuumOnCompliteOff=vacuumOnCompliteOff;
-				techPicker.askOnComplite=askOnComplite;
-				techPicker.layerOnComplite=layerOnComplite;
-				techPicker.layerOnCompliteTray=layerOnCompliteTray;
-				*/
-				
-				techPicker.barcodeReaders=barcodeReaders;
-				techPicker.controller=controller;
 				techPicker.reversOrder=reversOrder;
 				techPicker.techPoint=techPoint;
 				techPicker.turnInterval=turnInterval;
@@ -147,18 +104,12 @@
 			}
 
 			public function stop():void{
-				controller.stop();
-				var barReader:ComReader;
-				if (barcodeReaders){
-					for each(barReader in barcodeReaders) barReader.stop();
-				}
 				if(techPicker){
 					techPicker.stop();
 					techPicker.removeEventListener(ErrorEvent.ERROR, onPickerErr);
 					techPicker.destroy();
 					//techPicker=null;
 				}
-
 			}
 			
 			private function onPickerErr(event:ErrorEvent):void{
@@ -189,6 +140,10 @@
 							enabled="{!techPicker.isRunning}"
 							change="ddTemplate_changeHandler(event)"
 							width="250"/>
+			<s:Spacer width="20"/>
+			<s:CheckBox id="tgSkipBookNumCheck" selected="@{techPicker.inexactBookSequence}"
+						enabled="{!techPicker.isRunning || techPicker.isPaused}"/>
+			<s:Label text="Сборка брака"/>
 		</s:HGroup>
 
 		<s:HGroup gap="10" width="100%">
@@ -233,11 +188,14 @@
 				</s:HGroup>
 			</s:VGroup>
 			<s:VGroup gap="12" paddingRight="10">
-				<s:HGroup gap="10">
-					<s:ToggleButton id="tgVacuum" label="Вакуум" change="{tgVacuum.selected?controller.vacuumOn():controller.vacuumOff()}"/>
-					<s:ToggleButton id="tgEngine" label="Мотор" change="{tgEngine.selected?controller.engineOn():controller.engineOff()}"/>
+				<s:HGroup gap="10" enabled="{Boolean(techPicker.controller)}">
+					<s:ToggleButton id="tgVacuum" label="Вакуум" change="{tgVacuum.selected?techPicker.controller.vacuumOn():techPicker.controller.vacuumOff()}"/>
+					<s:ToggleButton id="tgEngine" label="Мотор" change="{tgEngine.selected?techPicker.controller.engineOn():techPicker.controller.engineOff()}"/>
 				</s:HGroup>
-				<s:Button id="btStart" label="Старт" enabled="{!techPicker.isRunning || techPicker.isPaused}" click="techPicker.start()"/>
+				<s:HGroup gap="10">
+					<s:Button id="btStart" label="Старт" enabled="{!techPicker.isRunning || techPicker.isPaused}" click="techPicker.start()"/>
+					<s:Button label="Перезапуск COM" enabled="{!techPicker.isRunning || techPicker.isPaused}" click="{serialProxy.restart()}"/>
+				</s:HGroup>
 				<s:HGroup gap="10">
 					<s:Button id="btPause" label="Пауза" enabled="{techPicker.isRunning}" click="techPicker.pauseRequest()"/>
 					<s:Button id="btStop" label="Стоп" click="techPicker.stop()"/>

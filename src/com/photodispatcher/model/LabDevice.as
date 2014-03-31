@@ -19,6 +19,8 @@ package com.photodispatcher.model{
 		public var speed1:Number=0.0;
 		[Bindable]
 		public var speed2:Number=0.0;
+		
+		public var queue_limit:int;
 
 		[Bindable]
 		public var onlineState:int=0;

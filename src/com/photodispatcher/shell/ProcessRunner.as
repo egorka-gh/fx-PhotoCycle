@@ -67,6 +67,10 @@ package com.photodispatcher.shell{
 			}
 		}
 
+		public function get process():NativeProcess{
+			return _process;
+		}
+		
 		public function get isRunning():Boolean{
 			return _process && _process.running;
 		}

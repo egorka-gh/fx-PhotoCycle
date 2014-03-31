@@ -9,6 +9,7 @@ package com.photodispatcher.service.barcode{
 	import flash.utils.Timer;
 	import flash.utils.getTimer;
 	
+	[Event(name="barcodeConnected", type="com.photodispatcher.event.BarCodeEvent")]
 	[Event(name="barcodeReaded", type="com.photodispatcher.event.BarCodeEvent")]
 	[Event(name="barcodeError", type="com.photodispatcher.event.BarCodeEvent")]
 	public class ComReader extends EventDispatcher{
@@ -87,11 +88,13 @@ package com.photodispatcher.service.barcode{
 		protected function onComConnect(event:Event):void{
 			isStarted=true;
 			_comPort.clean();
+			dispatchEvent(new BarCodeEvent(BarCodeEvent.BARCODE_CONNECTED,''))
 		}
 
 		protected function onComClose(event:Event):void{
 			stopTimer();
 			destroyCom();
+			dispatchEvent(new BarCodeEvent(BarCodeEvent.BARCODE_DISCONNECTED,''))
 		}
 
 		protected function onComErr(event:SerialProxyEvent):void{

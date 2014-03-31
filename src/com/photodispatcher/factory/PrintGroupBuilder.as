@@ -210,6 +210,7 @@ package com.photodispatcher.factory{
 			f.file_name=fileName;
 			f.caption=fileName;
 			//parse fileName
+			//TODO bug if ???_.... <3chars
 			var prop:String=fileName.split('_')[0];
 			f.prt_qty=int(prop.substr(0,prop.length-2));
 			if(f.prt_qty==0) f.prt_qty=1;

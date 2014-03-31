@@ -20,6 +20,7 @@ package com.photodispatcher.tech{
 		public var sheets:int;
 		public var revers:Boolean=false;
 		public var flap:ValveCom;
+		public var inexactBookSequence:Boolean=false;
 		
 		private var regArray:Array;
 		private var bookPart:int;
@@ -64,6 +65,7 @@ package com.photodispatcher.tech{
 		}
 		
 		public function get isComplete():Boolean{
+			if(inexactBookSequence) return false;//can't detect
 			if(bookPart==BookSynonym.BOOK_PART_BLOCK && registred==books*sheets){
 				return true;
 			}
@@ -104,6 +106,12 @@ package com.photodispatcher.tech{
 		public function get currentSheet():int{
 			return lastSheet;
 		}
+		public function get currentBookComplited():Boolean{
+			if(!lastBook) return false;
+			if(bookPart==BookSynonym.BOOK_PART_COVER) return true;
+			var endSheet:int=revers?1:sheets;
+			return lastSheet==endSheet;
+		}
 
 		protected var _canInterrupt:Boolean=false;
 		public function get canInterrupt():Boolean{
@@ -117,15 +125,18 @@ package com.photodispatcher.tech{
 		
 		public function finalise():Boolean{
 			var result:Boolean=true;
-			if (!isComplete){
+			if (!isComplete && !inexactBookSequence){
 				if(canInterrupt){
 					if(flap) flap.setOff();
 					if(strictSequence) result=false;
 				}
+				/*
 				var book:int=revers?1:books;
 				var sheet:int=0;
 				if (bookPart!=BookSynonym.BOOK_PART_COVER) sheet=revers?1:sheets;
 				logSequeceErr('Не верное завершение последовательности: '+ StrUtil.sheetName(lastBook,lastSheet) +' вместо '+ StrUtil.sheetName(book,sheet));
+				*/
+				logSequeceErr('Не полная последовательность');
 			}else{
 				if(logOk) logMsg('Ok');
 			}
@@ -133,7 +144,6 @@ package com.photodispatcher.tech{
 		}
 
 		protected function checkSequece(book:int,sheet:int):Boolean{
-			//throw new Error("You need to override checkSequece() in your concrete class");
 			var dBook:int=dueBook;
 			var dSheet:int=dueSheet;
 			var result:Boolean;
@@ -141,6 +151,11 @@ package com.photodispatcher.tech{
 				if(canInterrupt && flap) flap.setOff();
 				logSequeceErr('Должен быть следующий заказ: '+ StrUtil.sheetName(book,sheet)+' при завершенной последовательности.' );
 				return false;
+			}
+			if(inexactBookSequence){
+				var firstSheet:int=0;
+				if(bookPart==BookSynonym.BOOK_PART_BLOCK) firstSheet=revers?sheets:1;
+				if(dueSheet==firstSheet) dBook=book;
 			}
 			result=dBook==book && dSheet==sheet;
 			if(!result){

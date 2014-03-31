@@ -65,7 +65,7 @@ package com.photodispatcher.print{
 			if(isReading) return;
 			_refresh();
 		}
-		public function _refresh():void{
+		private function _refresh():void{
 			if(!lab) return;
 			//read print groups in Print state
 			var ordersMap:Object=new Object();

@@ -84,8 +84,8 @@ package com.photodispatcher.model.dao{
 			runNext();
 		}
 		
-		private static function runNext():void{
-			wait=0;
+		private static function runNext(resetWait:Boolean=true):void{
+			if(resetWait) wait=0;
 			attempt=0;
 			resultId=0;
 			resultRows=0;
@@ -97,7 +97,7 @@ package com.photodispatcher.model.dao{
 				return;
 			}
 			isBusy=true;
-			if(TRACE_DEBUG) trace('baseDao attempt to start transaction');
+			if(TRACE_DEBUG) trace('baseDao attempt to start transaction; wait:'+wait.toString());
 			try{
 				connection.addEventListener(SQLEvent.BEGIN, onBegin);
 				connection.addEventListener(SQLErrorEvent.ERROR, onBeginErr);
@@ -274,7 +274,7 @@ package com.photodispatcher.model.dao{
 				isBusy=false;
 				return;
 			}
-			if(TRACE_DEBUG) trace('baseDAO.execLate starts dao: '+ getCurrentUnit().dao.toString());//+DebugUtils.getObjectMemoryHash(this));
+			if(TRACE_DEBUG) trace('baseDAO.execLate wait:'+wait.toString()+'; starts dao: '+ getCurrentUnit().dao.toString());//+DebugUtils.getObjectMemoryHash(this));
 			var tu:TransactionUnit=getCurrentUnit();
 			if (wait>=MAX_WAITE || tu.dao.asyncFaultMode==FAULT_IGNORE){
 				//max wait reached
@@ -308,7 +308,7 @@ package com.photodispatcher.model.dao{
 		private static function onTimer(e:Event):void{
 			timer.removeEventListener(TimerEvent.TIMER,onTimer);
 			if(TRACE_DEBUG)  trace('baseDao restart on timer: '+ getCurrentUnit().dao.toString());
-			runNext();
+			runNext(false);
 		}
 
 		private static var rollbackTimer:Timer;

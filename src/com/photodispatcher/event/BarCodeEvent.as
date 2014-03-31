@@ -2,6 +2,8 @@ package com.photodispatcher.event{
 	import flash.events.Event;
 	
 	public class BarCodeEvent extends Event{
+		public static const BARCODE_DISCONNECTED:String = "barcodeDisConnected";
+		public static const BARCODE_CONNECTED:String = "barcodeConnected";
 		public static const BARCODE_READED:String = "barcodeReaded";
 		public static const BARCODE_ERR:String = "barcodeError";
 

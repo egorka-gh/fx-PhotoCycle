@@ -20,7 +20,7 @@ package com.photodispatcher.service.barcode{
 		}
 		
 		public function send(msg:String):void{
-			_comPort.send(msg);
+			if(_comPort) _comPort.send(msg);
 		}
 		
 	}

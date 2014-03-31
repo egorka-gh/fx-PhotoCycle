@@ -258,8 +258,10 @@ package com.photodispatcher.print{
 			}
 			for each(dev in devices){
 				if(dev){
+					//check time table
 					dev.checkTimeTable();
 					newState=Math.max(newState,dev.onlineState);
+					//check roll
 				}
 			}
 			onlineState=newState;

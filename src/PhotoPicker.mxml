@@ -56,12 +56,10 @@
 
 			/*
 			[Bindable]
-			private var barcodeReader:ComReader;
-			*/
-			[Bindable]
 			private var barcodeReaders:Array;
 			[Bindable]
 			private var controller:ValveController; 
+			*/
 
 			[Bindable]
 			private var turnInterval:int;
@@ -241,6 +239,7 @@
 				if(!serialProxy.isStarted){
 					return;
 				}
+				/*
 				var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_CONTROLLER);
 				if(proxy){
 					if(!controller) controller= new ValveController();
@@ -268,42 +267,11 @@
 					newBarcodeReaders.push(barReader);
 				}
 				barcodeReaders=newBarcodeReaders;
-				
-				currentState='monitor';
-				if(techPickerView) techPickerView.start();
-			}
-
-			private function startEmulator():void{
-				if(!techPointObj){
-					Alert.show('Приложение не настроено');
-					currentState='config';
-					return;
-				}
-				controller= new ValveControllerEmulator();
-				(controller as ValveControllerEmulator).pickerInterval=turnInterval;
-
-				/*
-				serialProxy.start([comBarcodeReader]);
-				var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
-				if(proxy){
-					if(!barcodeReader){
-						barcodeReader= new ComReader(500);
-						barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
-					}
-					barcodeReader.comPort=proxy;
-				}else{
-					//TODO destoroy
-				}
 				*/
-				var barcodeReader:ComReaderEmulator= new ComReaderEmulator();
-				barcodeReader.pickerInterval=turnInterval;
-				barcodeReader.pgId='5_15499_2';
-				barcodeReaders=[barcodeReader];
 				
 				currentState='monitor';
 				if(techPickerView) techPickerView.start();
 			}
-
 			
 			private function stop():void{
 				if(techPickerView) techPickerView.stop();
@@ -352,7 +320,7 @@
 			
 			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
 				Alert.show('Ошибка SerialProxy \n '+event.error,'Ошибка');
-				currentState='config';
+				//currentState='config';
 			}
 			
 			protected function chbRevers_changeHandler(event:Event):void{
@@ -524,10 +492,8 @@
 	<config:TechLayerConfig includeIn="templates" top="5" left="5" right="5" bottom="50"/>
 
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<!--<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" barcodeReader="{barcodeReader}" flap="{flap}"
-							  width="100%" height="100%"/>-->
 		<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
-							 barcodeReaders="{barcodeReaders}" controller="{controller}"
+							 serialProxy="{serialProxy}"
 							 reversOrder="{reversOrder}" turnInterval="{turnInterval}"
 							 engineOnStartOn="{engineOnStartOn}"
 							 vacuumOnStartOn="{vacuumOnStartOn}"

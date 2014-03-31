@@ -117,8 +117,7 @@ package com.photodispatcher.print{
 					}
 				}
 				var lb:LabBase=LabBuilder.build(lab);
-				lb.refreshOnlineState();
-				lb.refreshPrintQueue();
+				lb.refresh();
 				result.push(lb);
 			}
 			_labs.source=result;
