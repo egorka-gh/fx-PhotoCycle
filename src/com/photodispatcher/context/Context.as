@@ -41,7 +41,7 @@ package com.photodispatcher.context{
 			var appConfDAO:AppConfigDAO=new AppConfigDAO();
 			var appConf:AppConfig=appConfDAO.getItem();
 			if(appConf){
-				Context.setAttribute('workFolder',appConf.wrk_path);//backward compatibility, use local SharedObject .data.workFolder
+				//Context.setAttribute('workFolder',appConf.wrk_path);//backward compatibility, use local SharedObject .data.workFolder
 				
 				Context.setAttribute('syncInterval',appConf.monitor_interval);
 				//content filter

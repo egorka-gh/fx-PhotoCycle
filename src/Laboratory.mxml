@@ -77,7 +77,7 @@
 					//serverIP=so.data.serverIP;
 				}
 
-				if(!workFolder) workFolder=appConf.wrk_path; //backward compatibility
+				//if(!workFolder) workFolder=appConf.wrk_path; //backward compatibility
 				Context.setAttribute('workFolder',workFolder);
 				
 				if(!prtPath) prtPath=workFolder;

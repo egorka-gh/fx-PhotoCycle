@@ -3,7 +3,8 @@
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx" 
 		 xmlns:config="com.photodispatcher.view.config.*"
-		 creationComplete="{init()}">
+		 creationComplete="{init()}"
+		 >
 	
 	<fx:Script>
 		<![CDATA[
@@ -28,6 +29,7 @@
 			
 			import mx.collections.IList;
 			import mx.controls.Alert;
+			import mx.events.FlexEvent;
 
 			[Bindable]
 			private var currentList:ArrayCollection;
@@ -271,6 +273,7 @@
 			private function applyFilter():void{
 				if(currentList) currentList.refresh();
 			}
+			
 		]]>
 	</fx:Script>
 	

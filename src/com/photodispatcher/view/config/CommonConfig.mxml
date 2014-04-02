@@ -14,11 +14,13 @@
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.PasswPopup;
 			
 			import mx.collections.ArrayCollection;
 			import mx.events.FlexEvent;
 			
 			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
 			import spark.events.TextOperationEvent;
 			
 			[Bindable]
@@ -230,6 +232,31 @@
 				Context.setAttribute('contentFilter',currCFilter);
 			}
 			
+			protected function btSetPass_clickHandler(event:MouseEvent):void{
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPass);
+				passPop.show('',true);
+			}
+			protected function onCfgPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(!passPop) return;
+				passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					var newPass:String=passPop.pass;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.configPass = newPass;
+					so.flush();  
+					Context.setAttribute('configPass', newPass);
+				}
+			}
+
+			protected function btOffPass_clickHandler(event:MouseEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.configPass = '';
+				so.flush();  
+				Context.setAttribute('configPass', '');
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -307,6 +334,13 @@
 
 			<s:FormItem label="Сжать базу данных">
 				<s:Button id="btBdOptimize" label="Выполнить" click="btBdOptimize_clickHandler(event)"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Защита конфигурации">
+				<s:HGroup gap="10">
+					<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
+					<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+				</s:HGroup>
 			</s:FormItem> 
 
 		</s:Form>

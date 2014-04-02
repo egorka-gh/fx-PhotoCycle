@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" width="200" minHeight="50">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			public var pass:String;
+			
+			[Bindable]
+			private var newPassMode:Boolean=false;
+			
+			public function show(pass:String, newPassMode:Boolean=false):void{
+				this.newPassMode=newPassMode;
+				this.pass=pass;
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				PopUpManager.centerPopUp(this);
+				if(tiPass1) tiPass1.setFocus();
+			}
+
+			protected function btOk_clickHandler(event:MouseEvent):void{
+				if(!tiPass1.text) return;
+				if(newPassMode){
+					if(!tiPass2.text) return;
+					if(tiPass1.text==tiPass2.text){
+						pass=tiPass1.text;
+						close(true);
+					}else{
+						Alert.show('Пароль не совпадает');
+					}
+				}else{
+					if(tiPass1.text==pass){
+						close(true);
+					}else{
+						Alert.show('Не верный пароль');
+						tiPass1.text='';
+					}
+				}
+			}
+			
+			protected function tiPass1_enterHandler(event:FlexEvent):void{
+				if(!newPassMode) btOk_clickHandler(null);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup gap="5" top="10" left="10" right="10" bottom="10" verticalAlign="middle">
+		<s:TextInput id="tiPass1" displayAsPassword="true" width="90%" enter="tiPass1_enterHandler(event)"/>
+		<s:TextInput id="tiPass2" displayAsPassword="true" width="90%" visible="{newPassMode}" includeInLayout="{newPassMode}"/>
+		<s:HGroup width="100%" horizontalAlign="right">
+			<s:Button id="btOk" label="Ok" click="btOk_clickHandler(event)"/>
+			<s:Button id="btCancel" label="Отмена" click="{close()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

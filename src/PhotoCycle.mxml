@@ -7,11 +7,13 @@
 					   xmlns:config1="com.akmeful.fotokniga.config.*"
 					   xmlns:config2="com.akmeful.fotocalendar.config.*"
 					   xmlns:cfg="com.akmeful.fotakrama.cfg.*"
+					   xmlns:download="com.photodispatcher.provider.fbook.download.*" 
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="{destroy()}" xmlns:download="com.photodispatcher.provider.fbook.download.*" >
+					   closing="{destroy()}">
 	<fx:Script>
 		<![CDATA[
+			import com.akmeful.fotokniga.book.data.Book;
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.AppConfig;
@@ -27,10 +29,12 @@
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.OrderSearchPopup;
+			import com.photodispatcher.view.PasswPopup;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
 			
 			import spark.events.PopUpEvent;
 
@@ -108,14 +112,18 @@
 				var workFolder:String;
 				var prtPath:String;
 				var serverIP:String;
+				var configPass:String;
 				//var cFilterId:int;
 				if (so.size>0){
 					workFolder = so.data.workFolder;
 					imPath = so.data.imPath;
 					prtPath = so.data.prtPath;
 					serverIP=so.data.serverIP;
+					configPass=so.data.configPass;
 					//cFilterId=so.data.cFilterId;
 				}
+
+				Context.setAttribute('configPass',configPass);
 				
 				/*
 				//load content filters
@@ -181,6 +189,27 @@
 				}
 			}
 			
+			[Bindable]
+			private var cfgEnabled:Boolean;
+			protected function state1_enterStateHandler(event:FlexEvent):void{
+				var configPass:String=Context.getAttribute('configPass');
+				if(!configPass){
+					cfgEnabled=true;
+					return;
+				}
+				cfgEnabled=false;
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPass);
+				passPop.show(configPass);
+			}
+			protected function onCfgPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(passPop) passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					cfgEnabled=true;
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -205,12 +234,12 @@
 
 	<s:states>
 		<s:State name="disconnected"/>
-		<s:State name="config"/>
+		<s:State name="config" enterState="state1_enterStateHandler(event)"/>
 		<s:State name="monitor"/>
 	</s:states>
 	<s:VGroup gap="10" top="5" left="5" right="5" bottom="35">
 		<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"/>
-		<config:ConfigView includeIn="config" width="100%" height="100%"/>
+		<config:ConfigView includeIn="config" enabled="{cfgEnabled}" width="100%" height="100%"/>
 		<view:Monitor id="vMonitor" includeIn="monitor"
 					  width="100%" height="100%"/>
 	</s:VGroup>
