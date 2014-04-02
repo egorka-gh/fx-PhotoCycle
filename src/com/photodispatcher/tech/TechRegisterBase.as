@@ -21,6 +21,7 @@ package com.photodispatcher.tech{
 		public var revers:Boolean=false;
 		public var flap:ValveCom;
 		public var inexactBookSequence:Boolean=false;
+		public var detectFirstBook:Boolean=false;
 		
 		private var regArray:Array;
 		private var bookPart:int;
@@ -66,6 +67,12 @@ package com.photodispatcher.tech{
 		
 		public function get isComplete():Boolean{
 			if(inexactBookSequence) return false;//can't detect
+			if(detectFirstBook){
+				//check last book & last sheet 
+				var endSheet:int=0;
+				if(bookPart==BookSynonym.BOOK_PART_BLOCK) endSheet=revers?1:sheets;
+				if(lastBook==books && lastSheet==endSheet) return true;
+			}
 			if(bookPart==BookSynonym.BOOK_PART_BLOCK && registred==books*sheets){
 				return true;
 			}
@@ -156,7 +163,11 @@ package com.photodispatcher.tech{
 				var firstSheet:int=0;
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK) firstSheet=revers?sheets:1;
 				if(dueSheet==firstSheet) dBook=book;
+			}else if(detectFirstBook){
+				dBook=book;
+				detectFirstBook=false;
 			}
+			
 			result=dBook==book && dSheet==sheet;
 			if(!result){
 				if(canInterrupt && flap) flap.setOff();

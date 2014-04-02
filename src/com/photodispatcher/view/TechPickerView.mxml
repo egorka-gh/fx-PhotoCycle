@@ -144,6 +144,10 @@
 			<s:CheckBox id="tgSkipBookNumCheck" selected="@{techPicker.inexactBookSequence}"
 						enabled="{!techPicker.isRunning || techPicker.isPaused}"/>
 			<s:Label text="Сборка брака"/>
+			<s:Spacer width="20"/>
+			<s:CheckBox id="tgDetectFirstBook" selected="@{techPicker.detectFirstBook}"
+						enabled="{!techPicker.isRunning || techPicker.isPaused}"/>
+			<s:Label text="Не полный заказ"/>
 		</s:HGroup>
 
 		<s:HGroup gap="10" width="100%">

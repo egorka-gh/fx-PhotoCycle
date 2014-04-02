@@ -64,8 +64,27 @@ package com.photodispatcher.tech.picker{
 		public var endpaperSet:EndpaperSet;//:EndpaperSetKill; 
 		[Bindable]
 		public var currInerlayer:Layerset;
+		
+		private var _inexactBookSequence:Boolean=false;
 		[Bindable]
-		public var inexactBookSequence:Boolean=false;
+		public function get inexactBookSequence():Boolean{
+			return _inexactBookSequence;
+		}
+		public function set inexactBookSequence(value:Boolean):void{
+			_inexactBookSequence = value;
+			if(_inexactBookSequence) detectFirstBook=false;
+		}
+
+		private var _detectFirstBook:Boolean=false;
+		[Bindable]
+		public function get detectFirstBook():Boolean{
+			return _detectFirstBook;
+		}
+		public function set detectFirstBook(value:Boolean):void{
+			_detectFirstBook = value;
+			if(_detectFirstBook) inexactBookSequence=false;
+		}
+
 		
 		private var techGroup:int;
 
@@ -608,6 +627,7 @@ package com.photodispatcher.tech.picker{
 			pausedGroupStep=-1;
 			register=null;
 			inexactBookSequence=false;
+			detectFirstBook=false;
 			isRunning=false;
 			isPaused=false;
 			resetLatches();
@@ -814,6 +834,7 @@ package com.photodispatcher.tech.picker{
 						//if (currBookIdx>=currBookTot){ 
 						if (register.isComplete){
 							//order complited
+							detectFirstBook=false;
 							register.finalise();
 							register=null;
 							currBookTot=-1;
@@ -1089,6 +1110,9 @@ package com.photodispatcher.tech.picker{
 				register.techPoint=techPoint;
 				register.revers=reversOrder;
 				register.inexactBookSequence=inexactBookSequence;
+				register.detectFirstBook=detectFirstBook;
+				//reset detectFirstBook
+				if(detectFirstBook) detectFirstBook=false;
 			}else{
 				if(pgId!=currPgId){
 					if(register.inexactBookSequence){
