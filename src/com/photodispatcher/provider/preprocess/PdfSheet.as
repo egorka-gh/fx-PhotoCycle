@@ -57,6 +57,8 @@ package com.photodispatcher.provider.preprocess{
 				command.add('-crop'); command.add(sheetCrop);
 				command.add('-flatten');
 			}
+			//draw notching
+			IMCommandUtil.drawNotching(command,printGroup.bookTemplate.notching,sheetSize.x,sheetSize.y,0);
 			return command;
 		}
 		
