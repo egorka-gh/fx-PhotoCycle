@@ -67,7 +67,7 @@ package com.photodispatcher.service.barcode{
 		public static const MSG_CONTROLLER_ERROR_WRONG_LRC:String='err3';
 		*/
 		public static const MAX_RESEND:int=1;
-		public static const ACKNOWLEDGE_TIMEOUT:int	=100;
+		public static const ACKNOWLEDGE_TIMEOUT:int	=200;
 		
 
 		public var logger:ISimpleLogger;
@@ -198,7 +198,7 @@ package com.photodispatcher.service.barcode{
 		protected function sendCmd(cmd:String):void{
 			if(!cmd) return;
 			if(_isBusy){
-				log('! Busy error');
+				log('! Busy error; command: '+cmd);
 				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,'Нет потверждения предидущей команды ('+lastCommand+'/'+cmd+')',ERROR_BUSY));
 				return;
 			}

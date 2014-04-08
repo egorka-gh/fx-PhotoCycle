@@ -33,7 +33,7 @@ package com.photodispatcher.model.dao{
 		public function update(item:BookPgTemplate):void{
 			execute(
 				'UPDATE config.book_pg_template'+
-				' SET book=?, book_part=?, width=?, height=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, is_pdf=?, is_sheet_ready=?,'+
+				' SET book=?, book_part=?, width=?, height=?, height_add=?, paper=?, frame=?, correction=?, cutting=?, is_duplex=?, is_pdf=?, is_sheet_ready=?,'+
 				' sheet_width=?, sheet_len=?, page_width=?, page_len=?, page_hoffset=?, font_size=?, font_offset=?, fontv_size=?, fontv_offset=?,'+
 				' notching=?, stroke=?, bar_offset=?, bar_size=?,' + 
 				' tech_bar=?, tech_add=?, tech_bar_color=?, tech_bar_step=?,'+
@@ -43,6 +43,7 @@ package com.photodispatcher.model.dao{
 					item.book_part,
 					item.width,
 					item.height,
+					item.height_add,
 					item.paper,
 					item.frame,
 					item.correction,
@@ -79,15 +80,16 @@ package com.photodispatcher.model.dao{
 		public function create(item:BookPgTemplate):void{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
 			execute(
-				'INSERT INTO config.book_pg_template (book, book_part, width, height, paper, frame, correction, cutting, is_duplex, is_pdf, is_sheet_ready,'+
+				'INSERT INTO config.book_pg_template (book, book_part, width, height, height_add, paper, frame, correction, cutting, is_duplex, is_pdf, is_sheet_ready,'+
 					' sheet_width, sheet_len, page_width, page_len, page_hoffset, font_size, font_offset, fontv_size, fontv_offset,'+
 					' notching, stroke, bar_offset, bar_size,'+
 					' tech_bar, tech_add, tech_bar_color, tech_bar_step, is_tech_center, tech_bar_offset, is_tech_top, tech_bar_toffset, is_tech_bot, tech_bar_boffset)' +
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[	item.book,
 					item.book_part,
 					item.width,
 					item.height,
+					item.height_add,
 					item.paper,
 					item.frame,
 					item.correction,
@@ -148,6 +150,7 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('book_part'); col.headerText='Часть книги';  col.width=100; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.width=70; result.addItem(col);
 			col= new GridColumn('height'); col.headerText='Длина'; col.width=70; result.addItem(col);
+			col= new GridColumn('height_add'); col.headerText='Увеличение длинны с каждой стороны'; result.addItem(col);
 			col= new GridColumn('paper'); col.headerText='Бумага'; col.width=100; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			/*
 			col= new GridColumn('frame'); col.headerText='Рамка'; col.labelFunction=idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);

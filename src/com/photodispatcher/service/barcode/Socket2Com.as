@@ -26,7 +26,7 @@ package com.photodispatcher.service.barcode{
 		}
 
 		public function get comCaption():String{
-			return comInfo.label;
+			return (comInfo?comInfo.label:'');
 		}
 
 		public function get sufix():uint{

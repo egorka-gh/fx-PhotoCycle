@@ -12,10 +12,12 @@ package com.photodispatcher.service.barcode
 	import flash.events.NativeProcessExitEvent;
 	import flash.events.ProgressEvent;
 	import flash.events.SecurityErrorEvent;
+	import flash.events.TimerEvent;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	import flash.net.Socket;
+	import flash.utils.Timer;
 	
 	import flashx.textLayout.factory.TruncationOptions;
 	
@@ -59,9 +61,18 @@ package com.photodispatcher.service.barcode
 			addEventListener(SerialProxyEvent.SERIAL_PROXY_EXIT, onProxyExit);
 			stop();
 		}
-		
+
+		private var reconnectTimer:Timer;
 		private function onProxyExit(event:SerialProxyEvent):void{
 			removeEventListener(SerialProxyEvent.SERIAL_PROXY_EXIT, onProxyExit);
+			reconnectTimer= new Timer(3000,1);
+			reconnectTimer.addEventListener(TimerEvent.TIMER,onReconnectTimer);
+			reconnectTimer.start();
+			//start(null);
+		}
+		private function onReconnectTimer(evt:TimerEvent):void{
+			reconnectTimer.removeEventListener(TimerEvent.TIMER,onReconnectTimer);
+			reconnectTimer=null;
 			start(null);
 		}
 		

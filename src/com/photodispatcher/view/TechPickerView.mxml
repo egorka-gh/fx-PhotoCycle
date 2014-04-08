@@ -134,67 +134,83 @@
 	</fx:Declarations>
 	
 	<s:VGroup gap="10" width="100%" height="100%">
-		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Шаблон"/>
-			<s:DropDownList id="ddTemplate" dataProvider="{acTemplates}" labelField="name"
-							enabled="{!techPicker.isRunning}"
-							change="ddTemplate_changeHandler(event)"
-							width="250"/>
-			<s:Spacer width="20"/>
-			<s:CheckBox id="tgSkipBookNumCheck" selected="@{techPicker.inexactBookSequence}"
-						enabled="{!techPicker.isRunning || techPicker.isPaused}"/>
-			<s:Label text="Сборка брака"/>
-			<s:Spacer width="20"/>
-			<s:CheckBox id="tgDetectFirstBook" selected="@{techPicker.detectFirstBook}"
-						enabled="{!techPicker.isRunning || techPicker.isPaused}"/>
-			<s:Label text="Не полный заказ"/>
-		</s:HGroup>
-
 		<s:HGroup gap="10" width="100%">
-			<s:VGroup gap="5" width="100%">
+			<s:VGroup gap="10" width="100%">
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="Шаблон"/>
+					<s:DropDownList id="ddTemplate" dataProvider="{acTemplates}" labelField="name"
+									enabled="{!techPicker.isRunning}"
+									change="ddTemplate_changeHandler(event)"
+									width="250"/>
+					<s:Spacer width="20"/>
+					<s:CheckBox id="tgSkipBookNumCheck" selected="@{techPicker.inexactBookSequence}"
+								enabled="{!techPicker.isRunning || techPicker.isPaused}"/>
+					<s:Label text="Сборка брака"/>
+					<s:Spacer width="20"/>
+					<s:CheckBox id="tgDetectFirstBook" selected="@{techPicker.detectFirstBook}"
+								enabled="{!techPicker.isRunning || techPicker.isPaused}"/>
+					<s:Label text="Не полный заказ"/>
+				</s:HGroup>
+				
 				<s:HGroup gap="10" width="100%">
-					<s:Label text="Заказ: {techPicker.currPgId}"/>
-					<s:Label text="Тип книги: {techPicker.currBookTypeName}"/>
-					<s:Label text="Книга: {techPicker.currBookIdx.toString()}({techPicker.currBookTot.toString()})"/>
-					<s:Label text="Разворот: {techPicker.currSheetIdx.toString()}({techPicker.currSheetTot.toString()})"/>
-				</s:HGroup>
-				<s:HGroup gap="15" width="100%">
-					<s:VGroup gap="7" width="200">
-						<s:Label text="Тип: {techPicker.currOrder.calc_type}" width="100%" maxDisplayedLines="1"/>
-						<s:Label text="Обложка: {techPicker.currOrder.cover}" width="100%" maxDisplayedLines="1"/>
-						<s:Label text="Углы/Каптал: {techPicker.currOrder.corner_type}" width="100%" maxDisplayedLines="1"/>
-					</s:VGroup>
 					<s:VGroup gap="5" width="100%">
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Формат заказа: {techPicker.currOrder.format}" width="200"/>
-							<s:Spacer width="5"/>
-							<s:Label text="Загружен формат:" width="120" textAlign="right"/>
-							<s:DropDownList id="ddCurrFormat" width="150" enabled="false"/>
+						<s:HGroup gap="10" width="100%">
+							<s:Label text="Заказ: {techPicker.currPgId}"/>
+							<s:Label text="Тип книги: {techPicker.currBookTypeName}"/>
+							<s:Label text="Книга: {techPicker.currBookIdx.toString()}({techPicker.currBookTot.toString()})"/>
+							<s:Label text="Разворот: {techPicker.currSheetIdx.toString()}({techPicker.currSheetTot.toString()})"/>
 						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Прослойка заказа: {techPicker.currOrder.interlayer}" width="200"/>
-							<s:Spacer width="5"/>
-							<s:Label text="Шаблон прослойки:" width="120" textAlign="right"/>
-							<s:DropDownList id="ddCurrInterlayer" labelField="name" width="150" 
-											dataProvider="{techPicker.interlayerSet.layersets}" 
-											selectedItem="{techPicker.currInerlayer}"
-											changing="preventChanging(event)"/>
-						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Форзац заказа: {techPicker.currOrder.endpaper}" width="200"/>
-							<s:Spacer width="5"/>
-							<s:Label text="Шаблон форзаца:" width="120" textAlign="right"/>
-							<s:DropDownList id="ddCurrEndpaper" width="150" labelField="name" 
-											enabled="{!techPicker.isRunning || techPicker.isPaused}"
-											dataProvider="{techPicker.endpaperSet.layersets}" selectedItem="@{techPicker.currEndpaper}"/>
+						<s:HGroup gap="15" width="100%">
+							<s:VGroup gap="7" width="200">
+								<s:Label text="Тип: {techPicker.currOrder.calc_type}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Обложка: {techPicker.currOrder.cover}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Углы/Каптал: {techPicker.currOrder.corner_type}" width="100%" maxDisplayedLines="1"/>
+							</s:VGroup>
+							<s:VGroup gap="5" width="100%">
+								<s:HGroup gap="5" verticalAlign="baseline">
+									<s:Label text="Формат заказа: {techPicker.currOrder.format}" width="200"/>
+									<s:Spacer width="5"/>
+									<s:Label text="Загружен формат:" width="120" textAlign="right"/>
+									<s:DropDownList id="ddCurrFormat" width="150" enabled="false"/>
+								</s:HGroup>
+								<s:HGroup gap="5" verticalAlign="baseline">
+									<s:Label text="Прослойка заказа: {techPicker.currOrder.interlayer}" width="200"/>
+									<s:Spacer width="5"/>
+									<s:Label text="Шаблон прослойки:" width="120" textAlign="right"/>
+									<s:DropDownList id="ddCurrInterlayer" labelField="name" width="150" 
+													dataProvider="{techPicker.interlayerSet.layersets}" 
+													selectedItem="{techPicker.currInerlayer}"
+													changing="preventChanging(event)"/>
+								</s:HGroup>
+								<s:HGroup gap="5" verticalAlign="baseline">
+									<s:Label text="Форзац заказа: {techPicker.currOrder.endpaper}" width="200"/>
+									<s:Spacer width="5"/>
+									<s:Label text="Шаблон форзаца:" width="120" textAlign="right"/>
+									<s:DropDownList id="ddCurrEndpaper" width="150" labelField="name" 
+													enabled="{!techPicker.isRunning || techPicker.isPaused}"
+													dataProvider="{techPicker.endpaperSet.layersets}" selectedItem="@{techPicker.currEndpaper}"/>
+								</s:HGroup>
+							</s:VGroup>
 						</s:HGroup>
 					</s:VGroup>
 				</s:HGroup>
-			</s:VGroup>
+			</s:VGroup>	
 			<s:VGroup gap="12" paddingRight="10">
-				<s:HGroup gap="10" enabled="{Boolean(techPicker.controller)}">
+				<!--<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}">
 					<s:ToggleButton id="tgVacuum" label="Вакуум" change="{tgVacuum.selected?techPicker.controller.vacuumOn():techPicker.controller.vacuumOff()}"/>
 					<s:ToggleButton id="tgEngine" label="Мотор" change="{tgEngine.selected?techPicker.controller.engineOn():techPicker.controller.engineOff()}"/>
+				</s:HGroup>-->
+				<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}" verticalAlign="baseline" width="150">
+					<s:Label text="Вакуум"/>
+					<s:Spacer width="100%"/>
+					<s:Button label="On" width="40" click="{techPicker.controller.vacuumOn()}"/>
+					<s:Button label="Off" width="40" click="{techPicker.controller.vacuumOff()}"/>
+				</s:HGroup>
+				<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}" verticalAlign="baseline" width="150">
+					<s:Label text="Мотор"/>
+					<s:Spacer width="100%"/>
+					<s:Button label="On" width="40" click="{techPicker.controller.engineOn()}"/>
+					<s:Button label="Off" width="40" click="{techPicker.controller.engineOff()}"/>
 				</s:HGroup>
 				<s:HGroup gap="10">
 					<s:Button id="btStart" label="Старт" enabled="{!techPicker.isRunning || techPicker.isPaused}" click="techPicker.start()"/>
@@ -247,15 +263,6 @@
 				<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false" />
 			</s:VGroup>
 		</s:HGroup>
-<!--		<s:HGroup gap="10" width="100%" horizontalAlign="right">
-			<s:ToggleButton id="tgVacuum" label="Вакуум" change="{tgVacuum.selected?controller.vacuumOn():controller.vacuumOff()}"/>
-			<s:ToggleButton id="tgEngine" label="Мотор" change="{tgEngine.selected?controller.engineOn():controller.engineOff()}"/>
-			<s:Spacer width="50"/>
-			<s:Button id="btStart" label="Старт" enabled="{!techPicker.isRunning || techPicker.isPaused}" click="techPicker.start()"/>
-			<s:Button id="btPause" label="Пауза" enabled="{techPicker.isRunning}"/>
-			<s:Button id="btResume" label="Продолжить" enabled="{techPicker.isPaused}" click="techPicker.resume()"/>
-			<s:Button id="btStop" label="Стоп" click="techPicker.stop()"/>
-		</s:HGroup>-->
 	</s:VGroup>
 	
 </s:Group>

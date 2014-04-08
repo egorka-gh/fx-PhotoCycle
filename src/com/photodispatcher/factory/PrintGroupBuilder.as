@@ -73,7 +73,8 @@ package com.photodispatcher.factory{
 							//cover group
 							if(pg.height){
 								cpg.height=pg.height;
-								if(cpg.book_type==BookSynonym.BOOK_TYPE_BOOK) cpg.height+=8;
+								//бывший костыль if(cpg.book_type==BookSynonym.BOOK_TYPE_BOOK) cpg.height+=8; теперь -height_add
+								cpg.height=cpg.height+2*cpg.bookTemplate.height_add;
 								//BUGGGGG
 								//cpg.bookTemplate.sheet_len=UnitUtil.mm2Pixels300(cpg.height);
 							}

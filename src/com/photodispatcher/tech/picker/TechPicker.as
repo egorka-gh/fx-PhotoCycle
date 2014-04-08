@@ -31,6 +31,7 @@ package com.photodispatcher.tech.picker{
 	import flash.net.SharedObject;
 	import flash.text.ReturnKeyLabel;
 	import flash.utils.Timer;
+	import flash.utils.setInterval;
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
@@ -110,15 +111,29 @@ package com.photodispatcher.tech.picker{
 		public function set serialProxy(value:SerialProxy):void{
 			if(_serialProxy){
 				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
+				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
+				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0);
 			}
 			_serialProxy = value;
 			if(_serialProxy){
 				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
+				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
+				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0,false,10);
+				if(_serialProxy.isStarted) _serialProxy.connectAll();
 			}
 		}
-		
 		private function onSerialProxyStart(evt:SerialProxyEvent):void{
-			log('SerialProxy: started');
+			log('SerialProxy: started, connect to com proxies...');
+			serialProxy.connectAll();
+		}
+
+		private function onProxyConnect0(evt:SerialProxyEvent):void{
+			log('SerialProxy: connected, start devices');
+			startDevices();
+		}
+		private function onProxyErr(evt:SerialProxyEvent):void{
+			log('SerialProxy error: '+evt.error);
+			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,evt.error));
 		}
 
 		
@@ -250,8 +265,10 @@ package com.photodispatcher.tech.picker{
 			}
 			if(!prepared && alert){
 				var msg:String='';
-				if(!barcodeReaders || barcodeReaders.length==0 || !barsConnected) msg='Не инициализированы сканеры ШК';
-				if(!controller || !controller.connected) msg+='\n Не инициализирован контролер';
+				if(!barcodeReaders || barcodeReaders.length==0) msg='Не инициализированы сканеры ШК';
+				if(!barsConnected) msg='\n Не подключены сканеры ШК';
+				if(!controller) msg+='\n Не инициализирован контролер';
+				if(controller && !controller.connected) msg+='\n Не подключен контролер';
 				if(!traySet || !traySet.prepared) msg+='\n Не инициализирован набор лотков';
 				if(!interlayerSet ||!interlayerSet.prepared) msg+='\n Не инициализирован набор прослоек';
 				if(!endpaperSet || !endpaperSet.prepared) msg+='\n Не инициализирован набор форзацев';
@@ -378,6 +395,7 @@ package com.photodispatcher.tech.picker{
 				for each(barReader in _barcodeReaders){
 					barReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 					barReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
+					barReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
 					barReader.stop();
 				}
 			}
@@ -386,6 +404,7 @@ package com.photodispatcher.tech.picker{
 				for each(barReader in _barcodeReaders){
 					barReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 					barReader.addEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
+					barReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
 				}
 			}
 			checkPrepared();
@@ -399,6 +418,7 @@ package com.photodispatcher.tech.picker{
 		public function set controller(value:ValveController):void{
 			if(_controller){
 				_controller.removeEventListener(ErrorEvent.ERROR, onControllerErr);
+				_controller.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
 				_controller.removeEventListener(Event.COMPLETE, onControllerCommandComplite);
 				_controller.removeEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 			}
@@ -406,11 +426,18 @@ package com.photodispatcher.tech.picker{
 			if(_controller){
 				_controller.logger=logger;
 				_controller.addEventListener(ErrorEvent.ERROR, onControllerErr);
+				_controller.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
 				_controller.addEventListener(Event.COMPLETE, onControllerCommandComplite);
 				_controller.addEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 			}
 			checkPrepared();
 		}
+		
+		private function onControllerDisconnect(event:BarCodeEvent):void{
+			log('Отключен контролер '+event.barcode);
+			//pause('Отключен контролер '+event.barcode); busy bug
+		}
+
 
 		private var _register:TechRegisterPicker;
 		public function get register():TechRegisterPicker{
@@ -490,21 +517,20 @@ package com.photodispatcher.tech.picker{
 
 		public function start():void{
 			if(!serialProxy) return;
+			log('Start');
 			if(!serialProxy.isStarted){
 				log('SerialProxy not started...');
 				return;
 			}
 			//connect
 			serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
-			serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr); //global listener??
 			serialProxy.connectAll();
 		}
 		
 		private function onProxyConnect(evt:SerialProxyEvent):void{
-			log('SerialProxy: connected to com proxies');
+			log('SerialProxy: connected to com proxies (start)');
 			serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
-			serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr); 
-			startDevices()
+			//startDevices()
 			startInternal();
 		}
 		private function startDevices():void{
@@ -527,12 +553,6 @@ package com.photodispatcher.tech.picker{
 			if (barcodeReaders){
 				for each(barReader in barcodeReaders) barReader.start();
 			}
-		}
-		private function onProxyErr(evt:SerialProxyEvent):void{
-			serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
-			serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
-			log('SerialProxy: connect to com proxy error: '+evt.error);
-			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,evt.error));
 		}
 
 		protected function startInternal():void{
@@ -585,7 +605,10 @@ package com.photodispatcher.tech.picker{
 		private function pause(alert:String, isError:Boolean=true):void{
 			if(!isRunning) return;
 			if(isPaused) return;
-			if(isServiceGroup(currentGroup)) return;
+			if(currentGroup==COMMAND_GROUP_STOP || currentGroup==COMMAND_GROUP_PAUSE){
+				log('service sequence: '+alert);
+				return;
+			}
 			hasPauseRequest=false;
 			log('pause sequence: '+alert);
 			if(!isServiceGroup(currentGroup)){
@@ -933,7 +956,7 @@ package com.photodispatcher.tech.picker{
 				case PickerLatch.TYPE_ACL:
 					if(isServiceGroup(currentGroup)){
 						//skip
-						//log('ACL Timeout - reset');
+						//log('ACL Timeout - skipped (service group)');
 						l.reset();
 						checkLatches();
 						break;
@@ -1130,10 +1153,14 @@ package com.photodispatcher.tech.picker{
 			//check sequence
 			registerLatch.setOn();
 			register.register(bookNum,pageNum);
-			barLatch.forward();
+			//barLatch.forward();
 		}
 		private function onBarError(event:BarCodeEvent):void{
 			pause('Ошибка сканера ШК: '+event.error);
+		}
+		private function onBarDisconnect(event:BarCodeEvent):void{
+			log('Отключен сканер ШК '+event.barcode);
+			//pause('Отключен сканер ШК '+event.barcode); busy bug
 		}
 
 		private function onRegisterErr(event:ErrorEvent):void{
@@ -1143,6 +1170,7 @@ package com.photodispatcher.tech.picker{
 			currBookIdx=register.currentBook;
 			currSheetIdx=register.currentSheet;
 			registerLatch.forward();
+			barLatch.forward();
 		}
 		private function log(msg:String):void{
 			if(logger) logger.log(msg);

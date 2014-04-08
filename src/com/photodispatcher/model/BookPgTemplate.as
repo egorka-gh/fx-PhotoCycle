@@ -16,6 +16,8 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var height:int;
 		[Bindable]
+		public var height_add:int;
+		[Bindable]
 		public var paper:int=0;
 		[Bindable]
 		public var frame:int=0;
@@ -115,6 +117,7 @@ package com.photodispatcher.model{
 			raw.book_part=book_part;
 			raw.width=width;
 			raw.height=height;
+			raw.height_add=height_add;
 			raw.paper=paper;
 			raw.frame=frame;
 			raw.correction=correction;
@@ -153,6 +156,7 @@ package com.photodispatcher.model{
 			pgt.book_part=raw.book_part;
 			pgt.width=raw.width;
 			pgt.height=raw.height;
+			pgt.height_add=raw.height_add;
 			pgt.paper=raw.paper;
 			pgt.frame=raw.frame;
 			pgt.correction=raw.correction;
