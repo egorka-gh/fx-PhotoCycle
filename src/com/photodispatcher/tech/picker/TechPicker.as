@@ -396,7 +396,7 @@ package com.photodispatcher.tech.picker{
 					barReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 					barReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
 					barReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
-					barReader.stop();
+					//barReader.stop();
 				}
 			}
 			_barcodeReaders = value;
@@ -407,7 +407,7 @@ package com.photodispatcher.tech.picker{
 					barReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
 				}
 			}
-			checkPrepared();
+			//checkPrepared();
 		}
 
 		private var _controller:ValveController;
@@ -430,7 +430,7 @@ package com.photodispatcher.tech.picker{
 				_controller.addEventListener(Event.COMPLETE, onControllerCommandComplite);
 				_controller.addEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 			}
-			checkPrepared();
+			//checkPrepared();
 		}
 		
 		private function onControllerDisconnect(event:BarCodeEvent):void{
@@ -539,20 +539,22 @@ package com.photodispatcher.tech.picker{
 			if(!controller) controller= new ValveController();
 			controller.start(proxy);
 
-			var barReader:ComReader;
-			var newBarcodeReaders:Array=[];
+			//var barReader:ComReader;
 			var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
-			if(readers){
-				for each (proxy in readers){
-					barReader= new ComReader(500);
-					barReader.comPort=proxy;
-					newBarcodeReaders.push(barReader);
-				}
+			if(!readers || readers.length==0) return;
+			var i:int;
+			if(!barcodeReaders){
+				//init bar readers
+				var newBarcodeReaders:Array=[];
+				for (i=0; i<readers.length; i++) newBarcodeReaders.push(new ComReader(500));
+				barcodeReaders=newBarcodeReaders;
 			}
-			barcodeReaders=newBarcodeReaders;
-			if (barcodeReaders){
-				for each(barReader in barcodeReaders) barReader.start();
+			if(readers.length!=barcodeReaders.length){
+				barcodeReaders=null;
+				return;
 			}
+			//start readers
+			for (i=0; i<readers.length; i++) (barcodeReaders[i] as ComReader).start(readers[i]);
 		}
 
 		protected function startInternal():void{

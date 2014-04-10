@@ -39,7 +39,7 @@ package com.photodispatcher.service.barcode{
 				_comPort.removeEventListener(Event.CONNECT, onComConnect);
 				_comPort.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onComErr);
 				_comPort.removeEventListener(SerialProxyEvent.SERIAL_PROXY_DATA, onComData);
-				_comPort.close();
+				//_comPort.close();
 			}
 			_comPort = value;
 			if(_comPort){

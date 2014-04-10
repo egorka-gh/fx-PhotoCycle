@@ -26,7 +26,7 @@ package com.photodispatcher.service.barcode{
 		}
 
 		public function get comCaption():String{
-			return (comInfo?comInfo.label:'');
+			return (comInfo?comInfo.label:'COM?');
 		}
 
 		public function get sufix():uint{
@@ -129,6 +129,11 @@ package com.photodispatcher.service.barcode{
 				socket.readUTFBytes(socket.bytesAvailable);
 			}
 		}
-
+		
+		override public function toString():String{
+			return 'Socket2Com: '+comCaption;
+		}
+		
+		
 	}
 }
