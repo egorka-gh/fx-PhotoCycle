@@ -247,7 +247,7 @@
 		<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
 		<s:Image source="{IMRuner.isRunning?'assets/imgProcRun.png':'assets/imgProc.png'}" width="24" height="24" toolTip="Обработка в IM"/>
 		<s:Group width="5">
-			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
+			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000" toolTip="{BaseDAO.lastErrMsg}"/>
 		</s:Group>
 		<s:Spacer width="100%"/>
 		<s:Button label="Настройки" includeIn="monitor" click="button1_clickHandler(event)"/>

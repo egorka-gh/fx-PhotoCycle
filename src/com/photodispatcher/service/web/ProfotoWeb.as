@@ -167,6 +167,7 @@ package com.photodispatcher.service.web{
 			if(!is_preload){
 				//complited
 				endSync();
+				return;
 			}
 			is_preload=preloadStates.length>0;
 			if(is_preload){

@@ -27,7 +27,7 @@
 
 			private var mode:String=SQLMode.UPDATE;
 			private var optimizeBD:Boolean=false;
-			public function chekConnect(mode:String=SQLMode.UPDATE,optimizeBD:Boolean=true):void{
+			public function chekConnect(mode:String=SQLMode.UPDATE,optimizeBD:Boolean=false):void{
 				this.mode=mode;
 				this.optimizeBD=optimizeBD;
 				reConnect();
@@ -252,7 +252,7 @@
 	
 	<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
 		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="База данных"/>
+			<s:Label text="База данных (data)"/>
 			<s:TextInput id="tiBDPath" width="300" enabled="false"/>
 			<s:Button id="btBrowse" label="..." width="30"
 					  click="btBrowse_clickHandler(event)"/>

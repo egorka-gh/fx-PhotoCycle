@@ -40,16 +40,12 @@ package com.photodispatcher.factory{
 		 * trows ERR_READ_LOCK
 		 */
 		public function build(source:Source, map:Dictionary, orderId:String):Array{
-			//var dicDAO:DictionaryDAO=new DictionaryDAO();
-			//var synonymDAO:PrintGroupSynonymDAO= new PrintGroupSynonymDAO();
-			//var synonymDAO:BookSynonymDAO= new BookSynonymDAO();
 			var pg:PrintGroup;
 			var cpg:PrintGroup;
 			var fpg:PrintGroup;
 			var pgf:PrintGroupFile;
 			var o:Object;
 			var af:Array;
-			//var apg:Array;
 			var bookSynonym:BookSynonym;
 			var resultMap:Object=new Object;
 			

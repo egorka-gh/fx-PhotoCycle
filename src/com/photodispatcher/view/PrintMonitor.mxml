@@ -8,6 +8,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
@@ -15,9 +16,12 @@
 			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
+			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 
 			private var _modePrinted:Boolean;
@@ -65,6 +69,8 @@
 				var os:OrderState=new OrderState(); os.id=0; os.name='-';
 				a.unshift(os);
 				statesFilterList.source=a;
+				var idx:int=ArrayUtil.searchItemIdx('id',OrderState.PRN_PRINT,a);
+				if(idx!=-1 && ddStateFilter) ddStateFilter.selectedIndex=idx; 
 
 				Context.initAttributeLists();
 				paperFilterList=Context.getAttribute('paperList');
@@ -73,6 +79,12 @@
 				refresh();
 				pgList.filterFunction=filterPGList;
 				pgList.refresh();
+				
+				PrintQueueManager.instance.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
+			}
+			
+			private function onManagerError(e:PrintEvent):void{
+				Alert.show(e.errMsg);
 			}
 
 			public function refresh():void{
@@ -125,7 +137,47 @@
 			}
 			
 			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
+				//createContextMenu();
+			}
+			
+			private function createContextMenu(full:Boolean=false):void{
 				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER]);
+				if(!full) return;
+				gridMenu.addItem('Отменить печать',cancelPrintCallBack);
+				gridMenu.addItem('Напечатан',setPrintedCallBack);
+			}
+
+			private function cancelPrintCallBack(grid:DataGrid,param:int):void{
+				if (PrintQueueManager.instance.isBusy){
+					Alert.show('Не завершена предыдущая операция. Повторите отмену позже.');
+					return;
+				}
+				var a:Array=[];
+				var pg:PrintGroup;
+				for each(var o:Object in grid.selectedItems){
+					pg= o as PrintGroup;
+					if(pg && pg.state==OrderState.PRN_PRINT){
+						a.push(pg);
+					}
+				}
+				if(a.length>0){
+					PrintQueueManager.instance.cancelPost(a);
+				}
+			}
+			
+			private function setPrintedCallBack(grid:DataGrid,param:int):void{
+				var a:Array=[];
+				var pg:PrintGroup;
+				for each(var o:Object in grid.selectedItems){
+					pg= o as PrintGroup;
+					if(pg && pg.state==OrderState.PRN_PRINT){
+						pg.state=OrderState.PRN_COMPLETE;
+						a.push(pg);
+					}
+				}
+				if(a.length>0){
+					PrintQueueManager.instance.savePrintState(a);
+				}
 			}
 
 			protected function dfDateFilter_creationCompleteHandler(event:FlexEvent):void{
@@ -137,8 +189,8 @@
 	</fx:Script>
 
 	<s:states>
-		<s:State name="inPrint"/>
-		<s:State name="printed"/>
+		<s:State name="inPrint" enterState="{createContextMenu(true)}"/>
+		<s:State name="printed" enterState="{createContextMenu()}"/>
 	</s:states>
 
 	<s:HGroup gap="10" width="100%" height="100%">

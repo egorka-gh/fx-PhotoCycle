@@ -103,7 +103,8 @@ package com.photodispatcher.provider.ftp{
 			//connect timeout
 			startIdleTimer(CONNECT_TIMEOUT);
 			//run ftp sess
-			ftpClient.connect(source.ftpService.url, FTP_PORT);				
+			ftpClient.connect(source.ftpService.url, FTP_PORT);
+			trace('FtpTask: attempt to connect '+source.ftpService.url);
 		}
 
 		private var _abort:Boolean=false;
@@ -138,7 +139,10 @@ package com.photodispatcher.provider.ftp{
 		
 		//Функция вызываемая при установлении связи в сервером
 		private function handleConnected (evt:FTPEvent):void{
+			trace('FtpTask: connected, attempt to login '+source.ftpService.url);
 			stopIdleTimer();
+			//login timeout
+			startIdleTimer(CONNECT_TIMEOUT);
 			ftpClient.removeEventListener(FTPEvent.CONNECTED, handleConnected);
 			ftpClient.addEventListener(FTPEvent.LOGGED, handleLogged);
 			if(source && source.ftpService && source.ftpService.user){ 
@@ -240,6 +244,44 @@ package com.photodispatcher.provider.ftp{
 				startIdleTimer();
 				dispatchEvent(e);
 			}
+		}
+
+		public function listFolder(folder:String=''):void{
+			_abort=false;
+			stopIdleTimer();
+			if(!isConnected){
+				//dispatchEvent(new FTPEvent(FTPEvent.DISCONNECTED));
+				dispatchErr('FtpTask. Disconnected');
+				return;
+			}
+			ftpClient.addEventListener(FTPEvent.LISTING, handleSimpleListing);
+			trace('FtpTask list folder :' +folder);
+			ftpClient.list(folder);	
+		}
+
+		private function handleSimpleListing(evt:FTPEvent):void {
+			ftpClient.removeEventListener(FTPEvent.LISTING, handleSimpleListing);
+			if(_abort){
+				startIdleTimer();
+				dispatchEvent(new FTPEvent(FTPEvent.PAUSE));
+				return;
+			}
+			var lst:Array=[];
+			var fl:FTPFile;
+			if(evt.listing){
+				for each(var o:* in evt.listing){
+					fl=(o as FTPFile);
+					if(fl && fl.name!='..'){//skip parent dir
+						//if(fl._isDir)
+						lst.push(fl);
+					}
+				}
+			}
+				
+			var e:FTPEvent=new FTPEvent(FTPEvent.SCAN_DIR);
+			e.listing=lst;
+			startIdleTimer();
+			dispatchEvent(e);
 		}
 
 		private function dispatchErr(errMsg:String):void{
@@ -346,7 +388,7 @@ package com.photodispatcher.provider.ftp{
 		
 		private var idleTimer:Timer;
 		private function startIdleTimer(timeout:int=IDLE_TIMEOUT):void{
-			trace('ftpTsk startIdleTimer '+timeout.toString());
+			//trace('ftpTsk startIdleTimer '+timeout.toString());
 			if(!idleTimer){
 				idleTimer= new Timer(timeout,1);
 				idleTimer.addEventListener(TimerEvent.TIMER, onIdleTimer);
@@ -358,7 +400,7 @@ package com.photodispatcher.provider.ftp{
 			idleTimer.start();
 		}
 		private function stopIdleTimer():void{
-			trace('ftpTsk stopIdleTimer');
+			//trace('ftpTsk stopIdleTimer');
 			if(idleTimer){
 				idleTimer.stop();
 				idleTimer.reset();

@@ -1,4 +1,5 @@
 package com.photodispatcher.print{
+	import com.photodispatcher.model.LabDevice;
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.LabRoll;
 	import com.photodispatcher.model.PrintGroup;
@@ -76,7 +77,20 @@ package com.photodispatcher.print{
 				refreshLate();
 				return;
 			}
-			//read complited
+			//set device last pg
+			var dev:LabDevice;
+			if(lab.devices){
+				for each(dev in lab.devices){
+					if(!dev.refresh()){
+						//read lock
+						refreshLate();
+						return;
+					}
+					dev.setRollByChanel(lab.printChannel(dev.lastPG));
+					dev.setCurrentBusyTime(pgs);
+				}
+			}
+			//reads complited
 			queueOrders=0;
 			queuePGs=0;
 			queuePrints=0;

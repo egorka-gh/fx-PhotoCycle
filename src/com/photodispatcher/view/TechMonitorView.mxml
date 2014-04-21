@@ -7,6 +7,7 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechLog;
@@ -86,6 +87,8 @@
 				switch(techPoint.tech_type){
 					case SourceType.TECH_PRINT:
 						result= new TechRegisterPrint(printGroup,books,sheets);
+						var dao:PrintGroupDAO= new PrintGroupDAO();
+						dao.setState(printGroup,OrderState.PRN_INPRINT);
 						break;
 					case SourceType.TECH_FOLDING:
 						result= new TechRegisterFolding(printGroup,books,sheets);

@@ -202,8 +202,8 @@ package com.photodispatcher.view.menu{
 			}
 			if(canceled.length>0){
 				var dao:OrderDAO=new OrderDAO();
-				dao.setStateBatch(OrderState.CANCELED,orderIds);
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCancel);
+				dao.setStateBatch(OrderState.CANCELED,orderIds);
 			}
 		}
 		private function onCancel(e:AsyncSQLEvent):void{

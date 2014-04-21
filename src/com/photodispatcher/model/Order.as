@@ -80,6 +80,7 @@ package com.photodispatcher.model{
 		public var src_id:String;
 		[Bindable]
 		public var src_date:Date=new Date();
+		public var data_ts:String;
 		[Bindable]
 		public var ftp_folder:String;
 		[Bindable]

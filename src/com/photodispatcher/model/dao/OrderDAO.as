@@ -380,8 +380,8 @@ package com.photodispatcher.model.dao{
 
 			
 			//set order state
-			sql='UPDATE orders SET state = ?, state_date = ? WHERE id = ?';
-			params=[order.state, dt, order.id];
+			sql='UPDATE orders SET state = ?, state_date = ?, data_ts = ? WHERE id = ?';
+			params=[order.state, dt, order.data_ts, order.id];
 			sequence.push(prepareStatement(sql,params));
 
 			//log order state
@@ -487,8 +487,8 @@ package com.photodispatcher.model.dao{
 			sql='UPDATE tmp_orders SET is_new=IFNULL((SELECT 0 FROM orders WHERE orders.id=tmp_orders.id),1)';
 			sequence.push(prepareStatement(sql));
 			//isert new
-			sql='INSERT INTO orders (id, source, src_id, src_date, state, state_date, ftp_folder, fotos_num, sync, is_preload)' +
-				' SELECT id, source, src_id, src_date, state, state_date, ftp_folder, fotos_num, sync, is_preload' +
+			sql='INSERT INTO orders (id, source, src_id, src_date, state, state_date, ftp_folder, fotos_num, sync, is_preload, data_ts)' +
+				' SELECT id, source, src_id, src_date, state, state_date, ftp_folder, fotos_num, sync, is_preload, data_ts' +
 			  	  ' FROM tmp_orders WHERE is_new=1';
 			sequence.push(prepareStatement(sql));
 			//log state
@@ -542,6 +542,42 @@ package com.photodispatcher.model.dao{
 			params.push(OrderState.PRN_WAITE);
 			params.push(source.sync);
 			sequence.push(prepareStatement(sql,params));
+			
+			//finde reload candidate by project data time
+			sql='UPDATE tmp_orders SET reload=1 WHERE data_ts IS NOT NULL AND EXISTS(SELECT 1 FROM orders WHERE orders.id=tmp_orders.id AND orders.data_ts IS NOT NULL AND orders.data_ts!=tmp_orders.data_ts AND orders.state BETWEEN ? AND ?)';
+			params=[OrderState.PRN_WAITE_ORDER_STATE, OrderState.PRN_WAITE];
+			sequence.push(prepareStatement(sql,params));
+			//clean orders 4 reload
+			//clean files
+			sql='DELETE FROM print_group_file WHERE print_group IN (SELECT pg.id FROM tmp_orders t INNER JOIN print_group pg ON pg.order_id=t.id WHERE t.reload=1)';
+			sequence.push(prepareStatement(sql));
+			//clean print_group
+			sql='DELETE FROM print_group WHERE order_id IN (SELECT id FROM tmp_orders t WHERE t.reload=1)';
+			sequence.push(prepareStatement(sql));
+			//clean order extra_info
+			sql='DELETE FROM order_extra_info WHERE id IN (SELECT id FROM tmp_orders t WHERE t.reload=1)';
+			sequence.push(prepareStatement(sql));
+			//clean suborder extra_info
+			sql='DELETE FROM order_extra_info WHERE id IN (SELECT so.id FROM tmp_orders t INNER JOIN suborders so ON so.order_id=t.id WHERE t.reload=1)';
+			sequence.push(prepareStatement(sql));
+			//clean suborder
+			sql='DELETE FROM suborders WHERE order_id IN (SELECT id FROM tmp_orders t WHERE t.reload=1)';
+			sequence.push(prepareStatement(sql));
+			//reset order state
+			sql='UPDATE orders SET state = ?, state_date = ? WHERE id IN (SELECT id FROM tmp_orders t WHERE t.reload=1)';
+			params=[OrderState.WAITE_FTP, new Date()];
+			sequence.push(prepareStatement(sql,params));
+			//log
+			sql='INSERT INTO state_log (order_id, state, state_date, comment)' +
+				' SELECT id, ?, ?, ?  FROM tmp_orders t WHERE t.reload=1';
+			params=[OrderState.WAITE_FTP, new Date(), 'перезагрузка, заказ изменен на сайте'];
+			sequence.push(prepareStatement(sql,params));
+						
+			//set project data time 
+			sql="UPDATE orders SET data_ts=(SELECT tt.data_ts FROM tmp_orders tt WHERE tt.id=orders.id)" + 
+				" WHERE EXISTS (SELECT 1 FROM tmp_orders t WHERE t.id=orders.id AND t.data_ts IS NOT NULL AND t.is_new!=1 AND t.data_ts!=ifnull(orders.data_ts,''))";
+			sequence.push(prepareStatement(sql));
+			
 
 			//addEventListener(SqlSequenceEvent.SQL_SEQUENCE_EVENT, onSyncComplite);
 			executeSequence(sequence);

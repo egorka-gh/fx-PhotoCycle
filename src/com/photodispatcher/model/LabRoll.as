@@ -18,6 +18,8 @@ package com.photodispatcher.model{
 		public var len_std:int;
 		[Bindable]
 		public var len:int;
+		
+		//run time
 		[Bindable]
 		public var is_online:Boolean;
 		
@@ -62,6 +64,7 @@ package com.photodispatcher.model{
 			result.lab_device=lab_device;
 			result.paper=paper;
 			result.width=width;
+			result.speed=speed;
 			result.paper_name=paper_name;
 			result.len_std=len_std;
 			result.len=len;

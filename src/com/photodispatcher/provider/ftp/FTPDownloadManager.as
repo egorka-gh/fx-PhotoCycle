@@ -185,7 +185,7 @@ package com.photodispatcher.provider.ftp{
 						//stop
 						stopDownload(order.id);
 						//reset listing
-						if(listApplicant.id==order.id) listApplicant=null;
+						if(listApplicant && listApplicant.id==order.id) listApplicant=null;
 					}
 				}
 			}

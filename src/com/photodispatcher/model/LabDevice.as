@@ -1,6 +1,7 @@
 package com.photodispatcher.model{
 	import com.photodispatcher.model.dao.LabRollDAO;
 	import com.photodispatcher.model.dao.LabTimetableDAO;
+	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.print.LabBase;
 	import com.photodispatcher.util.ArrayUtil;
 
@@ -19,6 +20,7 @@ package com.photodispatcher.model{
 		public var speed1:Number=0.0;
 		[Bindable]
 		public var speed2:Number=0.0;
+		
 		
 		public var queue_limit:int;
 
@@ -63,9 +65,105 @@ package com.photodispatcher.model{
 			if(!loaded) return _rolls;
 			var dao:LabRollDAO=new LabRollDAO();
 			_rolls=dao.getByDevice(id,forEdit,silent);
+			//set speed
+			if(_rolls){
+				var roll:LabRoll;
+				for each(roll in rolls){
+					roll.is_online=false;//reset if persisted
+					roll.speed=roll.width<203?speed1:speed2;
+				}
+			}
 			return _rolls;
 		}
 		
+		//run time
+		private var _currentBusyTime:int=0;//sek
+		/**
+		 * время на печать текущей группы печати
+		 * @return  сек
+		 * 
+		 */		
+		public function get currentBusyTime():int{
+			return _currentBusyTime;
+		}
+		public function setCurrentBusyTime(queue:Array):void{
+			_currentBusyTime=0;
+			if(!queue || !lastPG || !lastRool) return;
+			var pg:PrintGroup=ArrayUtil.searchItem('id', lastPG.id,queue) as PrintGroup;
+			if(pg){
+				var height:int=(pg.width==lastRool.width)?pg.height:pg.width;
+				_currentBusyTime=height*(pg.prints-pg.prints_done)/lastRool.speed;
+			}
+		}
+	
+		/**
+		 * доступное рабочее время до отключения
+		 * @return сек  
+		 * 
+		 */		
+		public function get maxAvailableTime():int{
+			return timeToOff()*60-currentBusyTime;
+		}
+		
+		private var _lastPG:PrintGroup;
+		public function get lastPG():PrintGroup{
+			return _lastPG;
+		}
+
+		private var _lastRoll:LabRoll;
+		public function get lastRool():LabRoll{
+			return _lastRoll;
+		}
+		
+		public function refresh():Boolean{
+			if(!tech_point){
+				_lastPG=null;
+				return true;
+			}
+			var result:Boolean=true;
+			var pg:PrintGroup;
+			var dao:PrintGroupDAO= new PrintGroupDAO();
+			try{
+				pg=dao.lastByTechPoint(tech_point);
+				//check if new print goup - reset online rolls (reset manul settings)
+				if((! _lastPG && pg) || ( _lastPG && pg && _lastPG.id != pg.id)) resetOnlineRolls();
+				_lastPG=pg;
+			} catch(error:Error){
+				return false;
+			}	
+			return true;
+		}
+		
+		private function resetOnlineRolls():void{
+			if(rolls){
+				var roll:LabRoll;
+				for each(roll in rolls) roll.is_online=false;
+			}
+		}
+		
+		private function hasOnlineRolls():Boolean{
+			if(!rolls) return false;
+			var roll:LabRoll;
+			for each(roll in rolls){
+				if(roll.is_online) return true;
+			}
+			return false;
+		}
+
+		public function setRollByChanel(byChanel:LabPrintCode):LabRoll{
+			_lastRoll=null;
+			if(!byChanel || !rolls) return null;
+			var roll:LabRoll;
+			for each(roll in rolls){
+				if(roll.width==byChanel.roll && roll.paper==byChanel.paper){
+					_lastRoll=roll;
+					if(!hasOnlineRolls()) _lastRoll.is_online=true; //no manual online rolls
+					break;
+				}
+			}
+			return _lastRoll;
+		}
+
 		public function checkTimeTable():Boolean{
 			if(!_timetable) getTimetable(true);
 			if(!_timetable){

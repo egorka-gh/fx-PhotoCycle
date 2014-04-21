@@ -4,8 +4,11 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
+	
+	import pl.maliboo.ftp.FTPFile;
 
 	public class FotoknigaWeb extends BaseWeb{
 		public static const URL_API:String='api.php';
@@ -70,7 +73,10 @@ package com.photodispatcher.service.web{
 			var post:Object;
 			if(!is_preload){
 				//complited
-				endSync();
+				//endSync();
+				//list ftp
+				listFtp();
+				return;
 			}
 			is_preload=preloadStates.length>0;
 			if(is_preload){
@@ -86,6 +92,37 @@ package com.photodispatcher.service.web{
 			client.getData( new InvokerUrl(baseUrl+URL_API),post);
 		}
 
+		private function listFtp():void{
+			var ftp:FTPList= new FTPList(source);
+			ftp.addEventListener(Event.COMPLETE, onFtpList);
+			trace('Web sync list ftp: '+ source.ftpService.url)
+			ftp.list();
+		}
+		
+		private function onFtpList(evt:Event):void{
+			var ftp:FTPList=evt.target as FTPList;
+			var listing:Array;
+			if(ftp){
+				ftp.removeEventListener(Event.COMPLETE, onFtpList);
+				if(ftp.hasError){
+					abort('Ошибка : '+ftp.errMesage);
+					return;
+				}
+				listing=ftp.listing;
+			}
+			if(orderes && orderes.length>0 && listing && listing.length>0){
+				var obj:Object;
+				var ftpfile:FTPFile;
+				for each (obj in orderes){
+					if(obj && obj.hasOwnProperty('ftp_folder')){
+						ftpfile=ArrayUtil.searchItem('name',obj.ftp_folder,listing) as FTPFile;
+						if(ftpfile) obj.data_ts=ftpfile.date;
+					}
+				}
+			}
+			endSync();
+		}
+		
 		private var _getOrder:Order;
 		override public function get lastOrderId():String{
 			return _getOrder?_getOrder.id:'';

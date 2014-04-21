@@ -12,6 +12,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
+	import com.photodispatcher.model.dao.BaseDAO;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.preprocess.CaptionSetter;
@@ -248,11 +249,18 @@ package com.photodispatcher.provider.ftp{
 				writeOrdersList.refresh();
 				writeNext();
 			}else{
-				trace('FtpManager write locked '+ order.id);
-				isWriting=false;
+				trace('FtpManager write err '+ order.id+'; err: '+BaseDAO.lastErrMsg);
 				order.state=OrderState.ERR_WRITE_LOCK;
-				//writeOrders.push(writeOrder);
-				//writeOrder=null;
+				if (BaseDAO.lastErr==3119){
+					//write lock
+					isWriting=false;
+				}else{
+					//sql err
+					StateLogDAO.logState(OrderState.ERR_WRITE_LOCK,order.id, '','FtpManager write err '+ order.id+'; err: '+BaseDAO.lastErrMsg);
+					writeOrders.shift();
+					writeOrdersList.refresh();
+					writeNext();
+				}
 			}
 			dispatchEvent(new Event('processingLenthChange'));
 		}

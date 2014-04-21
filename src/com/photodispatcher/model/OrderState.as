@@ -15,6 +15,7 @@ package com.photodispatcher.model{
 		public static const ERR_GET_PROJECT:int=-318;//22.05.2013
 		
 		//flow state
+		//public static const FTP_RELOAD:int=95;
 		public static const WAITE_FTP:int=100;
 		public static const FTP_FORWARD:int=101;
 		public static const FTP_WEB_CHECK:int=105;
@@ -41,6 +42,7 @@ package com.photodispatcher.model{
 		public static const PRN_CANCEL:int=215;
 		public static const PRN_POST_FORWARD:int=220;
 		public static const PRN_PRINT:int=250;
+		public static const PRN_INPRINT:int=255;
 		public static const PRN_COMPLETE:int=300;
 		public static const CANCELED_OLD:int=310;
 		public static const TECH_FOLDING:int=320;

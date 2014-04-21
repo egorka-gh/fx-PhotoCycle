@@ -82,6 +82,8 @@ package com.photodispatcher.model.dao{
 		}
 
 		public function saveOnlineState(item:LabRoll, saveLen:Boolean=false):void{
+			//is_online - neve persists it, used only at runtime
+			/*
 			var sql:String;
 			if(!saveLen){
 				sql='UPDATE config.lab_rolls SET is_online=? WHERE lab_device=? AND width=? AND paper=?';
@@ -90,6 +92,7 @@ package com.photodispatcher.model.dao{
 				sql='UPDATE config.lab_rolls SET is_online=?, len=? WHERE lab_device=? AND width=? AND paper=?';
 				execute(sql,[item.is_online?1:0, item.len, item.lab_device, item.width, item.paper]);
 			}
+			*/
 		}
 
 		override protected function processRow(o:Object):Object{

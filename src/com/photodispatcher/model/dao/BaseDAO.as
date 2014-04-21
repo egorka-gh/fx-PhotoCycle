@@ -198,7 +198,7 @@ package com.photodispatcher.model.dao{
 			nextSequenceItem();
 		}
 		
-		private static var lastErr:int;
+		public static var lastErr:int;
 		[Bindable]
 		public static var lastErrMsg:String='';
 		private static function seqItemError(evt:SQLErrorEvent):void{
@@ -209,7 +209,7 @@ package com.photodispatcher.model.dao{
 			trace('baseDao sequenceStatement '+sequenceIdx.toString() +' error. dao: '+getCurrentUnit().dao.toString()+' err:'+evt.error.message);
 			//add listener
 			lastErr=evt.errorID;
-			lastErrMsg=evt.error.message;
+			lastErrMsg=evt.error.message+'; SQL: '+stmt.text;
 			connection.addEventListener(SQLEvent.ROLLBACK, onRollback);
 			connection.addEventListener(SQLErrorEvent.ERROR, onRollbackErr);
 			if(connection.inTransaction){
@@ -401,7 +401,6 @@ package com.photodispatcher.model.dao{
 				}
 			}
 			try{
-				//sqlConnection.begin(SQLTransactionLockType.IMMEDIATE);
 				stmt.execute();
 			}catch(err:SQLError){
 				lastResult=null;
@@ -412,22 +411,8 @@ package com.photodispatcher.model.dao{
 					trace('BaseDAO.runSelect lock error; sql: '+stmt.text)
 					if(!silent) Alert.show('Ошибка чтения данных. Данные блокированы другим процессом. Повторите попытку попозже. sql: '+stmt.text);
 				}
-				/*
-				if(sqlConnection.inTransaction){
-					try{
-						sqlConnection.rollback();
-					}catch(err:Error){}
-				}
-				*/
 				return false;
 			}
-			/*
-			if(sqlConnection.inTransaction){
-				try{
-					sqlConnection.commit();
-				}catch(err:SQLError){}
-			}
-			*/
 			var result:Array = stmt.getResult().data;
 			if (result == null) result=[];
 			if (pageSize != 0){
@@ -542,12 +527,14 @@ package com.photodispatcher.model.dao{
 				" source     INTEGER        DEFAULT ( 0 )," +
 				" src_id     VARCHAR( 50 )  DEFAULT ( ' ' )," +
 				" src_date   DATETIME," +
+				" data_ts    VARCHAR2(20),"+
 				" state      INT            DEFAULT ( 100 )," +
 				" state_max  INT            DEFAULT ( 0 )," +
 				" state_date DATETIME," +
 				" ftp_folder VARCHAR( 50 )," +
 				" fotos_num  INTEGER( 5 )," +
 				" sync       INTEGER," +
+				" reload     INTEGER( 3 )   DEFAULT ( 0 )," +
 				" is_new     INTEGER( 3 )   DEFAULT ( 0 )," +
 				" is_preload INTEGER( 1 )   DEFAULT ( 0 )" +  
 				")";
