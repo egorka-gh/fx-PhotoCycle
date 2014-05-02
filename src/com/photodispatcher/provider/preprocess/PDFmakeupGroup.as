@@ -573,6 +573,8 @@ package com.photodispatcher.provider.preprocess{
 
 		private function annotateCommand(command:IMCommand,file:PrintGroupFile):void{
 			if(!command || !file) return;
+			var strOff:String=printGroup.bookTemplate.font_offset;
+			if(!strOff) strOff=TEXT_OFFSET;
 			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,printGroup.annotateText(file),TEXT_OFFSET);
 		}
 

@@ -206,7 +206,7 @@ package com.photodispatcher.model.dao{
 			stmt.removeEventListener(SQLEvent.RESULT, seqItemResult);
 			stmt.removeEventListener(SQLErrorEvent.ERROR, seqItemError);
 
-			trace('baseDao sequenceStatement '+sequenceIdx.toString() +' error. dao: '+getCurrentUnit().dao.toString()+' err:'+evt.error.message);
+			trace('baseDao sequenceStatement '+sequenceIdx.toString() +' error. dao: '+getCurrentUnit().dao.toString()+' err:'+evt.error.message+'; SQL: '+stmt.text);
 			//add listener
 			lastErr=evt.errorID;
 			lastErrMsg=evt.error.message+'; SQL: '+stmt.text;
@@ -390,7 +390,7 @@ package com.photodispatcher.model.dao{
 		 * @return true on success
 		 * 
 		 */
-		protected function runSelect(sql:String, params:Array=null, silent:Boolean=false, startRow:int=0, pageSize:int=0):Boolean{
+		public function runSelect(sql:String, params:Array=null, silent:Boolean=false, startRow:int=0, pageSize:int=0):Boolean{
 			var stmt:SQLStatement = new SQLStatement();
 			stmt.sqlConnection = sqlConnection;
 			stmt.text = sql;
@@ -519,6 +519,72 @@ package com.photodispatcher.model.dao{
 			}
 			CursorManager.removeBusyCursor();
 		}
+		
+		public function cleanDatabase(tillDate:Date):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+
+			if(!tillDate) return;
+
+			//clean temps
+			sql='DELETE FROM tmp_orders';
+			sequence.push(prepareStatement(sql));
+			sql='DELETE FROM tmp_print_group';
+			sequence.push(prepareStatement(sql));
+			//get orders to kill
+			sql='INSERT INTO tmp_orders(id)'+
+				' SELECT o.id'+ 
+				' FROM orders o'+
+				' INNER JOIN sources_sync ss ON o.source=ss.id AND o.sync!=ss.sync'+
+				' WHERE o.state_date < ?';
+			sequence.push(prepareStatement(sql,[tillDate]));
+			//get printgroups to kill
+			sql='INSERT INTO tmp_print_group(id)'+
+				' SELECT pg.id'+
+				' FROM print_group pg'+
+				' INNER JOIN tmp_orders t ON t.id=pg.order_id';
+			sequence.push(prepareStatement(sql));
+			//clean files
+			sql='DELETE FROM print_group_file WHERE print_group IN (SELECT id FROM tmp_print_group)';
+			sequence.push(prepareStatement(sql));
+			//clean print_group
+			sql='DELETE FROM print_group WHERE id IN (SELECT id FROM tmp_print_group)';
+			sequence.push(prepareStatement(sql));
+			//clean order extra_info
+			sql='DELETE FROM order_extra_info WHERE id IN (SELECT id FROM tmp_orders)';
+			sequence.push(prepareStatement(sql));
+			//clean suborder extra_info
+			sql='DELETE FROM order_extra_info WHERE id IN (SELECT so.id FROM tmp_orders t INNER JOIN suborders so ON so.order_id=t.id)';
+			sequence.push(prepareStatement(sql));
+			//clean lost extra_info
+			sql="DELETE FROM order_extra_info WHERE EXISTS (SELECT 1 FROM tmp_orders t WHERE order_extra_info.id LIKE t.id || '.%' )";
+			sequence.push(prepareStatement(sql));
+			//clean suborder
+			sql='DELETE FROM suborders WHERE order_id IN (SELECT id FROM tmp_orders)';
+			sequence.push(prepareStatement(sql));
+			//clean extra state
+			sql='DELETE FROM order_extra_state WHERE id IN (SELECT id FROM tmp_orders)';
+			sequence.push(prepareStatement(sql));
+			//clean state_log
+			sql='DELETE FROM state_log WHERE order_id IN (SELECT id FROM tmp_orders)';
+			sequence.push(prepareStatement(sql));
+			//clean state_log
+			sql='DELETE FROM tech_log WHERE print_group IN (SELECT id FROM tmp_print_group)';
+			sequence.push(prepareStatement(sql));
+			//clean orders
+			sql='DELETE FROM orders WHERE id IN (SELECT id FROM tmp_orders)';
+			sequence.push(prepareStatement(sql));
+			//clean temps
+			sql='DELETE FROM tmp_orders';
+			sequence.push(prepareStatement(sql));
+			sql='DELETE FROM tmp_print_group';
+			sequence.push(prepareStatement(sql));
+
+			executeSequence(sequence);
+		}
+		
 
 		public function createTempTables():void{
 			//orders temp table
@@ -607,7 +673,8 @@ package com.photodispatcher.model.dao{
 		}
 		
 		protected function processRow(row:Object):Object{
-			throw new Error("You need to override processRow() in your concrete DAO");
+			//throw new Error("You need to override processRow() in your concrete DAO");
+			return row;
 		}
 
 		public function save(item:Object):void{

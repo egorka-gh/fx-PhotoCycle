@@ -118,7 +118,7 @@ package com.photodispatcher.provider.preprocess{
 
 		}
 
-		private function annotateCommand(printGroup:PrintGroup,command:IMCommand,file:PrintGroupFile, hOffset:int=0):void{
+		private function annotateCommand(printGroup:PrintGroup,command:IMCommand,file:PrintGroupFile):void{
 			if(!printGroup || !printGroup.bookTemplate || !printGroup.bookTemplate.font_size || !command || !file) return;
 			//calc points 4 density 300
 			var points:int=printGroup.bookTemplate.font_size*300/72;
@@ -128,7 +128,8 @@ package com.photodispatcher.provider.preprocess{
 			command.add('-strokewidth'); command.add('0');
 			command.add('-undercolor'); command.add(PDFmakeupGroup.TEXT_UNDERCOLOR);
 			command.add('-fill'); command.add('black');
-			var strOff:String='+'+(PDFmakeupGroup.TEXT_LEFT_OFFSET_PIX+hOffset).toString()+'+'+TEXT_TOP_OFFSET_PIX.toString();
+			var strOff:String=printGroup.bookTemplate.font_offset;
+			if(!strOff) strOff ='+'+(PDFmakeupGroup.TEXT_LEFT_OFFSET_PIX).toString()+'+'+TEXT_TOP_OFFSET_PIX.toString();
 			command.add('-annotate'); command.add(strOff); command.add(printGroup.annotateText(file));
 			//command.add('-gravity'); command.add('Center');
 		}

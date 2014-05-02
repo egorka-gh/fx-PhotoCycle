@@ -242,6 +242,8 @@ package com.photodispatcher.print{
 		}
 
 		public function refresh():void{
+			//TODO closed while not in use
+			return;
 			refreshOnlineState();
 			refreshPrintQueue();
 		}

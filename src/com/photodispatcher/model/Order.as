@@ -204,6 +204,8 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var source_name:String;
 		[Bindable]
+		public var source_code:String;
+		[Bindable]
 		public var state_name:String;
 		
 		public function get isFtpQueueComplete():Boolean{

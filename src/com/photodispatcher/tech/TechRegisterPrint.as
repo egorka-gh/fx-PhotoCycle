@@ -22,15 +22,15 @@ package com.photodispatcher.tech{
 			if(isComplete){
 				//set printgroup/order state
 				var pdao:PrintGroupDAO=new PrintGroupDAO();
-				pdao.setPrintStateByTech(printGroupId);
+				pdao.setPrintStateByTech(printGroupId,true);
 			}
 		}
 		
 		override public function finalise():Boolean{
 			if(!isComplete){
-				//4 reprint or partial print, set printgroup/order state 
+				//4 reprint set printgroup/order state (partial print???) 
 				var pdao:PrintGroupDAO=new PrintGroupDAO();
-				pdao.setPrintStateByTech(printGroupId);
+				pdao.setPrintStateByTech(printGroupId,false);
 			}
 			return super.finalise();
 		}

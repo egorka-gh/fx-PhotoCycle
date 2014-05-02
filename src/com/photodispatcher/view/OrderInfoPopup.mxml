@@ -114,13 +114,18 @@
 				}
 			}
 			
-			public function show(orderId:String):void{
+			public function show(orderId:String, techMode:Boolean=false):void{
 				refresh(orderId);
 				if(order){
 					this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
 					this.width=FlexGlobals.topLevelApplication.width-50;
 					this.height=FlexGlobals.topLevelApplication.height-100;
 					PopUpManager.centerPopUp(this);
+					if(techMode){
+						currentState='infoTech';
+					}else{
+						vsSubInfo.selectedChild= ncPrintGroups;
+					}
 				}else{
 					Alert.show('Заказ "'+orderId+'" не найден');
 				}
@@ -347,7 +352,8 @@
 	</fx:Declarations>
 
 	<s:states>
-		<s:State name="info"/>
+		<s:State name="infoFull" stateGroups="info"/>
+		<s:State name="infoTech" stateGroups="info"/>
 		<s:State name="reprint"/>
 	</s:states>
 
@@ -423,7 +429,7 @@
 						<s:TextInput text="{order.kaptal}" editable="false" width="150"/>
 					</s:FormItem> 
 				</s:Form>
-				<s:Button label="Сброс" bottom="10" right="10" click="button1_clickHandler(event)"/>
+				<s:Button label="Сброс" bottom="10" right="10" click="button1_clickHandler(event)" includeIn="infoFull"/>
 			</s:Group>
 			
 			<s:VGroup id="gDet" gap="0" width="100%" height="100%" includeIn="info">
@@ -439,11 +445,11 @@
 						</s:stroke>
 					</s:Rect>
 					<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
-						<s:NavigatorContent label="Подзаказы" backgroundAlpha="0" width="100%" height="100%">
+						<s:NavigatorContent label="Подзаказы" backgroundAlpha="0" width="100%" height="100%" includeIn="infoFull">
 							<s:DataGrid id="dgSuborders" selectionMode="none" top="10" left="10" right="10" bottom="10"
 										dataProvider="{soList}" locale="ru_RU" columns="{Suborder.gridColumns()}"/>
 						</s:NavigatorContent>
-						<s:NavigatorContent label="Группы печати" backgroundAlpha="0" width="100%" height="100%">
+						<s:NavigatorContent id="ncPrintGroups" label="Группы печати" backgroundAlpha="0" width="100%" height="100%"  includeIn="infoFull">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterPg" dataProvider="{soFilterList}" labelField="src_id"
 										width="100" height="100%" change="{applyPgFilter()}"/>
@@ -451,7 +457,7 @@
 											dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.shortGridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
-						<s:NavigatorContent label="Файлы" width="100%" height="100%">
+						<s:NavigatorContent label="Файлы" width="100%" height="100%"  includeIn="infoFull">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterFiles" dataProvider="{pgFilterList}" labelField="id"
 										width="100" height="100%" change="{applyFileFilter()}"/>
@@ -459,20 +465,22 @@
 											dataProvider="{fileList}" locale="ru_RU" columns="{PrintGroupFileDAO.gridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
+						<s:NavigatorContent label="Тех. точки" width="100%" height="100%">
+							<s:Scroller width="100%" height="100%">
+								<s:HGroup gap="10" height="100%" top="10" left="10" right="10" bottom="10">
+									<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" selectionChange="{applyTechFilter()}"
+												dataProvider="{techListAgg}" locale="ru_RU" columns="{TechLog.gridColumnsTechAgg()}"/>
+									<s:DataGrid id="dgTech" selectionMode="none" height="100%"
+												dataProvider="{techList}" locale="ru_RU" columns="{TechLog.gridColumnsTech()}"/>
+								</s:HGroup>
+							</s:Scroller>
+						</s:NavigatorContent>
 						<s:NavigatorContent label="История" width="100%" height="100%">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterLog" dataProvider="{logFilterList}" labelField="id"
 										width="100" height="100%" change="{applyLogFilter()}"/>
 								<s:DataGrid id="dgLog" selectionMode="none" width="100%" height="100%"
 											dataProvider="{logList}" locale="ru_RU" columns="{StateLogDAO.gridColumns()}"/>
-							</s:HGroup>
-						</s:NavigatorContent>
-						<s:NavigatorContent label="Тех. точки" width="100%" height="100%">
-							<s:HGroup gap="10" width="100%" height="100%" top="10" left="10" right="10" bottom="10">
-								<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" selectionChange="{applyTechFilter()}"
-											dataProvider="{techListAgg}" locale="ru_RU" columns="{TechLog.gridColumnsTechAgg()}"/>
-								<s:DataGrid id="dgTech" selectionMode="none" height="100%"
-											dataProvider="{techList}" locale="ru_RU" columns="{TechLog.gridColumnsTech()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
 					</mx:ViewStack>
@@ -522,7 +530,7 @@
 		<s:HGroup gap="10">
 			<s:Button id="btReprint" includeIn="reprint" label="Создать группы печати"
 					  click="btReprint_clickHandler(event)"/>
-			<s:Button id="btReprintMode" includeIn="info" label="Перепечатать" 
+			<s:Button id="btReprintMode" includeIn="infoFull" label="Перепечатать" 
 					  enabled="{order.state>=OrderState.PRN_WAITE}" click="btReprintMode_clickHandler(event)"/>
 			<s:Button id="btLookup" label="Закрыть" click="{close()}"/>
 		</s:HGroup>

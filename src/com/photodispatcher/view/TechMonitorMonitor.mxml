@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+		 creationComplete="{init()}" 
+		 keyDown="onKey(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.TechPoint;
+			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import flash.globalization.DateTimeStyle;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.PopUpEvent;
+			import spark.formatters.DateTimeFormatter;
+			
+			public var techPoint:TechPoint;
+			public var startTechType:SourceType;
+			[Bindable]
+			public var manualAdd:Boolean;
+			public var endTechType:SourceType;
+			public var refreshInterval:int;
+			
+			private var timer:Timer;
+			
+			public function start():void{
+				refresh();
+			}
+
+			public function stop():void{
+				if(timer){
+					timer.stop();
+					timer.removeEventListener(TimerEvent.TIMER, onTimer);
+					timer=null;
+				}
+			}
+
+			[Bindable]
+			private var listAC:ArrayCollection;
+			[Bindable]
+			private var gridColumnsAC:ArrayCollection;
+			
+			private function init():void{
+				gridColumnsAC= new ArrayCollection();
+				
+				var col:GridColumn = new GridColumn('id'); col.headerText='Заказ'; gridColumnsAC.addItem(col);
+				col= new GridColumn('state_name'); col.headerText='Начальный статус'; gridColumnsAC.addItem(col); 
+				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('state_date'); col.headerText='Дата'; col.formatter=fmt;  gridColumnsAC.addItem(col);
+
+				col= new GridColumn('state_name2'); col.headerText='Ожидаемый статус'; gridColumnsAC.addItem(col); 
+				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('state_date2'); col.headerText='Дата'; col.formatter=fmt;  gridColumnsAC.addItem(col);
+				
+			}
+			
+			private function refresh():void{
+				if(timer && timer.running) timer.stop();
+				var sql:String='SELECT es.id, es.state, es.state_date, os.name state_name, IFNULL(es2.state,1000) state2, es2.state_date state_date2, os2.name state_name2'+  
+								' FROM order_extra_state es'+
+								' INNER JOIN config.order_state os ON os.id=es.state'+
+								' LEFT OUTER JOIN order_extra_state es2 ON es.id=es2.id and es2.state=?'+
+								' LEFT OUTER JOIN config.order_state os2 ON os2.id=es2.state'+
+								' LEFT OUTER JOIN order_extra_state es3 ON es.id=es3.id and es3.state=?'+
+								' WHERE es.state=? and es3.id IS NULL'+
+								' ORDER BY IFNULL(es2.state,1000), es.state_date';
+				var params:Array=[endTechType.state, techPoint.tech_state, startTechType.state];
+				var dao:BaseDAO= new BaseDAO();
+				if (dao.runSelect(sql,params)){
+					listAC=dao.rawList;
+					listAC.filterFunction=filterOrdersList;
+				}
+				if(dgMonitor){
+					//dgMonitor.sortByColumns(new Vector.<int>([]),true);
+					dgMonitor.columnHeaderGroup.visibleSortIndicatorIndices=new Vector.<int>([]);
+				}
+				startTimer();
+			}
+			
+			private function startTimer():void{
+				if(refreshInterval<=0) return;
+				if(!timer){
+					timer= new Timer(refreshInterval*60000,1);
+					timer.addEventListener(TimerEvent.TIMER, onTimer);
+				}
+				timer.delay=refreshInterval*60000;
+				timer.start();
+			}
+			private function onTimer(evt:TimerEvent):void{
+				refresh();
+			}
+
+			protected function btAddOrder_clickHandler(event:MouseEvent):void{
+				newOrderId='';
+				var pop:OrderAddPopup=new OrderAddPopup();
+				pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
+				pop.open(null,true);
+			}
+			
+			private var newOrderId:String;
+			private function onOrderAdd(event:PopUpEvent):void{
+				var pop:OrderAddPopup=event.target as OrderAddPopup;
+				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
+				newOrderId='';
+				if(event.commit){
+					var order:Order=event.data as Order;
+					if(order){
+						newOrderId=order.id;
+						var dao:OrderDAO= new OrderDAO();
+						dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
+						dao.setExtraStateByTech(order.id,startTechType.id,techPoint.id);
+					}
+				}
+			}
+			private function onOrderAdded(event:AsyncSQLEvent):void{
+				var dao:OrderDAO=event.target as OrderDAO;
+				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
+				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
+					refresh();
+					var obj:Object=ArrayUtil.searchItem('id',newOrderId,listAC.source);
+					if(obj && dgMonitor) dgMonitor.selectedItem=obj;
+				}else{
+					Alert.show(event.error);
+				}
+				newOrderId='';
+			}
+			
+			private var ordersGridMenu:GridContexMenu;
+			protected function dgMonitor_creationCompleteHandler(event:FlexEvent):void{
+				ordersGridMenu= new GridContexMenu(dgMonitor); //, [GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
+				ordersGridMenu.addItem('Выполнен',completeCallBack);
+				ordersGridMenu.addItem('');
+				ordersGridMenu.addItem('Состояние',showCallBack);
+			}
+			
+			private function showCallBack(grid:DataGrid,param:int):void{
+				var onItem:Object;
+				onItem=grid.selectedItem;
+				if(onItem && onItem.id){
+					var pop:OrderInfoPopup=new OrderInfoPopup();
+					pop.show(onItem.id,true);
+				}
+			}
+			
+			private function completeCallBack(grid:DataGrid,param:int):void{
+				var onItem:Object;
+				onItem=grid.selectedItem;
+				if(onItem && onItem.id){
+					if(onItem.state2<1000){
+						setComplete();			
+					}else{
+						Alert.show('Ожидаемая операция не выполнена. Продолжить?','',Alert.YES|Alert.NO,this,onCompleteAlert);
+					}
+				}
+			}
+			
+			private function onCompleteAlert(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES) {
+					setComplete();
+				}
+			}
+			
+			private function setComplete():void{
+				var onItem:Object;
+				onItem=dgMonitor.selectedItem;
+				if(onItem && onItem.id){
+					var dao:OrderDAO= new OrderDAO();
+					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
+					dao.setExtraStateByTech(onItem.id, techPoint.tech_type);
+				}
+			}
+			private function onOrderCompleteSet(event:AsyncSQLEvent):void{
+				var dao:OrderDAO=event.target as OrderDAO;
+				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
+				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
+					refresh();
+				}else{
+					Alert.show(event.error);
+				}
+			}
+			
+			private function onKey(e:KeyboardEvent):void{
+				if(e.ctrlKey && e.keyCode==70){
+					//order lookup
+					var pop:OrderSearchPopup=new OrderSearchPopup();
+					pop.open(null);
+				}
+			}
+
+			private function filterOrdersList(item:Object):Boolean {
+				if(!item || !item.id) return false;
+				if(tiOrderFilter && tiOrderFilter.text && item.id.indexOf(tiOrderFilter.text)==-1) return false;
+				return true;
+			}
+
+			private function applyOrdersFilter():void{
+				listAC.refresh();
+				if(dgMonitor){
+					dgMonitor.clearSelection();
+					dgMonitor.dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+				}
+			}
+
+		]]>
+	</fx:Script>
+
+	<s:VGroup id="gGrid" gap="5" top="0" left="0" right="0" bottom="0">
+		<s:HGroup id="gFilters" width="900" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			<s:Label text="Фильтрация по №" fontWeight="bold"/>
+			<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>
+			<s:Spacer width="100%"/>
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<s:DataGrid id="dgMonitor" selectionMode="singleRow"
+					width="900" height="100%" creationComplete="dgMonitor_creationCompleteHandler(event)"
+					dataProvider="{listAC}" locale="ru_RU" columns="{gridColumnsAC}">
+			<s:rowBackground>
+				<fx:Component>
+					<itemRenderer:TechMonitorDataGridRowBackground/>
+				</fx:Component>
+			</s:rowBackground>
+		</s:DataGrid>
+		<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)" enabled="{manualAdd}"/>
+	</s:VGroup>
+	
+</s:Group>

@@ -160,7 +160,7 @@ package com.photodispatcher.model.dao{
 		public function findeById(id:String):ArrayCollection{
 			if(!id) return new ArrayCollection();
 			id='%'+id+'%';
-			var sql:String='SELECT o.*, s.name source_name, os.name state_name'+
+			var sql:String='SELECT o.*, s.name source_name, os.name state_name, s.code source_code'+
 				' FROM orders o'+
 				' INNER JOIN config.order_state os ON o.state = os.id'+
 				' INNER JOIN config.sources s ON o.source = s.id'+
@@ -257,6 +257,9 @@ package com.photodispatcher.model.dao{
 			sequence.push(prepareStatement(sql,[order.id]));
 
 			sql="DELETE FROM order_extra_info WHERE id IN (SELECT id FROM suborders WHERE order_id = ?)";
+			sequence.push(prepareStatement(sql,[order.id]));
+
+			sql="DELETE FROM order_extra_info WHERE id like ? || '.%'";
 			sequence.push(prepareStatement(sql,[order.id]));
 
 			sql="DELETE FROM suborders WHERE order_id = ?";
@@ -532,7 +535,18 @@ package com.photodispatcher.model.dao{
 			params.push(OrderState.PRN_WAITE);
 			params.push(source.sync);
 			sequence.push(prepareStatement(sql,params));
-			//cancel if not in sync
+			//cancel print groups
+			sql='UPDATE print_group SET state = ?, state_date = ? WHERE order_id IN'+
+				' (SELECT id FROM orders WHERE source=? AND state BETWEEN ? AND ? AND sync!=?)';
+			params=new Array();
+			params.push(OrderState.CANCELED);
+			params.push(new Date());
+			params.push(source.id);
+			params.push(OrderState.WAITE_FTP);
+			params.push(OrderState.PRN_WAITE);
+			params.push(source.sync);
+			sequence.push(prepareStatement(sql,params));
+			//cancel orders if not in sync
 			sql='UPDATE orders SET state=?, state_date=? WHERE source=? AND state BETWEEN ? AND ? AND sync!=?';
 			params=new Array();
 			params.push(OrderState.CANCELED);
@@ -560,6 +574,9 @@ package com.photodispatcher.model.dao{
 			//clean suborder extra_info
 			sql='DELETE FROM order_extra_info WHERE id IN (SELECT so.id FROM tmp_orders t INNER JOIN suborders so ON so.order_id=t.id WHERE t.reload=1)';
 			sequence.push(prepareStatement(sql));
+			//clean lost extra_info
+			sql="DELETE FROM order_extra_info WHERE EXISTS (SELECT * FROM tmp_orders t WHERE t.reload=1 AND order_extra_info.id LIKE t.id || '.%' )";
+			sequence.push(prepareStatement(sql));
 			//clean suborder
 			sql='DELETE FROM suborders WHERE order_id IN (SELECT id FROM tmp_orders t WHERE t.reload=1)';
 			sequence.push(prepareStatement(sql));
@@ -583,7 +600,54 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 		
-		
+		public function setExtraStateByTech(orderId:String,tech_type:int, tech_point:int=0):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			var dt:Date=new Date();
+			
+			//set order extra state
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, state_date)'+
+				' SELECT ?, st.state, ? FROM config.src_type st WHERE st.id=?';
+			params=[orderId, dt, tech_type];
+			sequence.push(prepareStatement(sql,params));
+
+			//set order state
+			sql='UPDATE orders'+
+				' SET state=(SELECT st.state FROM config.src_type st WHERE st.id=?), state_date = ?'+
+				' WHERE id=?'+
+				' AND EXISTS (SELECT 1 FROM config.src_type st WHERE st.id=? AND st.book_part=0)';
+			params=[tech_type, dt, orderId, tech_type];
+			sequence.push(prepareStatement(sql,params));
+			
+			//log state
+			sql='INSERT INTO state_log (order_id, pg_id, state, state_date)'+
+				' SELECT ?, ?, st.state, ? FROM config.src_type st WHERE st.id=?';
+			params=[orderId, orderId+'_1', dt, tech_type];
+			sequence.push(prepareStatement(sql,params));
+
+			//set pg state
+			//TODO fbook? will set all pg's (need some link between suborder-pg)
+			sql='UPDATE print_group'+
+				' SET state=(SELECT st.state FROM config.src_type st WHERE st.id=?), state_date = ?'+
+				' WHERE id IN' +
+				' (SELECT pg.id'+
+				 ' FROM config.src_type st'+
+				  ' INNER JOIN print_group pg ON pg.order_id=? AND pg.book_part=st.book_part'+
+				 ' WHERE st.id=?)';
+			params=[tech_type, dt, orderId, tech_type];
+			sequence.push(prepareStatement(sql,params));
+
+			if(tech_point){
+				//log operation start time
+				sql='INSERT INTO tech_log (print_group, sheet, src_id, log_date) VALUES (?,?,?,?)';
+				params=[orderId+'_1', 0, tech_point, dt];
+				sequence.push(prepareStatement(sql,params));
+			}
+			
+			executeSequence(sequence);
+		}
 
 		private function getRawVal(key:String, jo:Object):Object{
 			if(!key) return null; 

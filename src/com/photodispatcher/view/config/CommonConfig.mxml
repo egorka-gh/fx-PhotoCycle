@@ -14,6 +14,7 @@
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.CleanDatabasePopup;
 			import com.photodispatcher.view.PasswPopup;
 			
 			import mx.collections.ArrayCollection;
@@ -257,6 +258,11 @@
 				Context.setAttribute('configPass', '');
 			}
 			
+			protected function btBdClean_clickHandler(event:MouseEvent):void{
+				var popup:CleanDatabasePopup= new CleanDatabasePopup();
+				popup.show();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -332,9 +338,13 @@
 				<s:CheckBox id="tg_reversPrint" selected="{reversPrint}" change="tg_reversPrint_changeHandler(event)"/>
 			</s:FormItem> 
 
-			<s:FormItem label="Сжать базу данных">
-				<s:Button id="btBdOptimize" label="Выполнить" click="btBdOptimize_clickHandler(event)"/>
+			<s:FormItem label="Удаление заказов">
+				<s:Button id="btBdClean" label="Выполнить" click="btBdClean_clickHandler(event)"/>
 			</s:FormItem> 
+
+			<!--<s:FormItem label="Сжать базу данных">
+				<s:Button id="btBdOptimize" label="Выполнить" click="btBdOptimize_clickHandler(event)"/>
+			</s:FormItem> -->
 
 			<s:FormItem label="Защита конфигурации">
 				<s:HGroup gap="10">

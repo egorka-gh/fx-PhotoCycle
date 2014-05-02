@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   width="350" minHeight="50">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.dao.BaseDAO;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var isRunning:Boolean;
+			
+			[Bindable]
+			private var stateLabel:String;
+			
+			public function show():void{
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				PopUpManager.centerPopUp(this);
+			}
+
+			protected function dfDateFilter_creationCompleteHandler(event:FlexEvent):void{
+				var dt:Date=new Date();
+				dfTillDate.selectedDate=new Date(dt.fullYear,dt.month-1,1);
+				dfTillDate_changeHandler(null);
+			}
+
+			[Bindable]
+			private var willKill:String='-';
+			protected function dfTillDate_changeHandler(event:CalendarLayoutChangeEvent):void{
+				willKill='-';
+				var dao:BaseDAO= new BaseDAO();
+				var sql:String='SELECT count(*) cnt'+ 
+								' FROM orders o'+
+								' INNER JOIN sources_sync ss ON o.source=ss.id and o.sync!=ss.sync'+
+								' WHERE o.[state_date] < ?';
+				dao.runSelect(sql,[dfTillDate.selectedDate],true);
+				if(dao.item) willKill=dao.item.cnt;
+			}
+			
+			protected function btOk_clickHandler(event:MouseEvent):void{
+				if(!dfTillDate || !dfTillDate.selectedDate) return;
+				isRunning=true;
+				stateLabel='Удаление';
+				var dao:BaseDAO= new BaseDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCleanComplited);
+				CursorManager.setBusyCursor();
+				dao.cleanDatabase(dfTillDate.selectedDate);
+			}
+			
+			private function onCleanComplited(evt:AsyncSQLEvent):void{
+				var dao:BaseDAO=evt.target as BaseDAO;
+				dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCleanComplited);
+				CursorManager.removeBusyCursor();
+				if (evt.result==AsyncSQLEvent.RESULT_COMLETED){
+					stateLabel='Сжатие базы данных';
+					dao.vacuumDatabase();
+					close();
+				}else{
+					Alert.show('Ошибка :' + evt.error);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup gap="5" top="10" left="10" right="10" bottom="10" verticalAlign="middle">
+		<s:Label text="Резервную копию сделали?" width="100%" color="#dd0000"/>
+		<s:Label text="Закройте все программы подключенные к базе данных" width="100%" color="#dd0000"/>
+		<s:Spacer height="10"/>
+		<s:HGroup id="gDate" gap="5" verticalAlign="baseline">
+			<s:Label text="Удалить заказы с датой статуса менее"/>
+			<mx:DateField id="dfTillDate"  
+						  formatString="DD.MM.YY" 
+						  monthNames="{['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']}"
+						  firstDayOfWeek="1"
+						  dayNames="{['Вс','Пн','Вт','Ср','Чт','Пт','Сб']}"
+						  creationComplete="dfDateFilter_creationCompleteHandler(event)" change="dfTillDate_changeHandler(event)"/>
+		</s:HGroup>
+		<s:Label text="Будет удалено {willKill} заказов" width="{gDate.width}" textAlign="right" color="#555555"/>
+		<s:Label text="{stateLabel}" width="100%" color="#00dd00"/>
+		
+		<s:Spacer height="15"/>
+		<s:HGroup width="100%" horizontalAlign="right" enabled="{!isRunning}">
+			<s:Button id="btOk" label="Удалить" click="btOk_clickHandler(event)"/>
+			<s:Button id="btCancel" label="Отмена" click="{close()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

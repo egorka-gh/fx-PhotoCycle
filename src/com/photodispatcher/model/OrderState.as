@@ -45,10 +45,15 @@ package com.photodispatcher.model{
 		public static const PRN_INPRINT:int=255;
 		public static const PRN_COMPLETE:int=300;
 		public static const CANCELED_OLD:int=310;
+		public static const TECH_BFOLDING:int=318;
 		public static const TECH_FOLDING:int=320;
 		public static const TECH_LAMINATION:int=330;
+		public static const TECH_COVER_MADE:int=335;
 		public static const TECH_PICKING:int=340;
 		public static const TECH_GLUING:int=350;
+		public static const TECH_CUTTING:int=360;
+		public static const TECH_COVER_BLOK_PICKING:int=370;
+		public static const TECH_COVER_BLOK_JOIN:int=380;
 		public static const CANCELED:int=510;
 		public static const SKIPPED:int=520;
 

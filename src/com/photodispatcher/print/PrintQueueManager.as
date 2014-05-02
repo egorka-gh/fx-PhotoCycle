@@ -505,13 +505,6 @@ package com.photodispatcher.print{
 			queuePrints=newqueuePrints;
 		}
 		
-		public function savePrintState(printGroups:Array):void{
-			var dao:PrintGroupDAO=new PrintGroupDAO();
-			dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
-			var pg:PrintGroup;
-			for each(pg in printGroups) dao.writePrintState(pg);
-		}
-
 		private function onWrite(e:AsyncSQLEvent):void{
 			var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
 			if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
@@ -523,6 +516,14 @@ package com.photodispatcher.print{
 				refreshLabs();
 			}
 		}
+
+		public function savePrintState(printGroups:Array):void{
+			var dao:PrintGroupDAO=new PrintGroupDAO();
+			//dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
+			var pg:PrintGroup;
+			for each(pg in printGroups) dao.writePrintState(pg);
+		}
+		
 
 		/************ cancel print ***********/
 		private var cancelPostPrintGrps:Array;

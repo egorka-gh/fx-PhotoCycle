@@ -46,7 +46,7 @@
 					ordersList= dao.findeById(tiOrderId.text);
 					if(ordersList && ordersList.length>0){
 						if(ordersList.length==1){
-							showOrder((ordersList.getItemAt(0) as Order).id);
+							useOrder((ordersList.getItemAt(0) as Order));
 							return;
 						}else{
 							currentState='found';
@@ -57,10 +57,8 @@
 				}
 			}
 			
-			protected function showOrder(id:String):void{
-				var pop:OrderInfoPopup=new OrderInfoPopup();
-				close();
-				pop.show(id);
+			protected function useOrder(order:Order):void{
+				close(true,order);
 			}
 			
 			protected function skinnablepopupcontainer1_keyDownHandler(event:KeyboardEvent):void{
@@ -74,8 +72,8 @@
 			}
 			
 			protected function dgOrders_clickHandler(event:MouseEvent):void{
-				var order:Order=dgOrders.selectedItem as Order;
-				if(order) showOrder(order.id);
+				var order:Order	=dgOrders.selectedItem as Order;
+				if(order) useOrder(order);
 			}
 			
 		]]>
@@ -98,7 +96,7 @@
 
 	<s:VGroup gap="5" width="100%" horizontalAlign="center" paddingTop="5" paddingLeft="5" paddingRight="5" paddingBottom="5">
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-			<s:Label text="ID заказа"/>
+			<s:Label text="№ заказа"/>
 			<s:TextInput id="tiOrderId"/>
 			<s:Spacer width="100%"/>
 			<s:Button label="Найти" click="button1_clickHandler(event)"/>

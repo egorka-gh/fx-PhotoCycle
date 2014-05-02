@@ -375,37 +375,6 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
-		public function setExtraStateByTech(pgId:String,tech_type:int):void{
-			var sequence:Array=[];
-			var stmt:SQLStatement;
-			var sql:String;
-			var params:Array;
-			var dt:Date=new Date();
-
-			//set pg state
-			sql='UPDATE print_group'+
-				' SET state=(SELECT st.state FROM config.src_type st WHERE st.id=?), state_date = ?'+
-				' WHERE id=?';
-			params=[tech_type,dt,pgId];
-			sequence.push(prepareStatement(sql,params));
-			//log state
-			sql='INSERT INTO state_log (order_id, pg_id, state, state_date)'+
-				' SELECT pg.order_id, pg.id, pg.state, pg.state_date'+
-				' FROM print_group pg'+
-				' WHERE pg.id=?';
-			params=[pgId];
-			sequence.push(prepareStatement(sql,params));
-			//set order extra state
-			sql='INSERT OR IGNORE INTO order_extra_state (id, state, state_date)'+
-				' SELECT pg.order_id, pg.state, pg.state_date'+
-				' FROM print_group pg'+
-				' WHERE pg.id=?';
-			params=[pgId];
-			sequence.push(prepareStatement(sql,params));
-
-			executeSequence(sequence);
-		}
-
 		public function setState(pgId:String,state:int):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -430,6 +399,118 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		public function setExtraStateByTech(pgId:String,tech_type:int):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			var dt:Date=new Date();
+			
+			//set pg state
+			sql='UPDATE print_group'+
+				' SET state=(SELECT st.state FROM config.src_type st WHERE st.id=?), state_date = ?'+
+				' WHERE id=?';
+			params=[tech_type,dt,pgId];
+			sequence.push(prepareStatement(sql,params));
+			//log pg state
+			sql='INSERT INTO state_log (order_id, pg_id, state, state_date)'+
+				' SELECT pg.order_id, pg.id, pg.state, pg.state_date'+
+				' FROM print_group pg'+
+				' WHERE pg.id=?';
+			params=[pgId];
+			sequence.push(prepareStatement(sql,params));
+			
+			//set order state
+			sql='UPDATE orders'+
+				' SET state=(SELECT st.state FROM config.src_type st WHERE st.id=?), state_date = ?'+
+				' WHERE id=?'+
+				' AND EXISTS (SELECT 1 FROM config.src_type st WHERE st.id=? AND st.book_part=0)';
+			params=[tech_type, dt, PrintGroup.orderIdFromId(pgId), tech_type];
+			sequence.push(prepareStatement(sql,params));
+			
+			//set order extra state
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, state_date)'+
+				' SELECT pg.order_id, pg.state, pg.state_date'+
+				' FROM print_group pg'+
+				' WHERE pg.id=?';
+			params=[pgId];
+			sequence.push(prepareStatement(sql,params));
+
+			executeSequence(sequence);
+		}
+
+		public function setPrintStateByTech(pgId:String, complete:Boolean):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			var dt:Date=new Date();
+			
+			sql='DELETE FROM tmp_print_group';
+			sequence.push(prepareStatement(sql));
+			if(complete){
+				//get print group by id or 1st reprint group
+				//TODO create/use extra table vs reprint links
+				sql='INSERT INTO tmp_print_group(id, order_id)'+
+					' SELECT pg.id, pg.order_id FROM print_group pg'+
+					' WHERE pg.order_id=? AND pg.state<? AND (pg.id=? OR pg.is_reprint=1)'+
+					' ORDER BY pg.is_reprint LIMIT 1';
+				params=[PrintGroup.orderIdFromId(pgId), OrderState.PRN_COMPLETE, pgId];
+			}else{
+				//get 1st reprint group
+				//TODO create/use extra table vs reprint links
+				sql='INSERT INTO tmp_print_group(id, order_id)'+
+					' SELECT pg.id, pg.order_id FROM print_group pg'+
+					' WHERE pg.order_id=? AND pg.state<? AND pg.is_reprint=1'+
+					' ORDER BY pg.id LIMIT 1';
+				params=[PrintGroup.orderIdFromId(pgId), OrderState.PRN_COMPLETE];
+			}
+			sequence.push(prepareStatement(sql,params));
+
+			//set pg state
+			sql='UPDATE print_group'+
+				' SET state=?, state_date = ?'+
+				' WHERE id IN (SELECT id FROM tmp_print_group)';
+			params=[OrderState.PRN_COMPLETE,dt];
+			sequence.push(prepareStatement(sql,params));
+			//log state
+			sql='INSERT INTO state_log (order_id, pg_id, state, state_date)'+
+				' SELECT pg.order_id, pg.id, ?, ?'+
+				' FROM tmp_print_group pg';
+			params=[OrderState.PRN_COMPLETE,dt];
+			sequence.push(prepareStatement(sql,params));
+			
+			//set order print state
+			sql='DELETE FROM tmp_orders';
+			sequence.push(prepareStatement(sql));
+			//get min order state
+			sql='INSERT INTO tmp_orders(id, state, state_date)'+
+				' SELECT o.id, MIN(pg.state), ?'+
+				' FROM orders o'+ 
+				' INNER JOIN print_group pg on o.id=pg.order_id'+ 
+				' WHERE o.id = ?';
+			params=[dt, PrintGroup.orderIdFromId(pgId)];
+			sequence.push(prepareStatement(sql,params));
+			//chek if printed
+			sql='DELETE FROM tmp_orders WHERE state < ?';
+			sequence.push(prepareStatement(sql,[OrderState.PRN_COMPLETE]));
+			//update & log
+			sql='UPDATE orders SET state = (SELECT t.state FROM tmp_orders t WHERE t.id=orders.id), state_date = ?'+
+				' WHERE id IN(SELECT id FROM tmp_orders)';
+			sequence.push(prepareStatement(sql,[dt]));
+			sql='INSERT INTO state_log (order_id, state, state_date)'+
+				' SELECT id, state, state_date FROM tmp_orders';
+			sequence.push(prepareStatement(sql));
+
+			//set order extra state
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, state_date)'+
+				' SELECT id, ?, state_date FROM tmp_orders';
+			params=[OrderState.PRN_COMPLETE];
+			sequence.push(prepareStatement(sql,params));
+
+			executeSequence(sequence);
+		}
+		/*
 		public function setPrintStateByTech(pgId:String):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -492,6 +573,7 @@ package com.photodispatcher.model.dao{
 
 			executeSequence(sequence);
 		}
+		*/
 
 		public function printPost(item:PrintGroup, labId:int):void{
 			if(!item) return;
@@ -525,7 +607,6 @@ package com.photodispatcher.model.dao{
 		}
 
 		public function writePrintState(item:PrintGroup):void{
-			//TODO refactor to sequence
 			if(!item) return;
 			var sequence:Array=[];
 			var stmt:SQLStatement;
