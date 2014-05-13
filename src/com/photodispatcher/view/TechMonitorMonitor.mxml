@@ -79,7 +79,7 @@
 								' LEFT OUTER JOIN order_extra_state es2 ON es.id=es2.id and es2.state=?'+
 								' LEFT OUTER JOIN config.order_state os2 ON os2.id=es2.state'+
 								' LEFT OUTER JOIN order_extra_state es3 ON es.id=es3.id and es3.state=?'+
-								' WHERE es.state=? and es3.id IS NULL'+
+								' WHERE es.state=? and es3.state_date IS NULL'+
 								' ORDER BY (CASE WHEN es2.id IS NULL THEN 1000 WHEN es2.state_date IS NULL THEN 900 ELSE es2.state END), es.state_date';
 				var params:Array=[endTechType.state, techPoint.tech_state, startTechType.state];
 				var dao:BaseDAO= new BaseDAO();

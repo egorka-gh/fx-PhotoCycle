@@ -455,7 +455,7 @@ package com.photodispatcher.model.dao{
 			sql='INSERT OR IGNORE INTO order_extra_state (id, state, start_date, state_date)'+
 				' SELECT ?, st.state, ?, ?'+
 				' FROM config.src_type st WHERE st.id=?';
-			params=[PrintGroup.orderIdFromId(pgId), dt, dt];
+			params=[PrintGroup.orderIdFromId(pgId), dt, dt, tech_type];
 			sequence.push(prepareStatement(sql,params));
 
 			executeSequence(sequence);
