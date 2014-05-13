@@ -10,6 +10,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotakrama.canvas.content.CanvasText;
 	import com.akmeful.fotakrama.canvas.text.CanvasTextStyle;
 	import com.akmeful.fotakrama.data.ProjectBookPage;
+	import com.akmeful.fotakrama.library.LibraryPath;
 	import com.akmeful.fotakrama.library.data.ClipartType;
 	import com.akmeful.fotakrama.project.ProjectNS;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverFrameImage;
@@ -40,6 +41,7 @@ package com.photodispatcher.provider.fbook.download{
 		//public static const USER_MEDIA_PATH:String = 'book/photo/download/';
 		public static const USER_MEDIA_PATH:String = 'projectImage/download';
 		public static const CLIPART_PATH:String = 'admin/clipart/download/';
+		public static const USER_CLIPART_PATH:String = 'project/user/clipart/download/';
 		public static const CLIPART_FRAME_PATH:String = 'admin/frames/download/';
 
 		public static const CONTENT_CLIPART_IMG:String = ClipartType.IMG;
@@ -102,7 +104,7 @@ package com.photodispatcher.provider.fbook.download{
 							case ClipartType.IMG:
 								//TODO refactor to addLoadingItem + implement cache
 								name=contentElement.id;
-								req=createRequest(name,clipartPath(),pageNum);
+								req=createRequest(name,clipartPath(name),pageNum);
 								if(req){
 									//save to art subdir
 									name=FBookProject.artSubDir+name;
@@ -161,7 +163,7 @@ package com.photodispatcher.provider.fbook.download{
 									if(contentElement.size){
 										var maskElement:Object = JsonUtil.decode(contentElement.size);
 										name=maskElement.id;
-										req=createRequest(name,clipartPath(),pageNum);
+										req=createRequest(name,clipartPath(name),pageNum);
 										//req=createClipartRequest(name,pageNum);
 										if(req){
 											//save to art subdir
@@ -220,15 +222,27 @@ package com.photodispatcher.provider.fbook.download{
 				return null;
 			}
 			var itemId:String=name;
+			/*
 			var arr:Array=itemId.split('::');
 			if(arr.length > 1 && arr[0]==ProjectNS.SUP){
 				itemId=arr[1];
 			}
+			*/
+			var ns:Array = LibraryPath.extractNamespace(itemId);
+			var secure:String;
+			if(ns[0]){
+				secure = book.project.valueForNS(ns[0]) as String;
+			}
+			itemId=ns[1];
 			
 			itemId=name.split('.')[0];
 			var param:URLVariables=new URLVariables;
 			param.id=itemId;
-			param.project_id=book.id;
+			if(secure){
+				param.secure=secure;
+			}else{
+				param.project_id=book.id;
+			}
 			if(corner){
 				param.corner=corner;
 			}
@@ -236,8 +250,8 @@ package com.photodispatcher.provider.fbook.download{
 			result.url = url;
 			result.method = URLRequestMethod.POST;
 			result.data = param;
-			book.log='Page# '+pageNum+'. Request url: '+url+'. POST id:'+itemId+'  corner:'+corner;
-			trace('Page# '+pageNum+'. Request url: '+url+'. POST id:'+itemId+'  corner:'+corner);
+			book.log='Page# '+pageNum+'. Request url: '+url+'; POST id:'+itemId+';  corner:'+corner+';  secure:'+secure;
+			trace('Page# '+pageNum+'. Request url: '+url+'; POST id:'+itemId+';  corner:'+corner+';  secure:'+secure);
 			return result;
 		}
 
@@ -257,7 +271,11 @@ package com.photodispatcher.provider.fbook.download{
 		public function userImagePath():String {
 			return getBaseURL()+USER_MEDIA_PATH;
 		}
-		public function clipartPath():String {			
+		public function clipartPath(itemId:String):String {	
+			var ns:Array = LibraryPath.extractNamespace(itemId);
+			if(ns[0]){
+				return getBaseURL()+USER_CLIPART_PATH;
+			}
 			return getBaseURL()+CLIPART_PATH;
 		}
 		public function framePath():String {			

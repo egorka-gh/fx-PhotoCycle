@@ -599,7 +599,31 @@ package com.photodispatcher.model.dao{
 			//addEventListener(SqlSequenceEvent.SQL_SEQUENCE_EVENT, onSyncComplite);
 			executeSequence(sequence);
 		}
-		
+
+		public function startExtraStateByTech(orderId:String,tech_type:int, tech_point:int=0):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			var dt:Date=new Date();
+
+			//set order extra state
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, start_date)'+
+				' SELECT ?, st.state, ? FROM config.src_type st WHERE st.id=?';
+			params=[orderId, dt, tech_type];
+			sequence.push(prepareStatement(sql,params));
+			
+			if(tech_point){
+				//log operation start time
+				sql='INSERT INTO tech_log (print_group, sheet, src_id, log_date) VALUES (?,?,?,?)';
+				params=[orderId+'_1', 0, tech_point, dt];
+				sequence.push(prepareStatement(sql,params));
+			}
+
+			executeSequence(sequence);
+
+		}
+
 		public function setExtraStateByTech(orderId:String,tech_type:int, tech_point:int=0):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -607,10 +631,17 @@ package com.photodispatcher.model.dao{
 			var params:Array;
 			var dt:Date=new Date();
 			
-			//set order extra state
-			sql='INSERT OR IGNORE INTO order_extra_state (id, state, state_date)'+
-				' SELECT ?, st.state, ? FROM config.src_type st WHERE st.id=?';
-			params=[orderId, dt, tech_type];
+			//set order extra state end date
+			sql='UPDATE order_extra_state'+
+				' SET state_date=?'+
+				' WHERE id=? AND state=(SELECT st.state FROM config.src_type st WHERE st.id=?)';
+			params=[dt, orderId, tech_type];
+			sequence.push(prepareStatement(sql,params));
+			
+			//insert if not exists
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, start_date, state_date)'+
+				' SELECT ?, st.state, ?, ? FROM config.src_type st WHERE st.id=?';
+			params=[orderId, dt, dt, tech_type];
 			sequence.push(prepareStatement(sql,params));
 
 			//set order state
@@ -640,7 +671,7 @@ package com.photodispatcher.model.dao{
 			sequence.push(prepareStatement(sql,params));
 
 			if(tech_point){
-				//log operation start time
+				//log operation end time
 				sql='INSERT INTO tech_log (print_group, sheet, src_id, log_date) VALUES (?,?,?,?)';
 				params=[orderId+'_1', 0, tech_point, dt];
 				sequence.push(prepareStatement(sql,params));

@@ -1,7 +1,12 @@
 package com.photodispatcher.tech{
+	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.TechPoint;
+	import com.photodispatcher.model.TechPrintGroup;
+	import com.photodispatcher.model.dao.BaseDAO;
+	import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
 	import com.photodispatcher.service.barcode.ValveCom;
+	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.ErrorEvent;
@@ -182,5 +187,69 @@ package com.photodispatcher.tech{
 		protected function logMsg(msg:String):void{
 			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,'Заказ: '+printGroupId+'. '+msg,0));
 		}
+		
+		protected function get sheetsPerBook():int{
+			if(bookPart==BookSynonym.BOOK_PART_COVER){
+				return 1;
+			}
+			return sheets;
+		}
+		
+		/*************** local data base ************************/
+		protected var complited:Array=[];
+		protected var isWriting:Boolean;
+		
+		protected function checkComplited():void{
+			var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+			var arr:Array=lDao.finde4Transfer();
+			var pg:TechPrintGroup;
+			if(arr){
+				for each(pg in arr){
+					if(ArrayUtil.searchItemIdx('id',pg.id,complited)==-1) complited.push(pg);
+				}
+			}
+			if(!isWriting) writeNext();
+		}
+		
+		protected function writeNext():TechPrintGroup{
+			if(complited.length==0){
+				isWriting=false;
+				return null;
+			}
+			isWriting=true;
+			var pg:TechPrintGroup= complited[0] as TechPrintGroup;
+			if(!pg){
+				complited.shift();
+				return writeNext();
+			}
+			return pg;
+			// implement concret dao call
+			//var pdao:PrintGroupDAO=new PrintGroupDAO();
+			//pdao.execOnItem=pg.id;
+			//pdao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
+			//pdao.setExtraStateByTech(pg.id, pg.src_id);
+		}
+		protected function onExtraWrite(evt:AsyncSQLEvent):void{
+			var pdao:BaseDAO= evt.target as BaseDAO;
+			if(pdao) pdao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
+			//var pgId:String=evt.item as String;
+			var pg:TechPrintGroup=evt.item as TechPrintGroup;
+			if (evt.result==AsyncSQLEvent.RESULT_COMLETED){
+				if(pg){
+					var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+					if(pg.isComplite){
+						lDao.remove(pg.id);
+					}else{
+						lDao.startLoged(pg.id);
+					}
+				}
+				complited.shift();
+				writeNext();
+			}else{
+				//database locked
+				isWriting=false;
+			}
+		}
+
 	}
 }

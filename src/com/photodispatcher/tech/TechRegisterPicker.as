@@ -1,7 +1,10 @@
 package com.photodispatcher.tech{
+	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.TechLog;
+	import com.photodispatcher.model.TechPrintGroup;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.model.dao.TechLogDAO;
+	import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
 	
 	import flash.events.Event;
 
@@ -26,12 +29,39 @@ package com.photodispatcher.tech{
 			tl.src_id= techPoint.id;
 			var dao:TechLogDAO=new TechLogDAO();
 			dao.addLog(tl);
-			
+			//log to local db
+			var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+			lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
+			lDao.log(tl,books,sheetsPerBook, techPoint.tech_type);
+			/*
 			if(isComplete){
 				//set printgroup/order state
 				var pdao:PrintGroupDAO=new PrintGroupDAO();
 				pdao.setExtraStateByTech(printGroupId,techPoint.tech_type);
 			}
+			*/
 		}
+		
+		private function onLocalLog(evt:AsyncSQLEvent):void{
+			var lDao:TechPrintGroupDAO=evt.target as TechPrintGroupDAO;
+			if (lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
+			checkComplited();
+		}
+		
+		override protected function writeNext():TechPrintGroup{
+			var pg:TechPrintGroup=super.writeNext();
+			if(pg){
+				var pdao:PrintGroupDAO=new PrintGroupDAO();
+				pdao.execOnItem=pg;
+				pdao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
+				if(pg.isComplite){
+					pdao.setExtraStateByTech(pg.id, pg.tech_type);
+				}else{
+					pdao.startExtraStateByTech(pg.id, pg.tech_type);
+				}
+			}
+			return pg; 
+		}
+
 	}
 }

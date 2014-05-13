@@ -12,9 +12,15 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var id:String;
 		[Bindable]
+		public var sub_id:String;
+		[Bindable]
 		public var state:int;
 		[Bindable]
+		public var start_date:Date;
+		[Bindable]
 		public var state_date:Date;
+		[Bindable]
+		public var reported:int;
 		//ref
 		[Bindable]
 		public var state_name:String;
@@ -26,7 +32,9 @@ package com.photodispatcher.model{
 			col= new GridColumn('id'); col.headerText='id'; col.visible=false; result.push(col);
 			col= new GridColumn('state_name'); col.headerText='Статус'; result.push(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
-			col= new GridColumn('state_date'); col.headerText='Дата'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('start_date'); col.headerText='Начало'; col.formatter=fmt;  col.width=110; result.push(col);
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
+			col= new GridColumn('state_date'); col.headerText='Конец'; col.formatter=fmt;  col.width=110; result.push(col);
 			return new ArrayList(result);
 		}
 

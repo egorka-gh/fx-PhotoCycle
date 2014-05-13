@@ -15,8 +15,14 @@
 					data = null;
 				else
 					data = grid.dataProvider.getItemAt(rowIndex);
-				if(data && data.state2<1000){
-					backgroundColor=0x99EE99;
+				if(data){
+					if(data.state2<900){
+						backgroundColor=0x99EE99;	
+					}else if(data.state2<1000){
+						backgroundColor=0xEEEE99;	
+					}else{
+						backgroundColor=0xFFFFFF;
+					}
 				}else{
 					//backgroundColor=0xDDDDDD;
 					backgroundColor=0xFFFFFF;

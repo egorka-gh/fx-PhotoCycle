@@ -399,6 +399,22 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		public function startExtraStateByTech(pgId:String,tech_type:int):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			var dt:Date=new Date();
+			
+			//set order extra state
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, start_date)'+
+				' SELECT ?, st.state, ? FROM config.src_type st WHERE st.id=?';
+			params=[PrintGroup.orderIdFromId(pgId), dt, tech_type];
+			sequence.push(prepareStatement(sql,params));
+			
+			executeSequence(sequence);
+		}
+
 		public function setExtraStateByTech(pgId:String,tech_type:int):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -428,12 +444,18 @@ package com.photodispatcher.model.dao{
 			params=[tech_type, dt, PrintGroup.orderIdFromId(pgId), tech_type];
 			sequence.push(prepareStatement(sql,params));
 			
-			//set order extra state
-			sql='INSERT OR IGNORE INTO order_extra_state (id, state, state_date)'+
-				' SELECT pg.order_id, pg.state, pg.state_date'+
-				' FROM print_group pg'+
-				' WHERE pg.id=?';
-			params=[pgId];
+			//set order extra state end date
+			sql='UPDATE order_extra_state'+
+				' SET state_date=?'+
+				' WHERE id=? AND state=(SELECT st.state FROM config.src_type st WHERE st.id=?)';
+			params=[dt, PrintGroup.orderIdFromId(pgId), tech_type];
+			sequence.push(prepareStatement(sql,params));
+			
+			//insert if not exists
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, start_date, state_date)'+
+				' SELECT ?, st.state, ?, ?'+
+				' FROM config.src_type st WHERE st.id=?';
+			params=[PrintGroup.orderIdFromId(pgId), dt, dt];
 			sequence.push(prepareStatement(sql,params));
 
 			executeSequence(sequence);
@@ -502,9 +524,24 @@ package com.photodispatcher.model.dao{
 				' SELECT id, state, state_date FROM tmp_orders';
 			sequence.push(prepareStatement(sql));
 
+			/*
 			//set order extra state
 			sql='INSERT OR IGNORE INTO order_extra_state (id, state, state_date)'+
 				' SELECT id, ?, state_date FROM tmp_orders';
+			params=[OrderState.PRN_COMPLETE];
+			sequence.push(prepareStatement(sql,params));
+			*/
+			
+			//set order extra state end date
+			sql='UPDATE order_extra_state'+
+				' SET state_date=?'+
+				' WHERE id IN (SELECT id FROM tmp_orders) AND state=?';
+			params=[dt, OrderState.PRN_COMPLETE];
+			sequence.push(prepareStatement(sql,params));
+			
+			//insert extra state if not exists
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, start_date, state_date)'+
+				' SELECT id, ?, state_date as start_date, state_date FROM tmp_orders';
 			params=[OrderState.PRN_COMPLETE];
 			sequence.push(prepareStatement(sql,params));
 

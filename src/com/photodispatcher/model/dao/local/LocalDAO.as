@@ -1,5 +1,4 @@
-package com.photodispatcher.model.dao{
-	import com.photodispatcher.context.Context;
+package com.photodispatcher.model.dao.local{
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.DBRecord;
 	import com.photodispatcher.util.DebugUtils;
@@ -16,6 +15,7 @@ package com.photodispatcher.model.dao{
 	import flash.events.SQLErrorEvent;
 	import flash.events.SQLEvent;
 	import flash.events.TimerEvent;
+	import flash.filesystem.File;
 	import flash.utils.Timer;
 	import flash.utils.describeType;
 	
@@ -26,9 +26,8 @@ package com.photodispatcher.model.dao{
 	import spark.components.gridClasses.GridColumn;
 	
 	[Event(name="asyncSQLEvent", type="com.photodispatcher.event.AsyncSQLEvent")]
-	[Event(name="sqlSequenceEvent", type="com.photodispatcher.event.SqlSequenceEvent")]
 	[Event(name="complete", type="flash.events.Event")]
-	public class BaseDAO extends EventDispatcher{
+	public class LocalDAO extends EventDispatcher{
 		public static const RESULT_COMLETED:int=0;
 		public static const RESULT_FAULT:int=1;
 		public static const RESULT_FAULT_LOCKED:int=2;
@@ -40,9 +39,9 @@ package com.photodispatcher.model.dao{
 		
 		private static const TIMEOUT_MIN:int=300;
 		private static const TIMEOUT_MAX:int=1000;
-		public static var MAX_WAITE:int=60000;
+		private static const MAX_WAITE:int=10000;
 
-		[ArrayElementType("com.photodispatcher.model.dao.TransactionUnit")]
+		[ArrayElementType("com.photodispatcher.model.dao.local.TransactionUnitLocal")]
 		private static var queue:Array=[];
 		
 		private static var _isRunning:Boolean=false;
@@ -58,23 +57,29 @@ package com.photodispatcher.model.dao{
 		public static function get isBusy():Boolean{
 			return _isRunning;
 		}
+
+		public static function getSyncConnection():SQLConnection{
+			return syncConnection;
+		}
 		
 		private static var connection:SQLConnection;
+		private static var syncConnection:SQLConnection;
+
 		
 		/****************** static *****************************/
 
-		public static function write(dao:BaseDAO, sequence:Array):void{
+		public static function write(dao:LocalDAO, sequence:Array):void{
 			if(!dao) return;
 			if(!sequence || sequence.length==0){
 				//dao.writeComplited vs err
 				dao.executeResult(RESULT_COMLETED,0,0);
 			}
-			if(!connection) connection = Context.getAttribute("asyncConnection");
+			
 			if(!connection || !connection.connected){
 				//dao.writeComplited vs err
 				dao.executeResult(RESULT_FAULT,0,0,'Нет подключения к базе данных');
 			}
-			var tu:TransactionUnit= new TransactionUnit(dao, sequence, TransactionUnit.TYPE_WRITE);
+			var tu:TransactionUnitLocal= new TransactionUnitLocal(dao, sequence, TransactionUnitLocal.TYPE_WRITE);
 			queue.push(tu);
 			flushQueue();
 		}
@@ -106,9 +111,9 @@ package com.photodispatcher.model.dao{
 				//some problem vs connection
 				//complite each item in Queue vs err
 				lastErrMsg=error.message;
-				var tu:TransactionUnit=getCurrentUnit(true);
+				var tu:TransactionUnitLocal=getCurrentUnit(true);
 				while(tu){
-					if(tu.type==TransactionUnit.TYPE_WRITE){
+					if(tu.type==TransactionUnitLocal.TYPE_WRITE && tu.dao){
 						tu.dao.executeResult(RESULT_FAULT,0,0,error.message);
 					}
 					tu=getCurrentUnit(true);
@@ -151,7 +156,7 @@ package com.photodispatcher.model.dao{
 			stmt.sqlConnection = connection;
 			stmt.addEventListener(SQLEvent.RESULT, seqItemResult);
 			stmt.addEventListener(SQLErrorEvent.ERROR, seqItemError);
-			if(TRACE_DEBUG) trace('baseDao run item '+sequenceIdx.toString()+ ' dao:'+getCurrentUnit().dao.toString()+'; sql:'+stmt.text);
+			if(TRACE_DEBUG) trace('baseDao run item '+sequenceIdx.toString()+'; sql:'+stmt.text);
 			stmt.execute();
 		}
 
@@ -159,9 +164,9 @@ package com.photodispatcher.model.dao{
 			connection.removeEventListener(SQLEvent.COMMIT, onCommit);
 			connection.removeEventListener(SQLErrorEvent.ERROR, onCommitErr);
 			//complite unit vs result
-			if(TRACE_DEBUG) trace('baseDao sequence complited '+getCurrentUnit().dao.toString());
-			var tu:TransactionUnit=getCurrentUnit(true);
-			if(tu.type==TransactionUnit.TYPE_WRITE){
+			if(TRACE_DEBUG) trace('baseDao sequence complited ');
+			var tu:TransactionUnitLocal=getCurrentUnit(true);
+			if(tu.type==TransactionUnitLocal.TYPE_WRITE && tu.dao){
 				tu.dao.executeResult(RESULT_COMLETED,resultId,resultRows);
 			}
 			runNext();
@@ -169,7 +174,7 @@ package com.photodispatcher.model.dao{
 		private static function onCommitErr(evt:SQLErrorEvent):void{
 			connection.removeEventListener(SQLEvent.COMMIT, onCommit);
 			connection.removeEventListener(SQLErrorEvent.ERROR, onCommitErr);
-			if(TRACE_DEBUG) trace('baseDao commit err!!!! '+getCurrentUnit().dao.toString()+' err:'+evt.error.message);
+			if(TRACE_DEBUG) trace('baseDao commit err!!!! '+' err:'+evt.error.message);
 			lastErr=evt.errorID;
 			lastErrMsg=evt.error.message;
 			connection.addEventListener(SQLEvent.ROLLBACK, onRollback);
@@ -206,7 +211,7 @@ package com.photodispatcher.model.dao{
 			stmt.removeEventListener(SQLEvent.RESULT, seqItemResult);
 			stmt.removeEventListener(SQLErrorEvent.ERROR, seqItemError);
 
-			trace('baseDao sequenceStatement '+sequenceIdx.toString() +' error. dao: '+getCurrentUnit().dao.toString()+' err:'+evt.error.details+'; SQL: '+stmt.text);
+			trace('baseDao sequenceStatement '+sequenceIdx.toString() +' error.'+' err:'+evt.error.details+'; SQL: '+stmt.text);
 			//add listener
 			lastErr=evt.errorID;
 			lastErrMsg=evt.error.details+'; SQL: '+stmt.text;
@@ -223,15 +228,15 @@ package com.photodispatcher.model.dao{
 			connection.removeEventListener(SQLErrorEvent.ERROR, onRollbackErr);
 			if(lastErr!=3119){
 				//complite unit vs sql err & start next unit
-				var tu:TransactionUnit=getCurrentUnit(true);
-				if(tu.type==TransactionUnit.TYPE_WRITE){
+				var tu:TransactionUnitLocal=getCurrentUnit(true);
+				if(tu.type==TransactionUnitLocal.TYPE_WRITE && tu.dao){
 					tu.dao.executeResult(RESULT_FAULT,0,0,lastErrMsg);
 				}
 				runNext();
 				return;
 			}else{
 				//??????
-				if(TRACE_DEBUG) trace('baseDao sequenceStatement  Write lock!!!! '+getCurrentUnit().dao.toString());
+				if(TRACE_DEBUG) trace('baseDao sequenceStatement  Write lock!!!! ');
 				execLate();
 			}
 		}
@@ -251,13 +256,13 @@ package com.photodispatcher.model.dao{
 			execLate();
 		}
 
-		private static function getCurrentUnit(shift:Boolean=false):TransactionUnit{
-			var tu:TransactionUnit;
+		private static function getCurrentUnit(shift:Boolean=false):TransactionUnitLocal{
+			var tu:TransactionUnitLocal;
 			if(queue.length>0){
 				if(shift){
-					tu=queue.shift() as TransactionUnit;
+					tu=queue.shift() as TransactionUnitLocal;
 				}else{
-					tu=queue[0] as TransactionUnit;
+					tu=queue[0] as TransactionUnitLocal;
 				}
 			}
 			return tu;
@@ -274,13 +279,13 @@ package com.photodispatcher.model.dao{
 				isBusy=false;
 				return;
 			}
-			if(TRACE_DEBUG) trace('baseDAO.execLate wait:'+wait.toString()+'; starts dao: '+ getCurrentUnit().dao.toString());//+DebugUtils.getObjectMemoryHash(this));
-			var tu:TransactionUnit=getCurrentUnit();
-			if (wait>=MAX_WAITE || tu.dao.asyncFaultMode==FAULT_IGNORE){
+			if(TRACE_DEBUG) trace('baseDAO.execLate wait:'+wait.toString()+';');//+DebugUtils.getObjectMemoryHash(this));
+			var tu:TransactionUnitLocal=getCurrentUnit();
+			if (wait>=MAX_WAITE || !tu.dao || tu.dao.asyncFaultMode==FAULT_IGNORE){
 				//max wait reached
 				tu=getCurrentUnit(true);
 				//complite unit vs write_lock err
-				if(tu.type==TransactionUnit.TYPE_WRITE){
+				if(tu.type==TransactionUnitLocal.TYPE_WRITE && tu.dao){
 					tu.dao.executeResult(RESULT_FAULT_LOCKED,0,0,'Блокировка записи');
 				}
 				
@@ -307,7 +312,7 @@ package com.photodispatcher.model.dao{
 		
 		private static function onTimer(e:Event):void{
 			timer.removeEventListener(TimerEvent.TIMER,onTimer);
-			if(TRACE_DEBUG)  trace('baseDao restart on timer: '+ getCurrentUnit().dao.toString());
+			if(TRACE_DEBUG)  trace('baseDao restart on timer: ');
 			runNext(false);
 		}
 
@@ -342,13 +347,144 @@ package com.photodispatcher.model.dao{
 			return timeout;
 		}
 
+		public static function recreateBD():void{
+			if (syncConnection && syncConnection.connected){
+				try{
+					syncConnection.close();
+				}catch (error:SQLError){}
+			}
+			if(connection && connection.connected){
+				connection.addEventListener(SQLEvent.CLOSE, onAsyncClose);
+				connection.close();
+			}else{
+				onAsyncClose(null);
+			}
+		}
+		private static function onAsyncClose(evt:SQLEvent):void{
+			if(connection) connection.removeEventListener(SQLEvent.CLOSE, onAsyncClose);
+			var dbFile:File = File.applicationStorageDirectory.resolvePath("local.sqlite");
+			if(dbFile.exists){
+				try{
+					dbFile.deleteFile();
+				}catch (error:Error){}
+			}
+			connect();
+		}
 
+		public static function connect():Boolean{
+			var dbFile:File = File.applicationStorageDirectory.resolvePath("local.sqlite");
+			var dbExists:Boolean=dbFile.exists;
+			//create sync connection
+			syncConnection= new SQLConnection();
+			try{
+				syncConnection.open(dbFile);
+			}catch (error:SQLError){
+					lastErr=error.errorID;
+					lastErrMsg='Ошибка открытия локальной базы: ' + error.message;;
+				return false;
+			}
+			trace('Local data base connected');
+
+			if(!dbExists){
+				//create tables
+				trace('Local data base - fill shema');
+				createShema();
+			}else{
+				//compact
+				compact();
+			}
+			
+			//create async connection
+			connection= new SQLConnection();
+			connection.addEventListener(SQLEvent.OPEN, onOpenAsyncCnn);
+			connection.openAsync(dbFile);
+			return true;
+		}
+		
+		private static function onOpenAsyncCnn(evt:SQLEvent):void{
+			connection.removeEventListener(SQLEvent.OPEN, onOpenAsyncCnn);
+			createTempTables();
+			var dao:TechPrintGroupDAO= new TechPrintGroupDAO();
+			dao.removeOld();
+		}
+		
+		private static function createShema():void{
+			var sql:String;
+			var stmt:SQLStatement;
+			
+			sql='CREATE TABLE [tech_print_group] ('+
+				 ' [id] VARCHAR(50) NOT NULL,'+
+				 ' [tech_type] INTEGER DEFAULT 0,'+
+				 ' [start_date] DATETIME,'+
+				 ' [end_date] DATETIME,'+
+				 ' [books] INTEGER DEFAULT 0,'+ 
+				 ' [sheets] INTEGER DEFAULT 0,'+ 
+				 ' [start_loged] INTEGER DEFAULT 0,'+ 
+				 ' [done] INTEGER DEFAULT 0,'+ 
+				 ' CONSTRAINT [] PRIMARY KEY ([id]))';
+			stmt= new SQLStatement();
+			stmt.sqlConnection = syncConnection;
+			stmt.text = sql; 
+			stmt.execute();
+			
+			sql="CREATE TABLE [tech_log] ("+
+				 " [id] INTEGER PRIMARY KEY AUTOINCREMENT,"+ 
+				 " [print_group] VARCHAR2(50) NOT NULL CONSTRAINT [tech_log_fk_pg] REFERENCES [tech_print_group]([id]) ON DELETE CASCADE,"+ 
+				 " [sheet] INTEGER NOT NULL,"+
+				 " [src_id] INTEGER NOT NULL DEFAULT '0',"+ 
+				 " [log_date] DATETIME NOT NULL)";
+			stmt= new SQLStatement();
+			stmt.sqlConnection = syncConnection;
+			stmt.text = sql; 
+			stmt.execute();
+
+			sql="CREATE INDEX [tech_log_pg_idx] ON [tech_log] ([print_group])";
+			stmt= new SQLStatement();
+			stmt.sqlConnection = syncConnection;
+			stmt.text = sql; 
+			stmt.execute();
+		}
+		
+		private static function createTempTables():void{
+			var sql:String;
+			var stmt:SQLStatement;
+			//print groups temp table
+			sql='CREATE TEMP TABLE [tmp_tech_pg] ('+
+							' [id] VARCHAR(50) NOT NULL,'+
+							' [start_date] DATETIME,'+
+							' [end_date] DATETIME,'+
+							' [books] INTEGER DEFAULT 0,'+ 
+							' [sheets] INTEGER DEFAULT 0,'+ 
+							' [done] INTEGER DEFAULT 0,'+ 
+							' CONSTRAINT [] PRIMARY KEY ([id]))';
+
+			//sequence.push(prepareStatement(sql,params));
+			//executeSequence(sequence);
+			
+			stmt= new SQLStatement();
+			stmt.sqlConnection = connection;
+			stmt.text = sql; 
+			//stmt.execute();
+			
+			var tu:TransactionUnitLocal= new TransactionUnitLocal(null, [stmt], TransactionUnitLocal.TYPE_WRITE);
+			queue.push(tu);
+			flushQueue();
+
+		}
+
+		private static function compact():void{
+			//TODO implement
+			//kill older 10 days
+			//vacuum?
+		}
+		
 		/****************** instance *****************************/
+		public function get sqlConnection():SQLConnection{
+			return LocalDAO.getSyncConnection();
+		}
+
+		//private var asyncCnn:SQLConnection;
 		
-		
-		
-		protected var sqlConnection:SQLConnection;
-		private var asyncCnn:SQLConnection;
 		public var asyncFaultMode:int=FAULT_REPIT;
 		public var execOnItem:Object;
 
@@ -356,9 +492,9 @@ package com.photodispatcher.model.dao{
 		protected var lastResult:Array;
 		private var isRunning:Boolean=false;
 
-		public function BaseDAO(){
-			sqlConnection = Context.getAttribute("sqlConnection");
-			asyncCnn = Context.getAttribute("asyncConnection");
+		public function LocalDAO(){
+			//sqlConnection = Context.getAttribute("sqlConnection");
+			//asyncCnn = Context.getAttribute("asyncConnection");
 		}
 
 		protected function fillRow(source:Object,dest:DBRecord):void{
@@ -471,14 +607,14 @@ package com.photodispatcher.model.dao{
 			isRunning=true;
 			execOnItem=item;
 			var stmt:SQLStatement=prepareStatement(sql,params);
-			BaseDAO.write(this,[stmt]);
+			LocalDAO.write(this,[stmt]);
 		}
 
 		protected function executeSequence(statements:Array):void{
-			if(TRACE_DEBUG) trace('baseDao About to run sequence dao: '+ this.toString()+DebugUtils.getObjectMemoryHash(this));
+			if(TRACE_DEBUG) trace('baseDao Push to queue sequence dao: '+ this.toString()+DebugUtils.getObjectMemoryHash(this));
 			isRunning=true;
 			asyncFaultMode=FAULT_REPIT;
-			BaseDAO.write(this,statements);
+			LocalDAO.write(this,statements);
 		}
 
 		protected function executeResult(result:int,lastId:int,lastRows:int,errMsg:String=''):void{
@@ -519,159 +655,8 @@ package com.photodispatcher.model.dao{
 			}
 			CursorManager.removeBusyCursor();
 		}
-		
-		public function cleanDatabase(tillDate:Date):void{
-			var sequence:Array=[];
-			var stmt:SQLStatement;
-			var sql:String;
-			var params:Array;
 
-			if(!tillDate) return;
 
-			//clean temps
-			sql='DELETE FROM tmp_orders';
-			sequence.push(prepareStatement(sql));
-			sql='DELETE FROM tmp_print_group';
-			sequence.push(prepareStatement(sql));
-			//get orders to kill
-			sql='INSERT INTO tmp_orders(id)'+
-				' SELECT o.id'+ 
-				' FROM orders o'+
-				' INNER JOIN sources_sync ss ON o.source=ss.id AND o.sync!=ss.sync'+
-				' WHERE o.state_date < ?';
-			sequence.push(prepareStatement(sql,[tillDate]));
-			//get printgroups to kill
-			sql='INSERT INTO tmp_print_group(id)'+
-				' SELECT pg.id'+
-				' FROM print_group pg'+
-				' INNER JOIN tmp_orders t ON t.id=pg.order_id';
-			sequence.push(prepareStatement(sql));
-			//clean files
-			sql='DELETE FROM print_group_file WHERE print_group IN (SELECT id FROM tmp_print_group)';
-			sequence.push(prepareStatement(sql));
-			//clean print_group
-			sql='DELETE FROM print_group WHERE id IN (SELECT id FROM tmp_print_group)';
-			sequence.push(prepareStatement(sql));
-			//clean order extra_info
-			sql='DELETE FROM order_extra_info WHERE id IN (SELECT id FROM tmp_orders)';
-			sequence.push(prepareStatement(sql));
-			//clean suborder extra_info
-			sql='DELETE FROM order_extra_info WHERE id IN (SELECT so.id FROM tmp_orders t INNER JOIN suborders so ON so.order_id=t.id)';
-			sequence.push(prepareStatement(sql));
-			//clean lost extra_info
-			sql="DELETE FROM order_extra_info WHERE EXISTS (SELECT 1 FROM tmp_orders t WHERE order_extra_info.id LIKE t.id || '.%' )";
-			sequence.push(prepareStatement(sql));
-			//clean suborder
-			sql='DELETE FROM suborders WHERE order_id IN (SELECT id FROM tmp_orders)';
-			sequence.push(prepareStatement(sql));
-			//clean extra state
-			sql='DELETE FROM order_extra_state WHERE id IN (SELECT id FROM tmp_orders)';
-			sequence.push(prepareStatement(sql));
-			//clean state_log
-			sql='DELETE FROM state_log WHERE order_id IN (SELECT id FROM tmp_orders)';
-			sequence.push(prepareStatement(sql));
-			//clean state_log
-			sql='DELETE FROM tech_log WHERE print_group IN (SELECT id FROM tmp_print_group)';
-			sequence.push(prepareStatement(sql));
-			//clean orders
-			sql='DELETE FROM orders WHERE id IN (SELECT id FROM tmp_orders)';
-			sequence.push(prepareStatement(sql));
-			//clean temps
-			sql='DELETE FROM tmp_orders';
-			sequence.push(prepareStatement(sql));
-			sql='DELETE FROM tmp_print_group';
-			sequence.push(prepareStatement(sql));
-
-			executeSequence(sequence);
-		}
-		
-
-		public function createTempTables():void{
-			//orders temp table
-			var sql:String="CREATE TEMP TABLE tmp_orders (" +
-				" id         VARCHAR( 50 )  PRIMARY KEY," +
-				" source     INTEGER        DEFAULT ( 0 )," +
-				" src_id     VARCHAR( 50 )  DEFAULT ( ' ' )," +
-				" src_date   DATETIME," +
-				" data_ts    VARCHAR2(20),"+
-				" state      INT            DEFAULT ( 100 )," +
-				" state_max  INT            DEFAULT ( 0 )," +
-				" state_date DATETIME," +
-				" ftp_folder VARCHAR( 50 )," +
-				" fotos_num  INTEGER( 5 )," +
-				" sync       INTEGER," +
-				" reload     INTEGER( 3 )   DEFAULT ( 0 )," +
-				" is_new     INTEGER( 3 )   DEFAULT ( 0 )," +
-				" is_preload INTEGER( 1 )   DEFAULT ( 0 )" +  
-				")";
-			var stmt:SQLStatement = new SQLStatement();
-			stmt.sqlConnection = sqlConnection;
-			stmt.text = sql; 
-			stmt.execute();
-			stmt.sqlConnection=asyncCnn;
-			stmt.execute();
-
-			//print groups temp table
-			sql="CREATE TEMP TABLE tmp_print_group (" +
-				" id         VARCHAR( 50 )  PRIMARY KEY," +
-				" order_id   VARCHAR( 50 ) ,"+
-				" state      INT	DEFAULT ( 100 )," +
-				" state_max  INT	DEFAULT ( 0 )" +
-				")";
-			stmt= new SQLStatement();
-			stmt.sqlConnection = sqlConnection;
-			stmt.text = sql; 
-			stmt.execute();
-			stmt.sqlConnection=asyncCnn;
-			stmt.execute();
-
-			/*
-			//tech log temp table
-			sql="CREATE TEMP TABLE tmp_tech_log (" +
-				   " id          INTEGER         PRIMARY KEY AUTOINCREMENT," +
-				   " print_group VARCHAR( 50 )   NOT NULL," +
-				   " book_num    INTEGER         NOT NULL DEFAULT ( 0 )," +
-				   " page_num    INTEGER         NOT NULL DEFAULT ( 0 )," +
-				   " src_id      INTEGER         NOT NULL DEFAULT ( 0 )," +
-				   " log_date    DATETIME 		 NOT NULL" +
-				")";
-			stmt = new SQLStatement();
-			stmt.sqlConnection = sqlConnection;
-			stmt.text = sql; 
-			stmt.execute();
-			stmt.sqlConnection=asyncCnn;
-			stmt.execute();
-			*/
-		}
-
-		public function clearTempTables():void{
-			var sql:String='DELETE FROM tmp_orders';
-			var stmt:SQLStatement = new SQLStatement();
-			stmt.sqlConnection = sqlConnection;
-			stmt.text = sql; 
-			stmt.execute();
-			stmt.sqlConnection=asyncCnn;
-			stmt.execute();
-
-			sql='DELETE FROM tmp_print_group';
-			stmt= new SQLStatement();
-			stmt.sqlConnection = sqlConnection;
-			stmt.text = sql; 
-			stmt.execute();
-			stmt.sqlConnection=asyncCnn;
-			stmt.execute();
-
-			/*
-			sql='DELETE FROM tmp_tech_log';
-			stmt= new SQLStatement();
-			stmt.sqlConnection = sqlConnection;
-			stmt.text = sql; 
-			stmt.execute();
-			stmt.sqlConnection=asyncCnn;
-			stmt.execute();
-			*/
-		}
-		
 		protected function processRow(row:Object):Object{
 			//throw new Error("You need to override processRow() in your concrete DAO");
 			return row;

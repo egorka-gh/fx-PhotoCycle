@@ -17,6 +17,7 @@
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.SourceTypeDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
+			import com.photodispatcher.model.dao.local.LocalDAO;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.config.DatabasePopup;
 			

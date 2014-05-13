@@ -24,6 +24,7 @@
 			import com.photodispatcher.model.dao.LayersetGroupDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
+			import com.photodispatcher.model.dao.local.LocalDAO;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.ComReaderEmulator;
@@ -136,12 +137,19 @@
 			
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
+				BaseDAO.MAX_WAITE=15000;
+
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
 				bdPopup.chekConnect(SQLMode.UPDATE,false);
 			}
 			private function bdPopClose(e:PopUpEvent):void{
-				if(e.commit){
+				var connected:Boolean=e.commit;
+				if(connected){
+					//create local connection
+					connected=LocalDAO.connect();
+				}
+				if(connected){
 					//connected
 					init();
 					//if(vMonitor) vMonitor.start();
@@ -386,6 +394,10 @@
 				so.flush();  
 			}
 			
+			protected function btRecreateBD_clickHandler(event:MouseEvent):void{
+				LocalDAO.recreateBD();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -408,7 +420,9 @@
 
 	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
 			  top="5" right="5"/>
-		
+	<s:Button id="btRecreateBD" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"
+			  top="35" right="5"/>
+
 	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Технологическая точка:"/>
@@ -510,6 +524,11 @@
 		<s:Group width="5">
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
 		</s:Group>
+		<s:Image source="{LocalDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в локальную базу данных"/>
+		<s:Group width="5">
+			<s:Label text="{LocalDAO.lastErrMsg}" color="#cc0000"/>
+		</s:Group>
+
 		<s:Spacer width="100%"/>
 		<s:Button label="Настройки" includeIn="monitor" click="{stop()}"/>
 		<s:Button label="Шаблоны" includeIn="config" click="{showTemplates();}"/>
