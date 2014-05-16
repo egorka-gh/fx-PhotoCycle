@@ -62,6 +62,7 @@
 		<s:layout>
 			<s:FormLayout gap="-15" />
 		</s:layout>
+		<s:FormHeading label="Штрихкод"/>
 		<s:FormItem label="Увеличение длинны формата (мм)">
 			<s:TextInput id="tiTechAdd" text="{template.tech_add}" change="{template.tech_add=int(tiTechAdd.text)}" restrict="0-9" width="50"/>
 		</s:FormItem> 
@@ -109,6 +110,22 @@
 				<itemRenderer:OffsetEditor id="tiTechBarBOffs" 
 					data="{template.tech_bar_boffset}" enabled="{template.is_tech_bot}"
 										   change="{template.tech_bar_boffset=tiTechBarBOffs.data}"/>
+			</s:HGroup>
+		</s:FormItem>
+		<s:FormHeading label="Лесенка"/>
+		<s:FormItem label="Увеличение высоты формата (мм)">
+			<s:NumericStepper minimum="0" maximum="10" value="@{template.tech_stair_add}"/>
+		</s:FormItem> 
+		<s:FormItem label="Шаг (мм)">
+			<s:NumericStepper minimum="0" maximum="10" value="@{template.tech_stair_step}"/>
+		</s:FormItem> 
+		<s:FormItem label="Рисовать">
+			<s:HGroup gap="0" verticalAlign="baseline">
+				<s:CheckBox selected="@{template.is_tech_stair_top}"/>
+				<s:Label text="Cверху" width="60"/>
+				<s:Spacer width="15"/>
+				<s:CheckBox selected="@{template.is_tech_stair_bot}"/>
+				<s:Label text="Cнизу" width="60"/>
 			</s:HGroup>
 		</s:FormItem>
 	</s:Form>

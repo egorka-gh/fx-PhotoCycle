@@ -79,6 +79,15 @@ package com.photodispatcher.model{
 		public var is_tech_bot:Boolean=false;
 		[Bindable]
 		public var tech_bar_boffset:String='+0+0';
+		[Bindable]
+		public var tech_stair_add:int;
+		[Bindable]
+		public var tech_stair_step:int;
+		[Bindable]
+		public var is_tech_stair_top:Boolean;
+		[Bindable]
+		public var is_tech_stair_bot:Boolean;
+		
 		
 		//ref
 		[Bindable]
@@ -144,6 +153,10 @@ package com.photodispatcher.model{
 			raw.tech_bar_toffset=tech_bar_toffset;
 			raw.is_tech_bot=is_tech_bot;
 			raw.tech_bar_boffset=tech_bar_boffset;
+			raw.tech_stair_add=tech_stair_add;
+			raw.tech_stair_step=tech_stair_step;
+			raw.is_tech_stair_top=is_tech_stair_top;
+			raw.is_tech_stair_bot=is_tech_stair_bot;
 			
 			return raw;
 		}
@@ -183,7 +196,11 @@ package com.photodispatcher.model{
 			pgt.tech_bar_toffset=raw.tech_bar_toffset;
 			pgt.is_tech_bot=raw.is_tech_bot;
 			pgt.tech_bar_boffset=raw.tech_bar_boffset;
-			
+			pgt.tech_stair_add=raw.tech_stair_add;
+			pgt.tech_stair_step=raw.tech_stair_step;
+			pgt.is_tech_stair_top=raw.is_tech_stair_top;
+			pgt.is_tech_stair_bot=raw.is_tech_stair_bot;
+
 			return pgt;
 		}
 

@@ -281,6 +281,9 @@ package com.photodispatcher.provider.preprocess{
 
 					command=(sheets[i] as PdfSheet).getCommand(pageSize,sheetSize,printGroup);
 					
+					//draw stair
+					drawSheetStair(command,sheets[i] as PdfSheet,sheetSize);
+					
 					//draw tech barcode
 					drawSheetTechBar(command, i);
 					
@@ -376,6 +379,43 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 			return result; 
+		}
+
+		private function drawSheetStair(command:IMCommand, sheet:PdfSheet, sheetSize:Point):void{
+			if(!printGroup.bookTemplate.tech_stair_add || !printGroup.bookTemplate.tech_stair_step || 
+				(!printGroup.bookTemplate.is_tech_stair_bot && !printGroup.bookTemplate.is_tech_stair_top)) return;
+			if(!sheet || (!sheet.leftPage && !sheet.rightPage)) return;
+			
+			var fieldMM:int=printGroup.bookTemplate.tech_stair_add;
+			var field:int=UnitUtil.mm2Pixels300(fieldMM);
+			var step:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_stair_step);
+			var stepsPerPage:int=Math.floor((sheetSize.x/2)/step);
+			if(stepsPerPage==0) return;
+			var lOffset:int=-1;
+			if(sheet.leftPage){
+				lOffset=((sheet.leftPage.book_num-1) % stepsPerPage)*step;
+			}
+			var rOffset:int=-1;
+			if(sheet.rightPage){
+				rOffset=((sheet.rightPage.book_num-1) % stepsPerPage)*step;
+				rOffset=sheetSize.x-rOffset-step;
+			}
+			var yOffset:int=sheetSize.y;
+
+			command.add('-stroke'); command.add('none');
+			command.add('-strokewidth'); command.add('0');
+			command.add('-fill'); command.add('black');
+			if(printGroup.bookTemplate.is_tech_stair_top){
+				yOffset+=field;
+				IMCommandUtil.expandImageV(command,fieldMM);
+				if(lOffset!=-1) IMCommandUtil.drawRectangle(command,lOffset,0,step,field);
+				if(rOffset!=-1) IMCommandUtil.drawRectangle(command,rOffset,0,step,field);
+			}
+			if(printGroup.bookTemplate.is_tech_stair_bot){
+				IMCommandUtil.expandImageV(command,fieldMM,'South');
+				if(lOffset!=-1) IMCommandUtil.drawRectangle(command,lOffset,yOffset,step,field);
+				if(rOffset!=-1) IMCommandUtil.drawRectangle(command,rOffset,yOffset,step,field);
+			}
 		}
 
 		private function drawSheetTechBar(command:IMCommand, sheetIndex:int):void{

@@ -185,7 +185,7 @@
 			<s:Button id="btSave" label="Сохранить" click="{saveAll()}"/>
 			<s:Button id="btCancel" label="Отмена" click="{currentState='list';refresh();}"/>
 			<s:Spacer width="50"/>
-			<s:Button id="btTech" label="Технологический ШК" includeIn="itemEdit" click="btTech_clickHandler(event)"/>
+			<s:Button id="btTech" label="Технологическая разметка" includeIn="itemEdit" click="btTech_clickHandler(event)"/>
 		</s:HGroup>
 	</s:VGroup>
 </s:Group>

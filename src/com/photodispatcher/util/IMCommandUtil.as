@@ -131,7 +131,13 @@ package com.photodispatcher.util{
 				command.add('-composite');
 			}
 		}
-		
+
+		public static function drawRectangle (command:IMCommand, left:int, top:int, width:int, height:int):void{
+			// -draw "rectangle 20,10 80,50"
+			command.add('-draw');
+			command.add('rectangle '+left.toString()+','+top.toString()+' '+(left+width).toString()+','+(top+height).toString());
+		}
+
 		public static function annotateTransparent(command:IMCommand, height:int, text:String, offset:String, rotate:int=0, gravity:String='southeast'):void{
 			if(!command || !text || height<=0) return;
 			if(!offset) offset='+0+0';
@@ -173,7 +179,18 @@ package com.photodispatcher.util{
 				command.add('-splice'); command.add(amount.toString()+'x0');
 			}
 		}
-		
+
+		public static function expandImageV(command:IMCommand, amountMM:int, imageGravity:String='North'):void{
+			if(amountMM>0){
+				//expand to right
+				var amount:int=UnitUtil.mm2Pixels300(amountMM);
+				//-gravity east -background white  -splice 20x0
+				command.add('-gravity'); command.add(imageGravity);
+				command.add('-background'); command.add('white');
+				command.add('-splice'); command.add('0x'+amount.toString());
+			}
+		}
+
 		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, 
 										   offset:String, rotate:int=0, gravity:String='southwest',
 										   step:Number=3, color:int=0, quietZone:int=CODE128_QUIET_ZONE):void{

@@ -37,7 +37,8 @@ package com.photodispatcher.model.dao{
 				' sheet_width=?, sheet_len=?, page_width=?, page_len=?, page_hoffset=?, font_size=?, font_offset=?, fontv_size=?, fontv_offset=?,'+
 				' notching=?, stroke=?, bar_offset=?, bar_size=?,' + 
 				' tech_bar=?, tech_add=?, tech_bar_color=?, tech_bar_step=?,'+
-				' is_tech_center=?, tech_bar_offset=?, is_tech_top=?, tech_bar_toffset=?, is_tech_bot=?, tech_bar_boffset=?' + 
+				' is_tech_center=?, tech_bar_offset=?, is_tech_top=?, tech_bar_toffset=?, is_tech_bot=?, tech_bar_boffset=?,' + 
+				' tech_stair_add=?, tech_stair_step=?, is_tech_stair_top=?, is_tech_stair_bot=?' + 
 				' WHERE id=?',
 				[	item.book,
 					item.book_part,
@@ -74,6 +75,10 @@ package com.photodispatcher.model.dao{
 					item.tech_bar_toffset,
 					item.is_tech_bot?1:0,
 					item.tech_bar_boffset,
+					item.tech_stair_add,
+					item.tech_stair_step,
+					item.is_tech_stair_top?1:0,
+					item.is_tech_stair_bot?1:0,
 					item.id],item);
 		}
 		
@@ -83,8 +88,9 @@ package com.photodispatcher.model.dao{
 				'INSERT INTO config.book_pg_template (book, book_part, width, height, height_add, paper, frame, correction, cutting, is_duplex, is_pdf, is_sheet_ready,'+
 					' sheet_width, sheet_len, page_width, page_len, page_hoffset, font_size, font_offset, fontv_size, fontv_offset,'+
 					' notching, stroke, bar_offset, bar_size,'+
-					' tech_bar, tech_add, tech_bar_color, tech_bar_step, is_tech_center, tech_bar_offset, is_tech_top, tech_bar_toffset, is_tech_bot, tech_bar_boffset)' +
-				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+					' tech_bar, tech_add, tech_bar_color, tech_bar_step, is_tech_center, tech_bar_offset, is_tech_top, tech_bar_toffset, is_tech_bot, tech_bar_boffset,'+
+					' tech_stair_add, tech_stair_step, is_tech_stair_top, is_tech_stair_bot)' +
+				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[	item.book,
 					item.book_part,
 					item.width,
@@ -119,7 +125,11 @@ package com.photodispatcher.model.dao{
 					item.is_tech_top?1:0,
 					item.tech_bar_toffset,
 					item.is_tech_bot?1:0,
-					item.tech_bar_boffset
+					item.tech_bar_boffset,
+					item.tech_stair_add,
+					item.tech_stair_step,
+					item.is_tech_stair_top?1:0,
+					item.is_tech_stair_bot?1:0
 				],item);
 		}
 		private function onCreate(e:AsyncSQLEvent):void{

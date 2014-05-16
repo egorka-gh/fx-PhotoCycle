@@ -405,8 +405,8 @@ package com.photodispatcher.model.dao{
 			}catch(err:SQLError){
 				lastResult=null;
 				if(err.errorID!=3119){
-					if(TRACE_DEBUG) trace('BaseDAO.runSelect err: '+err.message+'; sql: '+stmt.text)
-					Alert.show('Ошибка чтения данных: ' +err.message);
+					if(TRACE_DEBUG) trace('BaseDAO.runSelect err: '+err.details+'; sql: '+stmt.text)
+					Alert.show('Ошибка чтения данных: ' +err.details+'; sql: '+stmt.text); 
 				}else{
 					trace('BaseDAO.runSelect lock error; sql: '+stmt.text)
 					if(!silent) Alert.show('Ошибка чтения данных. Данные блокированы другим процессом. Повторите попытку попозже. sql: '+stmt.text);
@@ -419,6 +419,32 @@ package com.photodispatcher.model.dao{
 				result = result.slice(startRow, pageSize);
 			}
 			lastResult=result;
+			return true;
+		}
+
+		/**
+		 *execute INSERT, UPDATE or DELETE use sync connection 
+		 * use to fill temp tables 4 sync selects
+		 * @param sql
+		 * @param params
+		 * 
+		 */
+		public function executeSync(sql:String, params:Array=null, silent:Boolean=true):Boolean{
+			var stmt:SQLStatement = prepareStatement(sql,params);
+			stmt.sqlConnection = sqlConnection;
+			try{
+				stmt.execute();
+			}catch(err:SQLError){
+				lastResult=null;
+				if(err.errorID!=3119){
+					if(TRACE_DEBUG) trace('BaseDAO.executeSync err: '+err.details+'; sql: '+stmt.text)
+					Alert.show('Ошибка : ' +err.details+'; sql: '+stmt.text); 
+				}else{
+					trace('BaseDAO.runSelect lock error; sql: '+stmt.text)
+					if(!silent) Alert.show('Ошибка. Данные блокированы другим процессом. Повторите попытку попозже. sql: '+stmt.text);
+				}
+				return false;
+			}
 			return true;
 		}
 
@@ -458,7 +484,7 @@ package com.photodispatcher.model.dao{
 		}
 
 		/**
-		 *execute INSERT, UPDATE or DELETE async 
+		 *execute INSERT, UPDATE or DELETE use async connection 
 		 * @param sql
 		 * @param params
 		 * 
@@ -567,6 +593,8 @@ package com.photodispatcher.model.dao{
 			//clean extra state
 			sql='DELETE FROM order_extra_state WHERE id IN (SELECT id FROM tmp_orders)';
 			sequence.push(prepareStatement(sql));
+			sql='DELETE FROM order_exstate_prolong WHERE id IN (SELECT id FROM tmp_orders)';
+			sequence.push(prepareStatement(sql));
 			//clean state_log
 			sql='DELETE FROM state_log WHERE order_id IN (SELECT id FROM tmp_orders)';
 			sequence.push(prepareStatement(sql));
@@ -617,6 +645,21 @@ package com.photodispatcher.model.dao{
 				" order_id   VARCHAR( 50 ) ,"+
 				" state      INT	DEFAULT ( 100 )," +
 				" state_max  INT	DEFAULT ( 0 )" +
+				")";
+			stmt= new SQLStatement();
+			stmt.sqlConnection = sqlConnection;
+			stmt.text = sql; 
+			stmt.execute();
+			stmt.sqlConnection=asyncCnn;
+			stmt.execute();
+
+			//orders spy temp table
+			sql="CREATE TEMP TABLE tmp_orders_spy (" +
+				" id         VARCHAR( 50 )  PRIMARY KEY," +
+				" state      INT," +
+				" start_date DATETIME," +
+				" state_date DATETIME," +
+				" max_date   DATETIME" +
 				")";
 			stmt= new SQLStatement();
 			stmt.sqlConnection = sqlConnection;

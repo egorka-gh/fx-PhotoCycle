@@ -420,7 +420,7 @@
 
 	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
 			  top="5" right="5"/>
-	<s:Button id="btRecreateBD" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"
+	<s:Button id="btRecreateBD" includeIn="config" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"
 			  top="35" right="5"/>
 
 	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">

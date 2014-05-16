@@ -624,6 +624,22 @@ package com.photodispatcher.model.dao{
 
 		}
 
+		public function prolongExtraState(orderId:String, state:int, comment:String=null):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			var dt:Date=new Date();
+			
+			//set order extra state
+			sql='INSERT OR IGNORE INTO order_exstate_prolong (id, state, state_date, comment)'+
+				' VALUES (?, ?, ?, ?)';
+			params=[orderId, state, dt, comment];
+			sequence.push(prepareStatement(sql,params));
+
+			executeSequence(sequence);
+		}
+
 		public function setExtraStateByTech(orderId:String,tech_type:int, tech_point:int=0):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;

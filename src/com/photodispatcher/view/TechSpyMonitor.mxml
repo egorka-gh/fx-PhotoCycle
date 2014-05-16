@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}"
+		 keyDown="onKey(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.OrderState;
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.dao.SourceTypeDAO;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import flash.globalization.DateTimeStyle;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.IndexChangeEvent;
+			import spark.formatters.DateTimeFormatter;
+			private var timer:Timer;
+			[Bindable]
+			private var refreshInterval:int;
+			[Bindable]
+			private var delayInterval:int;
+
+			[Bindable]
+			private var listAC:ArrayCollection;
+			[Bindable]
+			private var gridColumnsAC:ArrayCollection;
+			[Bindable]
+			private var techTypeAC:ArrayCollection;
+			[Bindable]
+			private var bookPartAC:ArrayCollection= new ArrayCollection([{id:0, label:'-'}, {id:1, label:'Обложка'}, {id:2, label:'Блок'}]);
+
+			private var startState:int;
+			private var endState:int;
+			
+			public function start():void{
+				refresh();
+			}
+			
+			public function stop():void{
+				if(timer){
+					timer.stop();
+					timer.removeEventListener(TimerEvent.TIMER, onTimer);
+					timer=null;
+				}
+			}
+
+			private var initComplite:Boolean=false;
+			private function init():void{
+				var stDao:SourceTypeDAO= new SourceTypeDAO();
+				techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
+				createColumnsAC();
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					refreshInterval=so.data.refreshInterval;
+					delayInterval=so.data.delayInterval;
+					startState=so.data.startState;
+					endState=so.data.endState;
+				}
+				if(!delayInterval) delayInterval=4;
+				if(!startState) startState= OrderState.PRN_POST;
+				if(!endState) endState= OrderState.TECH_COVER_BLOK_PICKING;
+				if(techTypeAC){
+					var sort:Sort= new Sort();
+					sort.fields=[new SortField('state',false,true)];
+					techTypeAC.sort=sort;
+					techTypeAC.refresh();
+					
+					var arr:Array=techTypeAC.source;
+					var it:SourceType=ArrayUtil.searchItem('state',startState,arr) as SourceType;
+					if(it && ddStartOp) ddStartOp.selectedItem=it;
+					it=ArrayUtil.searchItem('state',endState,arr) as SourceType;
+					if(it && ddEndOp) ddEndOp.selectedItem=it;
+				}
+				initComplite=true;
+				refresh();
+			}
+			
+			private function startTimer():void{
+				if(timer && timer.running) timer.stop();
+				if(refreshInterval<=0) return;
+				if(!timer){
+					timer= new Timer(refreshInterval*60000,1);
+					timer.addEventListener(TimerEvent.TIMER, onTimer);
+				}
+				timer.delay=refreshInterval*60000;
+				timer.start();
+			}
+
+			private function onTimer(evt:TimerEvent):void{
+				refresh();
+			}
+
+			private function createColumnsAC():void{
+				gridColumnsAC= new ArrayCollection();
+				
+				var col:GridColumn = new GridColumn('id'); col.headerText='Заказ'; gridColumnsAC.addItem(col);
+				col= new GridColumn('op_name'); col.headerText='Операция'; gridColumnsAC.addItem(col); 
+				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('start_date'); col.headerText='Старт'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
+				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('state_date'); col.headerText='Конец'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
+				col= new GridColumn('bp_name'); col.headerText='Часть книги'; gridColumnsAC.addItem(col);
+				col= new GridColumn('delay'); col.headerText='Задержка'; gridColumnsAC.addItem(col);
+
+			}
+			
+			private function refresh():void{
+				if(!initComplite) return;
+				if(timer && timer.running) timer.stop();
+				var dt:Date= new Date();
+				var bPart:int=0;
+				if(ddBookPart.selectedItem) bPart=ddBookPart.selectedItem.id;
+				if(delayInterval) dt= new Date(dt.fullYear,dt.month,dt.date,dt.hours-delayInterval,dt.minutes);
+				/*
+				var sql:String='SELECT oe2.id, oe2.state, oe2.start_date, oe2.state_date, st.name op_name, st.book_part, bp.name bp_name,'+
+									" (strftime('%s', ?) - strftime('%s',IFNULL(oe2.state_date,oe2.start_date)))/3600 AS delay"+	
+								' FROM'+
+								' (SELECT o.id, MAX(IFNULL(oe.state_date,oe.start_date)) lastdt'+ 
+									' FROM orders o'+
+									' INNER JOIN order_extra_state oe ON oe.id=o.id and oe.state BETWEEN ? AND ?'+
+									' WHERE o.state < ?'+  
+									' GROUP BY o.id'+
+									' HAVING MAX(IFNULL(oe.state_date,oe.start_date)) < ?) t'+
+								' INNER JOIN order_extra_state oe2 ON t.id=oe2.id AND t.lastdt IN (oe2.start_date,oe2.state_date)'+
+								' INNER JOIN config.src_type st ON oe2.state=st.state AND st.loc_type=3 AND (0=? OR st.book_part IN(0,?))'+
+								' INNER JOIN config.book_part bp ON bp.id = st.book_part'+
+								' ORDER BY IFNULL(oe2.state_date,oe2.start_date)';
+				var params:Array=[dt, startState, endState, OrderState.TECH_OTK, dt, bPart, bPart];
+				var dao:BaseDAO= new BaseDAO();
+				CursorManager.setBusyCursor();
+				if (dao.runSelect(sql,params)){
+					listAC=dao.rawList;
+				}
+				CursorManager.removeBusyCursor();
+				*/
+				
+				var dao:BaseDAO= new BaseDAO();
+				var sql:String;
+				var params:Array
+				CursorManager.setBusyCursor();
+				sql='DELETE FROM tmp_orders_spy';
+				if (dao.executeSync(sql)){
+					//finde orders
+					sql='INSERT INTO tmp_orders_spy (id, state, start_date, state_date, max_date)'+
+						'SELECT oe2.id, oe2.state, oe2.start_date, oe2.state_date, t.lastdt'+	
+						' FROM'+
+						' (SELECT o.id, MAX(IFNULL(oe.state_date,oe.start_date)) lastdt'+ 
+						' FROM orders o'+
+						' INNER JOIN order_extra_state oe ON oe.id=o.id and oe.state BETWEEN ? AND ?'+
+						' WHERE o.state < ?'+  
+						' GROUP BY o.id'+
+						' HAVING MAX(IFNULL(oe.state_date,oe.start_date)) < ?) t'+
+						' INNER JOIN order_extra_state oe2 ON t.id=oe2.id AND t.lastdt IN (oe2.start_date,oe2.state_date)'+
+						' INNER JOIN config.src_type st ON oe2.state=st.state AND st.loc_type=3 AND (0=? OR st.book_part IN(0,?))';
+					params=[startState, endState, OrderState.TECH_OTK, dt, bPart, bPart];
+					if (dao.executeSync(sql,params)){
+						//del fbooks
+						sql='DELETE FROM tmp_orders_spy'+
+							' WHERE EXISTS'+
+							' (SELECT 1 FROM suborders so WHERE so.order_id=tmp_orders_spy.id)';
+						if (dao.executeSync(sql)){
+							//del simple foto
+							sql='DELETE FROM tmp_orders_spy'+
+								' WHERE NOT EXISTS'+
+								' (SELECT 1 FROM print_group pg WHERE pg.order_id=tmp_orders_spy.id AND pg.book_type IN (1,2,3))';
+							if (dao.executeSync(sql)){
+								//del prolonged
+								sql='DELETE FROM tmp_orders_spy'+
+									' WHERE EXISTS'+
+									' (SELECT 1 FROM order_exstate_prolong so WHERE so.id=tmp_orders_spy.id AND so.state=tmp_orders_spy.state AND so.state_date >= ?)';
+								if (dao.executeSync(sql,[dt])){
+									//final select
+									sql='SELECT t.id, t.state, t.start_date, t.state_date, st.name op_name, st.book_part, bp.name bp_name,'+
+										" (strftime('%s', ?) - strftime('%s', t.max_date))/3600 AS delay"+	
+										' FROM tmp_orders_spy t'+
+										' INNER JOIN config.src_type st ON t.state=st.state AND st.loc_type=3'+
+										' INNER JOIN config.book_part bp ON bp.id = st.book_part'+
+										' ORDER BY t.max_date';
+									if (dao.runSelect(sql,[new Date()])){
+										listAC=dao.rawList;
+									}
+								}
+							}
+						}
+					}
+				}
+				CursorManager.removeBusyCursor();
+				
+				if(dgMonitor) dgMonitor.columnHeaderGroup.visibleSortIndicatorIndices=new Vector.<int>([]);
+				startTimer();
+			}
+			
+			protected function nsRefreshInterval_changeHandler(event:Event):void{
+				refreshInterval= nsRefreshInterval.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.refreshInterval = refreshInterval;
+				so.flush();  
+				startTimer();
+			}
+			
+			protected function nsDelay_changeHandler(event:Event):void{
+				delayInterval= nsDelay.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.delayInterval = delayInterval;
+				so.flush();
+				refresh();
+			}
+			
+			protected function ddStartOp_changeHandler(event:IndexChangeEvent):void{
+				var it:SourceType=ddStartOp.selectedItem as SourceType;
+				if(!it) return;
+				startState=it.state;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.startState = startState;
+				so.flush();
+				refresh();
+			}
+			
+			protected function ddEndOp_changeHandler(event:IndexChangeEvent):void{
+				var it:SourceType=ddEndOp.selectedItem as SourceType;
+				if(!it) return;
+				endState=it.state;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.endState = endState;
+				so.flush();
+				refresh();
+			}
+			
+			private function onKey(e:KeyboardEvent):void{
+				if(e.ctrlKey && e.keyCode==70){
+					//order lookup
+					var pop:OrderSearchPopup=new OrderSearchPopup();
+					pop.open(null);
+				}
+			}
+
+			
+			private var ordersGridMenu:GridContexMenu;
+			protected function dgMonitor_creationCompleteHandler(event:FlexEvent):void{
+				ordersGridMenu= new GridContexMenu(dgMonitor); //, [GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
+				ordersGridMenu.addItem('Выполнен',completeCallBack);
+				ordersGridMenu.addItem('Сброс задержки',resetCallBack);
+				ordersGridMenu.addItem('');
+				ordersGridMenu.addItem('Состояние',showCallBack);
+			}
+			
+			private function showCallBack(grid:DataGrid,param:int):void{
+				var onItem:Object;
+				onItem=grid.selectedItem;
+				if(onItem && onItem.id){
+					var pop:OrderInfoPopup=new OrderInfoPopup();
+					pop.show(onItem.id,true);
+				}
+			}
+
+			private function resetCallBack(grid:DataGrid,param:int):void{
+				var onItem:Object;
+				onItem=grid.selectedItem;
+				if(onItem && onItem.id && onItem.state){
+					var dao:OrderDAO= new OrderDAO();
+					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderReset);
+					dao.prolongExtraState(onItem.id, onItem.state);
+				}
+			}
+			private function onOrderReset(event:AsyncSQLEvent):void{
+				var dao:OrderDAO=event.target as OrderDAO;
+				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderReset);
+				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
+					refresh();
+				}else{
+					Alert.show(event.error,'',4,null,refresh);
+				}
+			}
+
+			private var writeQueue:Array=[];
+			private var isWriting:Boolean=false;
+			private function completeCallBack(grid:DataGrid,param:int):void{
+				var items:Vector.<Object>;
+				items=grid.selectedItems;
+				if(!items || items.length==0) return;
+				var onItem:Object;
+				for each(onItem in items){
+					if (writeQueue.indexOf(onItem.id)==-1) writeQueue.push(onItem.id);
+				}
+				if(!isWriting) writeNext();
+			}
+			
+			private function writeNext():void {
+				if(writeQueue.length==0){
+					//complite
+					isWriting=false;
+					refresh();
+					return;
+				}
+				var dao:OrderDAO= new OrderDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
+				dao.setExtraStateByTech(writeQueue[0], SourceType.TECH_OTK);
+			}
+			private function onOrderCompleteSet(event:AsyncSQLEvent):void{
+				var dao:OrderDAO=event.target as OrderDAO;
+				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
+				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
+					writeQueue.shift();
+					writeNext();
+				}else{
+					isWriting=false;
+					Alert.show(event.error,'',4,null,refresh);
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<s:VGroup id="gGrid" gap="5" top="0" left="0" right="0" bottom="0">
+		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			<s:Label text="Параметры " fontWeight="bold"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Начало"/>
+			<s:DropDownList id="ddStartOp" dataProvider="{techTypeAC}" labelField="name" width="180"
+							change="ddStartOp_changeHandler(event)"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Конец" />
+			<s:DropDownList id="ddEndOp" dataProvider="{techTypeAC}" labelField="name" width="180"
+							change="ddEndOp_changeHandler(event)"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Часть книги"/>
+			<s:DropDownList id="ddBookPart" dataProvider="{bookPartAC}" creationComplete="{ddBookPart.selectedIndex=0}"
+							change="{refresh()}"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Задержка (ч)"/>
+			<s:NumericStepper id="nsDelay" value="{delayInterval}" minimum="0" maximum="300" 
+							  width="50" change="nsDelay_changeHandler(event)"/>
+
+			<!--<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>-->
+			
+			<s:Spacer width="100%"/>
+			<s:Label text="Обновление (мин)"/>
+			<s:NumericStepper id="nsRefreshInterval" value="{refreshInterval}" minimum="0" maximum="120" 
+							  width="50" change="nsRefreshInterval_changeHandler(event)"/>
+			
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<s:DataGrid id="dgMonitor" selectionMode="multipleRows"
+					width="100%" height="100%" 
+					dataProvider="{listAC}" locale="ru_RU" columns="{gridColumnsAC}"
+					creationComplete="dgMonitor_creationCompleteHandler(event)">
+		</s:DataGrid>
+		<!--<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)" enabled="{manualAdd}"/>-->
+	</s:VGroup>
+
+</s:Group>

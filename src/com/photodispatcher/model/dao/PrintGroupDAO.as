@@ -695,6 +695,12 @@ package com.photodispatcher.model.dao{
 				' FROM orders o WHERE o.id = ? AND o.state_date = ?';
 			params=[item.order_id, dt];
 			sequence.push(prepareStatement(sql,params));
+			
+			//set (start) order extra state
+			sql='INSERT OR IGNORE INTO order_extra_state (id, state, start_date)'+
+												' VALUES (?, ?, ?)';
+			params=[item.order_id, OrderState.PRN_POST, dt];
+			sequence.push(prepareStatement(sql,params));
 
 			//start Sequence
 			executeSequence(sequence);

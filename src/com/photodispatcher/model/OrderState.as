@@ -54,6 +54,7 @@ package com.photodispatcher.model{
 		public static const TECH_CUTTING:int=360;
 		public static const TECH_COVER_BLOK_PICKING:int=370;
 		public static const TECH_COVER_BLOK_JOIN:int=380;
+		public static const TECH_OTK:int=450;
 		public static const CANCELED:int=510;
 		public static const SKIPPED:int=520;
 
