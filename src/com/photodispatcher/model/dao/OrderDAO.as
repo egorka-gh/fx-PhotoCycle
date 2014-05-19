@@ -696,6 +696,21 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		public function resetExtraStateByTech(orderId:String,tech_type:int):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			
+			//del order extra state
+			sql='DELETE FROM order_extra_state'+
+				' WHERE id=? AND state=(SELECT st.state FROM config.src_type st WHERE st.id=?)';
+			params=[orderId, tech_type];
+			sequence.push(prepareStatement(sql,params));
+
+			executeSequence(sequence);
+		}
+
 		private function getRawVal(key:String, jo:Object):Object{
 			if(!key) return null; 
 			var path:Array=key.split('.');

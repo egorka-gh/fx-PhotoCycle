@@ -47,6 +47,7 @@ package com.photodispatcher.model{
 			*/
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
 			col= new GridColumn('log_date'); col.headerText='Дата'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('tech_point_name'); col.headerText='Тех точка'; col.width=150; result.push(col);
 			col= new GridColumn('book_num'); col.headerText='№ Книги'; col.width=100; result.push(col);
 			col= new GridColumn('page_num'); col.headerText='№ Листа'; col.width=100; result.push(col);
 			return new ArrayList(result);

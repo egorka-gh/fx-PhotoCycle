@@ -247,6 +247,7 @@ package com.photodispatcher.tech{
 				writeNext();
 			}else{
 				//database locked
+				complited=[];
 				isWriting=false;
 			}
 		}

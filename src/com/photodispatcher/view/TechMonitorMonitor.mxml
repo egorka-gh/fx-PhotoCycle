@@ -8,6 +8,7 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.model.Order;
 			import com.photodispatcher.model.SourceType;
@@ -149,6 +150,10 @@
 				ordersGridMenu= new GridContexMenu(dgMonitor); //, [GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
 				ordersGridMenu.addItem('Выполнен',completeCallBack);
 				ordersGridMenu.addItem('');
+				if(manualAdd){
+					ordersGridMenu.addItem('Отменить',cancelMonitorCallBack);
+					ordersGridMenu.addItem('');
+				}
 				ordersGridMenu.addItem('Состояние',showCallBack);
 			}
 			
@@ -160,6 +165,49 @@
 					pop.show(onItem.id,true);
 				}
 			}
+			
+			private var cancelItem:Object;
+			private function cancelMonitorCallBack(grid:DataGrid,param:int):void{
+				cancelItem=null;
+				var onItem:Object;
+				onItem=grid.selectedItem;
+				if(onItem && onItem.id) cancelItem=onItem;
+				if(cancelItem) checkCfgPass();
+			}
+			protected function checkCfgPass():void{
+				var configPass:String=Context.getAttribute('configPass');
+				if(!configPass){
+					cancelMonitor();
+					return;
+				}
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPassCheck);
+				passPop.show(configPass);
+			}
+			protected function onCfgPassCheck(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(passPop) passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPassCheck);
+				if(event.commit) cancelMonitor();
+			}
+			private function cancelMonitor():void{
+				if(!cancelItem) return;
+				var dao:OrderDAO= new OrderDAO();
+				dao.resetExtraStateByTech(cancelItem.id, techPoint.tech_type);
+				dao= new OrderDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCanceled);
+				dao.resetExtraStateByTech(cancelItem.id,startTechType.id);
+				cancelItem=null;
+			}
+			private function onOrderCanceled(event:AsyncSQLEvent):void{
+				var dao:OrderDAO=event.target as OrderDAO;
+				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCanceled);
+				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
+					refresh();
+				}else{
+					Alert.show(event.error);
+				}
+			}
+
 			
 			private function completeCallBack(grid:DataGrid,param:int):void{
 				var onItem:Object;

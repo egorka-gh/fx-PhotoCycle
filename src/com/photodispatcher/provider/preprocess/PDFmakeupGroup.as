@@ -282,7 +282,7 @@ package com.photodispatcher.provider.preprocess{
 					command=(sheets[i] as PdfSheet).getCommand(pageSize,sheetSize,printGroup);
 					
 					//draw stair
-					drawSheetStair(command,sheets[i] as PdfSheet,sheetSize);
+					drawSheetStair(command,sheets[i] as PdfSheet,sheetSize, i);
 					
 					//draw tech barcode
 					drawSheetTechBar(command, i);
@@ -381,7 +381,7 @@ package com.photodispatcher.provider.preprocess{
 			return result; 
 		}
 
-		private function drawSheetStair(command:IMCommand, sheet:PdfSheet, sheetSize:Point):void{
+		private function drawSheetStair(command:IMCommand, sheet:PdfSheet, sheetSize:Point, sheetIndex:int):void{
 			if(!printGroup.bookTemplate.tech_stair_add || !printGroup.bookTemplate.tech_stair_step || 
 				(!printGroup.bookTemplate.is_tech_stair_bot && !printGroup.bookTemplate.is_tech_stair_top)) return;
 			if(!sheet || (!sheet.leftPage && !sheet.rightPage)) return;
@@ -391,14 +391,21 @@ package com.photodispatcher.provider.preprocess{
 			var step:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_stair_step);
 			var stepsPerPage:int=Math.floor((sheetSize.x/2)/step);
 			if(stepsPerPage==0) return;
+			var isFront:Boolean=!printGroup.is_duplex || (sheetIndex % 2)==0;
+
 			var lOffset:int=-1;
 			if(sheet.leftPage){
 				lOffset=((sheet.leftPage.book_num-1) % stepsPerPage)*step;
+				if(!isFront) lOffset=(sheetSize.x/2)-lOffset-step;
 			}
 			var rOffset:int=-1;
 			if(sheet.rightPage){
 				rOffset=((sheet.rightPage.book_num-1) % stepsPerPage)*step;
-				rOffset=sheetSize.x-rOffset-step;
+				if(isFront){
+					rOffset+=(sheetSize.x/2);
+				}else{
+					rOffset=sheetSize.x-rOffset-step;
+				}
 			}
 			var yOffset:int=sheetSize.y;
 

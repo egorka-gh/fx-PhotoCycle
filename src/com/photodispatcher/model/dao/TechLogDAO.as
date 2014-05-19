@@ -59,11 +59,13 @@ package com.photodispatcher.model.dao{
 							' INNER JOIN config.tech_point tp ON tl.src_id=tp.id'+
 							' INNER JOIN config.src_type st ON tp.tech_type=st.id'+ 
 							' INNER JOIN config.order_state os ON st.state = os.id'+
-							' WHERE pg.order_id=?';
+							' WHERE pg.order_id=?'+
+							' ORDER BY tl.log_date';
 			runSelect(sql,[orderId]);
 			return itemsArray;
 		}
 		
+		/*
 		public function getTechByOrderAgg(orderId:String):Array{
 			var sql:String=
 				'SELECT tl.print_group, tl.src_id, tp.name tech_point_name, st.state tech_state, os.name tech_state_name,'+
@@ -79,6 +81,7 @@ package com.photodispatcher.model.dao{
 			runSelect(sql,[orderId]);
 			return itemsArray;
 		}
+		*/
 
 	}
 }

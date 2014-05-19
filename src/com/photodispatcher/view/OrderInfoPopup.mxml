@@ -10,6 +10,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.OrderExtraState;
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.PrintGroupFile;
@@ -18,6 +19,7 @@
 			import com.photodispatcher.model.Suborder;
 			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.dao.OrderExtraStateDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.PrintGroupFileDAO;
 			import com.photodispatcher.model.dao.StateLogDAO;
@@ -104,7 +106,10 @@
 					techList=new ArrayCollection(a);
 					techList.filterFunction=filterTechList;
 					techList.refresh();
-					a=tDao.getTechByOrderAgg(order.id);
+					
+					//a=tDao.getTechByOrderAgg(order.id);
+					var oeDAO:OrderExtraStateDAO= new OrderExtraStateDAO();
+					a=oeDAO.getByOrder(order.id);
 					techListAgg= new ArrayCollection(a);
 					
 					var lDao:StateLogDAO=new StateLogDAO();
@@ -152,12 +157,17 @@
 				fileList.refresh();
 			}
 			private function filterTechList(item:Object):Boolean {
-				if(!dgTechAgg || dgTechAgg.selectedIndex==-1) return false;
+				if(!dgTechAgg || dgTechAgg.selectedIndex==-1) return true;
 				var f:TechLog=item as TechLog;
+				var es:OrderExtraState=dgTechAgg.selectedItem as OrderExtraState;
+				if(!f || !es) return false;
+				if(f.tech_state==es.state) return true;
+				/*
 				var ft:TechLog=dgTechAgg.selectedItem as TechLog;
 				if(!f || !ft) return false;
 				if(ft.print_group==f.print_group && ft.src_id==f.src_id && ft.tech_state==f.tech_state) return true;
 				//if(lstFilterTech && lstFilterTech.selectedIndex>0 && lstFilterTech.selectedItem.id!=f.print_group) return false;
+				*/
 				return false;
 			}
 			private function applyTechFilter():void{
@@ -466,14 +476,16 @@
 							</s:HGroup>
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Тех. точки" width="100%" height="100%">
-							<s:Scroller width="100%" height="100%">
-								<s:HGroup gap="10" height="100%" top="10" left="10" right="10" bottom="10">
+							<!--<s:Scroller top="10" left="10" right="10" bottom="10">-->
+								<s:HGroup gap="10" top="10" left="10" right="10" bottom="10">
+									<!--<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" selectionChange="{applyTechFilter()}"
+												dataProvider="{techListAgg}" locale="ru_RU" columns="{TechLog.gridColumnsTechAgg()}"/>-->
 									<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" selectionChange="{applyTechFilter()}"
-												dataProvider="{techListAgg}" locale="ru_RU" columns="{TechLog.gridColumnsTechAgg()}"/>
+												dataProvider="{techListAgg}" locale="ru_RU" columns="{OrderExtraState.gridColumnsTech()}"/>
 									<s:DataGrid id="dgTech" selectionMode="none" height="100%"
 												dataProvider="{techList}" locale="ru_RU" columns="{TechLog.gridColumnsTech()}"/>
 								</s:HGroup>
-							</s:Scroller>
+							<!--</s:Scroller>-->
 						</s:NavigatorContent>
 						<s:NavigatorContent label="История" width="100%" height="100%">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">

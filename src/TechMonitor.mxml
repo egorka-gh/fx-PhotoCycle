@@ -9,6 +9,7 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.Source;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
@@ -19,6 +20,7 @@
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
 			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.PasswPopup;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
 			import mx.collections.ArrayCollection;
@@ -93,12 +95,14 @@
 					yelloyState=Boolean(so.data.yelloyState);
 					//compliteTechType=so.data.compliteTechType;
 					refreshInterval=so.data.refreshInterval;
+					var configPass:String=so.data.configPass;;
+					if(configPass) Context.setAttribute('configPass',configPass);
 				}
 				if(startTechType) startTechTypeIdx=ArrayUtil.searchItemIdx('id',startTechType,techTypeAC.source);
 				if(endTechType) endTechTypeIdx=ArrayUtil.searchItemIdx('id',endTechType,techTypeAC.source);
 				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
 				//if(compliteTechType) compliteTechTypeIdx=ArrayUtil.searchItemIdx('value',compliteTechType,techTypeAC.source);
-
+				checkCfgPass();
 				currentState='config';
 			}
 
@@ -182,10 +186,12 @@
 			
 			protected function button2_clickHandler(event:MouseEvent):void{
 				if(techMonitor) techMonitor.stop();
+				cfgEnabled=false;
 				currentState='config';
 			}
 			
 			protected function state1_enterStateHandler(event:FlexEvent):void{
+				cfgEnabled=false;
 				var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
 				var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
 				techMonitor.techPoint=techPointObj;
@@ -194,6 +200,58 @@
 				techMonitor.endTechType=endTT;
 				techMonitor.refreshInterval=refreshInterval;
 				techMonitor.start();
+			}
+			
+			protected function btSetPass_clickHandler(event:MouseEvent):void{
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPass);
+				passPop.show('',true);
+			}
+			protected function onCfgPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(!passPop) return;
+				passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					var newPass:String=passPop.pass;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.configPass = newPass;
+					so.flush();  
+					Context.setAttribute('configPass', newPass);
+				}
+			}
+			
+			protected function btOffPass_clickHandler(event:MouseEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.configPass = '';
+				so.flush();  
+				Context.setAttribute('configPass', '');
+			}
+			[Bindable]
+			private var cfgEnabled:Boolean;
+
+			protected function checkCfgPass(ask:Boolean=false):void{
+				var configPass:String=Context.getAttribute('configPass');
+				if(!configPass){
+					cfgEnabled=true;
+					return;
+				}
+				cfgEnabled=false;
+				if(!ask) return;
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPassCheck);
+				passPop.show(configPass);
+			}
+			protected function onCfgPassCheck(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(passPop) passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPassCheck);
+				if(event.commit){
+					cfgEnabled=true;
+				}
+			}
+
+			
+			protected function button3_clickHandler(event:MouseEvent):void{
+				checkCfgPass(true);
 			}
 			
 		]]>
@@ -214,7 +272,8 @@
 	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
 			  top="5" right="5"/>
 	
-	<s:VGroup  includeIn="config" gap="5" top="20" left="20" right="5" bottom="50">
+	<s:VGroup  includeIn="config" enabled="{cfgEnabled}" 
+			   gap="5" top="20" left="20" right="5" bottom="50">
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label id="lbLong"  text="Технологическая точка:"/>
 			<s:DropDownList id="ddTechPoint" dataProvider="{techPiontsAC}" selectedItem="{techPointObj}" 
@@ -256,6 +315,14 @@
 			<s:NumericStepper id="nsRefresh" value="@{refreshInterval}" change="numericstepper1_changeHandler(event)" 
 							   minimum="10" maximum="200" snapInterval="1" width="50"/>
 		</s:HGroup>
+
+		<s:Spacer height="10"/>
+		<s:HGroup gap="10" verticalAlign="baseline">
+			<s:Label text="Защита конфигурации"/>
+			<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
+			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+		</s:HGroup>
+
 	</s:VGroup>
 	
 	<view:TechMonitorMonitor id="techMonitor" includeIn="monitor" top="20" left="20" right="5" bottom="50"/>
@@ -267,6 +334,7 @@
 		</s:Group>
 		<s:Spacer width="100%"/>
 		<s:Button label="Конфигурация" includeIn="monitor" click="button2_clickHandler(event)"/>
+		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
 		<s:Button label="Монитор" includeIn="config" click="button1_clickHandler(event)"/>
 		<s:Button label="Закрыть" click="{FlexGlobals.topLevelApplication.exit()}" />
 	</s:HGroup>

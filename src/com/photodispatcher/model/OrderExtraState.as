@@ -33,7 +33,7 @@ package com.photodispatcher.model{
 			col= new GridColumn('state_name'); col.headerText='Статус'; result.push(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
 			col= new GridColumn('start_date'); col.headerText='Начало'; col.formatter=fmt;  col.width=110; result.push(col);
-			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
+			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
 			col= new GridColumn('state_date'); col.headerText='Конец'; col.formatter=fmt;  col.width=110; result.push(col);
 			return new ArrayList(result);
 		}
