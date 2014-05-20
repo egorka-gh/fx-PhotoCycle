@@ -33,6 +33,8 @@
 			public var startTechType:SourceType;
 			[Bindable]
 			public var manualAdd:Boolean;
+			public var finalOperation:Boolean;
+			
 			public var endTechType:SourceType;
 			public var refreshInterval:int;
 			
@@ -232,11 +234,30 @@
 				onItem=dgMonitor.selectedItem;
 				if(onItem && onItem.id){
 					var dao:OrderDAO= new OrderDAO();
+					dao.execOnItem=onItem;
 					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
 					dao.setExtraStateByTech(onItem.id, techPoint.tech_type, techPoint.id);
 				}
 			}
 			private function onOrderCompleteSet(event:AsyncSQLEvent):void{
+				var dao:OrderDAO=event.target as OrderDAO;
+				var onItem:Object;
+				if(dao){
+					dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
+					onItem=dao.execOnItem;
+				}
+				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
+					if(finalOperation && onItem){
+						dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderFinalSet);
+						dao.setExtraStateByTech(onItem.id, SourceType.TECH_OTK);
+					}else{
+						refresh();
+					}
+				}else{
+					Alert.show(event.error);
+				}
+			}
+			private function onOrderFinalSet(event:AsyncSQLEvent):void{
 				var dao:OrderDAO=event.target as OrderDAO;
 				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
 				if(event.result==AsyncSQLEvent.RESULT_COMLETED){

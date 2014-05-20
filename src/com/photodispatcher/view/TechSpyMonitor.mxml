@@ -163,12 +163,14 @@
 						' (SELECT o.id, MAX(IFNULL(oe.state_date,oe.start_date)) lastdt'+ 
 						' FROM orders o'+
 						' INNER JOIN order_extra_state oe ON oe.id=o.id and oe.state BETWEEN ? AND ?'+
+						' INNER JOIN config.src_type st ON oe.state=st.state AND st.loc_type=3 AND (0=? OR st.book_part IN(0,?))'+
 						' WHERE o.state < ?'+  
 						' GROUP BY o.id'+
 						' HAVING MAX(IFNULL(oe.state_date,oe.start_date)) < ?) t'+
-						' INNER JOIN order_extra_state oe2 ON t.id=oe2.id AND t.lastdt IN (oe2.start_date,oe2.state_date)'+
-						' INNER JOIN config.src_type st ON oe2.state=st.state AND st.loc_type=3 AND (0=? OR st.book_part IN(0,?))';
-					params=[startState, endState, OrderState.TECH_OTK, dt, bPart, bPart];
+						' INNER JOIN order_extra_state oe2 ON t.id=oe2.id AND t.lastdt IN (oe2.start_date,oe2.state_date)';
+					/* + ' INNER JOIN config.src_type st ON oe2.state=st.state AND st.loc_type=3 AND (0=? OR st.book_part IN(0,?))'; */
+					//params=[startState, endState, OrderState.TECH_OTK, dt, bPart, bPart];
+					params=[startState, endState, bPart, bPart, OrderState.TECH_OTK, dt];
 					if (dao.executeSync(sql,params)){
 						//del fbooks
 						sql='DELETE FROM tmp_orders_spy'+

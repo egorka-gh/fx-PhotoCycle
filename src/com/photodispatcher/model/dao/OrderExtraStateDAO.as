@@ -14,7 +14,7 @@ package com.photodispatcher.model.dao{
 							' FROM order_extra_state es'+
 							' INNER JOIN config.order_state os ON os.id=es.state'+
 							' WHERE es.id=?'+
-							' ORDER BY es.start_date';
+							' ORDER BY IFNULL(es.state_date,es.start_date)';
 			runSelect(sql,[orderId]);
 			return itemsArray;
 		}

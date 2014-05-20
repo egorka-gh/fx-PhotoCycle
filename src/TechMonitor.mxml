@@ -44,6 +44,8 @@
 			[Bindable]
 			private var manualAdd:Boolean;
 			[Bindable]
+			private var finalOperation:Boolean;
+			[Bindable]
 			private var endTechTypeIdx:int;
 			private var endTechType:int;
 			[Bindable]
@@ -91,6 +93,7 @@
 					techPoint=so.data.monitorTechPoint;
 					startTechType=so.data.startTechType;
 					manualAdd=Boolean(so.data.manualAdd);
+					finalOperation=Boolean(so.data.finalOperation);
 					endTechType=so.data.endTechType;
 					yelloyState=Boolean(so.data.yelloyState);
 					//compliteTechType=so.data.compliteTechType;
@@ -197,6 +200,7 @@
 				techMonitor.techPoint=techPointObj;
 				techMonitor.startTechType=startTT;
 				techMonitor.manualAdd=manualAdd;
+				techMonitor.finalOperation=finalOperation;
 				techMonitor.endTechType=endTT;
 				techMonitor.refreshInterval=refreshInterval;
 				techMonitor.start();
@@ -252,6 +256,13 @@
 			
 			protected function button3_clickHandler(event:MouseEvent):void{
 				checkCfgPass(true);
+			}
+			
+			protected function tgFinalOp_changeHandler(event:Event):void			{
+				finalOperation=tgFinalOp.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.finalOperation = finalOperation;
+				so.flush();  
 			}
 			
 		]]>
@@ -323,6 +334,11 @@
 			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
 		</s:HGroup>
 
+		<s:Spacer height="20"/>
+		<s:HGroup gap="10" verticalAlign="baseline">
+			<s:CheckBox id="tgFinalOp" selected="@{finalOperation}" change="tgFinalOp_changeHandler(event)"/>
+			<s:Label text="Финальная операция"/>
+		</s:HGroup>
 	</s:VGroup>
 	
 	<view:TechMonitorMonitor id="techMonitor" includeIn="monitor" top="20" left="20" right="5" bottom="50"/>
