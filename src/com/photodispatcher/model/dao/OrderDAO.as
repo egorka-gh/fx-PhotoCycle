@@ -159,13 +159,29 @@ package com.photodispatcher.model.dao{
 
 		public function findeById(id:String):ArrayCollection{
 			if(!id) return new ArrayCollection();
-			id='%'+id+'%';
-			var sql:String='SELECT o.*, s.name source_name, os.name state_name, s.code source_code'+
-				' FROM orders o'+
-				' INNER JOIN config.order_state os ON o.state = os.id'+
-				' INNER JOIN config.sources s ON o.source = s.id'+
-				' WHERE o.id LIKE ?';
-			runSelect(sql, [id]);
+			var byNativeId:Boolean=true;
+			if ((id.charAt(0) >= 'A' && id.charAt(0) <= 'Z') || (id.charAt(0) >= 'a' && id.charAt(0) <= 'z')) byNativeId=false; 
+			var sql:String;
+			if(byNativeId){
+				id='%'+id+'%';
+				sql='SELECT o.*, s.name source_name, os.name state_name, s.code source_code'+
+					' FROM orders o'+
+					' INNER JOIN config.order_state os ON o.state = os.id'+
+					' INNER JOIN config.sources s ON o.source = s.id'+
+					' WHERE o.id LIKE ?';
+				runSelect(sql, [id]);
+			}else{
+				var codeChar:String=id.charAt(0);
+				id=id.substr(1);
+				//remove leading 0
+				if(id.charAt(0)=='0') id=id.substr(1);
+				sql="SELECT o.*, s.name source_name, os.name state_name, s.code source_code"+
+					" FROM config.sources s"+
+					" INNER JOIN orders o ON o.id= s.id || '_' || ?"+
+					" INNER JOIN config.order_state os ON o.state = os.id"+
+					" WHERE s.code=?";
+					runSelect(sql, [id, codeChar]);
+			}
 			
 			return itemsList;
 		}

@@ -3,13 +3,18 @@
 					   xmlns:s="library://ns.adobe.com/flex/spark" 
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
 					   xmlns:view="com.photodispatcher.view.*"
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*" 
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}"  
+					   closing="windowedapplication1_closingHandler(event)"
 					   >
 	
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
 			import com.photodispatcher.model.Source;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
@@ -19,6 +24,9 @@
 			import com.photodispatcher.model.dao.SourceTypeDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.PasswPopup;
 			import com.photodispatcher.view.config.DatabasePopup;
@@ -57,6 +65,10 @@
 			*/
 			[Bindable]
 			private var refreshInterval:int;
+			
+			[Bindable]
+			private var comReader:ComInfo; 
+
 			
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
@@ -105,6 +117,17 @@
 				if(endTechType) endTechTypeIdx=ArrayUtil.searchItemIdx('id',endTechType,techTypeAC.source);
 				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
 				//if(compliteTechType) compliteTechTypeIdx=ArrayUtil.searchItemIdx('value',compliteTechType,techTypeAC.source);
+				
+				var coms:Array=ComInfo.load();
+				var ci:ComInfo;
+				for each (ci in coms){
+					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReader=ci;
+				}
+				if(!comReader){
+					comReader= new ComInfo(); comReader.type=ComInfo.COM_TYPE_BARREADER;
+				}
+
+				
 				checkCfgPass();
 				currentState='config';
 			}
@@ -169,12 +192,32 @@
 				}
 			}
 			
+			[Bindable]
+			private var barcodeReader:ComReader;
+
 			protected function button1_clickHandler(event:MouseEvent):void{
 				var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
 				var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
 				if(!techPointObj || !startTT ||!endTT){
 					Alert.show('Монитор не настроен');
 					return;
+				}
+				if(comReader.num){
+					serialProxy.start([comReader]);
+					if(serialProxy.isStarted){
+						//start barcode reader
+						if(barcodeReader){
+							barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+							barcodeReader=null;
+						}
+						var pr:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
+						if(pr){
+							barcodeReader= new ComReader();
+							barcodeReader.comPort=pr;
+							barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+							barcodeReader.start();
+						}
+					}
 				}
 				/*
 				techMonitor.techPoint=techPointObj;
@@ -187,8 +230,18 @@
 				currentState='monitor';
 			}
 			
+			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
+				if(barcodeReader) barcodeReader.stop();
+				serialProxy.stop();
+				var bar:String=event.barcode;
+				bar = bar.replace(String.fromCharCode(13),'[LF]');
+				bar = bar.replace(String.fromCharCode(10),'[CR]');
+				Alert.show('Ошибка COM \n'+event.error+';\n данные com: '+bar,'Ошибка');
+			}
+
 			protected function button2_clickHandler(event:MouseEvent):void{
 				if(techMonitor) techMonitor.stop();
+				serialProxy.stop();
 				cfgEnabled=false;
 				currentState='config';
 			}
@@ -203,6 +256,7 @@
 				techMonitor.finalOperation=finalOperation;
 				techMonitor.endTechType=endTT;
 				techMonitor.refreshInterval=refreshInterval;
+				techMonitor.barcodeReader=barcodeReader;
 				techMonitor.start();
 			}
 			
@@ -265,8 +319,29 @@
 				so.flush();  
 			}
 			
+			protected function btSaveCom_clickHandler(event:MouseEvent):void{
+				ComInfo.save([comReader]);
+			}
+			
+			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
+				Alert.show('Ошибка COM (SerialProxy) \n '+event.error,'Ошибка');
+			}
+
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				if(serialProxy) serialProxy.stop();
+			}
+			
+			protected function button4_clickHandler(event:MouseEvent):void{
+				if(serialProxy) serialProxy.stop();
+				FlexGlobals.topLevelApplication.exit()
+			}
+			
 		]]>
 	</fx:Script>
+	
+	<fx:Declarations>
+		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
+	</fx:Declarations>
 	
 	<s:states>
 		<s:State name="disconnected"/>
@@ -334,11 +409,20 @@
 			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
 		</s:HGroup>
 
-		<s:Spacer height="20"/>
+		<s:Spacer height="10"/>
 		<s:HGroup gap="10" verticalAlign="baseline">
 			<s:CheckBox id="tgFinalOp" selected="@{finalOperation}" change="tgFinalOp_changeHandler(event)"/>
 			<s:Label text="Финальная операция"/>
 		</s:HGroup>
+		
+		<s:Spacer height="10"/>
+		<s:Label text="Сканер ШК" fontWeight="bold"/>
+		<itemRenderer:ComInfoRenderer  data="{comReader}" lockType="true"/>
+		<s:HGroup >
+			<s:Spacer width="230"/>
+			<s:Button id="btSaveCom" label="Сохранить" click="btSaveCom_clickHandler(event)"/>
+		</s:HGroup>
+
 	</s:VGroup>
 	
 	<view:TechMonitorMonitor id="techMonitor" includeIn="monitor" top="20" left="20" right="5" bottom="50"/>
@@ -352,7 +436,7 @@
 		<s:Button label="Конфигурация" includeIn="monitor" click="button2_clickHandler(event)"/>
 		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
 		<s:Button label="Монитор" includeIn="config" click="button1_clickHandler(event)"/>
-		<s:Button label="Закрыть" click="{FlexGlobals.topLevelApplication.exit()}" />
+		<s:Button label="Закрыть" click="button4_clickHandler(event)" />
 	</s:HGroup>
 
 </s:WindowedApplication>

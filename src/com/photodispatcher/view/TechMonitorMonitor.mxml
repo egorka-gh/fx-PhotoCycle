@@ -10,11 +10,15 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.OrderExtraState;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.dao.OrderExtraStateDAO;
+			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -37,6 +41,36 @@
 			
 			public var endTechType:SourceType;
 			public var refreshInterval:int;
+			
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
+				return _barcodeReader;
+			}
+			public function set barcodeReader(value:ComReader):void{
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+				}
+				_barcodeReader = value;
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+				}
+			}
+
+			private function onBarCode(event:BarCodeEvent):void{
+				var orderId:String=event.barcode;
+				if(!manualAdd || !orderId) return;
+				var dao:OrderDAO=new OrderDAO();
+				var ordersList:ArrayCollection= dao.findeById(orderId);
+				if(!ordersList) return;
+				if(ordersList.length==1){
+					addOrder(ordersList.getItemAt(0) as Order);
+				}else{
+					var pop:OrderAddPopup=new OrderAddPopup();
+					pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
+					pop.show(orderId,ordersList);
+				}
+			}
+
 			
 			private var timer:Timer;
 			
@@ -117,19 +151,46 @@
 				pop.open(null,true);
 			}
 			
+			private function checkOrder(orderId:String):Boolean{
+				if(!orderId) return false;
+				var dao:OrderExtraStateDAO= new OrderExtraStateDAO();
+				var arr:Array=dao.getByOrder(orderId);
+				if(!arr) return false;
+				if(arr.length==0) return true;
+				var es:OrderExtraState;
+				var isStarted:Boolean;
+				var isComplite:Boolean;
+				for each(es in arr){
+					if(es.state==startTechType.state) isStarted=true;
+					if(es.state==techPoint.tech_state){
+						isStarted=true;
+						if(es.state_date) isComplite=true; 
+					}
+				}
+				if(!isStarted && !isComplite) return true;
+				if(isComplite){
+					Alert.show('Заказ "'+orderId+'" уже прошел технологическую операцию');
+				}else{
+					Alert.show('Заказ "'+orderId+'" уже добавлен');
+				}
+				return false;
+			}
+			
 			private var newOrderId:String;
 			private function onOrderAdd(event:PopUpEvent):void{
 				var pop:OrderAddPopup=event.target as OrderAddPopup;
 				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
-				newOrderId='';
 				if(event.commit){
-					var order:Order=event.data as Order;
-					if(order){
-						newOrderId=order.id;
-						var dao:OrderDAO= new OrderDAO();
-						dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
-						dao.setExtraStateByTech(order.id,startTechType.id);
-					}
+					addOrder(event.data as Order);
+				}
+			}
+			private function addOrder(order:Order):void{
+				newOrderId='';
+				if(order && checkOrder(order.id)){
+					newOrderId=order.id;
+					var dao:OrderDAO= new OrderDAO();
+					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
+					dao.setExtraStateByTech(order.id,startTechType.id);
 				}
 			}
 			private function onOrderAdded(event:AsyncSQLEvent):void{

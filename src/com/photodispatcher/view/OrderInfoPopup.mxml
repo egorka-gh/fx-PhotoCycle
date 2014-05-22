@@ -480,9 +480,10 @@
 								<s:HGroup gap="10" top="10" left="10" right="10" bottom="10">
 									<!--<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" selectionChange="{applyTechFilter()}"
 												dataProvider="{techListAgg}" locale="ru_RU" columns="{TechLog.gridColumnsTechAgg()}"/>-->
-									<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" selectionChange="{applyTechFilter()}"
+									<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" width="420"
+												selectionChange="{applyTechFilter()}"
 												dataProvider="{techListAgg}" locale="ru_RU" columns="{OrderExtraState.gridColumnsTech()}"/>
-									<s:DataGrid id="dgTech" selectionMode="none" height="100%"
+									<s:DataGrid id="dgTech" selectionMode="none" height="100%" width="100%"
 												dataProvider="{techList}" locale="ru_RU" columns="{TechLog.gridColumnsTech()}"/>
 								</s:HGroup>
 							<!--</s:Scroller>-->

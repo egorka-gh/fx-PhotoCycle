@@ -20,7 +20,8 @@ package com.photodispatcher.service.barcode{
 		[Bindable]
 		public var isStarted:Boolean=false;
 		public var prefix:uint=0; //unused
-		public var sufix:uint=13; //LF default
+		//public var sufix:uint=13; //CR default
+		public var sufix:uint=10; //LF default
 
 		protected var buffer:String='';
 		protected var timer:Timer;
