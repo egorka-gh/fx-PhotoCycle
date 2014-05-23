@@ -16,18 +16,24 @@
 			import com.photodispatcher.model.dao.SourceTypeDAO;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
+			import com.photodispatcher.view.print.PrintDataGridView;
 			
 			import flash.globalization.DateTimeStyle;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
 			import mx.events.FlexEvent;
 			import mx.managers.CursorManager;
+			import mx.printing.FlexPrintJob;
+			import mx.printing.PrintDataGrid;
 			
 			import spark.collections.Sort;
 			import spark.collections.SortField;
 			import spark.components.gridClasses.GridColumn;
 			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
 			import spark.formatters.DateTimeFormatter;
 			private var timer:Timer;
 			[Bindable]
@@ -36,9 +42,10 @@
 			private var delayInterval:int;
 
 			[Bindable]
-			private var listAC:ArrayCollection;
+			private var listAC:ArrayCollection= new ArrayCollection();
 			[Bindable]
 			private var gridColumnsAC:ArrayCollection;
+			private var printGridColumns:Array;
 			[Bindable]
 			private var techTypeAC:ArrayCollection;
 			[Bindable]
@@ -110,14 +117,37 @@
 				gridColumnsAC= new ArrayCollection();
 				
 				var col:GridColumn = new GridColumn('id'); col.headerText='Заказ'; gridColumnsAC.addItem(col);
+				col= new GridColumn('path'); col.headerText='Алиас'; gridColumnsAC.addItem(col); 
 				col= new GridColumn('op_name'); col.headerText='Операция'; gridColumnsAC.addItem(col); 
 				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 				col= new GridColumn('start_date'); col.headerText='Старт'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
 				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 				col= new GridColumn('state_date'); col.headerText='Конец'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
+				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('reset_date'); col.headerText='Сброс'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
 				col= new GridColumn('bp_name'); col.headerText='Часть книги'; gridColumnsAC.addItem(col);
 				col= new GridColumn('delay'); col.headerText='Задержка'; gridColumnsAC.addItem(col);
 
+				printGridColumns=[];
+				var pc:DataGridColumn;
+				
+				pc= new DataGridColumn('id'); pc.headerText='Заказ'; pc.width=70;  printGridColumns.push(pc);
+				pc= new DataGridColumn('op_name'); pc.headerText='Операция'; printGridColumns.push(pc);
+				pc= new DataGridColumn('path'); pc.headerText='Алиас'; printGridColumns.push(pc);
+				pc= new DataGridColumn('start_date'); pc.headerText='Старт';  pc.width=80; pc.labelFunction=dateLabelFunction; printGridColumns.push(pc);
+				pc= new DataGridColumn('state_date'); pc.headerText='Конец';  pc.width=80; pc.labelFunction=dateLabelFunction; printGridColumns.push(pc);
+				pc= new DataGridColumn('reset_date'); pc.headerText='Сброс';  pc.width=80; pc.labelFunction=dateLabelFunction; printGridColumns.push(pc);
+				pc= new DataGridColumn('bp_name'); pc.headerText='Часть книги'; pc.width=70; printGridColumns.push(pc);
+				pc= new DataGridColumn('delay'); pc.headerText='Задержка'; pc.width=60; printGridColumns.push(pc);
+			}
+			
+			private function dateLabelFunction(item:Object, column:DataGridColumn):String{
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='dd.MM.yy H:mm';
+				if(item[column.dataField]){
+					return fmt.format(item[column.dataField]);
+				}
+				return '';
 			}
 			
 			private function refresh():void{
@@ -182,20 +212,37 @@
 								' WHERE NOT EXISTS'+
 								' (SELECT 1 FROM print_group pg WHERE pg.order_id=tmp_orders_spy.id AND pg.book_type IN (1,2,3))';
 							if (dao.executeSync(sql)){
+								/*
 								//del prolonged
 								sql='DELETE FROM tmp_orders_spy'+
 									' WHERE EXISTS'+
 									' (SELECT 1 FROM order_exstate_prolong so WHERE so.id=tmp_orders_spy.id AND so.state=tmp_orders_spy.state AND so.state_date >= ?)';
-								if (dao.executeSync(sql,[dt])){
-									//final select
-									sql='SELECT t.id, t.state, t.start_date, t.state_date, st.name op_name, st.book_part, bp.name bp_name,'+
-										" (strftime('%s', ?) - strftime('%s', t.max_date))/3600 AS delay"+	
-										' FROM tmp_orders_spy t'+
-										' INNER JOIN config.src_type st ON t.state=st.state AND st.loc_type=3'+
-										' INNER JOIN config.book_part bp ON bp.id = st.book_part'+
-										' ORDER BY t.max_date';
-									if (dao.runSelect(sql,[new Date()])){
-										listAC=dao.rawList;
+								*/
+								//set reset date
+								sql='UPDATE tmp_orders_spy'+
+									' SET reset_date =(SELECT max(so.state_date) FROM order_exstate_prolong so WHERE so.id=tmp_orders_spy.id AND so.state=tmp_orders_spy.state)'+
+									' WHERE EXISTS'+
+									' (SELECT 1 FROM order_exstate_prolong so WHERE so.id=tmp_orders_spy.id AND so.state=tmp_orders_spy.state)';
+								if (dao.executeSync(sql)){
+									//mark reset
+									sql='UPDATE tmp_orders_spy'+
+										' SET reset = 1'+
+										' WHERE reset_date >= ?';
+									if (dao.executeSync(sql,[dt])){
+										//final select
+										sql='SELECT t.id, t.state, t.start_date, t.state_date, t.reset, t.reset_date, st.name op_name, st.book_part, bp.name bp_name,'+
+											" (strftime('%s', ?) - strftime('%s', t.max_date))/3600 AS delay,"+	
+											' pg.path'+
+											' FROM tmp_orders_spy t'+
+											' INNER JOIN config.src_type st ON t.state=st.state AND st.loc_type=3'+
+											' INNER JOIN config.book_part bp ON bp.id = st.book_part'+
+											" LEFT OUTER JOIN print_group pg ON pg.id=t.id || '_1'"+
+											' ORDER BY t.max_date';
+										if (dao.runSelect(sql,[new Date()])){
+											listAC=dao.rawList;
+											listAC.filterFunction=filterList;
+											listAC.refresh();
+										}
 									}
 								}
 							}
@@ -208,6 +255,11 @@
 				startTimer();
 			}
 			
+			private function filterList(item:Object):Boolean {
+				if (chkReset.selected) return true;
+				return !item.reset;
+			}
+
 			protected function nsRefreshInterval_changeHandler(event:Event):void{
 				refreshInterval= nsRefreshInterval.value;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
@@ -259,6 +311,7 @@
 				ordersGridMenu.addItem('Выполнен',completeCallBack);
 				ordersGridMenu.addItem('Сброс задержки',resetCallBack);
 				ordersGridMenu.addItem('');
+				ordersGridMenu.addItem('Печать',printCallBack);
 				ordersGridMenu.addItem('Состояние',showCallBack);
 			}
 			
@@ -271,13 +324,60 @@
 				}
 			}
 
+			private function printCallBack(grid:DataGrid,param:int):void{
+				var items:Vector.<Object>=grid.selectedItems;
+				if(!items || items.length==0) return;
+				if(timer && timer.running) timer.stop();
+				var printJob:FlexPrintJob = new FlexPrintJob();
+				if(printJob.start()) {
+					var itemsAC:ArrayCollection=new ArrayCollection();
+					var onItem:Object;
+					for each(onItem in items) itemsAC.addItem(onItem);
+					
+					var printObj:PrintDataGridView= new PrintDataGridView();
+					printObj.includeInLayout=false;
+					FlexGlobals.topLevelApplication.addElement(printObj);
+					printObj.width=printJob.pageWidth;
+					printObj.height=printJob.pageHeight;
+					printObj.dataGrid.columns=printGridColumns;
+					printObj.dataGrid.dataProvider=itemsAC;
+					printObj.validateNow();
+
+					while (true){
+						printJob.addObject(printObj); //FlexPrintJobScaleType.NONE
+						if(printObj.dataGrid.validNextPage){
+							printObj.dataGrid.nextPage();
+						}else{
+							break;
+						}
+					}
+					printJob.send();
+					FlexGlobals.topLevelApplication.removeElement(printObj);
+				}
+				startTimer();
+			}
+
 			private function resetCallBack(grid:DataGrid,param:int):void{
-				var onItem:Object;
-				onItem=grid.selectedItem;
+				var pop:StringValuePopup= new StringValuePopup();
+				pop.addEventListener(PopUpEvent.CLOSE, onResetPopup);
+				pop.show('Укажите примечание');
+			}
+			private function onResetPopup(event:PopUpEvent):void{
+				var pop:StringValuePopup= event.target as StringValuePopup;
+				if(pop){
+					pop.removeEventListener(PopUpEvent.CLOSE, onResetPopup);
+					if(event.commit && pop.value){
+						resetOrder(pop.value);
+					}
+				}
+			}
+			private function resetOrder(comment:String):void{
+				if(!comment) return;
+				var onItem:Object=dgMonitor.selectedItem;
 				if(onItem && onItem.id && onItem.state){
 					var dao:OrderDAO= new OrderDAO();
 					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderReset);
-					dao.prolongExtraState(onItem.id, onItem.state);
+					dao.prolongExtraState(onItem.id, onItem.state, comment);
 				}
 			}
 			private function onOrderReset(event:AsyncSQLEvent):void{
@@ -335,8 +435,6 @@
 
 	<s:VGroup id="gGrid" gap="5" top="0" left="0" right="0" bottom="0">
 		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
-			<s:Label text="Параметры " fontWeight="bold"/>
-			
 			<s:Spacer width="5"/>
 			<s:Label text="Начало"/>
 			<s:DropDownList id="ddStartOp" dataProvider="{techTypeAC}" labelField="name" width="180"
@@ -349,13 +447,17 @@
 
 			<s:Spacer width="5"/>
 			<s:Label text="Часть книги"/>
-			<s:DropDownList id="ddBookPart" dataProvider="{bookPartAC}" creationComplete="{ddBookPart.selectedIndex=0}"
-							change="{refresh()}"/>
+			<s:DropDownList id="ddBookPart" dataProvider="{bookPartAC}" width="70"
+							creationComplete="{ddBookPart.selectedIndex=0}" change="{refresh()}"/>
 
 			<s:Spacer width="5"/>
 			<s:Label text="Задержка (ч)"/>
 			<s:NumericStepper id="nsDelay" value="{delayInterval}" minimum="0" maximum="300" 
 							  width="50" change="nsDelay_changeHandler(event)"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Сброс" toolTip="Показывать сброшенные"/>
+			<s:CheckBox id="chkReset" toolTip="Показывать сброшенные" change="{listAC.refresh()}"/>
 
 			<!--<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>-->
 			

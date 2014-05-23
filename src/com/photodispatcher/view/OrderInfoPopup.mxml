@@ -11,6 +11,7 @@
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.model.Order;
 			import com.photodispatcher.model.OrderExtraState;
+			import com.photodispatcher.model.OrderExtraStateProlong;
 			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.PrintGroupFile;
@@ -20,6 +21,7 @@
 			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.OrderExtraStateDAO;
+			import com.photodispatcher.model.dao.OrderExtraStateProlongDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.PrintGroupFileDAO;
 			import com.photodispatcher.model.dao.StateLogDAO;
@@ -54,6 +56,8 @@
 			private var techList:ArrayCollection= new ArrayCollection();
 			[Bindable]
 			private var techListAgg:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var techListResetAC:ArrayCollection= new ArrayCollection();
 			[Bindable]
 			private var logList:ArrayCollection= new ArrayCollection();
 
@@ -111,6 +115,12 @@
 					var oeDAO:OrderExtraStateDAO= new OrderExtraStateDAO();
 					a=oeDAO.getByOrder(order.id);
 					techListAgg= new ArrayCollection(a);
+					
+					var oespDAO:OrderExtraStateProlongDAO= new OrderExtraStateProlongDAO();
+					a=oespDAO.getByOrder(order.id);
+					techListResetAC= new ArrayCollection(a);
+					techListResetAC.filterFunction=filterTechListReset;
+					techListResetAC.refresh();
 					
 					var lDao:StateLogDAO=new StateLogDAO();
 					a=lDao.getByOrder(order.id);
@@ -170,8 +180,16 @@
 				*/
 				return false;
 			}
+			private function filterTechListReset(item:Object):Boolean {
+				if(!dgTechAgg || dgTechAgg.selectedIndex==-1) return true;
+				var f:OrderExtraStateProlong=item as OrderExtraStateProlong;
+				var es:OrderExtraState=dgTechAgg.selectedItem as OrderExtraState;
+				if(!f || !es) return false;
+				return f.state==es.state;
+			}
 			private function applyTechFilter():void{
 			    techList.refresh();
+				techListResetAC.refresh();
 			}
 			
 			private function filterLogList(item:Object):Boolean {
@@ -180,6 +198,7 @@
 				if(lstFilterLog && lstFilterLog.selectedIndex>0 && lstFilterLog.selectedItem.id!=f.pg_id) return false;
 				return true;
 			}
+			
 			private function applyLogFilter():void{
 				logList.refresh();
 			}
@@ -480,9 +499,15 @@
 								<s:HGroup gap="10" top="10" left="10" right="10" bottom="10">
 									<!--<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" selectionChange="{applyTechFilter()}"
 												dataProvider="{techListAgg}" locale="ru_RU" columns="{TechLog.gridColumnsTechAgg()}"/>-->
-									<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="100%" width="420"
-												selectionChange="{applyTechFilter()}"
-												dataProvider="{techListAgg}" locale="ru_RU" columns="{OrderExtraState.gridColumnsTech()}"/>
+									<s:VGroup gap="0" width="420" height="100%">
+										<s:DataGrid id="dgTechAgg" selectionMode="singleRow" height="60%" width="100%"
+													selectionChange="{applyTechFilter()}"
+													dataProvider="{techListAgg}" locale="ru_RU" columns="{OrderExtraState.gridColumnsTech()}"/>
+										<s:Spacer height="10"/>
+										<s:Label text="Сбросы"/>
+										<s:DataGrid id="dgTechReset" selectionMode="singleRow" height="40%" width="100%"
+													dataProvider="{techListResetAC}" locale="ru_RU" columns="{OrderExtraStateProlong.gridColumnsTech()}"/>
+									</s:VGroup>
 									<s:DataGrid id="dgTech" selectionMode="none" height="100%" width="100%"
 												dataProvider="{techList}" locale="ru_RU" columns="{TechLog.gridColumnsTech()}"/>
 								</s:HGroup>

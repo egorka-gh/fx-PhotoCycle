@@ -659,6 +659,8 @@ package com.photodispatcher.model.dao{
 				" state      INT," +
 				" start_date DATETIME," +
 				" state_date DATETIME," +
+				" reset      INT DEFAULT (0)," +
+				" reset_date DATETIME," +
 				" max_date   DATETIME" +
 				")";
 			stmt= new SQLStatement();

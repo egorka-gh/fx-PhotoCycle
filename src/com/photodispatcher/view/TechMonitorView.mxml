@@ -21,6 +21,7 @@
 			import com.photodispatcher.tech.TechRegisterFolding;
 			import com.photodispatcher.tech.TechRegisterPrint;
 			
+			import spark.formatters.DateTimeFormatter;
 			import spark.utils.TextFlowUtil;
 		
 			public var techPoint:TechPoint;
@@ -61,11 +62,24 @@
 			
 			private var logText:String = '';
 
+			private var _barText:String='';
 			[Bindable]
-			private var barText:String='';
+			public function get barText():String{
+				return _barText;
+			}
+			public function set barText(value:String):void{
+				if(!value){
+					_barText='';
+					return;
+				}
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				_barText += fmt.format(new Date())+': '+ value;
+			}
+
 
 			private function onError(event:BarCodeEvent):void{
-				barText+=event.barcode+'\n';
+				barText=event.barcode+'\n';
 				logToScreen('Ошибка: '+event.error,true);
 				
 			}
@@ -128,7 +142,7 @@
 				var barcode:String=event.barcode;
 				//parce barcode
 				var pgId:String;
-				barText+=barcode+'\n';
+				barText=barcode+'\n';
 				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 				if(!pgId){
 					//TODO rise err
@@ -154,6 +168,7 @@
 						return;
 					}
 					//start new
+					barText='';
 					barText=barcode+'\n';
 					currRegister.register(bookNum,pageNum);
 				}
@@ -162,7 +177,10 @@
 			private function logToScreen(msg:String, isError:Boolean=false):void{
 				var color:String=isError?"'#990000'":"'#006600'";
 				var bold:String=isError?"fontWeight='bold'":'';
-				logText += "<span color="+color+" "+bold+">" + msg + ":</span>  <br />";
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				logText += "<span>" + fmt.format(new Date()) + " </span>";
+				logText += "<span color="+color+" "+bold+">" + msg + "</span> <br />";
 				try{
 					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
 				}catch(error:Error){
@@ -211,7 +229,7 @@
 			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
 		<s:HGroup gap="5" width="100%" height="100%">
 			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
-			<s:TextArea id="barTextArea" text="{barText}" fontSize="10" width="150" height="100%" editable="false"/>
+			<s:TextArea id="barTextArea" text="{barText}" fontSize="10" width="170" height="100%" editable="false"/>
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%">
 			<s:Button label="Очистить" click="{cleanLog()}"/>
