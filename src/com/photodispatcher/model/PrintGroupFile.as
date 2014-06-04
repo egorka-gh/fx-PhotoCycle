@@ -13,6 +13,7 @@ package com.photodispatcher.model{
 		public var showPreview:Boolean;
 		[Bindable]
 		public var isBroken:Boolean;
+		public var isCustom:Boolean;
 		
 		//ref props
 		public var path:String;
@@ -57,6 +58,7 @@ package com.photodispatcher.model{
 			res.book_num=book_num;
 			res.page_num=page_num;
 			res.caption=caption;
+			res.isCustom=isCustom;
 			return res;
 		}
 

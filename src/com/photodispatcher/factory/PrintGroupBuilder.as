@@ -39,7 +39,7 @@ package com.photodispatcher.factory{
 		 * @return array of PrintGroup
 		 * trows ERR_READ_LOCK
 		 */
-		public function build(source:Source, map:Dictionary, orderId:String):Array{
+		public function build(source:Source, map:Dictionary, orderId:String, preview:Boolean=false):Array{
 			var pg:PrintGroup;
 			var cpg:PrintGroup;
 			var fpg:PrintGroup;
@@ -61,6 +61,8 @@ package com.photodispatcher.factory{
 					//parse pg from path, exact synonym
 					bookSynonym=BookSynonymDAO.translatePath(path,source.type_id);
 					if (bookSynonym){
+						//reset book_type 4 preview 
+						if(preview && bookSynonym.book_type==BookSynonym.BOOK_TYPE_JOURNAL) bookSynonym.book_type=BookSynonym.BOOK_TYPE_BOOK;
 						//parse files & book params
 						pg=parseBookFiles(af);
 						//covers group
@@ -94,7 +96,7 @@ package com.photodispatcher.factory{
 						//sheets group
 						cpg=bookSynonym.createPrintGroup(path, BookSynonym.BOOK_PART_BLOCK);
 						if(cpg){
-							fillSheets(pg,cpg);
+							fillSheets(pg,cpg, preview);
 							if(cpg.getFiles()){
 								cpg.book_num=pg.book_num;
 								cpg.file_num=cpg.getFiles().length;
@@ -170,27 +172,6 @@ package com.photodispatcher.factory{
 					pg.prints=prints;
 				}
 			}
-			/*
-			for each (o in resultMap){
-				pg= o as PrintGroup;
-				if(pg){
-					pg.order_id=orderId;
-					pg.id=orderId+'_'+i.toString();
-					//calc prints qtt
-					prints=0;
-					if(pg.book_type==0){
-						//photo print
-						for each(pgf in pg) prints+=pgf.prt_qty>0?pgf.prt_qty:1;
-					}else{
-						//book
-						prints=pg.book_num*pg.sheet_num;
-					}
-					pg.prints=prints;
-					resultArr.push(pg);
-					i++;
-				}
-			}
-				*/
 			return resultArr;
 		}
 
@@ -223,7 +204,16 @@ package com.photodispatcher.factory{
 			return pg;
 		}
 
-		private function parseBookFiles(files:Array):PrintGroup{
+		private function isBookFile(name:String):Boolean{
+			var ext:String=StrUtil.getFileExtension(name);
+			if(!ALLOWED_EXTENSIONS[ext]) return false;
+			//check pattern
+			var re:RegExp=/\d{3}-\d{2}/g;
+			var result:Boolean=re.test(name) && re.lastIndex==6;
+			return result;
+		}
+		
+		public function parseBookFiles(files:Array):PrintGroup{
 			var res:PrintGroup= new PrintGroup();
 			var f:PrintGroupFile;
 			var re:RegExp;
@@ -234,8 +224,9 @@ package com.photodispatcher.factory{
 			for each (var fileName:String in files){
 				if(fileName){
 					//check if valid file type
-					var ext:String=StrUtil.getFileExtension(fileName);
-					if(ALLOWED_EXTENSIONS[ext]){
+					//var ext:String=StrUtil.getFileExtension(fileName);
+					//if(ALLOWED_EXTENSIONS[ext]){
+					if(isBookFile(fileName)){
 						var s:String;
 						//remove ext
 						s=StrUtil.removeFileExtension(fileName);
@@ -264,6 +255,7 @@ package com.photodispatcher.factory{
 							//butt lenth
 							if(arr.length==4) res.butt=Math.max(res.butt,int(arr[3]));
 							f.book_num=int(arr[0]);
+							if(f.book_num>0) f.isCustom=true;
 							f.page_num=int(arr[1]);
 							//boks num
 							res.book_num=Math.max(res.book_num,f.book_num,1);
@@ -327,7 +319,7 @@ package com.photodispatcher.factory{
 			if(dst.getFiles()) dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
 		}
 
-		private function fillSheets(pg:PrintGroup, dst:PrintGroup):void{
+		private function fillSheets(pg:PrintGroup, dst:PrintGroup, preview:Boolean):void{
 			if(!pg.getFiles()) return;
 			var f:PrintGroupFile;
 			for each(f in pg.getFiles()){
@@ -348,7 +340,7 @@ package com.photodispatcher.factory{
 			dst.sheet_num=pageMax-pageMin+1;
 			if (dst.is_pdf && !dst.bookTemplate.is_sheet_ready){
 				dst.sheet_num=dst.sheet_num/2;
-				if(dst.is_duplex){
+				if(dst.is_duplex && !preview){
 					if(dst.book_type==BookSynonym.BOOK_TYPE_BOOK) dst.sheet_num++; //blank page
 					//duplex so
 					dst.sheet_num=dst.sheet_num/2;

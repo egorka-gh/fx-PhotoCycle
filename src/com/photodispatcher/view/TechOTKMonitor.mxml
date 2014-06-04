@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:view="com.photodispatcher.view.*"
+		 creationComplete="{init()}"
+		 >
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.OrderExtraState;
+			import com.photodispatcher.model.PrintGroup;
+			import com.photodispatcher.model.TechPoint;
+			import com.photodispatcher.model.TechPrintGroup;
+			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.dao.OrderExtraStateDAO;
+			import com.photodispatcher.model.dao.PrintGroupDAO;
+			import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.events.PopUpEvent;
+
+			[Bindable]
+			public var techPoint:TechPoint;
+
+			private function init():void{
+				refresh();
+			}
+			
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
+				return _barcodeReader;
+			}
+			public function set barcodeReader(value:ComReader):void{
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+				}
+				_barcodeReader = value;
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+				}
+			}
+			
+			/*
+			[Bindable]
+			private var currOrderId:String;
+			[Bindable]
+			private var currBook:int;
+			*/
+
+			private var lastScanId:String;
+			private var lastOrderId:String;
+			private var lastBook:int;
+
+			private function onBarCode(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				var newScanId:String;
+				var newBook:int;
+				
+				//parse
+				var idx:int=barcode.indexOf(':');
+				if(idx!=-1){
+					newBook=int(barcode.substr(idx+1));
+					newScanId=barcode.substring(0,idx);
+				}else{
+					newScanId=barcode;
+				}
+				//if(!currBook || !currOrderId){
+				if(!newScanId){
+					Alert.show('Не верный ШК: "'+barcode+'".');
+					return;
+				}
+				//check if same id
+				if(newScanId==lastScanId && lastOrderId){
+					//show
+					lastBook=newBook;
+					if(vInfo) vInfo.show(lastOrderId,lastBook, currentState=='book');
+					currentState='book';
+					return;
+				}
+
+				var dao:OrderDAO=new OrderDAO();
+				var ordersList:ArrayCollection= dao.findeById(newScanId);
+				if(!ordersList){
+					lastScanId='';
+					return;
+				}
+				lastBook=newBook;
+				if(ordersList.length==1){
+					lastScanId=newScanId;
+					addOrder(ordersList.getItemAt(0) as Order);
+				}else{
+					lastScanId='';
+					var pop:OrderAddPopup=new OrderAddPopup();
+					pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
+					pop.show(newScanId,ordersList);
+				}
+			}
+			
+			protected function btAdd_clickHandler(event:MouseEvent):void{
+				lastBook=0;
+				var pop:OrderAddPopup=new OrderAddPopup();
+				pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
+				pop.open(null,true);
+			}
+
+			private function onOrderAdd(event:PopUpEvent):void{
+				var pop:OrderAddPopup=event.target as OrderAddPopup;
+				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
+				if(event.commit){
+					addOrder(event.data as Order);
+				}
+			}
+			private function addOrder(order:Order):void{
+				lastOrderId='';
+				if(order && checkOrder(order.id)){
+					lastOrderId=order.id;
+					var booksTotal:int=getBooksTotal(lastOrderId);
+					if(booksTotal==0){
+						Alert.show('Не определено количество книг в заказе '+lastOrderId);
+						lastOrderId='';
+						return;
+					}else if(booksTotal==-1){
+						//onOrderAdded(null);
+						onOrderStarted(null);
+						return;
+					}
+					var tpgDAO:TechPrintGroupDAO= new TechPrintGroupDAO();
+					tpgDAO.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
+					tpgDAO.start(lastOrderId,booksTotal,1,techPoint.tech_type);
+				}
+			}
+			private function onOrderAdded(event:AsyncSQLEvent):void{
+				if(event){
+					var tpgDAO:TechPrintGroupDAO=event.target as TechPrintGroupDAO;
+					if(tpgDAO) tpgDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
+				}
+				if(event && event.result!=AsyncSQLEvent.RESULT_COMLETED){
+					lastOrderId='';
+					Alert.show(event.error);
+				}else{
+					var dao:OrderDAO= new OrderDAO();
+					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderStarted);
+					dao.startExtraStateByTech(lastOrderId, techPoint.tech_type, techPoint.id);
+				}
+			}
+			private function onOrderStarted(event:AsyncSQLEvent):void{
+				if(event){
+					var dao:OrderDAO=event.target as OrderDAO;
+					if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderStarted);
+				}
+				if(vInfo) vInfo.show(lastOrderId,lastBook);
+				currentState='book';
+			}
+			
+			private function checkOrder(orderId:String):Boolean{
+				if(!orderId) return false;
+				var dao:OrderExtraStateDAO= new OrderExtraStateDAO();
+				var arr:Array=dao.getByOrder(orderId);
+				if(!arr) return false;
+				if(arr.length==0) return true;
+				var es:OrderExtraState;
+				for each(es in arr){
+					if(es.state==techPoint.tech_state && es.state_date){
+						Alert.show('Заказ "'+orderId+'" уже прошел технологическую операцию');
+						return false;
+					}
+				}
+				return true;
+			}
+
+			private function getBooksTotal(orderId:String):int{
+				var tpgDAO:TechPrintGroupDAO= new TechPrintGroupDAO();
+				var tpg:TechPrintGroup=tpgDAO.getById(orderId);
+				//if(tpg) return tpg.books;
+				if(tpg) return -1;
+				var pgDao:PrintGroupDAO= new PrintGroupDAO();
+				var pg:PrintGroup= pgDao.getByID(orderId+'_1');
+				if(!pg) return 0;
+				return pg.book_num;
+			}
+
+			
+			[Bindable]
+			private var orderListAC:ArrayCollection;
+			
+			private function refresh():void{
+				var dao:TechPrintGroupDAO= new TechPrintGroupDAO();
+				var a:Array=dao.findeIncomplete();
+				if (a) orderListAC= new ArrayCollection(a);
+			}
+			
+			public function start():void{
+				refresh();
+			}
+			
+			public function stop():void{
+			}
+
+			private var ordersGridMenu:GridContexMenu;
+			protected function dgMonitor_creationCompleteHandler(event:FlexEvent):void{
+				ordersGridMenu= new GridContexMenu(dgMonitor); 
+				ordersGridMenu.addItem('Открыть',openCallBack);
+				//ordersGridMenu.addItem('');
+			}
+			private function openCallBack(grid:DataGrid,param:int):void{
+				var onItem:TechPrintGroup=grid.selectedItem as TechPrintGroup;
+				if(onItem && onItem.id){
+					lastBook=0;
+					lastOrderId=onItem.id;
+					if(vInfo) vInfo.show(lastOrderId,lastBook);
+					currentState='book';
+				}
+			}
+			protected function dgMonitor_doubleClickHandler(event:MouseEvent):void{
+				openCallBack(dgMonitor,0);
+			}
+
+			protected function orderinfootk1_closeHandler(event:Event):void{
+				refresh();
+				currentState='grid';
+			}
+			
+			protected function vInfo_creationCompleteHandler(event:FlexEvent):void{
+				if(lastOrderId) vInfo.show(lastOrderId,lastBook);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="grid"/>
+		<s:State name="book"/>
+	</s:states>
+	<s:VGroup gap="10" top="0" left="0" right="0" bottom="0">
+		<s:HGroup width="100%" horizontalAlign="right">
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+
+		</s:HGroup>
+		<s:DataGrid id="dgMonitor" selectionMode="singleRow" includeIn="grid" 
+					fontSize="14" width="100%" height="100%"
+					creationComplete="dgMonitor_creationCompleteHandler(event)"
+					doubleClickEnabled="true" doubleClick="dgMonitor_doubleClickHandler(event)"
+					dataProvider="{orderListAC}" locale="ru_RU" columns="{TechPrintGroup.gridColumnsTech()}"/>
+		<s:Button id="btAdd" label="Добавить" fontSize="14" click="btAdd_clickHandler(event)"/>
+	</s:VGroup>
+	
+	<view:OrderInfoOTK id="vInfo" top="0" left="0" right="0" bottom="0" includeIn="book"
+					   creationComplete="vInfo_creationCompleteHandler(event)"
+					   close="orderinfootk1_closeHandler(event)"  
+					   techPoint="{techPoint}"/>
+	
+</s:Group>

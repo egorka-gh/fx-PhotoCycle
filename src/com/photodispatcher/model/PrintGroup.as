@@ -158,6 +158,9 @@ package com.photodispatcher.model{
 		public function getFiles():Array{
 			return _files;
 		}
+		public function setFiles(files:Array):void{
+			_files=files;
+		}
 
 		private var originalFiles:Array;
 		public function resetFiles(keep:Boolean=true):void{
@@ -321,6 +324,10 @@ package com.photodispatcher.model{
 		public function get bookFiles():Array{
 			if(!_bookFiles) prepareBookFiles();
 			return _bookFiles;
+		}
+		
+		public function resetBookFiles():void{
+			_bookFiles=null;
 		}
 
 		private function prepareBookFiles():void{

@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="init()"
+		 keyUp="group1_keyUpHandler(event)"
+		 >
+
+	<fx:Metadata>
+		[Event(name="close", type="flash.events.Event")]
+	</fx:Metadata>
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.factory.PrintGroupBuilder;
+			import com.photodispatcher.model.BookPgTemplate;
+			import com.photodispatcher.model.BookSynonym;
+			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.PrintGroup;
+			import com.photodispatcher.model.PrintGroupFile;
+			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.TechLog;
+			import com.photodispatcher.model.TechPoint;
+			import com.photodispatcher.model.dao.BookSynonymDAO;
+			import com.photodispatcher.model.dao.TechLogDAO;
+			import com.photodispatcher.view.itemRenderer.BookSheetPreviewRenderer;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			import spark.events.IndexChangeEvent;
+			
+			public var techPoint:TechPoint;
+
+			private var rootDir:File;
+			private var order:Order;
+			private var bookSheets:Array;
+			//[Bindable]
+			//private var sheetsAC:ArrayCollection;
+			private var prepared:Boolean;
+
+			[Bindable]
+			private var pageSheetsAC:ArrayCollection;
+			private var sheets:Array;
+
+			[Bindable]
+			private var rows:int=2;
+			[Bindable]
+			private var cols:int=2;
+			
+			public function prepare(order:Order):Boolean{
+				if(this.order==order) return Boolean(this.order); 
+				//TODO reset
+				rootDir=null;
+				bookSheets=null;
+				pageSheetsAC=null;
+				prepared=false;
+				sheets=null;	
+				
+				if(!order) return false;
+				if(!order.printGroups || order.printGroups.length==0) return false;
+				var src:Source=Context.getSource(order.source);
+				if(!src) return false;
+				//check
+				if(!Context.getAttribute('workFolder')){
+					Alert.show('Не задана рабочая папка');
+					return false;
+				}
+				//check order folder
+				var pg:PrintGroup=order.printGroups[0] as PrintGroup;
+				if(!pg) return false;
+					
+				var fName:String=src.getWrkFolder()+File.separator+order.ftp_folder+File.separator+pg.path;
+				var fl:File=new File(fName);
+				if(!fl.exists || !fl.isDirectory){
+					Alert.show('Папка заказа не найдена');
+					return false;
+				}
+				rootDir=fl;
+				var a:Array=rootDir.getDirectoryListing();
+				var fNames:Array=[];
+				for each(fl in a){
+					if(!fl.isDirectory) fNames.push(fl.name);
+				}
+				
+				var builder:PrintGroupBuilder= new PrintGroupBuilder();
+				var map:Dictionary = new Dictionary();
+				map[pg.path]=fNames;
+				try{
+					a=builder.build(src,map,'',true);
+				}catch(error:Error){}
+				
+				if(!a || a.length==0){
+					Alert.show('Ошибка шаблона книи (build)');
+					return false;
+				}
+				var cover:PrintGroup;
+				var block:PrintGroup;
+				for each(pg in a){
+					if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) cover=pg;
+					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) block=pg;
+				}
+				if(!block){
+					Alert.show('Ошибка шаблона книи');
+					return false;
+				}
+
+				var doublePage:Boolean=(block.is_pdf && !block.bookTemplate.is_sheet_ready);
+				//prevent empty pages
+				block.is_duplex=false;
+				var item:BookPreviewSheet;
+				var blockPages:Array=block.bookFiles;
+				var coverPages:Array;
+				var i:int;
+				if (cover){
+					coverPages=cover.bookFiles;
+				}
+				//fill sheets
+				bookSheets=[];
+				for (i=0; i < block.book_num; i++){
+					a=[];
+					//cover
+					item= new BookPreviewSheet();
+					item.sheet=0;
+					item.rootDir=rootDir.nativePath+File.separator;
+					if(!coverPages){
+						item.isEmptyCover=true;
+					}else{
+						item.leftPage=(coverPages[i] as PrintGroupFile).file_name;
+						item.isCustomLeft=(coverPages[i] as PrintGroupFile).isCustom;
+					}
+					a.push(item);
+					//block
+					for (var j:int = 0; j < block.sheet_num; j++){
+						item= new BookPreviewSheet();
+						item.rootDir=rootDir.nativePath+File.separator;
+						item.doublePage=doublePage;
+						item.sheet=j+1;
+						if(doublePage){
+							item.leftPage=(blockPages[i*block.sheet_num*2+j*2] as PrintGroupFile).file_name;
+							item.isCustomLeft=(blockPages[i*block.sheet_num*2+j*2] as PrintGroupFile).isCustom;
+							item.rightPage=(blockPages[i*block.sheet_num*2+1+j*2] as PrintGroupFile).file_name;
+							item.isCustomRight=(blockPages[i*block.sheet_num*2+1+j*2] as PrintGroupFile).isCustom;
+						}else{
+							item.leftPage=(blockPages[i*block.sheet_num+j] as PrintGroupFile).file_name;
+							item.isCustomLeft=(blockPages[i*block.sheet_num+j] as PrintGroupFile).isCustom;
+						}
+						a.push(item);
+					}
+					bookSheets.push(a);
+				}
+				prepared=true;
+				this.order=order;
+				return true;
+			}
+
+			private var currBook:int;
+			
+			public function showBook(book:int):void{
+				pageSheetsAC=null;
+				//currentSheet=null;
+				currBook=0;
+				if(book<=0 || book>bookSheets.length){
+					return;
+				}
+				currBook=book;
+				sheets=bookSheets[book-1];
+				pageTop=0;
+				fillPage();
+				callLater(btFocus.setFocus);
+				//if(sheets) pageSheetsAC= new ArrayCollection(sheets.slice(0,cols*rows));
+			}
+			
+			private function init():void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				var newCols:int=so.data.cols;
+				var newRows:int=so.data.rows;
+				if(newCols>0) cols=newCols;
+				if(newRows>0) rows=newRows;
+				callLater(btFocus.setFocus);
+				
+			}
+			
+			private function setGrid():void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.cols = cols;
+				so.data.rows = rows;
+				so.flush();  
+				fillPage();
+			}
+			
+			private var pageTop:int;
+			
+			private function fillPage(move:int=0):void{
+				if(!sheets || sheets.length==0) return;
+				if(move>0){
+					//move forvard
+					if(pageTop<sheets.length-1){
+						pageTop=Math.min(sheets.length-1,pageTop+cols*rows);
+					}else{
+						return;
+					}
+				}else if(move<0){
+					//move back
+					if(pageTop>0){
+						pageTop=Math.max(0,pageTop-cols*rows);
+					}else{
+						return;
+					}
+				}
+				pageSheetsAC= new ArrayCollection(sheets.slice(pageTop,pageTop+cols*rows));
+			}
+			
+			/*
+			private var _currentSheet:BookPreviewSheet;
+			[Bindable]
+			public function get currentSheet():BookPreviewSheet{
+				return _currentSheet;
+			}
+			public function set currentSheet(value:BookPreviewSheet):void{
+				_currentSheet = value;
+				if(!_currentSheet || _currentSheet.isEmptyCover){
+					leftFile=null;
+					rightFile=null;
+					currentState='empty';
+					return;
+				}
+				if(_currentSheet.doublePage){
+					leftFile=rootDir.nativePath+File.separator+_currentSheet.leftPage;
+					rightFile=rootDir.nativePath+File.separator+_currentSheet.rightPage;
+					currentState='dual';
+				}else{
+					leftFile=rootDir.nativePath+File.separator+_currentSheet.leftPage;
+					rightFile=null;
+					currentState='simple';
+				}
+				if(_currentSheet && currBook){
+					_currentSheet.check=true;
+					var tl:TechLog= new TechLog();
+					tl.log_date=new Date();
+					tl.setSheet(currBook,_currentSheet.sheet);
+					if(_currentSheet.sheet==0){
+						tl.print_group=order.id+'_1';
+					}else{
+						tl.print_group=order.id+'_2';
+					}
+					tl.src_id= techPoint.id;
+					var dao:TechLogDAO=new TechLogDAO();
+					dao.addLog(tl);
+				}
+			}
+			[Bindable]
+			private var leftFile:String;
+			[Bindable]
+			private var rightFile:String;
+			*/
+
+			
+			protected function btClose_clickHandler(event:MouseEvent):void{
+				dispatchEvent( new Event(Event.CLOSE));			
+			}
+			
+			protected function group1_keyUpHandler(event:KeyboardEvent):void{
+				if(currentState=='simple' || currentState=='dual'){
+					closeFullSz();
+					return;
+				}
+				if(event.charCode==32){
+					event.preventDefault();
+					fillPage(1);
+				}else if(event.charCode==27){
+					event.preventDefault(); 
+					btClose_clickHandler(null);
+				}
+			}
+			
+			[Bindable]
+			private var leftBitmap:BitmapData;
+			[Bindable]
+			private var rightBitmap:BitmapData;
+			[Bindable]
+			private var currentSheet:BookPreviewSheet;
+			
+			protected function datagroup1_clickHandler(event:MouseEvent):void{
+				var ir:BookSheetPreviewRenderer =event.target as BookSheetPreviewRenderer;
+				if(ir){
+					if(!ir.sheet || ir.sheet.isEmptyCover) return;
+					currentSheet=ir.sheet;
+					if(!ir.imgLeft.bitmapData) return;
+					leftBitmap=ir.imgLeft.bitmapData
+					if(ir.sheet.doublePage){
+						rightBitmap=ir.imgRihgt.bitmapData
+						currentState='dual';
+					}else{
+						rightBitmap=null;
+						currentState='simple';
+					}
+				}
+			}
+			
+			private function closeFullSz():void{
+				currentState='grid';
+				leftBitmap=null;
+				rightBitmap=null;
+			}
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="grid" enterState="{callLater(btFocus.setFocus)}"/>
+		<s:State name="simple" stateGroups="fullSize"/>
+		<s:State name="dual" stateGroups="fullSize"/>
+	</s:states>
+
+	<s:Button id="btFocus" top="0" left="0" buttonMode="false" width="10" height="10" alpha="0"/>
+	<s:VGroup gap="5" top="0" left="0" right="0" bottom="0" includeIn="grid">
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+			<s:Label text="Колонок"/>
+			<s:NumericStepper id="nsCols" minimum="1" maximum="5" snapInterval="1"
+							  change="{setGrid()}"
+							  value="@{cols}"/>
+			<s:Spacer width="5"/>
+			<s:Label text="Строк"/>
+			<s:NumericStepper id="nsRows" minimum="1" maximum="5" snapInterval="1"
+							  change="{setGrid()}"
+							  value="@{rows}"/>
+			<s:Spacer width="100%"/>
+			<s:Button id="btBack" label="◄" fontSize="14" click="{fillPage(-1)}"/>
+			<s:Button id="btForvard" label="►" fontSize="14" click="{fillPage(1)}"/>
+			<s:Button id="btClose" label="Закрыть" click="btClose_clickHandler(event)"/>
+		</s:HGroup>
+		<s:Group id="gContent" width="100%" height="100%">
+			<s:DataGroup width="100%" height="100%"
+						 itemRenderer="com.photodispatcher.view.itemRenderer.BookSheetPreviewRenderer"
+						 dataProvider="{pageSheetsAC}"
+						 click="datagroup1_clickHandler(event)">
+				<s:layout>
+					<s:TileLayout verticalGap="5" horizontalGap="5" 
+								  clipAndEnableScrolling="true"
+								  requestedColumnCount="{cols}"
+								  requestedRowCount="{rows}"
+								  columnWidth="{(gContent.width-(cols-1)*5)/cols}"
+								  rowHeight="{(gContent.height-(rows-1)*5)/rows}"
+								  />
+				</s:layout>
+			</s:DataGroup>
+						 
+		</s:Group>
+	</s:VGroup>
+	<s:HGroup gap="0" top="0" left="0" right="0" bottom="0" includeIn="fullSize" click="closeFullSz()">
+		<s:Image id="imgLeft" width="100%" height="100%" scaleMode="letterbox" smooth="true" smoothingQuality="high"
+				 backgroundColor="{currentSheet.isCustomLeft?0xffcc66:0xccccee}" backgroundAlpha="0.5"
+				 source="{leftBitmap}"
+				 horizontalAlign="center" horizontalAlign.dual="right"/>
+		<s:Image id="imgRihgt" width="100%" height="100%" scaleMode="letterbox" smooth="true" smoothingQuality="high"
+				 backgroundColor="{currentSheet.isCustomRight?0xffcc66:0xccccee}" backgroundAlpha="0.5" 
+				 source="{rightBitmap}"
+				 horizontalAlign="left" includeIn="dual" />
+	</s:HGroup>
+</s:Group>

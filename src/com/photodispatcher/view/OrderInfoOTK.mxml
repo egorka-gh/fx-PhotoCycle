@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:view="com.photodispatcher.view.*">
+	
+	<fx:Metadata>
+		[Event(name="close", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.BookSynonym;
+			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.PrintGroup;
+			import com.photodispatcher.model.TechLog;
+			import com.photodispatcher.model.TechLogLocal;
+			import com.photodispatcher.model.TechPoint;
+			import com.photodispatcher.model.TechPrintGroup;
+			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.dao.PrintGroupDAO;
+			import com.photodispatcher.model.dao.TechLogDAO;
+			import com.photodispatcher.model.dao.local.TechLogLocalDAO;
+			import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
+			import com.photodispatcher.util.ArrayUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			public var techPoint:TechPoint;
+
+			/*
+			private var _currentBook:int;
+			public function get currentBook():int{
+				return _currentBook;
+			}
+			public function set currentBook(value:int):void{
+				_currentBook = value;
+				currBookIdx=_currentBook-1;
+				currBookLocked=_currentBook>0;
+				if(currBookIdx==-1) currBookIdx=0;
+				if(lstBookList) lstBookList.ensureIndexIsVisible(currBookIdx);
+			}
+			[Bindable]
+			private var currBookIdx:int=-1;
+			private var currBookLocked:Boolean;
+			*/
+
+			/*
+			private var _currentOrderId:String;
+			public function get currentOrderId():String{
+				return _currentOrderId;
+			}
+			public function set currentOrderId(value:String):void{
+				_currentOrderId = value;
+				if (_currentOrderId) refresh(_currentOrderId);
+			}
+			*/
+
+			[Bindable]
+			private var currBook:int;
+			
+			public function show(orderId:String, book:int, checkClose:Boolean=false):void{
+				if(order && order.id==orderId){
+					if(checkClose && book!=0 && currBook==book){
+						btComplite_clickHandler(null);
+						return;
+					}
+					refreshLocalData();
+				}else{
+					refresh(orderId);
+				}
+				currBook=book;
+			}
+			
+			[Bindable]
+			private var order:Order;
+			[Bindable]
+			private var pgCover:PrintGroup;
+			[Bindable]
+			private var pgBlok:PrintGroup;
+			//[Bindable]
+			//private var techOrder:TechPrintGroup;
+			[Bindable]
+			private var bookListAC:ArrayCollection;
+			[Bindable]
+			private var bookTotal:int;
+			[Bindable]
+			private var bookComplited:int;
+			
+			
+			private function refresh(orderId:String):void{
+				pgCover=null;
+				pgBlok=null;
+				//techOrder=null;
+				bookListAC=new ArrayCollection();
+				bookTotal=0;
+				bookComplited=0;
+				if(!orderId){
+					order=null;
+				}else{
+					var dao:OrderDAO= new OrderDAO();
+					order=dao.getItem(orderId,true);
+				}
+				if(!order) return;
+				var pDao:PrintGroupDAO=new PrintGroupDAO();
+				var a:Array=pDao.getByOrder(order.id);
+				var pg:PrintGroup;
+				for each(pg in a){
+					if (!pg.is_reprint && pg.book_type!=0){
+						if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) pgCover=pg;
+						if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) pgBlok=pg;
+					}
+				}
+				order.printGroups=[];
+				if(pgCover) order.printGroups.push(pgCover);
+				if(pgBlok) order.printGroups.push(pgBlok);
+				if(pgCover){
+					bookTotal=pgCover.book_num;
+				}else if(pgBlok){
+					bookTotal=pgBlok.book_num;
+				}
+				//vPreview.prepare(order);
+				refreshLocalData();
+				currentState='info';
+			}
+			
+			private function refreshLocalData():void{
+				//bookListAC=null;
+				bookComplited=0;
+				if(!order || !order.id){
+					return;
+				}
+				//var tpgDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+				//techOrder=tpgDao.getById(orderId);
+				var a:Array;
+				var tllDao:TechLogLocalDAO=new TechLogLocalDAO();
+				a=tllDao.getByParentId(order.id);
+				var aa:Array;
+				var i:int;
+				if(a){
+					aa=new Array(bookTotal);
+					var tll:TechLogLocal;
+					for each(tll in a){
+						bookComplited++;
+						aa[tll.book-1]=tll;
+					}
+					for (i = 0; i < aa.length; i++){
+						if(aa[i]== undefined){
+							tll= new TechLogLocal();
+							tll.setSheet(i+1,0);
+							aa[i]=tll;
+						}
+					}
+				}
+				bookListAC.source=aa;
+				bookListAC.refresh();
+			}
+
+			protected function btClose_clickHandler(event:MouseEvent):void{
+				closeView();
+			}
+			
+			private function closeView():void{
+				dispatchEvent( new Event(Event.CLOSE));
+			}
+			
+			/*
+			protected function lstBookList_changingHandler(event:IndexChangeEvent):void{
+				if(currBookLocked) event.preventDefault();
+			}
+			*/
+			
+			protected function btComplite_clickHandler(event:MouseEvent):void{
+				//check book
+				var tll:TechLogLocal=lstBookList.selectedItem as TechLogLocal;
+				if(!tll || tll.log_date){
+					checkComplited();
+					return;
+				}
+				
+				var tl:TechLog= new TechLog();
+				tl.log_date=new Date();
+				tl.setSheet(tll.book,0);
+				tl.print_group=order.id+'_1';
+				tl.src_id= techPoint.id;
+				var dao:TechLogDAO=new TechLogDAO();
+				dao.addLog(tl);
+				//log to local db
+				tl.print_group=order.id;
+				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+				lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
+				lDao.log(tl,bookTotal,bookTotal, techPoint.tech_type,true);
+			}
+			private function onLocalLog(evt:AsyncSQLEvent):void{
+				var lDao:TechPrintGroupDAO=evt.target as TechPrintGroupDAO;
+				if (lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
+				checkComplited();
+			}
+			
+			private function checkComplited():void{
+				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+				var tpg:TechPrintGroup=lDao.getById(order.id);
+				if(!tpg) return;
+				
+				if(tpg.books==tpg.done){
+					//compltete
+					Alert.show('Все книги проверены. Закрывать заказ?','',Alert.YES|Alert.NO,this,onCompleteAlert);
+				}else{
+					/*
+					//exit
+					closeView();
+					*/
+					refreshLocalData();
+				}
+			}
+			private function onCompleteAlert(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES) {
+					setComplete();
+				}else{
+					closeView();
+				}
+			}
+			private function setComplete():void{
+				//mark for write
+				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+				lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteMark);
+				lDao.startLoged(order.id);
+			}
+			private function onOrderCompleteMark(event:AsyncSQLEvent):void{
+				var lDao:TechPrintGroupDAO=event.target as TechPrintGroupDAO;
+				if(lDao){
+					lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteMark);
+				}
+				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
+					writeComplited();
+				}
+			}
+
+			protected var complited:Array=[];
+			protected var isWriting:Boolean;
+			private function writeComplited():void{
+				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+				var arr:Array=lDao.finde4Transfer();
+				var pg:TechPrintGroup;
+				if(arr){
+					for each(pg in arr){
+						if(ArrayUtil.searchItemIdx('id',pg.id,complited)==-1 && pg.isComplite && pg.start_loged==1) complited.push(pg);
+					}
+				}
+				if(!isWriting) writeNext();
+			}
+
+			protected function writeNext():void{
+				if(complited.length==0){
+					isWriting=false;
+					closeView();
+					return;
+				}
+				isWriting=true;
+				var pg:TechPrintGroup= complited[0] as TechPrintGroup;
+				if(!pg){
+					complited.shift();
+					writeNext();
+					return;
+				}
+				if(pg.isComplite && pg.start_loged==1){
+					var dao:OrderDAO= new OrderDAO();
+					dao.execOnItem=pg;
+					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
+					dao.setExtraStateByTech(pg.id,techPoint.tech_type);
+				}else{
+					complited.shift();
+					writeNext();
+				}
+			}
+			private function onExtraWrite(evt:AsyncSQLEvent):void{
+				var pdao:OrderDAO= evt.target as OrderDAO;
+				if(pdao) pdao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
+				//var pgId:String=evt.item as String;
+				var pg:TechPrintGroup=evt.item as TechPrintGroup;
+				if (evt.result==AsyncSQLEvent.RESULT_COMLETED && pg){
+					var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
+					lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCompleteDel);
+					lDao.remove(pg.id);
+				}else{
+					//database locked or err
+					complited=[];
+					isWriting=false;
+				}
+			}
+			private function onCompleteDel(evt:AsyncSQLEvent):void{
+				var lDao:TechPrintGroupDAO= evt.target as TechPrintGroupDAO;
+				if(lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCompleteDel);
+				complited.shift();
+				writeNext();
+			}
+
+			protected function lstBookList_changeHandler(event:IndexChangeEvent):void{
+				//currBookIdx=lstBookList.selectedIndex;
+				currBook=lstBookList.selectedIndex+1;
+			}
+			
+			protected function btPreview_clickHandler(event:MouseEvent):void{
+				if(currentState=='preview' || currBook<=0) return; 
+				if(vPreview){
+					if(vPreview.prepare(order)){
+						currentState='preview';
+						vPreview.showBook(currBook);
+						//vPreview.lstSheets.setFocus(); 
+					}else{
+						currentState='info';
+					}
+				}else{
+					currentState='preview';
+				}
+			}
+			
+			protected function vPreview_creationCompleteHandler(event:FlexEvent):void{
+				if (vPreview.prepare(order)){
+					vPreview.showBook(currBook);
+					//vPreview.lstSheets.setFocus(); 
+				}else{
+					currentState='info';
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:DateTimeFormatter id="dtFormater" dateTimePattern="dd.MM.yyyy HH:mm"/>
+	</fx:Declarations>
+	
+	
+	<s:states>
+		<s:State name="info"/>
+		<s:State name="preview"/>
+	</s:states>
+
+	<s:Rect radiusX="6" top="0" left="0" right="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#444444" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:HGroup gap="0" top="10" left="10" right="10" bottom="10" includeIn="info">
+		<s:Scroller width="500" height="100%">
+			<s:Group width="100%">
+				<s:Form id="frmOrder" width="100%" backgroundAlpha="0" fontSize="14">
+					<s:layout>
+						<s:FormLayout gap="-12"/>
+					</s:layout>
+					
+					<s:FormItem label="Заказ">
+						<s:TextInput id="tiID" text="{order.id}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Источник">
+						<s:TextInput id="tiSource" text="{order.source_name}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Тип">
+						<s:TextInput text="{pgCover.book_type_name}" editable="false" width="100%"/>
+						<s:TextInput text="{order.calc_type}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Обложка">
+						<s:TextInput text="{order.cover}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Формат">
+						<s:TextInput text="{order.format}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Алиас">
+						<s:TextInput text="{pgCover.path}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Форзац">
+						<s:TextInput text="{order.endpaper}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Прослойка">
+						<s:TextInput text="{order.interlayer}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Углы">
+						<s:TextInput text="{order.corner_type}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Каптал">
+						<s:TextInput text="{order.kaptal}" editable="false" width="100%"/>
+					</s:FormItem> 
+				</s:Form>
+			</s:Group>
+		</s:Scroller>
+		<s:Scroller width="350" height="100%">
+			<s:Group width="100%">
+				<s:Form width="100%" backgroundAlpha="0" fontSize="14">
+					<s:layout>
+						<s:FormLayout gap="-12"/>
+					</s:layout>
+					<s:FormHeading label="Обложка"/>
+					<s:FormItem label="Размер">
+						<s:TextInput text="{pgCover.height}x{pgCover.width}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Бумага">
+						<s:TextInput text="{pgCover.paper_name}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Печать">
+						<s:TextInput text="{pgCover.is_pdf?'Полиграфия':'Фотопечать'}" editable="false" width="100%"/>
+					</s:FormItem>
+					<s:FormItem />
+					<s:FormHeading label="Блок"/>
+					<s:FormItem label="Размер">
+						<s:TextInput text="{pgBlok.height}x{pgBlok.width}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Бумага">
+						<s:TextInput text="{pgBlok.paper_name}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Печать">
+						<s:TextInput text="{pgBlok.is_pdf?('Полиграфия '+(pgBlok.is_duplex?'двусторонняя':'односторонняя')):'Фотопечать'}" editable="false" width="100%"/>
+					</s:FormItem> 
+				</s:Form>
+			</s:Group>
+		</s:Scroller>
+		<s:VGroup gap="5" height="100%">
+			<s:Spacer height="10"/>
+			<s:HGroup gap="5" verticalAlign="baseline" fontSize="14">
+				<s:Label text="Книг" fontWeight="bold" width="{lbBC.width}" />
+				<s:TextInput text="{bookTotal.toString()}" editable="false" width="50"/>
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="baseline" fontSize="14">
+				<s:Label id="lbBC" text="Проверено" fontWeight="bold"/>
+				<s:TextInput text="{bookComplited.toString()}" editable="false" width="50"/>
+			</s:HGroup>
+			<s:List id="lstBookList" contentBackgroundAlpha="0" borderVisible="false"
+					itemRenderer="com.photodispatcher.view.itemRenderer.BookCheckRenderer"
+					selectedIndex="{currBook-1}" change="lstBookList_changeHandler(event)"
+					dataProvider="{bookListAC}" width="200" height="100%"/>
+		</s:VGroup>
+		<s:Spacer width="10"/>
+		<s:Spacer width="100%"/>
+		<s:VGroup gap="10" height="100%" fontSize="14">
+			<s:Button id="btPreview" label="Просмотр" enabled="{currBook!=0}" click="btPreview_clickHandler(event)" />
+			<!--<s:Button id="btInfo" label="Информация" />-->
+			<s:Button id="btComplite" label="Проверена" enabled="{currBook!=0}" click="btComplite_clickHandler(event)"/>
+			<s:Spacer height="100%"/>
+			<s:Button id="btClose" label="Закрыть" click="btClose_clickHandler(event)"/>
+		</s:VGroup>
+	</s:HGroup>
+	<!--<view:OrderPreviewOTKold id="vPreview" top="10" left="10" right="10" bottom="10" includeIn="preview"
+						  techPoint="{techPoint}"
+						  creationComplete="vPreview_creationCompleteHandler(event)"
+						  close="{currentState='info'}"/>-->
+	<view:OrderPreviewOTK id="vPreview" top="10" left="10" right="10" bottom="10" includeIn="preview"
+							 techPoint="{techPoint}"
+							 creationComplete="vPreview_creationCompleteHandler(event)"
+							 close="{currentState='info'}"/>
+</s:Group>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.view.BookPreviewSheet;
+			
+			[Bindable]
+			private var sheet:BookPreviewSheet;
+			[Bindable]
+			private var pageRectWidth:int=30;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				sheet=value as BookPreviewSheet;
+			}
+			
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="hovered"/>
+		<s:State name="selected"/>
+	</s:states>     
+
+	<s:Rect radiusX="0" top="0" left="0" width="{lbSheet.width+12}" bottom="0">
+		<s:fill>
+			<s:SolidColor id="labelFill" color="#ffffff"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect radiusX="0" top="0" left="{lbSheet.width+12}" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor id="backFill" color="{sheet.check?0x99EE99:0xeeeeee}"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:Rect radiusX="0" top="5" left="{lbSheet.width+17}" width="{sheet.doublePage?pageRectWidth:2*pageRectWidth}" bottom="5" right="5">
+		<s:stroke>
+			<s:SolidColorStroke color="0"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="{sheet.isCustomLeft?0xffcc66:0xccccee}"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect radiusX="0" top="5" left="{lbSheet.width+17+pageRectWidth}" width="{pageRectWidth}" bottom="5" right="5"
+			visible="{sheet.doublePage}" includeInLayout="{sheet.doublePage}">
+		<s:stroke>
+			<s:SolidColorStroke color="0"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="{sheet.isCustomRight?0xffcc66:0xccccee}"/>
+		</s:fill>
+	</s:Rect>
+	<s:Rect radiusX="1" top="0" left="0" right="0" bottom="0" includeIn="selected">
+		<s:stroke>
+			<s:SolidColorStroke color="#333333" alpha="0.7" weight="2"/>
+		</s:stroke>
+	</s:Rect>
+	
+	<s:Label id="lbSheet" fontSize="18" top="8" left="7" bottom="2" text="{sheet.sheet.toString()}" fontWeight="bold"/>
+
+</s:ItemRenderer>

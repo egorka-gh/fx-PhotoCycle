@@ -42,7 +42,7 @@ package com.photodispatcher.service.barcode{
 		public var databits:String=COM_DATABITS[0];
 		public var stopbits:String=COM_STOPBITS[0];
 		public var parity:String=COM_PARITYS[0];
-		public var suffix:int;
+		public var suffix:int=10; //LF default
 		public var proxy:Socket2Com;
 		public var doubleScanGap:int=ComReader.DOUBLE_SCAN_GAP;
 

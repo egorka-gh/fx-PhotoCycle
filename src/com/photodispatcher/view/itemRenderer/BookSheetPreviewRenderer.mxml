@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.view.BookPreviewSheet;
+			
+			[Bindable]
+			public var sheet:BookPreviewSheet;
+			
+			[Bindable]
+			private var leftFile:String;
+			[Bindable]
+			private var rightFile:String;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				sheet=value as BookPreviewSheet;
+				detectState();
+			}
+			
+			private function detectState():void{
+				if(!sheet || sheet.isEmptyCover){
+					leftFile=null;
+					rightFile=null;
+					currentState='empty';
+					return;
+				}
+				leftFile=sheet.rootDir+sheet.leftPage;
+				if(sheet.doublePage){
+					rightFile=sheet.rootDir+sheet.rightPage;
+					currentState='dual';
+				}else{
+					rightFile=null;
+					currentState='simple';
+				}
+			}
+
+			protected function imgLeft_clickHandler(event:MouseEvent):void{
+				dispatchEvent(event.clone());
+				event.stopImmediatePropagation();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="empty"/>
+		<s:State name="simple"/>
+		<s:State name="dual"/>
+	</s:states>
+
+	<s:Rect radiusX="0" top="0" left="0" bottom="0" right="0">
+		<s:stroke>
+			<s:SolidColorStroke color="0"/>
+		</s:stroke>
+	</s:Rect>
+	
+<!--	<s:Label id="lbSheet" fontSize="18" top="8" left="7" bottom="2" text="{sheet.sheet.toString()}" fontWeight="bold"/>-->
+	
+	<s:VGroup gap="5" width="100%" height="100%" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" verticalAlign="bottom">
+			<s:Label id="lbSheet" fontSize="16" text="{sheet.sheet.toString()}" fontWeight="bold"
+					 paddingTop="3" paddingLeft="2" paddingRight="2"
+					 backgroundColor="#ffffff"/>
+			<s:Label text="{sheet.leftPage+(sheet.rightPage?('/'+sheet.rightPage):'')}; {sheet.rootDir}" width="100%" maxDisplayedLines="1"/>
+		</s:HGroup>
+		<s:HGroup gap="0" width="100%" height="100%">
+			<s:Rect width="100%" height="100%" includeIn="empty">
+				<s:fill>
+					<s:SolidColor color="#eeeeee"/>
+				</s:fill>
+			</s:Rect>
+			<s:Image id="imgLeft" width="100%" height="100%" scaleMode="letterbox" smooth="true"
+					 backgroundColor="{sheet.isCustomLeft?0xffcc66:0xccccee}" backgroundAlpha="0.5"
+					 source="{leftFile}"
+					 click="imgLeft_clickHandler(event)"
+					 horizontalAlign="center" horizontalAlign.dual="right"/>
+			<s:Image id="imgRihgt" width="100%" height="100%" scaleMode="letterbox" smooth="true"
+					 backgroundColor="{sheet.isCustomRight?0xffcc66:0xccccee}" backgroundAlpha="0.5" 
+					 source="{rightFile}"
+					 click="imgLeft_clickHandler(event)"
+					 horizontalAlign="left" includeIn="dual" />
+		</s:HGroup>
+	</s:VGroup>
+</s:ItemRenderer>

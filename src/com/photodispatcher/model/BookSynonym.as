@@ -68,6 +68,22 @@ package com.photodispatcher.model{
 			if(pg) pg.is_horizontal=is_horizontal;
 			return pg;
 		}
+		
+		public function get blockTemplate():BookPgTemplate{
+			var it:BookPgTemplate;
+			for each(it in templates){
+				if(it.book_part==BOOK_PART_BLOCK) return it;
+			}
+			return null;
+		}
+
+		public function get coverTemplate():BookPgTemplate{
+			var it:BookPgTemplate;
+			for each(it in templates){
+				if(it.book_part==BOOK_PART_COVER || it.book_part==BOOK_PART_INSERT) return it;
+			}
+			return null;
+		}
 
 	}
 }

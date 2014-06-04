@@ -12,7 +12,23 @@ package com.photodispatcher.model.dao.local{
 			return a;
 		}
 		
-		public function log(item:TechLog, books:int, sheets:int, techType:int):void{
+		public function start(id:String, books:int, sheets:int, techType:int):void{
+			var sequence:Array=[];
+			var stmt:SQLStatement;
+			var sql:String;
+			var params:Array;
+			var dt:Date=new Date();
+
+			//create pg
+			sql='INSERT INTO tech_print_group (id, tech_type, start_date, books, sheets)'+
+				' SELECT ?, ?, ?, ?, ?  WHERE NOT EXISTS (SELECT 1 FROM tech_print_group WHERE id=?)';
+			params=[id, techType, dt, books, sheets, id];
+			sequence.push(prepareStatement(sql,params));
+			
+			executeSequence(sequence);
+		}
+		
+		public function log(item:TechLog, books:int, sheets:int, techType:int, bookMode:Boolean=false):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
 			var sql:String;
@@ -35,9 +51,15 @@ package com.photodispatcher.model.dao.local{
 			sql='DELETE FROM tmp_tech_pg';
 			sequence.push(prepareStatement(sql));
 			
-			sql='INSERT INTO tmp_tech_pg (id, end_date, done)'+
-				' SELECT tl.print_group, MAX(tl.log_date), COUNT(DISTINCT tl.sheet)'+ 
-				' FROM tech_log tl WHERE tl.print_group=? AND tl.src_id=?';
+			if(bookMode){
+				sql='INSERT INTO tmp_tech_pg (id, end_date, done)'+
+					' SELECT tl.print_group, MAX(tl.log_date), COUNT(DISTINCT CAST((tl.sheet/100) as int))'+ 
+					' FROM tech_log tl WHERE tl.print_group=? AND tl.src_id=?';
+			}else{
+				sql='INSERT INTO tmp_tech_pg (id, end_date, done)'+
+					' SELECT tl.print_group, MAX(tl.log_date), COUNT(DISTINCT tl.sheet)'+ 
+					' FROM tech_log tl WHERE tl.print_group=? AND tl.src_id=?';
+			}
 			params=[item.print_group, item.src_id];
 			sequence.push(prepareStatement(sql,params));
 
@@ -121,6 +143,24 @@ package com.photodispatcher.model.dao.local{
 							' WHERE pg.done=pg.books*pg.sheets OR pg.start_loged=0';
 			runSelect(sql,null,true);
 			return itemsArray;
+		}
+
+		public function findeIncomplete(bookMode:Boolean=true):Array{
+			if(!bookMode) return null;
+			var sql:String='SELECT pg.*'+
+							' FROM tech_print_group pg'+
+							' WHERE pg.done!=pg.books OR start_loged=0'
+							' ORDER BY pg.start_date';
+			runSelect(sql,null,true);
+			return itemsArray;
+		}
+
+		public function getById(id:String):TechPrintGroup{
+			var sql:String='SELECT pg.*'+
+							' FROM tech_print_group pg'+
+							' WHERE pg.id=?';
+			runSelect(sql,[id],true);
+			return item as TechPrintGroup;;
 		}
 
 	}
