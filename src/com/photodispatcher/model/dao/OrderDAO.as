@@ -632,7 +632,7 @@ package com.photodispatcher.model.dao{
 			if(tech_point){
 				//log operation start time
 				sql='INSERT INTO tech_log (print_group, sheet, src_id, log_date) VALUES (?,?,?,?)';
-				params=[orderId+'_1', 0, tech_point, dt];
+				params=[orderId, 0, tech_point, dt];
 				sequence.push(prepareStatement(sql,params));
 			}
 

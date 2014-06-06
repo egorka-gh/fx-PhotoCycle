@@ -429,7 +429,7 @@ package com.photodispatcher.model.dao.local{
 			
 			sql="CREATE TABLE [tech_log] ("+
 				 " [id] INTEGER PRIMARY KEY AUTOINCREMENT,"+ 
-				 " [print_group] VARCHAR2(50) NOT NULL CONSTRAINT [tech_log_fk_pg] REFERENCES [tech_print_group]([id]) ON DELETE CASCADE,"+ 
+				 " [print_group] VARCHAR2(50) NOT NULL,"+ //CONSTRAINT [tech_log_fk_pg] REFERENCES [tech_print_group]([id]) ON DELETE CASCADE 
 				 " [sheet] INTEGER NOT NULL,"+
 				 " [src_id] INTEGER NOT NULL DEFAULT '0',"+ 
 				 " [log_date] DATETIME NOT NULL)";

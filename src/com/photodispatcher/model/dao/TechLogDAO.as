@@ -1,6 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.TechLog;
 	
 	public class TechLogDAO extends BaseDAO{
@@ -13,14 +14,12 @@ package com.photodispatcher.model.dao{
 
 		public function addLog(item:TechLog):void{
 			asyncFaultMode=FAULT_IGNORE;
-			execute(
-				'INSERT INTO tech_log (print_group, sheet, src_id, log_date)'+
-				' VALUES (?,?,?,?)',
-				[	item.print_group,
-					item.sheet,
-					item.src_id,
-					item.log_date]
-				,item);
+			var sql:String='INSERT INTO tech_log (print_group, sheet, src_id, log_date) VALUES (?,?,?,?)';
+			var params:Array=[item.print_group,
+								item.sheet,
+								item.src_id,
+								item.log_date];
+			executeSequence([prepareStatement(sql,params)]);
 		}
 
 		public function addPrintLog(item:TechLog):void{
@@ -53,6 +52,7 @@ package com.photodispatcher.model.dao{
 		}
 
 		public function getTechByOrder(orderId:String):Array{
+			/*
 			var sql:String='SELECT tl.* , tp.name tech_point_name, st.state tech_state, os.name tech_state_name'+
 							' FROM print_group pg'+
 							' INNER JOIN tech_log tl ON pg.id=tl.print_group'+  
@@ -61,10 +61,31 @@ package com.photodispatcher.model.dao{
 							' INNER JOIN config.order_state os ON st.state = os.id'+
 							' WHERE pg.order_id=?'+
 							' ORDER BY tl.log_date';
-			runSelect(sql,[orderId]);
+			*/
+			var sql:String='SELECT tl.* , tp.name tech_point_name, st.state tech_state, os.name tech_state_name'+
+							' FROM tech_log tl'+  
+							' INNER JOIN config.tech_point tp ON tl.src_id=tp.id'+
+							' INNER JOIN config.src_type st ON tp.tech_type=st.id'+ 
+							' INNER JOIN config.order_state os ON st.state = os.id'+
+							" WHERE tl.print_group=? OR tl.print_group LIKE ? || '_%'"+
+							' ORDER BY tl.log_date';
+
+			runSelect(sql,[orderId, orderId]);
 			return itemsArray;
 		}
-		
+
+		public function getOTKBooks(orderId:String):Array{
+			var sql:String='SELECT tl.print_group, CAST((tl.sheet/100) as int)*100 sheet, tl.log_date log_date, tp.name tech_point_name'+
+							' FROM tech_log tl'+  
+							' INNER JOIN config.tech_point tp ON tl.src_id=tp.id AND tp.tech_type=?'+
+							' WHERE tl.print_group=? AND tl.sheet>99'+
+							' GROUP BY tl.print_group, CAST((tl.sheet/100) as int)*100'+
+							' ORDER BY tl.sheet';
+			
+			runSelect(sql,[SourceType.TECH_OTK, orderId]);
+			return itemsArray;
+		}
+
 		/*
 		public function getTechByOrderAgg(orderId:String):Array{
 			var sql:String=

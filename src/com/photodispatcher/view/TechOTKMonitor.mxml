@@ -18,6 +18,7 @@
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.OrderExtraStateDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
+			import com.photodispatcher.model.dao.local.TechLogLocalDAO;
 			import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -121,67 +122,77 @@
 			}
 			private function addOrder(order:Order):void{
 				lastOrderId='';
-				if(order && checkOrder(order.id)){
-					lastOrderId=order.id;
-					var booksTotal:int=getBooksTotal(lastOrderId);
-					if(booksTotal==0){
-						Alert.show('Не определено количество книг в заказе '+lastOrderId);
-						lastOrderId='';
-						return;
-					}else if(booksTotal==-1){
-						//onOrderAdded(null);
-						onOrderStarted(null);
-						return;
+				if(order){
+					switch(checkOrder(order.id)){
+						case 1:
+							//started
+							showOrder();
+							break;
+						case 0:
+							//start
+							startOrder(order.id);
+							break;
 					}
-					var tpgDAO:TechPrintGroupDAO= new TechPrintGroupDAO();
-					tpgDAO.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
-					tpgDAO.start(lastOrderId,booksTotal,1,techPoint.tech_type);
 				}
 			}
-			private function onOrderAdded(event:AsyncSQLEvent):void{
-				if(event){
-					var tpgDAO:TechPrintGroupDAO=event.target as TechPrintGroupDAO;
-					if(tpgDAO) tpgDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
-				}
-				if(event && event.result!=AsyncSQLEvent.RESULT_COMLETED){
+			
+			private function startOrder(orderId:String):void{
+				var booksTotal:int=getBooksTotal(orderId);
+				if(booksTotal==0){
+					Alert.show('Не определено количество книг в заказе '+lastOrderId);
 					lastOrderId='';
-					Alert.show(event.error);
-				}else{
-					var dao:OrderDAO= new OrderDAO();
-					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderStarted);
-					dao.startExtraStateByTech(lastOrderId, techPoint.tech_type, techPoint.id);
+					return;
 				}
+				lastOrderId=orderId;
+				var dao:OrderDAO= new OrderDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderStarted);
+				dao.startExtraStateByTech(lastOrderId, techPoint.tech_type, techPoint.id);
 			}
+			
 			private function onOrderStarted(event:AsyncSQLEvent):void{
-				if(event){
-					var dao:OrderDAO=event.target as OrderDAO;
-					if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderStarted);
+				var dao:OrderDAO=event.target as OrderDAO;
+				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderStarted);
+				if(event.result!=AsyncSQLEvent.RESULT_COMLETED){
+					//save in lockal db
+					var tdao:TechLogLocalDAO= new TechLogLocalDAO();
+					tdao.log(lastOrderId,0,techPoint.id);
 				}
+				showOrder();
+			}
+			
+			private function showOrder():void{
+				if(!lastOrderId) return;
 				if(vInfo) vInfo.show(lastOrderId,lastBook);
 				currentState='book';
 			}
 			
-			private function checkOrder(orderId:String):Boolean{
-				if(!orderId) return false;
+			private function checkOrder(orderId:String):int{ //-1 wrong id, 0-not started, 1 - started
+				if(!orderId) return -1;
 				var dao:OrderExtraStateDAO= new OrderExtraStateDAO();
 				var arr:Array=dao.getByOrder(orderId);
-				if(!arr) return false;
-				if(arr.length==0) return true;
+				if(!arr) return -1;
+				if(arr.length==0) return 0;
 				var es:OrderExtraState;
 				for each(es in arr){
-					if(es.state==techPoint.tech_state && es.state_date){
-						Alert.show('Заказ "'+orderId+'" уже прошел технологическую операцию');
-						return false;
+					if(es.state==techPoint.tech_state){
+						if(es.state_date){
+							Alert.show('Заказ "'+orderId+'" уже прошел технологическую операцию');
+							return -1;
+						}else{
+							return 1;
+						}
 					}
 				}
-				return true;
+				return 0;
 			}
 
 			private function getBooksTotal(orderId:String):int{
+				/*
 				var tpgDAO:TechPrintGroupDAO= new TechPrintGroupDAO();
 				var tpg:TechPrintGroup=tpgDAO.getById(orderId);
 				//if(tpg) return tpg.books;
 				if(tpg) return -1;
+				*/
 				var pgDao:PrintGroupDAO= new PrintGroupDAO();
 				var pg:PrintGroup= pgDao.getByID(orderId+'_1');
 				if(!pg) return 0;
@@ -193,8 +204,13 @@
 			private var orderListAC:ArrayCollection;
 			
 			private function refresh():void{
+				/*
 				var dao:TechPrintGroupDAO= new TechPrintGroupDAO();
 				var a:Array=dao.findeIncomplete();
+				if (a) orderListAC= new ArrayCollection(a);
+				*/
+				var dao:OrderExtraStateDAO= new OrderExtraStateDAO();
+				var a:Array=dao.getOtkOrders();
 				if (a) orderListAC= new ArrayCollection(a);
 			}
 			
@@ -212,12 +228,12 @@
 				//ordersGridMenu.addItem('');
 			}
 			private function openCallBack(grid:DataGrid,param:int):void{
-				var onItem:TechPrintGroup=grid.selectedItem as TechPrintGroup;
+				//var onItem:TechPrintGroup=grid.selectedItem as TechPrintGroup;
+				var onItem:OrderExtraState=grid.selectedItem as OrderExtraState;
 				if(onItem && onItem.id){
 					lastBook=0;
 					lastOrderId=onItem.id;
-					if(vInfo) vInfo.show(lastOrderId,lastBook);
-					currentState='book';
+					showOrder();
 				}
 			}
 			protected function dgMonitor_doubleClickHandler(event:MouseEvent):void{
@@ -250,7 +266,7 @@
 					fontSize="14" width="100%" height="100%"
 					creationComplete="dgMonitor_creationCompleteHandler(event)"
 					doubleClickEnabled="true" doubleClick="dgMonitor_doubleClickHandler(event)"
-					dataProvider="{orderListAC}" locale="ru_RU" columns="{TechPrintGroup.gridColumnsTech()}"/>
+					dataProvider="{orderListAC}" locale="ru_RU" columns="{OrderExtraState.gridColumnsOTK()}"/>
 		<s:Button id="btAdd" label="Добавить" fontSize="14" click="btAdd_clickHandler(event)"/>
 	</s:VGroup>
 	

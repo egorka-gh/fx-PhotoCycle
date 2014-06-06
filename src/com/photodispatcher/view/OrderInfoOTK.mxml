@@ -18,9 +18,11 @@
 			import com.photodispatcher.model.TechLogLocal;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.TechPrintGroup;
+			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.TechLogDAO;
+			import com.photodispatcher.model.dao.local.LocalDAO;
 			import com.photodispatcher.model.dao.local.TechLogLocalDAO;
 			import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
 			import com.photodispatcher.util.ArrayUtil;
@@ -35,44 +37,17 @@
 			[Bindable]
 			public var techPoint:TechPoint;
 
-			/*
-			private var _currentBook:int;
-			public function get currentBook():int{
-				return _currentBook;
-			}
-			public function set currentBook(value:int):void{
-				_currentBook = value;
-				currBookIdx=_currentBook-1;
-				currBookLocked=_currentBook>0;
-				if(currBookIdx==-1) currBookIdx=0;
-				if(lstBookList) lstBookList.ensureIndexIsVisible(currBookIdx);
-			}
-			[Bindable]
-			private var currBookIdx:int=-1;
-			private var currBookLocked:Boolean;
-			*/
-
-			/*
-			private var _currentOrderId:String;
-			public function get currentOrderId():String{
-				return _currentOrderId;
-			}
-			public function set currentOrderId(value:String):void{
-				_currentOrderId = value;
-				if (_currentOrderId) refresh(_currentOrderId);
-			}
-			*/
-
 			[Bindable]
 			private var currBook:int;
 			
 			public function show(orderId:String, book:int, checkClose:Boolean=false):void{
 				if(order && order.id==orderId){
 					if(checkClose && book!=0 && currBook==book){
+						//complite book
 						btComplite_clickHandler(null);
 						return;
 					}
-					refreshLocalData();
+					refreshBooks();
 				}else{
 					refresh(orderId);
 				}
@@ -85,8 +60,6 @@
 			private var pgCover:PrintGroup;
 			[Bindable]
 			private var pgBlok:PrintGroup;
-			//[Bindable]
-			//private var techOrder:TechPrintGroup;
 			[Bindable]
 			private var bookListAC:ArrayCollection;
 			[Bindable]
@@ -98,7 +71,6 @@
 			private function refresh(orderId:String):void{
 				pgCover=null;
 				pgBlok=null;
-				//techOrder=null;
 				bookListAC=new ArrayCollection();
 				bookTotal=0;
 				bookComplited=0;
@@ -126,34 +98,32 @@
 				}else if(pgBlok){
 					bookTotal=pgBlok.book_num;
 				}
-				//vPreview.prepare(order);
-				refreshLocalData();
+				refreshBooks();
 				currentState='info';
 			}
 			
-			private function refreshLocalData():void{
-				//bookListAC=null;
+			private function refreshBooks():void{
 				bookComplited=0;
 				if(!order || !order.id){
 					return;
 				}
-				//var tpgDao:TechPrintGroupDAO= new TechPrintGroupDAO();
-				//techOrder=tpgDao.getById(orderId);
-				var a:Array;
-				var tllDao:TechLogLocalDAO=new TechLogLocalDAO();
-				a=tllDao.getByParentId(order.id);
+
+				var tlDao:TechLogDAO= new TechLogDAO();
+				var a:Array=tlDao.getOTKBooks(order.id);
 				var aa:Array;
 				var i:int;
 				if(a){
 					aa=new Array(bookTotal);
-					var tll:TechLogLocal;
+					var tll:TechLog;
 					for each(tll in a){
-						bookComplited++;
-						aa[tll.book-1]=tll;
+						if(tll.book>0){
+							bookComplited++;
+							aa[tll.book-1]=tll;
+						}
 					}
 					for (i = 0; i < aa.length; i++){
 						if(aa[i]== undefined){
-							tll= new TechLogLocal();
+							tll= new TechLog();
 							tll.setSheet(i+1,0);
 							aa[i]=tll;
 						}
@@ -171,53 +141,34 @@
 				dispatchEvent( new Event(Event.CLOSE));
 			}
 			
-			/*
-			protected function lstBookList_changingHandler(event:IndexChangeEvent):void{
-				if(currBookLocked) event.preventDefault();
-			}
-			*/
-			
 			protected function btComplite_clickHandler(event:MouseEvent):void{
 				//check book
-				var tll:TechLogLocal=lstBookList.selectedItem as TechLogLocal;
+				var tll:TechLog=lstBookList.selectedItem as TechLog;
 				if(!tll || tll.log_date){
+					//TODO write loged
 					checkComplited();
 					return;
 				}
-				
-				var tl:TechLog= new TechLog();
-				tl.log_date=new Date();
-				tl.setSheet(tll.book,0);
-				tl.print_group=order.id+'_1';
-				tl.src_id= techPoint.id;
-				var dao:TechLogDAO=new TechLogDAO();
-				dao.addLog(tl);
-				//log to local db
-				tl.print_group=order.id;
-				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
-				lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
-				lDao.log(tl,bookTotal,bookTotal, techPoint.tech_type,true);
+				var dao:TechLogLocalDAO= new TechLogLocalDAO();
+				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
+				dao.log(order.id,tll.sheet,techPoint.id);
 			}
 			private function onLocalLog(evt:AsyncSQLEvent):void{
-				var lDao:TechPrintGroupDAO=evt.target as TechPrintGroupDAO;
+				var lDao:TechLogLocalDAO=evt.target as TechLogLocalDAO;
 				if (lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
-				checkComplited();
+				if(evt.result!=AsyncSQLEvent.RESULT_COMLETED) return;
+				//write loged
+				checkAfterTransfer=true;
+				transferLocal();
 			}
 			
+
 			private function checkComplited():void{
-				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
-				var tpg:TechPrintGroup=lDao.getById(order.id);
-				if(!tpg) return;
-				
-				if(tpg.books==tpg.done){
+				checkAfterTransfer=false;
+				refreshBooks();
+				if(bookTotal==bookComplited){
 					//compltete
 					Alert.show('Все книги проверены. Закрывать заказ?','',Alert.YES|Alert.NO,this,onCompleteAlert);
-				}else{
-					/*
-					//exit
-					closeView();
-					*/
-					refreshLocalData();
 				}
 			}
 			private function onCompleteAlert(evt:CloseEvent):void {
@@ -228,26 +179,37 @@
 				}
 			}
 			private function setComplete():void{
-				//mark for write
+				checkAfterTransfer=false;
+				//create local record for write to main db
 				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
 				lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteMark);
-				lDao.startLoged(order.id);
+				//lDao.startLoged(order.id);
+				lDao.setComplite(order.id);
 			}
 			private function onOrderCompleteMark(event:AsyncSQLEvent):void{
 				var lDao:TechPrintGroupDAO=event.target as TechPrintGroupDAO;
-				if(lDao){
-					lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteMark);
-				}
+				if(lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteMark);
 				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
-					writeComplited();
+					transferLocal();
 				}
 			}
 
 			protected var complited:Array=[];
 			protected var isWriting:Boolean;
-			private function writeComplited():void{
+			protected var checkAfterTransfer:Boolean;
+			private function transferLocal():void{
+				//books
+				var tlDao:TechLogLocalDAO= new TechLogLocalDAO();
+				var arr:Array=tlDao.findeAll();
+				var tl:TechLogLocal;
+				if(arr){
+					for each(tl in arr){
+						if(ArrayUtil.searchItemIdx('sheet',tl.sheet,complited)==-1) complited.push(tl);
+					}
+				}
+				//orders
 				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
-				var arr:Array=lDao.finde4Transfer();
+				arr=lDao.finde4Transfer();
 				var pg:TechPrintGroup;
 				if(arr){
 					for each(pg in arr){
@@ -260,43 +222,84 @@
 			protected function writeNext():void{
 				if(complited.length==0){
 					isWriting=false;
-					closeView();
+					//closeView();
+					//refreshBooks();
+					if(checkAfterTransfer){
+						checkComplited();
+					}else{
+						refreshBooks();
+					}
 					return;
 				}
 				isWriting=true;
-				var pg:TechPrintGroup= complited[0] as TechPrintGroup;
-				if(!pg){
+				if(complited[0] is TechLogLocal){
+					//book
+					var tl:TechLogLocal= complited[0] as TechLogLocal;
+					if(tl.sheet==0){
+						//start extra state
+						var dao:OrderDAO= new OrderDAO();
+						dao.execOnItem=tl;
+						dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onTransferWrite);
+						dao.setExtraStateByTech(tl.print_group,techPoint.tech_type, techPoint.id);
+					}else{
+						//write book
+						var tl2:TechLog= new TechLog();
+						tl2.log_date=tl.log_date;
+						tl2.setSheet(tl.book,0);
+						tl2.print_group=tl.print_group;
+						tl2.src_id= techPoint.id;
+						var tdao:TechLogDAO=new TechLogDAO();
+						tdao.execOnItem=tl;
+						tdao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onTransferWrite);
+						tdao.addLog(tl2);
+					}
+				}else if(complited[0] is TechPrintGroup){
+					//order
+					var pg:TechPrintGroup= complited[0] as TechPrintGroup;
+					if(pg.isComplite && pg.start_loged==1){
+						var odao:OrderDAO= new OrderDAO();
+						odao.execOnItem=pg;
+						odao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onTransferWrite);
+						odao.setExtraStateByTech(pg.id,techPoint.tech_type);
+					}else{
+						complited.shift();
+						writeNext();
+					}
+				}else{
 					complited.shift();
 					writeNext();
 					return;
 				}
-				if(pg.isComplite && pg.start_loged==1){
-					var dao:OrderDAO= new OrderDAO();
-					dao.execOnItem=pg;
-					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
-					dao.setExtraStateByTech(pg.id,techPoint.tech_type);
-				}else{
-					complited.shift();
-					writeNext();
-				}
 			}
-			private function onExtraWrite(evt:AsyncSQLEvent):void{
-				var pdao:OrderDAO= evt.target as OrderDAO;
-				if(pdao) pdao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
-				//var pgId:String=evt.item as String;
-				var pg:TechPrintGroup=evt.item as TechPrintGroup;
-				if (evt.result==AsyncSQLEvent.RESULT_COMLETED && pg){
+			private function onTransferWrite(evt:AsyncSQLEvent):void{
+				var pdao:BaseDAO= evt.target as BaseDAO;
+				if(pdao) pdao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onTransferWrite);
+				if (evt.result!=AsyncSQLEvent.RESULT_COMLETED){
+					//database locked or err
+					complited=[];
+					isWriting=false;
+					return;
+				}
+				if(evt.item is TechLogLocal){
+					//book
+					var tl:TechLogLocal= evt.item as TechLogLocal;
+					var tlDao:TechLogLocalDAO= new TechLogLocalDAO();
+					tlDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCompleteDel);
+					tlDao.remove(tl.print_group, tl.sheet, tl.src_id);
+				}else if(evt.item is TechPrintGroup){
+					//order
+					var pg:TechPrintGroup=evt.item as TechPrintGroup;
 					var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
 					lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCompleteDel);
 					lDao.remove(pg.id);
 				}else{
-					//database locked or err
 					complited=[];
 					isWriting=false;
+					return;
 				}
 			}
 			private function onCompleteDel(evt:AsyncSQLEvent):void{
-				var lDao:TechPrintGroupDAO= evt.target as TechPrintGroupDAO;
+				var lDao:LocalDAO= evt.target as LocalDAO;
 				if(lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCompleteDel);
 				complited.shift();
 				writeNext();
@@ -444,16 +447,11 @@
 		<s:Spacer width="100%"/>
 		<s:VGroup gap="10" height="100%" fontSize="14">
 			<s:Button id="btPreview" label="Просмотр" enabled="{currBook!=0}" click="btPreview_clickHandler(event)" />
-			<!--<s:Button id="btInfo" label="Информация" />-->
 			<s:Button id="btComplite" label="Проверена" enabled="{currBook!=0}" click="btComplite_clickHandler(event)"/>
 			<s:Spacer height="100%"/>
 			<s:Button id="btClose" label="Закрыть" click="btClose_clickHandler(event)"/>
 		</s:VGroup>
 	</s:HGroup>
-	<!--<view:OrderPreviewOTKold id="vPreview" top="10" left="10" right="10" bottom="10" includeIn="preview"
-						  techPoint="{techPoint}"
-						  creationComplete="vPreview_creationCompleteHandler(event)"
-						  close="{currentState='info'}"/>-->
 	<view:OrderPreviewOTK id="vPreview" top="10" left="10" right="10" bottom="10" includeIn="preview"
 							 techPoint="{techPoint}"
 							 creationComplete="vPreview_creationCompleteHandler(event)"

@@ -24,6 +24,8 @@ package com.photodispatcher.model{
 		//ref
 		[Bindable]
 		public var state_name:String;
+		public var books:int;
+		public var books_done:int;
 
 		public static function gridColumnsTech():ArrayList{
 			var result:Array= [];
@@ -35,6 +37,17 @@ package com.photodispatcher.model{
 			col= new GridColumn('start_date'); col.headerText='Начало'; col.formatter=fmt;  col.width=110; result.push(col);
 			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
 			col= new GridColumn('state_date'); col.headerText='Конец'; col.formatter=fmt;  col.width=110; result.push(col);
+			return new ArrayList(result);
+		}
+
+		public static function gridColumnsOTK():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			col= new GridColumn('id'); col.headerText='Заказ';  col.width=150; result.push(col);
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
+			col= new GridColumn('start_date'); col.headerText='Начат'; col.formatter=fmt; col.width=150; result.push(col);
+			col= new GridColumn('books'); col.headerText='Всего книг'; col.width=100; result.push(col);
+			col= new GridColumn('books_done'); col.headerText='Выполнено'; col.width=100; result.push(col);
 			return new ArrayList(result);
 		}
 

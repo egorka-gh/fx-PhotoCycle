@@ -5,10 +5,10 @@
 				autoDrawBackground="true">
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.TechLogLocal;
+			import com.photodispatcher.model.TechLog;
 			
 			[Bindable]
-			private var book:TechLogLocal;
+			private var book:TechLog;
 			[Bindable]
 			private var strDate:String;
 			
@@ -17,10 +17,12 @@
 				book=null;
 				strDate='не проверена';//'01.01.14 12:45';
 				backFill.color=0xeeeeee;
-				book=value as TechLogLocal;
+				book=value as TechLog;
 				if(book){
-					if(book.log_date) strDate = dtfmt.format(book.log_date);
-					if(book.id && book.log_date) backFill.color=0x99EE99;
+					if(book.log_date){
+						strDate = dtfmt.format(book.log_date);
+						backFill.color=0x99EE99;
+					}
 				}
 			}		
 
