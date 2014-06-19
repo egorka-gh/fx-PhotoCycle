@@ -591,7 +591,7 @@ package com.photodispatcher.model{
 			return txt;
 		}
 
-		public function barcodeText(file:PrintGroupFile):String{
+		public function bookBarcodeText(file:PrintGroupFile):String{
 			var sourceId:int=source_id;
 			var text:String='';
 			if(!sourceId && id){
@@ -609,6 +609,23 @@ package com.photodispatcher.model{
 			return text;
 		}
 
+		/**
+		 * 
+		 * @param file
+		 * @return 
+		 * IdГруппыПечати+#Книги(первых 2а символа источник, id, полседние 3и символа книга) 
+		 */		
+		public function bookBarcode(file:PrintGroupFile):String{
+			if(!id || !file) return '';
+			var arr:Array=id.split('_');
+			if(!arr || arr.length<2) return '';
+			var result:String=arr[0];
+			if (result.length>2) return '';
+			result=StrUtil.lPad(result,2)+arr[1]+StrUtil.lPad(file.book_num.toString(),3);
+			return result;
+		}
+
+		
 		/**
 		 * 
 		 * @param file

@@ -69,12 +69,19 @@
 				//parse
 				var idx:int=barcode.indexOf(':');
 				if(idx!=-1){
+					//old barcode
 					newBook=int(barcode.substr(idx+1));
 					newScanId=barcode.substring(0,idx);
 				}else{
-					newScanId=barcode;
+					if(barcode.length<6){
+						Alert.show('Не верный ШК: "'+barcode+'".');
+						return;
+					}
+					//new barcode
+					newBook=int(barcode.substr(barcode.length-3));
+					newScanId=barcode;//.substr(0, barcode.length-3)
+					//newScanId=barcode;
 				}
-				//if(!currBook || !currOrderId){
 				if(!newScanId){
 					Alert.show('Не верный ШК: "'+barcode+'".');
 					return;
@@ -89,7 +96,7 @@
 				}
 
 				var dao:OrderDAO=new OrderDAO();
-				var ordersList:ArrayCollection= dao.findeById(newScanId);
+				var ordersList:ArrayCollection= dao.findeById(newScanId,true);
 				if(!ordersList){
 					lastScanId='';
 					return;
@@ -126,6 +133,7 @@
 					switch(checkOrder(order.id)){
 						case 1:
 							//started
+							lastOrderId=order.id;
 							showOrder();
 							break;
 						case 0:

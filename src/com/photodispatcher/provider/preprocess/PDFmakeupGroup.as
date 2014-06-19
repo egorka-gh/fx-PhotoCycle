@@ -208,7 +208,7 @@ package com.photodispatcher.provider.preprocess{
 						commands.push(command);
 						//add 2 final cmd
 						command2.add(outName);
-						pdfPageNum=pdfPageNum++;
+						pdfPageNum++;
 						
 						/*07.02.2014
 						//create cover back
@@ -572,10 +572,12 @@ package com.photodispatcher.provider.preprocess{
 			if(printGroup.bookTemplate.notching>0 && buttPix){
 				IMCommandUtil.drawNotching(command,printGroup.bookTemplate.notching,len,width,buttPix);
 			}
+			var barcode:String;
 			//draw barcode
 			if(printGroup.bookTemplate.bar_size>0){
-				var barcode:String=printGroup.barcodeText(file);
-				if(barcode) IMCommandUtil.drawBarcode(folder,command,printGroup.bookTemplate.bar_size,barcode,barcode,printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
+				//var barcode:String=printGroup.bookBarcodeText(file);
+				barcode=printGroup.bookBarcode(file);
+				if(barcode) IMCommandUtil.drawBarcode(folder,command,printGroup.bookTemplate.bar_size,barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
 			}
 			//draw tech barcode
 			if(printGroup.bookTemplate.tech_bar && 

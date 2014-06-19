@@ -7,6 +7,7 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotocanvas.data.FotocanvasProject;
 	import com.akmeful.fotocup.data.FotocupProject;
+	import com.akmeful.fotokniga.book.BookEditorInfo;
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.fotokniga.book.data.BookCoverPrintType;
 	import com.akmeful.fotokniga.book.data.BookPage;
@@ -271,6 +272,20 @@ package com.photodispatcher.provider.fbook{
 					pageOffset.x=BookLayout.CUT_PADDING;
 					pageOffset.y=BookLayout.CUT_PADDING;
 					var bookPage:BookPage=bp.pages[pageNum] as BookPage;
+					if(!bookPage) return; 
+					var r:Rectangle;
+					if (bookPage && bookPage.isCover){
+						//get cover size & offset
+						r=BookPage.getBackgroundRectByFormat(bp.template.format, bp.editorInfo as BookEditorInfo, bp.template.cover, bp.bindingWidth);
+					}else{
+						//block
+						r=BookPage.getBackgroundRectByFormat(bp.template.format, bp.editorInfo as BookEditorInfo);
+					}
+					pageSize.x=r.size.x;
+					pageSize.y=r.size.y;
+					pageOffset.x=-r.x;
+					pageOffset.y=-r.y;
+					/*
 					if (bookPage && bookPage.isCover){
 						//get cover size & offset
 						var r:Rectangle=BookPage.getBackgroundRectByFormat(bp.template.format,bp.template.cover, bp.bindingWidth);
@@ -279,6 +294,7 @@ package com.photodispatcher.provider.fbook{
 						pageOffset.x=-r.x;
 						pageOffset.y=-r.y;
 					}
+					*/
 					break;
 				case FotocalendarProject.PROJECT_TYPE:
 					var cp:FotocalendarProject=(project as FotocalendarProject);

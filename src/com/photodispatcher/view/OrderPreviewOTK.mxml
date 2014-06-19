@@ -196,7 +196,7 @@
 				if(!sheets || sheets.length==0) return;
 				if(move>0){
 					//move forvard
-					if(pageTop<sheets.length-1){
+					if(pageTop<sheets.length-1 && (pageTop+cols*rows)<sheets.length){
 						pageTop=Math.min(sheets.length-1,pageTop+cols*rows);
 					}else{
 						return;

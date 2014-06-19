@@ -60,7 +60,7 @@
 				var orderId:String=event.barcode;
 				if(!manualAdd || !orderId) return;
 				var dao:OrderDAO=new OrderDAO();
-				var ordersList:ArrayCollection= dao.findeById(orderId);
+				var ordersList:ArrayCollection= dao.findeById(orderId,true);
 				if(!ordersList) return;
 				if(ordersList.length==1){
 					addOrder(ordersList.getItemAt(0) as Order);

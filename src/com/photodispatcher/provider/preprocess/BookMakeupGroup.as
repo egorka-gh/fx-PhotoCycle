@@ -181,13 +181,14 @@ package com.photodispatcher.provider.preprocess{
 			//draw cover barcode
 			var barcode:String
 			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER){
-				barcode=printGroup.barcodeText(file);
-				if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, barcode,printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
+				//barcode=printGroup.bookBarcodeText(file);
+				barcode=printGroup.bookBarcode(file);
+				if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
 			}
 
 			//draw body caption
 			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK && file.page_num==printGroup.pageNumber){
-				barcode=printGroup.barcodeText(file);
+				barcode=printGroup.bookBarcodeText(file);
 				if(barcode) IMCommandUtil.annotateTransparent(command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookTemplate.bar_offset,-90);
 			}
 
@@ -202,17 +203,6 @@ package com.photodispatcher.provider.preprocess{
 				var barColor:int=parseInt(printGroup.bookTemplate.tech_bar_color,16);
 				
 				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add);
-				/*
-				var formatAdd:int=printGroup.bookTemplate.tech_add;
-				if(formatAdd){
-					//expand to right
-					formatAdd=UnitUtil.mm2Pixels300(formatAdd);
-					//-gravity east -background white  -splice 20x0
-					command.add('-gravity'); command.add('east');
-					command.add('-background'); command.add('white');
-					command.add('-splice'); command.add(formatAdd.toString()+'x0');
-				}
-				*/
 				
 				//mm to pix
 				barSize=UnitUtil.mm2Pixels300(barSize);

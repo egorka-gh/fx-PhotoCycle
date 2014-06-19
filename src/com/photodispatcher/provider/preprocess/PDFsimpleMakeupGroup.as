@@ -82,7 +82,7 @@ package com.photodispatcher.provider.preprocess{
 			for (i=0; i<files.length; i++){
 				if(pdfPageNum==pageLimit){
 					//finalyze pdf cmd
-					pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
+					pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
 					command2.add('-compress'); command2.add('jpeg');
 					command2.add(outPath(pdfName));
 					finalCommands.push(command2);
@@ -110,7 +110,7 @@ package com.photodispatcher.provider.preprocess{
 				commands.push(command);
 				//add 2 final(pdf) cmd
 				command2.add(outName);
-				pdfPageNum=pdfPageNum++;
+				pdfPageNum++;
 			}
 			//finalyze pdf cmd
 			pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';

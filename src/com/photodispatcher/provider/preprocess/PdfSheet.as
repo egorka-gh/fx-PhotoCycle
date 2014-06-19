@@ -101,7 +101,7 @@ package com.photodispatcher.provider.preprocess{
 				annotateCommand(printGroup,command,page);
 				//draw body caption
 				if(printGroup.bookTemplate.bar_size>0 && page.page_num==printGroup.pageNumber){
-					var barcode:String=printGroup.barcodeText(page);
+					var barcode:String=printGroup.bookBarcodeText(page);
 					if(barcode) IMCommandUtil.annotateTransparent(command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookTemplate.bar_offset,-90);
 				}
 
