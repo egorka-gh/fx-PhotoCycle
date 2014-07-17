@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="PhotoCycle.mxml" projectUUID="d61dbb93-d8f2-4a0a-96db-b65cdd642dac" version="10">
+  <compiler additionalCompilerArguments="-locale en_US   -include-libraries ../libs/granite-essentials.swc" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="true" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
+    <compilerSourcePath>
+      <compilerSourcePathEntry kind="1" linkType="1" path="${DOCUMENTS}/Fotokniga/src"/>
+    </compilerSourcePath>
+    <libraryPath defaultLinkType="0">
+      <libraryPathEntry kind="4" path="">
+        <excludedEntries>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/flex.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/core.swc" useDefaultLinkType="false"/>
+        </excludedEntries>
+      </libraryPathEntry>
+      <libraryPathEntry kind="1" linkType="1" path="libs"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="TechSpy.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechMonitor.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoPicker.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechOTK.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoTech.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoHelper.mxml">
+      <airExcludes/>
+    </application>
+    <application path="Laboratory.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoCycle.mxml">
+      <airExcludes/>
+    </application>
+  </applications>
+  <modules/>
+  <buildCSSFiles/>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+  <buildTargets>
+    <buildTarget buildTargetName="default">
+      <airSettings airCertificatePath="D:/Egorka/Folders/flex/airCert/egorka.p12" airTimestamp="false" anePathSet="true" version="1">
+        <airExcludes>
+          <pathEntry path="com"/>
+          <pathEntry path="jp"/>
+        </airExcludes>
+        <anePaths/>
+      </airSettings>
+      <actionScriptSettings version="1"/>
+    </buildTarget>
+  </buildTargets>
+</actionScriptProperties>

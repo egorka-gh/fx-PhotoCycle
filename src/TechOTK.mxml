@@ -7,9 +7,8 @@
 					   xmlns:barcode="com.photodispatcher.service.barcode.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}"  
-					   closing="windowedapplication1_closingHandler(event)"
-					   >
-	
+					   closing="windowedapplication1_closingHandler(event)">
+
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;

@@ -176,23 +176,24 @@ package com.photodispatcher.model.dao{
 					" INNER JOIN config.order_state os ON o.state = os.id"+
 					" WHERE s.code=?";
 				runSelect(sql, [id, codeChar]);
-			}
-			if(!byBarcode){
-				//manual search
-				id='%'+id+'%';
 			}else{
-				if(id.length<6) return new ArrayCollection();
-				//parse barcode
-				var src:int=int(id.substr(0,2));
-				id=id.substr(2);
-				id=src.toString()+'_'+id.substr(0, id.length-3); //remove book
+				if(!byBarcode){
+					//manual search
+					id='%'+id+'%';
+				}else{
+					if(id.length<6) return new ArrayCollection();
+					//parse barcode
+					var src:int=int(id.substr(0,2));
+					id=id.substr(2);
+					id=src.toString()+'_'+id.substr(0, id.length-3); //remove book
+				}
+				sql='SELECT o.*, s.name source_name, os.name state_name, s.code source_code'+
+					' FROM orders o'+
+					' INNER JOIN config.order_state os ON o.state = os.id'+
+					' INNER JOIN config.sources s ON o.source = s.id'+
+					' WHERE o.id LIKE ?';
+				runSelect(sql, [id]);
 			}
-			sql='SELECT o.*, s.name source_name, os.name state_name, s.code source_code'+
-				' FROM orders o'+
-				' INNER JOIN config.order_state os ON o.state = os.id'+
-				' INNER JOIN config.sources s ON o.source = s.id'+
-				' WHERE o.id LIKE ?';
-			runSelect(sql, [id]);
 			return itemsList;
 		}
 

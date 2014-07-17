@@ -65,6 +65,7 @@
 				var barcode:String=event.barcode;
 				var newScanId:String;
 				var newBook:int;
+				var isOld:Boolean;
 				
 				//parse
 				var idx:int=barcode.indexOf(':');
@@ -72,7 +73,16 @@
 					//old barcode
 					newBook=int(barcode.substr(idx+1));
 					newScanId=barcode.substring(0,idx);
+					isOld= true;
 				}else{
+					if ((id.charAt(0) >= 'A' && id.charAt(0) <= 'Z') || (id.charAt(0) >= 'a' && id.charAt(0) <= 'z')){
+						//old barcode vsout bookNum
+						newBook=0;
+						newScanId=barcode;
+						isOld= true;
+					}
+				}
+				if(!isOld){
 					if(barcode.length<6){
 						Alert.show('Не верный ШК: "'+barcode+'".');
 						return;
@@ -257,6 +267,12 @@
 				if(lastOrderId) vInfo.show(lastOrderId,lastBook);
 			}
 			
+			protected function btAdd2_clickHandler(event:MouseEvent):void{
+				var e:BarCodeEvent= new BarCodeEvent(BarCodeEvent.BARCODE_READED,'R03338');
+				onBarCode(e);
+				
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -276,6 +292,7 @@
 					doubleClickEnabled="true" doubleClick="dgMonitor_doubleClickHandler(event)"
 					dataProvider="{orderListAC}" locale="ru_RU" columns="{OrderExtraState.gridColumnsOTK()}"/>
 		<s:Button id="btAdd" label="Добавить" fontSize="14" click="btAdd_clickHandler(event)"/>
+		<s:Button id="btAdd2" label="Добавить" fontSize="14" click="btAdd2_clickHandler(event)"/>
 	</s:VGroup>
 	
 	<view:OrderInfoOTK id="vInfo" top="0" left="0" right="0" bottom="0" includeIn="book"
