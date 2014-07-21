@@ -11,8 +11,7 @@ package com.photodispatcher.model.dao{
 
 		public function findByFilter(filter:int):Array{
 			var sql:String;
-			sql='SELECT l.*'+
-				' FROM config.content_filter_alias l WHERE l.filter = ?';
+			sql='SELECT l.* FROM config.content_filter_alias l WHERE l.filter = ?';
 			runSelect(sql,[filter],true);
 			return itemsArray;
 		}

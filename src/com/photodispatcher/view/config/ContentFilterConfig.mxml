@@ -8,12 +8,9 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.BookSynonym;
-			import com.photodispatcher.model.ContentFilter;
-			import com.photodispatcher.model.SourceType;
-			import com.photodispatcher.model.dao.BookSynonymDAO;
-			import com.photodispatcher.model.dao.ContentFilterDAO;
 			import com.photodispatcher.model.mysql.entities.ContentFilter;
+			import com.photodispatcher.model.mysql.entities.ContentFilterAlias;
+			import com.photodispatcher.model.mysql.entities.DmlResult;
 			import com.photodispatcher.model.mysql.entities.SelectResult;
 			import com.photodispatcher.model.mysql.services.ContentFilterService;
 			
@@ -34,7 +31,7 @@
 			[Bindable]
 			private var aliasDisAllowAC:ArrayCollection;
 			[Bindable]
-			private var currFilter:com.photodispatcher.model.ContentFilter;
+			private var currFilter:ContentFilter;
 			
 			private var aliasesChenged:Boolean;
 			
@@ -42,46 +39,68 @@
 			public var contentFilterService:ContentFilterService=Tide.getInstance().getContext().byType(ContentFilterService,true) as ContentFilterService;
 			
 			public function init():void{
+				aliasAllowAC= new ArrayCollection();
+				aliasDisAllowAC= new ArrayCollection();
+				/*
 				var fd:ContentFilterDAO= new ContentFilterDAO();
 				var arr:Array=fd.findAllArray();
 				if (arr) filtersAC= new ArrayCollection(arr);
 				if(filtersLst && filtersLst.currentIndex!=-1) filtersLst.currentIndex=-1;
-				aliasAllowAC= new ArrayCollection();
-				aliasDisAllowAC= new ArrayCollection();
-				
-				//tst
-				var itt:com.photodispatcher.model.mysql.entities.ContentFilter;
+				*/
 				contentFilterService.findeAll(false, onCfServise, onCfServiseFault);
+				//tst
+				//var itt:com.photodispatcher.model.mysql.entities.ContentFilter;
+				//contentFilterService.findeAll(true, onCfServise, onCfServiseFault);
 			}
 			
 			private function onCfServise(event:TideResultEvent):void {
 				var res:SelectResult=event.result as SelectResult;
 				if(res.complete){
-					if(res.data && res.data.length){
-						var itt:com.photodispatcher.model.mysql.entities.ContentFilter;
-						itt=res.data.getItemAt(0) as com.photodispatcher.model.mysql.entities.ContentFilter;
-						
-					}
+					filtersAC= new ArrayCollection();
+					filtersAC.addAll(res.data);
+					if(filtersLst && filtersLst.currentIndex!=-1) filtersLst.currentIndex=-1;
 				}else{
 					Alert.show(res.errMesage);
 					trace(res.errMesage);
 				}
 			}
+			/*
+			private function onCfServiseUpdate(event:TideResultEvent):void {
+				var res:DmlResult=event.result as DmlResult;
+				if(res.complete){
+					Alert.show('Inserted id=' + res.lastId.toString());
+				}else{
+					Alert.show(res.errMesage);
+					trace(res.errMesage);
+				}
+			}
+			*/
 			private function onCfServiseFault(event:TideFaultEvent):void {
 				//lMessage.text = event.fault.faultString;
 				Alert.show('Сервис не доступен, ошибка: '+event.fault.faultString);
 			}
 			
 			private function filterAllow(item:Object):Boolean{
+				/*
 				var s:BookSynonym=item as BookSynonym;
 				if(!s) return false;
 				return s.is_allow;
+				*/
+				var fa:ContentFilterAlias= item as ContentFilterAlias;
+				if(!fa) return false;
+				return fa.allow;
 			}
 			private function filterDisAllow(item:Object):Boolean{
+				/*
 				var s:BookSynonym=item as BookSynonym;
 				if(!s) return false;
 				if(tiSynonymFilter && tiSynonymFilter.text && s.synonym.indexOf(tiSynonymFilter.text)==-1 ) return false;
 				return !s.is_allow;
+				*/
+				var fa:ContentFilterAlias= item as ContentFilterAlias;
+				if(!fa) return false;
+				if(tiSynonymFilter && tiSynonymFilter.text && fa.alias_name.indexOf(tiSynonymFilter.text)==-1 ) return false;
+				return !fa.allow;
 			}
 
 			private function applyDisallowFilter():void{
@@ -90,7 +109,7 @@
 			}
 			
 			protected function btAdd_clickHandler(event:MouseEvent):void{
-				var f:com.photodispatcher.model.ContentFilter= new com.photodispatcher.model.ContentFilter();
+				var f:ContentFilter= new ContentFilter();
 				f.name='Новый фильтр';
 				filtersAC.addItem(f);
 				filtersLst.currentItem=f;
@@ -99,29 +118,32 @@
 			}
 			
 			protected function btSave_clickHandler(event:MouseEvent):void{
+				/*
 				if (!currFilter) return;
 				var fDao:ContentFilterDAO= new ContentFilterDAO();
 				if (!currFilter.loaded || currFilter.changed) fDao.save(currFilter);
 				if(aliasesChenged) fDao.saveAliasesBatch(currFilter.id,aliasAllowAC.source);	
 				aliasesChenged=false;
+				*/
 			}
 			
 			private function markChanged():void{
-				if (currFilter) currFilter.changed=true; 
+				//if (currFilter) currFilter.changed=true; 
+				if (currFilter) currFilter.persistState=-1;
 			}
 			
 			protected function filtersLst_selectionChangeHandler(event:GridSelectionEvent):void{
-				var f:com.photodispatcher.model.ContentFilter;
+				var f:ContentFilter;
 				var arr:Array=[];
-				var d:BookSynonymDAO;
 				if(filtersLst && filtersLst.currentItem){
-					f=filtersLst.currentItem as com.photodispatcher.model.ContentFilter;
+					f=filtersLst.currentItem as ContentFilter;
 				}
 				currFilter=f;
 				fillAliases();
 			}
 			
 			private function fillAliases():void{
+				/*
 				var arr:Array=[];
 				var d:BookSynonymDAO= new BookSynonymDAO();
 				if(currFilter && currFilter.loaded){
@@ -136,24 +158,55 @@
 				aliasDisAllowAC.filterFunction=filterDisAllow;
 				aliasDisAllowAC.refresh();
 				aliasesChenged=false;
+				*/
+				var ac:ArrayCollection;
+				if(!currFilter && currFilter.persistState!=1){
+					aliasAllowAC= new ArrayCollection();
+					aliasAllowAC.filterFunction=filterAllow;
+					aliasAllowAC.refresh();
+					aliasDisAllowAC= new ArrayCollection();
+					aliasDisAllowAC.filterFunction=filterDisAllow;
+					aliasDisAllowAC.refresh();
+					aliasesChenged=false;
+					return;
+				}
+				contentFilterService.loadAliases(currFilter.id, true, onAliasesLoad, onCfServiseFault);
 			}
 			
+			private function onAliasesLoad(event:TideResultEvent):void {
+				var res:SelectResult=event.result as SelectResult;
+				if(res.complete){
+					aliasAllowAC= new ArrayCollection();
+					aliasAllowAC.addAll(res.data);
+					aliasAllowAC.filterFunction=filterAllow;
+					aliasAllowAC.refresh();
+					aliasDisAllowAC= new ArrayCollection(aliasAllowAC.source);
+					aliasDisAllowAC.filterFunction=filterDisAllow;
+					aliasDisAllowAC.refresh();
+					aliasesChenged=false;
+				}
+			}
+
+			
 			protected function btAddAli_clickHandler(event:MouseEvent):void{
-				var s:BookSynonym;
+				//var s:BookSynonym;
+				var fa:ContentFilterAlias;
 				if(disAllowLst && disAllowLst.currentItem){
-					s=disAllowLst.currentItem as BookSynonym;
-					if(s) s.is_allow=true;
+					//s=disAllowLst.currentItem as BookSynonym;
+					//if(s) s.is_allow=true;
+					fa=disAllowLst.currentItem as ContentFilterAlias;
+					if(fa) fa.allow=true;
 				}
 				applyDisallowFilter();
 				aliasesChenged=true;
 			}
 			
 			protected function btAddAliAll_clickHandler(event:MouseEvent):void{
-				var s:BookSynonym;
+				var fa:ContentFilterAlias;
 				if(aliasDisAllowAC){
 					aliasDisAllowAC.disableAutoUpdate();
-					for each(s in aliasDisAllowAC){
-						if(!s.is_allow) s.is_allow=true;
+					for each(fa in aliasDisAllowAC){
+						if(!fa.allow) fa.allow=true;
 					}
 					aliasDisAllowAC.enableAutoUpdate();
 				}
@@ -162,21 +215,21 @@
 			}
 			
 			protected function btDelAli_clickHandler(event:MouseEvent):void{
-				var s:BookSynonym;
+				var fa:ContentFilterAlias;
 				if(allowLst && allowLst.selectedItem){
-					s=allowLst.selectedItem as BookSynonym;
-					if(s) s.is_allow=false;
+					fa=allowLst.selectedItem as ContentFilterAlias;
+					if(fa) fa.allow=false;
 				}
 				applyDisallowFilter();
 				aliasesChenged=true;
 			}
 			
 			protected function btDelAliAll_clickHandler(event:MouseEvent):void{
-				var s:BookSynonym;
+				var fa:ContentFilterAlias;
 				if(aliasAllowAC){
 					aliasAllowAC.disableAutoUpdate();
-					for each(s in aliasAllowAC){
-						if(s.is_allow) s.is_allow=false;
+					for each(fa in aliasAllowAC){
+						if(fa.allow) fa.allow=false;
 					}
 					aliasAllowAC.enableAutoUpdate();
 				}
@@ -195,7 +248,7 @@
 					width="100%" height="100%" labelField="name"/>-->
 			<config:ItemsGrid id="filtersLst" width="100%" height="100%" editable="true"
 							  selectionChange="filtersLst_selectionChangeHandler(event)"
-							  currentData="{filtersAC}" currentColumns="{com.photodispatcher.model.ContentFilter.gridColumns()}"/>
+							  currentData="{filtersAC}" currentColumns="{ContentFilter.gridColumns()}"/>
 			<s:HGroup gap="5" width="100%" horizontalAlign="right">
 				<s:Button id="btAdd" label="Добавить" click="btAdd_clickHandler(event)"/>
 			</s:HGroup>
@@ -218,7 +271,7 @@
 				<s:CheckBox selected="@{currFilter.is_alias_filter}" change="{markChanged()}"/>
 			</s:HGroup>
 			<s:HGroup gap="10" width="100%" height="100%" 
-					  enabled="{Boolean(currFilter) &amp;&amp; currFilter.loaded &amp;&amp; currFilter.is_alias_filter &amp;&amp; (currFilter.is_pro_allow || currFilter.is_retail_allow)}">
+					  enabled="{Boolean(currFilter) &amp;&amp; currFilter.persistState!=0 &amp;&amp; currFilter.is_alias_filter &amp;&amp; (currFilter.is_pro_allow || currFilter.is_retail_allow)}">
 				<s:VGroup gap="5" width="250" height="100%">
 					<s:Label text="Загружать алиасы"/>
 					<s:List id="allowLst" width="100%" height="100%" dataProvider="{aliasAllowAC}" labelField="synonym"/>
@@ -239,7 +292,7 @@
 					</s:HGroup>
 
 					<config:ItemsGrid id="disAllowLst" width="100%" height="100%" 
-									  editable="false" currentData="{aliasDisAllowAC}" currentColumns="{BookSynonymDAO.gridColumns()}"/>
+									  editable="false" currentData="{aliasDisAllowAC}" currentColumns="{ContentFilterAlias.gridColumns()}"/>
 				</s:VGroup>
 			</s:HGroup>
 			<s:HGroup gap="5" width="100%" horizontalAlign="right">

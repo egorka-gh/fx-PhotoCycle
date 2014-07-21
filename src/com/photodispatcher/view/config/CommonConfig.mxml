@@ -18,6 +18,9 @@
 			import com.photodispatcher.view.PasswPopup;
 			
 			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
 			
 			import spark.events.IndexChangeEvent;
@@ -47,6 +50,8 @@
 			[Bindable]
 			private var serverIP:String;
 			[Bindable]
+			private var bdServer:String;
+			[Bindable]
 			private var pdfPageLimit:int=100;
 			[Bindable]
 			private var reversPrint:Boolean=false;
@@ -67,6 +72,7 @@
 				if (so.size>0){
 					imThreads=so.data.imThreads;
 					serverIP=so.data.serverIP;
+					bdServer=so.data.bdServer;
 				}
 				if(!imThreads || imThreads<0) imThreads=0;
 				pingIM();
@@ -263,6 +269,26 @@
 				popup.show();
 			}
 			
+			protected function reconnectBdServer():void{
+				if(bdServer){
+					Alert.show('Перезапустите программу для подключения к серверу "'+bdServer+'"','Подключение к серверу',4,null,onReconnectBdServerAlert);
+				}else{
+					Alert.show('Не указан сервер базыданных');
+				}
+			}
+			
+			private function onReconnectBdServerAlert(e:CloseEvent):void{
+				FlexGlobals.topLevelApplication.exit();
+			}
+			
+			protected function tiBdServer_enterHandler(event:FlexEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				bdServer=tiBdServer.text;
+				so.data.bdServer = bdServer;
+				so.flush();  
+				reconnectBdServer();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -271,6 +297,10 @@
 			<s:layout>
 				<s:FormLayout gap="-10"/>
 			</s:layout>
+
+			<s:FormItem label="Сервер базы данных">
+					<s:TextInput id="tiBdServer" text="{bdServer}" width="300" enter="tiBdServer_enterHandler(event)"/>
+			</s:FormItem> 
 
 			<s:FormItem label="Рабочая папка">
 				<mx:HBox>

@@ -26,6 +26,7 @@
 			import com.photodispatcher.model.dao.LabResizeDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.mysql.services.ContentFilterService;
+			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.ArrayUtil;
@@ -38,7 +39,10 @@
 			import mx.events.FlexEvent;
 			
 			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
 			import org.granite.tide.service.DefaultServiceInitializer;
+			import org.granite.tide.spring.Spring;
 			
 			import spark.events.PopUpEvent;
 
@@ -50,9 +54,6 @@
 			}
 
 			private function initApp():void{
-				Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
-				Tide.getInstance().addComponents([ContentFilterService]);
-
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
 				bdPopup.chekConnect();
@@ -60,6 +61,7 @@
 			private function bdPopClose(e:PopUpEvent):void{
 				if(e.commit){
 					//connected
+					initBdServer();
 					fillContext();
 					currentState='monitor';
 					//if(vMonitor) vMonitor.start();
@@ -68,6 +70,32 @@
 					currentState='disconnected';
 					bdPopup.open(null);
 				}
+			}
+			
+			private function initBdServer():void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				var bdServer:String=so.data.bdServer;
+				if(!bdServer){
+					Alert.show('Не указан сервер базы данных');
+					//currentState='config';
+					return;
+				}
+				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
+				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
+				//run hallo
+				Tide.getInstance().addComponents([HalloService]);
+				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
+				//var hallosvc:HalloService=Tide.getInstance().getContext().halloService as HalloService;
+				hallosvc.ping(onPingServer, onPingServerFault);
+			}
+			private function onPingServer(event:TideResultEvent):void {
+				trace(event.result);
+				Alert.show('Подключен к БД');
+				//add services?
+				Tide.getInstance().addComponents([ContentFilterService]);
+			}
+			private function onPingServerFault(event:TideFaultEvent):void {
+				Alert.show('Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString);
 			}
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
