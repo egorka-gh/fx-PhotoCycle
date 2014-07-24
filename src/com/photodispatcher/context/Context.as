@@ -1,17 +1,31 @@
 package com.photodispatcher.context{
 	import com.photodispatcher.model.AppConfig;
-	import com.photodispatcher.model.AttrType;
 	import com.photodispatcher.model.ContentFilter;
+	import com.photodispatcher.model.Roll;
 	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.dao.AppConfigDAO;
 	import com.photodispatcher.model.dao.AttrTypeDAO;
+	import com.photodispatcher.model.dao.BookSynonymDAO;
 	import com.photodispatcher.model.dao.DictionaryDAO;
+	import com.photodispatcher.model.dao.LabResizeDAO;
+	import com.photodispatcher.model.dao.OrderStateDAO;
 	import com.photodispatcher.model.dao.SourcesDAO;
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.AttrType;
+	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.SelectResult;
+	import com.photodispatcher.model.mysql.services.DictionaryService;
 	import com.photodispatcher.util.ArrayUtil;
 	
+	import flash.events.Event;
 	import flash.utils.Dictionary;
 	
 	import mx.collections.ArrayCollection;
+	import mx.collections.IList;
+	import mx.rpc.AsyncToken;
+	
+	import org.granite.tide.Tide;
+	import org.granite.tide.events.TideResultEvent;
 
 	public dynamic class Context{
 
@@ -36,7 +50,30 @@ package com.photodispatcher.context{
 				return null;
 			}
 		}		
-		
+
+		public static function initPhotoCycle():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			//register services
+			Tide.getInstance().addComponents([DictionaryService]);
+			
+			//fill from config
+			//Context.fillFromConfig();
+
+			Context.initSourceLists();
+			latch.join(Context.initAttributeLists());
+
+			//init static maps
+			/* TODO Implement*/
+			LabResizeDAO.initSizeMap();
+			OrderStateDAO.initStateMap();
+			BookSynonymDAO.initSynonymMap();
+			DictionaryDAO.initSynonymMap();
+			Roll.initItemsMap();
+			/**/
+			latch.start();//start at caller?
+			return latch;
+		}
+
 		public static function fillFromConfig():void{
 			var appConfDAO:AppConfigDAO=new AppConfigDAO();
 			var appConf:AppConfig=appConfDAO.getItem();
@@ -58,48 +95,10 @@ package com.photodispatcher.context{
 					currCFilter.is_retail_allow=true;
 				}
 				Context.setAttribute('contentFilter',currCFilter);
-				
-				/*
-				//set fbook params
-				//block
-				Context.setAttribute('fbook.block.font.size',appConf.fbblok_font);
-				Context.setAttribute('fbook.block.notching',appConf.fbblok_notching);
-				Context.setAttribute('fbook.block.barcode.size',appConf.fbblok_bar);
-				Context.setAttribute('fbook.block.barcode.offset',appConf.fbblok_bar_offset);
-				//cover
-				Context.setAttribute('fbook.cover.font.size',appConf.fbcover_font);
-				Context.setAttribute('fbook.cover.notching',appConf.fbcover_notching);
-				Context.setAttribute('fbook.cover.barcode.size',appConf.fbcover_bar);
-				Context.setAttribute('fbook.cover.barcode.offset',appConf.fbcover_bar_offset);
-
-				//set tech params
-				Context.setAttribute('tech.add',appConf.tech_add);
-				Context.setAttribute('tech.barcode.size',appConf.tech_bar);
-				Context.setAttribute('tech.barcode.step',appConf.tech_bar_step);
-				Context.setAttribute('tech.barcode.color',appConf.tech_bar_color);
-				Context.setAttribute('tech.barcode.offset',appConf.tech_bar_offset);
-				*/
 			}else{
 				//set to defaults
 				
 				Context.setAttribute('syncInterval',10);
-
-				//set fbook params
-				//block
-				Context.setAttribute('fbook.block.font.size',0);
-				Context.setAttribute('fbook.block.notching',0);
-				Context.setAttribute('fbook.block.barcode.size',0);
-				Context.setAttribute('fbook.block.barcode.offset','+0+0');
-				//cover
-				Context.setAttribute('fbook.cover.font.size',0);
-				Context.setAttribute('fbook.cover.notching',0);
-				Context.setAttribute('fbook.cover.barcode.size',0);
-				Context.setAttribute('fbook.cover.barcode.offset','+0+0');
-				
-				//set tech params
-				Context.setAttribute('tech.add',0);
-				Context.setAttribute('fbook.tech.barcode.size',0);
-				Context.setAttribute('fbook.tech.barcode.offset','+0+0');
 
 			}
 		}
@@ -146,8 +145,138 @@ package com.photodispatcher.context{
 			setSources(soArr);
 			return true;
 		}
+
+		private static var latchAttributeLists:DbLatch;
+		public static function initAttributeLists():DbLatch{
+			latchAttributeLists= new DbLatch();
+			var dict:DictionaryService=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onAttributeLists);
+			latch.addLatch(dict.getPrintAttrs());
+			latch.start();
+			return latchAttributeLists;
+		}
+		private static function onAttributeLists(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onAttributeLists);
+				if(latch.hasError){
+					latchAttributeLists.join(latch);
+					latchAttributeLists.start();
+					return;
+				}
+				fillAttributeLists((latch.lastResult as SelectResult));
+			}
+		}
+
+		private static function onFieldList(event:TideResultEvent):void{
+			var field:String=event.asyncToken.tag; 
+			var res:SelectResult=event.result as SelectResult;
+			if(field && res && res.complete){
+				var ac:ArrayCollection =new ArrayCollection();
+				ac.addAll(res.data);
+				Context.setAttribute(field+'ValueList', ac);
+				//add empty 0 value, ' ' label
+				ac=new ArrayCollection();
+				ac.addAll(res.data);
+				var fv:FieldValue= new FieldValue();
+				fv.value=0;
+				fv.label=' ';
+				ac.addItemAt(fv,0);
+				Context.setAttribute(field+'List', ac);
+			}
+		}
+		private static function onFieldListSimpleList(event:TideResultEvent):void{
+			var field:String=event.asyncToken.tag; 
+			var res:SelectResult=event.result as SelectResult;
+			if(field && res && res.complete){
+				var ac:ArrayCollection =new ArrayCollection();
+				ac.addAll(res.data);
+				Context.setAttribute(field+'List', ac);
+			}
+		}
 		
-		public static function initAttributeLists():void{
+		private static function fillAttributeLists(select:SelectResult):void{
+			if(!select){
+				latchAttributeLists.releaseError('Ошибка инициализации (Context.fillAttributeLists)');
+				latchAttributeLists.start();
+				return;
+			}
+			var at:AttrType;
+			var field:String;
+			//var dDao:DictionaryDAO=new DictionaryDAO();
+			var dict:DictionaryService=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
+			var t:AsyncToken;
+			
+			//var a:ArrayCollection;
+			for each (var o:Object in select.data){
+				at=o as AttrType;
+				if(at){
+					field=at.field;
+					t=dict.getFieldValueList(at.id,false,onFieldList);
+					t.tag=field;
+					latchAttributeLists.addLatch(t);
+				}
+			}
+
+			t=dict.getBookTypeValueList(false,onFieldList);
+			t.tag='book_type';
+			latchAttributeLists.addLatch(t);
+
+			t=dict.getBookPartValueList(false,onFieldList);
+			t.tag='book_part';
+			latchAttributeLists.addLatch(t);
+
+			t=dict.getSrcTypeValueList(Source.LOCATION_TYPE_SOURCE, true, onFieldListSimpleList);
+			t.tag='src_type';
+			latchAttributeLists.addLatch(t);
+
+			t=dict.getSrcTypeValueList(Source.LOCATION_TYPE_LAB, true, onFieldListSimpleList);
+			t.tag='lab_type';
+			latchAttributeLists.addLatch(t);
+
+			//tech_typeList !!!!
+			t=dict.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT, false, onFieldList);
+			t.tag='tech_type';
+			latchAttributeLists.addLatch(t);
+
+			//tech_points
+			t=dict.getTechPointValueList(true, onFieldListSimpleList);
+			t.tag='tech_point';
+			latchAttributeLists.addLatch(t);
+
+			//tech layers
+			t=dict.getTechLayerValueList(true, onFieldList);
+			t.tag='layer';
+			latchAttributeLists.addLatch(t);
+
+			//tech seq layers
+			t=dict.getTechLayerValueList(true, onFieldList);
+			t.tag='seqlayer';
+			latchAttributeLists.addLatch(t);
+			
+			//tech layer group
+			t=dict.getLayerGroupValueList(false, onFieldList);
+			t.tag='layer_group';
+			latchAttributeLists.addLatch(t);
+			
+			//lab rolls
+			t=dict.getRollValueList(false, onFieldList);
+			t.tag='roll';
+			latchAttributeLists.addLatch(t);
+
+			if(!Context.getAttribute('booleanList')){
+				var a:ArrayCollection=new ArrayCollection();
+				a.source=[{value:0,label:'-'},
+					{value:true,label:'Да'},
+					{value:false,label:'Нет'}];
+				Context.setAttribute('booleanList', a);
+			}
+			latchAttributeLists.start();
+		}
+
+		/*
+		public static function initAttributeListsOld():void{
 			var at:AttrType;
 			var field:String;
 			//var atDao:AttrTypeDAO=new AttrTypeDAO();
@@ -167,12 +296,6 @@ package com.photodispatcher.context{
 					}
 				}
 			}
-			/*
-			if(!Context.getAttribute('pdfList')){
-				a=dDao.getPDFValueList();
-				Context.setAttribute('pdfList', a);
-			}
-			*/
 			if(!Context.getAttribute('book_typeList')){
 				a=dDao.getBookTypeValueList();
 				Context.setAttribute('book_typeList', a);
@@ -201,24 +324,10 @@ package com.photodispatcher.context{
 				Context.setAttribute('tech_typeValueList', a);
 			}
 
-			/*
-			//week days
-			if(!Context.getAttribute('day_idList')){
-				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT);
-				Context.setAttribute('day_idList', a);
-				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT,false);
-				Context.setAttribute('day_idValueList', a);
-			}
-			*/
-
 			//tech_points
 			if(!Context.getAttribute('tech_pointList')){
 				a=dDao.getTechPointValueList();
 				Context.setAttribute('tech_pointList', a);
-				/*
-				a=dDao.getTechPointValueList(false);
-				Context.setAttribute('tech_pointValueList', a);
-				*/
 			}
 
 			//tech layers
@@ -227,10 +336,6 @@ package com.photodispatcher.context{
 				//Context.setAttribute('layerList', a);
 				//Context.setAttribute('layerList', a);
 				Context.setAttribute('layerValueList', a);
-				/*
-				a=dDao.getTechPointValueList(false);
-				Context.setAttribute('tech_pointValueList', a);
-				*/
 			}
 
 			//tech seq layers
@@ -245,10 +350,6 @@ package com.photodispatcher.context{
 				a=dDao.getLayerGroupValueList();
 				Context.setAttribute('layer_groupList', a);
 				Context.setAttribute('layer_groupValueList', a);
-				/*
-				a=dDao.getTechPointValueList(false);
-				Context.setAttribute('tech_pointValueList', a);
-				*/
 			}
 
 			//lab rolls
@@ -268,5 +369,78 @@ package com.photodispatcher.context{
 			}
 		}
 
+		if(!Context.getAttribute('book_typeList')){
+			a=dDao.getBookTypeValueList();
+			Context.setAttribute('book_typeList', a);
+			a=dDao.getBookTypeValueList(false);
+			Context.setAttribute('book_typeValueList', a);
+		}
+		if(!Context.getAttribute('book_partList')){
+			a=dDao.getBookPartValueList();
+			Context.setAttribute('book_partList', a);
+			a=dDao.getBookPartValueList(false);
+			Context.setAttribute('book_partValueList', a);
+		}
+		if(!Context.getAttribute('src_typeList')){
+			a=dDao.getSrcTypeValueList();
+			Context.setAttribute('src_typeList', a);
+		}
+		if(!Context.getAttribute('lab_typeList')){
+			a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_LAB);
+			Context.setAttribute('lab_typeList', a);
+		}
+		//tech_typeList !!!!
+		if(!Context.getAttribute('tech_typeList')){
+			a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT);
+			Context.setAttribute('tech_typeList', a);
+			a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT,false);
+			Context.setAttribute('tech_typeValueList', a);
+		}
+		
+		//tech_points
+		if(!Context.getAttribute('tech_pointList')){
+			a=dDao.getTechPointValueList();
+			Context.setAttribute('tech_pointList', a);
+		}
+		
+		//tech layers
+		if(!Context.getAttribute('layerValueList')){
+			a=dDao.getTechLayerValueList();
+			//Context.setAttribute('layerList', a);
+			//Context.setAttribute('layerList', a);
+			Context.setAttribute('layerValueList', a);
+		}
+		
+		//tech seq layers
+		if(!Context.getAttribute('seqlayerList')){
+			a=dDao.getTechLayerValueList(false);
+			Context.setAttribute('seqlayerList', a);
+			Context.setAttribute('seqlayerValueList', a);
+		}
+		
+		//tech layer group
+		if(!Context.getAttribute('layer_groupList')){
+			a=dDao.getLayerGroupValueList();
+			Context.setAttribute('layer_groupList', a);
+			Context.setAttribute('layer_groupValueList', a);
+		}
+		
+		//lab rolls
+		if(!Context.getAttribute('rollList')){
+			a=dDao.getRollValueList();
+			Context.setAttribute('rollList', a);
+			a=dDao.getRollValueList(false);
+			Context.setAttribute('rollValueList', a);
+		}
+		
+		if(!Context.getAttribute('booleanList')){
+			a=new ArrayCollection();
+			a.source=[{value:0,label:'-'},
+				{value:true,label:'Да'},
+				{value:false,label:'Нет'}];
+			Context.setAttribute('booleanList', a);
+		}
+	}
+		*/
 	}
 }

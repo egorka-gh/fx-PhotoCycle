@@ -121,13 +121,9 @@
 			}
 			
 			private function fillContext():void{
-				//var appConfDAO:AppConfigDAO=new AppConfigDAO();
-				//var appConf:AppConfig=appConfDAO.getItem();
-				
+				/* moved 2 Context.initPhotoCycle
 				//fill from config
-				//Context.setAttribute('syncInterval',appConf.monitor_interval);
 				Context.fillFromConfig();
-				
 				
 				//init static maps
 				Context.initSourceLists();
@@ -137,6 +133,9 @@
 				BookSynonymDAO.initSynonymMap();
 				DictionaryDAO.initSynonymMap();
 				Roll.initItemsMap();
+				*/
+				Context.initPhotoCycle();
+
 				//init print manager
 				PrintQueueManager.instance.init();
 				
