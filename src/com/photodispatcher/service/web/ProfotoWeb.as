@@ -3,9 +3,9 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.Source;
-	import com.photodispatcher.model.SourceService;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceSvc;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -66,7 +66,7 @@ package com.photodispatcher.service.web{
 		private var fetchState:int=-1;
 
 		override public function sync():void{
-			if(!source || source.type_id!=SourceType.SRC_PROFOTO){
+			if(!source || source.type!=SourceType.SRC_PROFOTO){
 				abort('Не верная иннициализация синхронизации');
 				return;
 			}
@@ -87,7 +87,7 @@ package com.photodispatcher.service.web{
 		}
 		override public function getOrder(order:Order):void{
 			lastOrder=null;
-			if(!source || source.type_id!==SourceType.SRC_PROFOTO || !order || !order.ftp_folder){
+			if(!source || source.type!==SourceType.SRC_PROFOTO || !order || !order.ftp_folder){
 				abort('Не верная иннициализация синхронизации');
 				return;
 			}
@@ -110,7 +110,7 @@ package com.photodispatcher.service.web{
 		}
 		
 		private function login():void{
-			var svc:SourceService=source.webService;
+			var svc:SourceSvc=source.webService;
 			if(!baseUrl){
 				abort('Не указан url сервиса');
 				return;

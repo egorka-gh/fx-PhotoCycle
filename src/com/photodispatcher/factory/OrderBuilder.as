@@ -1,8 +1,8 @@
 package com.photodispatcher.factory{
 	import com.photodispatcher.model.AttrJsonMap;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.dao.AttrJsonMapDAO;
+	import com.photodispatcher.model.mysql.entities.Source;
 	
 	public class OrderBuilder{
 		
@@ -13,8 +13,8 @@ package com.photodispatcher.factory{
 			var order:Order;
 			//var attDao:AttrJsonMapDAO= new AttrJsonMapDAO();
 			//var jMap:Array=attDao.getOrderMapBySourceType(source.type_id);
-			var jMap:Array=AttrJsonMapDAO.getOrderJson(source.type_id);
-			var ejMap:Array=AttrJsonMapDAO.getOrderExtraJson(source.type_id);
+			var jMap:Array=AttrJsonMapDAO.getOrderJson(source.type);
+			var ejMap:Array=AttrJsonMapDAO.getOrderExtraJson(source.type);
 			if(!jMap) return null;
 			for each (var jo:Object in raw){
 				if(jo){

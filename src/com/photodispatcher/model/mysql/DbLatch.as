@@ -1,5 +1,6 @@
 package com.photodispatcher.model.mysql
 {
+	import com.photodispatcher.model.mysql.entities.SelectResult;
 	import com.photodispatcher.model.mysql.entities.SqlResult;
 	
 	import flash.events.Event;
@@ -7,6 +8,8 @@ package com.photodispatcher.model.mysql
 	import flash.events.IEventDispatcher;
 	import flash.utils.getTimer;
 	
+	import mx.collections.ArrayCollection;
+	import mx.controls.Alert;
 	import mx.rpc.AsyncResponder;
 	import mx.rpc.AsyncToken;
 	import mx.rpc.events.FaultEvent;
@@ -17,15 +20,20 @@ package com.photodispatcher.model.mysql
 		
 		public var complite:Boolean=false;
 		public var lastResult:SqlResult;
+		public var lastToken:AsyncToken;
 		public var hasError:Boolean=false;
 		public var error:String;
+
+		public var debugName:String;
+		public var silent:Boolean=true;
 
 		private var latches:Array;
 		private var joint:Array;
 		private var started:Boolean=false;
 		
-		public function DbLatch(){
+		public function DbLatch(silent:Boolean=true){
 			super(null);
+			this.silent=silent;
 			latches=[];
 			joint=[];
 		}
@@ -70,27 +78,46 @@ package com.photodispatcher.model.mysql
 			complite=false;
 			hasError=true;
 			error=err;
-			trace(error);
+			trace((debugName?'Latch '+debugName+' error: ':'')+ error);
 			latches=null;
 			if(joint && joint.length>0){
 				var latch:DbLatch;
 				for each(latch in joint) latch.removeEventListener(Event.COMPLETE,onJoinComplite);
 				joint=null;
 			}
-			if(started) dispatchEvent(new Event(Event.COMPLETE));
-	
+			if(started){
+				dispatchEvent(new Event(Event.COMPLETE));
+				if(!silent) showError();
+			}
 		}
 		
+		public function showError():void{
+			if(hasError) Alert.show(error);
+		}
+			
 		public function checkComplite():void{
 			if(!started) return;
 			if(hasError){
 				dispatchEvent(new Event(Event.COMPLETE));
+				if(!silent) showError();
 			}else if((!latches || latches.length==0) && (!joint || joint.length==0)){
+				if(debugName) trace('Latch '+debugName+' complited. state' +(hasError?'error':'complite'));
 				complite=true;
 				dispatchEvent(new Event(Event.COMPLETE));
 			}
 		}
 		
+		public function get lastDataAC():ArrayCollection{
+			return new ArrayCollection(lastDataArr);
+		}
+		public function get lastDataArr():Array{
+			var result:Array=[];
+			if(lastResult && lastResult is SelectResult && (lastResult as SelectResult).data){
+				result=(lastResult as SelectResult).data.toArray();
+			}
+			return result;
+		}
+
 		private function onJoinComplite(event:Event):void{
 			var latch:DbLatch=event.target as DbLatch;
 			if(latch){
@@ -107,7 +134,8 @@ package com.photodispatcher.model.mysql
 		
 		private function resultHandler(event:ResultEvent, token:AsyncToken=null):void{
 			if(!latches) return;
-			var latch:int=event.token.latch;
+			lastToken=event.token;
+			var latch:int=lastToken.latch;
 			
 			//check for sql error
 			lastResult=event.result.result as SqlResult;
@@ -128,6 +156,7 @@ package com.photodispatcher.model.mysql
 		}
 		
 		private function faultHandler(event:FaultEvent, token:AsyncToken=null):void{
+			lastToken=event.token;
 			releaseError('DbLatch RPC fault: ' +event.fault.faultString + '\n' + event.fault.faultDetail);
 		}
 		

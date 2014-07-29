@@ -2,19 +2,20 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.AppConfig;
 	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Roll;
-	import com.photodispatcher.model.Source;
 	import com.photodispatcher.model.dao.AppConfigDAO;
 	import com.photodispatcher.model.dao.AttrTypeDAO;
 	import com.photodispatcher.model.dao.BookSynonymDAO;
 	import com.photodispatcher.model.dao.DictionaryDAO;
-	import com.photodispatcher.model.dao.LabResizeDAO;
 	import com.photodispatcher.model.dao.OrderStateDAO;
-	import com.photodispatcher.model.dao.SourcesDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.services.DictionaryService;
+	import com.photodispatcher.model.mysql.services.LabResizeService;
+	import com.photodispatcher.model.mysql.services.SourceService;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -53,18 +54,19 @@ package com.photodispatcher.context{
 
 		public static function initPhotoCycle():DbLatch{
 			var latch:DbLatch=new DbLatch();
+			latch.debugName='initPhotoCycle';
 			//register services
-			Tide.getInstance().addComponents([DictionaryService]);
+			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService]);
 			
 			//fill from config
 			//Context.fillFromConfig();
 
-			Context.initSourceLists();
+			latch.join(Context.initSourceLists());
 			latch.join(Context.initAttributeLists());
+			latch.join(LabResize.initSizeMap());
 
 			//init static maps
 			/* TODO Implement*/
-			LabResizeDAO.initSizeMap();
 			OrderStateDAO.initStateMap();
 			BookSynonymDAO.initSynonymMap();
 			DictionaryDAO.initSynonymMap();
@@ -130,7 +132,8 @@ package com.photodispatcher.context{
 			if(!sourcesMap) return null;
 			return (sourcesMap[id] as Source);
 		}
-		public static function initSourceLists():Boolean{
+		public static function initSourceLists():DbLatch{
+			/*
 			if(sourcesArr && sourcesArr.length>0) return true;
 			var dao:SourcesDAO= new SourcesDAO();
 			//dao.findAll();
@@ -142,8 +145,23 @@ package com.photodispatcher.context{
 					if (!sourse.loadServices()) return false;
 				}
 			}
-			setSources(soArr);
-			return true;
+			*/
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initSourceLists';
+			var svc:SourceService=Tide.getInstance().getContext().byType(SourceService,true) as SourceService;
+			latch.addEventListener(Event.COMPLETE,onSourceLoad);
+			latch.addLatch(svc.loadAll(Source.LOCATION_TYPE_SOURCE));
+			latch.start();
+			return latch;
+		}
+		private static function onSourceLoad(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onSourceLoad);
+				if(latch.complite){
+					setSources((latch.lastResult as SelectResult).data.toArray());
+				}
+			}
 		}
 
 		private static var latchAttributeLists:DbLatch;
@@ -227,7 +245,7 @@ package com.photodispatcher.context{
 			t.tag='book_part';
 			latchAttributeLists.addLatch(t);
 
-			t=dict.getSrcTypeValueList(Source.LOCATION_TYPE_SOURCE, true, onFieldListSimpleList);
+			t=dict.getSrcTypeValueList(Source.LOCATION_TYPE_SOURCE, false, onFieldList);
 			t.tag='src_type';
 			latchAttributeLists.addLatch(t);
 

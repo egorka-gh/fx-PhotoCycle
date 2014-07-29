@@ -1,5 +1,5 @@
 package com.photodispatcher.factory{
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.service.web.FBookManualWeb;
@@ -10,7 +10,7 @@ package com.photodispatcher.factory{
 
 		public static function build(source:Source):BaseWeb{
 			if (!source) return null;
-			switch(source.type_id){
+			switch(source.type){
 				case SourceType.SRC_PROFOTO:
 					return new ProfotoWeb(source);
 					break;

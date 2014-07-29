@@ -1,6 +1,6 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.LabResize;
+	//import com.photodispatcher.model.LabResize;
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
@@ -8,6 +8,7 @@ package com.photodispatcher.model.dao{
 	import spark.components.gridClasses.GridColumn;
 
 	public class LabResizeDAO extends BaseDAO{
+		/*
 		private static var sizeMap:Object;
 
 		public static function getSizeLimit(size:int):int{
@@ -90,6 +91,6 @@ package com.photodispatcher.model.dao{
 			col= new GridColumn('pixels'); col.headerText='Ресайз (pcx)'; result.addItem(col);
 			return result;
 		}
-
+*/
 	}
 }

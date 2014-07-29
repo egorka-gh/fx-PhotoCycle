@@ -2,6 +2,7 @@ package com.photodispatcher.model{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.dao.OrderStateDAO;
 	import com.photodispatcher.model.dao.PrintGroupFileDAO;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.print.LabBase;
 	import com.photodispatcher.util.StrUtil;
 	

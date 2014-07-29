@@ -1,6 +1,6 @@
 package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;

@@ -3,8 +3,7 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.Source;
-	import com.photodispatcher.model.SourceService;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.util.JsonUtil;
 	
 	import flash.events.Event;

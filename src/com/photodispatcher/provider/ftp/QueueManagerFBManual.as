@@ -3,7 +3,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.StateLogDAO;
@@ -26,7 +26,7 @@ package com.photodispatcher.provider.ftp{
 			speed=0;
 			
 			//check
-			if(!source || !source.hasFbookService || source.type_id!=SourceType.SRC_FBOOK_MANUAL){
+			if(!source || !source.hasFbookService || source.type!=SourceType.SRC_FBOOK_MANUAL){
 				flowError('Ошибка инициализации');
 				return;
 			}

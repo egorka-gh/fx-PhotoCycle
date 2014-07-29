@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.dao.daoi.ISourcesDAO;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
 	
@@ -57,7 +57,7 @@ package com.photodispatcher.model.dao{
 			execute(
 				'UPDATE config.sources SET name=?, type_id=?, online=?, code=? WHERE id=?',
 				[	item.name,
-					item.type_id,
+					item.type,
 					item.online?1:0,
 					item.code.charAt(0),
 					item.id],item);
@@ -70,7 +70,7 @@ package com.photodispatcher.model.dao{
 						"VALUES (?,?,?,?)",
 						[	item.id > 0 ? item.id : null,
 							item.name,
-							item.type_id,
+							item.type,
 							item.code.charAt(0)],item);
 		}
 		private function onCreate(e:AsyncSQLEvent):void{
@@ -85,16 +85,16 @@ package com.photodispatcher.model.dao{
 			var a:Source = new Source();
 			a.id=o.id;
 			a.name=o.name;
-			a.type_id=o.type_id;
+			a.type=o.type_id;
 			a.sync=o.sync;
 			a.type_name=o.type_name;
-			a.type_id_name=a.type_name;
+			//a.type_id_name=a.type_name;
 			a.online= o.online==1;
 			a.loc_type=o.loc_type;
 			a.code=o.code;
 			if(!a.code) a.code=String.fromCharCode(64+a.id); 
 			
-			a.loaded = true;
+			//a.loaded = true;
 			return a;
 		}
 

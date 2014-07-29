@@ -4,7 +4,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.event.OrderBuildProgressEvent;
 	import com.photodispatcher.event.OrderPreprocessEvent;
 	import com.photodispatcher.model.OrderState;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.util.StrUtil;
 	

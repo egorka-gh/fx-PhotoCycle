@@ -1,8 +1,8 @@
 package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.ConnectionsProgressEvent;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.Source;
-	import com.photodispatcher.model.SourceService;
+	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceSvc;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -24,7 +24,7 @@ package com.photodispatcher.provider.ftp{
 		private var pending:Array=[];
 		private var source:Source;
 		private var limit:int=0;
-		private var ftpService:SourceService;
+		private var ftpService:SourceSvc;
 		private var waiteConnect:Boolean=false;
 
 		private var err_counter:int=0;

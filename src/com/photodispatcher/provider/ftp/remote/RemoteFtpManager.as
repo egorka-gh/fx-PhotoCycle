@@ -10,7 +10,7 @@ package com.photodispatcher.provider.ftp.remote{
 	import com.photodispatcher.event.LoadProgressEvent;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.provider.ftp.QueueManager;
 	import com.photodispatcher.provider.ftp.QueueManagerFBManual;
@@ -98,7 +98,7 @@ package com.photodispatcher.provider.ftp.remote{
 			}
 			isRunning=true;
 			//create loader
-			if(source.type_id==SourceType.SRC_FBOOK_MANUAL){
+			if(source.type==SourceType.SRC_FBOOK_MANUAL){
 				loader=new QueueManagerFBManual(source,true);
 			}else{
 				loader=new QueueManager(source,true);

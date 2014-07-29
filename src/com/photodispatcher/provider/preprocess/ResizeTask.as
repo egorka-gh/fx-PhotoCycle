@@ -6,8 +6,8 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
-	import com.photodispatcher.model.dao.LabResizeDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMRuner;
 	import com.photodispatcher.util.StrUtil;
@@ -87,8 +87,8 @@ package com.photodispatcher.provider.preprocess{
 								ri.order_id=order.id;
 								//size limit
 								try{
-									ri.fitSize.x=LabResizeDAO.getSizeLimit(Math.min(pg.width,pg.height));
-									ri.fitSize.y=LabResizeDAO.getSizeLimit(Math.max(pg.width,pg.height));
+									ri.fitSize.x=LabResize.getSizeLimit(Math.min(pg.width,pg.height));
+									ri.fitSize.y=LabResize.getSizeLimit(Math.max(pg.width,pg.height));
 								}catch(err:Error){
 									ri.fitSize.x=0;
 									ri.fitSize.y=0;

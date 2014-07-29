@@ -1,5 +1,5 @@
 package com.photodispatcher.service.web{
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.provider.ftp.FtpTask;
 	
 	import flash.events.Event;

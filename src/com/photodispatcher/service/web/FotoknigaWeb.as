@@ -2,7 +2,7 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -46,7 +46,7 @@ package com.photodispatcher.service.web{
 		private var fetchState:int=-1;
 
 		override public function sync():void{
-			if(!source || source.type_id!=SourceType.SRC_FOTOKNIGA){
+			if(!source || source.type!=SourceType.SRC_FOTOKNIGA){
 				abort('Не верная иннициализация синхронизации');
 				return;
 			}
@@ -142,7 +142,7 @@ package com.photodispatcher.service.web{
 				var arr:Array= order.id.split('_');
 				if(arr && arr.length>1) order.src_id=arr[1];
 			}
-			if(!source || source.type_id!=SourceType.SRC_FOTOKNIGA || !order || !order.src_id){
+			if(!source || source.type!=SourceType.SRC_FOTOKNIGA || !order || !order.src_id){
 				abort('Не верная иннициализация команды');
 				return;
 			}

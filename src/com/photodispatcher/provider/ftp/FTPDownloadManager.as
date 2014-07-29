@@ -9,10 +9,10 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Source;
-	import com.photodispatcher.model.SourceService;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.SourceSvc;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -40,7 +40,7 @@ package com.photodispatcher.provider.ftp{
 		private static const DEBUG_TRACE:Boolean=false;
 
 		protected var source:Source;
-		protected var ftpService:SourceService;
+		protected var ftpService:SourceSvc;
 		protected var _isStarted:Boolean=false;
 		protected var localFolder:String;
 		protected var forceStop:Boolean=false;
@@ -64,7 +64,7 @@ package com.photodispatcher.provider.ftp{
 			//TODO reset state
 			
 			//check
-			if(!source || (!source.ftpService && source.type_id!=SourceType.SRC_FBOOK_MANUAL)){
+			if(!source || (!source.ftpService && source.type!=SourceType.SRC_FBOOK_MANUAL)){
 				flowError('Ошибка инициализации');
 				return false;
 			}

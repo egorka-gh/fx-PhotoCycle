@@ -4,15 +4,15 @@
 		 xmlns:mx="library://ns.adobe.com/flex/mx">
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.Source;
-			import com.photodispatcher.model.SourceService;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceSvc;
 			
-			private var _data:SourceService;
+			private var _data:SourceSvc;
 			[Bindable]
-			public function get data():SourceService{
+			public function get data():SourceSvc{
 				return _data;
 			}
-			public function set data(value:SourceService):void{
+			public function set data(value:SourceSvc):void{
 				_data = value;
 				if(_data){
 					currentState=(_data.loc_type==Source.LOCATION_TYPE_SOURCE)?'service':'lab';

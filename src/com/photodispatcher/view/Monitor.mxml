@@ -18,7 +18,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.Order;
 			import com.photodispatcher.model.OrderState;
-			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;

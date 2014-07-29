@@ -15,7 +15,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotakrama.project.ProjectNS;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverFrameImage;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.SourceService;
+	import com.photodispatcher.model.mysql.entities.SourceSvc;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
 	import com.photodispatcher.provider.fbook.model.FrameData;
@@ -53,7 +53,7 @@ package com.photodispatcher.provider.fbook.download{
 		public static const CONTENT_PHOTO_BG:String =  CanvasPhotoBackgroundImage.TYPE;
 		public static const CONTENT_FRAME_MASKED_IMAGE:String =  CanvasFrameMaskedImage.TYPE;
 
-		private var service:SourceService;
+		private var service:SourceSvc;
 		private var book:FBookProject;
 		//private var workFolder:String;
 		private var loader:BulkLoader;
@@ -71,7 +71,7 @@ package com.photodispatcher.provider.fbook.download{
 		private var lastItemsLoaded:int=0;
 		private var fontMap:Object;
 
-		public function FBookContentDownloadManager(service:SourceService, book:FBookProject){
+		public function FBookContentDownloadManager(service:SourceSvc, book:FBookProject){
 			//TODO implement cache
 			super(null);
 			this.service=service;

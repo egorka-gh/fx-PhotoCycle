@@ -4,7 +4,8 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
+
 	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.util.StrUtil;

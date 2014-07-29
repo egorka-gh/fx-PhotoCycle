@@ -12,7 +12,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
 	import com.photodispatcher.model.Roll;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.BookSynonymDAO;
@@ -59,7 +59,7 @@ package com.photodispatcher.factory{
 					//get files
 					af=map[path] as Array;
 					//parse pg from path, exact synonym
-					bookSynonym=BookSynonymDAO.translatePath(path,source.type_id);
+					bookSynonym=BookSynonymDAO.translatePath(path,source.type);
 					if (bookSynonym){
 						//reset book_type 4 preview 
 						if(preview && bookSynonym.book_type==BookSynonym.BOOK_TYPE_JOURNAL) bookSynonym.book_type=BookSynonym.BOOK_TYPE_BOOK;
@@ -107,7 +107,7 @@ package com.photodispatcher.factory{
 						//parse pg from path by parts
 						//TODO check if read completed
 						//var afv:Array=dicDAO.translatePath(source.type_id,path);
-						var afv:Array=DictionaryDAO.translatePath(source.type_id,path);
+						var afv:Array=DictionaryDAO.translatePath(source.type,path);
 						pg=new PrintGroup();
 						pg.path=path;
 						for each (o in afv){
@@ -125,7 +125,7 @@ package com.photodispatcher.factory{
 								if(s){
 									fpg=parseFile(pg,s);
 									//TODO use prt_qty only 4 SRC_FOTOKNIGA
-									if(source.type_id!= SourceType.SRC_FOTOKNIGA){
+									if(source.type!= SourceType.SRC_FOTOKNIGA){
 										if(fpg && fpg.getFiles() && fpg.getFiles().length>0){
 											(fpg.getFiles()[0] as PrintGroupFile).prt_qty=1;
 										}

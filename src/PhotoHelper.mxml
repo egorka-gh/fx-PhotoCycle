@@ -27,7 +27,7 @@
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.BookSynonymDAO;
 			import com.photodispatcher.model.dao.DictionaryDAO;
-			import com.photodispatcher.model.dao.LabResizeDAO;
+			//import com.photodispatcher.model.dao.LabResizeDAO;
 			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.ArrayUtil;
@@ -94,8 +94,9 @@
 				//TODO implement some restart
 				if (!Context.initSourceLists()) close();
 				Context.fillFromConfig();
-				//init static maps 
-				LabResizeDAO.initSizeMap();
+				//init static maps  
+				//TODO REFACTOR
+				//LabResizeDAO.initSizeMap();
 				OrderStateDAO.initStateMap();
 				BookSynonymDAO.initSynonymMap();
 				DictionaryDAO.initSynonymMap();

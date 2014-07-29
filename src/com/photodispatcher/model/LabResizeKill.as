@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	public class LabResize extends DBRecord	{
+	public class LabResizeKill extends DBRecord	{
 		//database props
 		[Bindable]
 		public var id:int;

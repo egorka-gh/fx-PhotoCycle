@@ -7,7 +7,7 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.Order;
-			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.dao.OrderDAO;
 			
@@ -39,7 +39,7 @@
 			private function filterSrc(item:Object):Boolean {
 				var s:Source=item as Source;
 				if(!s) return false;
-				return s.type_id==SourceType.SRC_FBOOK_MANUAL;
+				return s.type==SourceType.SRC_FBOOK_MANUAL;
 			}
 
 			protected function ddSource_changeHandler(event:IndexChangeEvent):void{

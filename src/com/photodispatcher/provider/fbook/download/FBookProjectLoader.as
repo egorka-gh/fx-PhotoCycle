@@ -14,7 +14,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotocup.data.FotocupProject;
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.magnet.data.MagnetProject;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	
 	import flash.events.Event;

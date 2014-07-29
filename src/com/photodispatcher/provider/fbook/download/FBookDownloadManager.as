@@ -7,7 +7,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.BookSynonymDAO;
@@ -92,7 +92,7 @@ package com.photodispatcher.provider.fbook.download{
 				flowError('Не верная рабочая папка');
 				return false;
 			}
-			if(source.type_id == SourceType.SRC_PROFOTO){
+			if(source.type == SourceType.SRC_PROFOTO){
 				//use main login, no auth needed
 				_isStarted=true;
 				checkQueue();

@@ -13,8 +13,6 @@
 			import com.photodispatcher.model.AttrType;
 			import com.photodispatcher.model.Lab;
 			import com.photodispatcher.model.LabPrintCode;
-			import com.photodispatcher.model.LabResize;
-			import com.photodispatcher.model.Source;
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.AttrTypeDAO;
@@ -22,14 +20,26 @@
 			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.LabPrintCodeDAO;
-			import com.photodispatcher.model.dao.LabResizeDAO;
-			import com.photodispatcher.model.dao.SourceServiceDAO;
-			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.AbstractEntity;
+			import com.photodispatcher.model.mysql.entities.DmlResult;
+			import com.photodispatcher.model.mysql.entities.LabResize;
+			import com.photodispatcher.model.mysql.entities.SelectResult;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.LabResizeService;
+			import com.photodispatcher.model.mysql.services.SourceService;
+			
+			import flash.utils.getTimer;
 			
 			import mx.collections.IList;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.ResultEvent;
+			
+			import org.granite.tide.Tide;
 
 			[Bindable]
 			private var currentList:ArrayCollection;
@@ -60,7 +70,7 @@
 			}
 
 			private function detectState():void{
-				var dao:SourcesDAO;
+				var latch:DbLatch
 				currentItem=null;
 				gridEditable=false;
 				switch(tbView.selectedIndex){
@@ -69,9 +79,16 @@
 						break;
 					case 1:
 						currentState='sourceList';
-						dao= new SourcesDAO();
-						currentList=dao.findAll();
-						currentColumns=SourcesDAO.gridColumns();
+						//dao= new SourcesDAO();
+						//currentList=dao.findAll();
+						currentColumns=Source.gridColumns();
+						//currentList=new ArrayCollection(Context.getSources());
+						currentList=null;
+						var svc:SourceService=Tide.getInstance().getContext().byType(SourceService,true) as SourceService;
+						latch=new DbLatch(false);
+						latch.addEventListener(Event.COMPLETE, onNewCurrentList);
+						latch.addLatch(svc.loadAll(Source.LOCATION_TYPE_SOURCE));
+						latch.start();
 						break;
 					case 2:
 						currentState='labList';
@@ -98,9 +115,13 @@
 					case 4:
 						gridEditable=true;
 						currentState='prResizeList';
-						var rdao:LabResizeDAO= new LabResizeDAO();
-						currentList=rdao.findAll();
-						currentColumns=LabResizeDAO.gridColumns();
+						currentColumns=LabResize.gridColumns();
+						currentList=null;
+						var svcLR:LabResizeService=Tide.getInstance().getContext().byType(LabResizeService,true) as LabResizeService;
+						latch= new DbLatch(false);
+						latch.addEventListener(Event.COMPLETE, onNewCurrentList);
+						latch.addLatch(svcLR.loadAll());
+						latch.start();
 						break;
 					case 5:
 						currentState='bookSynonym';
@@ -118,6 +139,13 @@
 					case 8:
 						currentState='tech_layers';
 						break;
+				}
+			}
+			private function onNewCurrentList(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onNewCurrentList);
+					if(latch.complite) currentList=latch.lastDataAC;
 				}
 			}
 			
@@ -180,45 +208,85 @@
 					saveLab();
 				}else{
 					if(!currentItem) return;
-					var sDao:SourcesDAO=new SourcesDAO();
-					var svcDao:SourceServiceDAO=new SourceServiceDAO();
-					if(currentItem.loaded){
-						//save
-						itemsToSave=[];
-						if(currentItem.changed) itemsToSave.push({item:currentItem, dao:sDao});
-						if(currentItem.webService.changed) itemsToSave.push({item:currentItem.webService, dao:svcDao});
-						if(currentItem.ftpService.changed) itemsToSave.push({item:currentItem.ftpService, dao:svcDao});
-						if(currentItem.fbookService.changed) itemsToSave.push({item:currentItem.fbookService, dao:svcDao});
-						if(currentItem.hotFolder.changed) itemsToSave.push({item:currentItem.hotFolder, dao:svcDao});
-						saveNext();
-					}else{
-						//TODO implement save vsout return to list
-						//create
-						if(!currentItem.changed) return;
-						if(!currentItem.type_id){
-							Alert.show('Не указан тип');
-							return;
+					if(!currentItem.loaded && !currentItem.type){
+						Alert.show('Не указан тип');
+						return;
+					}
+					if((!currentItem.loaded) || currentItem.changed 
+						|| currentItem.webService.changed || currentItem.ftpService.changed || currentItem.fbookService.changed || currentItem.hotFolder.changed){
+						var svc:SourceService=Tide.getInstance().getContext().byType(SourceService,true) as SourceService;
+						var latch:DbLatch= new DbLatch(false);
+						var tk:AsyncToken=svc.persist(currentItem as com.photodispatcher.model.mysql.entities.Source);
+						if(!currentItem.loaded){
+							var id:int=getTimer();
+							currentItem.id=id;
+							tk.add=true;
+							tk.tag=id;
+							//tk.addResponder(new AsyncResponder(onSourceAdd,null));
+						}else{
+							tk.add=false;
+							tk.tag=currentItem.id;
 						}
-						itemsToSave=[];
-						itemsToSave.push({item:currentItem, dao:sDao});
-						saveNext();
+						latch.addLatch(tk);
+						latch.addEventListener(Event.COMPLETE, onSourceSave);
+						latch.start();
+						//TODO lock interface
+					}
+					
+				}
+			}
+			private function onSourceSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSourceSave);
+					if(latch.complite && latch.lastResult.complete){
+						var tag:int=latch.lastToken.tag;
+						if(tag && currentItem && currentItem.id==tag){
+							if(latch.lastToken.add){
+								currentItem.id=(latch.lastResult as DmlResult).lastId;
+								currentItem.loaded=true;
+								currentItem.edit();
+								currentList.addItem(currentItem);
+								//currentList.refresh();
+							}else{
+								//reset changed
+								currentItem.loaded=true;
+								currentItem.fbookService.loaded=true;
+								currentItem.ftpService.loaded=true;
+								currentItem.hotFolder.loaded=true;
+								currentItem.webService.loaded=true;
+							}
+						}
 					}
 				}
 			}
-			
+
 			private var itemsToSave:Array;
 
 			private function saveResizes():void{
 				var r:LabResize;
-				itemsToSave=[];
-				var rDao:LabResizeDAO= new LabResizeDAO();
-				for each (var o:Object in currentList){
-					r=o as LabResize;
-					if(r && (!r.loaded || r.changed)){
-						itemsToSave.push({item:r, dao:rDao});
+				var items:ArrayCollection= new ArrayCollection();
+				for each (r in currentList){
+					if (r.changed || !r.loaded) items.addItem(r);
+				}
+				if(items.length==0) return;
+				var svcLR:LabResizeService=Tide.getInstance().getContext().byType(LabResizeService,true) as LabResizeService;
+				var latch:DbLatch= new DbLatch(false);
+				latch.addLatch(svcLR.persistBatch(items));
+				latch.addEventListener(Event.COMPLETE, onRLSave);
+				latch.start();
+			}
+			private function onRLSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onRLSave);
+					if(latch.complite && latch.lastResult.complete){
+						var r:LabResize;
+						for each (r in currentList){
+							if (r.changed || !r.loaded) r.loaded=true;
+						}
 					}
 				}
-				saveNext();
 			}
 
 			private function saveTechPoints():void{

@@ -5,9 +5,9 @@
 
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.Source;
-			import com.photodispatcher.model.SourceService;
-			import com.photodispatcher.model.dao.SourceTypeDAO;
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceSvc;
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;
@@ -25,14 +25,18 @@
 				_currentItem = value;
 				typeListIdx=-1;
 				if(_currentItem){
+					_currentItem.edit();
 					currentState=(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE)?'source':'lab';
-					var stDao:SourceTypeDAO=new SourceTypeDAO();
-					typeList=stDao.findAll(_currentItem.loc_type);
-					typeListIdx=ArrayUtil.searchItemIdx('id',_currentItem.type_id,typeList.toArray());
+					//var stDao:SourceTypeDAO=new SourceTypeDAO();
+					//typeList=stDao.findAll(_currentItem.loc_type);
+					typeList=Context.getAttribute('src_typeValueList') as ArrayCollection;
+					typeListIdx=ArrayUtil.searchItemIdx('value',_currentItem.type,typeList.toArray());
+					/*
 					webService=_currentItem.webService;
 					ftpService=_currentItem.ftpService;
 					fbookService=_currentItem.fbookService;
 					hotFolder=_currentItem.hotFolder;
+					*/
 				}
 			}
 			
@@ -40,18 +44,20 @@
 			private var typeList:IList;
 			[Bindable]
 			private var typeListIdx:int;
+			/*
 			[Bindable]
-			private var webService:SourceService;
+			private var webService:SourceSvc;
 			[Bindable]
-			private var ftpService:SourceService;
+			private var ftpService:SourceSvc;
 			[Bindable]
-			private var fbookService:SourceService;
+			private var fbookService:SourceSvc;
 			[Bindable]
-			private var hotFolder:SourceService;
+			private var hotFolder:SourceSvc;
+			*/
 
 			protected function ddType_changeHandler(event:IndexChangeEvent):void{
 				if(currentItem && ddType.selectedItem){
-					currentItem.type_id=ddType.selectedItem.id;
+					currentItem.type=ddType.selectedItem.value;
 					currentItem.changed=true;
 				}
 			}
@@ -80,7 +86,7 @@
 			<s:TextInput id="tiName" text="@{currentItem.name}" change="{currentItem.changed=true}" width="200"/>
 		</s:FormItem> 
 		<s:FormItem label="Тип" required="true">
-			<s:DropDownList id="ddType" labelField="name" dataProvider="{typeList}" selectedIndex="{typeListIdx}" change="ddType_changeHandler(event)" width="200"/>
+			<s:DropDownList id="ddType"  dataProvider="{typeList}" selectedIndex="{typeListIdx}" change="ddType_changeHandler(event)" width="200"/>
 		</s:FormItem> 
 		<s:FormItem label="Online">
 			<s:CheckBox id="chbOnline" selected="@{currentItem.online}" change="{currentItem.changed=true}"/>
@@ -89,16 +95,16 @@
 			<s:TextInput id="tiCod" text="@{currentItem.code}" change="tiCod_changeHandler(event)" width="20"/>
 		</s:FormItem> 
 		<s:FormItem label="Сайт" enabled="{currentItem.loaded}" includeIn="source">
-			<config:SourceServiceEdit data="{webService}"/>
+			<config:SourceServiceEdit data="{currentItem.webService}"/>
 		</s:FormItem> 
 		<s:FormItem label="FTP" enabled="{currentItem.loaded}" includeIn="source">
-			<config:SourceServiceEdit data="{ftpService}"/>
+			<config:SourceServiceEdit data="{currentItem.ftpService}"/>
 		</s:FormItem> 
 		<s:FormItem label="FBook" enabled="{currentItem.loaded}" includeIn="source">
-			<config:SourceServiceEdit data="{fbookService}"/>
+			<config:SourceServiceEdit data="{currentItem.fbookService}"/>
 		</s:FormItem> 
 		<s:FormItem label="Hot folder" enabled="{currentItem.loaded}" includeIn="lab">
-			<config:SourceServiceEdit data="{hotFolder}"/>
+			<config:SourceServiceEdit data="{currentItem.hotFolder}"/>
 		</s:FormItem> 
 	</s:Form>
 </s:Group>

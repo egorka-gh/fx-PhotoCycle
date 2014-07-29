@@ -9,7 +9,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.BaseDAO;
@@ -71,7 +71,7 @@ package com.photodispatcher.provider.ftp{
 				for each(s in sources){
 					if(s && s.online){
 						f=null;
-						if(s.type_id==SourceType.SRC_FBOOK_MANUAL){
+						if(s.type==SourceType.SRC_FBOOK_MANUAL){
 							f= new QueueManagerFBManual(s);
 						}else if(s.ftpService){
 							f= new QueueManager(s);

@@ -7,7 +7,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	import com.photodispatcher.service.web.BaseWeb;

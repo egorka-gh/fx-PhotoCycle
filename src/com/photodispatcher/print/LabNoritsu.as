@@ -5,7 +5,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 
 	public class LabNoritsu extends LabBase	{

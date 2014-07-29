@@ -1,7 +1,7 @@
 package com.photodispatcher.factory{
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.OrderState;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.SubordersTemplate;
@@ -34,10 +34,10 @@ package com.photodispatcher.factory{
 			var result:Array;
 
 			//for profoto type
-			if(source.type_id==SourceType.SRC_PROFOTO){
+			if(source.type==SourceType.SRC_PROFOTO){
 				for (path in map){
 					if(path){
-						t=SubordersTemplate.translatePath(path,source.type_id);
+						t=SubordersTemplate.translatePath(path,source.type);
 						if(t){
 							o= new Suborder();
 							o.order_id=order.id;
@@ -51,7 +51,7 @@ package com.photodispatcher.factory{
 				}
 			}
 			//for fotokniga type
-			if(source.type_id==SourceType.SRC_FOTOKNIGA && order.src_id){
+			if(source.type==SourceType.SRC_FOTOKNIGA && order.src_id){
 				//get subOrder id (-#)
 				var subId:int;
 				var a:Array=order.src_id.split('-');
@@ -73,7 +73,7 @@ package com.photodispatcher.factory{
 		public static function buildFromFileSystem(source:Source, order:Order):String{
 			if (!source || !order || !order.hasSuborders) return '';
 			//parse profoto only 
-			if(source.type_id!=SourceType.SRC_PROFOTO) return '';
+			if(source.type!=SourceType.SRC_PROFOTO) return '';
 			var rootFolder:File=new File(source.getWrkFolder());
 			rootFolder=rootFolder.resolvePath(order.ftp_folder);
 			if(!rootFolder.exists || !rootFolder.isDirectory) return 'Папка заказа не найдена: '+rootFolder.nativePath;

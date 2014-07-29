@@ -8,7 +8,7 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.Source;
+			import com.photodispatcher.model.mysql.entities.Source;
 			
 			[Bindable]
 			private var source:Source;

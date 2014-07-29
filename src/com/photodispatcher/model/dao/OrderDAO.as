@@ -6,7 +6,7 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.Suborder;
 	
 	import flash.data.SQLStatement;
@@ -435,7 +435,7 @@ package com.photodispatcher.model.dao{
 			//get jsonMap
 			//var jmDao:AttrJsonMapDAO=new AttrJsonMapDAO();
 			//var jMap:Array=jmDao.getOrderMapBySourceType(source.type_id);
-			var jMap:Array=AttrJsonMapDAO.getOrderJson(source.type_id);
+			var jMap:Array=AttrJsonMapDAO.getOrderJson(source.type);
 			if(!jMap){
 				dispatchEvent(new AsyncSQLEvent(AsyncSQLEvent.RESULT_FAULT_LOCKED,0,0,null,'Ошибка чтения attr_json_map. Данные блокированы.'));
 				return;

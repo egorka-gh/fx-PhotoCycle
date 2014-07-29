@@ -1,7 +1,6 @@
 package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.Source;
-	import com.photodispatcher.model.SourceService;
+	import com.photodispatcher.model.mysql.entities.Source;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;

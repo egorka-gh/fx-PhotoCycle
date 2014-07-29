@@ -1,7 +1,7 @@
 package com.photodispatcher.model{
 
 	[Bindable]
-	public class SourceService extends DBRecord{
+	public class SourceServiceKill extends DBRecord{
 
 		public static const WEB_SERVICE:int=1;
 		public static const FTP_SERVICE:int=4;

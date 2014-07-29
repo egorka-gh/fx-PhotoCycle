@@ -1,5 +1,5 @@
 package com.photodispatcher.model.dao.daoi{
-	import com.photodispatcher.model.Source;
+	import com.photodispatcher.model.mysql.entities.Source;
 	
 	import mx.collections.ArrayCollection;
 
