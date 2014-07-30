@@ -14,8 +14,16 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class LabResizeBase extends AbstractEntity {
 
+        private var _id:int;
         private var _pixels:int;
         private var _width:int;
+
+        public function set id(value:int):void {
+            _id = value;
+        }
+        public function get id():int {
+            return _id;
+        }
 
         public function set pixels(value:int):void {
             _pixels = value;
@@ -33,12 +41,14 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _id = input.readObject() as int;
             _pixels = input.readObject() as int;
             _width = input.readObject() as int;
         }
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_pixels is IPropertyHolder) ? IPropertyHolder(_pixels).object : _pixels);
             output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
         }
