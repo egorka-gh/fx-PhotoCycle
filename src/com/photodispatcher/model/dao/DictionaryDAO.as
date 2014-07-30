@@ -1,6 +1,6 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.FieldValue;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	
 	import mx.collections.ArrayCollection;
 

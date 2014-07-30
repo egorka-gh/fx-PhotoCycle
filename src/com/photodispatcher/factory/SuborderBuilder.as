@@ -1,6 +1,5 @@
 package com.photodispatcher.factory{
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;

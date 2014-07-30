@@ -4,8 +4,8 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.BookPgTemplate;
 	import com.photodispatcher.model.BookSynonym;
-	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;

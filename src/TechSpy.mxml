@@ -11,7 +11,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.OrderStateDAO;
+			//import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
 			import mx.core.FlexGlobals;
@@ -68,7 +68,10 @@
 				*/
 				
 				//currentState='config';
-				OrderStateDAO.initStateMap();
+				
+				
+				//TODO REFACTOR !!!
+				//OrderStateDAO.initStateMap();
 
 				currentState='monitor';
 			}

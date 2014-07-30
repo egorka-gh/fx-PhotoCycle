@@ -3,7 +3,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.LabPrintCode;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;

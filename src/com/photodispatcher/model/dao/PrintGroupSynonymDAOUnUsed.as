@@ -1,6 +1,6 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupSynonym;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;

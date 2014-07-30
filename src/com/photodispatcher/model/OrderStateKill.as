@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	public class OrderState extends DBRecord{
+	public class OrderStateKill extends DBRecord{
 		//err state
 		public static const ERR_PRINT_POST:int=-300;
 		public static const ERR_PRINT_POST_FOLDER_NOT_FOUND:int=-301;

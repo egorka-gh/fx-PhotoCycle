@@ -5,7 +5,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.photodispatcher.event.OrderBuildProgressEvent;
 	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.StateLogDAO;

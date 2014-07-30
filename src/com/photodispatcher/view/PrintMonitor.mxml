@@ -10,12 +10,11 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
-			import com.photodispatcher.model.OrderState;
 			import com.photodispatcher.model.PrintGroup;
-			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.dao.LabDAO;
-			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -65,7 +64,7 @@
 				a.unshift(s);
 				labFilterList.source=a;
 
-				a=OrderStateDAO.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_COMPLETE+1,true);
+				a=OrderState.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_COMPLETE+1,true);
 				var os:OrderState=new OrderState(); os.id=0; os.name='-';
 				a.unshift(os);
 				statesFilterList.source=a;

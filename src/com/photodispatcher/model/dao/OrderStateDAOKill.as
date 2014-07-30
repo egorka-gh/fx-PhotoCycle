@@ -1,10 +1,10 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	
 	import mx.collections.ArrayCollection;
 	
-	public class OrderStateDAO extends BaseDAO{
+	public class OrderStateDAOKill extends BaseDAO{
 		
 		private static var stateMap:Object;
 		

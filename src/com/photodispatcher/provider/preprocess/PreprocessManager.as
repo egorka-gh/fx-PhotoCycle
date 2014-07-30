@@ -8,7 +8,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.event.OrderBuildEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;

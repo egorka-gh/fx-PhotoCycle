@@ -12,7 +12,7 @@
 			import com.photodispatcher.model.Order;
 			import com.photodispatcher.model.OrderExtraState;
 			import com.photodispatcher.model.OrderExtraStateProlong;
-			import com.photodispatcher.model.OrderState;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.PrintGroupFile;
 			import com.photodispatcher.model.mysql.entities.Source;

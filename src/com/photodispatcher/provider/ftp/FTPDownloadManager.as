@@ -7,7 +7,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;

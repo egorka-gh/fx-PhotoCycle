@@ -8,7 +8,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.FieldValue;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
 	import com.photodispatcher.model.Roll;

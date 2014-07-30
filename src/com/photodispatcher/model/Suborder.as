@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	import com.photodispatcher.model.dao.OrderStateDAO;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	
 	import flash.filesystem.File;

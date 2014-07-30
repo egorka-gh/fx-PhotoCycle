@@ -8,7 +8,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.LabDevice;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.SourceType;

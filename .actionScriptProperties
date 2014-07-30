@@ -16,16 +16,7 @@
     <sourceAttachmentPath/>
   </compiler>
   <applications>
-    <application path="TechSpy.mxml">
-      <airExcludes/>
-    </application>
     <application path="TechMonitor.mxml">
-      <airExcludes/>
-    </application>
-    <application path="PhotoPicker.mxml">
-      <airExcludes/>
-    </application>
-    <application path="TechOTK.mxml">
       <airExcludes/>
     </application>
     <application path="PhotoTech.mxml">
@@ -34,10 +25,19 @@
     <application path="PhotoHelper.mxml">
       <airExcludes/>
     </application>
+    <application path="TechSpy.mxml">
+      <airExcludes/>
+    </application>
     <application path="Laboratory.mxml">
       <airExcludes/>
     </application>
     <application path="PhotoCycle.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechOTK.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoPicker.mxml">
       <airExcludes/>
     </application>
   </applications>

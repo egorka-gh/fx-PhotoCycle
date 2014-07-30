@@ -19,7 +19,7 @@
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.BookSynonymDAO;
 			import com.photodispatcher.model.dao.DictionaryDAO;
-			import com.photodispatcher.model.dao.OrderStateDAO;
+			//import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.SourceTypeDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
@@ -79,7 +79,9 @@
 			}
 			
 			private function init():void{
-				OrderStateDAO.initStateMap();
+				//TODO REFACTOR !!!
+				//OrderStateDAO.initStateMap();
+				
 				Context.initSourceLists();
 				BookSynonymDAO.initSynonymMap();
 

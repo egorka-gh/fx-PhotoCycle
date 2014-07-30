@@ -18,9 +18,9 @@
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
@@ -104,7 +104,8 @@
 			}
 
 			private function init():void{
-				OrderStateDAO.initStateMap();
+				//TODO REFACTOR !!!
+				OrderState.initStateMap();
 				var dao:TechPointDAO=new TechPointDAO();
 				/*
 				var a:Array=dao.findByType(SourceType.TECH_PRINT);

@@ -8,7 +8,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;

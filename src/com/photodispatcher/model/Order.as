@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	import com.photodispatcher.model.dao.OrderStateDAO;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.print.LabBase;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -99,7 +99,7 @@ package com.photodispatcher.model{
 		}
 		public function set state(value:int):void{
 			state_date= new Date();
-			if(_state != value) state_name= OrderStateDAO.getStateName(value);
+			if(_state != value) state_name= OrderState.getStateName(value);
 			_state = value;
 			if(_state!=OrderState.ERR_READ_LOCK && 
 				_state!=OrderState.ERR_WRITE_LOCK && 

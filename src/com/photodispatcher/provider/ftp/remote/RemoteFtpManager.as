@@ -9,7 +9,7 @@ package com.photodispatcher.provider.ftp.remote{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.LoadProgressEvent;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.provider.ftp.QueueManager;

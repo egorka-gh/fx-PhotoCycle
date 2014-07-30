@@ -9,11 +9,10 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.factory.LabBuilder;
 			import com.photodispatcher.model.Lab;
-			import com.photodispatcher.model.OrderState;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.dao.LabDAO;
-			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.print.LabBase;
@@ -76,7 +75,7 @@
 				Context.initAttributeLists();
 				paperFilterList=Context.getAttribute('paperList');
 				
-				a=OrderStateDAO.getStateArray(OrderState.PRN_COMPLETE,OrderState.PRN_COMPLETE+1,true);
+				a=OrderState.getStateArray(OrderState.PRN_COMPLETE,OrderState.PRN_COMPLETE+1,true);
 				var os:OrderState=new OrderState(); os.id=0; os.name='-';
 				a.unshift(os);
 				statesFilterList.source=a;

@@ -6,7 +6,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.jxl.chat.vo.messages.MessageTypes;
 	import com.jxl.chatserver.mvcs.services.ChatServerService;
 	import com.jxl.chatserver.vo.ClientVO;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.dao.StateLogDAO;
 
 	public class OrderBuilderRemote extends OrderBuilderBase{

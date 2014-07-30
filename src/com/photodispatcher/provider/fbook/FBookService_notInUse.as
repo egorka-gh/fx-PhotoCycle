@@ -4,7 +4,7 @@ package com.photodispatcher.provider.fbook{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.StateLogDAO;

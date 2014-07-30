@@ -2,10 +2,10 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
 	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.util.GridUtil;
 	
 	import flash.data.SQLStatement;

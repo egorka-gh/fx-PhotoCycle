@@ -3,7 +3,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.fotakrama.canvas.text.CanvasTextStyle;
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.download.FontDownloadManager;
 	

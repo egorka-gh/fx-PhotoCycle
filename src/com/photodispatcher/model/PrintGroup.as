@@ -1,7 +1,7 @@
 package com.photodispatcher.model{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.dao.OrderStateDAO;
 	import com.photodispatcher.model.dao.PrintGroupFileDAO;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.print.LabBase;
 	import com.photodispatcher.util.StrUtil;
@@ -52,7 +52,7 @@ package com.photodispatcher.model{
 			if(_state != value){
 				//save old valid state
 				if(_state>0) _prev_state=_state;
-				state_name= OrderStateDAO.getStateName(value);
+				state_name= OrderState.getStateName(value);
 			}
 			_state = value;
 		}

@@ -17,12 +17,11 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.Order;
-			import com.photodispatcher.model.OrderState;
-			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.dao.OrderDAO;
-			import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.model.dao.StateLogDAO;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.provider.ftp.FtpManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
 			import com.photodispatcher.service.SyncService;
@@ -147,7 +146,7 @@
 				switch(currentState){
 					case 'ordersPending':
 					default:
-						a=OrderStateDAO.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_WAITE+1);
+						a=OrderState.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_WAITE+1);
 						var os:OrderState=new OrderState(); os.id=0; os.name='-';
 						a.unshift(os);
 						os=new OrderState(); os.id=-1; os.name='Ошибки';

@@ -6,15 +6,16 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.dao.AttrTypeDAO;
 	import com.photodispatcher.model.dao.BookSynonymDAO;
 	import com.photodispatcher.model.dao.DictionaryDAO;
-	import com.photodispatcher.model.dao.OrderStateDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.mysql.entities.LabResize;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.services.DictionaryService;
 	import com.photodispatcher.model.mysql.services.LabResizeService;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.SourceService;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -56,7 +57,7 @@ package com.photodispatcher.context{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoCycle';
 			//register services
-			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService]);
+			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService, OrderStateService]);
 			
 			//fill from config
 			//Context.fillFromConfig();
@@ -64,10 +65,10 @@ package com.photodispatcher.context{
 			latch.join(Context.initSourceLists());
 			latch.join(Context.initAttributeLists());
 			latch.join(LabResize.initSizeMap());
+			latch.join(OrderState.initStateMap());
 
 			//init static maps
 			/* TODO Implement*/
-			OrderStateDAO.initStateMap();
 			BookSynonymDAO.initSynonymMap();
 			DictionaryDAO.initSynonymMap();
 			Roll.initItemsMap();

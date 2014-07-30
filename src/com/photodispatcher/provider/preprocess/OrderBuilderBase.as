@@ -2,7 +2,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.photodispatcher.event.OrderBuildEvent;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	
 	import flash.events.EventDispatcher;

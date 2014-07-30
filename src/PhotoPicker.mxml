@@ -22,7 +22,7 @@
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.LayersetGroupDAO;
-			import com.photodispatcher.model.dao.OrderStateDAO;
+			//import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
 			import com.photodispatcher.service.barcode.ComInfo;
@@ -161,7 +161,9 @@
 			}
 
 			private function init():void{
-				OrderStateDAO.initStateMap();
+				//TODO REFACTOR !!!
+				//OrderStateDAO.initStateMap();
+				
 				//load tech layers
 				var a:ArrayCollection;
 				if(!Context.getAttribute('layerValueList')){

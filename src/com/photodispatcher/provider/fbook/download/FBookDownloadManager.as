@@ -6,7 +6,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
