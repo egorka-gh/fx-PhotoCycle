@@ -1,6 +1,6 @@
 package com.photodispatcher.tech{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.TechPoint;
 	import com.photodispatcher.model.TechPrintGroup;
 	import com.photodispatcher.model.dao.BaseDAO;

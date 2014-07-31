@@ -1,5 +1,5 @@
 package com.photodispatcher.print{
-	import com.photodispatcher.model.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.Lab;
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;

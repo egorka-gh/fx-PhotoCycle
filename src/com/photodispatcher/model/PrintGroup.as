@@ -1,6 +1,8 @@
 package com.photodispatcher.model{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.dao.PrintGroupFileDAO;
+	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.print.LabBase;

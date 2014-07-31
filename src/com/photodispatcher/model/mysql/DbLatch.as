@@ -38,10 +38,11 @@ package com.photodispatcher.model.mysql
 			joint=[];
 		}
 		
-		public function addLatch(token:AsyncToken):void{
+		public function addLatch(token:AsyncToken, tag:String=null):void{
 			if(hasError ||!token || !latches) return;
 			var latch:int=getTimer();
 			token.latch=latch;
+			if(tag) token.tag=tag;
 			latches.push(latch);
 			token.addResponder(new AsyncResponder(resultHandler, faultHandler));
 		}
@@ -108,7 +109,14 @@ package com.photodispatcher.model.mysql
 		}
 		
 		public function get lastDataAC():ArrayCollection{
-			return new ArrayCollection(lastDataArr);
+			if(lastResult && lastResult is SelectResult && (lastResult as SelectResult).data){
+				if ((lastResult as SelectResult).data is ArrayCollection){
+					return (lastResult as SelectResult).data as ArrayCollection;
+				}else{
+					return new ArrayCollection(lastDataArr);
+				}
+			}
+			return null;
 		}
 		public function get lastDataArr():Array{
 			var result:Array=[];

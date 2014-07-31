@@ -9,7 +9,7 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.Endpaper;
 			import com.photodispatcher.model.Layer;
 			import com.photodispatcher.model.LayerAllocation;
@@ -20,9 +20,7 @@
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.SynonymCommon;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.BookSynonymDAO;
 			import com.photodispatcher.model.dao.DictionaryCommonDAO;
-			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.EndpaperDAO;
 			import com.photodispatcher.model.dao.LayerAllocationDAO;
 			import com.photodispatcher.model.dao.LayerDAO;

@@ -1,6 +1,6 @@
 package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PdfTemplate;
 	import com.photodispatcher.model.PrintGroup;

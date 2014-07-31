@@ -21,9 +21,8 @@
 			import com.photodispatcher.model.Roll;
 			import com.photodispatcher.model.dao.AppConfigDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.BookSynonymDAO;
-			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.LabResizeDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.services.ContentFilterService;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
@@ -62,7 +61,6 @@
 					//connected
 					initBdServer();
 					fillContext();
-					currentState='monitor';
 					//if(vMonitor) vMonitor.start();
 				}else{
 					//no connection
@@ -107,7 +105,7 @@
 			
 			protected function button2_clickHandler(event:MouseEvent):void{
 				fillContext();
-				currentState='monitor';
+				//currentState='monitor';
 				if(vMonitor) vMonitor.init(); //vMonitor.start();
 			}
 			
@@ -133,8 +131,22 @@
 				DictionaryDAO.initSynonymMap();
 				Roll.initItemsMap();
 				*/
-				Context.initPhotoCycle();
-
+				var latch:DbLatch=Context.initPhotoCycle();
+				latch.addEventListener(Event.COMPLETE, onConextInit);
+				latch.start();
+			}
+			private function onConextInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onConextInit);
+					if(latch.complite){
+						postFillContext();
+					}else{
+						latch.showError();
+					}
+				}
+			}
+			private function postFillContext():void{
 				//init print manager
 				PrintQueueManager.instance.init();
 				
@@ -207,6 +219,8 @@
 				if(!pdfPageLimit) pdfPageLimit=100;
 				Context.setAttribute("pdfPageLimit", pdfPageLimit);
 				Context.setAttribute('reversPrint', so.data.reversPrint);
+				currentState='monitor';
+
 			}
 			private function onImPing(e:IMRunerEvent):void{
 				var im:IMRuner=e.target as IMRuner;

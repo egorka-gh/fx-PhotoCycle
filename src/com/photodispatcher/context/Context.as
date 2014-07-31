@@ -4,15 +4,15 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.Roll;
 	import com.photodispatcher.model.dao.AppConfigDAO;
 	import com.photodispatcher.model.dao.AttrTypeDAO;
-	import com.photodispatcher.model.dao.BookSynonymDAO;
-	import com.photodispatcher.model.dao.DictionaryDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.AttrType;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.services.BookSynonymService;
 	import com.photodispatcher.model.mysql.services.DictionaryService;
 	import com.photodispatcher.model.mysql.services.LabResizeService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
@@ -57,7 +57,7 @@ package com.photodispatcher.context{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoCycle';
 			//register services
-			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService, OrderStateService]);
+			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService, OrderStateService, BookSynonymService]);
 			
 			//fill from config
 			//Context.fillFromConfig();
@@ -66,14 +66,15 @@ package com.photodispatcher.context{
 			latch.join(Context.initAttributeLists());
 			latch.join(LabResize.initSizeMap());
 			latch.join(OrderState.initStateMap());
+			latch.join(BookSynonym.initSynonymMap());
+			latch.join(FieldValue.initSynonymMap());
 
 			//init static maps
 			/* TODO Implement*/
-			BookSynonymDAO.initSynonymMap();
-			DictionaryDAO.initSynonymMap();
+			//DictionaryDAO.initSynonymMap();
 			Roll.initItemsMap();
 			/**/
-			latch.start();//start at caller?
+			//latch.start();//start at caller?
 			return latch;
 		}
 
@@ -225,72 +226,65 @@ package com.photodispatcher.context{
 			var field:String;
 			//var dDao:DictionaryDAO=new DictionaryDAO();
 			var dict:DictionaryService=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
-			var t:AsyncToken;
+			//var t:AsyncToken;
 			
 			//var a:ArrayCollection;
 			for each (var o:Object in select.data){
 				at=o as AttrType;
 				if(at){
 					field=at.field;
-					t=dict.getFieldValueList(at.id,false,onFieldList);
-					t.tag=field;
-					latchAttributeLists.addLatch(t);
+					latchAttributeLists.addLatch(dict.getFieldValueList(at.id,false,onFieldList),field);
 				}
 			}
 
-			t=dict.getBookTypeValueList(false,onFieldList);
-			t.tag='book_type';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getBookTypeValueList(false,onFieldList),'book_type');
 
-			t=dict.getBookPartValueList(false,onFieldList);
-			t.tag='book_part';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getBookPartValueList(false,onFieldList),'book_part');
 
-			t=dict.getSrcTypeValueList(Source.LOCATION_TYPE_SOURCE, false, onFieldList);
-			t.tag='src_type';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_SOURCE, false, onFieldList),'src_type');
 
-			t=dict.getSrcTypeValueList(Source.LOCATION_TYPE_LAB, true, onFieldListSimpleList);
-			t.tag='lab_type';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_LAB, true, onFieldListSimpleList),'lab_type');
 
 			//tech_typeList !!!!
-			t=dict.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT, false, onFieldList);
-			t.tag='tech_type';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT, false, onFieldList),'tech_type');
 
 			//tech_points
-			t=dict.getTechPointValueList(true, onFieldListSimpleList);
-			t.tag='tech_point';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getTechPointValueList(true, onFieldListSimpleList),'tech_point');
 
 			//tech layers
-			t=dict.getTechLayerValueList(true, onFieldList);
-			t.tag='layer';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getTechLayerValueList(true, onFieldList),'layer');
 
 			//tech seq layers
-			t=dict.getTechLayerValueList(true, onFieldList);
-			t.tag='seqlayer';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getTechLayerValueList(true, onFieldList),'seqlayer');
 			
 			//tech layer group
-			t=dict.getLayerGroupValueList(false, onFieldList);
-			t.tag='layer_group';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getLayerGroupValueList(false, onFieldList),'layer_group');
 			
 			//lab rolls
-			t=dict.getRollValueList(false, onFieldList);
-			t.tag='roll';
-			latchAttributeLists.addLatch(t);
+			latchAttributeLists.addLatch(dict.getRollValueList(false, onFieldList),'roll');
+			
+			//book synonym_type
+			latchAttributeLists.addLatch(dict.getBookSynonimTypeValueList(onFieldList),'synonym_type');
 
+			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){
-				var a:ArrayCollection=new ArrayCollection();
+				a=new ArrayCollection();
 				a.source=[{value:0,label:'-'},
 					{value:true,label:'Да'},
 					{value:false,label:'Нет'}];
 				Context.setAttribute('booleanList', a);
 			}
+			/*
+			if(!Context.getAttribute('synonym_typeValueList')){
+				a=new ArrayCollection();
+				a.source=[{value:0,label:'Профики'},
+						  {value:1,label:'Розница'}];
+				Context.setAttribute('synonym_typeValueList', a);
+				a=new ArrayCollection(a.source);
+				a.addItemAt({value:null,label:'-'},0);
+				Context.setAttribute('synonym_typeList', a);
+			}
+			*/
 			latchAttributeLists.start();
 		}
 

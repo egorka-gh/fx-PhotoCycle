@@ -13,7 +13,7 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.fotokniga.book.data.BookPage;
 	import com.akmeful.fotokniga.book.layout.BookLayout;
 	import com.akmeful.magnet.data.MagnetProject;
-	import com.photodispatcher.model.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
 	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.util.ArrayUtil;

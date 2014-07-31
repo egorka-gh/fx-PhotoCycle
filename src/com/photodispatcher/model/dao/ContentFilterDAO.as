@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.ContentFilter;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 
 	public class ContentFilterDAO extends BaseDAO{
 

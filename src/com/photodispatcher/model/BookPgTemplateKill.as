@@ -3,7 +3,7 @@ package com.photodispatcher.model{
 	
 	import mx.collections.ArrayCollection;
 
-	public class BookPgTemplate extends DBRecord{
+	public class BookPgTemplateKill extends DBRecord{
 		//database props
 		[Bindable]
 		public var id:int;

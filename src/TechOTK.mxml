@@ -17,12 +17,10 @@
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.BookSynonymDAO;
-			import com.photodispatcher.model.dao.DictionaryDAO;
-			//import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.SourceTypeDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
@@ -83,7 +81,7 @@
 				//OrderStateDAO.initStateMap();
 				
 				Context.initSourceLists();
-				BookSynonymDAO.initSynonymMap();
+				BookSynonym.initSynonymMap();
 
 				var dao:TechPointDAO=new TechPointDAO();
 				techPiontsAC=dao.findAll(false, SourceType.TECH_OTK);

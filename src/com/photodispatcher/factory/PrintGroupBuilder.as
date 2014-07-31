@@ -4,20 +4,18 @@ package com.photodispatcher.factory{
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.BookPgTemplate;
-	import com.photodispatcher.model.BookSynonym;
-	import com.photodispatcher.model.FieldValue;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
 	import com.photodispatcher.model.Roll;
-	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
-	import com.photodispatcher.model.dao.BookSynonymDAO;
-	import com.photodispatcher.model.dao.DictionaryDAO;
 	import com.photodispatcher.model.dao.PrintGroupFileDAO;
+	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.util.StrUtil;
@@ -26,6 +24,9 @@ package com.photodispatcher.factory{
 	import flash.filesystem.File;
 	import flash.geom.Point;
 	import flash.utils.Dictionary;
+	
+	import mx.collections.ArrayList;
+	import mx.collections.ListCollectionView;
 
 	public class PrintGroupBuilder{
 		private static const ALLOWED_EXTENSIONS:Object={jpg:true,jpeg:true,png:true,tif:true,tiff:true,bmp:true,gif:true};
@@ -59,7 +60,7 @@ package com.photodispatcher.factory{
 					//get files
 					af=map[path] as Array;
 					//parse pg from path, exact synonym
-					bookSynonym=BookSynonymDAO.translatePath(path,source.type);
+					bookSynonym=BookSynonym.translatePath(path,source.type);
 					if (bookSynonym){
 						//reset book_type 4 preview 
 						if(preview && bookSynonym.book_type==BookSynonym.BOOK_TYPE_JOURNAL) bookSynonym.book_type=BookSynonym.BOOK_TYPE_BOOK;
@@ -107,7 +108,7 @@ package com.photodispatcher.factory{
 						//parse pg from path by parts
 						//TODO check if read completed
 						//var afv:Array=dicDAO.translatePath(source.type_id,path);
-						var afv:Array=DictionaryDAO.translatePath(source.type,path);
+						var afv:Array=FieldValue.translatePath(source.type,path);
 						pg=new PrintGroup();
 						pg.path=path;
 						for each (o in afv){
@@ -194,10 +195,10 @@ package com.photodispatcher.factory{
 			if(f.prt_qty==0) f.prt_qty=1;
 			//var dic:DictionaryDAO=new DictionaryDAO();
 			//var fv:FieldValue=dic.translateWord(0,prop.substr(-1,1),'correction');
-			var fv:FieldValue=DictionaryDAO.translateWord(0,prop.substr(-1,1),'correction');
+			var fv:FieldValue=FieldValue.translateWord(0,prop.substr(-1,1),'correction');
 			if(fv) pg.correction=fv.value;
 			//fv=dic.translateWord(0,prop.substr(-2,1),'cutting');
-			fv=DictionaryDAO.translateWord(0,prop.substr(-2,1),'cutting');
+			fv=FieldValue.translateWord(0,prop.substr(-2,1),'cutting');
 			if(fv) pg.cutting=fv.value;
 			
 			pg.addFile(f);
@@ -391,10 +392,10 @@ package com.photodispatcher.factory{
 					}
 					
 					//try to use print alias
-					bookSynonym=BookSynonymDAO.translateAlias(proj.printAlias);
+					bookSynonym=BookSynonym.translateAlias(proj.printAlias);
 					if(!bookSynonym){
 						//detect paper
-						var fv:FieldValue=DictionaryDAO.translateWord(SourceType.SRC_FBOOK,proj.paperId,'paper');
+						var fv:FieldValue=FieldValue.translateWord(SourceType.SRC_FBOOK,proj.paperId,'paper');
 						if(fv){
 							paper=int(fv.value);
 						}else{
@@ -404,11 +405,11 @@ package com.photodispatcher.factory{
 					}
 					//try to finde by pape & format 4 book
 					//if(!bookSynonym && proj.bookType==BookSynonym.BOOK_TYPE_BOOK && !proj.isPageSliced(0)) bookSynonym=BookSynonymDAO.guess(paper, coverPixels, blockPixels);
-					if(!bookSynonym) bookSynonym=BookSynonymDAO.guess(paper, coverPixels, blockPixels, slicePixels);
+					if(!bookSynonym) bookSynonym=BookSynonym.guess(paper, coverPixels, blockPixels, slicePixels);
 					if(!bookSynonym){
 						//build
 						bookSynonym= new BookSynonym();
-						bookSynonym.templates=[];
+						bookSynonym.templates=new ListCollectionView(new ArrayList());
 						var pt:BookPgTemplate;
 						if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK ||
 							proj.bookType==BookSynonym.BOOK_TYPE_JOURNAL ||
@@ -425,7 +426,7 @@ package com.photodispatcher.factory{
 							//set template size
 							pt.sheet_len=blockPixels.x;
 							pt.sheet_width=blockPixels.y;
-							bookSynonym.templates.push(pt);
+							bookSynonym.templates.addItem(pt);
 							
 							if(coverPixels || slicePixels){
 								//crete cover template
@@ -445,7 +446,7 @@ package com.photodispatcher.factory{
 								//set template size
 								pt.sheet_len=coverPixels.x;
 								pt.sheet_width=coverPixels.y;
-								bookSynonym.templates.push(pt);
+								bookSynonym.templates.addItem(pt);
 							}
 						}else{
 							//crete block template by first page
@@ -460,7 +461,7 @@ package com.photodispatcher.factory{
 							//set template size
 							pt.sheet_len=blockPixels.x;
 							pt.sheet_width=blockPixels.y;
-							bookSynonym.templates.push(pt);
+							bookSynonym.templates.addItem(pt);
 						}
 					}
 					//create print gruops

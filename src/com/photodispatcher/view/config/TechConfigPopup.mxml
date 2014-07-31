@@ -6,7 +6,7 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.BookPgTemplate;
+			import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 			
 			import mx.collections.ArrayCollection;
 			import mx.core.FlexGlobals;

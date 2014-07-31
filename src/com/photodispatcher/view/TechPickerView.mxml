@@ -12,7 +12,6 @@
 			import com.photodispatcher.model.LayerAllocation;
 			import com.photodispatcher.model.Layerset;
 			import com.photodispatcher.model.TechPoint;
-			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.LayersetDAO;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.SerialProxy;

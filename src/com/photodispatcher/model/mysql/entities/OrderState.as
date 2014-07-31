@@ -31,6 +31,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_PREPROCESS_REMOTE:int=-316;
 		public static const ERR_LOAD_REMOTE:int=-317;//04.04.2013
 		public static const ERR_GET_PROJECT:int=-318;//22.05.2013
+		public static const ERR_APP_INIT:int=-319;//
 		
 		//flow state
 		//public static const FTP_RELOAD:int=95;
@@ -79,17 +80,23 @@ package com.photodispatcher.model.mysql.entities {
 		private static var stateMap:Object;
 		
 		public static function getStateName(id:int):String{
+			if(!stateMap){
+				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				return;
+			}
 			var os:OrderState;
-			if(!stateMap) initStateMap();
 			if(stateMap) os=stateMap[id.toString()] as OrderState;
 			return os?os.name:'';
 		}
 		
 		public static function getStateArray(from:int=-1, to:int=-1, excludeRuntime:Boolean=false):Array{
+			if(!stateMap){
+				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				return;
+			}
 			var result:Array=[];
 			if(from==-1) from=int.MIN_VALUE;
 			if(to==-1) to=int.MAX_VALUE;
-			if(!stateMap) initStateMap();
 			if(stateMap){
 				var os:OrderState;
 				for (var key:Object in stateMap){
@@ -102,8 +109,11 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		public static function getStateList():ArrayCollection{
+			if(!stateMap){
+				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				return;
+			}
 			var result:ArrayCollection=new ArrayCollection();
-			if(!stateMap) initStateMap();
 			if(stateMap){
 				var os:OrderState;
 				for (var key:Object in stateMap){

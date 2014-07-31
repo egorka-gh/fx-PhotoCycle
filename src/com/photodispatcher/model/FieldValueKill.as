@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	public class FieldValue{
+	public class FieldValueKill{
 		public var field:String;
 		public var value:int;
 		public var label:String;

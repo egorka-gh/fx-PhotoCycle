@@ -17,7 +17,6 @@
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.AttrTypeDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.LabPrintCodeDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;

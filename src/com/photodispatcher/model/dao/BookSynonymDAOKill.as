@@ -2,8 +2,8 @@ package com.photodispatcher.model.dao{
 	
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.BookPgTemplate;
-	import com.photodispatcher.model.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.util.GridUtil;
@@ -17,7 +17,7 @@ package com.photodispatcher.model.dao{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class BookSynonymDAO extends BaseDAO{
+	public class BookSynonymDAOKill extends BaseDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:BookSynonym = new BookSynonym();
@@ -90,7 +90,7 @@ package com.photodispatcher.model.dao{
 			return itemsArray;
 		}
 
-		public function get4Layerset(src_type:int, layerset:int=0):Array{
+		public function get4LayersetKill(src_type:int, layerset:int=0):Array{
 			var sql:String;
 			sql='SELECT l.*, st.name src_type_name, bt.name book_type_name, ifnull(la.alias,0) is_allow'+
 				' FROM config.book_synonym l'+

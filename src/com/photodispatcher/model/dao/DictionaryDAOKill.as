@@ -1,10 +1,9 @@
 package com.photodispatcher.model.dao{
-	import com.photodispatcher.model.FieldValue;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	
 	import mx.collections.ArrayCollection;
 
-	public class DictionaryDAO extends BaseDAO{
+	public class DictionaryDAOKill extends BaseDAO{
 		public static const PRINT_FAMILY:int=1;
 		public static const ORDER_FAMILY:int=2;
 

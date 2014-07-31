@@ -9,15 +9,19 @@
 	<![CDATA[
 		import com.photodispatcher.context.Context;
 		import com.photodispatcher.event.AsyncSQLEvent;
-		import com.photodispatcher.model.BookPgTemplate;
-		import com.photodispatcher.model.BookSynonym;
 		import com.photodispatcher.model.SourceType;
 		import com.photodispatcher.model.dao.BaseDAO;
-		import com.photodispatcher.model.dao.BookPgTemplateDAO;
-		import com.photodispatcher.model.dao.BookSynonymDAO;
+		import com.photodispatcher.model.mysql.DbLatch;
+		import com.photodispatcher.model.mysql.entities.BookPgTemplate;
+		import com.photodispatcher.model.mysql.entities.BookSynonym;
+		import com.photodispatcher.model.mysql.services.BookSynonymService;
 		
 		import mx.collections.ArrayCollection;
+		import mx.collections.ArrayList;
+		import mx.collections.ListCollectionView;
 		import mx.controls.Alert;
+		
+		import org.granite.tide.Tide;
 		
 		[Bindable]
 		private var currentList:ArrayCollection=new ArrayCollection();
@@ -28,16 +32,50 @@
 		private var currentBook:BookSynonym;
 		[Bindable]
 		private var templatesList:ArrayCollection=new ArrayCollection();
+		
+		private var service:BookSynonymService;
 
 		private function refresh():void{
-			var dao:BookSynonymDAO=new BookSynonymDAO();
-			currentList.source=dao.findAllArray(SourceType.SRC_FOTOKNIGA);
+			//var dao:BookSynonymDAO=new BookSynonymDAO();
+			//currentList.source=dao.findAllArray(SourceType.SRC_FOTOKNIGA);
+			var latch:DbLatch= new DbLatch(false);
+			latch.addEventListener(Event.COMPLETE, onLoad);
+			latch.addLatch(service.loadAll(SourceType.SRC_FOTOKNIGA,0),'synonim');
+			latch.start();
 		}
 		
+		private function onLoad(event:Event):void{
+			lockView=false;
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoad);
+				if(latch.complite){
+					if(latch.lastToken.tag=='synonim'){
+						currentList=latch.lastDataAC;
+						currentList.filterFunction=gridFilter;
+						currentList.refresh();
+						currentState='list';
+					}else if(latch.lastToken.tag=='template'){
+						if(latch.lastDataAC){
+							templatesList=latch.lastDataAC;
+						}else{
+							templatesList= new ArrayCollection();
+						}
+						currentState='itemEdit';
+					}else if(latch.lastToken.tag=='save'){
+						refresh();
+					}
+				}else{
+					currentList=null;
+					templatesList=null;					
+				}
+			}
+		}
+
+		
 		private function init():void{
-			Context.initAttributeLists();
 			bookTypeFilterList=Context.getAttribute('book_typeList');
-			currentList.filterFunction=gridFilter;
+			service=Tide.getInstance().getContext().byType(BookSynonymService,true) as BookSynonymService;
 			refresh();
 		}
 
@@ -59,6 +97,36 @@
 			}
 		}
 
+		[Bindable]
+		private var lockView:Boolean=false;
+		private function saveAll():void{
+			var item:BookSynonym;
+			var temp:BookPgTemplate;
+			var itemsToSave:ArrayCollection= new ArrayCollection(); //:ListCollectionView= new ListCollectionView(new ArrayList());
+			for each (item in currentList){
+				if(item){
+					if(!item.loaded || item.changed){
+						itemsToSave.addItem(item);
+					}else if(item.templates){
+						for each(temp in item.templates){
+							if(temp && (!temp.loaded || temp.changed)){
+								itemsToSave.addItem(item);
+								break;
+							}
+						}
+					}
+				}
+			}
+			if(itemsToSave.length!=0){
+				lockView=true;
+				var latch:DbLatch= new DbLatch(false);
+				latch.addEventListener(Event.COMPLETE, onLoad);
+				latch.addLatch(service.persistBatch(itemsToSave),'save');
+				latch.start();
+			}
+		}
+
+		/*
 		private var itemsToSave:Array=[];
 		private var saveRunning:Boolean=false;
 		private function saveAll():void{
@@ -109,6 +177,7 @@
 				saveRunning=false;
 			}
 		}
+		*/
 
 		private function applyFilter():void{
 			currentList.refresh();
@@ -124,18 +193,24 @@
 
 		protected function btEdit_clickHandler(event:MouseEvent):void{
 			currentBook = itemsGrid.currentItem as BookSynonym;
-			templatesList.source=null;
+			//templatesList.source=null;
 			if(currentBook){
 				if(!currentBook.loaded){
 					Alert.show('Необходимо сохранить новую запись.');
 					return;
 				}
+				/*
 				if (!currentBook.templates){
 					if(!currentBook.loadTemplates()) return;
 				}
 				if (!currentBook.templates) currentBook.templates=[];
 				templatesList.source=currentBook.templates;
 				currentState='itemEdit';
+				*/
+				var latch:DbLatch= new DbLatch(false);
+				latch.addEventListener(Event.COMPLETE, onLoad);
+				latch.addLatch(service.loadTemplates(currentBook.id),'template');
+				latch.start();
 			}
 		}
 		
@@ -171,12 +246,12 @@
 					  cornerRadius="4" width="22" height="22" baseline="4"/>
 		</s:HGroup>
 		<config:ItemsGrid id="itemsGrid" editable="true" includeIn="list"
-						  currentData="{currentList}" currentColumns="{BookSynonymDAO.gridColumns()}" 
+						  currentData="{currentList}" currentColumns="{BookSynonym.gridColumns()}" 
 						  width="100%" height="100%"/>
 		<s:Label includeIn="itemEdit" text="{currentBook.synonym}" width="100%" fontWeight="bold"/>
 		<s:Label includeIn="itemEdit" text="{currentBook.book_type_name}" width="100%"/>
 		<config:ItemsGrid id="tempGrid" editable="true" includeIn="itemEdit"
-						  currentData="{templatesList}" currentColumns="{BookPgTemplateDAO.gridColumns()}" 
+						  currentData="{templatesList}" currentColumns="{BookPgTemplate.gridColumns()}" 
 						  width="100%" height="100%"/>
 		<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="left">
 			<!--TODO implement DELETE-->

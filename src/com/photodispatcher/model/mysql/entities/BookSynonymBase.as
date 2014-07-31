@@ -16,13 +16,15 @@ package com.photodispatcher.model.mysql.entities {
     public class BookSynonymBase extends AbstractEntity {
 
         private var _book_type:int;
-        private var _book_type_name:int;
+        private var _book_type_name:String;
         private var _id:int;
+        private var _is_allow:Boolean;
         private var _is_horizontal:Boolean;
         private var _src_type:int;
         private var _src_type_name:String;
         private var _synonym:String;
         private var _synonym_type:int;
+        private var _synonym_type_name:String;
         private var _templates:ListCollectionView;
 
         public function set book_type(value:int):void {
@@ -32,10 +34,10 @@ package com.photodispatcher.model.mysql.entities {
             return _book_type;
         }
 
-        public function set book_type_name(value:int):void {
+        public function set book_type_name(value:String):void {
             _book_type_name = value;
         }
-        public function get book_type_name():int {
+        public function get book_type_name():String {
             return _book_type_name;
         }
 
@@ -44,6 +46,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get id():int {
             return _id;
+        }
+
+        public function set is_allow(value:Boolean):void {
+            _is_allow = value;
+        }
+        public function get is_allow():Boolean {
+            return _is_allow;
         }
 
         public function set is_horizontal(value:Boolean):void {
@@ -81,6 +90,13 @@ package com.photodispatcher.model.mysql.entities {
             return _synonym_type;
         }
 
+        public function set synonym_type_name(value:String):void {
+            _synonym_type_name = value;
+        }
+        public function get synonym_type_name():String {
+            return _synonym_type_name;
+        }
+
         public function set templates(value:ListCollectionView):void {
             _templates = value;
         }
@@ -91,13 +107,15 @@ package com.photodispatcher.model.mysql.entities {
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _book_type = input.readObject() as int;
-            _book_type_name = input.readObject() as int;
+            _book_type_name = input.readObject() as String;
             _id = input.readObject() as int;
+            _is_allow = input.readObject() as Boolean;
             _is_horizontal = input.readObject() as Boolean;
             _src_type = input.readObject() as int;
             _src_type_name = input.readObject() as String;
             _synonym = input.readObject() as String;
             _synonym_type = input.readObject() as int;
+            _synonym_type_name = input.readObject() as String;
             _templates = input.readObject() as ListCollectionView;
         }
 
@@ -106,11 +124,13 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
             output.writeObject((_book_type_name is IPropertyHolder) ? IPropertyHolder(_book_type_name).object : _book_type_name);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
+            output.writeObject((_is_allow is IPropertyHolder) ? IPropertyHolder(_is_allow).object : _is_allow);
             output.writeObject((_is_horizontal is IPropertyHolder) ? IPropertyHolder(_is_horizontal).object : _is_horizontal);
             output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
             output.writeObject((_src_type_name is IPropertyHolder) ? IPropertyHolder(_src_type_name).object : _src_type_name);
             output.writeObject((_synonym is IPropertyHolder) ? IPropertyHolder(_synonym).object : _synonym);
             output.writeObject((_synonym_type is IPropertyHolder) ? IPropertyHolder(_synonym_type).object : _synonym_type);
+            output.writeObject((_synonym_type_name is IPropertyHolder) ? IPropertyHolder(_synonym_type_name).object : _synonym_type_name);
             output.writeObject((_templates is IPropertyHolder) ? IPropertyHolder(_templates).object : _templates);
         }
     }

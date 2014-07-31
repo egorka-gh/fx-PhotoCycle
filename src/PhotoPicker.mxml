@@ -20,11 +20,10 @@
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.LayersetGroupDAO;
-			//import com.photodispatcher.model.dao.OrderStateDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.ComReaderEmulator;
@@ -162,8 +161,11 @@
 
 			private function init():void{
 				//TODO REFACTOR !!!
-				//OrderStateDAO.initStateMap();
 				
+				OrderState.initStateMap();
+				Context.initAttributeLists();
+				/*
+				//OrderStateDAO.initStateMap();
 				//load tech layers
 				var a:ArrayCollection;
 				if(!Context.getAttribute('layerValueList')){
@@ -177,6 +179,7 @@
 					a=dDao.getBookTypeValueList(false);
 					Context.setAttribute('book_typeValueList', a);
 				}
+				*/
 				
 				var dao:TechPointDAO=new TechPointDAO();
 				techPionts=dao.findAll(false,SourceType.TECH_PICKING);

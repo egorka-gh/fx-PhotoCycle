@@ -3,7 +3,7 @@ package com.photodispatcher.model{
 	
 	import mx.collections.ArrayCollection;
 
-	public class BookSynonym extends DBRecord{
+	public class BookSynonymKill extends DBRecord{
 		public static const BOOK_TYPE_BOOK:int=1;
 		public static const BOOK_TYPE_JOURNAL:int=2;
 		public static const BOOK_TYPE_LEATHER:int=3;

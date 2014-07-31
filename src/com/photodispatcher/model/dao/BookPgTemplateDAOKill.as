@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.BookPgTemplate;
+	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
@@ -12,7 +12,7 @@ package com.photodispatcher.model.dao{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class BookPgTemplateDAO extends BaseDAO{
+	public class BookPgTemplateDAOKill extends BaseDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:BookPgTemplate = new BookPgTemplate();

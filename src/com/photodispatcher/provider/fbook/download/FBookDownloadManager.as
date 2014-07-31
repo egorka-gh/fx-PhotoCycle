@@ -3,15 +3,14 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.json.JsonUtil;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.BookSynonym;
 	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
-	import com.photodispatcher.model.dao.BookSynonymDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
 	import com.photodispatcher.util.ArrayUtil;
@@ -412,7 +411,7 @@ package com.photodispatcher.provider.fbook.download{
 					skip=project.bookType==0 && !cFilter.is_photo_allow; 
 					skip=project.bookType!=0 && !cFilter.is_retail_allow;
 					if(!skip && project.bookType!=0 && cFilter.is_alias_filter){
-						var bs:BookSynonym=BookSynonymDAO.translateAlias(project.printAlias)
+						var bs:BookSynonym=BookSynonym.translateAlias(project.printAlias)
 						if(bs) skip=!cFilter.allowAlias(bs.id);
 					}
 					if(skip){

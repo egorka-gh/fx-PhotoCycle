@@ -19,7 +19,6 @@
 			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.DictionaryDAO;
 			import com.photodispatcher.model.dao.SourceTypeDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;

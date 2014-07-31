@@ -125,6 +125,28 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("getBookPartValueList", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function getBookSynonimTypeValueList(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getBookSynonimTypeValueList", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getBookSynonimTypeValueList", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getBookSynonimTypeValueList") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function getFieldValueSynonims(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getFieldValueSynonims", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getFieldValueSynonims", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getFieldValueSynonims") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }
     }
 }

@@ -5,7 +5,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.FieldValue;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;

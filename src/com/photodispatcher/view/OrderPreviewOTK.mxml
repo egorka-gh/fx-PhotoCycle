@@ -14,15 +14,14 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.factory.PrintGroupBuilder;
-			import com.photodispatcher.model.BookPgTemplate;
-			import com.photodispatcher.model.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.BookPgTemplate;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.Order;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.PrintGroupFile;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.TechPoint;
-			import com.photodispatcher.model.dao.BookSynonymDAO;
 			import com.photodispatcher.model.dao.TechLogDAO;
 			import com.photodispatcher.view.itemRenderer.BookSheetPreviewRenderer;
 			

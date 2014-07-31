@@ -5,7 +5,7 @@ package com.photodispatcher.tech.picker{
 	import com.photodispatcher.event.SerialProxyEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
 	import com.photodispatcher.model.DBRecord;
-	import com.photodispatcher.model.FieldValue;
+	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.Layer;
 	import com.photodispatcher.model.LayerSequence;
 	import com.photodispatcher.model.Layerset;
