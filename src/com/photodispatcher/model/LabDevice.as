@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	import com.photodispatcher.model.dao.LabRollDAO;
+	//import com.photodispatcher.model.dao.LabRollDAO;
 	import com.photodispatcher.model.dao.LabTimetableDAO;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.print.LabBase;
@@ -63,8 +63,10 @@ package com.photodispatcher.model{
 		
 		public function getRolls(forEdit:Boolean=false, silent:Boolean=false):Array{
 			if(!loaded) return _rolls;
+			/*TODO refactor
 			var dao:LabRollDAO=new LabRollDAO();
 			_rolls=dao.getByDevice(id,forEdit,silent);
+			*/
 			//set speed
 			if(_rolls){
 				var roll:LabRoll;

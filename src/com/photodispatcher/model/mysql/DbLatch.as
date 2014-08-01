@@ -16,26 +16,19 @@ package com.photodispatcher.model.mysql
 	import mx.rpc.events.ResultEvent;
 	
 	[Event(name="complete", type="flash.events.Event")]
-	public class DbLatch extends EventDispatcher{
+	public class DbLatch extends AsyncLatch{
 		
-		public var complite:Boolean=false;
 		public var lastResult:SqlResult;
 		public var lastToken:AsyncToken;
-		public var hasError:Boolean=false;
-		public var error:String;
 
-		public var debugName:String;
-		public var silent:Boolean=true;
-
-		private var latches:Array;
-		private var joint:Array;
-		private var started:Boolean=false;
+		protected var latches:Array;
 		
-		public function DbLatch(silent:Boolean=true){
-			super(null);
-			this.silent=silent;
+		public function DbLatch(silent:Boolean=false){
+			super(silent);
+			//no manual release
+			//release only by latches & joint 
+			thisComplite=true;
 			latches=[];
-			joint=[];
 		}
 		
 		public function addLatch(token:AsyncToken, tag:String=null):void{
@@ -46,66 +39,21 @@ package com.photodispatcher.model.mysql
 			latches.push(latch);
 			token.addResponder(new AsyncResponder(resultHandler, faultHandler));
 		}
-
-		public function join(latch:DbLatch):void{
-			if(hasError || !latch || !joint) return;
-			if(latch.complite) return;
-			if(latch.hasError){
-				releaseError(latch.error);
-				return;
-			}
-			joint.push(latch);
-			latch.addEventListener(Event.COMPLETE,onJoinComplite);
-		}
-
-		public function start():void{
-			/*
-			if(joint && joint.length>0){
-				var latch:DbLatch;
-				for each(latch in joint){
-					if(!latch.isStarted) latch.start();
-				}
-			}
-			*/
-			started=true;
-			checkComplite();
+		
+		override public function release():void{
+			//no action
+			//super.release(force);
 		}
 		
-		public function get isStarted():Boolean{
-			return started;
-		}
+		
 
-		public function releaseError(err:String):void{
-			complite=false;
-			hasError=true;
-			error=err;
-			trace((debugName?'Latch '+debugName+' error: ':'')+ error);
+		override public function releaseError(err:String):void{
 			latches=null;
-			if(joint && joint.length>0){
-				var latch:DbLatch;
-				for each(latch in joint) latch.removeEventListener(Event.COMPLETE,onJoinComplite);
-				joint=null;
-			}
-			if(started){
-				dispatchEvent(new Event(Event.COMPLETE));
-				if(!silent) showError();
-			}
+			super.releaseError(err);
 		}
 		
-		public function showError():void{
-			if(hasError) Alert.show(error);
-		}
-			
-		public function checkComplite():void{
-			if(!started) return;
-			if(hasError){
-				dispatchEvent(new Event(Event.COMPLETE));
-				if(!silent) showError();
-			}else if((!latches || latches.length==0) && (!joint || joint.length==0)){
-				if(debugName) trace('Latch '+debugName+' complited. state' +(hasError?'error':'complite'));
-				complite=true;
-				dispatchEvent(new Event(Event.COMPLETE));
-			}
+		override protected function isComplite():Boolean{
+			return (!latches || latches.length==0) && super.isComplite();
 		}
 		
 		public function get lastDataAC():ArrayCollection{
@@ -126,21 +74,7 @@ package com.photodispatcher.model.mysql
 			return result;
 		}
 
-		private function onJoinComplite(event:Event):void{
-			var latch:DbLatch=event.target as DbLatch;
-			if(latch){
-				latch.removeEventListener(Event.COMPLETE,onJoinComplite);
-				var idx:int=joint.indexOf(latch);
-				if(idx!=-1) joint.splice(idx,1);
-				if(latch.hasError){
-					releaseError(latch.error);
-				}else{
-					checkComplite();
-				}
-			}
-		}
-		
-		private function resultHandler(event:ResultEvent, token:AsyncToken=null):void{
+		protected function resultHandler(event:ResultEvent, token:AsyncToken=null):void{
 			if(!latches) return;
 			lastToken=event.token;
 			var latch:int=lastToken.latch;
@@ -163,7 +97,7 @@ package com.photodispatcher.model.mysql
 			checkComplite();
 		}
 		
-		private function faultHandler(event:FaultEvent, token:AsyncToken=null):void{
+		protected function faultHandler(event:FaultEvent, token:AsyncToken=null):void{
 			lastToken=event.token;
 			releaseError('DbLatch RPC fault: ' +event.fault.faultString + '\n' + event.fault.faultDetail);
 		}

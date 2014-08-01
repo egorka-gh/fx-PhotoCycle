@@ -1,7 +1,6 @@
 package com.photodispatcher.context{
 	import com.photodispatcher.model.AppConfig;
 	import com.photodispatcher.model.ContentFilter;
-	import com.photodispatcher.model.Roll;
 	import com.photodispatcher.model.dao.AppConfigDAO;
 	import com.photodispatcher.model.dao.AttrTypeDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
@@ -10,12 +9,14 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.services.BookSynonymService;
 	import com.photodispatcher.model.mysql.services.DictionaryService;
 	import com.photodispatcher.model.mysql.services.LabResizeService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
+	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -57,23 +58,20 @@ package com.photodispatcher.context{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoCycle';
 			//register services
-			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService, OrderStateService, BookSynonymService]);
+			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService, OrderStateService, BookSynonymService, RollService]);
 			
 			//fill from config
 			//Context.fillFromConfig();
 
+			//init static maps
 			latch.join(Context.initSourceLists());
 			latch.join(Context.initAttributeLists());
 			latch.join(LabResize.initSizeMap());
 			latch.join(OrderState.initStateMap());
 			latch.join(BookSynonym.initSynonymMap());
 			latch.join(FieldValue.initSynonymMap());
+			latch.join(Roll.initItemsMap());
 
-			//init static maps
-			/* TODO Implement*/
-			//DictionaryDAO.initSynonymMap();
-			Roll.initItemsMap();
-			/**/
 			//latch.start();//start at caller?
 			return latch;
 		}
@@ -265,6 +263,8 @@ package com.photodispatcher.context{
 			
 			//book synonym_type
 			latchAttributeLists.addLatch(dict.getBookSynonimTypeValueList(onFieldList),'synonym_type');
+			
+			//order state 
 
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){

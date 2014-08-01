@@ -33,8 +33,11 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static function getSizeLimit(size:int):int{
 			var sl:LabResize;
-			if(!sizeMap) initSizeMap();
-			if(sizeMap) sl=sizeMap[size.toString()] as LabResize;
+			if(!sizeMap){
+				throw new Error('Ошибка инициализации LabResize.initSizeMap',OrderState.ERR_APP_INIT);
+				return;
+			}
+			sl=sizeMap[size.toString()] as LabResize;
 			return sl?sl.pixels:0;
 		}
 		

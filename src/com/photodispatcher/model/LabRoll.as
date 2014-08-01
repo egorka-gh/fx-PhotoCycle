@@ -1,4 +1,5 @@
 package com.photodispatcher.model{
+	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.BooleanGridRenderer;
 	

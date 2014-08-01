@@ -15,6 +15,7 @@
 		import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 		import com.photodispatcher.model.mysql.entities.BookSynonym;
 		import com.photodispatcher.model.mysql.services.BookSynonymService;
+		import com.photodispatcher.util.ArrayUtil;
 		
 		import mx.collections.ArrayCollection;
 		import mx.collections.ArrayList;
@@ -55,12 +56,27 @@
 						currentList.filterFunction=gridFilter;
 						currentList.refresh();
 						currentState='list';
+						//restore selection
+						if(itemsGrid && lastSelectedBook){
+							var selObj:Object;
+							if(lastSelectedBook.id){
+								selObj= ArrayUtil.searchItem('id',lastSelectedBook.id,currentList.source);
+							}else if(lastSelectedBook.synonym){
+								selObj= ArrayUtil.searchItem('synonym',lastSelectedBook.synonym,currentList.source);
+							}
+							if(selObj){
+								itemsGrid.currentItem=selObj;
+								itemsGrid.ensureSelectionVisible();
+							}
+							lastSelectedBook=null;
+						}
 					}else if(latch.lastToken.tag=='template'){
 						if(latch.lastDataAC){
 							templatesList=latch.lastDataAC;
 						}else{
 							templatesList= new ArrayCollection();
 						}
+						if (currentBook) currentBook.templates=templatesList;
 						currentState='itemEdit';
 					}else if(latch.lastToken.tag=='save'){
 						refresh();
@@ -89,6 +105,7 @@
 					newPgs.book_type=ddBookTypeFilter.selectedItem.value;
 					newPgs.book_type_name=ddBookTypeFilter.selectedItem.label;
 				}
+				currentBook=newPgs;
 				itemsGrid.addItem(newPgs);
 			}else if(currentState=='itemEdit'){
 				var newTemp:BookPgTemplate=new BookPgTemplate();
@@ -99,6 +116,7 @@
 
 		[Bindable]
 		private var lockView:Boolean=false;
+		private var lastSelectedBook:Object;
 		private function saveAll():void{
 			var item:BookSynonym;
 			var temp:BookPgTemplate;
@@ -118,6 +136,12 @@
 				}
 			}
 			if(itemsToSave.length!=0){
+				if(!currentBook && itemsGrid && itemsGrid.currentItem) currentBook=itemsGrid.currentItem as BookSynonym;
+				if(currentBook){
+					lastSelectedBook= new Object();
+					if(currentBook.loaded) lastSelectedBook.id=currentBook.id;
+					lastSelectedBook.synonym=currentBook.synonym;
+				}
 				lockView=true;
 				var latch:DbLatch= new DbLatch(false);
 				latch.addEventListener(Event.COMPLETE, onLoad);

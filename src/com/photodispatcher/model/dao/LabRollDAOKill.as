@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.LabRoll;
 	
-	public class LabRollDAO extends BaseDAO{
+	public class LabRollDAOKill extends BaseDAO{
 
 		/*
 		public function getByLab(lab:int, silent:Boolean=true):Array {

@@ -1,7 +1,7 @@
 package com.photodispatcher.model{
 	import com.photodispatcher.model.dao.RollDAO;
 
-	public class Roll extends DBRecord{
+	public class RollKill extends DBRecord{
 		private static var _itemsMap:Object;
 
 		public static function itemsMap():Object{

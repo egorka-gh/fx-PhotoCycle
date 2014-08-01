@@ -18,16 +18,18 @@
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.AppConfig;
 			import com.photodispatcher.model.ContentFilter;
-			import com.photodispatcher.model.Roll;
 			import com.photodispatcher.model.dao.AppConfigDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.LabResizeDAO;
+			import com.photodispatcher.model.mysql.AsyncLatch;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Roll;
 			import com.photodispatcher.model.mysql.services.ContentFilterService;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.OrderSearchPopup;
 			import com.photodispatcher.view.PasswPopup;
 			import com.photodispatcher.view.config.DatabasePopup;
@@ -59,8 +61,7 @@
 			private function bdPopClose(e:PopUpEvent):void{
 				if(e.commit){
 					//connected
-					initBdServer();
-					fillContext();
+					initApp_ms();
 					//if(vMonitor) vMonitor.start();
 				}else{
 					//no connection
@@ -69,7 +70,12 @@
 				}
 			}
 			
-			private function initBdServer():void{
+			private function initApp_ms():void{
+				pingBdServer();
+			}
+
+			private var startPopup:ModalPopUp;
+			private function pingBdServer():void{
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var bdServer:String=so.data.bdServer;
 				if(!bdServer){
@@ -77,22 +83,24 @@
 					//currentState='config';
 					return;
 				}
+				startPopup= new ModalPopUp();
+				startPopup.label='Подключение к Базе данных';
+				startPopup.open(null);
+
 				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
 				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
 				//run hallo
 				Tide.getInstance().addComponents([HalloService]);
 				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
-				//var hallosvc:HalloService=Tide.getInstance().getContext().halloService as HalloService;
 				hallosvc.ping(onPingServer, onPingServerFault);
 			}
 			private function onPingServer(event:TideResultEvent):void {
-				trace(event.result);
-				Alert.show('Подключен к БД');
-				//add services?
-				Tide.getInstance().addComponents([ContentFilterService]);
+				startPopup.close();
+				startPopup=null;
+				fillContext();
 			}
 			private function onPingServerFault(event:TideFaultEvent):void {
-				Alert.show('Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString);
+				startPopup.label='Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString;
 			}
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
@@ -106,7 +114,6 @@
 			protected function button2_clickHandler(event:MouseEvent):void{
 				fillContext();
 				//currentState='monitor';
-				if(vMonitor) vMonitor.init(); //vMonitor.start();
 			}
 			
 			protected function button3_clickHandler(event:MouseEvent):void{
@@ -117,39 +124,9 @@
 				FlexGlobals.topLevelApplication.exit();
 			}
 			
+			private var latchIM:AsyncLatch;
+			
 			private function fillContext():void{
-				/* moved 2 Context.initPhotoCycle
-				//fill from config
-				Context.fillFromConfig();
-				
-				//init static maps
-				Context.initSourceLists();
-				Context.initAttributeLists();
-				LabResizeDAO.initSizeMap();
-				OrderStateDAO.initStateMap();
-				BookSynonymDAO.initSynonymMap();
-				DictionaryDAO.initSynonymMap();
-				Roll.initItemsMap();
-				*/
-				var latch:DbLatch=Context.initPhotoCycle();
-				latch.addEventListener(Event.COMPLETE, onConextInit);
-				latch.start();
-			}
-			private function onConextInit(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onConextInit);
-					if(latch.complite){
-						postFillContext();
-					}else{
-						latch.showError();
-					}
-				}
-			}
-			private function postFillContext():void{
-				//init print manager
-				PrintQueueManager.instance.init();
-				
 				//detect local setings
 				Context.setAttribute('imThreads',0);
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
@@ -167,47 +144,14 @@
 					configPass=so.data.configPass;
 					//cFilterId=so.data.cFilterId;
 				}
-
+				
 				Context.setAttribute('configPass',configPass);
-				
-				/*
-				//load content filters
-				var cfilters:Array=ContentFilter.filters;
-				//current content filter
-				var currCFilter:ContentFilter;
-				if(cfilters) currCFilter=ArrayUtil.searchItem('id',cFilterId,cfilters) as ContentFilter;
-				if(!currCFilter){
-					currCFilter= new ContentFilter();
-					currCFilter.is_alias_filter=false;
-					currCFilter.is_photo_allow=true;
-					currCFilter.is_pro_allow=true;
-					currCFilter.is_retail_allow=true;
-				}
-				Context.setAttribute('contentFilter',currCFilter);
-				*/
-					
-				if(!workFolder){
-					workFolder=Context.getAttribute('workFolder'); //backward compatibility, get from config
-					if(workFolder){
-						//var so:SharedObject = SharedObject.getLocal('appProps','/');
-						so.data.workFolder = workFolder;
-						so.flush();
-					}
-				}
 				Context.setAttribute('workFolder',workFolder);
-				
 				if(!prtPath) prtPath=workFolder;
 				Context.setAttribute('prtPath',prtPath);
-				
 				Context.setAttribute('serverIP',serverIP);
-				if (imPath){
-					Context.setAttribute('imPath',imPath);
-					var f:File=File.applicationStorageDirectory;
-					//var im:IMRuner= new IMRuner(imPath,appConf.wrk_path);
-					var im:IMRuner= new IMRuner(imPath,f.nativePath);
-					im.addEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
-					im.ping(imPath);
-				}
+				Context.setAttribute('imPath',imPath);
+
 				//get force start
 				so= SharedObject.getLocal('appProps','/');
 				var hh:int=so.data.forceStarHour;
@@ -219,20 +163,59 @@
 				if(!pdfPageLimit) pdfPageLimit=100;
 				Context.setAttribute("pdfPageLimit", pdfPageLimit);
 				Context.setAttribute('reversPrint', so.data.reversPrint);
-				currentState='monitor';
 
+				//init app
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+
+				//detect IM
+				if (imPath){
+					latchIM=new AsyncLatch(true);
+					latchIM.start();
+					var f:File=File.applicationStorageDirectory;
+					var im:IMRuner= new IMRuner(imPath,f.nativePath);
+					im.addEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+					im.ping(imPath);
+				}
+
+				var latch:DbLatch=Context.initPhotoCycle();
+				if(latchIM) latch.join(latchIM);
+				latch.addEventListener(Event.COMPLETE, onConextInit);
+				latch.start();
+			}
+			private function onConextInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onConextInit);
+					if(latch.complite){
+						postInit();
+						startPopup.close();
+						startPopup=null;
+					}else{
+						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						//latch.showError();
+					}
+				}
+			}
+			private function postInit():void{
+				//init print manager
+				PrintQueueManager.instance.init();
+				currentState='monitor';
+				if(vMonitor) vMonitor.init(); 
 			}
 			private function onImPing(e:IMRunerEvent):void{
 				var im:IMRuner=e.target as IMRuner;
 				im.removeEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
-
 				if(!e.hasError){
 					var so:SharedObject = SharedObject.getLocal('appProps','/');
 					var imThreads:int=so.data.imThreads;
 					if(!imThreads || imThreads<=0) imThreads=0;
 					Context.setAttribute('imThreads',imThreads);
+					latchIM.release();
 				}else{
-					Alert.show('ImageMagick не доступен: '+e.error);
+					latchIM.releaseError('ImageMagick не доступен: '+e.error);
+					//Alert.show('ImageMagick не доступен: '+e.error);
 				}
 			}
 			

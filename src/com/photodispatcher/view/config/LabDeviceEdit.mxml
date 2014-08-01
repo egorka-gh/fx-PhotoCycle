@@ -10,7 +10,6 @@
 			import com.photodispatcher.model.LabDevice;
 			import com.photodispatcher.model.LabRoll;
 			import com.photodispatcher.model.LabTimetable;
-			import com.photodispatcher.model.dao.LabRollDAO;
 			import com.photodispatcher.model.dao.LabTimetableDAO;
 			import com.photodispatcher.util.ArrayUtil;
 			
@@ -83,18 +82,22 @@
 			}
 			
 			protected function btAutoFill_clickHandler(event:MouseEvent):void{
+				/*TODO refactor
 				if (!currentItem) return;
 				var dao:LabRollDAO= new LabRollDAO();
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onAutoFill);
 				dao.fillByChannels(currentItem.id);
+				*/
 			}
 			
 			private function onAutoFill(e:AsyncSQLEvent):void{
+				/*TODO refactor
 				var dao:LabRollDAO=e.target as LabRollDAO;
 				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onAutoFill);
 				currentItem.getRolls(true);
 				rolls.source=_currentItem.rolls;
 				rolls.refresh();
+				*/
 			}
 		]]>
 	</fx:Script>

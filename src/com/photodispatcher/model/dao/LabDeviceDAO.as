@@ -45,7 +45,9 @@ package com.photodispatcher.model.dao{
 			var o:Object;
 			var sql:String;
 			var params:Array;
+			/*TODO refactor
 			var lrDao:LabRollDAO= new LabRollDAO();
+			*/
 			var lttDao:LabTimetableDAO= new LabTimetableDAO();
 			for each(o in items){
 				item= o as LabDevice;
@@ -56,7 +58,9 @@ package com.photodispatcher.model.dao{
 						sequence.push(prepareStatement(sql,params));
 					}
 					//add roll update
+					/*TODO refactor
 					sequence=sequence.concat(lrDao.saveSequence(item.rolls));
+					*/
 					//add time table update
 					sequence=sequence.concat(lttDao.saveSequence(item.timetable));
 				}

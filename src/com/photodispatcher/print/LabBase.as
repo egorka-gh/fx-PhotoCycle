@@ -7,7 +7,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.LabRoll;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Roll;
+	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.dao.LabPrintCodeDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.util.ArrayUtil;

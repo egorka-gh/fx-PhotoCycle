@@ -1,9 +1,9 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.LabDevice;
-	import com.photodispatcher.model.Roll;
+	import com.photodispatcher.model.mysql.entities.Roll;
 	
 
-	public class RollDAO extends BaseDAO{
+	public class RollDAOKill extends BaseDAO{
 
 		public function findAllArray(silent:Boolean=true):Array {
 			var sql:String;

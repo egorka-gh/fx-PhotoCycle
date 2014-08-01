@@ -96,7 +96,7 @@
 				//TODO refactor, incorrect implementation
 				//startForceStarTimer();
 				
-				focusManager.setFocus(focusHolder);
+				if(focusManager) focusManager.setFocus(focusHolder);
 			}
 
 			private function startForceStarTimer():void{

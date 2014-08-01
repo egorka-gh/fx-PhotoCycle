@@ -10,7 +10,7 @@
 			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
 			import com.photodispatcher.model.PrintGroup;
-			import com.photodispatcher.model.Roll;
+			import com.photodispatcher.model.mysql.entities.Roll;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;

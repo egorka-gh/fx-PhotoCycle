@@ -3,7 +3,6 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.LabPrintCode;
 	import com.photodispatcher.model.LabRoll;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.dao.LabRollDAO;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	
 	import flash.events.TimerEvent;

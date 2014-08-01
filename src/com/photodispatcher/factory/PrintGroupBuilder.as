@@ -7,7 +7,6 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
-	import com.photodispatcher.model.Roll;
 	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.PrintGroupFileDAO;
@@ -15,6 +14,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.model.PageData;
