@@ -15,13 +15,12 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
-			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.SourceTypeDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
@@ -97,8 +96,9 @@
 				techPiontsAC=dao.findAll();
 				
 				//var dDao:DictionaryDAO=new DictionaryDAO();
-				var stDao:SourceTypeDAO= new SourceTypeDAO();
-				techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
+				//TODO REFACTOR
+				//var stDao:SourceTypeDAO= new SourceTypeDAO();
+				//techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
 
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){

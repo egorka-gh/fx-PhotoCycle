@@ -11,7 +11,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.view.ErrorPopup;
 			import com.photodispatcher.view.LabInfo;
 			
@@ -24,14 +24,14 @@
 			private static const ERR_TOOL_TIP_TIME:int=10000;
 			
 			[Bindable]
-			private var lab:LabBase;
+			private var lab:LabGeneric;
 			override public function get data():Object{
 				return super.data;
 			}
 			override public function set data(value:Object):void{
 				super.data = value;
 				if(lab) lab.removeEventListener(ErrorEvent.ERROR,labErrHandler);
-				lab=value as LabBase;
+				lab=value as LabGeneric;
 				if(lab) lab.addEventListener(ErrorEvent.ERROR,labErrHandler);
 			}
 			

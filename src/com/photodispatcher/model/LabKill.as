@@ -6,7 +6,7 @@ package com.photodispatcher.model{
 	
 	import spark.components.gridClasses.GridColumn;
 	
-	public class Lab extends DBRecord{
+	public class LabKill extends DBRecord{
 		
 		//db fileds
 		[Bindable]

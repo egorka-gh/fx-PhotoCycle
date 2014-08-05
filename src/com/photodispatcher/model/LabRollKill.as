@@ -8,7 +8,7 @@ package com.photodispatcher.model{
 	
 	import spark.components.gridClasses.GridColumn;
 	
-	public class LabRoll extends Roll{
+	public class LabRollKill extends Roll{
 
 		//db fileds
 		[Bindable]

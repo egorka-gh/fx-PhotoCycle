@@ -6,7 +6,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.LabRoll;
+			import com.photodispatcher.model.mysql.entities.LabRoll;
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;

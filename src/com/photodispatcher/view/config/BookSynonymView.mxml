@@ -9,7 +9,7 @@
 	<![CDATA[
 		import com.photodispatcher.context.Context;
 		import com.photodispatcher.event.AsyncSQLEvent;
-		import com.photodispatcher.model.SourceType;
+		import com.photodispatcher.model.mysql.entities.SourceType;
 		import com.photodispatcher.model.dao.BaseDAO;
 		import com.photodispatcher.model.mysql.DbLatch;
 		import com.photodispatcher.model.mysql.entities.BookPgTemplate;
@@ -149,59 +149,6 @@
 				latch.start();
 			}
 		}
-
-		/*
-		private var itemsToSave:Array=[];
-		private var saveRunning:Boolean=false;
-		private function saveAll():void{
-			var item:BookSynonym;
-			var temp:BookPgTemplate;
-			for each (item in currentList){
-				if(item){
-					if(!item.loaded || item.changed){
-						itemsToSave.push(item);
-					}
-					if(item.templates){
-						for each(temp in item.templates){
-							if(temp && (!temp.loaded || temp.changed)){
-								itemsToSave.push(temp);
-							}
-						}
-					}
-				}
-			}
-			if(!saveRunning) saveNext();
-			currentState='list';
-		}
-		private function saveNext():void{
-			if(!itemsToSave || itemsToSave.length==0){
-				//completed
-				return;
-			}
-			saveRunning=true;
-			var o:Object=itemsToSave.shift();
-			var dao:BaseDAO;
-			if(o is BookSynonym){
-				dao=new BookSynonymDAO();
-			}else if(o is BookPgTemplate){
-				dao=new BookPgTemplateDAO();
-			}
-			if(dao){
-				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
-				dao.save(o);
-			}
-		}
-		private function onSave(e:AsyncSQLEvent):void{
-			var dao:BaseDAO=e.target as BaseDAO;
-			if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
-			saveRunning=itemsToSave && itemsToSave.length>0;
-			if(e.result==AsyncSQLEvent.RESULT_COMLETED){
-				saveNext();
-			}else{
-				saveRunning=false;
-			}
-		}
-		*/
 
 		private function applyFilter():void{
 			currentList.refresh();

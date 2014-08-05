@@ -1,9 +1,9 @@
 package com.photodispatcher.print{
-	import com.photodispatcher.model.LabDevice;
-	import com.photodispatcher.model.LabPrintCode;
-	import com.photodispatcher.model.LabRoll;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
+	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.LabRoll;
 	
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
@@ -31,9 +31,9 @@ package com.photodispatcher.print{
 		
 		private var printGroups:Array=[];
 
-		private var lab:LabBase;
+		private var lab:LabGeneric;
 		
-		public function PrintQueue(lab:LabBase){
+		public function PrintQueue(lab:LabGeneric){
 			this.lab=lab;
 		}
 

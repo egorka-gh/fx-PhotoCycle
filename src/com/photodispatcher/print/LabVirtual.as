@@ -1,14 +1,14 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.Lab;
-	import com.photodispatcher.model.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.Lab;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import mx.collections.ArrayCollection;
 	
-	public class LabVirtual extends LabBase{
+	public class LabVirtual extends LabGeneric{
 		
 		public function LabVirtual(lab:Lab){
 			super(lab);

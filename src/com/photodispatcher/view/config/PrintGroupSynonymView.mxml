@@ -10,7 +10,7 @@
 		import com.photodispatcher.context.Context;
 		import com.photodispatcher.event.AsyncSQLEvent;
 		import com.photodispatcher.model.PrintGroupSynonym;
-		import com.photodispatcher.model.SourceType;
+		import com.photodispatcher.model.mysql.entities.SourceType;
 		import com.photodispatcher.model.dao.PrintGroupSynonymDAO;
 		
 		import mx.collections.ArrayCollection;

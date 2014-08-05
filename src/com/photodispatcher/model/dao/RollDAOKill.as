@@ -1,5 +1,5 @@
 package com.photodispatcher.model.dao{
-	import com.photodispatcher.model.LabDevice;
+	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.Roll;
 	
 

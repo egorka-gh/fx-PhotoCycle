@@ -16,7 +16,7 @@
 			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -303,7 +303,7 @@
 			protected function btPost_clickHandler(event:MouseEvent):void{
 				if(!dgPGroups.selectedItem || !lstLabs.selectedItem) return;
 				lbManagerError.text='';
-				var l:LabBase=lstLabs.selectedItem as LabBase;
+				var l:LabGeneric=lstLabs.selectedItem as LabGeneric;
 				printManager.post(dgPGroups.selectedItems,l);
 			}
 			

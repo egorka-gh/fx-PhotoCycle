@@ -1,6 +1,6 @@
 package com.photodispatcher.factory{
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.service.web.FBookManualWeb;
 	import com.photodispatcher.service.web.FotoknigaWeb;

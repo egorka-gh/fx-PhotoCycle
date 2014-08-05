@@ -10,8 +10,8 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.LabDevice;
-			import com.photodispatcher.model.LabRoll;
+			import com.photodispatcher.model.mysql.entities.LabDevice;
+			import com.photodispatcher.model.mysql.entities.LabRoll;
 			import com.photodispatcher.model.LabTimetable;
 			import com.photodispatcher.view.AddOnlineRollPopup;
 			import com.photodispatcher.view.LabInfo;

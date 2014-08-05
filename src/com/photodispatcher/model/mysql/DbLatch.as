@@ -1,5 +1,6 @@
 package com.photodispatcher.model.mysql
 {
+	import com.photodispatcher.model.mysql.entities.DmlResult;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
 	import com.photodispatcher.model.mysql.entities.SqlResult;
 	
@@ -72,6 +73,12 @@ package com.photodispatcher.model.mysql
 				result=(lastResult as SelectResult).data.toArray();
 			}
 			return result;
+		}
+		public function get lastItem():Object{
+			if(lastResult && lastResult is DmlResult){
+				return (lastResult as DmlResult).item;
+			}
+			return null;
 		}
 
 		protected function resultHandler(event:ResultEvent, token:AsyncToken=null):void{

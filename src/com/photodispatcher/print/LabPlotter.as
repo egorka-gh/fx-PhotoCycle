@@ -1,9 +1,9 @@
 package com.photodispatcher.print{
-	import com.photodispatcher.model.Lab;
-	import com.photodispatcher.model.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.Lab;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;
 	
-	public class LabPlotter extends LabBase{
+	public class LabPlotter extends LabGeneric{
 		public function LabPlotter(lab:Lab){
 			super(lab);
 		}

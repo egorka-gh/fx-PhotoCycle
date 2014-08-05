@@ -15,7 +15,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
-			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;

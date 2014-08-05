@@ -14,11 +14,6 @@ package com.photodispatcher.model.mysql.entities {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.ContentFilter")]
     public class ContentFilter extends ContentFilterBase {
 	
-		public function ContentFilter(){
-			super();
-			hasAutoId=true;
-		}
-		
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;

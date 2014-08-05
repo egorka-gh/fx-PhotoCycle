@@ -9,14 +9,16 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.AttrType;
-			import com.photodispatcher.model.LabPrintCode;
-			import com.photodispatcher.model.SourceType;
-			import com.photodispatcher.model.dao.AttrTypeDAO;
-			import com.photodispatcher.model.dao.LabPrintCodeDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.LabPrintCode;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.services.LabService;
+			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 			
 			[Bindable]
 			private var currentList:ArrayCollection=new ArrayCollection();
@@ -79,59 +81,87 @@
 				itemsGrid.addItem(newCode);
 			}
 			
-			private var itemsToSave:Array=[];
-			private var saveRunning:Boolean=false;
+			[Bindable]
+			private var lockView:Boolean=false;
+			private var lastSelected:Object;
 			private function saveAll():void{
-				var code:LabPrintCode;
-				for each (var o:Object in currentList){
-					code=o as LabPrintCode;
-					if(code && (!code.loaded || code.changed)){
-						itemsToSave.push(code);
+				var item:LabPrintCode;
+				var itemsToSave:ArrayCollection= new ArrayCollection(); 
+				for each (item in currentList){
+					if(!item.loaded || item.changed) itemsToSave.addItem(item);
+				}
+				if(itemsToSave.length!=0){
+					if(itemsGrid && itemsGrid.currentItem){
+						item=itemsGrid.currentItem as LabPrintCode;
+						if(item){
+							lastSelected= new Object(); 
+							if(item.loaded){
+								lastSelected.id=item.id;
+							}else{
+								lastSelected.code=item.prt_code;
+							}
+						}
+					}
+					var service:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+					var latch:DbLatch= new DbLatch();
+					latch.addEventListener(Event.COMPLETE, onSave);
+					latch.addLatch(service.persistPrintCodes(itemsToSave));
+					latch.start();
+				}
+			}
+			private function onSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSave);
+					if(latch.complite){
+						refresh();
 					}
 				}
-				if(!saveRunning) saveNext();
 			}
-			
-			private function saveNext():void{
-				if(!itemsToSave || itemsToSave.length==0){
-					//completed
+
+			private function refresh():void{
+				var type:int=0;
+				btAdd.enabled=false;
+				btSave.enabled=false;
+				if(ddLabType && ddLabType.selectedIndex!=-1) type=ddLabType.selectedItem.value;
+				currentLabType=type;
+				if(type<=0){
+					currentList=null;
 					return;
 				}
-				saveRunning=true;
-				var o:Object=itemsToSave.shift();
-				var dao:LabPrintCodeDAO=new LabPrintCodeDAO();
-				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
-				dao.save(o);
+				var service:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onLoad);
+				latch.addLatch(service.loadPrintCode(type));
+				latch.start();
 			}
-			private function onSave(e:AsyncSQLEvent):void{
-				var dao:LabPrintCodeDAO=e.target as LabPrintCodeDAO;
-				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
-				saveRunning=itemsToSave && itemsToSave.length>0;
-				if(e.result==AsyncSQLEvent.RESULT_COMLETED){
-					saveNext();
-				}else{
-					saveRunning=false;
+			private function onLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoad);
+					if(latch.complite){
+						btAdd.enabled=currentLabType!=SourceType.LAB_VIRTUAL;
+						btSave.enabled=currentLabType!=SourceType.LAB_VIRTUAL;
+						currentList=latch.lastDataAC;
+						currentList.filterFunction=gridFilter;
+						applyFilter();
+						if(lastSelected && itemsGrid){
+							var item:LabPrintCode;
+							if(lastSelected.id){
+								item=ArrayUtil.searchItem('id',lastSelected.id,currentList.source) as LabPrintCode;
+							}else if(lastSelected.code){
+								item=ArrayUtil.searchItem('prt_code',lastSelected.code,currentList.source) as LabPrintCode;
+							}
+							if(item){
+								itemsGrid.currentItem=item;
+								itemsGrid.ensureSelectionVisible();
+							}
+							lastSelected=null;
+						}
+					}
 				}
 			}
-			
-			private function refresh():void{
-				/*
-				var dao:PdfTemplateDAO=new PdfTemplateDAO();
-				currentList.source=dao.findAllArr();
-				*/
-				var ldao:LabPrintCodeDAO= new LabPrintCodeDAO();
-				var type:int=0;
-				if(ddLabType && ddLabType.selectedIndex!=-1) type=ddLabType.selectedItem.value;
-				btAdd.enabled=type!=SourceType.LAB_VIRTUAL;
-				btSave.enabled=type!=SourceType.LAB_VIRTUAL;
-				
-				currentList=ldao.findAll(type);
-				currentList.filterFunction=gridFilter;
-				applyFilter();
 
-				currentLabType=type;
-			}
-			
 			private function init():void{
 				initCbLists();
 				labTypeList=Context.getAttribute('lab_typeList');
@@ -147,19 +177,12 @@
 				currentList.filterFunction=gridFilter;
 				refresh();
 			}
+			
 			private function initCbLists():void{
-				var at:AttrType;
-				var field:String;
-				var atDao:AttrTypeDAO=new AttrTypeDAO();
-				//var dDao:DictionaryDAO=new DictionaryDAO();
-				Context.initAttributeLists();
-				for each (var o:Object in atDao.findAll()){
-					at=o as AttrType;
-					if(at){
-						field=at.field;
-						this[field+'FilterList']=Context.getAttribute(field+'List');
-					}
-				}
+				paperFilterList=Context.getAttribute('paperList');
+				frameFilterList=Context.getAttribute('frameList');
+				correctionFilterList=Context.getAttribute('correctionList');
+				cuttingFilterList=Context.getAttribute('cuttingList');
 			}
 			
 			private function applyFilter():void{
@@ -235,7 +258,7 @@
 					  cornerRadius="4" width="22" height="22" baseline="4"/>
 		</s:HGroup>
 		<config:ItemsGrid id="itemsGrid" editable="true"
-						  currentData="{currentList}" currentColumns="{LabPrintCodeDAO.gridColumns(currentLabType)}" 
+						  currentData="{currentList}" currentColumns="{LabPrintCode.gridColumns(currentLabType)}" 
 						  width="100%" height="100%"/>
 		<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="left">
 			<!--TODO implement DELETE-->

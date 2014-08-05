@@ -5,7 +5,8 @@ package com.photodispatcher.model{
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.print.LabBase;
+	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.print.LabGeneric;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.filesystem.File;
@@ -189,7 +190,7 @@ package com.photodispatcher.model{
 		 * runtime
 		 * post to lab (used in PrintManager) 
 		 */
-		public var destinationLab:LabBase;
+		public var destinationLab:LabGeneric;
 
 		public function key(srcType:int=SourceType.LAB_NORITSU,fullness:int=0):String{
 			var sizeKey:String;

@@ -7,14 +7,17 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.services.BookSynonymService;
+	import com.photodispatcher.model.mysql.services.ContentFilterService;
 	import com.photodispatcher.model.mysql.services.DictionaryService;
 	import com.photodispatcher.model.mysql.services.LabResizeService;
+	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
@@ -58,7 +61,7 @@ package com.photodispatcher.context{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoCycle';
 			//register services
-			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService, OrderStateService, BookSynonymService, RollService]);
+			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService, OrderStateService, BookSynonymService, RollService, ContentFilterService, LabService]);
 			
 			//fill from config
 			//Context.fillFromConfig();
@@ -71,6 +74,7 @@ package com.photodispatcher.context{
 			latch.join(BookSynonym.initSynonymMap());
 			latch.join(FieldValue.initSynonymMap());
 			latch.join(Roll.initItemsMap());
+			latch.join(LabPrintCode.initChanelMap());
 
 			//latch.start();//start at caller?
 			return latch;
@@ -241,13 +245,13 @@ package com.photodispatcher.context{
 
 			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_SOURCE, false, onFieldList),'src_type');
 
-			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_LAB, true, onFieldListSimpleList),'lab_type');
+			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_LAB, false, onFieldList),'lab_type');
 
 			//tech_typeList !!!!
 			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT, false, onFieldList),'tech_type');
 
 			//tech_points
-			latchAttributeLists.addLatch(dict.getTechPointValueList(true, onFieldListSimpleList),'tech_point');
+			latchAttributeLists.addLatch(dict.getTechPointValueList(true, onFieldList),'tech_point');
 
 			//tech layers
 			latchAttributeLists.addLatch(dict.getTechLayerValueList(true, onFieldList),'layer');

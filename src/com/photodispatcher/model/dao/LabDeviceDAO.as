@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.LabDevice;
-	import com.photodispatcher.model.LabRoll;
+	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.LabRoll;
 	import com.photodispatcher.model.LabTimetable;
 	
 	import mx.collections.ArrayCollection;
@@ -62,7 +62,7 @@ package com.photodispatcher.model.dao{
 					sequence=sequence.concat(lrDao.saveSequence(item.rolls));
 					*/
 					//add time table update
-					sequence=sequence.concat(lttDao.saveSequence(item.timetable));
+					//sequence=sequence.concat(lttDao.saveSequence(item.timetable));
 				}
 			}
 			return sequence;
@@ -95,11 +95,12 @@ package com.photodispatcher.model.dao{
 			}
 		}
 
-
+/*
 		override protected function processRow(o:Object):Object{
 			var a:LabDevice= new LabDevice();
 			fillRow(o,a);
 			return a;
 		}
+		*/
 	}
 }

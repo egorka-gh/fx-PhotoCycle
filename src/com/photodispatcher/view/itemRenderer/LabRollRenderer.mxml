@@ -7,7 +7,7 @@
 				autoDrawBackground="false" >
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.LabRoll;
+			import com.photodispatcher.model.mysql.entities.LabRoll;
 			[Bindable]
 			private var roll:LabRoll;
 			override public function get data():Object{

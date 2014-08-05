@@ -10,23 +10,21 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.AttrType;
-			import com.photodispatcher.model.Lab;
-			import com.photodispatcher.model.LabPrintCode;
-			import com.photodispatcher.model.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.AttrTypeDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.LabDAO;
-			import com.photodispatcher.model.dao.LabPrintCodeDAO;
 			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.AbstractEntity;
 			import com.photodispatcher.model.mysql.entities.DmlResult;
+			import com.photodispatcher.model.mysql.entities.Lab;
+			import com.photodispatcher.model.mysql.entities.LabPrintCode;
 			import com.photodispatcher.model.mysql.entities.LabResize;
 			import com.photodispatcher.model.mysql.entities.SelectResult;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.services.LabResizeService;
+			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.model.mysql.services.SourceService;
 			
 			import flash.utils.getTimer;
@@ -91,25 +89,17 @@
 						break;
 					case 2:
 						currentState='labList';
-						var ldao:LabDAO= new LabDAO();
-						currentList=ldao.findAll();
+						//var ldao:LabDAO= new LabDAO();
+						//currentList=ldao.findAll();
 						currentColumns=Lab.gridColumns();
-						/*
-						dao= new SourcesDAO();
-						currentList=dao.findAll(Source.LOCATION_TYPE_LAB);
-						currentColumns=SourcesDAO.gridColumns(true);
-						*/
+						var lsvc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+						latch=new DbLatch(false);
+						latch.addEventListener(Event.COMPLETE, onNewCurrentList);
+						latch.addLatch(lsvc.loadAll(true));
+						latch.start();
 						break;
 					case 3:
-						//gridEditable=true;
-						//initCbLists();
 						currentState='prtCodeList';
-						//var ldao:LabPrintCodeDAO= new LabPrintCodeDAO();
-						//Noritsu
-						//currentList=ldao.findAll(SourceType.LAB_NORITSU);
-						//currentList.filterFunction=gridFilter;
-						//applyFilter();
-						//currentColumns=LabPrintCodeDAO.gridColumns();
 						break;
 					case 4:
 						gridEditable=true;
@@ -215,7 +205,7 @@
 						|| currentItem.webService.changed || currentItem.ftpService.changed || currentItem.fbookService.changed || currentItem.hotFolder.changed){
 						var svc:SourceService=Tide.getInstance().getContext().byType(SourceService,true) as SourceService;
 						var latch:DbLatch= new DbLatch(false);
-						var tk:AsyncToken=svc.persist(currentItem as com.photodispatcher.model.mysql.entities.Source);
+						var tk:AsyncToken=svc.persist(currentItem as Source);
 						if(!currentItem.loaded){
 							var id:int=getTimer();
 							currentItem.id=id;
@@ -242,10 +232,15 @@
 						var tag:int=latch.lastToken.tag;
 						if(tag && currentItem && currentItem.id==tag){
 							if(latch.lastToken.add){
+								/*
 								currentItem.id=(latch.lastResult as DmlResult).lastId;
 								currentItem.loaded=true;
-								currentItem.edit();
-								currentList.addItem(currentItem);
+								*/
+								currentItem=(latch.lastResult as DmlResult).item as Source;
+								if(currentItem){
+									currentItem.edit();
+									currentList.addItem(currentItem);
+								}
 								//currentList.refresh();
 							}else{
 								//reset changed
@@ -303,6 +298,7 @@
 
 			private function saveLab():void{
 				if(!currentLab) return;
+				/*
 				var ldao:LabDAO=new LabDAO();
 				if(!currentLab.loaded){
 					ldao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSaveComplite);
@@ -311,11 +307,32 @@
 					ldao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSaveComplite);
 					ldao.update(currentLab);
 				}
+				*/
+				var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch= new DbLatch();
+				latch.addLatch(svc.persistLab(currentLab));
+				latch.addEventListener(Event.COMPLETE, onLabSave);
+				latch.start();
 			}
+			private function onLabSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLabSave);
+					if(latch.complite && latch.lastResult.complete){
+						if(currentLab.loaded){
+							detectState();
+							return;
+						}
+						currentLab=(latch.lastResult as DmlResult).item as Lab
+					}
+				}
+			}
+			
+			
 			private function onSaveComplite(e:AsyncSQLEvent):void{
 				var dao:BaseDAO=e.target as BaseDAO;
 				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSaveComplite);
-				if(e.result==AsyncSQLEvent.RESULT_COMLETED) detectState();;
+				if(e.result==AsyncSQLEvent.RESULT_COMLETED) detectState();
 			}
 
 			private function saveNext():void{

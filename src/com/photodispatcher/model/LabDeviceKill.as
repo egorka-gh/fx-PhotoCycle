@@ -2,10 +2,11 @@ package com.photodispatcher.model{
 	//import com.photodispatcher.model.dao.LabRollDAO;
 	import com.photodispatcher.model.dao.LabTimetableDAO;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
-	import com.photodispatcher.print.LabBase;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
+	import com.photodispatcher.print.LabGeneric;
 	import com.photodispatcher.util.ArrayUtil;
 
-	public class LabDevice extends DBRecord{
+	public class LabDeviceKill extends DBRecord{
 
 		//db fileds
 		[Bindable]
@@ -28,7 +29,7 @@ package com.photodispatcher.model{
 		public var onlineState:int=0;
 		
 		public function get isOnline():Boolean{
-			return onlineState==LabBase.STATE_ON || onlineState==LabBase.STATE_ON_WARN;
+			return onlineState==LabGeneric.STATE_ON || onlineState==LabGeneric.STATE_ON_WARN;
 		}
 		//db drived
 		[Bindable]
@@ -169,26 +170,26 @@ package com.photodispatcher.model{
 		public function checkTimeTable():Boolean{
 			if(!_timetable) getTimetable(true);
 			if(!_timetable){
-				onlineState=LabBase.STATE_OFF;
+				onlineState=LabGeneric.STATE_OFF;
 				return false;
 			}
 			var now:Date=new Date();
 			var tt:LabTimetable=ArrayUtil.searchItem( 'day_id',now.day, _timetable) as LabTimetable;
 			if(!tt || !tt.is_online){
-				onlineState=LabBase.STATE_OFF;
+				onlineState=LabGeneric.STATE_OFF;
 				return false;
 			}
 			//reset to current date
 			tt.time_from.date=1; tt.time_from.fullYear=now.fullYear; tt.time_from.month=now.month; tt.time_from.date=now.date; 
 			tt.time_to.date=1; tt.time_to.fullYear=now.fullYear; tt.time_to.month=now.month; tt.time_to.date=now.date;
 			if(now.time>=tt.time_from.time && now.time<=tt.time_to.time){
-				onlineState=LabBase.STATE_ON;
+				onlineState=LabGeneric.STATE_ON;
 			}else if(now.time<tt.time_from.time && (tt.time_from.time-now.time)/(1000*60)<=30){ //30min till on
-				onlineState=LabBase.STATE_SCHEDULED_ON;
+				onlineState=LabGeneric.STATE_SCHEDULED_ON;
 			}else{
-				onlineState=LabBase.STATE_OFF;
+				onlineState=LabGeneric.STATE_OFF;
 			}
-			return onlineState==LabBase.STATE_ON;
+			return onlineState==LabGeneric.STATE_ON;
 		}
 		
 		//minutes till device on

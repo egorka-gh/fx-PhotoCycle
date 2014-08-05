@@ -1,8 +1,8 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.LabPrintCode;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
@@ -13,7 +13,7 @@ package com.photodispatcher.model.dao{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class LabPrintCodeDAO extends BaseDAO{
+	public class LabPrintCodeDAOKill extends BaseDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:LabPrintCode = new LabPrintCode();

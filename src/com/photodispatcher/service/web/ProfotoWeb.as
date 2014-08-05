@@ -4,7 +4,7 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SourceSvc;
 	
 	import flash.events.Event;

@@ -5,17 +5,17 @@ package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.factory.LabBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
-	import com.photodispatcher.model.Lab;
-	import com.photodispatcher.model.LabDevice;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.SourceProperty;
-	import com.photodispatcher.model.SourceType;
 	import com.photodispatcher.model.dao.LabDAO;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.Lab;
+	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -103,20 +103,20 @@ package com.photodispatcher.print{
 			labNamesMap= new Object();
 			for each(lab in rawLabs){
 				labNamesMap[lab.id.toString()]=lab.name;
-				lab.getDevices(true);
+				//lab.getDevices(true);
 				if(!lab.devices){
 					initErr('Блокировка чтения при инициализации менеджера печати');
 					return;
 				}
 				for each(dev in lab.devices){
-					dev.getRolls(false,true);
-					dev.getTimetable(true);
+					//dev.getRolls(false,true);
+					//dev.getTimetable(true);
 					if(!dev.rolls || !dev.timetable){
 						initErr('Блокировка чтения при инициализации менеджера печати');
 						return;
 					}
 				}
-				var lb:LabBase=LabBuilder.build(lab);
+				var lb:LabGeneric=LabBuilder.build(lab);
 				lb.refresh();
 				result.push(lb);
 			}
@@ -150,7 +150,7 @@ package com.photodispatcher.print{
 		public function get labMap():Object{
 			if(!initCompleted) return null;
 			var result:Object= new Object();
-			var lab:LabBase;
+			var lab:LabGeneric;
 			for each(lab in _labs.source){
 				if(lab){
 					result[lab.id.toString()]=lab;
@@ -226,11 +226,11 @@ package com.photodispatcher.print{
 
 		private function getAvailableLabs():Array{
 			if(labs.length==0) return [];
-			var lab:LabBase;
+			var lab:LabGeneric;
 			var result:Array=[];
 			for each(lab in labs){
 				if(lab.is_active && lab.is_managed && 
-					(lab.onlineState==LabBase.STATE_ON || lab.onlineState==LabBase.STATE_SCHEDULED_ON) && 
+					(lab.onlineState==LabGeneric.STATE_ON || lab.onlineState==LabGeneric.STATE_SCHEDULED_ON) && 
 					lab.printQueue.printQueueLen<lab.queue_limit){
 					result.push(lab);
 				}
@@ -250,7 +250,7 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
-		public function post(printGrps:Vector.<Object>,lab:LabBase):void{
+		public function post(printGrps:Vector.<Object>,lab:LabGeneric):void{
 			var pg:PrintGroup;
 			if(!lab || !printGrps || printGrps.length==0) return;
 			lab.addEventListener(PrintEvent.POST_COMPLETE_EVENT,onPostComplete);
@@ -493,7 +493,7 @@ package com.photodispatcher.print{
 			var newqueueOrders:int;
 			var newqueuePGs:int;
 			var newqueuePrints:int;
-			var lab:LabBase;
+			var lab:LabGeneric;
 			for each(lab in _labs.source){
 				if(!recalcOnly) lab.refresh();
 				newqueueOrders+=lab.printQueue.queueOrders;
@@ -536,7 +536,7 @@ package com.photodispatcher.print{
 			var dao:PrintGroupDAO= new PrintGroupDAO();
 			dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCancelPostWrite);
 			trace('PrintManager cancel print, '+printGrps.length+' print groups');
-			var l:LabBase;
+			var l:LabGeneric;
 			dao.cancelPrint(printGrps,labNamesMap);
 		}
 		private function onCancelPostWrite(e:AsyncSQLEvent):void{
@@ -569,7 +569,7 @@ package com.photodispatcher.print{
 			}
 			var pg:PrintGroup=cancelPostPrintGrps.pop() as PrintGroup;
 			//build path
-			var currentLab:LabBase=ArrayUtil.searchItem('id',pg.destination,labs.source) as LabBase;
+			var currentLab:LabGeneric=ArrayUtil.searchItem('id',pg.destination,labs.source) as LabGeneric;
 			if(!currentLab){
 				dispatchManagerErr('Не определена лаборатория id:'+pg.destination.toString()+'. Файлы заказа '+pg.id+' не удалены.');
 				deleteNextFolder();

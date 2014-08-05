@@ -1,6 +1,6 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.Lab;
+	import com.photodispatcher.model.mysql.entities.Lab;
 	
 	import mx.collections.ArrayCollection;
 	
@@ -67,7 +67,7 @@ package com.photodispatcher.model.dao{
 						item.id]));
 			}
 			var ldDao:LabDeviceDAO= new LabDeviceDAO();
-			sequence=sequence.concat(ldDao.updateSequence(item.devices));
+			//sequence=sequence.concat(ldDao.updateSequence(item.devices));
 			executeSequence(sequence);
 		}
 		
@@ -95,11 +95,13 @@ package com.photodispatcher.model.dao{
 			}
 		}
 
+		/*
 		override protected function processRow(o:Object):Object{
 			var a:Lab= new Lab();
 			fillRow(o,a);
 			return a;
 		}
+		*/
 
 	}
 }

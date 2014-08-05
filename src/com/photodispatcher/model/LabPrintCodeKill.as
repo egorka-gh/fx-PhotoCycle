@@ -1,5 +1,7 @@
 package com.photodispatcher.model{
-	public class LabPrintCode extends DBRecord{
+	import com.photodispatcher.model.mysql.entities.SourceType;
+
+	public class LabPrintCodeKill extends DBRecord{
 		//database props
 		[Bindable]
 		public var id:int;

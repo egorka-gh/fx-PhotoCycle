@@ -1,8 +1,8 @@
 package com.photodispatcher.factory{
-	import com.photodispatcher.model.Lab;
-	import com.photodispatcher.model.SourceType;
-	import com.photodispatcher.print.LabBase;
+	import com.photodispatcher.model.mysql.entities.Lab;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.print.LabFuji;
+	import com.photodispatcher.print.LabGeneric;
 	import com.photodispatcher.print.LabNoritsu;
 	import com.photodispatcher.print.LabNoritsuNHF;
 	import com.photodispatcher.print.LabPlotter;
@@ -13,7 +13,7 @@ package com.photodispatcher.factory{
 
 	public class LabBuilder	{
 
-		public static function build(lab:Lab):LabBase{
+		public static function build(lab:Lab):LabGeneric{
 			if (!lab) return null;
 			switch(lab.src_type){
 				case SourceType.LAB_NORITSU:

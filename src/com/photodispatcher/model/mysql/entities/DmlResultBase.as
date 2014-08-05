@@ -14,23 +14,23 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class DmlResultBase extends SqlResult {
 
-        private var _lastId:int;
+        private var _item:Object;
 
-        public function set lastId(value:int):void {
-            _lastId = value;
+        public function set item(value:Object):void {
+            _item = value;
         }
-        public function get lastId():int {
-            return _lastId;
+        public function get item():Object {
+            return _item;
         }
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
-            _lastId = input.readObject() as int;
+            _item = input.readObject() as Object;
         }
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_lastId is IPropertyHolder) ? IPropertyHolder(_lastId).object : _lastId);
+            output.writeObject((_item is IPropertyHolder) ? IPropertyHolder(_item).object : _item);
         }
     }
 }

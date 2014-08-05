@@ -4,7 +4,7 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.Order;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.PrintGroupFile;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.util.GridUtil;
 	

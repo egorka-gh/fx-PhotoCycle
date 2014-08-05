@@ -5,18 +5,21 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.Lab;
-			import com.photodispatcher.model.LabDevice;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Lab;
+			import com.photodispatcher.model.mysql.entities.LabDevice;
+			import com.photodispatcher.model.mysql.entities.SelectResult;
 			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.model.SourceType;
-			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.LabDeviceDAO;
-			import com.photodispatcher.model.dao.SourceTypeDAO;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.util.ArrayUtil;
 			
+			import mx.collections.ArrayCollection;
 			import mx.collections.ArrayList;
-			import mx.collections.IList;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 
@@ -33,29 +36,21 @@
 				lstDevices.selectedIndex=-1;
 				if(_currentItem){
 					isNoritsu=_currentItem.src_type==SourceType.LAB_NORITSU;
-					var stDao:SourceTypeDAO=new SourceTypeDAO();
-					typeList=stDao.findAll(Source.LOCATION_TYPE_LAB);
-					typeListIdx=ArrayUtil.searchItemIdx('id',_currentItem.src_type,typeList.toArray());
-					//var dDao:LabDeviceDAO= new LabDeviceDAO();
-					if(!_currentItem.devices) _currentItem.getDevices();
-					devices.source=_currentItem.devices;
-				}else{
-					devices.source=[];
+					if(!typeList) typeList= Context.getAttribute('lab_typeValueList');
+					typeListIdx=ArrayUtil.searchItemIdx('value',_currentItem.src_type,typeList.source);
+					if(!_currentItem.devices) _currentItem.devices= new ArrayCollection();
 				}
 			}
 			[Bindable]
-			private var typeList:IList;
+			private var typeList:ArrayCollection;
 			[Bindable]
 			private var typeListIdx:int;
 			[Bindable]
 			private var isNoritsu:Boolean=false;
 
-			[Bindable]
-			private var devices:ArrayList= new ArrayList();
-
 			protected function ddType_changeHandler(event:IndexChangeEvent):void{
 				if(currentItem && ddType.selectedItem){
-					currentItem.src_type=ddType.selectedItem.id;
+					currentItem.src_type=ddType.selectedItem.value;
 					currentItem.changed=true;
 					isNoritsu=currentItem.src_type==SourceType.LAB_NORITSU; 
 				}
@@ -63,34 +58,44 @@
 
 			protected function btAddDevice_clickHandler(event:MouseEvent):void{
 				if(!_currentItem || !_currentItem.loaded || !_currentItem.id) return;
-				var dDao:LabDeviceDAO= new LabDeviceDAO();
 				var dev:LabDevice= new LabDevice();
 				dev.lab=_currentItem.id;
-				dev.name='Новое устройство';
-				dDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onDevSave);
-				dDao.save(dev);
+				var lsvc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch(false);
+				latch.addEventListener(Event.COMPLETE, onDevAdd);
+				latch.addLatch(lsvc.addDevice(dev));
+				latch.start();
 			}
-			private function onDevSave(e:AsyncSQLEvent):void{
-				var dao:BaseDAO=e.target as BaseDAO;
-				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onDevSave);
-				if(e.result==AsyncSQLEvent.RESULT_COMLETED){
-					devices.addItem(e.item);
-					lstDevices.selectedItem=e.item;
+			private function onDevAdd(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onDevAdd);
+					if(latch.complite){
+						var dev:LabDevice=latch.lastItem as LabDevice;
+						if(dev){
+							currentItem.devices.addItem(dev);
+							currentItem.devices.refresh();
+							lstDevices.selectedItem=dev;
+						}
+					}
 				}
 			}
-
 			
 			protected function btDelDevice_clickHandler(event:MouseEvent):void{
 				if(!_currentItem || !_currentItem.loaded || !_currentItem.id || !lstDevices.selectedItem) return;
-				var dDao:LabDeviceDAO= new LabDeviceDAO();
-				dDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onDevDel);
-				dDao.remove(lstDevices.selectedItem.id);
+				var lsvc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch(false);
+				latch.addEventListener(Event.COMPLETE, onDevDel);
+				latch.addLatch(lsvc.delDevice(lstDevices.selectedItem.id,currentItem.id));
+				latch.start();
 			}
-			private function onDevDel(e:AsyncSQLEvent):void{
-				var dao:LabDeviceDAO=e.target as LabDeviceDAO;
-				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onDevDel);
-				if(e.result==AsyncSQLEvent.RESULT_COMLETED){
-					devices.source=dao.getByLab(_currentItem.id);
+			private function onDevDel(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onDevDel);
+					if(latch.complite){
+						currentItem.devices=latch.lastDataAC;
+					}
 				}
 			}
 			
@@ -103,7 +108,7 @@
 			</s:layout>
 			
 			<s:FormItem label="Тип" required="true" enabled="{!currentItem.loaded}" >
-				<s:DropDownList id="ddType" labelField="name" dataProvider="{typeList}" selectedIndex="{typeListIdx}" change="ddType_changeHandler(event)" width="200"/>
+				<s:DropDownList id="ddType" dataProvider="{typeList}" selectedIndex="{typeListIdx}" change="ddType_changeHandler(event)" width="200"/>
 			</s:FormItem>
 			<s:FormItem label="Наименование">
 				<s:TextInput id="tiName" text="@{currentItem.name}" change="{currentItem.changed=true}" width="200"/>
@@ -127,7 +132,7 @@
 		</s:Form>
 		<s:VGroup height="100%" gap="5" enabled="{currentItem.loaded}">
 			<s:Label text="Устройства"/>
-			<s:List id="lstDevices" dataProvider="{devices}" labelField="name"/>
+			<s:List id="lstDevices" dataProvider="{currentItem.devices}" labelField="name"/>
 			<s:HGroup gap="10" horizontalAlign="right">
 				<s:Button id="btAddDevice" label="+" click="btAddDevice_clickHandler(event)" width="30"/>
 				<s:Button id="btDelDevice" label="-" click="btDelDevice_clickHandler(event)" width="30"/>

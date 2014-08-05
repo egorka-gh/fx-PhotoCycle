@@ -10,10 +10,9 @@
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.OrderDAO;
-			import com.photodispatcher.model.dao.SourceTypeDAO;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			import com.photodispatcher.view.print.PrintDataGridView;
@@ -68,8 +67,10 @@
 
 			private var initComplite:Boolean=false;
 			private function init():void{
-				var stDao:SourceTypeDAO= new SourceTypeDAO();
-				techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
+				//TODO REFACTOR
+				//var stDao:SourceTypeDAO= new SourceTypeDAO();
+				//techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
+				
 				createColumnsAC();
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');

@@ -3,7 +3,7 @@ package com.photodispatcher.model{
 	
 	import flash.text.ReturnKeyLabel;
 
-	public class AttrType extends DBRecord{
+	public class AttrTypeKill extends DBRecord{
 		//database props
 		public var id:int;
 		public var attr_fml:int;

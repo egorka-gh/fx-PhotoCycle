@@ -1,10 +1,10 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
-	import com.photodispatcher.model.Lab;
-	import com.photodispatcher.model.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.Lab;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;
 
-	public class LabNoritsuNHF extends LabBase{
+	public class LabNoritsuNHF extends LabGeneric{
 		
 		public function LabNoritsuNHF(lab:Lab){
 			super(lab);

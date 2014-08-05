@@ -1,6 +1,6 @@
 package com.photodispatcher.model{
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.print.LabBase;
+	import com.photodispatcher.print.LabGeneric;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import pl.maliboo.ftp.FTPFile;

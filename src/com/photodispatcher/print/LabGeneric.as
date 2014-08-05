@@ -1,15 +1,14 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
-	import com.photodispatcher.model.mysql.entities.BookSynonym;
-	import com.photodispatcher.model.Lab;
-	import com.photodispatcher.model.LabDevice;
-	import com.photodispatcher.model.LabPrintCode;
-	import com.photodispatcher.model.LabRoll;
-	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.mysql.entities.Roll;
-	import com.photodispatcher.model.dao.LabPrintCodeDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.Lab;
+	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.LabRoll;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -17,7 +16,7 @@ package com.photodispatcher.print{
 	import flash.events.IEventDispatcher;
 
 	[Event(name="postComplete", type="com.photodispatcher.event.PrintEvent")]
-	public class LabBase extends Lab implements IEventDispatcher{
+	public class LabGeneric extends Lab implements IEventDispatcher{
 		public static const STATE_ERROR:int=-1;
 		public static const STATE_OFF:int=0;
 		public static const STATE_ON:int=1;
@@ -41,7 +40,7 @@ package com.photodispatcher.print{
 		protected var printTasks:Array=[];
 		protected var _chanelMap:Object;
 		
-		public function LabBase(lab:Lab){
+		public function LabGeneric(lab:Lab){
 			super();
 			lab.cloneTo(this);
 			printQueue=new PrintQueue(this);
@@ -141,8 +140,7 @@ package com.photodispatcher.print{
 		// Lazy loading chanels
 		protected function get chanelMap():Object{
 			if(!_chanelMap){
-				var dao:LabPrintCodeDAO= new LabPrintCodeDAO();
-				var chanels:Array= dao.findAllArray(this.src_type);
+				var chanels:Array= LabPrintCode.getChanels(this.src_type);
 				if(chanels){
 					_chanelMap=new Object;
 					for each(var o:Object in chanels){
@@ -230,7 +228,7 @@ package com.photodispatcher.print{
 			roll.speed=0;
 			var dev:LabDevice;
 			if(roll.lab_device){
-				dev=ArrayUtil.searchItem('id',roll.lab_device,devices) as LabDevice;
+				dev=ArrayUtil.searchItem('id',roll.lab_device,devices.toArray()) as LabDevice;
 				if(dev) roll.speed=roll.width<203?dev.speed1:dev.speed2;
 			}
 			if(roll.speed==0){

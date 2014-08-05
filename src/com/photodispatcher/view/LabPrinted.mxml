@@ -8,14 +8,14 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.factory.LabBuilder;
-			import com.photodispatcher.model.Lab;
+			import com.photodispatcher.model.mysql.entities.Lab;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
-			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;

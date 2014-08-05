@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	public class SourceType extends DBRecord{
+	public class SourceTypeKill extends DBRecord{
 
 		public static const SRC_PROFOTO:int=1;
 		public static const SRC_FOTOKNIGA:int=4;

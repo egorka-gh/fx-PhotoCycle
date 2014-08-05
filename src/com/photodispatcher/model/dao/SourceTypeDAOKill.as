@@ -1,10 +1,10 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	
 	import mx.collections.ArrayCollection;
 
-	public class SourceTypeDAO extends BaseDAO{
+	public class SourceTypeDAOKill extends BaseDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:SourceType= new SourceType();

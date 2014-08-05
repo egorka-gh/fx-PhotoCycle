@@ -7,7 +7,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.Source;
 
 	import com.photodispatcher.model.SourceProperty;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.Event;
@@ -56,7 +56,7 @@ package com.photodispatcher.print{
 		
 		public var printGrp:PrintGroup;
 		public var revers:Boolean;
-		private var lab:LabBase;
+		private var lab:LabGeneric;
 		
 		private var dstFolder:File;
 		private var srcFolder:File;
@@ -71,7 +71,7 @@ package com.photodispatcher.print{
 		private var printBodyTemp02:String;
 		
 
-		public function PrintTask(printGroup:PrintGroup, lab:LabBase, revers:Boolean){
+		public function PrintTask(printGroup:PrintGroup, lab:LabGeneric, revers:Boolean){
 			super(null);
 			this.printGrp=printGroup;
 			this.lab=lab;

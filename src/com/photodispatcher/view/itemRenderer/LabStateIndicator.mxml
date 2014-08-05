@@ -5,7 +5,7 @@
 		 >
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.LabGeneric;
 			
 			[Bindable]
 			public var label:String;
@@ -17,16 +17,16 @@
 			public function set state(value:int):void{
 				_state=value;
 				switch(_state){
-					case LabBase.STATE_MANUAL:
+					case LabGeneric.STATE_MANUAL:
 						stateColor.color=0x0000ff;
 						break;
-					case LabBase.STATE_ON_WARN:
+					case LabGeneric.STATE_ON_WARN:
 						stateColor.color=0xf9f900;
 						break;
-					case LabBase.STATE_ON:
+					case LabGeneric.STATE_ON:
 						stateColor.color=0x00DD00;
 						break;
-					case LabBase.STATE_ERROR:
+					case LabGeneric.STATE_ERROR:
 						stateColor.color=0xDD0000;
 						break;
 					default:

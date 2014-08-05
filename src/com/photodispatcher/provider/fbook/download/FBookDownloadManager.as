@@ -5,7 +5,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;

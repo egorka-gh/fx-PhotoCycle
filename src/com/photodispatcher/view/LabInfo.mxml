@@ -5,20 +5,20 @@
 		 cornerRadius="4" borderWeight="1" borderColor="#555555" backgroundColor="#ffffff">
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.LabGeneric;
 			
 			import mx.managers.PopUpManager;
 			
-			private var _lab:LabBase;
+			private var _lab:LabGeneric;
 
 			[Bindable]
 			public var isPopup:Boolean=true;
 
 			[Bindable]
-			public function get lab():LabBase{
+			public function get lab():LabGeneric{
 				return _lab;
 			}
-			public function set lab(value:LabBase):void{
+			public function set lab(value:LabGeneric):void{
 				_lab = value;
 			}
 

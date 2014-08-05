@@ -9,15 +9,15 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
-			import com.photodispatcher.model.Lab;
-			import com.photodispatcher.model.LabRoll;
+			import com.photodispatcher.model.mysql.entities.Lab;
+			import com.photodispatcher.model.mysql.entities.LabRoll;
 			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -259,7 +259,7 @@
 					pgList.source=(lstLabRolls.selectedItem as LabRoll).printGroups;
 				}else if(lstLabs.selectedIndex!=-1){
 					var a:Array=[];
-					var l:LabBase= lstLabs.selectedItem as LabBase;
+					var l:LabGeneric= lstLabs.selectedItem as LabGeneric;
 					var lr:LabRoll;
 					for each(lr in l.printQueue.rolls){
 						a=a.concat(lr.printGroups);

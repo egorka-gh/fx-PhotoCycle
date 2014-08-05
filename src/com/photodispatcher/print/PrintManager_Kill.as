@@ -7,7 +7,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.SourceProperty;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
@@ -106,7 +106,7 @@ package com.photodispatcher.print{
 		}
 		*/
 
-		public function post(printGrps:Vector.<Object>,lab:LabBase):void{
+		public function post(printGrps:Vector.<Object>,lab:LabGeneric):void{
 			var pg:PrintGroup;
 			if(isWriting || !lab || !printGrps || printGrps.length==0) return;
 			lab.addEventListener(PrintEvent.POST_COMPLETE_EVENT,onPostComplete);
@@ -404,7 +404,7 @@ package com.photodispatcher.print{
 			dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCancelPostWrite);
 			trace('PrintManager cancel print, '+printGrps.length+' print groups');
 			var nameMap:Object= new Object();
-			var l:LabBase;
+			var l:LabGeneric;
 			for each(l in labMap){
 				if(l) nameMap[l.id.toString()]=l.name; 
 			}
@@ -442,7 +442,7 @@ package com.photodispatcher.print{
 			}
 			var pg:PrintGroup=cancelPostPrintGrps.pop() as PrintGroup;
 			//build path
-			var currentLab:LabBase=currentLabMap[pg.destination.toString()] as LabBase;
+			var currentLab:LabGeneric=currentLabMap[pg.destination.toString()] as LabGeneric;
 			if(!currentLab){
 				Alert.show('Не определена лаборатория id:'+pg.destination.toString()+'. Файлы заказа '+pg.id+' не удалены.');
 				deleteNextFolder();

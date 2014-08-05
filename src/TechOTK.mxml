@@ -14,11 +14,9 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
-			import com.photodispatcher.model.SourceType;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.SourceTypeDAO;
-			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.service.barcode.ComInfo;
@@ -83,8 +81,9 @@
 				Context.initSourceLists();
 				BookSynonym.initSynonymMap();
 
-				var dao:TechPointDAO=new TechPointDAO();
-				techPiontsAC=dao.findAll(false, SourceType.TECH_OTK);
+				//TODO REFACTOR !!!
+				//var dao:TechPointDAO=new TechPointDAO();
+				//techPiontsAC=dao.findAll(false, SourceType.TECH_OTK);
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){

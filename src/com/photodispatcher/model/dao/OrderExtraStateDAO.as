@@ -1,6 +1,6 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.OrderExtraState;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 
 	public class OrderExtraStateDAO extends BaseDAO{
 		

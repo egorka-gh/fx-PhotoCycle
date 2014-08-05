@@ -15,15 +15,7 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class AbstractEntityBase implements IExternalizable {
 
-        private var _hasAutoId:Boolean;
         private var _persistState:int;
-
-        public function set hasAutoId(value:Boolean):void {
-            _hasAutoId = value;
-        }
-        public function get hasAutoId():Boolean {
-            return _hasAutoId;
-        }
 
         public function set persistState(value:int):void {
             _persistState = value;
@@ -33,12 +25,10 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         public function readExternal(input:IDataInput):void {
-            _hasAutoId = input.readObject() as Boolean;
             _persistState = input.readObject() as int;
         }
 
         public function writeExternal(output:IDataOutput):void {
-            output.writeObject((_hasAutoId is IPropertyHolder) ? IPropertyHolder(_hasAutoId).object : _hasAutoId);
             output.writeObject((_persistState is IPropertyHolder) ? IPropertyHolder(_persistState).object : _persistState);
         }
     }

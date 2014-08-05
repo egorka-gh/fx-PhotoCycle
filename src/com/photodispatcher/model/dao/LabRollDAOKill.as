@@ -1,5 +1,5 @@
 package com.photodispatcher.model.dao{
-	import com.photodispatcher.model.LabRoll;
+	import com.photodispatcher.model.mysql.entities.LabRoll;
 	
 	public class LabRollDAOKill extends BaseDAO{
 

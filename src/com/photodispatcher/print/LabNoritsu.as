@@ -1,14 +1,14 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
-	import com.photodispatcher.model.mysql.entities.BookSynonym;
-	import com.photodispatcher.model.Lab;
-	import com.photodispatcher.model.LabPrintCode;
-	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 
-	public class LabNoritsu extends LabBase	{
+	public class LabNoritsu extends LabGeneric	{
 		//
 		//private var chanels:Array;
 

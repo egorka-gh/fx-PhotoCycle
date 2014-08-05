@@ -10,7 +10,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.BaseDAO;
 	import com.photodispatcher.model.dao.OrderDAO;

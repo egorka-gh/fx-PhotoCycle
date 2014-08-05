@@ -6,7 +6,7 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.print.LabBase;
+			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
 			
 			import spark.events.IndexChangeEvent;
@@ -19,7 +19,7 @@
 			}
 
 			protected function lstLabs_changeHandler(event:IndexChangeEvent):void{
-				labInfo.lab=lstLabs.selectedItem as LabBase;
+				labInfo.lab=lstLabs.selectedItem as LabGeneric;
 			}
 
 			protected function btRefreshLab_clickHandler(event:MouseEvent):void{

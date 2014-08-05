@@ -1,10 +1,9 @@
 package com.photodispatcher.print{
-	import com.photodispatcher.model.Lab;
-	import com.photodispatcher.model.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.Lab;
+	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.dao.LabPrintCodeDAO;
 	
-	public class LabFuji extends LabBase{
+	public class LabFuji extends LabGeneric{
 		
 		public function LabFuji(lab:Lab){
 			super(lab);

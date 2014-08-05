@@ -3,7 +3,7 @@ package com.photodispatcher.service{
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.ProcessState;
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.SourceType;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.view.ModalPopUp;
