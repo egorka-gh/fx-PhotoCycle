@@ -31,8 +31,8 @@
 				super.data = value;
 				dev= value as LabDevice;
 				if(dev){
-					if(!dev.rolls) dev.getRolls(false,true);
-					if(!dev.timetable) dev.getTimetable(true);
+					//if(!dev.rolls) dev.getRolls(false,true);
+					//if(!dev.timetable) dev.getTimetable(true);
 				}
 			}
 

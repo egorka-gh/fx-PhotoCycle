@@ -6,9 +6,29 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.view.itemRenderer.BooleanGridRenderer;
+	import com.photodispatcher.view.itemRenderer.TimeGridEditor;
+	
+	import mx.collections.ArrayList;
+	import mx.core.ClassFactory;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabTimetable")]
     public class LabTimetable extends LabTimetableBase {
+		
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			var col:GridColumn;
+			col= new GridColumn('is_online'); col.headerText=' '; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=30; result.addItem(col);
+			col= new GridColumn('day_id_name'); col.headerText='День недели'; col.editable=false; result.addItem(col);
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateTimePattern='HH:mm'; fmt.useUTC=false;
+			col= new GridColumn('time_from'); col.headerText='С'; col.formatter=fmt; col.itemEditor=new ClassFactory(TimeGridEditor); col.width=100; result.addItem(col);
+			col= new GridColumn('time_to'); col.headerText='До'; col.formatter=fmt; col.itemEditor=new ClassFactory(TimeGridEditor);  col.width=100; result.addItem(col);
+			return result;
+		}
+
     }
 }

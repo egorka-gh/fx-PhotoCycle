@@ -10,10 +10,8 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.AttrTypeDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.TechPointDAO;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.AbstractEntity;
 			import com.photodispatcher.model.mysql.entities.DmlResult;
@@ -23,9 +21,11 @@
 			import com.photodispatcher.model.mysql.entities.SelectResult;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.LabResizeService;
 			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.model.mysql.services.SourceService;
+			import com.photodispatcher.model.mysql.services.TechPointService;
 			
 			import flash.utils.getTimer;
 			
@@ -121,9 +121,13 @@
 					case 7:
 						gridEditable=true;
 						currentState='tech_point';
-						var tpDao:TechPointDAO=new TechPointDAO();
-						currentList=tpDao.findAll();
 						currentColumns=TechPoint.gridColumns();
+						currentList=null;
+						var svcTP:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+						latch= new DbLatch(false);
+						latch.addEventListener(Event.COMPLETE, onNewCurrentList);
+						latch.addLatch(svcTP.loadAll(0));
+						latch.start();
 						break;
 					case 8:
 						currentState='tech_layers';
@@ -267,17 +271,17 @@
 				var svcLR:LabResizeService=Tide.getInstance().getContext().byType(LabResizeService,true) as LabResizeService;
 				var latch:DbLatch= new DbLatch(false);
 				latch.addLatch(svcLR.persistBatch(items));
-				latch.addEventListener(Event.COMPLETE, onRLSave);
+				latch.addEventListener(Event.COMPLETE, onBatchSave);
 				latch.start();
 			}
-			private function onRLSave(event:Event):void{
+			private function onBatchSave(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onRLSave);
+					latch.removeEventListener(Event.COMPLETE,onBatchSave);
 					if(latch.complite && latch.lastResult.complete){
-						var r:LabResize;
-						for each (r in currentList){
-							if (r.changed || !r.loaded) r.loaded=true;
+						var item:AbstractEntity;
+						for each (item in currentList){
+							if (item.changed || !item.loaded) item.loaded=true;
 						}
 					}
 				}
@@ -285,29 +289,20 @@
 
 			private function saveTechPoints():void{
 				var tp:TechPoint;
-				itemsToSave=[];
-				var sDao:TechPointDAO=new TechPointDAO();
-				for each (var o:Object in currentList){
-					tp=o as TechPoint;
-					if(tp && (!tp.loaded || tp.changed)){
-						itemsToSave.push({item:tp, dao:sDao});
-					}
+				var items:ArrayCollection= new ArrayCollection();
+				for each (tp in currentList){
+					if (tp.changed || !tp.loaded) items.addItem(tp);
 				}
-				saveNext();
+				if(items.length==0) return;
+				var svcTP:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				var latch:DbLatch= new DbLatch();
+				latch.addLatch(svcTP.persistBatch(items));
+				latch.addEventListener(Event.COMPLETE, onBatchSave);
+				latch.start();
 			}
 
 			private function saveLab():void{
 				if(!currentLab) return;
-				/*
-				var ldao:LabDAO=new LabDAO();
-				if(!currentLab.loaded){
-					ldao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSaveComplite);
-					ldao.save(currentLab);
-				}else{
-					ldao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSaveComplite);
-					ldao.update(currentLab);
-				}
-				*/
 				var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
 				var latch:DbLatch= new DbLatch();
 				latch.addLatch(svc.persistLab(currentLab));

@@ -80,6 +80,8 @@ package com.photodispatcher.print{
 		}
 		
 		public function init(rawLabs:Array=null):void{
+			//TODO refactor
+			return;
 			if(!rawLabs && initCompleted) return; 
 			//TODO 4 print cancel need full lab list (not only active)
 			if(rawLabs){//init from labaratory

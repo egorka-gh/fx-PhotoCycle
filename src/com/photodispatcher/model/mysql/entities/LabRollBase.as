@@ -12,7 +12,7 @@ package com.photodispatcher.model.mysql.entities {
     import org.granite.tide.IPropertyHolder;
 
     [Bindable]
-    public class LabRollBase extends Roll {
+    public class LabRollBase extends AbstractEntity {
 
         private var _is_online:Boolean;
         private var _is_used:Boolean;
@@ -21,6 +21,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _len_std:int;
         private var _paper:int;
         private var _paper_name:String;
+        private var _width:int;
 
         public function set is_online(value:Boolean):void {
             _is_online = value;
@@ -71,6 +72,13 @@ package com.photodispatcher.model.mysql.entities {
             return _paper_name;
         }
 
+        public function set width(value:int):void {
+            _width = value;
+        }
+        public function get width():int {
+            return _width;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _is_online = input.readObject() as Boolean;
@@ -80,6 +88,7 @@ package com.photodispatcher.model.mysql.entities {
             _len_std = input.readObject() as int;
             _paper = input.readObject() as int;
             _paper_name = input.readObject() as String;
+            _width = input.readObject() as int;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -91,6 +100,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_len_std is IPropertyHolder) ? IPropertyHolder(_len_std).object : _len_std);
             output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
             output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
+            output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
         }
     }
 }

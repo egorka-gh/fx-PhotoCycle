@@ -21,6 +21,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
+	import com.photodispatcher.model.mysql.services.TechPointService;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -61,7 +62,17 @@ package com.photodispatcher.context{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoCycle';
 			//register services
-			Tide.getInstance().addComponents([DictionaryService, SourceService, LabResizeService, OrderStateService, BookSynonymService, RollService, ContentFilterService, LabService]);
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				LabResizeService, 
+				OrderStateService, 
+				BookSynonymService, 
+				RollService, 
+				ContentFilterService, 
+				LabService,
+				TechPointService
+			]);
 			
 			//fill from config
 			//Context.fillFromConfig();
@@ -248,7 +259,8 @@ package com.photodispatcher.context{
 			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_LAB, false, onFieldList),'lab_type');
 
 			//tech_typeList !!!!
-			latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT, false, onFieldList),'tech_type');
+			//latchAttributeLists.addLatch(dict.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT, false, onFieldList),'tech_type');
+			latchAttributeLists.addLatch(dict.getTechTypeValueList(onFieldList),'tech_type');
 
 			//tech_points
 			latchAttributeLists.addLatch(dict.getTechPointValueList(true, onFieldList),'tech_point');

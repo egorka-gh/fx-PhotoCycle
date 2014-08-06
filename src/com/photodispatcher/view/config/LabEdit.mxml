@@ -59,6 +59,7 @@
 			protected function btAddDevice_clickHandler(event:MouseEvent):void{
 				if(!_currentItem || !_currentItem.loaded || !_currentItem.id) return;
 				var dev:LabDevice= new LabDevice();
+				dev.name='Новое';
 				dev.lab=_currentItem.id;
 				var lsvc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
 				var latch:DbLatch=new DbLatch(false);
