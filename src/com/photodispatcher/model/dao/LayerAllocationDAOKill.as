@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.LayerAllocation;
 
-	public class LayerAllocationDAO extends BaseDAO{
+	public class LayerAllocationDAOKill extends BaseDAO{
 
 		public function getBySet(layerset:int, forEdit:Boolean, silent:Boolean=false):Array {
 			var sql:String;

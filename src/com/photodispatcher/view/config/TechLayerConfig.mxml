@@ -8,28 +8,23 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.mysql.entities.BookSynonym;
-			import com.photodispatcher.model.Endpaper;
-			import com.photodispatcher.model.Layer;
-			import com.photodispatcher.model.LayerAllocation;
 			import com.photodispatcher.model.LayerGroup;
-			import com.photodispatcher.model.LayerSequence;
 			import com.photodispatcher.model.Layerset;
-			import com.photodispatcher.model.LayersetGroup;
-			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.SynonymCommon;
-			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.DictionaryCommonDAO;
-			import com.photodispatcher.model.dao.EndpaperDAO;
-			import com.photodispatcher.model.dao.LayerAllocationDAO;
-			import com.photodispatcher.model.dao.LayerDAO;
-			import com.photodispatcher.model.dao.LayerSequenceDAO;
-			import com.photodispatcher.model.dao.LayersetDAO;
-			import com.photodispatcher.model.dao.LayersetGroupDAO;
+			//import com.photodispatcher.model.dao.LayersetDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Layer;
+			import com.photodispatcher.model.mysql.entities.LayerSequence;
+			import com.photodispatcher.model.mysql.entities.LayersetGroup;
+			import com.photodispatcher.model.mysql.entities.SelectResult;
+			import com.photodispatcher.model.mysql.services.TechPickerService;
 			import com.photodispatcher.tech.picker.TechPicker;
 			
 			import flash.sampler.NewObjectSample;
+			
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideResultEvent;
 			
 			import spark.events.GridItemEditorEvent;
 			import spark.events.GridSelectionEvent;
@@ -54,19 +49,52 @@
 
 			[Bindable]
 			private var currTemplate:Object;
+			
+			private var service:TechPickerService;
 
 			private function init():void{
-				var gdao:LayersetGroupDAO= new LayersetGroupDAO();
-				groupsAC=gdao.findAll();
-				if(groupsAC && groupsAC.length>0) currTechGroup=groupsAC.getItemAt(0) as LayersetGroup;
-				var dao:LayerDAO= new LayerDAO();
-				layersAC= dao.findAll();
-				var tDao:LayersetDAO= new LayersetDAO();
-				templatesAC=tDao.findAll();
 				lGroupAC= Context.getAttribute('layer_groupList');
 				if(lGroupAC && lGroupAC.length>0) currLGroupIdx=0;
+				service=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
+				var latch:DbLatch= new DbLatch();
+				latch.addLatch(service.loadLayersetGroups(onLoadLach),'groups');
+				latch.addLatch(service.loadLayers(onLoadLach),'layers');
+				latch.addLatch(service.loadLayersets(0,onLoadLach),'templates');
+				
+				latch.addEventListener(Event.COMPLETE, onInitComplite);
+				latch.start();
 			}
 			
+			private function onInitComplite(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInitComplite);
+					if(latch.complite){
+						
+					}
+				}
+			}
+			
+			private function onLoadLach(event:TideResultEvent):void{
+				var tag:String=event.asyncToken.tag; 
+				var res:SelectResult=event.result as SelectResult;
+				if(tag && res && res.complete){
+					switch(tag){
+						case 'groups':
+							groupsAC=res.data as ArrayCollection;
+							if(groupsAC && groupsAC.length>0) currTechGroup=groupsAC.getItemAt(0) as LayersetGroup;
+							break;
+						case 'layers':
+							layersAC=res.data as ArrayCollection;
+							break;
+						case 'templates':
+							templatesAC=res.data as ArrayCollection;
+							break;
+					}
+				}
+			}
+
+
 			protected function btAddLayer_clickHandler(event:MouseEvent):void{
 				var l:Layer= new Layer();
 				l.name='Новый слой';
@@ -75,15 +103,27 @@
 			}
 			
 			protected function btSaveLayers_clickHandler(event:MouseEvent):void{
-				var dao:LayerDAO;
 				var l:Layer;
+				var items:ArrayCollection= new ArrayCollection();
 				for each(l in layersAC){
 					if ((l.changed || !l.loaded) && l.id!=0 && l.id!=1){
-						dao= new LayerDAO();
-						dao.save(l);
+						items.addItem(l);
 					}
 				}
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onLayersSave);
+				latch.addLatch(service.persistLayers(items));
+				latch.start();
 				
+			}
+			private  function onLayersSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLayersSave);
+					if(latch.complite){
+						layersAC=latch.lastDataAC;
+					}
+				}
 			}
 
 			protected function btAddLayerset_clickHandler(event:MouseEvent):void{
@@ -212,10 +252,26 @@
 				if(idx==-1) return;
 				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup;
 				if(!lg) return;
-
+				/*
 				var dao:LayerSequenceDAO= new LayerSequenceDAO();
 				dao.updateBatch(seqAC.source, ls.id, lg.id);
+				*/
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onSequenceSave);
+				latch.addLatch(service.persistSequence(seqAC, ls.id, lg.id));
+				latch.start();
+				
 			}
+			private  function onSequenceSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSequenceSave);
+					if(latch.complite){
+						seqAC=latch.lastDataAC;
+					}
+				}
+			}
+
 			
 			private function detectState():void{
 				var tDao:LayersetDAO= new LayersetDAO();
@@ -284,94 +340,6 @@
 				showSequence();
 			}
 			
-			/*
-			[Bindable]
-			private var aliasAllowAC:ArrayCollection;
-			[Bindable]
-			private var aliasDisAllowAC:ArrayCollection;
-			private var aliasesChenged:Boolean;
-			
-			private function filterAllow(item:Object):Boolean{
-				var s:BookSynonym=item as BookSynonym;
-				if(!s) return false;
-				return s.is_allow;
-			}
-			private function filterDisAllow(item:Object):Boolean{
-				var s:BookSynonym=item as BookSynonym;
-				if(!s) return false;
-				if(tiSynonymFilter && tiSynonymFilter.text && s.synonym.indexOf(tiSynonymFilter.text)==-1 ) return false;
-				return !s.is_allow;
-			}
-			
-			private function applyDisallowFilter():void{
-				if(aliasDisAllowAC) aliasDisAllowAC.refresh();
-				if(aliasAllowAC) aliasAllowAC.refresh();
-			}
-
-			private function fillAliases():void{
-				var arr:Array=[];
-				var d:BookSynonymDAO= new BookSynonymDAO();
-				if(currFilter && currFilter.loaded){
-					arr= d.get4Layerset(SourceType.SRC_FOTOKNIGA,currFilter.id);
-				}else{
-					arr= d.findAllArray(SourceType.SRC_FOTOKNIGA,-1);
-				}
-				aliasAllowAC= new ArrayCollection(arr);
-				aliasAllowAC.filterFunction=filterAllow;
-				aliasAllowAC.refresh();
-				aliasDisAllowAC= new ArrayCollection(arr);
-				aliasDisAllowAC.filterFunction=filterDisAllow;
-				aliasDisAllowAC.refresh();
-				aliasesChenged=false;
-			}
-			
-			protected function btAddAli_clickHandler(event:MouseEvent):void{
-				var s:BookSynonym;
-				if(disAllowLst && disAllowLst.currentItem){
-					s=disAllowLst.currentItem as BookSynonym;
-					if(s) s.is_allow=true;
-				}
-				applyDisallowFilter();
-				aliasesChenged=true;
-			}
-			
-			protected function btAddAliAll_clickHandler(event:MouseEvent):void{
-				var s:BookSynonym;
-				if(aliasDisAllowAC){
-					aliasDisAllowAC.disableAutoUpdate();
-					for each(s in aliasDisAllowAC){
-						if(!s.is_allow) s.is_allow=true;
-					}
-					aliasDisAllowAC.enableAutoUpdate();
-				}
-				applyDisallowFilter();
-				aliasesChenged=true;
-			}
-			
-			protected function btDelAli_clickHandler(event:MouseEvent):void{
-				var s:BookSynonym;
-				if(allowLst && allowLst.selectedItem){
-					s=allowLst.selectedItem as BookSynonym;
-					if(s) s.is_allow=false;
-				}
-				applyDisallowFilter();
-				aliasesChenged=true;
-			}
-			
-			protected function btDelAliAll_clickHandler(event:MouseEvent):void{
-				var s:BookSynonym;
-				if(aliasAllowAC){
-					aliasAllowAC.disableAutoUpdate();
-					for each(s in aliasAllowAC){
-						if(s.is_allow) s.is_allow=false;
-					}
-					aliasAllowAC.enableAutoUpdate();
-				}
-				applyDisallowFilter();
-				aliasesChenged=true;
-			}
-			*/
-
 
 			protected function btAddLayerGrp_clickHandler(event:MouseEvent):void{
 				var l:LayersetGroup= new LayersetGroup();
@@ -381,12 +349,28 @@
 			}
 			
 			protected function btSaveLayersGrp_clickHandler(event:MouseEvent):void{
-				var dao:LayersetGroupDAO;
+				//var dao:LayersetGroupDAO;
 				var l:LayersetGroup;
+				var items:ArrayCollection= new ArrayCollection();
 				for each(l in groupsAC){
 					if ((l.changed || !l.loaded) && l.id!=0 ){
-						dao= new LayersetGroupDAO();
-						dao.save(l);
+						items.addItem(l);
+					}
+				}
+				if(items.length==0) return;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onLayersetGroupSave);
+				latch.addLatch(service.persistLayers(items));
+				latch.start();
+				
+			}
+			private  function onLayersetGroupSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLayersetGroupSave);
+					if(latch.complite){
+						groupsAC=latch.lastDataAC;
+						if(groupsAC && groupsAC.length>0) currTechGroup=groupsAC.getItemAt(0) as LayersetGroup;
 					}
 				}
 			}

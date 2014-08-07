@@ -16,7 +16,7 @@ package com.photodispatcher.model.dao{
 			return itemsArray ;
 		}
 		
-		public function checkBySet(layerset:int, silent:Boolean=false):String {
+		public function checkBySetKILL(layerset:int, silent:Boolean=false):String {
 			var sql:String;
 			sql='SELECT l.name name'+
 				' FROM config.layer l'+

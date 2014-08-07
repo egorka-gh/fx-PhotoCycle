@@ -11,16 +11,17 @@ package com.photodispatcher.model.mysql.entities {
 	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
-    [RemoteClass(alias="com.photodispatcher.model.mysql.entities.LayersetGroup")]
-    public class LayersetGroup extends LayersetGroupBase {
-		
-		public static function gridColumns(subSetType:int=0):ArrayList{
+    [RemoteClass(alias="com.photodispatcher.model.mysql.entities.Layer")]
+    public class Layer extends LayerBase {
+		public static const LAYER_EMPTY:int=0;
+		public static const LAYER_SHEET:int=1;
+		public static const LAYER_ENDPAPER:int=2;
+
+		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
-			var col:GridColumn;
-			col= new GridColumn('id'); col.headerText='ID'; col.visible=false; result.addItem(col);
+			var col:GridColumn= new GridColumn('id'); col.headerText='ID'; col.visible=false; result.addItem(col);
 			col= new GridColumn('name'); col.headerText='Наименование'; result.addItem(col); 
 			return result;
 		}
-
     }
 }

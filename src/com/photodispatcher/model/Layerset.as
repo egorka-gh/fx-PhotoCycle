@@ -1,5 +1,4 @@
 package com.photodispatcher.model{
-	import com.photodispatcher.model.dao.LayerAllocationDAO;
 	import com.photodispatcher.model.dao.LayerSequenceDAO;
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;

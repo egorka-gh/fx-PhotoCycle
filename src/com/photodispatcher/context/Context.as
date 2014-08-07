@@ -21,6 +21,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
+	import com.photodispatcher.model.mysql.services.TechPickerService;
 	import com.photodispatcher.model.mysql.services.TechPointService;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -71,7 +72,8 @@ package com.photodispatcher.context{
 				RollService, 
 				ContentFilterService, 
 				LabService,
-				TechPointService
+				TechPointService,
+				TechPickerService
 			]);
 			
 			//fill from config
