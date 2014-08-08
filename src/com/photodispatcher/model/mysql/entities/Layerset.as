@@ -6,9 +6,41 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.util.GridUtil;
+	import com.photodispatcher.view.itemRenderer.BooleanGridRenderer;
+	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
+	
+	import mx.collections.ArrayList;
+	import mx.core.ClassFactory;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.Layerset")]
     public class Layerset extends LayersetBase {
+		public static const LAYERSET_TYPE_TEMPLATE:int=0;
+		public static const LAYERSET_TYPE_INTERLAYER:int=1;
+		public static const LAYERSET_TYPE_ENDPAPER:int=2;
+
+		public function get prepared():Boolean{
+			return loaded;
+		}
+
+		public static function gridColumns(subSetType:int=0):ArrayList{
+			var result:ArrayList= new ArrayList();
+			var col:GridColumn;
+			col= new GridColumn('id'); col.headerText='ID'; col.visible=false; result.addItem(col);
+			col= new GridColumn('name'); col.headerText='Наименование'; col.width=150; result.addItem(col); 
+			if(subSetType==0){
+				col= new GridColumn('book_type'); col.headerText='Тип книги'; col.width=150; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+				col= new GridColumn('is_book_check_off'); col.headerText='Отключить контроль типа книги'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
+				col= new GridColumn('is_epaper_check_off'); col.headerText='Отключить контроль форзаца'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
+			}
+			if(subSetType==2){
+				col= new GridColumn('is_passover'); col.headerText='Без форзаца'; col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.editable=false;  col.width=200; result.addItem(col);
+			}
+			return result;
+		}
+
     }
 }

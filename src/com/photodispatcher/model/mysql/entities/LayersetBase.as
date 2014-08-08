@@ -28,6 +28,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _sequenceMiddle:ListCollectionView;
         private var _sequenceStart:ListCollectionView;
         private var _subset_type:int;
+        private var _usesEndPaper:Boolean;
 
         public function set book_type(value:int):void {
             _book_type = value;
@@ -120,6 +121,13 @@ package com.photodispatcher.model.mysql.entities {
             return _subset_type;
         }
 
+        public function set usesEndPaper(value:Boolean):void {
+            _usesEndPaper = value;
+        }
+        public function get usesEndPaper():Boolean {
+            return _usesEndPaper;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _book_type = input.readObject() as int;
@@ -135,6 +143,7 @@ package com.photodispatcher.model.mysql.entities {
             _sequenceMiddle = input.readObject() as ListCollectionView;
             _sequenceStart = input.readObject() as ListCollectionView;
             _subset_type = input.readObject() as int;
+            _usesEndPaper = input.readObject() as Boolean;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -152,6 +161,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_sequenceMiddle is IPropertyHolder) ? IPropertyHolder(_sequenceMiddle).object : _sequenceMiddle);
             output.writeObject((_sequenceStart is IPropertyHolder) ? IPropertyHolder(_sequenceStart).object : _sequenceStart);
             output.writeObject((_subset_type is IPropertyHolder) ? IPropertyHolder(_subset_type).object : _subset_type);
+            output.writeObject((_usesEndPaper is IPropertyHolder) ? IPropertyHolder(_usesEndPaper).object : _usesEndPaper);
         }
     }
 }

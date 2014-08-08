@@ -84,17 +84,6 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
-        public function loadtSequence(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
-            if (faultHandler != null)
-                return callProperty("loadtSequence", arg0, resultHandler, faultHandler) as AsyncToken;
-            else if (resultHandler is Function || resultHandler is ITideResponder)
-                return callProperty("loadtSequence", arg0, resultHandler) as AsyncToken;
-            else if (resultHandler == null)
-                return callProperty("loadtSequence", arg0) as AsyncToken;
-            else
-                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
-        }    
-        
         public function persistSequence(arg0:ListCollectionView, arg1:int, arg2:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("persistSequence", arg0, arg1, arg2, resultHandler, faultHandler) as AsyncToken;
@@ -102,28 +91,6 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("persistSequence", arg0, arg1, arg2, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("persistSequence", arg0, arg1, arg2) as AsyncToken;
-            else
-                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
-        }    
-        
-        public function loadEndpapers(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
-            if (faultHandler != null)
-                return callProperty("loadEndpapers", resultHandler, faultHandler) as AsyncToken;
-            else if (resultHandler is Function || resultHandler is ITideResponder)
-                return callProperty("loadEndpapers", resultHandler) as AsyncToken;
-            else if (resultHandler == null)
-                return callProperty("loadEndpapers") as AsyncToken;
-            else
-                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
-        }    
-        
-        public function persistEndpapers(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
-            if (faultHandler != null)
-                return callProperty("persistEndpapers", arg0, resultHandler, faultHandler) as AsyncToken;
-            else if (resultHandler is Function || resultHandler is ITideResponder)
-                return callProperty("persistEndpapers", arg0, resultHandler) as AsyncToken;
-            else if (resultHandler == null)
-                return callProperty("persistEndpapers", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }

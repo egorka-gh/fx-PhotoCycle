@@ -8,16 +8,15 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.LayerGroup;
-			import com.photodispatcher.model.Layerset;
-			import com.photodispatcher.model.SynonymCommon;
-			import com.photodispatcher.model.dao.DictionaryCommonDAO;
-			//import com.photodispatcher.model.dao.LayersetDAO;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Layer;
+			import com.photodispatcher.model.mysql.entities.LayerGroup;
 			import com.photodispatcher.model.mysql.entities.LayerSequence;
+			import com.photodispatcher.model.mysql.entities.Layerset;
 			import com.photodispatcher.model.mysql.entities.LayersetGroup;
+			import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 			import com.photodispatcher.model.mysql.entities.SelectResult;
+			import com.photodispatcher.model.mysql.services.DictionaryService;
 			import com.photodispatcher.model.mysql.services.TechPickerService;
 			import com.photodispatcher.tech.picker.TechPicker;
 			
@@ -51,16 +50,19 @@
 			private var currTemplate:Object;
 			
 			private var service:TechPickerService;
+			private var dictionary:DictionaryService;
 
 			private function init():void{
 				lGroupAC= Context.getAttribute('layer_groupList');
 				if(lGroupAC && lGroupAC.length>0) currLGroupIdx=0;
 				service=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
+				dictionary=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
 				var latch:DbLatch= new DbLatch();
 				latch.addLatch(service.loadLayersetGroups(onLoadLach),'groups');
 				latch.addLatch(service.loadLayers(onLoadLach),'layers');
-				latch.addLatch(service.loadLayersets(0,onLoadLach),'templates');
-				
+				//latch.addLatch(service.loadLayersets(0,onLoadLach),'templates');
+				latch.join(loadTemplates());
+
 				latch.addEventListener(Event.COMPLETE, onInitComplite);
 				latch.start();
 			}
@@ -144,25 +146,43 @@
 			}
 
 			protected function btSaveLayersets_clickHandler(event:MouseEvent):void{
-				var dao:LayersetDAO;
+				//var dao:LayersetDAO;
+				var items:ArrayCollection= new ArrayCollection();
 				var ls:Layerset;
 				for each(ls in templatesAC){
 					if (ls.changed || !ls.loaded){
-						dao= new LayersetDAO;
-						dao.save(ls);
+						items.addItem(ls);
+						//dao= new LayersetDAO;
+						//dao.save(ls);
+					}
+				}
+				if(items.length==0) return;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onLayersetsSave);
+				latch.addLatch(service.persistLayersets(items));
+				latch.start();
+				
+			}
+			private  function onLayersetsSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLayersetsSave);
+					if(latch.complite){
+						loadTemplates();
 					}
 				}
 			}
 			
 			protected function btEditLayerset_clickHandler(event:MouseEvent):void{
 				var ls:Layerset= currTemplate as Layerset;
+				var loadSynonym:Boolean=false;
 				if (!ls){
 					return;
 				}
 				var arr:Array=[];
 				var lg:LayerGroup;
 				var newState:String;
-				var dao:DictionaryCommonDAO;
+				//var dao:DictionaryCommonDAO;
 				var sarr:Array;
 				if(currentState=='templates'){
 					newState='template_edit';
@@ -174,46 +194,60 @@
 					newState='interlayers_edit';
 					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_BETWEEN_SHEET; lg.name='Между разворотами';
 					arr.push(lg);
-					dao= new DictionaryCommonDAO();
-					sarr= dao.getLayersetSynonyms(ls.id);
-					synAC=new ArrayCollection(sarr);
+					loadSynonym=true;
 				}else{
 					newState='endpaper_edit';
 					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_START; lg.name='Начало книги';
 					arr.push(lg);
 					lg= new LayerGroup(); lg.id=TechPicker.COMMAND_GROUP_BOOK_END; lg.name='Конец книги';
 					arr.push(lg);
-					dao= new DictionaryCommonDAO();
-					sarr= dao.getLayersetSynonyms(ls.id);
-					synAC=new ArrayCollection(sarr);
+					loadSynonym=true;
 				}
 				lGroupAC= new ArrayCollection(arr);
 				if(lGroupAC && lGroupAC.length>0) currLGroupIdx=0;
-				
-				if(!ls.loadSequence()) return;
+				synAC=null;
+				if(loadSynonym){
+					var latch:DbLatch= new DbLatch();
+					latch.addEventListener(Event.COMPLETE, onSynonymLoad);
+					latch.addLatch(dictionary.loadLayersetSynonyms(ls.id));
+				}
+				//if(!ls.loadSequence()) return;
 				showSequence();
 				currentState=newState;
 			}
+			private function onSynonymLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSynonymLoad);
+					if(latch.complite){
+						synAC=latch.lastDataAC;
+					}
+				}
+			}
 			
-			private function showSequence():void{
-				var a:Array=[];
-				var ls:Layerset= currTemplate as Layerset;
+			private function getCurrLGroupId():int{
+				var result:int=-1;
 				var idx:int=currLGroupIdx;
 				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup; 
-				if(ls && lg){
-					switch(lg.id){
+				if(lg) result=lg.id;
+				return result;
+			}
+			
+			private function showSequence():void{
+				var ls:Layerset= currTemplate as Layerset;
+				if(ls){
+					switch(getCurrLGroupId()){
 						case TechPicker.COMMAND_GROUP_BOOK_START:
-							a=ls.sequenceStart;
+							seqAC=ls.sequenceStart as ArrayCollection;
 							break;
 						case TechPicker.COMMAND_GROUP_BOOK_BETWEEN_SHEET:
-							a=ls.sequenceMiddle;
+							seqAC=ls.sequenceMiddle as ArrayCollection;
 							break;
 						case TechPicker.COMMAND_GROUP_BOOK_END:
-							a=ls.sequenceEnd;
+							seqAC=ls.sequenceEnd as ArrayCollection;
 							break;
 					}
 				}
-				seqAC= new ArrayCollection(a);
 			}
 			
 			protected function btAddSeq_clickHandler(event:MouseEvent):void{
@@ -221,11 +255,9 @@
 				if(!ls) return;
 				var newIt:LayerSequence= new LayerSequence();
 				newIt.layerset=ls.id;
-				var idx:int=currLGroupIdx;
-				if(idx==-1) return;
-				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup;
-				if(!lg) return;
-				newIt.layer_group=lg.id;
+				var lgId:int=getCurrLGroupId();
+				if(lgId<0) return;
+				newIt.layer_group=lgId;
 				var seq:int=1;
 				if(seqAC && seqAC.source && seqAC.source.length>0){
 					var it:LayerSequence=seqAC.source[seqAC.source.length-1] as LayerSequence; 
@@ -248,17 +280,11 @@
 			protected function btSaveSeq_clickHandler(event:MouseEvent):void{
 				var ls:Layerset= currTemplate as Layerset;
 				if(!ls) return;
-				var idx:int=currLGroupIdx;
-				if(idx==-1) return;
-				var lg:LayerGroup=lGroupAC.getItemAt(idx) as LayerGroup;
-				if(!lg) return;
-				/*
-				var dao:LayerSequenceDAO= new LayerSequenceDAO();
-				dao.updateBatch(seqAC.source, ls.id, lg.id);
-				*/
+				var lgId:int=getCurrLGroupId();
+				if(lgId<0) return;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE, onSequenceSave);
-				latch.addLatch(service.persistSequence(seqAC, ls.id, lg.id));
+				latch.addLatch(service.persistSequence(seqAC, ls.id, lgId));
 				latch.start();
 				
 			}
@@ -268,13 +294,26 @@
 					latch.removeEventListener(Event.COMPLETE,onSequenceSave);
 					if(latch.complite){
 						seqAC=latch.lastDataAC;
+						var ls:Layerset= currTemplate as Layerset;
+						if(!ls) return;
+						switch(getCurrLGroupId()){
+							case TechPicker.COMMAND_GROUP_BOOK_START:
+								ls.sequenceStart=seqAC;
+								break;
+							case TechPicker.COMMAND_GROUP_BOOK_BETWEEN_SHEET:
+								ls.sequenceMiddle=seqAC;
+								break;
+							case TechPicker.COMMAND_GROUP_BOOK_END:
+								ls.sequenceEnd=seqAC;
+								break;
+						}
 					}
 				}
 			}
 
 			
 			private function detectState():void{
-				var tDao:LayersetDAO= new LayersetDAO();
+				//var tDao:LayersetDAO= new LayersetDAO();
 				switch(tbView.selectedIndex){
 					case 0:
 						currentState='tech_groups';
@@ -283,23 +322,64 @@
 						currentState='layers';
 						break;
 					case 2:
+						/*
 						templatesAC=tDao.findAll();
 						templatesAC.filterFunction=filterTemplates;
 						templatesAC.refresh();
+						*/
 						currentState='templates';
+						loadTemplates();
 						break;
 					case 3:
+						/*
 						templatesAC=tDao.findAll(1);
 						templatesAC.filterFunction=filterTemplates;
 						templatesAC.refresh();
+						*/
 						currentState='interlayers';
+						loadTemplates();
 						break;
 					case 4:
+						/*
 						templatesAC=tDao.findAll(2);
 						templatesAC.filterFunction=filterTemplates;
 						templatesAC.refresh();
+						*/
 						currentState='endpaper';
+						loadTemplates();
 						break;
+				}
+			}
+			
+			private function loadTemplates():DbLatch{
+				var type:int=0;
+				switch(currentState){
+					case 'templates':
+						type=0;
+						break;
+					case 'interlayers':
+						type=1;
+						break;
+					case 'endpaper':
+						type=2;
+						break;
+				}
+				templatesAC=null;
+				var latch:DbLatch= new DbLatch();
+				latch.addLatch(service.loadLayersets(type));
+				latch.addEventListener(Event.COMPLETE, onloadTemplates);
+				latch.start();
+				return latch;
+			}
+			private function onloadTemplates(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadTemplates);
+					if(latch.complite){
+						templatesAC=latch.lastDataAC;
+						templatesAC.filterFunction=filterTemplates;
+						templatesAC.refresh();
+					}
 				}
 			}
 			
@@ -318,22 +398,40 @@
 			protected function btAddSynonym_clickHandler(event:MouseEvent):void{
 				var ls:Layerset= currTemplate as Layerset;
 				if(!ls) return;
-				var newIt:SynonymCommon= new SynonymCommon();
+				var newIt:LayersetSynonym= new LayersetSynonym();
 				newIt.item_id=ls.id;
 				synAC.addItem(newIt);
 				synGrid.currentItem=newIt;
 			}
 			
 			protected function btSaveSynonym_clickHandler(event:MouseEvent):void{
-				var dao:DictionaryCommonDAO;
-				var ls:SynonymCommon;
+				var ls:LayersetSynonym;
+				var items:ArrayCollection= new ArrayCollection();
 				for each (ls in synAC){
-					if(ls.changed || !ls.loaded){
-						dao= new DictionaryCommonDAO();
-						dao.saveLayersetSynonym(ls);
+					if(ls.changed || !ls.loaded) items.addItem(ls);
+				}
+				if(items.length>0){
+					var latch:DbLatch= new DbLatch();
+					latch.addLatch(dictionary.persistsLayersetSynonyms(items));
+					latch.addEventListener(Event.COMPLETE, onSaveSynonym);
+					latch.start();
+
+				}
+			}
+			private function onSaveSynonym(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSaveSynonym);
+					if(latch.complite){
+						var ls:Layerset= currTemplate as Layerset;
+						if (!ls) return;
+						latch=new DbLatch();
+						latch.addEventListener(Event.COMPLETE, onSynonymLoad);
+						latch.addLatch(dictionary.loadLayersetSynonyms(ls.id));
 					}
 				}
 			}
+
 		
 			protected function cbGroup_changeHandler(event:IndexChangeEvent):void{
 				currLGroupIdx=cbGroup.selectedIndex;
@@ -454,7 +552,7 @@
 			<s:VGroup height="100%" width="250" gap="10" includeIn="interlayers_edit, endpaper_edit">
 				<s:Label text="Синонимы" fontWeight="bold"/>
 				<config:ItemsGrid id="synGrid" editable="true" 
-								  currentData="{synAC}" currentColumns="{SynonymCommon.gridColumns()}"
+								  currentData="{synAC}" currentColumns="{LayersetSynonym.gridColumns()}"
 								  width="100%" height="100%"/>
 				<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
 					<s:Button id="btAddSynonym" label="Добавить" click="btAddSynonym_clickHandler(event)"/>
@@ -477,37 +575,6 @@
 					<s:Button id="btSaveSeq" label="Сохранить"  click="btSaveSeq_clickHandler(event)"/>
 				</s:HGroup>
 			</s:VGroup>
-			<!--<s:VGroup height="100%" width="100%" gap="10" includeIn="template_edit">
-				<s:HGroup width="100%" verticalAlign="baseline">
-					<s:Label text="Список алиасов"/>
-					<s:CheckBox/>
-				</s:HGroup>
-				<s:HGroup gap="10" width="100%" height="100%">
-					<s:VGroup gap="5" width="200" height="100%">
-						<s:Label text="Разрешен для алиасов"/>
-						<s:List id="allowLst" width="100%" height="100%" labelField="synonym"/>
-					</s:VGroup>
-					<s:VGroup height="100%" verticalAlign="middle">
-						<s:Button id="btAddAli" label="&#60;"  toolTip="Добавить" />
-						<s:Button id="btAddAliAll" label="&#60;&#60;" toolTip="Добавить все" />
-						<s:Button id="btDelAli" label="&#62;" toolTip="Удалить" />
-						<s:Button id="btDelAliAll" label="&#62;&#62;" toolTip="Удалить все" />
-					</s:VGroup>
-					<s:VGroup gap="5" width="100%" height="100%" maxWidth="300">
-						<s:Label text="Исключен для алиасов"/>
-						<s:HGroup width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
-							<s:Label text="Фильтрация"/>
-							<s:TextInput id="tiSynonymFilter" width="100%"/>
-						</s:HGroup>
-						<config:ItemsGrid id="disAllowLst" width="100%" height="100%" 
-										  editable="false" currentColumns="{BookSynonymDAO.gridColumns(true)}"/>
-					</s:VGroup>
-				</s:HGroup>
-				<s:HGroup width="100%" maxWidth="600" gap="10" horizontalAlign="right">
-					<s:Button id="btSaveAlias" label="Сохранить"  />
-					<s:Button label="В список шаблонов" click="detectState()"/>
-				</s:HGroup>
-			</s:VGroup>-->
 			<s:Button label="В список шаблонов" click="detectState()"/>
 		</s:HGroup>
 	</s:VGroup>
