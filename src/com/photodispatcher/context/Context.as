@@ -4,6 +4,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.dao.AppConfigDAO;
 	import com.photodispatcher.model.dao.AttrTypeDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.AttrJsonMap;
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
@@ -88,6 +89,7 @@ package com.photodispatcher.context{
 			latch.join(FieldValue.initSynonymMap());
 			latch.join(Roll.initItemsMap());
 			latch.join(LabPrintCode.initChanelMap());
+			latch.join(AttrJsonMap.initJsonMap());
 
 			//latch.start();//start at caller?
 			return latch;

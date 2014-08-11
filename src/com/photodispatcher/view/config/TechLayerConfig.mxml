@@ -108,7 +108,7 @@
 				var l:Layer;
 				var items:ArrayCollection= new ArrayCollection();
 				for each(l in layersAC){
-					if ((l.changed || !l.loaded) && l.id!=0 && l.id!=1){
+					if (!l.loaded || (l.changed && l.id!=0 && l.id!=1)){
 						items.addItem(l);
 					}
 				}
@@ -210,6 +210,7 @@
 					var latch:DbLatch= new DbLatch();
 					latch.addEventListener(Event.COMPLETE, onSynonymLoad);
 					latch.addLatch(dictionary.loadLayersetSynonyms(ls.id));
+					latch.start();
 				}
 				//if(!ls.loadSequence()) return;
 				showSequence();

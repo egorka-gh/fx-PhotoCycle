@@ -23,5 +23,9 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('name'); col.headerText='Наименование'; result.addItem(col); 
 			return result;
 		}
+		
+		public function Layer():void{
+			id=-1;
+		}
     }
 }

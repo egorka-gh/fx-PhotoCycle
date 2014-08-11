@@ -10,5 +10,9 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.AttrType")]
     public class AttrType extends AttrTypeBase {
+		public static const FAMILY_PRINT:int=1;
+		public static const FAMILY_ORDER:int=2;
+		public static const FAMILY_ORDER_EXTRA:int=3;
+
     }
 }
