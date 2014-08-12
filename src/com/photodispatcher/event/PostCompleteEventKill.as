@@ -1,5 +1,5 @@
 package com.photodispatcher.event{
-	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
 	import flash.events.Event;
 	

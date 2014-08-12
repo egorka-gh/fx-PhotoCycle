@@ -9,15 +9,9 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.Order;
 			import com.photodispatcher.model.OrderExtraState;
 			import com.photodispatcher.model.OrderExtraStateProlong;
-			import com.photodispatcher.model.mysql.entities.OrderState;
-			import com.photodispatcher.model.PrintGroup;
-			import com.photodispatcher.model.PrintGroupFile;
-			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.StateLog;
-			import com.photodispatcher.model.Suborder;
 			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.OrderExtraStateDAO;
@@ -27,12 +21,19 @@
 			import com.photodispatcher.model.dao.StateLogDAO;
 			import com.photodispatcher.model.dao.SuborderDAO;
 			import com.photodispatcher.model.dao.TechLogDAO;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.PrintGroupFile;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.itemRenderer.PGFileReprintItemRenderer;
 			
 			import flash.utils.flash_proxy;
 			
 			import mx.collections.ArrayCollection;
+			import mx.collections.ListCollectionView;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
@@ -96,7 +97,7 @@
 					a=soDAO.getByOrder(order.id, true);
 					soList.source=a;
 					aa=a.slice();
-					var so:Suborder= new Suborder(); so.ftp_folder=so.src_id='-';
+					var so:SubOrder= new SubOrder(); so.ftp_folder=so.sub_id='-';
 					aa.unshift(so);
 					soFilterList.source=aa;
 					
@@ -295,11 +296,11 @@
 				var pg:PrintGroup;
 				var pgf:PrintGroupFile;
 				var arrPG:Array=[];
-				var arrFiles:Array;
+				var files:ListCollectionView;
 				//get reprint pg
 				for each (pg in reprintPGList){
 					if(pg){
-						for each (pgf in pg.getFiles()){
+						for each (pgf in pg.files){
 							if(pgf && pgf.reprint){
 								arrPG.push(pg);
 								break;
@@ -320,16 +321,16 @@
 						pg.state=OrderState.PRN_WAITE;
 						pg.is_reprint=true;
 						//get files
-						arrFiles=pg.getFiles();
+						files=pg.files;
 						pg.resetFiles();
-						for each (pgf in arrFiles){
+						for each (pgf in files){
 							if(pgf && pgf.reprint){
 								pgf.print_group=pg.id;
 								pg.addFile(pgf);
 								prints+=pgf.prt_qty>0?pgf.prt_qty:1;
 							}
 						}
-						pg.file_num=pg.getFiles().length;
+						pg.file_num=pg.files.length;
 						pg.prints=prints;
 					}
 				}
@@ -437,25 +438,25 @@
 						<s:TextInput id="tiFotosNum" text="{order.fotos_num.toString()}" editable="false" width="150"/>
 					</s:FormItem> 
 					<s:FormItem label="Тип">
-						<s:TextInput text="{order.calc_type}" editable="false" width="150"/>
+						<s:TextInput text="{order.extraInfo.calc_type}" editable="false" width="150"/>
 					</s:FormItem> 
 					<s:FormItem label="Обложка">
-						<s:TextInput text="{order.cover}" editable="false" width="150"/>
+						<s:TextInput text="{order.extraInfo.cover}" editable="false" width="150"/>
 					</s:FormItem> 
 					<s:FormItem label="Формат">
-						<s:TextInput text="{order.format}" editable="false" width="150"/>
+						<s:TextInput text="{order.extraInfo.format}" editable="false" width="150"/>
 					</s:FormItem> 
 					<s:FormItem label="Форзац">
-						<s:TextInput text="{order.endpaper}" editable="false" width="150"/>
+						<s:TextInput text="{order.extraInfo.endpaper}" editable="false" width="150"/>
 					</s:FormItem> 
 					<s:FormItem label="Прослойка">
-						<s:TextInput text="{order.interlayer}" editable="false" width="150"/>
+						<s:TextInput text="{order.extraInfo.interlayer}" editable="false" width="150"/>
 					</s:FormItem> 
 					<s:FormItem label="Углы">
-						<s:TextInput text="{order.corner_type}" editable="false" width="150"/>
+						<s:TextInput text="{order.extraInfo.corner_type}" editable="false" width="150"/>
 					</s:FormItem> 
 					<s:FormItem label="Каптал">
-						<s:TextInput text="{order.kaptal}" editable="false" width="150"/>
+						<s:TextInput text="{order.extraInfo.kaptal}" editable="false" width="150"/>
 					</s:FormItem> 
 				</s:Form>
 				<s:Button label="Сброс" bottom="10" right="10" click="button1_clickHandler(event)" includeIn="infoFull"/>
@@ -476,7 +477,7 @@
 					<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
 						<s:NavigatorContent label="Подзаказы" backgroundAlpha="0" width="100%" height="100%" includeIn="infoFull">
 							<s:DataGrid id="dgSuborders" selectionMode="none" top="10" left="10" right="10" bottom="10"
-										dataProvider="{soList}" locale="ru_RU" columns="{Suborder.gridColumns()}"/>
+										dataProvider="{soList}" locale="ru_RU" columns="{SubOrder.gridColumns()}"/>
 						</s:NavigatorContent>
 						<s:NavigatorContent id="ncPrintGroups" label="Группы печати" backgroundAlpha="0" width="100%" height="100%"  includeIn="infoFull">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">

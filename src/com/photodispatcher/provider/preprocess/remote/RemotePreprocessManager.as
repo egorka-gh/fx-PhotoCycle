@@ -7,7 +7,7 @@ package com.photodispatcher.provider.preprocess.remote{
 	import com.jxl.chatclient.mvcs.services.ChatService;
 	import com.photodispatcher.event.OrderBuildEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.provider.preprocess.OrderBuilderLocal;
 	
 	import flash.events.EventDispatcher;

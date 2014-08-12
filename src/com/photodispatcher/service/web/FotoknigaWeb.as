@@ -1,7 +1,8 @@
 package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.OrderBuilder;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.util.ArrayUtil;
@@ -216,13 +217,16 @@ package com.photodispatcher.service.web{
 					if(arr && arr.length>0){
 						var to:Order=arr[0] as Order;
 						if(to){
-							_getOrder.calc_type=to.calc_type;
-							_getOrder.endpaper=to.endpaper;
-							_getOrder.interlayer=to.interlayer;
-							_getOrder.cover=to.cover;
-							_getOrder.format=to.format;
-							_getOrder.corner_type=to.corner_type;
-							_getOrder.kaptal=to.kaptal;
+							_getOrder.extraInfo= new OrderExtraInfo();
+							if(to.extraInfo){
+							_getOrder.extraInfo.calc_type=to.extraInfo.calc_type;
+							_getOrder.extraInfo.endpaper=to.extraInfo.endpaper;
+							_getOrder.extraInfo.interlayer=to.extraInfo.interlayer;
+							_getOrder.extraInfo.cover=to.extraInfo.cover;
+							_getOrder.extraInfo.format=to.extraInfo.format;
+							_getOrder.extraInfo.corner_type=to.extraInfo.corner_type;
+							_getOrder.extraInfo.kaptal=to.extraInfo.kaptal;
+							}
 						}
 					}
 					endGetOrder();

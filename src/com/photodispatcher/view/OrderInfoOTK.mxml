@@ -11,9 +11,6 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.mysql.entities.BookSynonym;
-			import com.photodispatcher.model.Order;
-			import com.photodispatcher.model.PrintGroup;
 			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.TechLogLocal;
 			import com.photodispatcher.model.TechPoint;
@@ -25,6 +22,9 @@
 			import com.photodispatcher.model.dao.local.LocalDAO;
 			import com.photodispatcher.model.dao.local.TechLogLocalDAO;
 			import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;
@@ -90,9 +90,9 @@
 						if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) pgBlok=pg;
 					}
 				}
-				order.printGroups=[];
-				if(pgCover) order.printGroups.push(pgCover);
-				if(pgBlok) order.printGroups.push(pgBlok);
+				order.printGroups=new ArrayCollection;
+				if(pgCover) order.printGroups.addItem(pgCover);
+				if(pgBlok) order.printGroups.addItem(pgBlok);
 				if(pgCover){
 					bookTotal=pgCover.book_num;
 				}else if(pgBlok){
@@ -372,28 +372,28 @@
 					</s:FormItem> 
 					<s:FormItem label="Тип">
 						<s:TextInput text="{pgCover.book_type_name}" editable="false" width="100%"/>
-						<s:TextInput text="{order.calc_type}" editable="false" width="100%"/>
+						<s:TextInput text="{order.extraInfo.calc_type}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Обложка">
-						<s:TextInput text="{order.cover}" editable="false" width="100%"/>
+						<s:TextInput text="{order.extraInfo.cover}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Формат">
-						<s:TextInput text="{order.format}" editable="false" width="100%"/>
+						<s:TextInput text="{order.extraInfo.format}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Алиас">
 						<s:TextInput text="{pgCover.path}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Форзац">
-						<s:TextInput text="{order.endpaper}" editable="false" width="100%"/>
+						<s:TextInput text="{order.extraInfo.endpaper}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Прослойка">
-						<s:TextInput text="{order.interlayer}" editable="false" width="100%"/>
+						<s:TextInput text="{order.extraInfo.interlayer}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Углы">
-						<s:TextInput text="{order.corner_type}" editable="false" width="100%"/>
+						<s:TextInput text="{order.extraInfo.corner_type}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Каптал">
-						<s:TextInput text="{order.kaptal}" editable="false" width="100%"/>
+						<s:TextInput text="{order.extraInfo.kaptal}" editable="false" width="100%"/>
 					</s:FormItem> 
 				</s:Form>
 			</s:Group>

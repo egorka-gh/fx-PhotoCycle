@@ -6,7 +6,6 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
-	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.services.BookSynonymService;

@@ -6,7 +6,6 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
-	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;

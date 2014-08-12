@@ -3,10 +3,10 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.event.IMRunerEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
 	import com.photodispatcher.event.OrderPreprocessEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.dao.LabResizeDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.fbook.makeup.FBookMakeupManager;

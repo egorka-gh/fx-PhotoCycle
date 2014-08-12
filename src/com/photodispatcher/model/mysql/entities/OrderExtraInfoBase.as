@@ -22,6 +22,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:String;
         private var _interlayer:String;
         private var _kaptal:String;
+        private var _sub_id:String;
 
         public function set calc_type(value:String):void {
             _calc_type = value;
@@ -79,6 +80,13 @@ package com.photodispatcher.model.mysql.entities {
             return _kaptal;
         }
 
+        public function set sub_id(value:String):void {
+            _sub_id = value;
+        }
+        public function get sub_id():String {
+            return _sub_id;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _calc_type = input.readObject() as String;
@@ -89,6 +97,7 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as String;
             _interlayer = input.readObject() as String;
             _kaptal = input.readObject() as String;
+            _sub_id = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -101,6 +110,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_interlayer is IPropertyHolder) ? IPropertyHolder(_interlayer).object : _interlayer);
             output.writeObject((_kaptal is IPropertyHolder) ? IPropertyHolder(_kaptal).object : _kaptal);
+            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
         }
     }
 }

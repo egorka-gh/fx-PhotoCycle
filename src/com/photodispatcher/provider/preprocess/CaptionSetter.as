@@ -1,7 +1,7 @@
 package com.photodispatcher.provider.preprocess{
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.filesystem.File;
@@ -33,11 +33,11 @@ package com.photodispatcher.provider.preprocess{
 		
 		private static function restorePgFilesCaption(pg:PrintGroup, orderFolder:File):void{
 			if(!pg || pg.book_type!=0) return;
+			if(!pg.files || pg.files.length==0) return;
 			
-			var pgfs:Array=pg.getFiles();
+			//var pgfs:Array=pg.files;
 			var pgf:PrintGroupFile;
 			
-			if(!pgfs || pgfs.length==0) return;
 			
 			var pgFolder:File=orderFolder.resolvePath(pg.path);
 			if(!pgFolder.exists || !pgFolder.isDirectory) return;
@@ -91,7 +91,7 @@ package com.photodispatcher.provider.preprocess{
 			var caption:String;
 			*/
 			//set caption
-			for each(pgf in pgfs){
+			for each(pgf in pg.files){
 				if(pgf){
 					key=StrUtil.getFileName(pgf.file_name);
 					key=StrUtil.removeFileExtension(key);

@@ -3,8 +3,8 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.PdfTemplate;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.dao.PdfTemplateDAO;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.util.IMCommandUtil;

@@ -1,7 +1,7 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.model.mysql.entities.Lab;
-	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.OrderState;

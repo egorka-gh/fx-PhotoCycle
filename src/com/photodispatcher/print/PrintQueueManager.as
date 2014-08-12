@@ -5,8 +5,6 @@ package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.factory.LabBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.dao.LabDAO;
 	import com.photodispatcher.model.dao.OrderDAO;
@@ -14,7 +12,9 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
@@ -289,11 +289,11 @@ package com.photodispatcher.print{
 							order.id=pg.order_id;
 							order.source=pg.source_id;
 							order.ftp_folder=pg.order_folder;
-							order.printGroups=[];
+							order.printGroups=new ArrayCollection();
 							order.state=OrderState.PRN_QUEUE;
 							srcOrders[pg.order_id]=order;
 						}
-						if(order.printGroups.length==0 || order.printGroups.indexOf(pg)==-1) order.printGroups.push(pg);
+						if(order.printGroups.length==0 || order.printGroups.getItemIndex(pg)==-1) order.printGroups.addItem(pg);
 					}
 				}
 			}

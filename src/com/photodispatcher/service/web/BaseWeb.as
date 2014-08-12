@@ -2,7 +2,7 @@ package com.photodispatcher.service.web{
 	import com.adobe.serialization.json.JSONDecoder;
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.OrderBuilder;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.util.JsonUtil;
 	

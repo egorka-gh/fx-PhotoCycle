@@ -138,9 +138,6 @@ package com.photodispatcher.model{
 		//childs
 		public var suborders:Array;
 
-		public function get hasSuborders():Boolean{
-			return (suborders && suborders.length>0);
-		}
 
 		public function addSuborder(so:Suborder):void{
 			if(!suborders){

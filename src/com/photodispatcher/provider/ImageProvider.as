@@ -1,6 +1,6 @@
 package com.photodispatcher.provider{
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.util.ArrayUtil;
 	

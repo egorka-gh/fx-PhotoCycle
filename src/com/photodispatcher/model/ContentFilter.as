@@ -2,6 +2,7 @@ package com.photodispatcher.model{
 	
 	import com.photodispatcher.model.dao.ContentFilterAliasDAO;
 	import com.photodispatcher.model.dao.ContentFilterDAO;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
 	import mx.collections.ArrayList;
 	
@@ -71,7 +72,7 @@ package com.photodispatcher.model{
 			return aliases.indexOf(alias)!=-1;
 		}
 
-		public function allowPrintGroup(pg:PrintGroup):Boolean{
+		public function allowPrintGroup(pg:com.photodispatcher.model.mysql.entities.PrintGroup):Boolean{
 			if(!pg) return false;
 			if(pg.book_type==0 && !is_photo_allow) return false;
 			if(pg.bookTemplate && !allowAlias(pg.bookTemplate.book)) return false;

@@ -1,14 +1,16 @@
 package com.photodispatcher.factory{
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.SubordersTemplate;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.model.Suborder;
-	import com.photodispatcher.model.SubordersTemplate;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	import flash.utils.Dictionary;
+	
+	import mx.collections.ListCollectionView;
 
 	public class SuborderBuilder{
 		
@@ -29,7 +31,7 @@ package com.photodispatcher.factory{
 			if(!source || !map || !order) return [];
 			var path:String;
 			var t:SubordersTemplate;
-			var o:Suborder;
+			var o:SubOrder;
 			var result:Array;
 
 			//for profoto type
@@ -38,7 +40,7 @@ package com.photodispatcher.factory{
 					if(path){
 						t=SubordersTemplate.translatePath(path,source.type);
 						if(t){
-							o= new Suborder();
+							o= new SubOrder();
 							o.order_id=order.id;
 							o.src_type=t.sub_src_type;
 							o.ftp_folder=path;
@@ -52,11 +54,11 @@ package com.photodispatcher.factory{
 			//for fotokniga type
 			if(source.type==SourceType.SRC_FOTOKNIGA && order.src_id){
 				//get subOrder id (-#)
-				var subId:int;
+				var subId:String; //:int;
 				var a:Array=order.src_id.split('-');
 				if(a && a.length>=2){
-					subId=int(a[1]);
-					o= new Suborder();
+					subId=a[1];
+					o= new SubOrder();
 					o.order_id=order.id;
 					o.sub_id=subId;
 					o.src_type=SourceType.SRC_FBOOK;
@@ -77,10 +79,10 @@ package com.photodispatcher.factory{
 			rootFolder=rootFolder.resolvePath(order.ftp_folder);
 			if(!rootFolder.exists || !rootFolder.isDirectory) return 'Папка заказа не найдена: '+rootFolder.nativePath;
 
-			var so:Suborder;
+			var so:SubOrder;
 			var soFolder:File;
 			var relFile:File;
-			var suborders:Array=order.suborders;
+			var suborders:ListCollectionView=order.suborders;
 			order.resetSuborders();
 			
 			for each(so in suborders){
@@ -102,7 +104,7 @@ package com.photodispatcher.factory{
 					txt=txt.replace(File.lineEnding, '\n');
 					var lines:Array=txt.split('\n');
 					var line:String;
-					var newSo:Suborder;
+					var newSo:SubOrder;
 					var poz:int;
 					if(lines && lines.length>0){
 						//parse last number
@@ -116,16 +118,16 @@ package com.photodispatcher.factory{
 									poz=txt.lastIndexOf('.');
 									if(poz!=-1){
 										txt=txt.substring(0,poz);
-										var subId:int=int(txt);
-										if(subId){
+										//var subId:int=int(txt);
+										//if(subId){
 											newSo=so.clone();
-											newSo.sub_id=subId;
+											newSo.sub_id=txt;
 											//newSo.fillId();
 											//newSo.fillFolder();
 											order.addSuborder(newSo);
-										}else{
+										//}else{
 											return 'Ошибка определения подзаказа: '+line;
-										}
+										//}
 									}
 								}
 							}

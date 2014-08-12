@@ -303,27 +303,7 @@ package com.photodispatcher.model{
 			var fa:Array=files;
 			if(!fa) return;
 			_printFiles=fa.concat();
-			/*
-			if (book_type!=0 && is_pdf){
-				_printFiles=fa.concat();
-				return;
-			}
-			if(book_type==0 || is_reprint){
-				//common print 
-				_printFiles=fa.concat();
-				return;
-			}
-			//common book
-			prepareBookFiles();
-			*/
 		}
-
-		/*
-		public function preparePDF():void{
-			if(book_type==0 || !is_pdf || (bookTemplate && bookTemplate.is_sheet_ready)) return;
-			prepareBookFiles(true);
-		}
-		*/
 
 		public function get bookFiles():Array{
 			if(!_bookFiles) prepareBookFiles();

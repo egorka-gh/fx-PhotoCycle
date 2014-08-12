@@ -11,7 +11,7 @@
 			import com.photodispatcher.factory.LabBuilder;
 			import com.photodispatcher.model.mysql.entities.Lab;
 			import com.photodispatcher.model.mysql.entities.LabRoll;
-			import com.photodispatcher.model.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;

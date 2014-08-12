@@ -10,7 +10,7 @@ package com.jxl.chatclient.mvcs.services
 	import com.jxl.chat.vo.messages.LoadMessageVO;
 	import com.jxl.chatclient.events.ServiceEvent;
 	import com.jxl.chatserver.vo.ClientVO;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;

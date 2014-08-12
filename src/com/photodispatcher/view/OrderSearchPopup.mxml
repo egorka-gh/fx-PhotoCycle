@@ -6,7 +6,7 @@
 						   keyDown="skinnablepopupcontainer1_keyDownHandler(event)">
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.dao.OrderDAO;
 			
 			import flash.globalization.DateTimeStyle;

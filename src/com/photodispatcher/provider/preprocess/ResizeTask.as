@@ -2,10 +2,10 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.IMRunerEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.shell.IMCommand;
@@ -73,15 +73,13 @@ package com.photodispatcher.provider.preprocess{
 		private function prepare():void{
 			var pg:PrintGroup;
 			var pgf:PrintGroupFile;
-			var files:Array;
 			var ri:ResizeItem
 			prepareItems=[];
 			resizeItems=[];
 			for each(pg in order.printGroups){
 				if(pg && pg.book_type==0 && pg.state<OrderState.CANCELED){
-					files=pg.getFiles();
-					if(files && files.length>0){
-						for each(pgf in files){
+					if(pg.files && pg.files.length>0){
+						for each(pgf in pg.files){
 							if(pgf){
 								ri= new ResizeItem(pgf);
 								ri.order_id=order.id;

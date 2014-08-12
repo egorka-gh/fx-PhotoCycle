@@ -1,6 +1,5 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
-	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Lab;
@@ -8,6 +7,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabRoll;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.util.ArrayUtil;
 	

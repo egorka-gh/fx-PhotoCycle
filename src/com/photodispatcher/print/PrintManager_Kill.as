@@ -3,9 +3,9 @@ package com.photodispatcher.print{
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.factory.WebServiceBuilder;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.dao.OrderDAO;

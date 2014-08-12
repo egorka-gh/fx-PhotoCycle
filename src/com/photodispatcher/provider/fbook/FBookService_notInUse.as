@@ -3,10 +3,10 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.json.JsonUtil;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.Suborder;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.ImageProvider;
 	import com.photodispatcher.provider.fbook.download.FBookContentDownloadManager;

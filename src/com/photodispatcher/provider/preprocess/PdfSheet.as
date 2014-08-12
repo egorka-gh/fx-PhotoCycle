@@ -1,6 +1,6 @@
 package com.photodispatcher.provider.preprocess{
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.util.IMCommandUtil;
 	

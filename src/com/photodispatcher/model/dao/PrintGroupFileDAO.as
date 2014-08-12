@@ -1,6 +1,6 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	
 	import flash.globalization.DateTimeStyle;
 	
@@ -53,7 +53,7 @@ package com.photodispatcher.model.dao{
 
 			a.loaded = true;
 			*/
-			fillRow(o,a);
+			//fillRow(o,a);
 			return a;
 		}
 	}

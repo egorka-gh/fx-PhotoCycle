@@ -6,13 +6,13 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.model.ContentFilter;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceSvc;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -24,6 +24,7 @@ package com.photodispatcher.provider.ftp{
 	import flash.utils.Dictionary;
 	import flash.utils.Timer;
 	
+	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
 	
 	import pl.maliboo.ftp.FTPFile;
@@ -516,8 +517,8 @@ package com.photodispatcher.provider.ftp{
 			
 			//can download
 			order.local_folder=fl.parent.nativePath;
-			order.printGroups=pgArr;
-			order.suborders=soArr;
+			order.printGroups=new ArrayCollection(pgArr);
+			order.suborders=new ArrayCollection(soArr);
 			order.state=OrderState.FTP_LOAD;
 			order.ftpQueue=ftpQueue;
 			order.resetErrCounter();

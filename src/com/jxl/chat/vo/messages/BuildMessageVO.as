@@ -1,5 +1,5 @@
 package com.jxl.chat.vo.messages{
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 
 	public class BuildMessageVO extends ChatMessageVO{
 		

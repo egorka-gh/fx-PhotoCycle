@@ -1,8 +1,8 @@
 package com.photodispatcher.view.menu{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.StateLog;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.view.OrderInfoPopup;

@@ -4,11 +4,11 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
 	import com.photodispatcher.factory.PrintGroupBuilder;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.provider.preprocess.BookMakeupGroup;
@@ -74,19 +74,19 @@ package com.photodispatcher.provider.fbook.makeup{
 
 			order.state=OrderState.PREPROCESS_PDF;
 			if(logStates) StateLogDAO.logState(order.state,order.id,'','Подготовка подзаказов');
-			var so:Suborder;
+			var so:SubOrder;
 			for each(so in order.suborders){
 				if(so && so.state<OrderState.CANCELED) so.state=OrderState.PREPROCESS_WAITE;
 			}
 			nextSuborder();
 		}
 
-		private var currSuborder:Suborder;
+		private var currSuborder:SubOrder;
 		private var textBuilder:TextImageBuilder;
 		private function nextSuborder():void{
 			currSuborder=null;
 			reportProgress();
-			var so:Suborder;
+			var so:SubOrder;
 			for each(so in order.suborders){
 				if(so && so.project && so.state==OrderState.PREPROCESS_WAITE){
 					currSuborder=so;
@@ -114,7 +114,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				return;
 			}
 			currSuborder.state=OrderState.PREPROCESS_PDF;
-			if(logStates) StateLogDAO.logState(order.state,order.id,'','Подзаказ: '+ currSuborder.src_id);
+			if(logStates) StateLogDAO.logState(order.state,order.id,'','Подзаказ: '+ currSuborder.sub_id);
 			var dir:File=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
 			textBuilder=new TextImageBuilder(currSuborder.project);
 			textBuilder.addEventListener(Event.COMPLETE, onTxtComplite);
@@ -347,7 +347,7 @@ package com.photodispatcher.provider.fbook.makeup{
 		
 		private var progressTotal:int=0;
 		private function reportProgress(caption:String='',ready:Number=0, total:Number=0):void{
-			dispatchEvent(new OrderBuildProgressEvent(order.id+':'+(currSuborder?currSuborder.src_id:'')+' '+ caption,ready,total));
+			dispatchEvent(new OrderBuildProgressEvent(order.id+':'+(currSuborder?currSuborder.sub_id:'')+' '+ caption,ready,total));
 		}
 
 	}

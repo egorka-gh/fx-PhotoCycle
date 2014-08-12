@@ -1,6 +1,6 @@
 package com.photodispatcher.service.barcode{
 	import com.photodispatcher.event.BarCodeEvent;
-	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.util.StrUtil;
 	

@@ -2,12 +2,12 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.AttrJsonMap;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
-	import com.photodispatcher.model.Suborder;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	
 	import flash.data.SQLStatement;
 	import flash.globalization.DateTimeStyle;
@@ -22,7 +22,7 @@ package com.photodispatcher.model.dao{
 
 		override protected function processRow(o:Object):Object{
 			var a:Order = new Order();
-			fillRow(o,a);
+			//fillRow(o,a);
 			//don't set before a.state, u'l lost actual state_date
 			a.state_date= new Date(o.state_date);
 
@@ -317,7 +317,7 @@ package com.photodispatcher.model.dao{
 			var sql:String;
 			var params:Array;
 			var dt:Date=new Date();
-			var so:Suborder;
+			var so:SubOrder;
 			
 			if(order.state<OrderState.CANCELED) order.state=order.is_preload?OrderState.PRN_WAITE_ORDER_STATE:OrderState.PRN_WAITE;
 			
@@ -326,7 +326,7 @@ package com.photodispatcher.model.dao{
 				for each(so in order.suborders){
 					sql='INSERT INTO suborders (id, order_id, src_type, sub_id, ftp_folder, prt_qty, proj_type, state, state_date)' +
 						' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-					params=[so.id,
+					params=[//so.id,
 							order.id,
 							so.src_type,
 							so.sub_id,
@@ -337,10 +337,10 @@ package com.photodispatcher.model.dao{
 							dt];
 					sequence.push(prepareStatement(sql,params));
 					//add sub orders extra info
-					if(so.endpaper || so.interlayer || so.cover || so.format || so.corner_type || so.kaptal){
+					if(so){//.endpaper || so.interlayer || so.cover || so.format || so.corner_type || so.kaptal){
 						sql='INSERT OR IGNORE INTO order_extra_info (id, endpaper, interlayer, calc_type, cover, format, corner_type, kaptal)' +
 							' VALUES (?,?,?,?,?,?,?,?)';
-						params=[so.id, so.endpaper, so.interlayer, so.calc_type, so.cover, so.format, so.corner_type, so.kaptal];
+						//params=[so.id, so.endpaper, so.interlayer, so.calc_type, so.cover, so.format, so.corner_type, so.kaptal];
 						sequence.push(prepareStatement(sql,params));
 					}
 				}
@@ -383,8 +383,8 @@ package com.photodispatcher.model.dao{
 						params=[order.id, pg.id, order.state, dt];
 						sequence.push(prepareStatement(sql,params));
 
-						if(pg.getFiles() && pg.getFiles().length>0){
-							for each(oo in pg.getFiles()){
+						if(pg.files && pg.files.length>0){
+							for each(oo in pg.files){
 								pgf= oo as PrintGroupFile;
 								if(pgf){
 									//create PrintGroupFile
@@ -401,10 +401,10 @@ package com.photodispatcher.model.dao{
 			}
 			
 			//add extra info
-			if(order.calc_type || order.endpaper || order.interlayer || order.cover || order.format || order.corner_type || order.kaptal){
+			if(order){//.calc_type || order.endpaper || order.interlayer || order.cover || order.format || order.corner_type || order.kaptal){
 				sql='INSERT OR IGNORE INTO order_extra_info (id, endpaper, interlayer, calc_type, cover, format, corner_type, kaptal)' +
 					' VALUES (?,?,?,?,?,?,?,?)';
-				params=[order.id, order.endpaper, order.interlayer, order.calc_type, order.cover, order.format, order.corner_type,order.kaptal];
+				//params=[order.id, order.endpaper, order.interlayer, order.calc_type, order.cover, order.format, order.corner_type,order.kaptal];
 				sequence.push(prepareStatement(sql,params));
 			}
 

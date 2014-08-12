@@ -1,5 +1,5 @@
 package com.photodispatcher.provider.preprocess{
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	
 	import flash.geom.Point;
 

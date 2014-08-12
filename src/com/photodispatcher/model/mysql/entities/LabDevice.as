@@ -6,7 +6,6 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
-	import com.photodispatcher.model.PrintGroup;
 	import com.photodispatcher.print.LabGeneric;
 	import com.photodispatcher.util.ArrayUtil;
 

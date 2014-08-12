@@ -4,18 +4,18 @@ package com.photodispatcher.factory{
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
-	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.PrintGroupFileDAO;
 	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.util.StrUtil;
@@ -25,6 +25,7 @@ package com.photodispatcher.factory{
 	import flash.geom.Point;
 	import flash.utils.Dictionary;
 	
+	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
 	import mx.collections.ListCollectionView;
 
@@ -78,9 +79,9 @@ package com.photodispatcher.factory{
 								//cpg.bookTemplate.sheet_len=UnitUtil.mm2Pixels300(cpg.height);
 							}
 							fillCovers(pg,cpg);
-							if(cpg.getFiles()){
+							if(cpg.files){
 								cpg.book_num=pg.book_num;
-								cpg.file_num=cpg.getFiles().length;
+								cpg.file_num=cpg.files.length;
 								resultMap[path+'~'+cpg.book_part+'~'+cpg.key()]=cpg;
 							}
 						}
@@ -88,9 +89,9 @@ package com.photodispatcher.factory{
 						cpg=bookSynonym.createPrintGroup(path, BookSynonym.BOOK_PART_INSERT);
 						if(cpg){
 							fillInsert(pg,cpg);
-							if(cpg.getFiles()){
+							if(cpg.files){
 								cpg.book_num=pg.book_num;
-								cpg.file_num=cpg.getFiles().length;
+								cpg.file_num=cpg.files.length;
 								resultMap[path+'~'+cpg.book_part+'~'+cpg.key()]=cpg;
 							}
 						}
@@ -98,9 +99,9 @@ package com.photodispatcher.factory{
 						cpg=bookSynonym.createPrintGroup(path, BookSynonym.BOOK_PART_BLOCK);
 						if(cpg){
 							fillSheets(pg,cpg, preview);
-							if(cpg.getFiles()){
+							if(cpg.files){
 								cpg.book_num=pg.book_num;
-								cpg.file_num=cpg.getFiles().length;
+								cpg.file_num=cpg.files.length;
 								resultMap[path+'~'+cpg.book_part+'~'+cpg.key()]=cpg;
 							}
 						}
@@ -127,8 +128,8 @@ package com.photodispatcher.factory{
 									fpg=parseFile(pg,s);
 									//TODO use prt_qty only 4 SRC_FOTOKNIGA
 									if(source.type!= SourceType.SRC_FOTOKNIGA){
-										if(fpg && fpg.getFiles() && fpg.getFiles().length>0){
-											(fpg.getFiles()[0] as PrintGroupFile).prt_qty=1;
+										if(fpg && fpg.files && fpg.files.length>0){
+											(fpg.files[0] as PrintGroupFile).prt_qty=1;
 										}
 									}
 									//put into result map grouped by path & print attr 
@@ -267,8 +268,8 @@ package com.photodispatcher.factory{
 					}
 				}
 			}
-			if(res.getFiles()){
-				for each (f in res.getFiles()){
+			if(res.files){
+				for each (f in res.files){
 					//set print qtty
 					f.prt_qty=1;//f.book_num==0?res.book_num:1;
 					//add caption 4 annotate
@@ -290,9 +291,9 @@ package com.photodispatcher.factory{
 		}
 
 		private function fillCovers(pg:PrintGroup, dst:PrintGroup):void{
-			if(!pg.getFiles()) return;
+			if(!pg.files) return;
 			var f:PrintGroupFile;
-			for each(f in pg.getFiles()){
+			for each(f in pg.files){
 				if (f && (f.page_num==0 || 
 					(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && !dst.bookTemplate.is_sheet_ready && dst.is_pdf && (f.page_num==1 || f.page_num==pg.pageNumber)))){
 					dst.addFile(f);
@@ -302,14 +303,18 @@ package com.photodispatcher.factory{
 			dst.sheet_num=1;
 			if(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && !dst.bookTemplate.is_sheet_ready) dst.sheet_num=2;
 			//sort 
-			if(dst.getFiles()) dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
+			if(dst.files){
+				var arr:Array=dst.files.toArray();
+				arr.sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
+				dst.files= new ArrayCollection(arr);
+			}
 		}
 
 		private function fillInsert(pg:PrintGroup, dst:PrintGroup):void{
-			if(!pg.getFiles()) return;
+			if(!pg.files) return;
 			//var res:Array=[];
 			var f:PrintGroupFile;
-			for each(f in pg.getFiles()){
+			for each(f in pg.files){
 				if (f && f.page_num==0){
 					dst.addFile(f);
 				}
@@ -317,24 +322,28 @@ package com.photodispatcher.factory{
 			//set sheets number
 			dst.sheet_num=1;
 			//sort 
-			if(dst.getFiles()) dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
+			if(dst.files){
+				var arr:Array=dst.files.toArray();
+				arr.sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
+				dst.files= new ArrayCollection(arr);
+			}
 		}
 
 		private function fillSheets(pg:PrintGroup, dst:PrintGroup, preview:Boolean):void{
-			if(!pg.getFiles()) return;
+			if(!pg.files) return;
 			var f:PrintGroupFile;
-			for each(f in pg.getFiles()){
+			for each(f in pg.files){
 				if (f && f.page_num!=0 
 					&& !(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && !dst.bookTemplate.is_sheet_ready && (f.page_num==1 || f.page_num==pg.pageNumber))){
 					dst.addFile(f);
 				}
 			}
-			if(!dst.getFiles() || dst.getFiles().length==0) return; 
+			if(!dst.files || dst.files.length==0) return; 
 			
 			//detect sheets number
 			var pageMax:int=0;
 			var pageMin:int=int.MAX_VALUE;
-			for each(f in dst.getFiles()){
+			for each(f in dst.files){
 				pageMax=Math.max(pageMax,f.page_num);
 				pageMin=Math.min(pageMin,f.page_num);
 			}
@@ -349,7 +358,11 @@ package com.photodispatcher.factory{
 			}
 			
 			//sort by book / sheet
-			dst.getFiles().sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
+			if(dst.files){
+				var arr:Array=dst.files.toArray();
+				arr.sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
+				dst.files= new ArrayCollection(arr);
+			}
 		}
 
 		public function buildFromSuborders(order:Order):Array{
@@ -357,7 +370,7 @@ package com.photodispatcher.factory{
 			if(!order || !order.suborders || order.suborders.length==0) return result;
 			var pgNum:int=1;
 			if(order.printGroups) pgNum=order.printGroups.length+1;
-			var so:Suborder;
+			var so:SubOrder;
 			var proj:FBookProject;
 			var page:PageData;
 			var paper:int;
@@ -526,21 +539,21 @@ package com.photodispatcher.factory{
 					}
 					
 					//add to order
-					if(pgCover && pgCover.getFiles() && pgCover.getFiles().length>0){
+					if(pgCover && pgCover.files && pgCover.files.length>0){
 						pgCover.id=order.id+'_'+pgNum.toString();
-						pgCover.sheet_num=pgCover.getFiles().length;
+						pgCover.sheet_num=pgCover.files.length;
 						pgCover.prints=pgCover.book_num*pgCover.sheet_num;
-						if(!order.printGroups) order.printGroups=[];
-						order.printGroups.push(pgCover);
+						if(!order.printGroups) order.printGroups=new ArrayCollection();
+						order.printGroups.addItem(pgCover);
 						result.push(pgCover);
 						pgNum++;
 					}
-					if(pgBody.getFiles() && pgBody.getFiles().length>0){
+					if(pgBody.files && pgBody.files.length>0){
 						pgBody.id=order.id+'_'+pgNum.toString();
-						pgBody.sheet_num=pgBody.getFiles().length;
+						pgBody.sheet_num=pgBody.files.length;
 						pgBody.prints=pgBody.book_num*pgBody.sheet_num;
-						if(!order.printGroups) order.printGroups=[];
-						order.printGroups.push(pgBody);
+						if(!order.printGroups) order.printGroups=new ArrayCollection();
+						order.printGroups.addItem(pgBody);
 						result.push(pgBody);
 						pgNum++;
 					}

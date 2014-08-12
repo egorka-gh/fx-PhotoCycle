@@ -1,6 +1,6 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.Lab;
-	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
 	public class LabXerox extends LabGeneric{
 

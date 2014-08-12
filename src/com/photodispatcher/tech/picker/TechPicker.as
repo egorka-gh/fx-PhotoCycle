@@ -9,8 +9,8 @@ package com.photodispatcher.tech.picker{
 	import com.photodispatcher.model.Layer;
 	import com.photodispatcher.model.LayerSequence;
 	import com.photodispatcher.model.Layerset;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.TechPoint;
 	import com.photodispatcher.model.dao.LayersetDAO;
 	import com.photodispatcher.model.dao.OrderDAO;

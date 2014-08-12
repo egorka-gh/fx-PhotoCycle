@@ -6,9 +6,131 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.provider.fbook.FBookProject;
+	
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.SubOrder")]
     public class SubOrder extends SubOrderBase {
+		
+		//runtime
+		public  var project:FBookProject;
+
+		public function SubOrder(){
+			super();
+			state=OrderState.FTP_WAITE_SUBORDER;
+			proj_type=1;
+			prt_qty=1;
+
+		}
+		
+		override public function set sub_id(value:String):void{
+			super.sub_id = value;
+			fillId();
+		}
+		override public function get sub_id():String{
+			return super.sub_id;
+		}
+		
+		private function fillId():void{
+			//id=order_id+'.'+src_id;
+			ftp_folder='fb'+sub_id;
+		}
+
+		public function clone():SubOrder{
+			var result:SubOrder= new SubOrder;
+			result.ftp_folder=ftp_folder;
+			result.order_id=order_id;
+			result.sub_id=sub_id;
+			result.src_type=src_type;
+			result.src_type_name=src_type_name;
+			result.proj_type=proj_type;
+			result.proj_type_name=proj_type_name;
+			//extra
+			if(extraInfo){
+				result.extraInfo= new OrderExtraInfo();
+				result.extraInfo.calc_type=extraInfo.calc_type;
+				result.extraInfo.corner_type=extraInfo.corner_type;
+				result.extraInfo.cover=extraInfo.cover;
+				result.extraInfo.endpaper=extraInfo.endpaper;
+				result.extraInfo.format=extraInfo.format;
+				result.extraInfo.interlayer=extraInfo.interlayer;
+				result.extraInfo.kaptal=extraInfo.kaptal;
+			}
+			return result;
+		}
+
+		public function toRaw():Object{
+			//serialize props 4 build only 
+			var raw:Object= new Object;
+			//raw.id=id;
+			raw.order_id=order_id;
+			raw.sub_id=sub_id;
+			raw.src_type=src_type;
+			raw.proj_type=proj_type;
+			raw.prt_qty=prt_qty;
+			//extra
+			if(extraInfo){
+				raw.calc_type=extraInfo.calc_type;
+				raw.corner_type=extraInfo.corner_type;
+				raw.cover=extraInfo.cover;
+				raw.endpaper=extraInfo.endpaper;
+				raw.format=extraInfo.format;
+				raw.interlayer=extraInfo.interlayer;
+				raw.kaptal=extraInfo.kaptal;
+			}
+			
+			if(project) raw.project=project.toRaw();
+			
+			return raw;
+		}
+		
+		public static function fromRaw(raw:Object):SubOrder{
+			if(!raw) return null;
+			var suborder:SubOrder= new SubOrder();
+			//suborder.id=raw.id;
+			suborder.order_id=raw.order_id;
+			suborder.sub_id=raw.sub_id;
+			suborder.src_type=raw.src_type;
+			suborder.proj_type=raw.proj_type;
+			suborder.prt_qty=raw.prt_qty;
+			//extra
+			suborder.extraInfo= new OrderExtraInfo();
+			suborder.extraInfo.calc_type=raw.calc_type;
+			suborder.extraInfo.corner_type=raw.corner_type;
+			suborder.extraInfo.cover=raw.cover;
+			suborder.extraInfo.endpaper=raw.endpaper;
+			suborder.extraInfo.format=raw.format;
+			suborder.extraInfo.interlayer=raw.interlayer;
+			suborder.extraInfo.kaptal=raw.kaptal;
+			
+			suborder.project=FBookProject.fromRaw(raw.project);
+			return suborder;
+		}
+		
+		public static function gridColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('src_type_name'); col.headerText='Тип источника'; result.push(col);
+			col= new GridColumn('sub_id'); col.headerText='ID'; col.width=80; result.push(col);
+			col= new GridColumn('proj_type_name'); col.headerText='Тип книги'; result.push(col);
+			col= new GridColumn('ftp_folder'); col.headerText='Папка'; result.push(col);
+			col= new GridColumn('prt_qty'); col.headerText='Кол-во'; result.push(col);
+			col= new GridColumn('calc_type'); col.headerText='Тип'; result.push(col);
+			col= new GridColumn('cover'); col.headerText='Обложка'; result.push(col);
+			col= new GridColumn('format'); col.headerText='Формат'; result.push(col);
+			col= new GridColumn('endpaper'); col.headerText='Форзац'; result.push(col);
+			col= new GridColumn('interlayer'); col.headerText='Прослойка'; result.push(col);
+			col= new GridColumn('corner_type'); col.headerText='Углы'; result.push(col);
+			col= new GridColumn('kaptal'); col.headerText='Каптал'; result.push(col);
+			
+			return new ArrayList(result);
+		}
+
+		
     }
 }

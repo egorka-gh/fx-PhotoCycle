@@ -1,9 +1,9 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.util.GridUtil;
@@ -347,8 +347,8 @@ package com.photodispatcher.model.dao{
 					params=[item.order_id, item.id, item.state, item.state_date];
 					sequence.push(prepareStatement(sql,params));
 					
-					if(item.getFiles() && item.getFiles().length>0){
-						for each(pgf in item.getFiles()){
+					if(item.files && item.files.length>0){
+						for each(pgf in item.files){
 							if(pgf){
 								//create PrintGroupFile
 								sql='INSERT INTO print_group_file (print_group, file_name, prt_qty, book_num, page_num, caption)' +
@@ -756,7 +756,7 @@ package com.photodispatcher.model.dao{
 
 		override protected function processRow(o:Object):Object{
 			var a:PrintGroup = new PrintGroup();
-			fillRow(o,a);
+			//fillRow(o,a);
 			//don't set before a.state, u'l lost actual state_date
 			a.state_date=new Date(o.state_date);
 			return a;

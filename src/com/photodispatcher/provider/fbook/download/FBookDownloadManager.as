@@ -4,13 +4,14 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.ContentFilter;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
 	import com.photodispatcher.util.ArrayUtil;
@@ -50,7 +51,7 @@ package com.photodispatcher.provider.fbook.download{
 		private var queue:Array=[];
 		[Bindable]
 		public var currentOrder:Order;
-		private var currentSubOrder:Suborder;
+		private var currentSubOrder:SubOrder;
 
 		private var projectLoader:FBookProjectLoader;
 		private var _speed:Number=0;
@@ -243,7 +244,7 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		public function download(order:Order):void{
-			var so:Suborder;
+			var so:SubOrder;
 			if(order){
 				if(order.suborders && order.suborders.length>0){
 					trace('FBookDownloadManager added order '+order.id);
@@ -313,9 +314,9 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		private function nextSubOrder():void{
-			var so:Suborder;
-			var vsErr:Suborder;
-			var toLoad:Suborder;
+			var so:SubOrder;
+			var vsErr:SubOrder;
+			var toLoad:SubOrder;
 			if(!currentOrder){
 				checkQueue();
 				return;
@@ -350,7 +351,7 @@ package com.photodispatcher.provider.fbook.download{
 				projectLoader= new FBookProjectLoader(source);
 				projectLoader.addEventListener(Event.COMPLETE, onProjectLoaded);
 			}
-			projectLoader.fetchProject(currentSubOrder.sub_id);
+			projectLoader.fetchProject(int(currentSubOrder.sub_id));
 		}
 		
 		private function onProjectLoaded(event:Event):void{
@@ -397,12 +398,13 @@ package com.photodispatcher.provider.fbook.download{
 				currentSubOrder.project=project;
 				
 				//fill extra info
-				currentSubOrder.calc_type='Розница';
-				currentSubOrder.endpaper=project.endpaperName;
-				currentSubOrder.interlayer=project.interlayerName;
-				currentSubOrder.cover=project.coverName;
-				currentSubOrder.format=project.formatName;
-				currentSubOrder.corner_type=project.cornerTypeName;
+				currentSubOrder.extraInfo= new OrderExtraInfo();
+				currentSubOrder.extraInfo.calc_type='Розница';
+				currentSubOrder.extraInfo.endpaper=project.endpaperName;
+				currentSubOrder.extraInfo.interlayer=project.interlayerName;
+				currentSubOrder.extraInfo.cover=project.coverName;
+				currentSubOrder.extraInfo.format=project.formatName;
+				currentSubOrder.extraInfo.corner_type=project.cornerTypeName;
 
 				//check content filter
 				var cFilter:ContentFilter=Context.getAttribute('contentFilter') as ContentFilter;

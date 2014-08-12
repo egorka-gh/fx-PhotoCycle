@@ -1,12 +1,12 @@
 package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.model.Suborder;
-	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -123,9 +123,9 @@ package com.photodispatcher.provider.ftp{
 			var newOrder:Order=fetch();
 			if(newOrder){
 				//create suborder
-				var so:Suborder= new Suborder();
+				var so:SubOrder= new SubOrder();
 				so.order_id=newOrder.id;
-				so.sub_id=int(newOrder.src_id);
+				so.sub_id=newOrder.src_id;
 				so.src_type=SourceType.SRC_FBOOK;
 				so.prt_qty=newOrder.fotos_num;
 				newOrder.addSuborder(so);

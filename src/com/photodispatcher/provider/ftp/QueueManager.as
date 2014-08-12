@@ -5,10 +5,11 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.LoadProgressEvent;
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
@@ -21,6 +22,8 @@ package com.photodispatcher.provider.ftp{
 	import flash.events.TimerEvent;
 	import flash.filesystem.File;
 	import flash.utils.Timer;
+	
+	import mx.collections.ArrayCollection;
 	
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	[Event(name="orderLoaded", type="com.photodispatcher.event.ImageProviderEvent")]
@@ -485,12 +488,13 @@ package com.photodispatcher.provider.ftp{
 				startOrder.state=OrderState.FTP_WEB_OK;
 
 				//fill extra info
-				startOrder.calc_type=pw.getLastOrder().calc_type;
-				startOrder.endpaper=pw.getLastOrder().endpaper;
-				startOrder.interlayer=pw.getLastOrder().interlayer;
-				startOrder.cover=pw.getLastOrder().cover;
-				startOrder.format=pw.getLastOrder().format;
-				startOrder.corner_type=pw.getLastOrder().corner_type;
+				startOrder.extraInfo= new OrderExtraInfo();
+				startOrder.extraInfo.calc_type=pw.getLastOrder().extraInfo.calc_type;
+				startOrder.extraInfo.endpaper=pw.getLastOrder().extraInfo.endpaper;
+				startOrder.extraInfo.interlayer=pw.getLastOrder().extraInfo.interlayer;
+				startOrder.extraInfo.cover=pw.getLastOrder().extraInfo.cover;
+				startOrder.extraInfo.format=pw.getLastOrder().extraInfo.format;
+				startOrder.extraInfo.corner_type=pw.getLastOrder().extraInfo.corner_type;
 
 				//remove from queue
 				removeOrder(startOrder);
@@ -591,8 +595,8 @@ package com.photodispatcher.provider.ftp{
 
 		protected function resetOrder(order:Order):void{
 			if(!order) return;
-			order.printGroups=[];
-			order.suborders=[];
+			order.printGroups=new ArrayCollection();
+			order.suborders=new ArrayCollection();
 			order.ftpQueue=[];
 		}
 

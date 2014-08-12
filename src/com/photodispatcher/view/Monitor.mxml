@@ -16,7 +16,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.Order;
+			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.model.dao.StateLogDAO;

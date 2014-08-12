@@ -7,7 +7,7 @@ package com.photodispatcher.provider.ftp{
 	import com.jxl.chatserver.mvcs.services.ChatServerService;
 	import com.jxl.chatserver.vo.ClientVO;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.dao.StateLogDAO;
 	

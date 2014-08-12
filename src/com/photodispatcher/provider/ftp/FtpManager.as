@@ -6,15 +6,15 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.OrderLoadedEvent;
 	import com.photodispatcher.event.OrderPreprocessEvent;
 	import com.photodispatcher.factory.SuborderBuilder;
-	import com.photodispatcher.model.Order;
-	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.model.Suborder;
 	import com.photodispatcher.model.dao.BaseDAO;
 	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.preprocess.CaptionSetter;
 	import com.photodispatcher.provider.preprocess.PreprocessManager;
 	import com.photodispatcher.util.ArrayUtil;
@@ -269,7 +269,7 @@ package com.photodispatcher.provider.ftp{
 			//chek if order skipped
 			var minState:int=OrderState.SKIPPED;
 			var pg:PrintGroup;
-			var so:Suborder;
+			var so:SubOrder;
 			if(order.printGroups){
 				for each(pg in order.printGroups) minState=Math.min(minState,pg.state);
 			}

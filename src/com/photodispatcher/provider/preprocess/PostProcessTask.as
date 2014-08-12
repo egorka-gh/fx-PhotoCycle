@@ -1,9 +1,9 @@
 package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.event.OrderBuildProgressEvent;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.PrintGroup;
-	import com.photodispatcher.model.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -35,7 +35,7 @@ package com.photodispatcher.provider.preprocess{
 		public function run():void{
 			var printGroup:PrintGroup;
 			var pgf:PrintGroupFile;
-			var a:Array;
+			//var a:Array;
 			var printFile:File;
 			var srcFile:File;
 			var filePath:String;
@@ -52,9 +52,8 @@ package com.photodispatcher.provider.preprocess{
 				if(printGroup && printGroup.state<OrderState.CANCELED){
 					if(printGroup.book_type==0 || !printGroup.is_pdf){
 						//TODO kill wrk dirs
-						a=printGroup.getFiles();
-						if(a && a.length>0){
-							for each (pgf in a){
+						if(printGroup.files && printGroup.files.length>0){
+							for each (pgf in printGroup.files){
 								if(pgf){
 									notInPrint=false;
 									if(rootFolder==prtFolder){//same folder, check by parent folder 

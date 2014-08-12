@@ -14,14 +14,24 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class SubOrderBase extends AbstractEntity {
 
+        private var _extraInfo:OrderExtraInfo;
         private var _ftp_folder:String;
         private var _order_id:String;
         private var _proj_type:int;
+        private var _proj_type_name:String;
         private var _prt_qty:int;
         private var _src_type:int;
+        private var _src_type_name:String;
         private var _state:int;
         private var _state_date:Date;
         private var _sub_id:String;
+
+        public function set extraInfo(value:OrderExtraInfo):void {
+            _extraInfo = value;
+        }
+        public function get extraInfo():OrderExtraInfo {
+            return _extraInfo;
+        }
 
         public function set ftp_folder(value:String):void {
             _ftp_folder = value;
@@ -44,6 +54,13 @@ package com.photodispatcher.model.mysql.entities {
             return _proj_type;
         }
 
+        public function set proj_type_name(value:String):void {
+            _proj_type_name = value;
+        }
+        public function get proj_type_name():String {
+            return _proj_type_name;
+        }
+
         public function set prt_qty(value:int):void {
             _prt_qty = value;
         }
@@ -56,6 +73,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get src_type():int {
             return _src_type;
+        }
+
+        public function set src_type_name(value:String):void {
+            _src_type_name = value;
+        }
+        public function get src_type_name():String {
+            return _src_type_name;
         }
 
         public function set state(value:int):void {
@@ -81,11 +105,14 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _extraInfo = input.readObject() as OrderExtraInfo;
             _ftp_folder = input.readObject() as String;
             _order_id = input.readObject() as String;
             _proj_type = input.readObject() as int;
+            _proj_type_name = input.readObject() as String;
             _prt_qty = input.readObject() as int;
             _src_type = input.readObject() as int;
+            _src_type_name = input.readObject() as String;
             _state = input.readObject() as int;
             _state_date = input.readObject() as Date;
             _sub_id = input.readObject() as String;
@@ -93,11 +120,14 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);
             output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
             output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
             output.writeObject((_proj_type is IPropertyHolder) ? IPropertyHolder(_proj_type).object : _proj_type);
+            output.writeObject((_proj_type_name is IPropertyHolder) ? IPropertyHolder(_proj_type_name).object : _proj_type_name);
             output.writeObject((_prt_qty is IPropertyHolder) ? IPropertyHolder(_prt_qty).object : _prt_qty);
             output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
+            output.writeObject((_src_type_name is IPropertyHolder) ? IPropertyHolder(_src_type_name).object : _src_type_name);
             output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
             output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
             output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);

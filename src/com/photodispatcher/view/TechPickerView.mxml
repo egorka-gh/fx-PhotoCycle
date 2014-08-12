@@ -161,19 +161,19 @@
 						</s:HGroup>
 						<s:HGroup gap="15" width="100%">
 							<s:VGroup gap="7" width="200">
-								<s:Label text="Тип: {techPicker.currOrder.calc_type}" width="100%" maxDisplayedLines="1"/>
-								<s:Label text="Обложка: {techPicker.currOrder.cover}" width="100%" maxDisplayedLines="1"/>
-								<s:Label text="Углы/Каптал: {techPicker.currOrder.corner_type}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Тип: {techPicker.currOrder.extraInfo.calc_type}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Обложка: {techPicker.currOrder.extraInfo.cover}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Углы/Каптал: {techPicker.currOrder.extraInfo.corner_type}" width="100%" maxDisplayedLines="1"/>
 							</s:VGroup>
 							<s:VGroup gap="5" width="100%">
 								<s:HGroup gap="5" verticalAlign="baseline">
-									<s:Label text="Формат заказа: {techPicker.currOrder.format}" width="200"/>
+									<s:Label text="Формат заказа: {techPicker.currOrder.extraInfo.format}" width="200"/>
 									<s:Spacer width="5"/>
 									<s:Label text="Загружен формат:" width="120" textAlign="right"/>
 									<s:DropDownList id="ddCurrFormat" width="150" enabled="false"/>
 								</s:HGroup>
 								<s:HGroup gap="5" verticalAlign="baseline">
-									<s:Label text="Прослойка заказа: {techPicker.currOrder.interlayer}" width="200"/>
+									<s:Label text="Прослойка заказа: {techPicker.currOrder.extraInfo.interlayer}" width="200"/>
 									<s:Spacer width="5"/>
 									<s:Label text="Шаблон прослойки:" width="120" textAlign="right"/>
 									<s:DropDownList id="ddCurrInterlayer" labelField="name" width="150" 

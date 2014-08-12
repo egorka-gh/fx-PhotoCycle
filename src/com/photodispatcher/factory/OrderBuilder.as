@@ -1,6 +1,6 @@
 package com.photodispatcher.factory{
 	import com.photodispatcher.model.AttrJsonMap;
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.dao.AttrJsonMapDAO;
 	import com.photodispatcher.model.mysql.entities.Source;
 	

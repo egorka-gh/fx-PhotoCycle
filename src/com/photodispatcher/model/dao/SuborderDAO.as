@@ -1,5 +1,5 @@
 package com.photodispatcher.model.dao{
-	import com.photodispatcher.model.Suborder;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	
 	public class SuborderDAO extends BaseDAO{
 		
@@ -8,8 +8,8 @@ package com.photodispatcher.model.dao{
 		}
 		
 		override protected function processRow(o:Object):Object{
-			var a:Suborder = new Suborder();
-			fillRow(o,a);
+			var a:SubOrder = new SubOrder();
+			//fillRow(o,a);
 			//don't set before a.state, u'l lost actual state_date
 			if(o.state_date) a.state_date= new Date(o.state_date);
 			

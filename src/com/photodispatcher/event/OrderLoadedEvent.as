@@ -1,5 +1,5 @@
 package com.photodispatcher.event{
-	import com.photodispatcher.model.Order;
+	import com.photodispatcher.model.mysql.entities.Order;
 	
 	import flash.events.Event;
 	
