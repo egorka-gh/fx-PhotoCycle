@@ -18,6 +18,17 @@ package com.photodispatcher.model.mysql.services {
 
     public class OrderServiceBase extends Component {    
         
+        public function sync(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("sync", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("sync", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("sync") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function beginSync(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("beginSync", resultHandler, faultHandler) as AsyncToken;

@@ -74,11 +74,13 @@ package com.photodispatcher.model.mysql.entities {
 			return (fbookService && fbookService.url && fbookService.connections>0);
 		}
 		
+		/*
 		public function incrementSync():int{
 			if(sync == int.MAX_VALUE) sync=0;
 			sync++;
 			return sync; 
 		}
+		*/
 		public var syncState:ProcessState= new ProcessState();
 		public var ftpState:ProcessState= new ProcessState();
 		

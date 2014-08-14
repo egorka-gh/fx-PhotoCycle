@@ -16,10 +16,9 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.dao.OrderDAO;
-			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.model.dao.StateLogDAO;
+			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.provider.ftp.FtpManager;
@@ -72,8 +71,7 @@
 			private var forceStarTimer:Timer;
 
 			public function init():void{
-				var dao:SourcesDAO= new SourcesDAO();
-				sources=dao.findAll();
+				sources=new ArrayCollection(Context.getSources());
 				
 				buildFilterLists();
 				

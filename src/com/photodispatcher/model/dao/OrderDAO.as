@@ -446,7 +446,7 @@ package com.photodispatcher.model.dao{
 			//var keepOrders:Array=new Array();
 			
 			//increment source sync
-			source.incrementSync();
+			//source.incrementSync();
 			//sync moved to data.sources_sync (to prevent config lock)
 			//sequence.push(prepareStatement('UPDATE config.sources SET sync=? WHERE id=?',[source.sync, source.id]));
 			sequence.push(prepareStatement('UPDATE sources_sync SET sync=? WHERE id=?',[source.sync, source.id]));

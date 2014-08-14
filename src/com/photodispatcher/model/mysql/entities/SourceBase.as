@@ -23,6 +23,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _name:String;
         private var _online:Boolean;
         private var _sync:int;
+        private var _sync_date:Date;
+        private var _sync_state:Boolean;
         private var _type:int;
         private var _type_name:String;
         private var _webService:SourceSvc;
@@ -90,6 +92,20 @@ package com.photodispatcher.model.mysql.entities {
             return _sync;
         }
 
+        public function set sync_date(value:Date):void {
+            _sync_date = value;
+        }
+        public function get sync_date():Date {
+            return _sync_date;
+        }
+
+        public function set sync_state(value:Boolean):void {
+            _sync_state = value;
+        }
+        public function get sync_state():Boolean {
+            return _sync_state;
+        }
+
         public function set type(value:int):void {
             _type = value;
         }
@@ -122,6 +138,8 @@ package com.photodispatcher.model.mysql.entities {
             _name = input.readObject() as String;
             _online = input.readObject() as Boolean;
             _sync = input.readObject() as int;
+            _sync_date = input.readObject() as Date;
+            _sync_state = input.readObject() as Boolean;
             _type = input.readObject() as int;
             _type_name = input.readObject() as String;
             _webService = input.readObject() as SourceSvc;
@@ -138,6 +156,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
             output.writeObject((_online is IPropertyHolder) ? IPropertyHolder(_online).object : _online);
             output.writeObject((_sync is IPropertyHolder) ? IPropertyHolder(_sync).object : _sync);
+            output.writeObject((_sync_date is IPropertyHolder) ? IPropertyHolder(_sync_date).object : _sync_date);
+            output.writeObject((_sync_state is IPropertyHolder) ? IPropertyHolder(_sync_state).object : _sync_state);
             output.writeObject((_type is IPropertyHolder) ? IPropertyHolder(_type).object : _type);
             output.writeObject((_type_name is IPropertyHolder) ? IPropertyHolder(_type_name).object : _type_name);
             output.writeObject((_webService is IPropertyHolder) ? IPropertyHolder(_webService).object : _webService);

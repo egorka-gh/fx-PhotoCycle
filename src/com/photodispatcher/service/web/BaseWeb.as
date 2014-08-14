@@ -2,6 +2,7 @@ package com.photodispatcher.service.web{
 	import com.adobe.serialization.json.JSONDecoder;
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.OrderBuilder;
+	import com.photodispatcher.model.mysql.AsyncLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.util.JsonUtil;
@@ -29,6 +30,8 @@ package com.photodispatcher.service.web{
 		public var source:Source;
 		//raw orders
 		public var orderes:Array;
+		
+		public var latch:AsyncLatch;
 
 		protected var cmd:int;
 		//last order (from get order) 
@@ -110,6 +113,8 @@ package com.photodispatcher.service.web{
 			_hasError=false;
 			_errMesage='';
 			stopListen();
+			//build orders
+			orderes=OrderBuilder.build(source,orderes,true);
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		protected function endGetOrder():void{
@@ -117,9 +122,8 @@ package com.photodispatcher.service.web{
 			_hasError=false;
 			_errMesage='';
 			stopListen();
-			var ob:OrderBuilder= new OrderBuilder();
 			if (orderes && orderes.length>0){
-				var arr:Array=ob.build(source,orderes);
+				var arr:Array=OrderBuilder.build(source,orderes);
 				if(arr && arr.length>0){
 					lastOrder=arr[0];
 					trace('BaseWeb loaded order id:'+lastOrder.ftp_folder);

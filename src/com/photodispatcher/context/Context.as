@@ -19,6 +19,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.DictionaryService;
 	import com.photodispatcher.model.mysql.services.LabResizeService;
 	import com.photodispatcher.model.mysql.services.LabService;
+	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
@@ -74,7 +75,8 @@ package com.photodispatcher.context{
 				ContentFilterService, 
 				LabService,
 				TechPointService,
-				TechPickerService
+				TechPickerService,
+				OrderService
 			]);
 			
 			//fill from config
@@ -152,21 +154,8 @@ package com.photodispatcher.context{
 			return (sourcesMap[id] as Source);
 		}
 		public static function initSourceLists():DbLatch{
-			/*
-			if(sourcesArr && sourcesArr.length>0) return true;
-			var dao:SourcesDAO= new SourcesDAO();
-			//dao.findAll();
-			var soArr:Array=dao.findAllArray();
-			if(!soArr) return false;
-			var sourse:Source;
-			for each(sourse in soArr){
-				if(sourse){
-					if (!sourse.loadServices()) return false;
-				}
-			}
-			*/
 			var latch:DbLatch=new DbLatch();
-			latch.debugName='initSourceLists';
+			//latch.debugName='initSourceLists';
 			var svc:SourceService=Tide.getInstance().getContext().byType(SourceService,true) as SourceService;
 			latch.addEventListener(Event.COMPLETE,onSourceLoad);
 			latch.addLatch(svc.loadAll(Source.LOCATION_TYPE_SOURCE));
@@ -178,7 +167,7 @@ package com.photodispatcher.context{
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onSourceLoad);
 				if(latch.complite){
-					setSources((latch.lastResult as SelectResult).data.toArray());
+					setSources(latch.lastDataArr);
 				}
 			}
 		}

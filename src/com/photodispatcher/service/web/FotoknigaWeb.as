@@ -212,8 +212,7 @@ package com.photodispatcher.service.web{
 					}
 					_getOrder.src_state=result.result.status;
 					//parse extra data
-					var ob:OrderBuilder= new OrderBuilder();
-					var arr:Array=ob.build(source,[result.result]);
+					var arr:Array=OrderBuilder.build(source,[result.result]);
 					if(arr && arr.length>0){
 						var to:Order=arr[0] as Order;
 						if(to){

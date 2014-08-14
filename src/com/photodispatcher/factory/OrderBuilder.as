@@ -1,24 +1,39 @@
 package com.photodispatcher.factory{
-	import com.photodispatcher.model.AttrJsonMap;
+	import com.photodispatcher.model.mysql.entities.AttrJsonMap;
 	import com.photodispatcher.model.mysql.entities.Order;
-	import com.photodispatcher.model.dao.AttrJsonMapDAO;
+	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderTemp;
 	import com.photodispatcher.model.mysql.entities.Source;
 	
 	public class OrderBuilder{
-		
-		public function build(source:Source, raw:Array):Array{
+
+		public static function build(source:Source, raw:Array, forSync:Boolean=false):Array{
 			if(!source || !raw || raw.length==0) return [];
 			
 			var result:Array=[];
-			var order:Order;
-			//var attDao:AttrJsonMapDAO= new AttrJsonMapDAO();
-			//var jMap:Array=attDao.getOrderMapBySourceType(source.type_id);
-			var jMap:Array=AttrJsonMapDAO.getOrderJson(source.type);
-			var ejMap:Array=AttrJsonMapDAO.getOrderExtraJson(source.type);
+			var order:Object;// :Order;
+			var einfo:OrderExtraInfo;
+			var src_id:int;
+			var syncDate:Date= new Date();
+			//var jMap:Array=AttrJsonMapDAO.getOrderJson(source.type);
+			//var ejMap:Array=AttrJsonMapDAO.getOrderExtraJson(source.type);
+			var jMap:Array= AttrJsonMap.getOrderJson(source.type);
+			var ejMap:Array=AttrJsonMap.getOrderExtraJson(source.type);
 			if(!jMap) return null;
 			for each (var jo:Object in raw){
 				if(jo){
-					order=new Order();
+					src_id=0;
+					if(forSync){
+						order=new OrderTemp();
+						order.source=source.id;
+						order.state=OrderState.WAITE_FTP;
+						order.state_date=syncDate;
+					}else{
+						order=new Order();
+						einfo=new OrderExtraInfo();
+						order.extraInfo=einfo;
+					}
 					//var src_id:int;
 					var o:Object;
 					var ajm:AttrJsonMap;
@@ -40,34 +55,42 @@ package com.photodispatcher.factory{
 									}else{
 										order[ajm.field]=val;
 									}
+									if(forSync && ajm.field=='src_id'){
+										//create id
+										//removes subNumber (-#) for fotokniga
+										src_id=cleanId(val as String);
+										if(src_id) order.id=source.id.toString()+'_'+src_id.toString();
+									}
+
 								}
 							}
 						}
 					}
 					
-					//extra info
-					if(ejMap && ejMap.length>0){
-						for each(o in ejMap){
-							ajm=o as AttrJsonMap;
-							if(ajm){
-								if(order.hasOwnProperty(ajm.field)){
-									//params array
-									val=getRawVal(ajm.json_key, jo);
-									if(val){
-										if(ajm.field.indexOf('date')!=-1){
-											//convert date
-											d=parseDate(val.toString());
-											order[ajm.field]=d;
-										}else{
-											order[ajm.field]=val;
+					if(!forSync){
+						//extra info
+						if(ejMap && ejMap.length>0){
+							for each(o in ejMap){
+								ajm=o as AttrJsonMap;
+								if(ajm){
+									if(einfo.hasOwnProperty(ajm.field)){
+										//params array
+										val=getRawVal(ajm.json_key, jo);
+										if(val){
+											if(ajm.field.indexOf('date')!=-1){
+												//convert date
+												d=parseDate(val.toString());
+												einfo[ajm.field]=d;
+											}else{
+												einfo[ajm.field]=val;
+											}
 										}
 									}
 								}
 							}
 						}
 					}
-
-					result.push(order);
+					if(!forSync || order.id) result.push(order); //skip if id empty
 				}
 			}
 			return result;
@@ -77,7 +100,7 @@ package com.photodispatcher.factory{
 		//calc_data indexed array
 		//=>type:cover - search in array object vs proverty type==cover
 		//.value - gets from founded object property value
-		private function getRawVal(key:String, jo:Object):Object{
+		private static function getRawVal(key:String, jo:Object):Object{
 			if(!key) return null; 
 			var path:Array=key.split('.');
 			var value:Object=jo;
@@ -102,7 +125,7 @@ package com.photodispatcher.factory{
 			}
 		}
 		
-		private function searchRawValInArray(searchKey:String, array:Object):Object{
+		private static function searchRawValInArray(searchKey:String, array:Object):Object{
 			if(!searchKey || searchKey.substr(0,2)!='=>') return null;
 			searchKey=searchKey.substr(2);
 			if(!searchKey) return null;
@@ -122,7 +145,7 @@ package com.photodispatcher.factory{
 		}
 		
 		
-		private function parseDate(s:String):Date{
+		private static function parseDate(s:String):Date{
 			//json date, parsed as "2012-05-17 15:52:08"
 			var d:Date=new Date();
 			if(!s) return d;
@@ -134,5 +157,18 @@ package com.photodispatcher.factory{
 			if(!a3 || a3.length<3) return d;
 			return new Date(a2[0],a2[1]-1,a2[2],a3[0],a3[1],a3[2]);
 		}
+		
+		private static function cleanId(src_id:String):int{
+			//removes subNumber (-#) for fotokniga
+			var a:Array=src_id.split('-');
+			var sId:String;
+			if(!a || a.length==0){
+				sId=src_id;
+			}else{
+				sId=a[0];
+			}
+			return int(sId);
+		}
+
 	}		
 }
