@@ -29,6 +29,7 @@ package com.photodispatcher.model.dao{
 			return a;
 		}
 
+		/*
 		public function setLocalFolder(id:String, localFolder:String):void{
 			var sql:String='UPDATE orders SET local_folder = ? WHERE id = ?';
 			var params:Array=[];
@@ -36,12 +37,15 @@ package com.photodispatcher.model.dao{
 			params.push(id);
 			execute(sql,params);
 		}
-
+		*/
+		/*
 		public function setState(id:String, newState:int):void{
 			asyncFaultMode=FAULT_REPIT;
 			//start Sequence
 			executeSequence(setStateSequence(id, newState));
 		}
+		*/
+		/*
 		private function setStateSequence(id:String, newState:int):Array{
 			var stateToLog:int; 
 			var idToLog:String; 
@@ -64,6 +68,7 @@ package com.photodispatcher.model.dao{
 			sequence.push(prepareStatement(sql,params));
 			return sequence;
 		}
+		*/
 		
 		public function addManual(order:Order):void{
 			if(!order) return;

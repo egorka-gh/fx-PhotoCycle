@@ -16,11 +16,12 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.StateLogDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.provider.ftp.FtpManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
 			import com.photodispatcher.service.SyncService;
@@ -29,6 +30,8 @@
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.GridSelectionEvent;
 			import spark.events.PopUpEvent;
@@ -228,14 +231,26 @@
 				focusManager.setFocus(focusHolder);
 			}
 			private function fillOrdersPendingList():void{
-				var dao:OrderDAO= new OrderDAO();
-				var a:Array=dao.findAllArray(-1,OrderState.WAITE_FTP,OrderState.PRN_WAITE+1);
-				if(a){
-					if(ftpManager) ftpManager.resync(a);
-					ordersPendingList.source=a;
-					applyOrdersFilter();
-					ordersErrLimitList.source=a;
-					ordersErrLimitList.refresh();
+				var latch:DbLatch=new DbLatch();
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				latch.addEventListener(Event.COMPLETE, onPendingList);
+				latch.addLatch(svc.loadByState(OrderState.WAITE_FTP,OrderState.PRN_WAITE+1));
+				latch.start();
+			}
+			private function onPendingList(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onPendingList);
+					if(latch.complite){
+						var a:Array=latch.lastDataArr;
+						if(a){
+							if(ftpManager) ftpManager.resync(a);
+							ordersPendingList.source=a;
+							applyOrdersFilter();
+							ordersErrLimitList.source=a;
+							ordersErrLimitList.refresh();
+						}
+					}
 				}
 			}
 
@@ -395,13 +410,13 @@
 					<s:NavigatorContent label="Двойная ошибка" backgroundAlpha="0" width="100%" height="100%">
 						<s:DataGrid id="dgErrLimit" selectionMode="multipleRows"
 									width="100%" height="100%" creationComplete="dgErrLimit_creationCompleteHandler(event)"
-									dataProvider="{ordersErrLimitList}" locale="ru_RU" columns="{OrderDAO.shortGridColumns()}"/>
+									dataProvider="{ordersErrLimitList}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
 					</s:NavigatorContent>
 					<s:NavigatorContent label="Обработка" backgroundAlpha="0" width="100%" height="100%">
 						<s:VGroup id="vPrepocess" width="100%" height="100%" gap="5">
 							<s:DataGrid id="dgPrepocessQueue" selectionMode="singleRow"
 										width="100%" height="100%" creationComplete="dgPrepocessQueue_creationCompleteHandler(event)"
-										dataProvider="{preprocessManager.orderList}" locale="ru_RU" columns="{OrderDAO.shortGridColumns()}"/>
+										dataProvider="{preprocessManager.orderList}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
 							<s:HGroup width="100%" gap="5">
 								<s:Label text="Очередь {preprocessManager.queueLenth}({preprocessManager.errorOrdersLenth})"/>
 								<s:Label text="{preprocessManager.lastError}" color="#ff0000"/>
@@ -416,7 +431,7 @@
 					<s:NavigatorContent label="Запись" backgroundAlpha="{ftpManager.isWriting?1:0}" backgroundColor="#00ff00" width="100%" height="100%">
 						<s:DataGrid id="dgWriteQueue" selectionMode="singleRow"
 									width="100%" height="100%" creationComplete="dgWriteQueue_creationCompleteHandler(event)"
-									dataProvider="{ftpManager.writeOrdersList}" locale="ru_RU" columns="{OrderDAO.shortGridColumns()}"/>
+									dataProvider="{ftpManager.writeOrdersList}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
 					</s:NavigatorContent>
 				</mx:ViewStack>
 			</s:VGroup>
@@ -445,7 +460,7 @@
 			</s:HGroup>
 			<s:DataGrid id="dgOrders" selectionMode="multipleRows"
 						width="100%" height="100%" creationComplete="dgOrders_creationCompleteHandler(event)"
-						dataProvider="{ordersPendingList}" locale="ru_RU" columns="{OrderDAO.gridColumns()}"/>
+						dataProvider="{ordersPendingList}" locale="ru_RU" columns="{Order.gridColumns()}"/>
 			<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)"/>
 		</s:VGroup>
 		<view:PrintDistribute id="printDistribute" top="0" left="0" right="0" bottom="0" includeIn="printDeploy"/>

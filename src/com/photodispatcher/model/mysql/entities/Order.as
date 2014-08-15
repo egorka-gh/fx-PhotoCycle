@@ -8,9 +8,15 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.util.ArrayUtil;
 	
+	import flash.globalization.DateTimeStyle;
+	
 	import mx.collections.ArrayCollection;
+	import mx.collections.ArrayList;
 	
 	import pl.maliboo.ftp.FTPFile;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.Order")]
@@ -19,6 +25,37 @@ package com.photodispatcher.model.mysql.entities {
 		public static const BILL_TYPE_TXT:int=0;
 		public static const BILL_TYPE_HTML:int=1;
 
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn= new GridColumn('source_name');
+			col.headerText='Источник'; result.addItem(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col); 
+			col= new GridColumn('id'); result.addItem(col);
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('src_date'); col.headerText='Размещен'; col.formatter=fmt;  result.addItem(col);
+			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('ftp_folder'); col.headerText='Ftp Папка'; result.addItem(col);
+			col= new GridColumn('fotos_num'); col.headerText='Кол фото'; result.addItem(col);
+			return result;
+		}
+		
+		public static function shortGridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			var col:GridColumn;
+			
+			col= new GridColumn('source_name'); col.headerText='Источник'; result.addItem(col);
+			col= new GridColumn('id'); result.addItem(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('ftp_folder'); col.headerText='Ftp Папка'; result.addItem(col);
+			return result;
+		}
+
+		
+		
 		//remote source state (4 check if canceled) runtime
 		public var src_state:String;
 		/**
