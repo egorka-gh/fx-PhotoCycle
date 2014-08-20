@@ -7,6 +7,10 @@
 
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.util.StrUtil;
+	
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrintGroupFile")]
@@ -19,6 +23,21 @@ package com.photodispatcher.model.mysql.entities {
 		public var showPreview:Boolean;
 		public var isBroken:Boolean;
 		public var isCustom:Boolean;
+		
+		public static function gridColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('print_group'); col.headerText='Группа печати'; col.width=85; result.push(col);
+			col= new GridColumn('path'); col.headerText='Папка'; col.width=110; result.push(col);
+			col= new GridColumn('file_name'); col.headerText='Файл'; col.width=250; result.push(col); 
+			col= new GridColumn('caption'); col.headerText='Подпись'; col.width=250; result.push(col); 
+			col= new GridColumn('book_num'); col.headerText='№ Книги'; result.push(col);
+			col= new GridColumn('page_num'); col.headerText='№ Листа'; result.push(col);
+			col= new GridColumn('prt_qty'); col.headerText='Кол отпечатков'; result.push(col);
+			return new ArrayList(result);
+		}
+
 		
 		override public function set book_num(value:int):void{
 			if(super.book_num==0 && value!=0 && caption){

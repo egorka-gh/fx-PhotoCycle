@@ -18,7 +18,7 @@ package com.photodispatcher.model.dao{
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 
-	public class OrderDAO extends BaseDAO{
+	public class OrderDAOKill extends BaseDAO{
 
 		override protected function processRow(o:Object):Object{
 			var a:Order = new Order();

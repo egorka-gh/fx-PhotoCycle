@@ -1,12 +1,14 @@
 package com.photodispatcher.view.menu{
 	import com.photodispatcher.event.AsyncSQLEvent;
+	import com.photodispatcher.model.mysql.entities.StateLog;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
-	import com.photodispatcher.model.StateLog;
-	import com.photodispatcher.model.dao.OrderDAO;
+	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.view.OrderInfoPopup;
 	
+	import flash.events.Event;
 	import flash.events.MouseEvent;
 	
 	import mx.collections.ArrayCollection;
@@ -14,6 +16,8 @@ package com.photodispatcher.view.menu{
 	import mx.controls.FlexNativeMenu;
 	import mx.events.FlexEvent;
 	import mx.events.FlexNativeMenuEvent;
+	
+	import org.granite.tide.Tide;
 	
 	import spark.components.DataGrid;
 	import spark.components.gridClasses.GridSelectionMode;
@@ -201,11 +205,39 @@ package com.photodispatcher.view.menu{
 				for (o in orderMap) orderIds.push(o);
 			}
 			if(canceled.length>0){
+				/*
 				var dao:OrderDAO=new OrderDAO();
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCancel);
 				dao.setStateBatch(OrderState.CANCELED,orderIds);
+				*/
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onOrdersCancel);
+				latch.addLatch(svc.cancelOrders(orderIds));
+				latch.start();
 			}
 		}
+		private function onOrdersCancel(e:Event):void{
+			var latch:DbLatch=e.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onOrdersCancel);
+				if(latch.complite){
+					var order:Order; 
+					var pg:PrintGroup;
+					for each(var o:Object in canceled){
+						if(o is Order){
+							order=o as Order;
+							order.state=OrderState.CANCELED;
+						}else if(o is PrintGroup){
+							pg=o as PrintGroup;
+							pg.state=OrderState.CANCELED;
+						}
+					}
+				}
+			}
+			canceled=null;
+		}
+		/*
 		private function onCancel(e:AsyncSQLEvent):void{
 			var oDAO:OrderDAO=e.target as OrderDAO;
 			if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCancel);
@@ -224,6 +256,7 @@ package com.photodispatcher.view.menu{
 			}
 			canceled=null;
 		}
+		*/
 		
 	}
 }

@@ -18,6 +18,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _book_type:int;
         private var _data_ts:String;
         private var _extraInfo:OrderExtraInfo;
+        private var _extraState:ListCollectionView;
+        private var _extraStateProlong:ListCollectionView;
         private var _fotos_num:int;
         private var _ftp_folder:String;
         private var _id:String;
@@ -30,10 +32,12 @@ package com.photodispatcher.model.mysql.entities {
         private var _src_date:Date;
         private var _src_id:String;
         private var _state:int;
+        private var _stateLog:ListCollectionView;
         private var _state_date:Date;
         private var _state_name:String;
         private var _suborders:ListCollectionView;
         private var _sync:int;
+        private var _techLog:ListCollectionView;
 
         public function set book_type(value:int):void {
             _book_type = value;
@@ -54,6 +58,20 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get extraInfo():OrderExtraInfo {
             return _extraInfo;
+        }
+
+        public function set extraState(value:ListCollectionView):void {
+            _extraState = value;
+        }
+        public function get extraState():ListCollectionView {
+            return _extraState;
+        }
+
+        public function set extraStateProlong(value:ListCollectionView):void {
+            _extraStateProlong = value;
+        }
+        public function get extraStateProlong():ListCollectionView {
+            return _extraStateProlong;
         }
 
         public function set fotos_num(value:int):void {
@@ -140,6 +158,13 @@ package com.photodispatcher.model.mysql.entities {
             return _state;
         }
 
+        public function set stateLog(value:ListCollectionView):void {
+            _stateLog = value;
+        }
+        public function get stateLog():ListCollectionView {
+            return _stateLog;
+        }
+
         public function set state_date(value:Date):void {
             _state_date = value;
         }
@@ -168,11 +193,20 @@ package com.photodispatcher.model.mysql.entities {
             return _sync;
         }
 
+        public function set techLog(value:ListCollectionView):void {
+            _techLog = value;
+        }
+        public function get techLog():ListCollectionView {
+            return _techLog;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _book_type = input.readObject() as int;
             _data_ts = input.readObject() as String;
             _extraInfo = input.readObject() as OrderExtraInfo;
+            _extraState = input.readObject() as ListCollectionView;
+            _extraStateProlong = input.readObject() as ListCollectionView;
             _fotos_num = input.readObject() as int;
             _ftp_folder = input.readObject() as String;
             _id = input.readObject() as String;
@@ -185,10 +219,12 @@ package com.photodispatcher.model.mysql.entities {
             _src_date = input.readObject() as Date;
             _src_id = input.readObject() as String;
             _state = input.readObject() as int;
+            _stateLog = input.readObject() as ListCollectionView;
             _state_date = input.readObject() as Date;
             _state_name = input.readObject() as String;
             _suborders = input.readObject() as ListCollectionView;
             _sync = input.readObject() as int;
+            _techLog = input.readObject() as ListCollectionView;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -196,6 +232,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
             output.writeObject((_data_ts is IPropertyHolder) ? IPropertyHolder(_data_ts).object : _data_ts);
             output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);
+            output.writeObject((_extraState is IPropertyHolder) ? IPropertyHolder(_extraState).object : _extraState);
+            output.writeObject((_extraStateProlong is IPropertyHolder) ? IPropertyHolder(_extraStateProlong).object : _extraStateProlong);
             output.writeObject((_fotos_num is IPropertyHolder) ? IPropertyHolder(_fotos_num).object : _fotos_num);
             output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
@@ -208,10 +246,12 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_src_date is IPropertyHolder) ? IPropertyHolder(_src_date).object : _src_date);
             output.writeObject((_src_id is IPropertyHolder) ? IPropertyHolder(_src_id).object : _src_id);
             output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
+            output.writeObject((_stateLog is IPropertyHolder) ? IPropertyHolder(_stateLog).object : _stateLog);
             output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
             output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
             output.writeObject((_suborders is IPropertyHolder) ? IPropertyHolder(_suborders).object : _suborders);
             output.writeObject((_sync is IPropertyHolder) ? IPropertyHolder(_sync).object : _sync);
+            output.writeObject((_techLog is IPropertyHolder) ? IPropertyHolder(_techLog).object : _techLog);
         }
     }
 }

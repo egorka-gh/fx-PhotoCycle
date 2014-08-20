@@ -8,11 +8,17 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.print.LabGeneric;
+	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.filesystem.File;
+	import flash.globalization.DateTimeStyle;
 	
 	import mx.collections.ArrayCollection;
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrintGroup")]
@@ -43,6 +49,87 @@ package com.photodispatcher.model.mysql.entities {
 			return result;
 		}
 
+		public static function gridColumns(withLab:Boolean=false):ArrayList{
+			var a:Array=baseGridColumns();
+			var col:GridColumn;
+			if(!a) return null;
+			if(withLab){
+				col= new GridColumn('lab_name'); col.headerText='Лаборатория'; col.width=80;
+				a.unshift(col);
+			}
+			return new ArrayList(a);
+		}
+		
+		private static function baseGridColumns():Array{
+			var result:Array= [];
+			
+			var col:GridColumn= new GridColumn('source_name'); col.headerText='Источник'; col.width=70; result.push(col);
+			//col= new GridColumn('order_id'); col.headerText='Id Заказа'; result.addItem(col);
+			col= new GridColumn('id'); col.headerText='ID'; col.width=80; result.push(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=95; result.push(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('path'); col.headerText='Папка'; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
+			col= new GridColumn('frame_name'); col.headerText='Рамка'; result.push(col);
+			col= new GridColumn('correction_name'); col.headerText='Коррекция'; result.push(col);
+			col= new GridColumn('cutting_name'); col.headerText='Обрезка'; result.push(col);
+			col= new GridColumn('book_type_name'); col.headerText='Тип книги'; result.push(col);
+			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
+			//col= new GridColumn('cover_name'); col.headerText='Обложка'; result.addItem(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
+			return result;
+		}
+		
+		public static function shortGridColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('id'); col.headerText='ID'; col.width=85; result.push(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=90; result.push(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('lab_name'); col.headerText='Лаборатория'; col.width=70; result.push(col);
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('path'); col.headerText='Папка'; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
+			col= new GridColumn('frame_name'); col.headerText='Рамка'; result.push(col);
+			col= new GridColumn('correction_name'); col.headerText='Коррекция'; result.push(col);
+			col= new GridColumn('cutting_name'); col.headerText='Обрезка'; result.push(col);
+			col= new GridColumn('book_type_name'); col.headerText='Тип книги'; result.push(col);
+			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
+			return new ArrayList(result);
+		}
+		
+		public static function reprintGridColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('id'); col.headerText='ID'; col.width=85; result.push(col);
+			col= new GridColumn('path'); col.headerText='Папка'; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
+			col= new GridColumn('frame_name'); col.headerText='Рамка'; result.push(col);
+			col= new GridColumn('correction_name'); col.headerText='Коррекция'; result.push(col);
+			col= new GridColumn('cutting_name'); col.headerText='Обрезка'; result.push(col);
+			col= new GridColumn('book_type_name'); col.headerText='Тип книги'; result.push(col);
+			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
+			return new ArrayList(result);
+		}
+
+		
 		public var bookTemplate:BookPgTemplate;
 		public var butt:int=0;
 		public var is_horizontal:Boolean;
@@ -139,6 +226,10 @@ package com.photodispatcher.model.mysql.entities {
 
 		public function clone():PrintGroup{
 			var res:PrintGroup=new PrintGroup();
+			
+			res.order_id=order_id;
+			res.sub_id=sub_id;
+			
 			res.width=width;
 			res.height=height;
 			

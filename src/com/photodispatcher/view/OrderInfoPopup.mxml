@@ -8,25 +8,18 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.OrderExtraState;
-			import com.photodispatcher.model.OrderExtraStateProlong;
-			import com.photodispatcher.model.StateLog;
-			import com.photodispatcher.model.TechLog;
-			import com.photodispatcher.model.dao.OrderDAO;
-			import com.photodispatcher.model.dao.OrderExtraStateDAO;
-			import com.photodispatcher.model.dao.OrderExtraStateProlongDAO;
-			import com.photodispatcher.model.dao.PrintGroupDAO;
-			import com.photodispatcher.model.dao.PrintGroupFileDAO;
-			import com.photodispatcher.model.dao.StateLogDAO;
-			import com.photodispatcher.model.dao.SuborderDAO;
-			import com.photodispatcher.model.dao.TechLogDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderExtraState;
+			import com.photodispatcher.model.mysql.entities.OrderExtraStateProlong;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.StateLog;
 			import com.photodispatcher.model.mysql.entities.SubOrder;
+			import com.photodispatcher.model.mysql.entities.TechLog;
+			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.itemRenderer.PGFileReprintItemRenderer;
 			
@@ -38,29 +31,31 @@
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
 			
+			import org.granite.tide.Tide;
+			
 			[Bindable]
 			private var order:Order;
 			[Bindable]
-			private var pgList:ArrayCollection= new ArrayCollection();
+			private var pgList:ArrayCollection;
 			[Bindable]
-			private var pgFilterList:ArrayCollection= new ArrayCollection();;
+			private var soList:ArrayCollection;
 			[Bindable]
-			private var soList:ArrayCollection= new ArrayCollection();
+			private var soFilterList:ArrayCollection;
 			[Bindable]
-			private var soFilterList:ArrayCollection= new ArrayCollection();;
-
+			private var logFilterList:ArrayCollection;
+			/*
 			[Bindable]
-			private var logFilterList:ArrayCollection= new ArrayCollection();;
+			private var fileList:ArrayCollection;
+			*/
 			[Bindable]
-			private var fileList:ArrayCollection= new ArrayCollection();
+			private var techList:ArrayCollection;
 			[Bindable]
-			private var techList:ArrayCollection= new ArrayCollection();
+			private var techListAgg:ArrayCollection;
 			[Bindable]
-			private var techListAgg:ArrayCollection= new ArrayCollection();
+			private var techListResetAC:ArrayCollection;
 			[Bindable]
-			private var techListResetAC:ArrayCollection= new ArrayCollection();
-			[Bindable]
-			private var logList:ArrayCollection= new ArrayCollection();
+			private var logList:ArrayCollection;
+			
 
 			[Bindable]
 			private var reprintPGList:ArrayCollection;
@@ -68,13 +63,17 @@
 			private var reprintFileList:ArrayCollection;
 
 			private function refresh(orderId:String):void{
+				order=null;
 				if(!orderId){
-					order=null;
+					return;
 				}else{
-					var dao:OrderDAO= new OrderDAO();
-					order=dao.getItem(orderId,true);
+					var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+					var latch:DbLatch= new DbLatch();
+					latch.addEventListener(Event.COMPLETE,onOrderLoad);
+					latch.addLatch(svc.loadOrderFull(orderId));
+					latch.start();
 				}
-				
+				/*
 				if(order){
 					var pDao:PrintGroupDAO=new PrintGroupDAO();
 					var a:Array=pDao.getByOrder(order.id);
@@ -128,7 +127,63 @@
 					logList.source=a;
 					logList.filterFunction=filterLogList;
 				}
+				*/
 			}
+			private function onOrderLoad(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
+					order=latch.lastItem as Order;
+					var aa:Array;
+					if(order){
+						pgList=order.printGroups as ArrayCollection;
+						if(pgList){
+							pgList.filterFunction=filterPgList;
+							
+							aa=pgList.source.slice();
+							var pg:PrintGroup= new PrintGroup(); pg.id=order.id;
+							aa.unshift(pg);
+							pg= new PrintGroup(); pg.id='-';
+							aa.unshift(pg);
+							logFilterList= new ArrayCollection(aa);
+						}
+						
+						soList=order.suborders as ArrayCollection;
+						if(soList){
+							aa=soList.source.slice();
+							var so:SubOrder= new SubOrder(); so.ftp_folder=so.sub_id='-';
+							aa.unshift(so);
+							soFilterList= new ArrayCollection(aa);
+						}
+						
+						/*
+						var pfDao:PrintGroupFileDAO=new PrintGroupFileDAO();
+						a=pfDao.getByOrder(order.id);
+						fileList.source=a;
+						fileList.filterFunction=filterFileList;
+						*/
+						techList=order.techLog as ArrayCollection;
+						if(techList){
+							techList.filterFunction=filterTechList;
+							techList.refresh();
+						}
+						
+						//a=tDao.getTechByOrderAgg(order.id);
+						techListAgg=order.extraState as ArrayCollection;
+						
+						techListResetAC=order.extraStateProlong as ArrayCollection;
+						if(techListResetAC){
+							techListResetAC.filterFunction=filterTechListReset;
+							techListResetAC.refresh();
+						}
+						logList= order.stateLog as ArrayCollection;
+						if(logList) logList.filterFunction=filterLogList;
+						
+					}
+				}
+			}
+
+			
 			
 			public function show(orderId:String, techMode:Boolean=false):void{
 				refresh(orderId);
@@ -158,15 +213,6 @@
 				pgList.refresh();
 			}
 
-			private function filterFileList(item:Object):Boolean {
-				var f:PrintGroupFile=item as PrintGroupFile;
-				if(!f) return false;
-				if(lstFilterFiles && lstFilterFiles.selectedIndex>0 && lstFilterFiles.selectedItem.id!=f.print_group) return false;
-				return true;
-			}
-			private function applyFileFilter():void{
-				fileList.refresh();
-			}
 			private function filterTechList(item:Object):Boolean {
 				if(!dgTechAgg || dgTechAgg.selectedIndex==-1) return true;
 				var f:TechLog=item as TechLog;
@@ -206,11 +252,25 @@
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if (!order) return;
+				/*
 				var dao:OrderDAO= new OrderDAO();
 				dao.cleanUp(order);
+				*/
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onOrderClean);
+				latch.addLatch(svc.cleanUpOrder(order.id));
+				latch.start();
+				//close();
+			}
+			private function onOrderClean(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderClean);
+				}
 				close();
 			}
-			
+
 			private var _currReprintPg:PrintGroup;
 			[Bindable]
 			public function get currReprintPg():Object{
@@ -225,18 +285,17 @@
 					}else{
 						chkPreview.enabled=true;
 					}
-					reprintFileList.source=value.getFiles();
+					reprintFileList=_currReprintPg.files as ArrayCollection;
 					chkPreview_changeHandler(null);
 				}else{
-					reprintFileList.source=[];
+					reprintFileList=null;
 				}
 			}
 
 			
 			protected function btReprintMode_clickHandler(event:MouseEvent):void{
 				var srcArr:Array=pgList.source;
-				var srcPgfArr:Array=fileList.source;
-				if(!srcArr || !srcPgfArr) return;
+				if(!srcArr) return;
 
 				reprintPGList=new ArrayCollection();
 				reprintFileList=new ArrayCollection();
@@ -260,17 +319,15 @@
 				
 				var pgPath:String='';
 				for each (pg in srcArr){
-					if(pg && !pg.is_reprint){
+					if(pg && !pg.is_reprint && pg.files && pg.files.length>0){
 						newPg=pg.clone();
 						newPg.id=pg.id;
 						pgArr.push(newPg);
-						if(orderPath) pgPath=orderPath+File.separator+newPg.path
-						for each(pgf in srcPgfArr){
-							if(pgf && pgf.print_group==pg.id){
-								newPgf=pgf.clone();
-								if(pgPath) newPgf.fullPath=pgPath+File.separator+pgf.file_name;
-								newPg.addFile(newPgf);
-							}
+						if(orderPath) pgPath=orderPath+File.separator+newPg.path;
+						for each(pgf in pg.files){
+							newPgf=pgf.clone();
+							if(pgPath) newPgf.fullPath=pgPath+File.separator+pgf.file_name;
+							newPg.addFile(newPgf);
 						}
 					}
 				}
@@ -316,10 +373,10 @@
 						//set pg props
 						pgIdx++;
 						prints=0;
-						pg.order_id=order.id;
+						pg.is_reprint=true;
+						pg.reprint_id=pg.id;
 						pg.id=order.id+'_'+pgIdx.toString();
 						pg.state=OrderState.PRN_WAITE;
-						pg.is_reprint=true;
 						//get files
 						files=pg.files;
 						pg.resetFiles();
@@ -484,15 +541,15 @@
 								<s:List id="lstFilterPg" dataProvider="{soFilterList}" labelField="src_id"
 										width="100" height="100%" change="{applyPgFilter()}"/>
 								<s:DataGrid id="dgPGroups" selectionMode="none" width="100%" height="100%"
-											dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.shortGridColumns()}"/>
+											dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.shortGridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Файлы" width="100%" height="100%"  includeIn="infoFull">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
-								<s:List id="lstFilterFiles" dataProvider="{pgFilterList}" labelField="id"
-										width="100" height="100%" change="{applyFileFilter()}"/>
+								<s:List id="lstFilterFiles" dataProvider="{pgList}" labelField="id"
+										width="100" height="100%"/>
 								<s:DataGrid id="dgFiles" selectionMode="none" width="100%" height="100%"
-											dataProvider="{fileList}" locale="ru_RU" columns="{PrintGroupFileDAO.gridColumns()}"/>
+											dataProvider="{lstFilterFiles.selectedItem.files}" locale="ru_RU" columns="{PrintGroupFile.gridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Тех. точки" width="100%" height="100%">
@@ -540,7 +597,7 @@
 						<s:Label text="Группы печати"/>
 						<s:DataGrid id="dgReprintPGroups" selectionMode="singleRow" height="100%" width="100%" 
 									selectedItem="@{currReprintPg}"
-									dataProvider="{reprintPGList}" locale="ru_RU" columns="{PrintGroupDAO.reprintGridColumns()}"/>
+									dataProvider="{reprintPGList}" locale="ru_RU" columns="{PrintGroup.reprintGridColumns()}"/>
 					</s:VGroup>
 					<s:VGroup gap="5" height="100%">
 						<s:HGroup gap="5" verticalAlign="middle" width="100%">

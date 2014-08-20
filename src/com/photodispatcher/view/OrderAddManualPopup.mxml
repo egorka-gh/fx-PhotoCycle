@@ -6,15 +6,18 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.SourceType;
-			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.mysql.services.OrderService;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 			
@@ -64,12 +67,25 @@
 				order.ftp_folder=order.src_id;
 				
 				//save
+				/*
 				var dao:OrderDAO= new OrderDAO();
 				dao.addManual(order);
-				
+				*/
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onOrderAdd);
+				latch.addLatch(svc.addManual(order));
+				latch.start();
+				//close(true);
+			}
+			private function onOrderAdd(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderAdd);
+				}
 				close(true);
 			}
-			
+
 		]]>
 	</fx:Script>
 	

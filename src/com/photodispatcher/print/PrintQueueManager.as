@@ -7,15 +7,16 @@ package com.photodispatcher.print{
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.dao.LabDAO;
-	import com.photodispatcher.model.dao.OrderDAO;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -27,6 +28,8 @@ package com.photodispatcher.print{
 	import flash.filesystem.File;
 	
 	import mx.collections.ArrayCollection;
+	
+	import org.granite.tide.Tide;
 	
 	[Event(name="managerError", type="com.photodispatcher.event.PrintEvent")]
 	public class PrintQueueManager extends EventDispatcher{
@@ -298,7 +301,7 @@ package com.photodispatcher.print{
 				}
 			}
 			checkOrders();
-			
+			/*
 			//start check web state
 			//scan sources
 			var orderId:String;
@@ -315,6 +318,7 @@ package com.photodispatcher.print{
 				if(!svc.isRunning) serviceCheckNext(svc);
 			}
 			checkWebComplite();
+			*/
 		}
 
 		private function checkOrders():void{
@@ -325,51 +329,88 @@ package com.photodispatcher.print{
 			var order:Order;
 			var bdOrder:Order;
 			var key:String;
+			var idsAC:ArrayCollection= new ArrayCollection();
 			for each(oMap in webQueue){
 				for (key in oMap){
 					order=oMap[key] as Order;
 					if(order.state==OrderState.PRN_QUEUE && !order.bdCheckComplete){
-						//check state in bd
-						var pg:Object;
-						var dao:OrderDAO=new OrderDAO();
-						bdOrder=dao.getItem(order.id);
-						if(!bdOrder){
-							dbReadOk=false;
-							//set errState
-							for each (pg in order.printGroups){
-								pg.state=OrderState.ERR_READ_LOCK;
-							}
-							delete oMap[key];
-						}else{
-							//check state
-							if(bdOrder.state!=OrderState.PRN_WAITE && bdOrder.state!=OrderState.PRN_CANCEL && bdOrder.state!=OrderState.PRN_POST){
-								dbStateOk=false;
-								//set to order state
-								for each (pg in order.printGroups){
-									pg.state=bdOrder.state;
-								}
-								delete oMap[key];
-							}else{
-								order.bdCheckComplete=true;
-							}
-						}
+						idsAC.addItem(order.id);
 					}
-					if(!dbReadOk) dispatchManagerErr('Часть заказов не размещена из-за блокировки чтения.');
-					if(!dbStateOk) dispatchManagerErr('Часть заказов не размещена из-за не сответствия статуса заказа.');
 				}
 			}
-			//clean up webQueue, remove empty orders map
-			var srcKey:String;
-			for (srcKey in webQueue){
-				oMap=webQueue[srcKey];
-				key='';
-				for (key in oMap){
-					if(key) break;
-				}
-				if(!key) delete webQueue[srcKey];
+			if(idsAC.length>0){
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onOrdersLoad);
+				latch.addLatch(svc.loadOrdersByIds(idsAC));
+				latch.start();
 			}
 		}
-		
+		private function onOrdersLoad(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onOrdersLoad);
+				if(latch.complite){
+					var result:Array=latch.lastDataArr;
+					var oMap:Object;
+					var dbStateOk:Boolean=true;
+					var order:Order;
+					var bdOrder:Order;
+					var key:String;
+					if(result){
+						for each(oMap in webQueue){
+							for (key in oMap){
+								order=oMap[key] as Order;
+								//look in result
+								bdOrder=ArrayUtil.searchItem('id',order.id,result) as Order;
+								if(!bdOrder){
+									delete oMap[key];
+								}else{
+									//check state
+									if(bdOrder.state!=OrderState.PRN_WAITE && bdOrder.state!=OrderState.PRN_CANCEL && bdOrder.state!=OrderState.PRN_POST){
+										dbStateOk=false;
+										//set to order state
+										var pg:Object;
+										for each (pg in order.printGroups) pg.state=bdOrder.state;
+										delete oMap[key];
+									}else{
+										order.bdCheckComplete=true;
+									}
+								}
+							}
+						}
+						if(!dbStateOk) dispatchManagerErr('Часть заказов не размещена из-за не сответствия статуса заказа.');
+						//clean up webQueue, remove empty orders map
+						var srcKey:String;
+						for (srcKey in webQueue){
+							oMap=webQueue[srcKey];
+							key='';
+							for (key in oMap){
+								if(key) break;
+							}
+							if(!key) delete webQueue[srcKey];
+						}
+						//start check web state
+						//scan sources
+						var orderId:String;
+						var src_id:String;
+						for(src_id in webQueue){
+							//var svc:ProfotoWeb=webServices[src_id] as ProfotoWeb;
+							var svc:BaseWeb=webServices[src_id] as BaseWeb;
+							if(!svc){
+								//svc= new ProfotoWeb(Context.getSource(int(src_id)));
+								svc= WebServiceBuilder.build(Context.getSource(int(src_id)));
+								svc.addEventListener(Event.COMPLETE,serviceCompliteHandler);
+								webServices[src_id]=svc;
+							}
+							if(!svc.isRunning) serviceCheckNext(svc);
+						}
+						checkWebComplite();
+					}
+				}
+			}
+		}
+
 		private function checkWebComplite():Boolean{
 			//check if any source in process
 			var src_id:String='';

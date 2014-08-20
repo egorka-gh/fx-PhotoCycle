@@ -1,5 +1,7 @@
 package com.photodispatcher.model.dao{
-	import com.photodispatcher.model.StateLog;
+	
+	
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	
 	import flash.globalization.DateTimeStyle;
 	
@@ -29,6 +31,7 @@ package com.photodispatcher.model.dao{
 
 		override protected function processRow(o:Object):Object{
 			var a:StateLog = new StateLog();
+			/*
 			a.id=o.id;
 			a.order_id=o.order_id;
 			a.pg_id=o.pg_id;
@@ -39,6 +42,7 @@ package com.photodispatcher.model.dao{
 			a.state_name=o.state_name;
 
 			a.loaded = true;
+			*/
 			return a;
 		}
 

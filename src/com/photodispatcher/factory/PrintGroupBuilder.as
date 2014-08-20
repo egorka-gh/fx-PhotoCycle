@@ -4,7 +4,6 @@ package com.photodispatcher.factory{
 	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.dao.PrintGroupFileDAO;
 	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.FieldValue;

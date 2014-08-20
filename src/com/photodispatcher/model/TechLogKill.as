@@ -6,7 +6,7 @@ package com.photodispatcher.model{
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 	
-	public class TechLog extends DBRecord{
+	public class TechLogKill extends DBRecord{
 		//database props
 		public var id:int;
 		public var print_group:String;

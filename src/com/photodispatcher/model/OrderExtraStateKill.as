@@ -6,7 +6,7 @@ package com.photodispatcher.model{
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 
-	public class OrderExtraState extends DBRecord{
+	public class OrderExtraStateKill extends DBRecord{
 
 		//database props
 		[Bindable]

@@ -11,7 +11,7 @@ package com.photodispatcher.model.dao{
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 	
-	public class PrintGroupFileDAO extends BaseDAO{
+	public class PrintGroupFileDAOKill extends BaseDAO{
 
 		public static function gridColumns():ArrayList{
 			var result:Array= [];

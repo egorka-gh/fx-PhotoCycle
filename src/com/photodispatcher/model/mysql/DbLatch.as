@@ -21,6 +21,7 @@ package com.photodispatcher.model.mysql
 		
 		public var lastResult:SqlResult;
 		public var lastToken:AsyncToken;
+		public var lastTag:String;
 
 		protected var latches:Array;
 		
@@ -56,7 +57,14 @@ package com.photodispatcher.model.mysql
 		override protected function isComplite():Boolean{
 			return (!latches || latches.length==0) && super.isComplite();
 		}
-		
+
+		public function get lastDataItem():Object{
+			if(lastResult && lastResult is SelectResult && (lastResult as SelectResult).data && (lastResult as SelectResult).data.length>0){
+				return (lastResult as SelectResult).data[0];
+			}
+			return null;
+		}
+
 		public function get lastDataAC():ArrayCollection{
 			if(lastResult && lastResult is SelectResult && (lastResult as SelectResult).data){
 				if ((lastResult as SelectResult).data is ArrayCollection){
@@ -84,6 +92,7 @@ package com.photodispatcher.model.mysql
 		protected function resultHandler(event:ResultEvent, token:AsyncToken=null):void{
 			if(!latches) return;
 			lastToken=event.token;
+			lastTag=lastToken.tag?lastToken.tag:'';
 			var latch:int=lastToken.latch;
 			
 			//check for sql error
@@ -106,6 +115,7 @@ package com.photodispatcher.model.mysql
 		
 		protected function faultHandler(event:FaultEvent, token:AsyncToken=null):void{
 			lastToken=event.token;
+			lastTag=lastToken.tag?lastToken.tag:'';
 			releaseError('DbLatch RPC fault: ' +event.fault.faultString + '\n' + event.fault.faultDetail);
 		}
 		

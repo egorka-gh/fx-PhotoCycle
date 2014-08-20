@@ -8,9 +8,9 @@ package com.photodispatcher.model{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class Suborder extends Order{
+	public class SuborderKill extends Order{
 		
-		public function Suborder(){
+		public function SuborderKill(){
 			super();
 			state=OrderState.FTP_WAITE_SUBORDER;
 		}

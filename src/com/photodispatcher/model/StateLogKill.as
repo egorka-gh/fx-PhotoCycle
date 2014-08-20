@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	public class StateLog extends DBRecord{
+	public class StateLogKill extends DBRecord{
 		//database props
 		[Bindable]
 		public var id:int;
