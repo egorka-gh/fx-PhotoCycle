@@ -391,13 +391,28 @@
 						pg.prints=prints;
 					}
 				}
+				if(arrPG.length==0) return;
+				/*
 				var dao:PrintGroupDAO= new PrintGroupDAO();
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWriteReprint);
 				trace('PrintManager write PrintGroup to db '+ pg.id);
 				dao.createReprintGroups(arrPG);
+				*/
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onReprint);
+				latch.addLatch(svc.addReprintPGroups(new ArrayCollection(arrPG)));
+				latch.start();
 				btReprint.enabled=false;
 				btLookup.enabled=false;
 			}
+			private function onReprint(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch) latch.removeEventListener(Event.COMPLETE,onReprint);
+				close();
+			}
+
+			/*
 			private function onWriteReprint(e:AsyncSQLEvent):void{
 				var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
 				if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWriteReprint);
@@ -410,6 +425,7 @@
 					btLookup.enabled=true;
 				}
 			}
+			*/
 			
 			protected function btReprintAll_clickHandler(event:MouseEvent):void{
 				if(!reprintFileList) return;
@@ -576,7 +592,7 @@
 								<s:List id="lstFilterLog" dataProvider="{logFilterList}" labelField="id"
 										width="100" height="100%" change="{applyLogFilter()}"/>
 								<s:DataGrid id="dgLog" selectionMode="none" width="100%" height="100%"
-											dataProvider="{logList}" locale="ru_RU" columns="{StateLogDAO.gridColumns()}"/>
+											dataProvider="{logList}" locale="ru_RU" columns="{StateLog.gridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
 					</mx:ViewStack>

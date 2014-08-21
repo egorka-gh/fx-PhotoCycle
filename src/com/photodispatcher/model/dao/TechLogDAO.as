@@ -2,13 +2,13 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.model.TechLog;
+	import com.photodispatcher.model.mysql.entities.TechLog;
 	
 	public class TechLogDAO extends BaseDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:TechLog = new TechLog();
-			fillRow(o,a);
+			//fillRow(o,a);
 			return a;
 		}
 

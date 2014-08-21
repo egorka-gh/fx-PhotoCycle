@@ -1,5 +1,5 @@
 package com.photodispatcher.model.dao.local{
-	import com.photodispatcher.model.TechLog;
+	import com.photodispatcher.model.mysql.entities.TechLog;
 	import com.photodispatcher.model.TechPrintGroup;
 	
 	import flash.data.SQLStatement;

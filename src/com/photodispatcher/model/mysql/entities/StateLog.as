@@ -6,9 +6,33 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import flash.globalization.DateTimeStyle;
+	
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.StateLog")]
     public class StateLog extends StateLogBase {
+		
+		public static function gridColumns(includeOrderId:Boolean=false):ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			if(includeOrderId){
+				col= new GridColumn('order_id'); col.headerText='ID Заказа'; col.width=85; result.push(col);
+				col= new GridColumn('pg_id'); col.headerText='ID Группы'; col.width=85; result.push(col);
+			}else{
+				col= new GridColumn('pg_id'); col.headerText='ID'; col.width=85; result.push(col);
+			}
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=100; result.push(col); 
+			col= new GridColumn('comment'); col.headerText='Комментарий'; result.push(col); 
+			return new ArrayList(result);
+		}
+
     }
 }

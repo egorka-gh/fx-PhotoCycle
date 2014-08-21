@@ -11,26 +11,29 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.TechLog;
 			import com.photodispatcher.model.TechLogLocal;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.TechPrintGroup;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.TechLogDAO;
 			import com.photodispatcher.model.dao.local.LocalDAO;
 			import com.photodispatcher.model.dao.local.TechLogLocalDAO;
 			import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.TechLog;
+			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 			
@@ -71,20 +74,35 @@
 			private function refresh(orderId:String):void{
 				pgCover=null;
 				pgBlok=null;
+				order=null;
 				bookListAC=new ArrayCollection();
 				bookTotal=0;
 				bookComplited=0;
-				if(!orderId){
-					order=null;
-				}else{
+				if(!orderId) return;
+				/*
 					var dao:OrderDAO= new OrderDAO();
 					order=dao.getItem(orderId,true);
+				*/
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onOrderLoad);
+				latch.addLatch(svc.loadOrderVsChilds(orderId));
+				latch.start();
+			}
+			private function onOrderLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
+					order=latch.lastItem as Order;
 				}
-				if(!order) return;
+					
+				if(!order || !order.printGroups) return;
+				/*
 				var pDao:PrintGroupDAO=new PrintGroupDAO();
 				var a:Array=pDao.getByOrder(order.id);
+				*/
 				var pg:PrintGroup;
-				for each(pg in a){
+				for each(pg in order.printGroups){
 					if (!pg.is_reprint && pg.book_type!=0){
 						if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) pgCover=pg;
 						if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) pgBlok=pg;

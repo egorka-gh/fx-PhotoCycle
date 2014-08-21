@@ -5,15 +5,16 @@ package com.photodispatcher.tech.picker{
 	import com.photodispatcher.event.SerialProxyEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
 	import com.photodispatcher.model.DBRecord;
-	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.Layer;
 	import com.photodispatcher.model.LayerSequence;
 	import com.photodispatcher.model.Layerset;
-	import com.photodispatcher.model.mysql.entities.Order;
-	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.TechPoint;
 	import com.photodispatcher.model.dao.LayersetDAO;
-	import com.photodispatcher.model.dao.OrderDAO;
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.service.barcode.ComInfo;
 	import com.photodispatcher.service.barcode.ComReader;
 	import com.photodispatcher.service.barcode.ComReaderEmulator;
@@ -35,6 +36,8 @@ package com.photodispatcher.tech.picker{
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
+	
+	import org.granite.tide.Tide;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	public class TechPicker extends EventDispatcher{
@@ -170,7 +173,7 @@ package com.photodispatcher.tech.picker{
 		
 		//print group params
 		[Bindable]
-		public var currOrder:Order;
+		public var currExtraInfo:OrderExtraInfo
 		[Bindable]
 		public var currPgId:String='';
 		private var currBarcode:String;
@@ -572,7 +575,7 @@ package com.photodispatcher.tech.picker{
 			log('start');
 			currBarcode=null;
 			currPgId='';
-			currOrder=null;
+			currExtraInfo=null;
 			currBookTot=-1;
 			currBookIdx=-1;
 			currSheetTot=-1;
@@ -868,7 +871,7 @@ package com.photodispatcher.tech.picker{
 							currSheetIdx=-1;
 							log('Заказ '+currPgId+' завершен.');
 							currPgId='';
-							currOrder=null;
+							currExtraInfo=null;
 							currentGroup= COMMAND_GROUP_ORDER_END;
 							nextStep();
 						}else{
@@ -1180,27 +1183,43 @@ package com.photodispatcher.tech.picker{
 		
 		private function checkOrderParams():void{
 			if(!currPgId) return;
+			/*
 			var dao:OrderDAO= new OrderDAO();
 			var o:Order=dao.getExtraInfoByPG(currPgId,true);
-			if(!o){
-				//read lock
-				callDbLate(checkOrderParams);
+			*/
+			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			var latch:DbLatch= new DbLatch();
+			latch.addLatch(svc.loadExtraIfoByPG(currPgId));
+			latch.addEventListener(Event.COMPLETE,onOrderFinde);
+			latch.start();
+		}
+		private function onOrderFinde(e:Event):void{
+			var latch:DbLatch=e.target as DbLatch;
+			var ei:OrderExtraInfo;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onOrderFinde);
+				ei=latch.lastItem as OrderExtraInfo;
+			}
+			if(!ei){
+				//read error or not exists
+				pause('Нет доп информации по заказу');
+				log('! ExtraInfo not found');
 				return;
 			}
-			currOrder=o;
+			currExtraInfo=ei;
 			bdLatch.forward('Проверка заказа');
 			
-			currBookTypeName=getBookTypeName(currOrder.book_type)
+			currBookTypeName=getBookTypeName(currExtraInfo.book_type)
 			//check book type
-			if(!layerset.is_book_check_off && layerset.book_type!=currOrder.book_type){
+			if(!layerset.is_book_check_off && layerset.book_type!=currExtraInfo.book_type){
 				pause('Тип книги "'+currBookTypeName+'" заказа не соответствует шаблону.');
 				log('! wrong book_type');
 				return;
 			}
 			//check interlayer
-			currInerlayer=interlayerSet.getBySynonym(currOrder.interlayer);
-			if(currOrder.interlayer && !currInerlayer){
-				pause('Неизвестный тип прослойки "'+currOrder.interlayer+'"');
+			currInerlayer=interlayerSet.getBySynonym(currExtraInfo.interlayer);
+			if(currExtraInfo.interlayer && !currInerlayer){
+				pause('Неизвестный тип прослойки "'+currExtraInfo.interlayer+'"');
 				log('! unknown interlayer');
 				return;
 			}
@@ -1208,13 +1227,13 @@ package com.photodispatcher.tech.picker{
 			if(!layerset.is_epaper_check_off){
 				//check endpaper
 				var newEp:Layerset;
-				if(currOrder.endpaper){
-					newEp=endpaperSet.getBySynonym(currOrder.endpaper);
+				if(currExtraInfo.endpaper){
+					newEp=endpaperSet.getBySynonym(currExtraInfo.endpaper);
 				}else{
 					newEp=endpaperSet.emptyEndpaper;
 				}
 				if(!newEp){
-					pause('Не известный форзац "'+currOrder.endpaper+'"');
+					pause('Не известный форзац "'+currExtraInfo.endpaper+'"');
 					log('! unknown endpaper');
 					return;
 				}

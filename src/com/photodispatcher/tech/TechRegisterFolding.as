@@ -1,6 +1,6 @@
 package com.photodispatcher.tech{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.TechLog;
+	import com.photodispatcher.model.mysql.entities.TechLog;
 	import com.photodispatcher.model.TechPrintGroup;
 	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.model.dao.TechLogDAO;

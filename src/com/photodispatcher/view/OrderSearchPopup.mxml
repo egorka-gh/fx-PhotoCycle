@@ -6,8 +6,9 @@
 						   keyDown="skinnablepopupcontainer1_keyDownHandler(event)">
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
-			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.mysql.services.OrderService;
 			
 			import flash.globalization.DateTimeStyle;
 			
@@ -15,6 +16,8 @@
 			import mx.collections.ArrayList;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.components.gridClasses.GridColumn;
 			import spark.formatters.DateTimeFormatter;
@@ -42,6 +45,7 @@
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if (tiOrderId.text){
+					/*
 					var dao:OrderDAO=new OrderDAO();
 					ordersList= dao.findeById(tiOrderId.text);
 					if(ordersList && ordersList.length>0){
@@ -54,8 +58,34 @@
 					}else{
 						currentState='notFound';
 					}
+					*/
+					var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+					var latch:DbLatch= svc.findeById(tiOrderId.text);
+					latch.addEventListener(Event.COMPLETE,onOrderFinde);
+					latch.start();
 				}
 			}
+			private function onOrderFinde(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				ordersList=null;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderFinde);
+					if(latch.complite){
+						ordersList=latch.lastDataAC;
+					}
+				}
+				if(ordersList && ordersList.length>0){
+					if(ordersList.length==1){
+						showOrder((ordersList.getItemAt(0) as Order).id);
+						return;
+					}else{
+						currentState='found';
+					}
+				}else{
+					currentState='notFound';
+				}
+			}
+
 			
 			protected function showOrder(id:String):void{
 				var pop:OrderInfoPopup=new OrderInfoPopup();

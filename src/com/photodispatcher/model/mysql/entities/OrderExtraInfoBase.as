@@ -14,6 +14,7 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class OrderExtraInfoBase extends AbstractEntity {
 
+        private var _book_type:int;
         private var _calc_type:String;
         private var _corner_type:String;
         private var _cover:String;
@@ -23,6 +24,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _interlayer:String;
         private var _kaptal:String;
         private var _sub_id:String;
+
+        public function set book_type(value:int):void {
+            _book_type = value;
+        }
+        public function get book_type():int {
+            return _book_type;
+        }
 
         public function set calc_type(value:String):void {
             _calc_type = value;
@@ -89,6 +97,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _book_type = input.readObject() as int;
             _calc_type = input.readObject() as String;
             _corner_type = input.readObject() as String;
             _cover = input.readObject() as String;
@@ -102,6 +111,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
             output.writeObject((_calc_type is IPropertyHolder) ? IPropertyHolder(_calc_type).object : _calc_type);
             output.writeObject((_corner_type is IPropertyHolder) ? IPropertyHolder(_corner_type).object : _corner_type);
             output.writeObject((_cover is IPropertyHolder) ? IPropertyHolder(_cover).object : _cover);

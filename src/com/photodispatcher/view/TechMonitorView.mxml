@@ -10,7 +10,7 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.SourceType;
-			import com.photodispatcher.model.TechLog;
+			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.PrintGroupDAO;
 			import com.photodispatcher.model.dao.TechLogDAO;

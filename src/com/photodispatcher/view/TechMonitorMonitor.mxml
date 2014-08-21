@@ -12,7 +12,7 @@
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.mysql.entities.Order;
-			import com.photodispatcher.model.OrderExtraState;
+			import com.photodispatcher.model.mysql.entities.OrderExtraState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.BaseDAO;

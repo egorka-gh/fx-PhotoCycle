@@ -312,10 +312,10 @@
 				ordersQueueGridMenu= new GridContexMenu(dgPrepocessQueue,[GridContexMenu.SHOW_ORDER]);
 			}
 			
-			protected function dgWriteQueue_creationCompleteHandler(event:FlexEvent):void{
+/* 			protected function dgWriteQueue_creationCompleteHandler(event:FlexEvent):void{
 				ordersWriteQueueGridMenu= new GridContexMenu(dgWriteQueue,[GridContexMenu.SHOW_ORDER]);
 			}
-			
+ */			
 			protected function dgErrLimit_creationCompleteHandler(event:FlexEvent):void{
 				ordersErrLimitGridMenu= new GridContexMenu(dgErrLimit,[GridContexMenu.SHOW_ORDER,GridContexMenu.RESET_ERRLIMIT]);
 			}
@@ -428,11 +428,11 @@
 
 						</s:VGroup>
 					</s:NavigatorContent>
-					<s:NavigatorContent label="Запись" backgroundAlpha="{ftpManager.isWriting?1:0}" backgroundColor="#00ff00" width="100%" height="100%">
+					<!--<s:NavigatorContent label="Запись" backgroundAlpha="{ftpManager.isWriting?1:0}" backgroundColor="#00ff00" width="100%" height="100%">
 						<s:DataGrid id="dgWriteQueue" selectionMode="singleRow"
 									width="100%" height="100%" creationComplete="dgWriteQueue_creationCompleteHandler(event)"
 									dataProvider="{ftpManager.writeOrdersList}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
-					</s:NavigatorContent>
+					</s:NavigatorContent>-->
 				</mx:ViewStack>
 			</s:VGroup>
 			<s:VGroup gap="10" width="400" height="100%" visible="true">

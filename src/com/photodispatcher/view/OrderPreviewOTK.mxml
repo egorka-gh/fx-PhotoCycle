@@ -20,7 +20,7 @@
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.model.TechLog;
+			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.TechPoint;
 			import com.photodispatcher.model.dao.TechLogDAO;
 			import com.photodispatcher.view.itemRenderer.BookSheetPreviewRenderer;

@@ -5,7 +5,7 @@
 				autoDrawBackground="true">
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.TechLog;
+			import com.photodispatcher.model.mysql.entities.TechLog;
 			
 			[Bindable]
 			private var book:TechLog;

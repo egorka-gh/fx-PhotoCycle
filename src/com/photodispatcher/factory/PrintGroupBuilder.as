@@ -214,7 +214,7 @@ package com.photodispatcher.factory{
 			return result;
 		}
 		
-		public function parseBookFiles(files:Array):PrintGroup{
+		private function parseBookFiles(files:Array):PrintGroup{
 			var res:PrintGroup= new PrintGroup();
 			var f:PrintGroupFile;
 			var re:RegExp;
@@ -539,6 +539,7 @@ package com.photodispatcher.factory{
 					
 					//add to order
 					if(pgCover && pgCover.files && pgCover.files.length>0){
+						pgCover.sub_id=so.sub_id;
 						pgCover.id=order.id+'_'+pgNum.toString();
 						pgCover.sheet_num=pgCover.files.length;
 						pgCover.prints=pgCover.book_num*pgCover.sheet_num;
@@ -548,6 +549,7 @@ package com.photodispatcher.factory{
 						pgNum++;
 					}
 					if(pgBody.files && pgBody.files.length>0){
+						pgBody.sub_id=so.sub_id;
 						pgBody.id=order.id+'_'+pgNum.toString();
 						pgBody.sheet_num=pgBody.files.length;
 						pgBody.prints=pgBody.book_num*pgBody.sheet_num;

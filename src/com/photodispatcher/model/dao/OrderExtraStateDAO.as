@@ -1,12 +1,12 @@
 package com.photodispatcher.model.dao{
-	import com.photodispatcher.model.OrderExtraState;
+	import com.photodispatcher.model.mysql.entities.OrderExtraState;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 
 	public class OrderExtraStateDAO extends BaseDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:OrderExtraState = new OrderExtraState();
-			fillRow(o,a);
+			//fillRow(o,a);
 			return a;
 		}
 

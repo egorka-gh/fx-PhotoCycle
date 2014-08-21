@@ -120,13 +120,13 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('proj_type_name'); col.headerText='Тип книги'; result.push(col);
 			col= new GridColumn('ftp_folder'); col.headerText='Папка'; result.push(col);
 			col= new GridColumn('prt_qty'); col.headerText='Кол-во'; result.push(col);
-			col= new GridColumn('calc_type'); col.headerText='Тип'; result.push(col);
-			col= new GridColumn('cover'); col.headerText='Обложка'; result.push(col);
-			col= new GridColumn('format'); col.headerText='Формат'; result.push(col);
-			col= new GridColumn('endpaper'); col.headerText='Форзац'; result.push(col);
-			col= new GridColumn('interlayer'); col.headerText='Прослойка'; result.push(col);
-			col= new GridColumn('corner_type'); col.headerText='Углы'; result.push(col);
-			col= new GridColumn('kaptal'); col.headerText='Каптал'; result.push(col);
+			col= new GridColumn('extraInfo.calc_type'); col.headerText='Тип'; result.push(col);
+			col= new GridColumn('extraInfo.cover'); col.headerText='Обложка'; result.push(col);
+			col= new GridColumn('extraInfo.format'); col.headerText='Формат'; result.push(col);
+			col= new GridColumn('extraInfo.endpaper'); col.headerText='Форзац'; result.push(col);
+			col= new GridColumn('extraInfo.interlayer'); col.headerText='Прослойка'; result.push(col);
+			col= new GridColumn('extraInfo.corner_type'); col.headerText='Углы'; result.push(col);
+			col= new GridColumn('extraInfo.kaptal'); col.headerText='Каптал'; result.push(col);
 			
 			return new ArrayList(result);
 		}
