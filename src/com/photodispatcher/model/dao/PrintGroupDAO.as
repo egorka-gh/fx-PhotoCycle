@@ -19,7 +19,7 @@ package com.photodispatcher.model.dao{
 	import spark.formatters.DateTimeFormatter;
 	
 	public class PrintGroupDAO extends BaseDAO{
-		
+		/* loadOrderFull*/
 		public function getByOrder(orderId:String):Array{
 			var sql:String;
 			sql='SELECT pg.*, o.source source_id, s.name source_name, o.ftp_folder order_folder, os.name state_name,'+
@@ -42,6 +42,7 @@ package com.photodispatcher.model.dao{
 			return itemsArray;
 		}
 
+		/* TechPickerService. bookNumByPGroup*/
 		public function getByID(pgId:String):PrintGroup{
 			var sql:String;
 			sql='SELECT pg.*, o.source source_id, s.name source_name, o.ftp_folder order_folder, os.name state_name,'+
@@ -69,6 +70,7 @@ package com.photodispatcher.model.dao{
 		 * 
 		 * trows ERR_READ_LOCK
 		 */
+		/* LabService.getLastPGroupByTPoint*/
 		public function lastByTechPoint(techPointId:int):PrintGroup{ 
 			var sql:String;
 			sql='SELECT pg.* FROM tech_log tl1'+
@@ -295,6 +297,7 @@ package com.photodispatcher.model.dao{
 			*/
 		}
 
+		/* order service*/
 		public function createReprintGroups(printGroups:Array):void{
 			if(!printGroups || printGroups.length==0){
 				dispatchEvent(new AsyncSQLEvent(AsyncSQLEvent.RESULT_COMLETED));
@@ -399,6 +402,7 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		/* OrderStateService.extraStateStart */
 		public function startExtraStateByTech(pgId:String,tech_type:int):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -415,6 +419,7 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		/* OrderStateService.extraStateSetByPGroup  !!!tech_type=state */
 		public function setExtraStateByTech(pgId:String,tech_type:int):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -612,6 +617,7 @@ package com.photodispatcher.model.dao{
 		}
 		*/
 
+		/*
 		public function printPost(item:PrintGroup, labId:int):void{
 			if(!item) return;
 			item.state=OrderState.PRN_POST;
@@ -642,6 +648,7 @@ package com.photodispatcher.model.dao{
 			//start Sequence
 			executeSequence(sequence);
 		}
+		*/
 
 		public function writePrintState(item:PrintGroup):void{
 			if(!item) return;

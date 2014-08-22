@@ -61,6 +61,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PRN_CANCEL:int=215;
 		public static const PRN_POST_FORWARD:int=220;
 		public static const PRN_PRINT:int=250;
+		public static const PRN_REPRINT:int=251;
 		public static const PRN_INPRINT:int=255;
 		public static const PRN_COMPLETE:int=300;
 		public static const CANCELED_OLD:int=310;
