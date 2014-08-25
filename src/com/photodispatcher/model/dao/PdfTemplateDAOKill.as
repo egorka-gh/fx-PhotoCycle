@@ -7,7 +7,7 @@ package com.photodispatcher.model.dao{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class PdfTemplateDAO extends BaseDAO{
+	public class PdfTemplateDAOKill extends BaseDAO{
 		
 		private static var templateMap:Object;
 		

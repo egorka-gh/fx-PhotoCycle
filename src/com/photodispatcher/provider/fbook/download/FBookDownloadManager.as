@@ -4,13 +4,13 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.ContentFilter;
-	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
@@ -306,7 +306,7 @@ package com.photodispatcher.provider.fbook.download{
 			if(newOrder){
 				currentOrder=newOrder;
 				currentOrder.state=OrderState.FTP_LOAD;
-				if(!remoteMode) StateLogDAO.logState(currentOrder.state,currentOrder.id,null,'Загрузка подзаказов');
+				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,'','Загрузка подзаказов');
 				nextSubOrder();
 			}else{
 				checkQueue();
@@ -336,7 +336,7 @@ package com.photodispatcher.provider.fbook.download{
 				currentOrder.state=OrderState.FTP_COMPLETE;
 				currentOrder.resetErrCounter();
 				removeFromQueue(currentOrder);
-				if(!remoteMode) StateLogDAO.logState(currentOrder.state,currentOrder.id,null,'Завершена загрузка подзаказов'); 
+				if(!remoteMode) StateLog.log(currentOrder.state, currentOrder.id,'','Завершена загрузка подзаказов'); 
 				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,currentOrder));
 				currentOrder=null;
 				currentSubOrder=null;
@@ -388,7 +388,7 @@ package com.photodispatcher.provider.fbook.download{
 				}catch(err:Error){
 					currentSubOrder.state=OrderState.ERR_FILE_SYSTEM;
 					currentOrder.state=OrderState.ERR_FILE_SYSTEM;
-					if(!remoteMode) StateLogDAO.logState(currentOrder.state,currentOrder.id,null,'Папка: '+file.nativePath+' '+err.message); 
+					if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Папка: '+file.nativePath+' '+err.message); 
 					if(currentOrder.exceedErrLimit) releaseWithError(currentOrder,err.message);
 					currentOrder=null;
 					currentSubOrder=null;
@@ -418,7 +418,7 @@ package com.photodispatcher.provider.fbook.download{
 					}
 					if(skip){
 						currentSubOrder.state=OrderState.SKIPPED;
-						if(!remoteMode) StateLogDAO.logState(currentSubOrder.state ,currentSubOrder.order_id); 
+						if(!remoteMode) StateLog.log(currentSubOrder.state ,currentSubOrder.order_id, currentSubOrder.sub_id,''); 
 						nextSubOrder();
 						return;
 					}
@@ -429,8 +429,8 @@ package com.photodispatcher.provider.fbook.download{
 			}else{
 				currentSubOrder.state=OrderState.ERR_WEB;
 				currentOrder.state=OrderState.ERR_WEB;
-				if(!remoteMode) StateLogDAO.logState(OrderState.ERR_WEB,currentOrder.id,null,'Не найден проект заказа '+currentSubOrder.sub_id.toString()+': '+projectLoader.lastErr);
-				releaseWithError(currentOrder,'Не найден проект заказа '+currentSubOrder.sub_id.toString()+': '+projectLoader.lastErr);
+				if(!remoteMode) StateLog.log(OrderState.ERR_WEB,currentOrder.id,currentSubOrder.sub_id,'Не найден проект заказа '+currentSubOrder.sub_id+': '+projectLoader.lastErr);
+				releaseWithError(currentOrder,'Не найден проект заказа '+currentSubOrder.sub_id+': '+projectLoader.lastErr);
 				checkQueue();
 			}
 		}
@@ -462,12 +462,12 @@ package com.photodispatcher.provider.fbook.download{
 				//TODO check auth??
 				currentSubOrder.state=OrderState.ERR_FTP;
 				currentOrder.state=OrderState.ERR_FTP;
-				if(!remoteMode) StateLogDAO.logState(currentOrder.state,currentOrder.id,null,'Ошибка загрузки подзаказа ' +currentSubOrder.sub_id.toString()+' :'+contentLoader.errorText);
-				releaseWithError(currentOrder,'Подзаказ ' +currentSubOrder.sub_id.toString()+': '+contentLoader.errorText);
+				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Ошибка загрузки подзаказа ' +currentSubOrder.sub_id+' :'+contentLoader.errorText);
+				releaseWithError(currentOrder,'Подзаказ ' +currentSubOrder.sub_id+': '+contentLoader.errorText);
 				checkQueue();
 			}else{
 				currentSubOrder.state=OrderState.FTP_COMPLETE;
-				if(!remoteMode) StateLogDAO.logState(currentOrder.state,currentOrder.id,null,'Загружен подзаказ ' +currentSubOrder.sub_id.toString());
+				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Загружен подзаказ ' +currentSubOrder.sub_id);
 				//TODO prepare text images
 				nextSubOrder();
 			}

@@ -4,7 +4,7 @@ package com.photodispatcher.model.dao{
 	
 	import mx.collections.ArrayCollection;
 	
-	public class LabDAO extends BaseDAO{
+	public class LabDAOKill extends BaseDAO{
 
 		public function findAll(silent:Boolean=false):ArrayCollection{
 			var res:Array=findAllArray(silent);

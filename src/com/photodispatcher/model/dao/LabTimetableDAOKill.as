@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.LabTimetable;
 	
-	public class LabTimetableDAO extends BaseDAO{
+	public class LabTimetableDAOKill extends BaseDAO{
 
 		public function getByDevice(device:int, silent:Boolean=false):Array {
 			var sql:String;

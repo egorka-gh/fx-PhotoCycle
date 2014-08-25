@@ -1,7 +1,7 @@
 package com.photodispatcher.model{
 	import com.photodispatcher.model.dao.SourcePropertyDAO;
 	
-	public class SourceProperty  extends DBRecord{
+	public class SourcePropertyKill  extends DBRecord{
 		
 		public static const HF_PREFIX:String='hotFolderPrefix';
 		public static const HF_IMG_FOLDER:String='imageSubFolder';

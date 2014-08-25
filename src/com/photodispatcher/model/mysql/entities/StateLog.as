@@ -6,9 +6,14 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
+	
 	import flash.globalization.DateTimeStyle;
 	
 	import mx.collections.ArrayList;
+	
+	import org.granite.tide.Tide;
 	
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
@@ -33,6 +38,27 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('comment'); col.headerText='Комментарий'; result.push(col); 
 			return new ArrayList(result);
 		}
+		
+		public static function logByPGroup(state:int, pgId:String, comment:String):void{
+			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			if(!svc) return;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addLatch(svc.logStateByPGroup(pgId, state, comment));
+			latch.start();
+		}
 
+		public static function log(state:int, orderId:String, subId:String, comment:String):void{
+			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			if(!svc) return;
+			var sl:StateLog= new StateLog();
+			sl.order_id=orderId;
+			sl.sub_id=subId;
+			sl.comment=comment.substr(0,250);
+			sl.state=state;
+			sl.state_date= new Date();
+			var latch:DbLatch= new DbLatch(true);
+			latch.addLatch(svc.logState(sl));
+			latch.start();
+		}
     }
 }

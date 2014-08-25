@@ -1,9 +1,9 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	
-	public class SuborderDAO extends BaseDAO{
+	public class SuborderDAOKill extends BaseDAO{
 		
-		public function SuborderDAO(){
+		public function SuborderDAOKill(){
 			super();
 		}
 		

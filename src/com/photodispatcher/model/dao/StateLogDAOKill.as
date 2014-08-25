@@ -10,7 +10,7 @@ package com.photodispatcher.model.dao{
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 
-	public class StateLogDAO extends BaseDAO{
+	public class StateLogDAOKill extends BaseDAO{
 
 		public static function gridColumns(includeOrderId:Boolean=false):ArrayList{
 			var result:Array= [];

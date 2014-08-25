@@ -2,7 +2,7 @@ package com.photodispatcher.model{
 	import com.photodispatcher.model.dao.SubordersTemplateDAO;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 
-	public class SubordersTemplate extends DBRecord	{
+	public class SubordersTemplateKill extends DBRecord	{
 		//database props
 		public var id:int;
 		public var src_type:int;

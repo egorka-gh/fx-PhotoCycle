@@ -1,12 +1,16 @@
 package com.photodispatcher.print{
-	import com.photodispatcher.model.mysql.entities.PrintGroup;
-	import com.photodispatcher.model.dao.PrintGroupDAO;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabRoll;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	
+	import flash.events.Event;
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
+	
+	import org.granite.tide.Tide;
 
 	public class PrintQueue{
 		private static const READ_DELAY_MIN:int=400;
@@ -62,13 +66,22 @@ package com.photodispatcher.print{
 		}
 
 		public function refresh():void{
-			if(isReading) return;
-			_refresh();
-		}
-		private function _refresh():void{
 			if(!lab) return;
 			//read print groups in Print state
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onLoadPg);
+			latch.addLatch(svc.loadInPrint(lab.id));
+			latch.start();
+			//_refresh();
+		}
+		private function onLoadPg(evt:Event):void{ //_refresh():void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch || !latch.complite) return;
+			var pgs:Array= latch.lastDataArr;
+			if(!pgs) return;
 			var ordersMap:Object=new Object();
+			/*
 			var pgDao:PrintGroupDAO= new PrintGroupDAO();
 			var pgs:Array=pgDao.findInPrint(lab.id);
 			if(!pgs){
@@ -76,13 +89,14 @@ package com.photodispatcher.print{
 				refreshLate();
 				return;
 			}
+			*/
 			//set device last pg
 			var dev:LabDevice;
 			if(lab.devices){
 				for each(dev in lab.devices){
 					if(!dev.refresh()){
 						//read lock
-						refreshLate();
+						//refreshLate();
 						return;
 					}
 					dev.setRollByChanel(lab.printChannel(dev.lastPG));
@@ -93,7 +107,6 @@ package com.photodispatcher.print{
 			queueOrders=0;
 			queuePGs=0;
 			queuePrints=0;
-			isReading= false;
 			printGroups=pgs;
 			queuePGs=printGroups.length;
 			var newRolls:Array;
@@ -180,7 +193,6 @@ package com.photodispatcher.print{
 			printQueueLenM=Math.round(resultM/1000);
 		}
 		
-		private var isReading:Boolean=false;
 		private var readDelay:int=0;
 		private var timer:Timer;
 		private var readAttempt:int=0;
@@ -193,6 +205,7 @@ package com.photodispatcher.print{
 			return timeout;
 		}
 
+		/*
 		private function refreshLate():void{
 			if(!isReading){
 				isReading= true;
@@ -224,6 +237,7 @@ package com.photodispatcher.print{
 			timer.removeEventListener(TimerEvent.TIMER,onTimer);
 			_refresh();
 		}
+		*/
 
 	}
 }

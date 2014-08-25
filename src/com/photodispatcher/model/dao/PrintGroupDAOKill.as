@@ -18,7 +18,7 @@ package com.photodispatcher.model.dao{
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 	
-	public class PrintGroupDAO extends BaseDAO{
+	public class PrintGroupDAOKill extends BaseDAO{
 		/* loadOrderFull*/
 		public function getByOrder(orderId:String):Array{
 			var sql:String;
@@ -166,6 +166,7 @@ package com.photodispatcher.model.dao{
 			return new ArrayList(result);
 		}
 
+		/* PrintGroupService.loadByState */
 		public function findAllArray(stateFrom:int=-1, stateTo:int=-1):Array{ 
 			var sql:String;
 			var where:String='';
@@ -204,6 +205,7 @@ package com.photodispatcher.model.dao{
 			return itemsArray;
 		}
 
+		/* PrintGroupService.loadByOrderState */
 		public function findAllInPrint():Array{ 
 			var sql:String;
 			sql='SELECT pg.*, o.source source_id, s.name source_name, o.ftp_folder order_folder, os.name state_name,'+
@@ -227,6 +229,7 @@ package com.photodispatcher.model.dao{
 			return itemsArray;
 		}
 
+		/* PrintGroupService.loadInPrint */
 		public function findInPrint(labId:int):Array{ 
 			var sql:String;
 			sql='SELECT pg.*, o.source source_id, s.name source_name, o.ftp_folder order_folder, os.name state_name,'+
@@ -252,6 +255,7 @@ package com.photodispatcher.model.dao{
 			return itemsArray;
 		}
 
+		/* PrintGroupService.loadPrinted */
 		public function findPrinted(date:Date=null):Array{ 
 			var sql:String;
 			var where:String
@@ -378,6 +382,7 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		/* techService.?*/
 		public function setState(pgId:String,state:int):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -466,6 +471,7 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		/* techService.?*/
 		public function setPrintStateByTech(pgId:String, complete:Boolean):void{
 			var sequence:Array=[];
 			var stmt:SQLStatement;
@@ -650,6 +656,7 @@ package com.photodispatcher.model.dao{
 		}
 		*/
 
+		/* OrderStateService.printPost & OrderStateService.printEndManual */
 		public function writePrintState(item:PrintGroup):void{
 			if(!item) return;
 			var sequence:Array=[];
@@ -713,6 +720,7 @@ package com.photodispatcher.model.dao{
 			executeSequence(sequence);
 		}
 
+		/* OrderStateService.printCancel */
 		public function cancelPrint(items:Array, nameMap:Object=null):void{ // labName:String=''):void{
 			if(!items || items.length==0){
 				dispatchEvent(new AsyncSQLEvent(AsyncSQLEvent.RESULT_COMLETED));

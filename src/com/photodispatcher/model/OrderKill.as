@@ -5,7 +5,7 @@ package com.photodispatcher.model{
 	
 	import pl.maliboo.ftp.FTPFile;
 
-	public class Order extends DBRecord{
+	public class OrderKill extends DBRecord{
 		public static const ERROR_COUNTER_LIMIT:int=2;
 		public static const BILL_TYPE_TXT:int=0;
 		public static const BILL_TYPE_HTML:int=1;

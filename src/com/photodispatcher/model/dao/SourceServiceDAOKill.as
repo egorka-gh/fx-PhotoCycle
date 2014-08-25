@@ -6,7 +6,7 @@ package com.photodispatcher.model.dao{
 	
 	import mx.collections.ArrayCollection;
 	
-	public class SourceServiceDAO extends BaseDAO{
+	public class SourceServiceDAOKill extends BaseDAO{
 		
 		public function getBySource(sourceId:int):Array{
 			var sql:String='SELECT s.*, st.name type_name, st.loc_type FROM config.services s INNER JOIN config.srvc_type st ON st.id = s.srvc_id WHERE s.src_id = ?';

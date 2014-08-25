@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	public class PdfTemplate extends DBRecord{
+	public class PdfTemplateKill extends DBRecord{
 		
 		//database props
 		[Bindable]

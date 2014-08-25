@@ -1,6 +1,5 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
-	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
@@ -9,6 +8,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Roll;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -65,7 +65,7 @@ package com.photodispatcher.print{
 		}
 		
 		protected function dispatchErr(pg:PrintGroup, msg:String):void{
-			StateLogDAO.logState(pg.state, pg.order_id,pg.id,'Ошибка размещения на печать: '+msg);
+			StateLog.logByPGroup(pg.state, pg.id,'Ошибка размещения на печать: '+msg);
 			dispatchEvent(new PrintEvent(PrintEvent.POST_COMPLETE_EVENT,pg,msg));
 		}
 
@@ -78,7 +78,7 @@ package com.photodispatcher.print{
 			}
 			if(pt){
 				postRunning=true;
-				StateLogDAO.logState(OrderState.PRN_POST, pt.printGrp.order_id, pt.printGrp.id);
+				//StateLog.logByPGroup(OrderState.PRN_POST, pt.printGrp.id);
 				pt.addEventListener(Event.COMPLETE,taskComplete);
 				pt.post();
 			}else{

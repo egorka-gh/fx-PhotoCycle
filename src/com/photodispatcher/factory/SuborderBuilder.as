@@ -1,9 +1,9 @@
 package com.photodispatcher.factory{
-	import com.photodispatcher.model.SubordersTemplate;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
+	import com.photodispatcher.model.mysql.entities.SubordersTemplate;
 	
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;

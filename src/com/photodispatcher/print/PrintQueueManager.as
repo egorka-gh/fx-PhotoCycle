@@ -1,22 +1,22 @@
 package com.photodispatcher.print{
 	import com.akmeful.util.Exception;
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.factory.LabBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
-	import com.photodispatcher.model.SourceProperty;
-	import com.photodispatcher.model.dao.LabDAO;
-	import com.photodispatcher.model.dao.PrintGroupDAO;
-	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.StateLog;
+	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
+	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -83,44 +83,45 @@ package com.photodispatcher.print{
 		}
 		
 		public function init(rawLabs:Array=null):void{
-			//TODO refactor
-			return;
-			if(!rawLabs && initCompleted) return; 
-			//TODO 4 print cancel need full lab list (not only active)
-			if(rawLabs){//init from labaratory
-				if(rawLabs.length==0){
-					_initCompleted=false;
-					return;
-				}
+			if(!rawLabs && initCompleted) return;
+			if(rawLabs){
+				fillLabs(rawLabs);
+				return;
 			}
-			if(!rawLabs){ //default init
+			//TODO 4 print cancel need full lab list (not only active)
+			//read from bd
+			var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onLabsLoad);
+			latch.addLatch(svc.loadAll(false));
+			latch.start();
+			/*
 				var dao:LabDAO= new LabDAO();
 				var rawLabs:Array=dao.findActive(true);
 				if(rawLabs==null){
 					initErr('Блокировка чтения при инициализации менеджера печати');
 					return;
 				}
-			}
-			//fill labs from db
+			*/
+		}
+		private function onLabsLoad(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onLabsLoad);
+			if(!latch.complite) return;
+			var rawLabs:Array=latch.lastDataArr;
+			if(!rawLabs) return;
+			fillLabs(rawLabs);
+		}
+		
+		private function fillLabs(rawLabs:Array):void{
+			//fill labs 
 			var lab:Lab;
 			var dev:LabDevice;
 			var result:Array=[];
 			labNamesMap= new Object();
 			for each(lab in rawLabs){
 				labNamesMap[lab.id.toString()]=lab.name;
-				//lab.getDevices(true);
-				if(!lab.devices){
-					initErr('Блокировка чтения при инициализации менеджера печати');
-					return;
-				}
-				for each(dev in lab.devices){
-					//dev.getRolls(false,true);
-					//dev.getTimetable(true);
-					if(!dev.rolls || !dev.timetable){
-						initErr('Блокировка чтения при инициализации менеджера печати');
-						return;
-					}
-				}
 				var lb:LabGeneric=LabBuilder.build(lab);
 				lb.refresh();
 				result.push(lb);
@@ -129,18 +130,6 @@ package com.photodispatcher.print{
 			refreshLabs(true);
 			_initCompleted=true;
 			dispatchEvent(new Event("labsChange"));
-			/*
-			//fill lab names (4 cancel print)
-			rawLabs=dao.findAllArray(true);
-			if(rawLabs==null){
-				initErr('Блокировка чтения при инициализации менеджера печати');
-				return;
-			}
-			labNamesMap= new Object();
-			for each(lab in rawLabs){
-				labNamesMap[lab.id.toString()]=lab.name;
-			}
-			*/
 		}
 		
 		private function initErr(msg:String):void{
@@ -165,13 +154,34 @@ package com.photodispatcher.print{
 		}
 		
 		public function reSync(printGrps:Array=null):void{
+			if(printGrps){
+				_reSync(printGrps);
+				return;
+			}
+			/*
 			if (!printGrps){
 				var pgDao:PrintGroupDAO=new PrintGroupDAO();
 				printGrps=pgDao.findAllArray(OrderState.PRN_WAITE,OrderState.PRN_PRINT);
 
 			}
 			if (!printGrps) return; //read lock
-			
+			*/
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onLoadPgSync);
+			latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_PRINT));
+			latch.start();
+		}
+		private function onLoadPgSync(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoadPgSync);
+				if(!latch.complite) return;
+				_reSync(latch.lastDataArr);
+			}
+		}
+
+		private function _reSync(printGrps:Array):void{
 			//PrintGroup to save
 			var inProcess:Array=[];
 			
@@ -471,7 +481,7 @@ package com.photodispatcher.print{
 					dispatchManagerErr('Ошибка web сервиса: '+svc.errMesage);
 					for each (pg in order.printGroups){
 						pg.state=OrderState.ERR_WEB;
-						StateLogDAO.logState(OrderState.ERR_WEB,order.id,pg.id,'Ошибка проверки на сайте: '+svc.errMesage);
+						StateLog.logByPGroup(OrderState.ERR_WEB,pg.id,'Ошибка проверки на сайте: '+svc.errMesage);
 					}
 				}else{
 					//TODO order can be in state PRN_POST, so check both remote state  
@@ -488,7 +498,7 @@ package com.photodispatcher.print{
 									var revers:Boolean=Context.getAttribute('reversPrint');
 									prnGrp.destinationLab.post(prnGrp,revers);
 								}else{
-									StateLogDAO.logState(OrderState.ERR_WEB,order.id,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
+									StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
 								}
 							}
 						}
@@ -526,9 +536,34 @@ package com.photodispatcher.print{
 			}
 			if(!e.hasErr){
 				//save
+				/*
 				var dao:PrintGroupDAO=new PrintGroupDAO();
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
 				dao.writePrintState(e.printGroup);
+				*/
+				
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onPostWrite);
+				latch.addLatch(svc.printPost(e.printGroup.id, e.printGroup.destination));
+				latch.start();
+			}
+		}
+		private function onPostWrite(evt:Event):void{ //onWrite(e:AsyncSQLEvent):void{
+			/*
+			var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
+			if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
+			if(e.result!=AsyncSQLEvent.RESULT_COMLETED){
+				dispatchManagerErr('Блокировка записи при сохранении статуса группы печати');
+			}
+			*/
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onPostWrite);
+			}
+			if(postQueue.length==0){
+				//complited refresh lab
+				refreshLabs();
 			}
 		}
 		
@@ -548,23 +583,23 @@ package com.photodispatcher.print{
 			queuePrints=newqueuePrints;
 		}
 		
-		private function onWrite(e:AsyncSQLEvent):void{
-			var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
-			if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
-			if(e.result!=AsyncSQLEvent.RESULT_COMLETED){
-				dispatchManagerErr('Блокировка записи при сохранении статуса группы печати');
-			}
-			if(postQueue.length==0){
-				//complited refresh lab
-				refreshLabs();
-			}
-		}
 
-		public function savePrintState(printGroups:Array):void{
+		public function setPrintedState(printGroups:Array):void{
+			/*
 			var dao:PrintGroupDAO=new PrintGroupDAO();
 			//dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
 			var pg:PrintGroup;
 			for each(pg in printGroups) dao.writePrintState(pg);
+			*/
+			if(!printGroups || printGroups.length==0) return;
+			var ids:Array=[];
+			var pg:PrintGroup;
+			for each(pg in printGroups) ids.push(pg.id);
+			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			var latch:DbLatch= new DbLatch();
+			//latch.addEventListener(Event.COMPLETE,onPostWrite);
+			latch.addLatch(svc.printEndManual(ids));
+			latch.start();
 		}
 		
 
@@ -576,13 +611,24 @@ package com.photodispatcher.print{
 			isBusy=true;
 			//currentLab=lab;
 			cancelPostPrintGrps=printGrps;
+			/*
 			var dao:PrintGroupDAO= new PrintGroupDAO();
 			dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCancelPostWrite);
 			trace('PrintManager cancel print, '+printGrps.length+' print groups');
 			var l:LabGeneric;
 			dao.cancelPrint(printGrps,labNamesMap);
+			*/
+			var ids:Array=[];
+			var pg:PrintGroup;
+			for each(pg in cancelPostPrintGrps) ids.push(pg.id);
+			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onCancelPost);
+			latch.addLatch(svc.printCancel(ids));
+			latch.start();
 		}
-		private function onCancelPostWrite(e:AsyncSQLEvent):void{
+		private function onCancelPost(evt:Event):void{ //onCancelPostWrite(e:AsyncSQLEvent):void{
+			/*
 			var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
 			if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onCancelPostWrite);
 			if(e.result==AsyncSQLEvent.RESULT_COMLETED){
@@ -593,6 +639,20 @@ package com.photodispatcher.print{
 				dispatchManagerErr('Отмена печати не выполнена.');
 				cancelPostPrintGrps=null;
 				isBusy=false;
+			}
+			*/
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onCancelPost);
+				if(latch.complite){
+					trace('PrintManager cancel print write db completed.');
+					clearHotFolder();
+				}else{
+					trace('PrintManager cancel print write db locked '+ '; err: '+latch.error);
+					dispatchManagerErr('Отмена печати не выполнена.');
+					cancelPostPrintGrps=null;
+					isBusy=false;
+				}
 			}
 		}
 		private function clearHotFolder():void{

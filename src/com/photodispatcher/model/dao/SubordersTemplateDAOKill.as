@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.SubordersTemplate;
 
-	public class SubordersTemplateDAO extends BaseDAO{
+	public class SubordersTemplateDAOKill extends BaseDAO{
 
 		override protected function processRow(o:Object):Object{
 			var a:SubordersTemplate = new SubordersTemplate();

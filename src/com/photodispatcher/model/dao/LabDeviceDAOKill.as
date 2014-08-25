@@ -6,7 +6,7 @@ package com.photodispatcher.model.dao{
 	
 	import mx.collections.ArrayCollection;
 
-	public class LabDeviceDAO extends BaseDAO{
+	public class LabDeviceDAOKill extends BaseDAO{
 
 		public function getByLab(labId:int, silent:Boolean=false):Array{
 			var sql:String='SELECT s.id, s.lab, s.name, s.speed1, s.speed2, tech_point, tp.name tech_point_name'+

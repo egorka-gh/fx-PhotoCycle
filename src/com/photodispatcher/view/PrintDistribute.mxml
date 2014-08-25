@@ -9,13 +9,12 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.Roll;
-			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.PrintGroupDAO;
-			import com.photodispatcher.model.dao.SourcesDAO;
-			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.PrintGroupService;
 			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -23,6 +22,8 @@
 			import mx.collections.ArrayCollection;
 			import mx.collections.IList;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 			[Bindable]
@@ -92,11 +93,30 @@
 			}
 			
 			private function refreshPgList():void{
+				/*
 				var pgDao:PrintGroupDAO=new PrintGroupDAO();
 				var a:Array=pgDao.findAllArray(OrderState.PRN_WAITE,OrderState.PRN_PRINT);
-				if(!a) return;//read lock
-				if(printManager) printManager.reSync(a);
-				pgArray=a;
+				*/
+				var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadPgSync);
+				latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_PRINT));
+				latch.start();
+			}
+			private function onLoadPgSync(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadPgSync);
+					if(!latch.complite) return;
+					_refreshPgList(latch.lastDataArr);
+				}
+			}
+
+			
+			private function _refreshPgList(pgs:Array):void{
+				if(!pgs) return;//??
+				if(printManager) printManager.reSync(pgs);
+				pgArray=pgs;
 				//reset filter
 				if(lstSizes){
 					lstSizes.selectedIndex=-1;
@@ -104,79 +124,8 @@
 				}else{
 					pgList.source=pgArray;
 				}
-				calcTotals(a);
+				calcTotals(pgs);
 			}
-			
-			/*
-			private function calcTotals(pgArray:Array):void{
-				ordTotal=0;
-				pgTotal=0;
-				phTotal=0;
-				if(!pgArray){
-					sizesList.source=[];
-					return;
-				}
-				var pg:PrintGroup; 
-				var orderMap:Object=new Object();
-				var o:Object;
-				var sizeMap:Object= new Object();
-				var sizeFilterMap:Object= new Object();
-				var paperFilterMap:Object= new Object();
-				var key:String;
-				var size:PhotoSizeAccum;
-				for each(o in pgArray){
-					pg= o as PrintGroup;
-					orderMap[pg.order_id]=pg.order_id;
-					//total printgroups
-					pgTotal++;
-					//total files
-					phTotal+=pg.file_num;
-					//fill sizesList 
-					key=pg.width.toString()+'~'+pg.paper.toString();
-					size=sizeMap[key] as PhotoSizeAccum;
-					if(!size){
-						size= new PhotoSizeAccum();
-						size.size=pg.width;
-						size.paper_id=pg.paper;
-						size.paper=pg.paper_name;
-						sizeMap[key]=size;
-					}
-					size.pg_num++;
-					size.file_num+=pg.file_num;
-					size.len+=pg.file_num*pg.height;
-					//fill size filter list
-					sizeFilterMap[size.size.toString()]={id:size.size, name:size.size.toString()};
-					//fill paper filter list
-					paperFilterMap[size.paper_id.toString()]={id:size.paper_id, name:size.paper};
-					if(pg.width!=pg.height){
-						sizeFilterMap[pg.height.toString()]={id:pg.height, name:pg.height.toString()};
-					}
-				}
-				//total orders
-				for (o in orderMap) ordTotal++;
-				//sizesList
-				var a:Array=[];
-				for each (o in sizeMap) a.push(o);
-				a.sortOn('file_num',Array.DESCENDING | Array.NUMERIC);
-				size=new PhotoSizeAccum(); size.size=-1;
-				a.unshift(size);
-				sizesList.source=a;
-				//sizesFilterList
-				a=[];
-				for each (o in sizeFilterMap) a.push(o);
-				a.sortOn('id',Array.NUMERIC);
-				a.unshift({id:-1,name:'-'});
-				sizesFilterList.source=a;
-				//paper FilterList
-				a=[];
-				for each (o in paperFilterMap){
-					if(o.id) a.push(o);
-				}
-				a.sortOn('id',Array.NUMERIC);
-				a.unshift({id:-1,name:'-'});
-				paperFilterList.source=a;
-			}
-			*/
 			
 			private function calcTotals(pgArray:Array):void{
 				if(!pgArray){
@@ -426,7 +375,7 @@
 			</s:HGroup>
 			<s:DataGrid id="dgPGroups" selectionMode="multipleRows"
 						width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
-						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.gridColumns()}"/>
+						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns()}"/>
 		</s:VGroup>
 		<s:Group height="100%">
 			<s:Button id="btPost" label="{printManager.isBusy?'!':'>'}" width="30" fontWeight="bold" verticalCenter="0" 

@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.SourceProperty;
 
-	public class SourcePropertyDAO extends BaseDAO{
+	public class SourcePropertyDAOKill extends BaseDAO{
 
 		override protected function processRow(o:Object):Object{
 			var a:SourceProperty= new SourceProperty();

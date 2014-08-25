@@ -4,10 +4,10 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
 	import com.photodispatcher.factory.PrintGroupBuilder;
-	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.model.PageData;
@@ -73,7 +73,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 
 			order.state=OrderState.PREPROCESS_PDF;
-			if(logStates) StateLogDAO.logState(order.state,order.id,'','Подготовка подзаказов');
+			if(logStates) StateLog.log(order.state,order.id,'','Подготовка подзаказов');
 			var so:SubOrder;
 			for each(so in order.suborders){
 				if(so && so.state<OrderState.CANCELED) so.state=OrderState.PREPROCESS_WAITE;
@@ -114,7 +114,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				return;
 			}
 			currSuborder.state=OrderState.PREPROCESS_PDF;
-			if(logStates) StateLogDAO.logState(order.state,order.id,'','Подзаказ: '+ currSuborder.sub_id);
+			if(logStates) StateLog.log(currSuborder.state,order.id,currSuborder.sub_id,'');
 			var dir:File=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
 			textBuilder=new TextImageBuilder(currSuborder.project);
 			textBuilder.addEventListener(Event.COMPLETE, onTxtComplite);
@@ -340,7 +340,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			errNum=err;
 			order.state=err;
 			error=errMsg;
-			if(logStates) StateLogDAO.logState(order.state,order.id,'',error);
+			if(logStates) StateLog.log(order.state,order.id,'',error);
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 

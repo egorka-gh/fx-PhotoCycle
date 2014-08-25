@@ -9,14 +9,14 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Lab;
 			import com.photodispatcher.model.mysql.entities.LabRoll;
-			import com.photodispatcher.model.mysql.entities.PrintGroup;
-			import com.photodispatcher.model.dao.LabDAO;
-			import com.photodispatcher.model.dao.PrintGroupDAO;
-			import com.photodispatcher.model.dao.SourcesDAO;
 			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.LabService;
+			import com.photodispatcher.model.mysql.services.PrintGroupService;
 			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
@@ -25,6 +25,8 @@
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 			
@@ -69,21 +71,14 @@
 				
 				labMap=PrintQueueManager.instance.labMap;
 
-				var lDao:SourcesDAO= new SourcesDAO();
-				var a:Array=lDao.findAllArray();
+				//var lDao:SourcesDAO= new SourcesDAO();
+				var a:Array=Context.getSources(); //lDao.findAllArray();
 				if(!a) a=[];
 				var s:Source=new Source(); s.id=0; s.name='-';
 				a.unshift(s);
 				sourceFilterList.source=a;
 
-				var labDao:LabDAO= new LabDAO();
-				a=labDao.findAllArray();
-				if(!a) a=[];
-				var lab:Lab= new Lab(); lab.id=0; lab.name='-';
-				a.unshift(lab);
-				labFilterList.source=a;
-
-				Context.initAttributeLists();
+				//Context.initAttributeLists();
 				paperFilterList=Context.getAttribute('paperList');
 
 				a=OrderState.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_COMPLETE+1,true);
@@ -91,12 +86,40 @@
 				a.unshift(os);
 				statesFilterList.source=a;
 
-				pgList.filterFunction=filterPGList;
-				
+				/*
+				var labDao:LabDAO= new LabDAO();
+				a=labDao.findAllArray();
+				if(!a) a=[];
+				var lab:Lab= new Lab(); lab.id=0; lab.name='-';
+				a.unshift(lab);
+				labFilterList.source=a;
+
 				refresh();
+				
+			}*/
+				var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadLab);
+				latch.addLatch(svc.loadList());
+				latch.start();
+			}
+			private function onLoadLab(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadLab);
+					if(!latch.complite) return;
+					var a:Array=latch.lastDataArr;
+					if(!a) a=[];
+					var lab:Lab= new Lab(); lab.id=0; lab.name='-';
+					a.unshift(lab);
+					labFilterList.source=a;
+					refresh();
+				}
 			}
 
+
 			public function refresh():void{
+				/*
 				if(printManager) printManager.refreshLabs();
 				var pgDao:PrintGroupDAO=new PrintGroupDAO();
 				var a:Array=pgDao.findAllInPrint();
@@ -105,9 +128,31 @@
 				if(a){
 					viewPrintgroups=a;
 					pgList.source=a;
+					pgList.filterFunction=filterPGList;
 					pgList.refresh();
 				}
-				//calcTotals(a);
+				*/
+				var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadPgs);
+				latch.addLatch(svc.loadByOrderState(OrderState.PRN_POST,OrderState.PRN_COMPLETE));
+				latch.start();
+			}
+			private function onLoadPgs(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadPgs);
+					if(!latch.complite) return;
+					var ac:ArrayCollection=latch.lastDataAC;
+					lstLabs.selectedIndex=-1;
+					lstLabRolls.selectedIndex=-1;
+					if(ac){
+						viewPrintgroups=ac.source;
+						pgList=ac;
+						pgList.filterFunction=filterPGList;
+						pgList.refresh();
+					}
+				}
 			}
 			
 			private function onManagerError(e:PrintEvent):void{
@@ -244,7 +289,7 @@
 				}
 				if(a.length>0){
 					//printManager.cancelPost(a,lab);
-					printManager.savePrintState(a);
+					printManager.setPrintedState(a);
 				}
 			}
 
@@ -365,7 +410,7 @@
 			</s:HGroup>
 			<s:DataGrid id="dgPGroups" selectionMode="multipleRows"
 						width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
-						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.gridColumns(true)}"/>
+						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns(true)}"/>
 		</s:VGroup>
 	</s:HGroup>
 	

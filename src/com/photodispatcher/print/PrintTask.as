@@ -1,11 +1,11 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.util.StrUtil;
 	

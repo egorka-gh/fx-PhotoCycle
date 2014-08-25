@@ -14,6 +14,8 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceProperty;
+	import com.photodispatcher.model.mysql.entities.SubordersTemplate;
 	import com.photodispatcher.model.mysql.services.BookSynonymService;
 	import com.photodispatcher.model.mysql.services.ContentFilterService;
 	import com.photodispatcher.model.mysql.services.DictionaryService;
@@ -21,6 +23,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
+	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
 	import com.photodispatcher.model.mysql.services.TechPickerService;
@@ -76,7 +79,8 @@ package com.photodispatcher.context{
 				LabService,
 				TechPointService,
 				TechPickerService,
-				OrderService
+				OrderService,
+				PrintGroupService
 			]);
 			
 			//fill from config
@@ -92,11 +96,50 @@ package com.photodispatcher.context{
 			latch.join(Roll.initItemsMap());
 			latch.join(LabPrintCode.initChanelMap());
 			latch.join(AttrJsonMap.initJsonMap());
+			latch.join(SourceProperty.initMap());
+			latch.join(SubordersTemplate.initMap());
 
 			//latch.start();//start at caller?
 			return latch;
 		}
 
+		public static function initLab():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initLab';
+			//register services
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				//LabResizeService, 
+				OrderStateService, 
+				//BookSynonymService, 
+				//RollService, 
+				//ContentFilterService, 
+				LabService,
+				//TechPointService,
+				//TechPickerService,
+				OrderService,
+				PrintGroupService
+			]);
+			
+			//fill from config
+			//Context.fillFromConfig();
+			
+			//init static maps
+			latch.join(Context.initSourceLists());
+			latch.join(Context.initAttributeLists());
+			//latch.join(LabResize.initSizeMap());
+			latch.join(OrderState.initStateMap());
+			//latch.join(BookSynonym.initSynonymMap());
+			//latch.join(FieldValue.initSynonymMap());
+			//latch.join(Roll.initItemsMap());
+			//latch.join(LabPrintCode.initChanelMap());
+			//latch.join(AttrJsonMap.initJsonMap());
+			//latch.join(SourceProperty.initMap());
+			
+			//latch.start();//start at caller?
+			return latch;
+		}
 		
 		public static function initPhotoPicker():DbLatch{
 			var latch:DbLatch=new DbLatch();

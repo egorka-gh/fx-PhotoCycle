@@ -7,7 +7,7 @@ package com.photodispatcher.model.dao{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class LabResizeDAO extends BaseDAO{
+	public class LabResizeDAOKill extends BaseDAO{
 		/*
 		private static var sizeMap:Object;
 

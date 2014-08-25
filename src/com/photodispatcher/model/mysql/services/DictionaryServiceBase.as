@@ -192,6 +192,28 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("getOrderJsonAttr", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadSourceProperties(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadSourceProperties", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadSourceProperties", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadSourceProperties") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadSubordersTemplate(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadSubordersTemplate", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadSubordersTemplate", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadSubordersTemplate") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }
     }
 }

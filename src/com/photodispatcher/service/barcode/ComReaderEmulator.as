@@ -1,7 +1,6 @@
 package com.photodispatcher.service.barcode{
 	import com.photodispatcher.event.BarCodeEvent;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
-	import com.photodispatcher.model.dao.PrintGroupDAO;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.TimerEvent;
@@ -32,8 +31,8 @@ package com.photodispatcher.service.barcode{
 				started=false;
 				return;
 			}
-			var dao:PrintGroupDAO= new PrintGroupDAO();
-			var pg:PrintGroup=dao.getByID(pgId);
+			//var dao:PrintGroupDAO= new PrintGroupDAO();
+			var pg:PrintGroup;//=dao.getByID(pgId);
 			if(!pg){
 				started=false;
 				return;

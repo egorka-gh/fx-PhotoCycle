@@ -11,7 +11,7 @@ package com.photodispatcher.model{
 	
 	import flash.filesystem.File;
 
-	public class PrintGroup extends DBRecord{
+	public class PrintGroupKill extends DBRecord{
 		public static const PDF_FILENAME_COVERS:String='oblogka';
 		public static const PDF_FILENAME_SHEETS:String='blok';
 		public static const SUBFOLDER_PRINT:String='print';

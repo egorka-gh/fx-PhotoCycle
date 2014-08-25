@@ -10,11 +10,13 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.PrintEvent;
 			import com.photodispatcher.factory.LabBuilder;
-			import com.photodispatcher.model.mysql.entities.PrintGroup;
-			import com.photodispatcher.model.dao.LabDAO;
-			import com.photodispatcher.model.dao.PrintGroupDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Lab;
 			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.LabService;
+			import com.photodispatcher.model.mysql.services.PrintGroupService;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -22,6 +24,8 @@
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 
 			private var _modePrinted:Boolean;
 			[Bindable]
@@ -53,16 +57,12 @@
 			private var gridMenu:GridContexMenu;
 
 			private function init():void{
+				PrintQueueManager.instance.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
 				var a:Array=Context.getSources();
 				if(!a) a=[];
 				var s:Source=new Source(); s.id=0; s.name='-';
 				a.unshift(s);
 				sourceFilterList.source=a;
-
-				var lDao:LabDAO= new LabDAO();
-				a=lDao.findAllArray();
-				a.unshift(s);
-				labFilterList.source=a;
 
 				a=OrderState.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_COMPLETE+1,true);
 				var os:OrderState=new OrderState(); os.id=0; os.name='-';
@@ -71,26 +71,57 @@
 				var idx:int=ArrayUtil.searchItemIdx('id',OrderState.PRN_PRINT,a);
 				if(idx!=-1 && ddStateFilter) ddStateFilter.selectedIndex=idx; 
 
-				Context.initAttributeLists();
+				//Context.initAttributeLists();
 				paperFilterList=Context.getAttribute('paperList');
 				booleanFilterList=Context.getAttribute('booleanList');
 				
+				/*
+				var lDao:LabDAO= new LabDAO();
+				a=lDao.findAllArray();
+				a.unshift(s);
+				labFilterList.source=a;
+
 				refresh();
 				pgList.filterFunction=filterPGList;
 				pgList.refresh();
 				
-				PrintQueueManager.instance.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
+			}*/
+				var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadLab);
+				latch.addLatch(svc.loadList());
+				latch.start();
 			}
+			private function onLoadLab(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadLab);
+					if(!latch.complite) return;
+					var a:Array=latch.lastDataArr;
+					if(!a) a=[];
+					var lab:Lab= new Lab(); lab.id=0; lab.name='-';
+					a.unshift(lab);
+					labFilterList.source=a;
+					refresh();
+				}
+			}
+
 			
 			private function onManagerError(e:PrintEvent):void{
 				Alert.show(e.errMsg);
 			}
 
 			public function refresh():void{
-				var pgDao:PrintGroupDAO=new PrintGroupDAO();
-				var a:Array;
+				//var pgDao:PrintGroupDAO=new PrintGroupDAO();
+				//var a:Array;
+				var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadPgs);
 				if(currentState=='inPrint'){
-					a=pgDao.findAllInPrint(); 
+					//a=pgDao.findAllInPrint();
+					latch.addLatch(svc.loadByOrderState(OrderState.PRN_POST,OrderState.PRN_COMPLETE));
+					latch.start();
+
 				}else{
 					var dt:Date;
 					if (dfDateFilter && dfDateFilter.selectedDate){
@@ -99,10 +130,22 @@
 						dt= new Date();
 						dt= new Date(dt.fullYear,dt.month, dt.date);
 					}
-					a=pgDao.findPrinted(dt); 
+					//a=pgDao.findPrinted(dt);
+					latch.addLatch(svc.loadPrinted(dt));
+					latch.start();
 				}
-				if(a){
-					pgList.source=a;
+				// if(a) pgList.source=a;
+			}
+			private function onLoadPgs(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadPgs);
+					if(!latch.complite) return;
+					pgList=latch.lastDataAC;
+					if(pgList){
+						pgList.filterFunction=filterPGList;
+						pgList.refresh();
+					}
 				}
 			}
 
@@ -175,7 +218,7 @@
 					}
 				}
 				if(a.length>0){
-					PrintQueueManager.instance.savePrintState(a);
+					PrintQueueManager.instance.setPrintedState(a);
 				}
 			}
 
@@ -242,7 +285,7 @@
 			</s:HGroup>
 			<s:DataGrid id="dgPGroups" selectionMode="singleRow"
 						width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
-						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroupDAO.gridColumns(true)}"/>
+						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns(true)}"/>
 		</s:VGroup>
 	</s:HGroup>
 </s:Group>

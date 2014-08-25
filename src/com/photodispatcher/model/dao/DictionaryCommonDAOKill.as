@@ -6,7 +6,7 @@ package com.photodispatcher.model.dao{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class DictionaryCommonDAO extends BaseDAO{
+	public class DictionaryCommonDAOKill extends BaseDAO{
 		
 
 		public function getLayersetSynonyms(byItemId:int=-1, silent:Boolean=false):Array{
