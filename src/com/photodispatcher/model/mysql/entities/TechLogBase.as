@@ -20,6 +20,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _print_group:String;
         private var _sheet:int;
         private var _src_id:int;
+        private var _sub_id:String;
         private var _tech_point_name:String;
         private var _tech_state:int;
         private var _tech_state_name:String;
@@ -66,6 +67,13 @@ package com.photodispatcher.model.mysql.entities {
             return _src_id;
         }
 
+        public function set sub_id(value:String):void {
+            _sub_id = value;
+        }
+        public function get sub_id():String {
+            return _sub_id;
+        }
+
         public function set tech_point_name(value:String):void {
             _tech_point_name = value;
         }
@@ -95,6 +103,7 @@ package com.photodispatcher.model.mysql.entities {
             _print_group = input.readObject() as String;
             _sheet = input.readObject() as int;
             _src_id = input.readObject() as int;
+            _sub_id = input.readObject() as String;
             _tech_point_name = input.readObject() as String;
             _tech_state = input.readObject() as int;
             _tech_state_name = input.readObject() as String;
@@ -108,6 +117,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_print_group is IPropertyHolder) ? IPropertyHolder(_print_group).object : _print_group);
             output.writeObject((_sheet is IPropertyHolder) ? IPropertyHolder(_sheet).object : _sheet);
             output.writeObject((_src_id is IPropertyHolder) ? IPropertyHolder(_src_id).object : _src_id);
+            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
             output.writeObject((_tech_point_name is IPropertyHolder) ? IPropertyHolder(_tech_point_name).object : _tech_point_name);
             output.writeObject((_tech_state is IPropertyHolder) ? IPropertyHolder(_tech_state).object : _tech_state);
             output.writeObject((_tech_state_name is IPropertyHolder) ? IPropertyHolder(_tech_state_name).object : _tech_state_name);

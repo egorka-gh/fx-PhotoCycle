@@ -47,7 +47,7 @@ package com.photodispatcher.model.mysql.entities {
 			latch.start();
 		}
 
-		public static function log(state:int, orderId:String, subId:String, comment:String):void{
+		public static function log(state:int, orderId:String, subId:String='', comment:String=''):void{
 			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 			if(!svc) return;
 			var sl:StateLog= new StateLog();

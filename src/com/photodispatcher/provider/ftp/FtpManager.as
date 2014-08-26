@@ -6,8 +6,6 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.OrderLoadedEvent;
 	import com.photodispatcher.event.OrderPreprocessEvent;
 	import com.photodispatcher.factory.SuborderBuilder;
-	import com.photodispatcher.model.dao.BaseDAO;
-	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;

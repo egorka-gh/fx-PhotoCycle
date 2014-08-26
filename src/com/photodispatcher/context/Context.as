@@ -28,6 +28,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.SourceService;
 	import com.photodispatcher.model.mysql.services.TechPickerService;
 	import com.photodispatcher.model.mysql.services.TechPointService;
+	import com.photodispatcher.model.mysql.services.TechService;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -113,7 +114,7 @@ package com.photodispatcher.context{
 				//LabResizeService, 
 				OrderStateService, 
 				//BookSynonymService, 
-				//RollService, 
+				RollService, 
 				//ContentFilterService, 
 				LabService,
 				//TechPointService,
@@ -132,7 +133,7 @@ package com.photodispatcher.context{
 			latch.join(OrderState.initStateMap());
 			//latch.join(BookSynonym.initSynonymMap());
 			//latch.join(FieldValue.initSynonymMap());
-			//latch.join(Roll.initItemsMap());
+			latch.join(Roll.initItemsMap());
 			//latch.join(LabPrintCode.initChanelMap());
 			//latch.join(AttrJsonMap.initJsonMap());
 			//latch.join(SourceProperty.initMap());
@@ -156,6 +157,7 @@ package com.photodispatcher.context{
 				//LabService,
 				TechPointService,
 				TechPickerService,
+				TechService,
 				OrderService //+
 			]);
 			
@@ -192,6 +194,7 @@ package com.photodispatcher.context{
 				//LabService,
 				TechPointService,
 				TechPickerService,
+				TechService,
 				OrderService //+
 			]);
 			

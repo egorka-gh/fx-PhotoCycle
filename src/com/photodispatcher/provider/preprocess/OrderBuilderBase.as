@@ -3,7 +3,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.event.OrderBuildEvent;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
@@ -60,7 +60,7 @@ package com.photodispatcher.provider.preprocess{
 			isBusy=false;
 			lastBuildDate= new Date();
 			lastOrder.state=OrderState.PREPROCESS_COMPLETE;
-			if(logStates) StateLogDAO.logState(lastOrder.state,lastOrder.id); 
+			if(logStates) StateLog.log(lastOrder.state,lastOrder.id); 
 			dispatchEvent(new OrderBuildEvent(OrderBuildEvent.ORDER_PREPROCESSED_EVENT,lastOrder));
 		}
 
@@ -70,7 +70,7 @@ package com.photodispatcher.provider.preprocess{
 			if(lastOrder.state!=error) lastOrder.state=error;
 			lastError=error;
 			lastErrMsg=msg;
-			if(logStates) StateLogDAO.logState(lastOrder.state,lastOrder.id,'',msg); 
+			if(logStates) StateLog.log(lastOrder.state,lastOrder.id,'',msg); 
 			dispatchEvent(new OrderBuildEvent(OrderBuildEvent.ORDER_PREPROCESSED_EVENT,lastOrder,error,msg));
 		}
 

@@ -16,12 +16,13 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.dao.StateLogDAO;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.StateLog;
 			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.provider.ftp.FtpManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
 			import com.photodispatcher.service.SyncService;
@@ -298,11 +299,32 @@
 				//TODO implement filter
 				var date:Date=new Date;
 				if (errDateFilter) date=errDateFilter.selectedDate;
+
+				var latch:DbLatch=new DbLatch();
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				latch.addEventListener(Event.COMPLETE,onLogLoad);
+				latch.addLatch(svc.loadStateLogs(date, true));
+				latch.start();
+				/*
 				var dao:StateLogDAO=new StateLogDAO();
 				var a:Array=dao.findeAllArray(date);
 				if(a) logList.source=a;
 				logList.refresh();
+				*/
 			}
+			private function onLogLoad(evt:Event):void{
+				var latch:DbLatch=evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLogLoad);
+					if(latch.complite){
+						logList=latch.lastDataAC;
+					}else{
+						logList=null;
+					}
+				}
+			}
+			
+			
 			protected function dfDateFilter_creationCompleteHandler(event:FlexEvent):void{
 				var dt:Date=new Date();
 				errDateFilter.selectedDate=new Date(dt.fullYear,dt.month,dt.date);
@@ -502,7 +524,7 @@
 			</s:HGroup>
 			<s:DataGrid id="dgLog" selectionMode="singleRow"
 						width="100%" height="100%" creationComplete="dgErrors_creationCompleteHandler(event)"
-						dataProvider="{logList}" locale="ru_RU" columns="{StateLogDAO.gridColumns(true)}"/>
+						dataProvider="{logList}" locale="ru_RU" columns="{StateLog.gridColumns(true)}"/>
 		</s:VGroup>
 
 	</s:Group>

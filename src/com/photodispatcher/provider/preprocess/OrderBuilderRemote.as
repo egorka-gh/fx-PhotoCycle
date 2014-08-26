@@ -7,7 +7,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.jxl.chatserver.mvcs.services.ChatServerService;
 	import com.jxl.chatserver.vo.ClientVO;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 
 	public class OrderBuilderRemote extends OrderBuilderBase{
 		
@@ -22,7 +22,7 @@ package com.photodispatcher.provider.preprocess{
 		
 		override protected function startBuild():void{
 			if((!lastOrder.printGroups || lastOrder.printGroups.length==0) && (!lastOrder.suborders || lastOrder.suborders.length==0)){	
-				if(logStates) StateLogDAO.logState(lastOrder.state,lastOrder.id,'','Пустой заказ. Не требует подготовки');
+				if(logStates) StateLog.log(lastOrder.state,lastOrder.id,'','Пустой заказ. Не требует подготовки');
 				releaseComplite();
 				return;
 			}
@@ -33,7 +33,7 @@ package com.photodispatcher.provider.preprocess{
 			msg.message=ChatPretender.buildPostMessage()+lastOrder.id;
 			msg.order=lastOrder;
 			ChatServerService.instance.sendDirectMessage(client,msg);
-			if(logStates) StateLogDAO.logState(lastOrder.state,lastOrder.id,'',client.username);
+			if(logStates) StateLog.log(lastOrder.state,lastOrder.id,'',client.username);
 		}
 		
 		public function processMessage(message:ChatMessageVO):void{
@@ -43,7 +43,7 @@ package com.photodispatcher.provider.preprocess{
 			switch(msg.instructions){
 				case InstructionConstants.CLIENT_BUILD_CONFIRM:
 					lastOrder.state=OrderState.PREPROCESS_REMOTE;
-					if(logStates) StateLogDAO.logState(lastOrder.state,lastOrder.id,'',client.username);
+					if(logStates) StateLog.log(lastOrder.state,lastOrder.id,'',client.username);
 					break;
 				case InstructionConstants.CLIENT_BUILD_REJECT:
 					skipOnReject=true;

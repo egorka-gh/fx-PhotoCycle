@@ -5,11 +5,11 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.LoadProgressEvent;
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
-	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
@@ -472,7 +472,7 @@ package com.photodispatcher.provider.ftp{
 				trace('getOrderHandle web check order err: '+pw.errMesage);
 				webErrCounter++;
 				startOrder.state=OrderState.ERR_WEB;
-				if(!remoteMode) StateLogDAO.logState(OrderState.ERR_WEB,startOrder.id,'','Ошибка проверки на сайте: '+pw.errMesage);
+				if(!remoteMode) StateLog.log(OrderState.ERR_WEB,startOrder.id,'','Ошибка проверки на сайте: '+pw.errMesage);
 				//to prevent cycle web check when network error or offline
 				if(webErrCounter>WEB_ERRORS_LIMIT){
 					flowError('Ошибка web: '+pw.errMesage);
@@ -541,7 +541,7 @@ package com.photodispatcher.provider.ftp{
 			if(err){
 				if(order){
 					order.state=OrderState.ERR_FILE_SYSTEM;
-					if(!remoteMode) StateLogDAO.logState(order.state,order.id,null,err);
+					if(!remoteMode) StateLog.log(order.state,order.id,'',err);
 					order.setErrLimit();
 					resetOrder(order);
 					queue.push(order);
@@ -583,7 +583,7 @@ package com.photodispatcher.provider.ftp{
 			if(order){
 				if(order.state>=0){
 					order.state=OrderState.ERR_FTP;
-					if(!remoteMode) StateLogDAO.logState(OrderState.ERR_FTP,order.id,'',event.error);
+					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'',event.error);
 				}
 				order.setErrLimit();
 				resetOrder(order);

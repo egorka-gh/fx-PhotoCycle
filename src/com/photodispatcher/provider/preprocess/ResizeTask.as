@@ -2,12 +2,12 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.IMRunerEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
+	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
-	import com.photodispatcher.model.dao.StateLogDAO;
-	import com.photodispatcher.model.mysql.entities.LabResize;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMRuner;
 	import com.photodispatcher.util.StrUtil;
@@ -177,7 +177,7 @@ package com.photodispatcher.provider.preprocess{
 					loader.contentLoaderInfo.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
 					msg='Ошибка определения размера (loader.load): '+err.message+'; '+currResizeItem.fileFolder+File.separator+currResizeItem.printGroupFile.file_name;
 					trace('ResizeTask. '+msg);
-					if(logStates) StateLogDAO.logState(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'',msg); 
+					if(logStates) StateLog.log(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'',msg); 
 					if (currResizeItem.isNotJPG){
 						resizeItems.push(currResizeItem);
 					}
@@ -212,7 +212,7 @@ package com.photodispatcher.provider.preprocess{
 			//TODO remove
 			//StateLogDAO.logState(order.state,order.id,'','Ошибка определения размера(un) : '+msg); 
 			if(currResizeItem){
-				if(logStates) StateLogDAO.logState(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'','Ошибка определения размера(un) : '+msg+'; '+ currResizeItem.printGroupFile.file_name); 
+				if(logStates) StateLog.log(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'','Ошибка определения размера(un) : '+msg+'; '+ currResizeItem.printGroupFile.file_name); 
 				if (currResizeItem.isNotJPG){
 					resizeItems.push(currResizeItem);
 				}
@@ -235,7 +235,7 @@ package com.photodispatcher.provider.preprocess{
 			//TODO remove
 			//StateLogDAO.logState(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'','Ошибка определения размера: '+e.type+'; '+e.text+'; '); 
 			if(currResizeItem){
-				if(logStates) StateLogDAO.logState(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'','Ошибка определения размера: '+e.type+'; '+e.text+'; '+ currResizeItem.printGroupFile.file_name); 
+				if(logStates) StateLog.log(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'','Ошибка определения размера: '+e.type+'; '+e.text+'; '+ currResizeItem.printGroupFile.file_name); 
 				if (currResizeItem.isNotJPG){
 					resizeItems.push(currResizeItem);
 				}
@@ -323,11 +323,11 @@ package com.photodispatcher.provider.preprocess{
 				ri.isComplete=true;
 				if(e.hasError){
 					ri.printGroupFile.isBroken=true;
-					if(logStates) StateLogDAO.logState(OrderState.ERR_PREPROCESS,ri.order_id,'','Ошибка ресайза: '+e.error);
+					if(logStates) StateLog.log(OrderState.ERR_PREPROCESS,ri.order_id,'','Ошибка ресайза: '+e.error);
 				}else{
 					if (ri.isNotJPG){
 						trace('ResizeTask. Image converted to JPG: '+ri.fileFolder+File.separator+ri.printGroupFile.file_name);
-						if(logStates) StateLogDAO.logState(order.state,ri.order_id,'','Файл перекодирован в jpg: '+ri.printGroupFile.file_name);
+						if(logStates) StateLog.log(order.state,ri.order_id,'','Файл перекодирован в jpg: '+ri.printGroupFile.file_name);
 					}
 					ri.printGroupFile.file_name=ri.resultFileName;
 				}

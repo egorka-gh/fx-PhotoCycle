@@ -11,18 +11,27 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.AppConfig;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Lab;
-			import com.photodispatcher.model.mysql.entities.Roll;
-			import com.photodispatcher.model.dao.AppConfigDAO;
-			import com.photodispatcher.model.dao.LabDAO;
 			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Roll;
+			import com.photodispatcher.model.mysql.services.HalloService;
+			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
 			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
+			
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
+			import org.granite.tide.service.DefaultServiceInitializer;
+			import org.granite.tide.spring.Spring;
 			
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
@@ -42,31 +51,55 @@
 			private function bdPopClose(e:PopUpEvent):void{
 				if(e.commit){
 					//connected
-					fillContext();
-					fillLabList();
-					if(PrintQueueManager.instance.initCompleted){
-						currentState='workplace';
-					}else{
-						currentState='config';
-					}
+					//fillContext();
+					initApp_ms();
 				}else{
 					//no connection
 					currentState='disconnected';
 					bdPopup.open(null);
 				}
 			}
+			
+			private function initApp_ms():void{
+				pingBdServer();
+			}
+			
+			private var startPopup:ModalPopUp;
+			private function pingBdServer():void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				var bdServer:String=so.data.bdServer;
+				if(!bdServer){
+					Alert.show('Не указан сервер базы данных');
+					//currentState='config';
+					return;
+				}
+				startPopup= new ModalPopUp();
+				startPopup.label='Подключение к Базе данных';
+				startPopup.open(null);
+				
+				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
+				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
+				//run hallo
+				Tide.getInstance().addComponents([HalloService]);
+				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
+				hallosvc.ping(onPingServer, onPingServerFault);
+			}
+			private function onPingServer(event:TideResultEvent):void {
+				startPopup.close();
+				startPopup=null;
+				fillContext();
+			}
+			private function onPingServerFault(event:TideFaultEvent):void {
+				startPopup.label='Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString;
+			}
+
 
 			private function fillContext():void{
-				var appConfDAO:AppConfigDAO=new AppConfigDAO();
-				var appConf:AppConfig=appConfDAO.getItem();
-				Context.setAttribute('syncInterval',appConf.monitor_interval);
+				//var appConfDAO:AppConfigDAO=new AppConfigDAO();
+				//var appConf:AppConfig=appConfDAO.getItem();
+				Context.setAttribute('syncInterval',10);//appConf.monitor_interval);
 				Context.setAttribute('hideLabInfoButton',true);
 				
-				Context.initSourceLists();
-				//init static maps 
-				//TODO REFACTOR !!!
-				OrderState.initStateMap();
-				Roll.initItemsMap();
 
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var workFolder:String;
@@ -77,21 +110,52 @@
 					prtPath = so.data.prtPath;
 					//serverIP=so.data.serverIP;
 				}
-
 				//if(!workFolder) workFolder=appConf.wrk_path; //backward compatibility
 				Context.setAttribute('workFolder',workFolder);
-				
 				if(!prtPath) prtPath=workFolder;
 				Context.setAttribute('prtPath',prtPath);
+				
+				/*				
+				Context.initSourceLists();
+				//init static maps 
+				//TODO REFACTOR !!!
+				OrderState.initStateMap();
+				Roll.initItemsMap();
+				
+				fillLabList();
+				*/
 
-			}
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
 
-			private function fillLabList():void{
 				labMap=null;
+				var initLatch:DbLatch=Context.initLab();
 
+				var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadLab);
+				latch.addLatch(svc.loadAll(false));
+				latch.start();
+				
+				initLatch.join(latch);
+				initLatch.addEventListener(Event.COMPLETE, onConextInit);
+				initLatch.start();
+			}
+			private function onLoadLab(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadLab);
+					if(!latch.complite) return;
+					labList=latch.lastDataAC;
+				}
+				if(!labList) return;
+				/*
 				var lDAO:LabDAO= new LabDAO;
 				labList=lDAO.findAll();
-
+				*/
+				
 				//detect lab ids
 				var oId:Object;
 				var aId:Array;
@@ -104,7 +168,6 @@
 				}
 				fillLabMap(aId);
 			}
-			
 			private function fillLabMap(arrId:Array):void{
 				var lId:int;
 				var arrlab:Array=[];
@@ -117,10 +180,34 @@
 						arrlab.push(lab);;
 					}
 				}
+				//init print manager
 				PrintQueueManager.instance.init(arrlab);
 				labMap=PrintQueueManager.instance.labMap;
 			}
+			private function onConextInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onConextInit);
+					if(latch.complite){
+						postInit();
+						startPopup.close();
+						startPopup=null;
+					}else{
+						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						//latch.showError();
+					}
+				}
+			}
+			private function postInit():void{
+				//end init
+				if(PrintQueueManager.instance.initCompleted){
+					currentState='workplace';
+				}else{
+					currentState='config';
+				}
+			}
 
+			
 			protected function button3_clickHandler(event:MouseEvent):void{
 				FlexGlobals.topLevelApplication.exit();
 			}
@@ -142,8 +229,9 @@
 			}
 			
 			protected function button4_clickHandler(event:MouseEvent):void{
-				fillLabList();
-				if(labMap) currentState='workplace';
+				//fillLabList();
+				fillContext();
+				//if(labMap) currentState='workplace';
 			}
 			
 		]]>

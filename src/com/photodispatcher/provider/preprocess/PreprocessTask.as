@@ -7,8 +7,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
-	import com.photodispatcher.model.dao.LabResizeDAO;
-	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.provider.fbook.makeup.FBookMakeupManager;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMRuner;
@@ -275,7 +274,7 @@ package com.photodispatcher.provider.preprocess{
 		private function dispatchErr(errState:int,errMsg:String):void{
 			hasErr=true;
 			if(order.state!=errState) order.state=errState;
-			if(logStates) StateLogDAO.logState(errState,order.id,'',errMsg); 
+			if(logStates) StateLog.log(errState,order.id,'',errMsg); 
 			dispatchEvent(new OrderPreprocessEvent(order,errState,errMsg));
 			reportProgress();
 		}

@@ -5,7 +5,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.event.OrderPreprocessEvent;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
-	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.ProgressEvent;
@@ -21,7 +21,7 @@ package com.photodispatcher.provider.preprocess{
 
 		override protected function startBuild():void{
 			if((!lastOrder.printGroups || lastOrder.printGroups.length==0) && (!lastOrder.suborders || lastOrder.suborders.length==0)){	
-				if(logStates) StateLogDAO.logState(lastOrder.state,lastOrder.id,'','Пустой заказ. Не требует подготовки');
+				if(logStates) StateLog.log(lastOrder.state,lastOrder.id,'','Пустой заказ. Не требует подготовки');
 				releaseComplite();
 				return;
 			}

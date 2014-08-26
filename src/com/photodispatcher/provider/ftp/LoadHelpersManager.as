@@ -9,7 +9,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -383,7 +383,7 @@ package com.photodispatcher.provider.ftp{
 			if(order){
 				if(order.state>=0){
 					order.state=OrderState.ERR_FTP;
-					StateLogDAO.logState(OrderState.ERR_FTP,order.id,'',event.error);
+					StateLog.log(OrderState.ERR_FTP,order.id,'',event.error);
 				}
 				order.setErrLimit();
 				unFetch(order);

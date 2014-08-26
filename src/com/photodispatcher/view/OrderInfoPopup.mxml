@@ -389,6 +389,8 @@
 						}
 						pg.file_num=pg.files.length;
 						pg.prints=prints;
+						pg.book_num=1;
+						pg.sheet_num=pg.files.length;
 					}
 				}
 				if(arrPG.length==0) return;

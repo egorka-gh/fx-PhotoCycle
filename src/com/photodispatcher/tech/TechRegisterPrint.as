@@ -1,16 +1,11 @@
 package com.photodispatcher.tech{
-	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.mysql.entities.TechLog;
-	import com.photodispatcher.model.TechPrintGroup;
-	import com.photodispatcher.model.dao.PrintGroupDAO;
-	import com.photodispatcher.model.dao.TechLogDAO;
-	import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
 	
 	public class TechRegisterPrint extends TechRegisterBase{
 		public function TechRegisterPrint(printGroup:String, books:int, sheets:int){
 			super(printGroup, books, sheets);
 		}
 		
+		/*
 		override public function register(book:int, sheet:int):void{
 			super.register(book, sheet);
 			//log to data base
@@ -23,13 +18,6 @@ package com.photodispatcher.tech{
 			//dao.addLog(tl);
 			dao.addPrintLog(tl);
 			
-			/*
-			if(isComplete){
-				//set printgroup/order state
-				var pdao:PrintGroupDAO=new PrintGroupDAO();
-				pdao.setPrintStateByTech(printGroupId,true);
-			}
-			*/
 			//log to local db
 			var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
 			lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
@@ -67,6 +55,7 @@ package com.photodispatcher.tech{
 			}
 			return super.finalise();
 		}
+		*/
 		
 	}
 }

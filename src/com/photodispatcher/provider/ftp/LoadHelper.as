@@ -9,7 +9,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.dao.StateLogDAO;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -58,7 +58,7 @@ package com.photodispatcher.provider.ftp{
 			switch(msg.instructions){
 				case InstructionConstants.CLIENT_LOAD_CONFIRM:
 					_order.state=OrderState.FTP_REMOTE;
-					StateLogDAO.logState(_order.state,_order.id,'',client.username);
+					StateLog.log(_order.state,_order.id,'',client.username);
 					break;
 				case InstructionConstants.CLIENT_LOAD_REJECT:
 					if(!msg.hasError) skipOnReject=true; //is busy or some else, skip me next time 
@@ -79,7 +79,7 @@ package com.photodispatcher.provider.ftp{
 					_order.printGroups=msg.order.printGroups;
 					_order.suborders=msg.order.suborders;
 					
-					StateLogDAO.logState(_order.state,_order.id,'',msg.errorMsg);
+					StateLog.log(_order.state,_order.id,'',msg.errorMsg);
 					lastUsageDate= new Date();
 					var order:Order=currentOrder;
 					//reset();
@@ -116,7 +116,7 @@ package com.photodispatcher.provider.ftp{
 			msg.instructions=InstructionConstants.SERVER_LOAD_POST;
 			msg.message=ChatPretender.loadPostMessage()+_order.id;
 			msg.order=_order;
-			StateLogDAO.logState(_order.state,_order.id,'',client.username);
+			StateLog.log(_order.state,_order.id,'',client.username);
 			ChatServerService.instance.sendDirectMessage(client,msg);
 		}
 		

@@ -1,10 +1,10 @@
 package com.photodispatcher.tech{
 	import com.photodispatcher.event.AsyncSQLEvent;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
-	import com.photodispatcher.model.TechPoint;
-	import com.photodispatcher.model.TechPrintGroup;
-	import com.photodispatcher.model.dao.BaseDAO;
-	import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
+	import com.photodispatcher.model.mysql.entities.TechLog;
+	import com.photodispatcher.model.mysql.entities.TechPoint;
+	import com.photodispatcher.model.mysql.services.TechService;
 	import com.photodispatcher.service.barcode.ValveCom;
 	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.StrUtil;
@@ -13,6 +13,8 @@ package com.photodispatcher.tech{
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
+	
+	import org.granite.tide.Tide;
 	
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]
@@ -67,7 +69,22 @@ package com.photodispatcher.tech{
 				regArray[idx][sheet]=new Date();
 				registred++;
 			}
+			logRegistred(book,sheet);
 			dispatchEvent(new Event(Event.COMPLETE));
+		}
+		
+		protected function logRegistred(book:int,sheet:int):void{
+			//log to data base
+			var tl:TechLog= new TechLog();
+			tl.log_date=new Date();
+			tl.setSheet(book,sheet);
+			tl.print_group=printGroupId;
+			tl.src_id= techPoint.id;
+			var latch:DbLatch=new DbLatch();
+			var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+			//latch.addEventListener(Event.COMPLETE,onLog);
+			latch.addLatch(svc.logByPg(tl));
+			latch.start();
 		}
 		
 		public function get isComplete():Boolean{
@@ -142,12 +159,6 @@ package com.photodispatcher.tech{
 					if(flap) flap.setOff();
 					if(strictSequence) result=false;
 				}
-				/*
-				var book:int=revers?1:books;
-				var sheet:int=0;
-				if (bookPart!=BookSynonym.BOOK_PART_COVER) sheet=revers?1:sheets;
-				logSequeceErr('Не верное завершение последовательности: '+ StrUtil.sheetName(lastBook,lastSheet) +' вместо '+ StrUtil.sheetName(book,sheet));
-				*/
 				logSequeceErr('Не полная последовательность');
 			}else{
 				if(logOk) logMsg('Ok');
@@ -196,6 +207,7 @@ package com.photodispatcher.tech{
 		}
 		
 		/*************** local data base ************************/
+		/*
 		protected var complited:Array=[];
 		protected var isWriting:Boolean;
 		
@@ -251,6 +263,7 @@ package com.photodispatcher.tech{
 				isWriting=false;
 			}
 		}
+		*/
 
 	}
 }

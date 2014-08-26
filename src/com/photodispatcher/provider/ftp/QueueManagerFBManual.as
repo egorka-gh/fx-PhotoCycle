@@ -1,11 +1,11 @@
 package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.dao.StateLogDAO;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	import com.photodispatcher.util.StrUtil;
@@ -154,7 +154,7 @@ package com.photodispatcher.provider.ftp{
 			if(order){
 				if(order.state>=0){
 					order.state=OrderState.ERR_FTP;
-					if(!remoteMode) StateLogDAO.logState(OrderState.ERR_FTP,order.id,'',event.error);
+					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'',event.error);
 				}
 				order.setErrLimit();
 				resetOrder(order);
