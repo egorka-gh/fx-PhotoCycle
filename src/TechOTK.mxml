@@ -14,15 +14,16 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
-			import com.photodispatcher.model.mysql.entities.SourceType;
-			import com.photodispatcher.model.TechPoint;
-			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.local.LocalDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.PasswPopup;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
@@ -30,6 +31,8 @@
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
@@ -53,17 +56,19 @@
 			
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
-				BaseDAO.MAX_WAITE=15000;
+				//BaseDAO.MAX_WAITE=15000;
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
-				bdPopup.chekConnect(SQLMode.UPDATE,false);
+				bdPopup.chekConnect();//SQLMode.UPDATE,false);
 			}
 			private function bdPopClose(e:PopUpEvent):void{
 				var connected:Boolean=e.commit;
+				/*
 				if(connected){
 					//create local connection
 					connected=LocalDAO.connect();
 				}
+				*/
 				if(connected){
 					//connected
 					init();
@@ -73,17 +78,48 @@
 					bdPopup.open(null);
 				}
 			}
-			
-			private function init():void{
-				//TODO REFACTOR !!!
-				//OrderStateDAO.initStateMap();
-				
-				Context.initSourceLists();
-				BookSynonym.initSynonymMap();
 
+			private var startPopup:ModalPopUp;
+
+			private function init():void{
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+
+				var initLatch:DbLatch=Context.initTechOTK();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+
+				var latch:DbLatch= new DbLatch();
+				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				latch.addEventListener(Event.COMPLETE,onTPLoad);
+				latch.addLatch(svc.loadAll(SourceType.TECH_OTK));
+				latch.start();
+				initLatch.join(latch);
 				//TODO REFACTOR !!!
 				//var dao:TechPointDAO=new TechPointDAO();
 				//techPiontsAC=dao.findAll(false, SourceType.TECH_OTK);
+
+				initLatch.start();
+			}
+			private function onTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPLoad);
+					if(latch.complite){
+						techPiontsAC=latch.lastDataAC;
+					}
+				}
+			}
+			private function onInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						return;
+					}
+				}
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
@@ -106,6 +142,8 @@
 					comReader= new ComInfo(); comReader.type=ComInfo.COM_TYPE_BARREADER;
 				}
 				
+				startPopup.close();
+				startPopup=null;
 				
 				checkCfgPass();
 				currentState='config';
@@ -390,14 +428,14 @@
 						 top="20" left="20" right="20" bottom="50"/>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
-		<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
+		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
 		<s:Group width="5">
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
 		</s:Group>
 		<s:Image source="{LocalDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в локальную базу данных"/>
 		<s:Group width="5">
 			<s:Label text="{LocalDAO.lastErrMsg}" color="#cc0000"/>
-		</s:Group>
+		</s:Group>-->
 		<s:Label text="{lastBarcode}" height="100%" verticalAlign="bottom"/>
 		<s:Spacer width="100%"/>
 		<s:Button label="Конфигурация" includeIn="monitor" click="button2_clickHandler(event)"/>

@@ -9,10 +9,10 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
-			import com.photodispatcher.model.LayerAllocation;
-			import com.photodispatcher.model.Layerset;
-			import com.photodispatcher.model.TechPoint;
-			import com.photodispatcher.model.dao.LayersetDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Layerset;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.TechPickerService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.service.barcode.ValveController;
@@ -23,6 +23,8 @@
 			import flash.security.RevocationCheckSettings;
 			
 			import mx.controls.Alert;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 			import spark.formatters.DateTimeFormatter;
@@ -80,13 +82,30 @@
 			
 			public function start():void{
 				techGroup=Context.getAttribute('techGroup.id');
+				techPicker= new TechPicker(techGroup);
+
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onStartLatch);
+				var svc:TechPickerService=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
+				latch.addLatch(svc.loadLayersets(Layerset.LAYERSET_TYPE_TEMPLATE, techGroup));
+				latch.join(techPicker.init());
+				latch.start();
+				/*	
 				var dao:LayersetDAO=new LayersetDAO();
 				acTemplates=dao.findAll();
+				*/
+			}
+			private function onStartLatch(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(!latch) return;
+				latch.removeEventListener(Event.COMPLETE,onStartLatch);
+				if(!latch.complite) return;
+				acTemplates=latch.lastDataAC;
+				if(!acTemplates) return;
 				acTemplates.filterFunction=filterTemplates;
 				acTemplates.refresh();
 				if (acTemplates.length==0) return;
 				
-				techPicker= new TechPicker(techGroup);
 				techPicker.serialProxy=serialProxy;
 				techPicker.engineOnStartOn=engineOnStartOn;
 				techPicker.vacuumOnStartOn=vacuumOnStartOn;

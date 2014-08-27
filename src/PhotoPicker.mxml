@@ -16,14 +16,13 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
-			import com.photodispatcher.model.LayersetGroup;
-			import com.photodispatcher.model.mysql.entities.SourceType;
-			import com.photodispatcher.model.TechPoint;
-			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.LayersetGroupDAO;
-			import com.photodispatcher.model.dao.TechPointDAO;
-			import com.photodispatcher.model.dao.local.LocalDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.LayersetGroup;
 			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.TechPickerService;
+			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.ComReaderEmulator;
@@ -32,11 +31,14 @@
 			import com.photodispatcher.service.barcode.ValveControllerEmulator;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
@@ -136,18 +138,21 @@
 			
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
-				BaseDAO.MAX_WAITE=15000;
+				//BaseDAO.MAX_WAITE=15000;
 
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
-				bdPopup.chekConnect(SQLMode.UPDATE,false);
+				bdPopup.chekConnect();//SQLMode.UPDATE,false);
 			}
+			
 			private function bdPopClose(e:PopUpEvent):void{
 				var connected:Boolean=e.commit;
+				/*
 				if(connected){
 					//create local connection
 					connected=LocalDAO.connect();
 				}
+				*/
 				if(connected){
 					//connected
 					init();
@@ -159,33 +164,67 @@
 				}
 			}
 
+			private var startPopup:ModalPopUp;
 			private function init():void{
-				//TODO REFACTOR !!!
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+
+				var initLatch:DbLatch=Context.initPhotoPicker();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+
+				var latch:DbLatch= new DbLatch();
+				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				latch.addEventListener(Event.COMPLETE,onTPLoad);
+				latch.addLatch(svc.loadAll(SourceType.TECH_PICKING));
+				latch.start();
+				initLatch.join(latch);
+
+				latch= new DbLatch();
+				var svc2:TechPickerService=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
+				latch.addEventListener(Event.COMPLETE,onLGLoad);
+				latch.addLatch(svc2.loadLayersetGroups());
+				latch.start();
+				initLatch.join(latch);
 				
-				OrderState.initStateMap();
-				Context.initAttributeLists();
+				initLatch.start();
+			}
+			private function onTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPLoad);
+					if(latch.complite){
+						techPionts=latch.lastDataAC;
+					}
+				}
+			}
+			private function onLGLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLGLoad);
+					if(latch.complite){
+						techGroupsAC=latch.lastDataAC;
+					}
+				}
+			}
+			private function onInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						return;
+					}
+				}
+
 				/*
-				//OrderStateDAO.initStateMap();
-				//load tech layers
-				var a:ArrayCollection;
-				if(!Context.getAttribute('layerValueList')){
-					var dDao:DictionaryDAO=new DictionaryDAO();
-					layersAC=dDao.getTechLayerValueList();
-					Context.setAttribute('layerValueList', layersAC);
-				}
-				if(!Context.getAttribute('book_typeList')){
-					a=dDao.getBookTypeValueList();
-					Context.setAttribute('book_typeList', a);
-					a=dDao.getBookTypeValueList(false);
-					Context.setAttribute('book_typeValueList', a);
-				}
-				*/
-				
 				var dao:TechPointDAO=new TechPointDAO();
 				techPionts=dao.findAll(false,SourceType.TECH_PICKING);
 
 				var gdao:LayersetGroupDAO= new LayersetGroupDAO();
 				techGroupsAC=gdao.findAll();
+			*/
 				
 				comReaders= new ArrayCollection();
 				var coms:Array=ComInfo.load();
@@ -197,18 +236,9 @@
 				if(!comController){
 					comController= new ComInfo(); comController.type=ComInfo.COM_TYPE_CONTROLLER; comController.suffix=ValveController.MSG_SUFIX;
 				}
-				/*
-				if(!comBarcodeReader){
-					comBarcodeReader= new ComInfo(); comBarcodeReader.type=ComInfo.COM_TYPE_BARREADER;
-				}
-				*/
-				//var serverIP:String;
 				var techGroupId:int;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
-					/*
-					serverIP=so.data.serverIP;
-					*/
 					techPointID=so.data.techPoint;
 					techGroupId=so.data.techGroupId;
 					setCurrTechGroup(techGroupId);
@@ -224,15 +254,11 @@
 					layerOnComplite=so.data.layerOnComplite;
 					if(!layerOnComplite) layerOnComplite=0;
 					layerOnCompliteIdx=ArrayUtil.searchItemIdx('value',layerOnComplite,layersAC.source);
-					/*
-					engineOnCompliteOff=so.data.engineOnCompliteOff;
-					vacuumOnCompliteOff=so.data.vacuumOnCompliteOff;
-					askOnComplite=so.data.askOnComplite;
-					layerOnComplite=so.data.layerOnComplite;
-					layerOnCompliteTray=so.data.layerOnCompliteTray;
-					if(layerOnCompliteTray<=0) layerOnCompliteTray=1;
-					*/
 				}
+
+				startPopup.close();
+				startPopup=null;
+
 				currentState='config';
 			}
 
@@ -399,9 +425,11 @@
 				so.flush();  
 			}
 			
+			/*
 			protected function btRecreateBD_clickHandler(event:MouseEvent):void{
 				LocalDAO.recreateBD();
 			}
+			*/
 			
 		]]>
 	</fx:Script>
@@ -425,8 +453,8 @@
 
 	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
 			  top="5" right="5"/>
-	<s:Button id="btRecreateBD" includeIn="config" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"
-			  top="35" right="5"/>
+	<!--<s:Button id="btRecreateBD" includeIn="config" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"
+			  top="35" right="5"/>-->
 
 	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
 		<s:HGroup gap="5" verticalAlign="baseline">

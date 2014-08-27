@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.OrderExtraStateProlong;
 
-	public class OrderExtraStateProlongDAO extends BaseDAO{
+	public class OrderExtraStateProlongDAOKill extends BaseDAO{
 
 		override protected function processRow(o:Object):Object{
 			var a:OrderExtraStateProlong = new OrderExtraStateProlong();

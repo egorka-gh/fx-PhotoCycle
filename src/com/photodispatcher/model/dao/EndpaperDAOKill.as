@@ -1,27 +1,30 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.LayersetGroup;
+	import com.photodispatcher.model.Endpaper;
 	
 	import mx.collections.ArrayCollection;
 	
-	public class LayersetGroupDAO extends BaseDAO{
-
+	public class EndpaperDAOKill extends BaseDAO{
+		
 		public function findAll(silent:Boolean=false):ArrayCollection{
 			var res:Array=findAllArray(silent);
 			return new ArrayCollection(res);
 		}
 		
 		public function findAllArray(silent:Boolean=false):Array{
-			var sql:String='SELECT s.*'+
-				' FROM config.layerset_group s';
+			var sql:String='SELECT s.id, s.name'+
+				' FROM config.endpaper s';
+			//if(forEdit) sql+=' WHERE s.id NOT IN (0,1,2)';
+			//sql+=' ORDER BY s.name';
 			runSelect(sql,null,silent);
 			var res:Array=itemsArray;
 			return res;
 		}
 		
 		override public function save(item:Object):void{
-			var it:LayersetGroup=item as LayersetGroup;
+			var it:Endpaper=item as Endpaper;
 			if(!it) return;
+			if(it.id==0)  return; //predefined
 			if (it.id==-1){
 				create(it);
 			}else{
@@ -29,22 +32,23 @@ package com.photodispatcher.model.dao{
 			}
 		}
 		
-		public function update(item:LayersetGroup):void{
+		public function update(item:Endpaper):void{
 			execute(
-				'UPDATE config.layerset_group SET name=? WHERE id=?',
-				[item.name, item.id],item);
+				'UPDATE config.endpaper SET name=? WHERE id=?',
+				[	item.name,
+					item.id],item);
 		}
 		
-		public function create(item:LayersetGroup):void{
+		public function create(item:Endpaper):void{
 			addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
-			execute("INSERT INTO config.layerset_group (name)" +
-				" VALUES (?)",
-				[item.name],item);
+			execute("INSERT INTO config.endpaper (name)" +
+				"VALUES (?)",
+				[	item.name],item);
 		}
 		private function onCreate(e:AsyncSQLEvent):void{
 			removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT,onCreate);
 			if(e.result==AsyncSQLEvent.RESULT_COMLETED){
-				var it:LayersetGroup= e.item as LayersetGroup;
+				var it:Endpaper= e.item as Endpaper;
 				if(it){ 
 					it.id=e.lastID;
 					it.loaded=true;
@@ -53,11 +57,10 @@ package com.photodispatcher.model.dao{
 		}
 
 		override protected function processRow(o:Object):Object{
-			var a:LayersetGroup= new LayersetGroup();
+			var a:Endpaper= new Endpaper();
 			fillRow(o,a);
 			return a;
 		}
-
 
 	}
 }

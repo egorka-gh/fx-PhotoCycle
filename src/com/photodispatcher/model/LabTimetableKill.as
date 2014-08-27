@@ -13,7 +13,7 @@ package com.photodispatcher.model{
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 
-	public class LabTimetable extends DBRecord{
+	public class LabTimetableKill extends DBRecord{
 		//db fileds
 		[Bindable]
 		public var lab_device:int;

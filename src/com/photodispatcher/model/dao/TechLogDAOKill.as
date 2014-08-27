@@ -4,7 +4,7 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.TechLog;
 	
-	public class TechLogDAO extends BaseDAO{
+	public class TechLogDAOKill extends BaseDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:TechLog = new TechLog();

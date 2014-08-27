@@ -1,10 +1,10 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.Layerset;
+	import com.photodispatcher.model.mysql.entities.Layerset;
 	
 	import mx.collections.ArrayCollection;
 
-	public class LayersetDAO extends BaseDAO{
+	public class LayersetDAOKill extends BaseDAO{
 
 		public function findAll(type:int=0,silent:Boolean=false, techGroup:int=-1):ArrayCollection{
 			var res:Array=findAllArray(type, silent, techGroup);

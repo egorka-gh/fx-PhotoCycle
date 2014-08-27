@@ -11,7 +11,7 @@ package com.photodispatcher.model.dao{
 	
 	import spark.components.gridClasses.GridColumn;
 	
-	public class SourcesDAO extends BaseDAO{
+	public class SourcesDAOKill extends BaseDAO{
 		
 		public static function gridColumns(labColumns:Boolean=false):ArrayList{
 			var result:ArrayList= new ArrayList();

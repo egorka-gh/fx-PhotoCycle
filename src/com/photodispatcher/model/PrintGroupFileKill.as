@@ -1,7 +1,7 @@
 package com.photodispatcher.model{
 	import com.photodispatcher.util.StrUtil;
 
-	public class PrintGroupFile extends DBRecord{
+	public class PrintGroupFileKill extends DBRecord{
 		public static const CAPTION_BOOK_NUM_HOLDER:String='~b~';
 
 		//runtime props

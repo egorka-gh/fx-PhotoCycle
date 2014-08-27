@@ -20,7 +20,6 @@
 			import com.photodispatcher.model.ContentFilter;
 			import com.photodispatcher.model.dao.AppConfigDAO;
 			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.LabResizeDAO;
 			import com.photodispatcher.model.mysql.AsyncLatch;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Roll;

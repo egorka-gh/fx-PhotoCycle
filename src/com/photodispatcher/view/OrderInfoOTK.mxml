@@ -12,7 +12,7 @@
 		<![CDATA[
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.model.TechLogLocal;
-			import com.photodispatcher.model.TechPoint;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.TechPrintGroup;
 			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.dao.PrintGroupDAO;

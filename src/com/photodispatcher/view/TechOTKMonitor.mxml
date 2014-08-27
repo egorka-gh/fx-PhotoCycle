@@ -13,7 +13,7 @@
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderExtraState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
-			import com.photodispatcher.model.TechPoint;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.TechPrintGroup;
 			import com.photodispatcher.model.dao.OrderDAO;
 			import com.photodispatcher.model.dao.OrderExtraStateDAO;

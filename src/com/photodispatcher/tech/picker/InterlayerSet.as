@@ -1,11 +1,14 @@
 package com.photodispatcher.tech.picker{
-	import com.photodispatcher.model.Layerset;
-	import com.photodispatcher.model.SynonymCommon;
-	import com.photodispatcher.model.dao.DictionaryCommonDAO;
-	import com.photodispatcher.model.dao.LayersetDAO;
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.Layerset;
+	import com.photodispatcher.model.mysql.services.TechPickerService;
 	import com.photodispatcher.util.ArrayUtil;
 	
+	import flash.events.Event;
+	
 	import mx.collections.ArrayCollection;
+	
+	import org.granite.tide.Tide;
 
 	public class InterlayerSet{
 		
@@ -26,9 +29,33 @@ package com.photodispatcher.tech.picker{
 			type=Layerset.LAYERSET_TYPE_INTERLAYER;
 		}
 		
-		public function init(techGroup:int):Boolean{
+		public function init(techGroup:int):DbLatch{
 			_prepared=false;
 			this.techGroup=techGroup;
+			
+			var latch:DbLatch=new DbLatch();
+			var svc:TechPickerService=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
+			latch.addEventListener(Event.COMPLETE,onLoad);
+			latch.addLatch(svc.loadLayersets(type, techGroup));
+			latch.start();
+			return latch;
+		}
+		protected function onLoad(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onLoad);
+			layersets=latch.lastDataAC;
+			if(!layersets) return;
+			var ls:Layerset;
+			//fill synonym map
+			synonymMap=new Object;
+			for each(ls in layersets){
+				if(ls.synonyms){
+					for each (var syn:String in ls.synonyms) synonymMap[syn]=ls;
+				}
+			}
+			_prepared=true;
+			/*
 			//load
 			var ilDao:LayersetDAO= new LayersetDAO();
 			var arr:Array=ilDao.findAllArray(type,true,techGroup);
@@ -55,6 +82,7 @@ package com.photodispatcher.tech.picker{
 			layersets= new ArrayCollection(arr);
 			_prepared=true;
 			return _prepared;
+			*/
 		}
 		
 		public function getBySynonym(synonym:String):Layerset{

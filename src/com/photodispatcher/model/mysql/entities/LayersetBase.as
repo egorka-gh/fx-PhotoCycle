@@ -28,6 +28,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _sequenceMiddle:ListCollectionView;
         private var _sequenceStart:ListCollectionView;
         private var _subset_type:int;
+        private var _synonyms:ListCollectionView;
         private var _usesEndPaper:Boolean;
 
         public function set book_type(value:int):void {
@@ -121,6 +122,13 @@ package com.photodispatcher.model.mysql.entities {
             return _subset_type;
         }
 
+        public function set synonyms(value:ListCollectionView):void {
+            _synonyms = value;
+        }
+        public function get synonyms():ListCollectionView {
+            return _synonyms;
+        }
+
         public function set usesEndPaper(value:Boolean):void {
             _usesEndPaper = value;
         }
@@ -143,6 +151,7 @@ package com.photodispatcher.model.mysql.entities {
             _sequenceMiddle = input.readObject() as ListCollectionView;
             _sequenceStart = input.readObject() as ListCollectionView;
             _subset_type = input.readObject() as int;
+            _synonyms = input.readObject() as ListCollectionView;
             _usesEndPaper = input.readObject() as Boolean;
         }
 
@@ -161,6 +170,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_sequenceMiddle is IPropertyHolder) ? IPropertyHolder(_sequenceMiddle).object : _sequenceMiddle);
             output.writeObject((_sequenceStart is IPropertyHolder) ? IPropertyHolder(_sequenceStart).object : _sequenceStart);
             output.writeObject((_subset_type is IPropertyHolder) ? IPropertyHolder(_subset_type).object : _subset_type);
+            output.writeObject((_synonyms is IPropertyHolder) ? IPropertyHolder(_synonyms).object : _synonyms);
             output.writeObject((_usesEndPaper is IPropertyHolder) ? IPropertyHolder(_usesEndPaper).object : _usesEndPaper);
         }
     }

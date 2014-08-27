@@ -6,18 +6,25 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.mysql.services.HalloService;
 			
 			import flash.display.DisplayObjectContainer;
 			
 			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
 			import mx.managers.PopUpManager;
 			
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
+			import org.granite.tide.service.DefaultServiceInitializer;
+			import org.granite.tide.spring.Spring;
+			
 			import spark.events.PopUpEvent;
-			public static const DEFAULT_DB_FILE_PATH:String = 'app-storage:/data/data.sqlite';
+			//public static const DEFAULT_DB_FILE_PATH:String = 'app-storage:/data/data.sqlite';
 
-			private var _databaseFile:File;
-			private var _configFile:File;
+			//private var _databaseFile:File;
+			//private var _configFile:File;
 			
 			[Bindable]
 			private var _connected:Boolean=false;
@@ -25,68 +32,62 @@
 				return _connected;
 			}
 
-			private var mode:String=SQLMode.UPDATE;
-			private var optimizeBD:Boolean=false;
-			public function chekConnect(mode:String=SQLMode.UPDATE,optimizeBD:Boolean=false):void{
-				this.mode=mode;
-				this.optimizeBD=optimizeBD;
+			//private var mode:String=SQLMode.UPDATE;
+			//private var optimizeBD:Boolean=false;
+			public function chekConnect():void{//mode:String=SQLMode.UPDATE,optimizeBD:Boolean=false):void{
+				//this.mode=mode;
+				//this.optimizeBD=optimizeBD;
 				reConnect();
-				/*
+			}
+
+			private var bdServer:String;
+			private function reConnect():void{
 				_connected=false;
 				if(statusMessage) statusMessage.text='';
-				
-				var sqlConnection:SQLConnection=Context.getAttribute("sqlConnection");
-				var asyncCnn:SQLConnection=Context.getAttribute("asyncConnection");
-				if(sqlConnection && asyncCnn){
-					//TODO ping bd
-					_connected=true;
-					return;
-				}
-				if(!_databaseFile){ 
-					//open default or last accessed
-					var path:String=DEFAULT_DB_FILE_PATH;
-					var so:SharedObject = SharedObject.getLocal('appProps','/');
-					if (so.size>0) path = so.data.dbPath;  
-					if (!path) return;
-					_databaseFile = new File(path);
-				}
-				if(tiBDPath) tiBDPath.text=_databaseFile.nativePath;
-				if(!_databaseFile.exists){
-					_databaseFile=null;
-					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
-					return;
-				}
-				//resolve config bd
-				_configFile=_databaseFile.parent.resolvePath('config.sqlite');
-				if(!_configFile.exists){
-					_databaseFile=null;
-					_configFile=null;
-					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
-					return;
-				}
-				
-				//create sync connection
-				try{
-					sqlConnection= new SQLConnection();
-					sqlConnection.open(_databaseFile, mode);
-					Context.setAttribute("sqlConnection", sqlConnection);
-				}
-				catch (error:SQLError){
-					if(!isOpen){
-						//commit=false
+
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				bdServer=so.data.bdServer;
+				if(!bdServer){
+					if(isOpen){
+						statusMessage.text='Не указан сервер базы данных';
+					}else{
 						dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
-					} else{
-						statusMessage.text = 'Ошибка открытия: ' + error.message;
 					}
 					return;
 				}
-				asyncCnn= new SQLConnection();
-				asyncCnn.addEventListener(SQLEvent.OPEN,onOpenAsync);
-				asyncCnn.addEventListener(SQLErrorEvent.ERROR,onErrAsync);
-				asyncCnn.openAsync(_databaseFile, mode);
-				*/
+				pingBdServer();
 			}
 
+			private function pingBdServer():void{
+				if(isOpen) statusMessage.text='Подключение к базе данных '+bdServer;
+				
+				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
+				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
+				//run hallo
+				Tide.getInstance().addComponents([HalloService]);
+				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
+				hallosvc.ping(onPingServer, onPingServerFault);
+			}
+			private function onPingServer(event:TideResultEvent):void {
+				//server - ok
+				_connected=true;
+				if(!isOpen){
+					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE,false,false,true));
+				}else{
+					statusMessage.text='Подключен к '+bdServer;	
+				}
+			}
+			private function onPingServerFault(event:TideFaultEvent):void {
+				if(!isOpen){
+					//commit=false
+					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE));
+				} else{
+					statusMessage.text='Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString;
+				}
+			}
+
+			
+			/*
 			private function reConnect():void{
 				_connected=false;
 				this.mode=mode;
@@ -226,6 +227,7 @@
 				_configFile=null;
 				reConnect();
 			}
+			*/
 			
 			override public function close(commit:Boolean=false, data:*=null):void{
 				super.close(_connected, data);
@@ -235,7 +237,15 @@
 			override public function open(owner:DisplayObjectContainer, modal:Boolean=false):void{
 				super.open(FlexGlobals.topLevelApplication as DisplayObjectContainer, true);
 				PopUpManager.centerPopUp(this);
-				if(tiBDPath && _databaseFile) tiBDPath.text=_databaseFile.nativePath;
+				//if(tiBDPath && _databaseFile) tiBDPath.text=_databaseFile.nativePath;
+			}
+			
+			protected function tiBDPath_enterHandler(event:FlexEvent):void{
+				bdServer=tiBDPath.text;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.bdServer = bdServer;
+				so.flush();
+				reConnect();
 			}
 			
 		]]>
@@ -252,15 +262,15 @@
 	
 	<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
 		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="База данных (data)"/>
-			<s:TextInput id="tiBDPath" width="300" enabled="false"/>
-			<s:Button id="btBrowse" label="..." width="30"
-					  click="btBrowse_clickHandler(event)"/>
+			<s:Label text="Сервер базы данных"/>
+			<s:TextInput id="tiBDPath" width="300"  enter="tiBDPath_enterHandler(event)"/>
+			<!--<s:Button id="btBrowse" label="..." width="30"
+					  click="btBrowse_clickHandler(event)"/>-->
 		</s:HGroup>
 		<s:HGroup gap="5" verticalAlign="baseline" horizontalAlign="right">
-			<s:Label id="statusMessage" color="#ff0000" width="100%"/>
-			<s:Button id="btClose" label="Закрыть" enabled="{_connected}"
-					  click="{close()}"/>
+			<s:Label id="statusMessage" color="{_connected?0x00ff00:0xff0000}" width="100%"/>
+			<s:Button id="btCheck" label="Подключить" enabled="{!_connected}" click="{tiBDPath_enterHandler(null)}"/>
+			<s:Button id="btClose" label="Закрыть" enabled="{_connected}" click="{close()}"/>
 			<s:Button id="btCloseApp" label="Закрыть приложение" enabled="{!_connected}"
 					  click="{FlexGlobals.topLevelApplication.exit()}"/>
 		</s:HGroup>

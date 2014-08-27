@@ -1,7 +1,7 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.LayerSequence;
 
-	public class LayerSequenceDAO extends BaseDAO{
+	public class LayerSequenceDAOKill extends BaseDAO{
 
 		public function getBySet(layerset:int, silent:Boolean=false):Array {
 			var sql:String;

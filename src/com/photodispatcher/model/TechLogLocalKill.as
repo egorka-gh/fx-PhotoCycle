@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	public class TechLogLocal extends DBRecord{
+	public class TechLogLocalKill extends DBRecord{
 		
 		//database props
 		[Bindable]

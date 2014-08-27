@@ -1,6 +1,5 @@
 package com.photodispatcher.tech.picker{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.model.Layer;
 	import com.photodispatcher.model.LayerAllocation;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.util.ArrayUtil;

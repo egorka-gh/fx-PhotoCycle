@@ -142,6 +142,42 @@ package com.photodispatcher.context{
 			return latch;
 		}
 		
+		public static function initTechMonitor():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initTechMonitor';
+			//register services
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				//LabResizeService, 
+				OrderStateService, 
+				//BookSynonymService, 
+				//RollService, 
+				//ContentFilterService, 
+				//LabService,
+				TechPointService,
+				TechService,
+				OrderService //+
+			]);
+			
+			//fill from config
+			//Context.fillFromConfig();
+			
+			//init static maps
+			latch.join(Context.initSourceLists());
+			latch.join(Context.initAttributeLists());
+			//latch.join(LabResize.initSizeMap());
+			latch.join(OrderState.initStateMap());
+			//latch.join(BookSynonym.initSynonymMap());
+			//latch.join(FieldValue.initSynonymMap());
+			//latch.join(Roll.initItemsMap());
+			//latch.join(LabPrintCode.initChanelMap());
+			//latch.join(AttrJsonMap.initJsonMap());
+			
+			//latch.start();//start at caller?
+			return latch;
+		}
+
 		public static function initPhotoPicker():DbLatch{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoPicker';
@@ -181,7 +217,7 @@ package com.photodispatcher.context{
 
 		public static function initTechOTK():DbLatch{
 			var latch:DbLatch=new DbLatch();
-			latch.debugName='initPhotoPicker';
+			latch.debugName='initTechOTK';
 			//register services
 			Tide.getInstance().addComponents([
 				DictionaryService, 

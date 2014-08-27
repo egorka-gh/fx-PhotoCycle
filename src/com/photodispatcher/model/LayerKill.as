@@ -3,7 +3,7 @@ package com.photodispatcher.model{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class Layer extends DBRecord{
+	public class LayerKill extends DBRecord{
 		public static const LAYER_EMPTY:int=0;
 		public static const LAYER_SHEET:int=1;
 		public static const LAYER_ENDPAPER:int=2;

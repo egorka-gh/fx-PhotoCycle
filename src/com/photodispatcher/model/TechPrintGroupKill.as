@@ -6,7 +6,7 @@ package com.photodispatcher.model{
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 
-	public class TechPrintGroup extends DBRecord{
+	public class TechPrintGroupKill extends DBRecord{
 
 		//db fileds
 		[Bindable]

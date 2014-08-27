@@ -3,7 +3,7 @@ package com.photodispatcher.model{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class SynonymCommon  extends DBRecord{
+	public class SynonymCommonKill  extends DBRecord{
 		//db fileds
 		[Bindable]
 		public var id:int;

@@ -1,5 +1,5 @@
 package com.photodispatcher.model{
-	public class LayerGroup extends DBRecord{
+	public class LayerGroupKill extends DBRecord{
 		//db fileds
 		[Bindable]
 		public var id:int;

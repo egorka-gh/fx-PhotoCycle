@@ -46,7 +46,7 @@
 			private function initApp():void{
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
-				bdPopup.chekConnect(SQLMode.UPDATE,false);
+				bdPopup.chekConnect();//SQLMode.UPDATE,false);
 			}
 			private function bdPopClose(e:PopUpEvent):void{
 				if(e.commit){
@@ -61,10 +61,11 @@
 			}
 			
 			private function initApp_ms():void{
-				pingBdServer();
+				fillContext();
 			}
 			
 			private var startPopup:ModalPopUp;
+			/*
 			private function pingBdServer():void{
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var bdServer:String=so.data.bdServer;
@@ -92,6 +93,7 @@
 			private function onPingServerFault(event:TideFaultEvent):void {
 				startPopup.label='Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString;
 			}
+			*/
 
 
 			private function fillContext():void{

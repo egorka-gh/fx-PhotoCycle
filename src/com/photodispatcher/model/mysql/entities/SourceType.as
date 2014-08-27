@@ -22,18 +22,18 @@ package com.photodispatcher.model.mysql.entities {
 		public static const LAB_PLOTTER:int=6;
 		public static const LAB_VIRTUAL:int=9;
 		
-		public static const TECH_PRINT:int=10;
-		public static const TECH_FOLDING:int=12;
-		public static const TECH_LAMINATION:int=13;
-		public static const TECH_PICKING:int=14;
-		public static const TECH_GLUING:int=15;
-		public static const TECH_BFOLDING:int=16;
-		public static const TECH_COVER_MADE:int=17;
-		public static const TECH_CUTTING:int=18;
-		public static const TECH_COVER_BLOK_PICKING:int=19;
-		public static const TECH_COVER_BLOK_JOIN:int=20;
-		public static const TECH_PRINT_POST:int=21;
-		public static const TECH_OTK:int=22;
+		public static const TECH_PRINT:int=300;//=10;
+		public static const TECH_FOLDING:int=320;//12;
+		public static const TECH_LAMINATION:int=330;//13;
+		public static const TECH_PICKING:int=340;//14;
+		public static const TECH_GLUING:int=350;//15;
+		public static const TECH_BFOLDING:int=318;//16;
+		public static const TECH_COVER_MADE:int=335;//17;
+		public static const TECH_CUTTING:int=360;//18;
+		public static const TECH_COVER_BLOK_PICKING:int=370;//19;
+		public static const TECH_COVER_BLOK_JOIN:int=380;//20;
+		public static const TECH_PRINT_POST:int=210;//21;
+		public static const TECH_OTK:int=450;//22;
 
     }
 }

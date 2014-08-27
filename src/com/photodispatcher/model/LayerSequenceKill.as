@@ -7,7 +7,7 @@ package com.photodispatcher.model{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class LayerSequence extends DBRecord{
+	public class LayerSequenceKill extends DBRecord{
 		//db fileds
 		[Bindable]
 		public var layerset:int;

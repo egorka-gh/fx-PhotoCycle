@@ -10,7 +10,7 @@ package com.photodispatcher.model{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class Layerset extends DBRecord{
+	public class LayersetKill extends DBRecord{
 		public static const LAYERSET_TYPE_TEMPLATE:int=0;
 		public static const LAYERSET_TYPE_INTERLAYER:int=1;
 		public static const LAYERSET_TYPE_ENDPAPER:int=2;

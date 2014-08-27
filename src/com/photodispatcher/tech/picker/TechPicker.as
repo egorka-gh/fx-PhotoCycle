@@ -4,16 +4,14 @@ package com.photodispatcher.tech.picker{
 	import com.photodispatcher.event.ControllerMesageEvent;
 	import com.photodispatcher.event.SerialProxyEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
-	import com.photodispatcher.model.DBRecord;
-	import com.photodispatcher.model.Layer;
-	import com.photodispatcher.model.LayerSequence;
-	import com.photodispatcher.model.Layerset;
-	import com.photodispatcher.model.TechPoint;
-	import com.photodispatcher.model.dao.LayersetDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.Layer;
+	import com.photodispatcher.model.mysql.entities.LayerSequence;
+	import com.photodispatcher.model.mysql.entities.Layerset;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.TechPoint;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.service.barcode.ComInfo;
 	import com.photodispatcher.service.barcode.ComReader;
@@ -215,6 +213,7 @@ package com.photodispatcher.tech.picker{
 		public function TechPicker(techGroup:int){
 			super(null);
 			this.techGroup=techGroup;
+			/*
 			//create & fill trays
 			traySet= new TraySet();
 			if (!traySet.prepared) return;
@@ -229,6 +228,46 @@ package com.photodispatcher.tech.picker{
 			
 			currEndpaper=endpaperSet.emptyEndpaper;
 
+			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', ValveController.ACKNOWLEDGE_TIMEOUT*3);
+			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
+			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',turnInterval);
+			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000); //1сек
+			barLatch = new PickerLatch(PickerLatch.TYPE_BARCODE, 1,'Сканер','Ожидание штрихкода',turnInterval);
+			registerLatch = new PickerLatch(PickerLatch.TYPE_REGISTER, 1,'Книга','Контроль очередности',ValveController.ACKNOWLEDGE_TIMEOUT*2);
+			bdLatch= new PickerLatch(PickerLatch.TYPE_BD, 2,'База данных','Получение параметров заказа',2*BD_MAX_WAITE); //callDbLate wl pause after BD_MAX_WAITE
+			
+			latches=[aclLatch,layerInLatch,layerOutLatch,barLatch,registerLatch,bdLatch];
+			var l:PickerLatch;
+			for each(l in latches){
+				l.addEventListener(ErrorEvent.ERROR, onLatchTimeout);
+				l.addEventListener(Event.COMPLETE, onLatchRelease);
+			}
+			checkPrepared();
+			*/
+		}
+		
+		public function init():DbLatch{
+			interlayerSet= new InterlayerSet();
+			endpaperSet= new EndpaperSet();
+			var initLatch:DbLatch= new DbLatch();
+			initLatch.addEventListener(Event.COMPLETE, onInitLatch);
+			initLatch.join(interlayerSet.init(techGroup));
+			initLatch.join(endpaperSet.init(techGroup));
+			initLatch.start();
+			return initLatch;
+		}
+		protected function onInitLatch(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onInitLatch);
+			if(!latch.complite) return;
+		
+			//create & fill trays
+			traySet= new TraySet();
+			if (!traySet.prepared) return;
+			
+			currEndpaper=endpaperSet.emptyEndpaper;
+			
 			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', ValveController.ACKNOWLEDGE_TIMEOUT*3);
 			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
 			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',turnInterval);
@@ -297,11 +336,13 @@ package com.photodispatcher.tech.picker{
 			barcodeReaders=null;
 			controller=null;
 			register=null;
+			/*
 			if(bdTimer){
 				bdTimer.reset();
 				bdTimer.removeEventListener(TimerEvent.TIMER,onBdTimer);
 				bdTimer=null;
 			}
+			*/
 		}
 		
 		private var _layerset:Layerset;
@@ -343,9 +384,9 @@ package com.photodispatcher.tech.picker{
 					*/
 					case COMMAND_GROUP_BOOK_START:
 						if(!currEndpaper || currEndpaper.is_passover){
-							currentSequence=layerset.sequenceStart;
+							currentSequence=layerset.sequenceStart.toArray();
 						}else{
-							currentSequence=currEndpaper.sequenceStart;
+							currentSequence=currEndpaper.sequenceStart.toArray();
 						}
 						break;
 					case COMMAND_GROUP_BOOK_SHEET:
@@ -358,16 +399,16 @@ package com.photodispatcher.tech.picker{
 						break;
 					case COMMAND_GROUP_BOOK_BETWEEN_SHEET:
 						if(currInerlayer){
-							currentSequence=currInerlayer.sequenceMiddle;
+							currentSequence=currInerlayer.sequenceMiddle.toArray();
 						}else{
 							currentSequence=[];
 						}
 						break;
 					case COMMAND_GROUP_BOOK_END:
 						if(!currEndpaper || currEndpaper.is_passover){
-							currentSequence=layerset.sequenceEnd;
+							currentSequence=layerset.sequenceEnd.toArray();
 						}else{
-							currentSequence=currEndpaper.sequenceEnd;
+							currentSequence=currEndpaper.sequenceEnd.toArray();
 						}
 						break;
 					case COMMAND_GROUP_ORDER_END:
@@ -469,14 +510,17 @@ package com.photodispatcher.tech.picker{
 				prepared=false;
 				return;
 			}
+			/*
 			_layerset.prepareTamplate();
 			if(!_layerset.prepared){
 				callDbLate(prepareTemplate);
 				return;
 			}
+			*/
 			checkPrepared();
 		}
 		
+		/*
 		private var bdWait:int=0;
 		private var bdAttempt:int=0;
 		private var bdTimer:Timer;
@@ -517,6 +561,7 @@ package com.photodispatcher.tech.picker{
 			bdTimer.removeEventListener(TimerEvent.TIMER,onBdTimer);
 			bdFunction();
 		}
+		*/
 
 		public function start():void{
 			if(!serialProxy) return;
@@ -1128,9 +1173,11 @@ package com.photodispatcher.tech.picker{
 				currPgId=pgId;
 				currBookTot=int(barcode.substr(3,3));
 				currSheetTot=int(barcode.substr(8,2));
+				/*
 				//template check
 				bdWait=0;
 				bdAttempt=0;
+				*/
 				bdLatch.setOn();
 				checkOrderParams();
 				//new register

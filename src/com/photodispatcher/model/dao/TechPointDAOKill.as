@@ -1,10 +1,10 @@
 package com.photodispatcher.model.dao{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.TechPoint;
+	import com.photodispatcher.model.mysql.entities.TechPoint;
 	
 	import mx.collections.ArrayCollection;
 
-	public class TechPointDAO extends BaseDAO{
+	public class TechPointDAOKill extends BaseDAO{
 		
 		public function findAll(silent:Boolean=false, type:int=-1):ArrayCollection{
 			var res:Array;

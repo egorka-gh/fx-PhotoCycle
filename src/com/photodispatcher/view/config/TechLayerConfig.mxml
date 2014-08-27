@@ -16,7 +16,6 @@
 			import com.photodispatcher.model.mysql.entities.LayersetGroup;
 			import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 			import com.photodispatcher.model.mysql.entities.SelectResult;
-			import com.photodispatcher.model.mysql.services.DictionaryService;
 			import com.photodispatcher.model.mysql.services.TechPickerService;
 			import com.photodispatcher.tech.picker.TechPicker;
 			
@@ -50,13 +49,13 @@
 			private var currTemplate:Object;
 			
 			private var service:TechPickerService;
-			private var dictionary:DictionaryService;
+			//private var dictionary:DictionaryService;
 
 			private function init():void{
 				lGroupAC= Context.getAttribute('layer_groupList');
 				if(lGroupAC && lGroupAC.length>0) currLGroupIdx=0;
 				service=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
-				dictionary=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
+				//dictionary=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
 				var latch:DbLatch= new DbLatch();
 				latch.addLatch(service.loadLayersetGroups(onLoadLach),'groups');
 				latch.addLatch(service.loadLayers(onLoadLach),'layers');
@@ -209,7 +208,7 @@
 				if(loadSynonym){
 					var latch:DbLatch= new DbLatch();
 					latch.addEventListener(Event.COMPLETE, onSynonymLoad);
-					latch.addLatch(dictionary.loadLayersetSynonyms(ls.id));
+					latch.addLatch(service.loadLayersetSynonyms(ls.id));
 					latch.start();
 				}
 				//if(!ls.loadSequence()) return;
@@ -367,7 +366,7 @@
 				}
 				templatesAC=null;
 				var latch:DbLatch= new DbLatch();
-				latch.addLatch(service.loadLayersets(type));
+				latch.addLatch(service.loadLayersets(type,-1));
 				latch.addEventListener(Event.COMPLETE, onloadTemplates);
 				latch.start();
 				return latch;
@@ -413,7 +412,7 @@
 				}
 				if(items.length>0){
 					var latch:DbLatch= new DbLatch();
-					latch.addLatch(dictionary.persistsLayersetSynonyms(items));
+					latch.addLatch(service.persistsLayersetSynonyms(items));
 					latch.addEventListener(Event.COMPLETE, onSaveSynonym);
 					latch.start();
 
@@ -428,7 +427,7 @@
 						if (!ls) return;
 						latch=new DbLatch();
 						latch.addEventListener(Event.COMPLETE, onSynonymLoad);
-						latch.addLatch(dictionary.loadLayersetSynonyms(ls.id));
+						latch.addLatch(service.loadLayersetSynonyms(ls.id));
 					}
 				}
 			}

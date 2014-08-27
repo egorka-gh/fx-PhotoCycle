@@ -2,7 +2,7 @@ package com.photodispatcher.model.dao{
 	import com.photodispatcher.model.mysql.entities.OrderExtraState;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 
-	public class OrderExtraStateDAO extends BaseDAO{
+	public class OrderExtraStateDAOKill extends BaseDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:OrderExtraState = new OrderExtraState();
