@@ -4,7 +4,7 @@ package com.photodispatcher.model.dao.local{
 	
 	import flash.data.SQLStatement;
 
-	public class TechLogLocalDAO extends LocalDAO{
+	public class TechLogLocalDAOKill extends LocalDAO{
 
 		override protected function processRow(o:Object):Object{
 			var a:TechLogLocal= new TechLogLocal();

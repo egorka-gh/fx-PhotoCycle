@@ -4,7 +4,7 @@ package com.photodispatcher.model.dao.local{
 	
 	import flash.data.SQLStatement;
 
-	public class TechPrintGroupDAO extends LocalDAO{
+	public class TechPrintGroupDAOKill extends LocalDAO{
 		
 		override protected function processRow(o:Object):Object{
 			var a:TechPrintGroup= new TechPrintGroup();

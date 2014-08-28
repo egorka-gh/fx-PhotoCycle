@@ -7,7 +7,7 @@
 
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.LayerSequence;
+			import com.photodispatcher.model.mysql.entities.LayerSequence;
 			
 			[Bindable]
 			private var layerSeq:LayerSequence;

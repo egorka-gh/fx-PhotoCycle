@@ -9,15 +9,11 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderExtraState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.OrderDAO;
-			import com.photodispatcher.model.dao.OrderExtraStateDAO;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;

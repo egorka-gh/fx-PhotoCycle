@@ -404,8 +404,8 @@ package com.photodispatcher.model.dao.local{
 		private static function onOpenAsyncCnn(evt:SQLEvent):void{
 			connection.removeEventListener(SQLEvent.OPEN, onOpenAsyncCnn);
 			createTempTables();
-			var dao:TechPrintGroupDAO= new TechPrintGroupDAO();
-			dao.removeOld();
+			//var dao:TechPrintGroupDAO= new TechPrintGroupDAO();
+			//dao.removeOld();
 		}
 		
 		private static function createShema():void{

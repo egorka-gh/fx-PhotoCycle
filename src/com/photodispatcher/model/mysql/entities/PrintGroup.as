@@ -716,6 +716,11 @@ package com.photodispatcher.model.mysql.entities {
 				+getDigitId();
 			return text;
 		}
+		/*
+			первые 2 символа источник
+			idзаказа
+			последние 2 символа номер группы печати 
+		*/
 		private function getDigitId():String{
 			if(!id) return '';
 			var arr:Array=id.split('_');

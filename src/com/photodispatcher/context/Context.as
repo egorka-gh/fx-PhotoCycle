@@ -252,6 +252,43 @@ package com.photodispatcher.context{
 			return latch;
 		}
 
+		public static function initTechSpy():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initTechSpy';
+			//register services
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				//LabResizeService, 
+				OrderStateService, 
+				//BookSynonymService, 
+				//RollService, 
+				//ContentFilterService, 
+				//LabService,
+				TechPointService,
+				TechPickerService,
+				TechService,
+				OrderService //+
+			]);
+			
+			//fill from config
+			//Context.fillFromConfig();
+			
+			//init static maps
+			latch.join(Context.initSourceLists());
+			latch.join(Context.initAttributeLists());
+			//latch.join(LabResize.initSizeMap());
+			latch.join(OrderState.initStateMap());
+			//latch.join(BookSynonym.initSynonymMap());
+			//latch.join(FieldValue.initSynonymMap());
+			//latch.join(Roll.initItemsMap());
+			//latch.join(LabPrintCode.initChanelMap());
+			//latch.join(AttrJsonMap.initJsonMap());
+			
+			//latch.start();//start at caller?
+			return latch;
+		}
+
 		public static function fillFromConfig():void{
 			var appConfDAO:AppConfigDAO=new AppConfigDAO();
 			var appConf:AppConfig=appConfDAO.getItem();

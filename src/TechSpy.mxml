@@ -10,10 +10,12 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.dao.BaseDAO;
-			//import com.photodispatcher.model.dao.OrderStateDAO;
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
+			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.events.FlexEvent;
 			
@@ -27,7 +29,7 @@
 			private function initApp():void{
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
-				bdPopup.chekConnect(SQLMode.UPDATE,false);
+				bdPopup.chekConnect();//SQLMode.UPDATE,false);
 			}
 			private function bdPopClose(e:PopUpEvent):void{
 				if(e.commit){
@@ -41,39 +43,30 @@
 				}
 			}
 			
-			private function init():void{
-				/*
-				OrderStateDAO.initStateMap();
-				var dao:TechPointDAO=new TechPointDAO();
-				techPiontsAC=dao.findAll();
-				
-				//var dDao:DictionaryDAO=new DictionaryDAO();
-				var stDao:SourceTypeDAO= new SourceTypeDAO();
-				techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
-				
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				if (so.size>0){
-					techPoint=so.data.monitorTechPoint;
-					startTechType=so.data.startTechType;
-					manualAdd=Boolean(so.data.manualAdd);
-					endTechType=so.data.endTechType;
-					yelloyState=Boolean(so.data.yelloyState);
-					//compliteTechType=so.data.compliteTechType;
-					refreshInterval=so.data.refreshInterval;
-				}
-				if(startTechType) startTechTypeIdx=ArrayUtil.searchItemIdx('id',startTechType,techTypeAC.source);
-				if(endTechType) endTechTypeIdx=ArrayUtil.searchItemIdx('id',endTechType,techTypeAC.source);
-				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
-				//if(compliteTechType) compliteTechTypeIdx=ArrayUtil.searchItemIdx('value',compliteTechType,techTypeAC.source);
-				*/
-				
-				//currentState='config';
-				
-				
-				//TODO REFACTOR !!!
-				//OrderStateDAO.initStateMap();
+			private var startPopup:ModalPopUp;
 
-				currentState='monitor';
+			private function init():void{
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+				
+				var initLatch:DbLatch=Context.initTechSpy()();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+				//currentState='monitor';
+			}
+			private function onInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				startPopup.close();
+				startPopup=null;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						Alert.show('Ошибка инициализации'+'/n'+latch.error);
+					}else{
+						currentState='monitor';
+					}
+				}
 			}
 
 
@@ -105,10 +98,10 @@
 	<view:TechSpyMonitor id="techMonitor" includeIn="monitor" top="10" left="10" right="10" bottom="50"/>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
-		<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
+		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
 		<s:Group width="5">
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
-		</s:Group>
+		</s:Group>-->
 		<s:Spacer width="100%"/>
 		<s:Button label="Конфигурация" includeIn="monitor" click="{currentState='config'; techMonitor.stop();}"/>
 		<s:Button label="Монитор" includeIn="config" click="{currentState='monitor'}"/>
