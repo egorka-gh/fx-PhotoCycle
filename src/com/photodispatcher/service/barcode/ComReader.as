@@ -30,6 +30,10 @@ package com.photodispatcher.service.barcode{
 		protected var lastBarcode:String;
 		protected var lastBarcodeTime:int=getTimer();
 		protected var cleanMsg:Boolean=true;
+		
+		public function get lastCode():String{
+			return lastBarcode;
+		}
 
 		//private var comPort:SerialProxy;
 		protected var _comPort:Socket2Com;

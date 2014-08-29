@@ -10,10 +10,14 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
-			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.model.mysql.entities.OrderExtraState;
-			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -25,17 +29,19 @@
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
 			
+			import org.granite.tide.Tide;
+			
 			import spark.components.gridClasses.GridColumn;
 			import spark.events.PopUpEvent;
 			import spark.formatters.DateTimeFormatter;
 			
 			public var techPoint:TechPoint;
-			public var startTechType:SourceType;
+			public var startTechType:FieldValue;
 			[Bindable]
 			public var manualAdd:Boolean;
 			public var finalOperation:Boolean;
 			
-			public var endTechType:SourceType;
+			public var endTechType:FieldValue;
 			public var refreshInterval:int;
 			
 			private var _barcodeReader:ComReader;
@@ -55,15 +61,33 @@
 			private function onBarCode(event:BarCodeEvent):void{
 				var orderId:String=event.barcode;
 				if(!manualAdd || !orderId) return;
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch=svc.findeSuborder(orderId,true);
+				latch.addEventListener(Event.COMPLETE,onOrderFinde);
+				latch.start();
+			}
+			private function onOrderFinde(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				var ordersList:ArrayCollection;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderFinde);
+					if(latch.complite){
+						ordersList=latch.lastDataAC;
+					}
+				}
+				/*
 				var dao:OrderDAO=new OrderDAO();
 				var ordersList:ArrayCollection= dao.findeById(orderId,true);
+				*/
 				if(!ordersList) return;
 				if(ordersList.length==1){
-					addOrder(ordersList.getItemAt(0) as Order);
+					addOrder(ordersList.getItemAt(0) as SubOrder);
 				}else{
 					var pop:OrderAddPopup=new OrderAddPopup();
 					pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
-					pop.show(orderId,ordersList);
+					var code:String=PrintGroup.idFromBookBarcode(barcodeReader.lastCode);
+					if(!code) code=barcodeReader.lastCode;
+					pop.show(code,ordersList);
 				}
 			}
 
@@ -105,6 +129,8 @@
 			
 			private function refresh():void{
 				if(timer && timer.running) timer.stop();
+				listAC=null;
+				/*
 				var sql:String='SELECT es.id, es.state, es.state_date, os.name state_name,'+
 									' (CASE WHEN es2.id IS NULL THEN 1000 WHEN es2.state_date IS NULL THEN 900 ELSE es2.state END) state2, es2.start_date start_date2, es2.state_date state_date2, os2.name state_name2'+  
 								' FROM order_extra_state es'+
@@ -120,6 +146,24 @@
 					listAC=dao.rawList;
 					listAC.filterFunction=filterOrdersList;
 				}
+				*/
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onRefresh);
+				latch.addLatch(svc.loadMonitorEState(startTechType.value, techPoint.tech_type, endTechType.value));
+				latch.start();
+			}
+			private function onRefresh(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				var ordersList:ArrayCollection;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onRefresh);
+					if(latch.complite){
+						listAC=latch.lastDataAC;
+						listAC.filterFunction=filterOrdersList;
+					}
+				}
+
 				if(dgMonitor){
 					//dgMonitor.sortByColumns(new Vector.<int>([]),true);
 					dgMonitor.columnHeaderGroup.visibleSortIndicatorIndices=new Vector.<int>([]);
@@ -157,8 +201,8 @@
 				var isStarted:Boolean;
 				var isComplite:Boolean;
 				for each(es in arr){
-					if(es.state==startTechType.state) isStarted=true;
-					if(es.state==techPoint.tech_state){
+					if(es.state==startTechType.value) isStarted=true;
+					if(es.state==techPoint.tech_type){
 						isStarted=true;
 						if(es.state_date) isComplite=true; 
 					}
@@ -177,10 +221,10 @@
 				var pop:OrderAddPopup=event.target as OrderAddPopup;
 				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
 				if(event.commit){
-					addOrder(event.data as Order);
+					addOrder(event.data as SubOrder);
 				}
 			}
-			private function addOrder(order:Order):void{
+			private function addOrder(order:SubOrder):void{
 				newOrderId='';
 				if(order && checkOrder(order.id)){
 					newOrderId=order.id;

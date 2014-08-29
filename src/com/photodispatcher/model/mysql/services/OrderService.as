@@ -7,6 +7,7 @@
 
 package com.photodispatcher.model.mysql.services {
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
 	import mx.collections.ArrayCollection;
 
@@ -38,6 +39,38 @@ package com.photodispatcher.model.mysql.services {
 					id=src.toString()+'_'+id.substr(0, id.length-3); //remove book
 				}
 				latch.addLatch(loadOrder(id));
+			}
+			return latch;
+		}
+
+		public function findeSuborder(id:String, byBarcode:Boolean=false):DbLatch{
+			var byPg:Boolean=false;
+			
+			if(!id) return null;
+			var latch:DbLatch= new DbLatch();
+			if ((id.charAt(0) >= 'A' && id.charAt(0) <= 'Z') || (id.charAt(0) >= 'a' && id.charAt(0) <= 'z')){
+				//old barcode
+				var codeChar:String=id.charAt(0);
+				id=id.substr(1);
+				//remove leading 0
+				if(id.charAt(0)=='0') id=id.substr(1);
+				//remove book
+				var idx:int=id.indexOf(':');
+				if(idx!=-1)	id=id.substring(0,idx);
+			}else{
+				if(!byBarcode){
+					//manual search
+					id='%'+id+'%';
+				}else{
+					byPg=true;
+					id=PrintGroup.idFromBookBarcode(id);
+					if(!id) return null;
+				}
+			}
+			if(byPg){
+				latch.addLatch(loadSubOrderByPg(id));
+			}else{
+				latch.addLatch(loadSubOrderByOrder(id));
 			}
 			return latch;
 		}

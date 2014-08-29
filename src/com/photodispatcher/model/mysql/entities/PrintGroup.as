@@ -673,15 +673,21 @@ package com.photodispatcher.model.mysql.entities {
 		 * 
 		 * @param file
 		 * @return 
-		 * IdГруппыПечати+#Книги(первых 2а символа источник, id, полседние 3и символа книга) 
+		 * getDigitId+полседние 3и символа книга
+		 * 2 символа источник+idзаказа+2 символа номер группы печати+3и символа книга 
+		 * old: первых 2а символа источник, id, полседние 3и символа книга 
 		 */		
 		public function bookBarcode(file:PrintGroupFile):String{
 			if(!id || !file) return '';
+			/*
 			var arr:Array=id.split('_');
 			if(!arr || arr.length<2) return '';
 			var result:String=arr[0];
 			if (result.length>2) return '';
 			result=StrUtil.lPad(result,2)+arr[1]+StrUtil.lPad(file.book_num.toString(),3);
+			*/
+			var result:String=getDigitId();
+			if (result) result+=StrUtil.lPad(file.book_num.toString(),3);
 			return result;
 		}
 		
@@ -744,6 +750,45 @@ package com.photodispatcher.model.mysql.entities {
 			return result+'_'+tInt.toString();
 		}
 
-		
+		public static function idFromBookBarcode(code:String):String{
+			if(!code || code.length<8) return '';
+			if(code.indexOf('_')!=-1) return code; //old barcode (x_xx_x)
+			if(code.indexOf(':')!=-1) return ''; //old barcode (x_xx_x)
+			//src id
+			var src:int= parseInt(code.substr(0,2));
+			if(isNaN(src)) return '';
+			//order id
+			var order:String=code.substr(2,code.length-7);
+			//pg #
+			var pg:int=parseInt(code.substr(code.length-5,2));
+			if(isNaN(pg)) return '';
+			/*
+			//book #
+			var book:int=parseInt(code.substr(code.length-3,3));
+			if(isNaN(book)) return '';
+			*/
+			return src.toString()+'_'+order+'_'+pg.toString();
+		}
+
+		public static function bookFromBookBarcode(code:String):int{
+			if(!code || code.length<8) return 0;
+			if(code.indexOf('_')!=-1) return 0; //old barcode (x_xx_x)
+			if(code.indexOf(':')!=-1) return 0; //old barcode (x_xx_x)
+			/*
+			//src id
+			var src:int= parseInt(code.substr(0,2));
+			if(isNaN(src)) return '';
+			//order id
+			var order:String=code.substr(2,code.length-7);
+			//pg #
+			var pg:int=parseInt(code.substr(code.length-5,2));
+			if(isNaN(pg)) return '';
+			*/
+			//book #
+			var book:int=parseInt(code.substr(code.length-3,3));
+			if(isNaN(book)) return 0;
+			return book;
+		}
+
     }
 }

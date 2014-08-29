@@ -16,8 +16,8 @@
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
@@ -106,6 +106,11 @@
 				latch.addLatch(svc.loadAll(0));
 				latch.start();
 				
+				/*
+				var stDao:SourceTypeDAO= new SourceTypeDAO();
+				techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
+				*/
+				
 				initLatch.join(latch);
 				initLatch.start();
 			}
@@ -119,14 +124,21 @@
 				}
 			}
 			private function onInit(event:Event):void{
+				startPopup.close();
+				startPopup=null;
+				
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onInit);
 					if(!latch.complite){
-						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						Alert.show('Ошибка инициализации'+'/n'+latch.error);
+						currentState='disconnected';
 						return;
 					}
 				}
+
+				techTypeAC= Context.getAttribute('tech_typeValueList') as ArrayCollection;
+				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					techPoint=so.data.monitorTechPoint;
@@ -154,17 +166,14 @@
 					comReader= new ComInfo(); comReader.type=ComInfo.COM_TYPE_BARREADER;
 				}
 
-				startPopup.close();
-				startPopup=null;
-
 				checkCfgPass();
 				currentState='config';
 			}
 
 			protected function ddStartTechType_changeHandler(event:IndexChangeEvent):void{
-				var st:SourceType= ddStartTechType.selectedItem as SourceType;
+				var st:FieldValue= ddStartTechType.selectedItem as FieldValue;
 				if (!st) return;
-				startTechType=st.id;
+				startTechType=st.value;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.startTechType = startTechType;
 				so.flush();  
@@ -178,9 +187,9 @@
 			}
 			
 			protected function ddEndTechType_changeHandler(event:IndexChangeEvent):void{
-				var st:SourceType= ddEndTechType.selectedItem as SourceType;
+				var st:FieldValue= ddEndTechType.selectedItem as FieldValue;
 				if (!st) return;
-				endTechType=st.id;
+				endTechType=st.value;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.endTechType = endTechType;
 				so.flush();  
@@ -225,8 +234,8 @@
 			private var barcodeReader:ComReader;
 
 			protected function button1_clickHandler(event:MouseEvent):void{
-				var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
-				var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
+				var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
+				var endTT:FieldValue=ddEndTechType.selectedItem as FieldValue;
 				if(!techPointObj || !startTT ||!endTT){
 					Alert.show('Монитор не настроен');
 					return;
@@ -277,8 +286,8 @@
 			
 			protected function state1_enterStateHandler(event:FlexEvent):void{
 				cfgEnabled=false;
-				var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
-				var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
+				var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
+				var endTT:FieldValue=ddEndTechType.selectedItem as FieldValue;
 				techMonitor.techPoint=techPointObj;
 				techMonitor.startTechType=startTT;
 				techMonitor.manualAdd=manualAdd;
@@ -398,7 +407,7 @@
 		<s:Spacer height="10"/>
 		<s:HGroup id="gStartTT" gap="5" verticalAlign="baseline">
 			<s:Label text="Базовая операция" width="{lbLong.width}"/>
-			<s:DropDownList id="ddStartTechType" selectedIndex="{startTechTypeIdx}" dataProvider="{techTypeAC}" labelField="name"
+			<s:DropDownList id="ddStartTechType" selectedIndex="{startTechTypeIdx}" dataProvider="{techTypeAC}" 
 							change="ddStartTechType_changeHandler(event)" width="200"/>
 		</s:HGroup>
 		<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">
@@ -409,7 +418,7 @@
 		<s:Spacer height="10"/>
 		<s:HGroup id="gEndTT" gap="5" verticalAlign="baseline">
 			<s:Label text="Ожидать операцию" width="{lbLong.width}"/>
-			<s:DropDownList id="ddEndTechType" selectedIndex="{endTechTypeIdx}" dataProvider="{techTypeAC}"  labelField="name"
+			<s:DropDownList id="ddEndTechType" selectedIndex="{endTechTypeIdx}" dataProvider="{techTypeAC}"
 							change="ddEndTechType_changeHandler(event)" width="200"/>
 		</s:HGroup>
 		<!--<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">

@@ -19,9 +19,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:String;
         private var _reported:Boolean;
         private var _start_date:Date;
+        private var _start_date2:Date;
         private var _state:int;
+        private var _state2:int;
         private var _state_date:Date;
+        private var _state_date2:Date;
         private var _state_name:String;
+        private var _state_name2:String;
         private var _sub_id:String;
 
         public function set books(value:int):void {
@@ -59,11 +63,25 @@ package com.photodispatcher.model.mysql.entities {
             return _start_date;
         }
 
+        public function set start_date2(value:Date):void {
+            _start_date2 = value;
+        }
+        public function get start_date2():Date {
+            return _start_date2;
+        }
+
         public function set state(value:int):void {
             _state = value;
         }
         public function get state():int {
             return _state;
+        }
+
+        public function set state2(value:int):void {
+            _state2 = value;
+        }
+        public function get state2():int {
+            return _state2;
         }
 
         public function set state_date(value:Date):void {
@@ -73,11 +91,25 @@ package com.photodispatcher.model.mysql.entities {
             return _state_date;
         }
 
+        public function set state_date2(value:Date):void {
+            _state_date2 = value;
+        }
+        public function get state_date2():Date {
+            return _state_date2;
+        }
+
         public function set state_name(value:String):void {
             _state_name = value;
         }
         public function get state_name():String {
             return _state_name;
+        }
+
+        public function set state_name2(value:String):void {
+            _state_name2 = value;
+        }
+        public function get state_name2():String {
+            return _state_name2;
         }
 
         public function set sub_id(value:String):void {
@@ -94,9 +126,13 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as String;
             _reported = input.readObject() as Boolean;
             _start_date = input.readObject() as Date;
+            _start_date2 = input.readObject() as Date;
             _state = input.readObject() as int;
+            _state2 = input.readObject() as int;
             _state_date = input.readObject() as Date;
+            _state_date2 = input.readObject() as Date;
             _state_name = input.readObject() as String;
+            _state_name2 = input.readObject() as String;
             _sub_id = input.readObject() as String;
         }
 
@@ -107,9 +143,13 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_reported is IPropertyHolder) ? IPropertyHolder(_reported).object : _reported);
             output.writeObject((_start_date is IPropertyHolder) ? IPropertyHolder(_start_date).object : _start_date);
+            output.writeObject((_start_date2 is IPropertyHolder) ? IPropertyHolder(_start_date2).object : _start_date2);
             output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
+            output.writeObject((_state2 is IPropertyHolder) ? IPropertyHolder(_state2).object : _state2);
             output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
+            output.writeObject((_state_date2 is IPropertyHolder) ? IPropertyHolder(_state_date2).object : _state_date2);
             output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
+            output.writeObject((_state_name2 is IPropertyHolder) ? IPropertyHolder(_state_name2).object : _state_name2);
             output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
         }
     }

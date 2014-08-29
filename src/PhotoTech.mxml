@@ -15,23 +15,25 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.TechPointDAO;
-			import com.photodispatcher.model.dao.local.LocalDAO;
-			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
@@ -81,17 +83,19 @@
 			
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
-				BaseDAO.MAX_WAITE=15000;
+				//BaseDAO.MAX_WAITE=15000;
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
-				bdPopup.chekConnect(SQLMode.UPDATE,false);
+				bdPopup.chekConnect();//SQLMode.UPDATE,false);
 			}
 			private function bdPopClose(e:PopUpEvent):void{
 				var connected:Boolean=e.commit;
+				/*
 				if(connected){
 					//create local connection
 					connected=LocalDAO.connect();
 				}
+				*/
 				if(connected){
 					//connected
 					init();
@@ -103,17 +107,53 @@
 				}
 			}
 
+			private var startPopup:ModalPopUp;
+			
 			private function init():void{
-				//TODO REFACTOR !!!
-				OrderState.initStateMap();
-				var dao:TechPointDAO=new TechPointDAO();
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+				
+				var initLatch:DbLatch=Context.initPhotoPicker();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+
+				var latch:DbLatch= new DbLatch();
+				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				latch.addEventListener(Event.COMPLETE,onTPLoad);
+				latch.addLatch(svc.loadAll(0));
+				latch.start();
 				/*
-				var a:Array=dao.findByType(SourceType.TECH_PRINT);
-				if(a){
-					techPionts=new ArrayCollection(a);
-				}
-				*/
+				var dao:TechPointDAO=new TechPointDAO();
 				techPionts=dao.findAll();
+				*/
+				
+				initLatch.join(latch);
+				initLatch.start();
+			}
+			private function onTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPLoad);
+					if(latch.complite){
+						techPionts=latch.lastDataAC;
+					}
+				}
+			}
+			private function onInit(event:Event):void{
+				startPopup.close();
+				startPopup=null;
+
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						Alert.show('Ошибка инициализации'+'/n'+latch.error);
+						currentState='disconnected';
+						return;
+					}
+				}
+				
 				coms.source=ComInfo.load();
 				
 				//var serverIP:String;
@@ -228,9 +268,11 @@
 				so.flush();  
 			}
 			
+			/*
 			protected function btRecreateBD_clickHandler(event:MouseEvent):void{
 				LocalDAO.recreateBD();
 			}
+			*/
 			
 		]]>
 	</fx:Script>
@@ -279,7 +321,7 @@
 		</s:VGroup>
 		
 		<s:Spacer height="10"/>
-		<s:Button id="btRecreateBD" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"/>
+		<!--<s:Button id="btRecreateBD" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"/>-->
 	</s:VGroup>
 
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
@@ -288,14 +330,14 @@
 	</s:VGroup>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
-		<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
+		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
 		<s:Group width="5">
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
 		</s:Group>
 		<s:Image source="{LocalDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в локальную базу данных"/>
 		<s:Group width="5">
 			<s:Label text="{LocalDAO.lastErrMsg}" color="#cc0000"/>
-		</s:Group>
+		</s:Group>-->
 		<s:Spacer width="100%"/>
 		<s:Button label="Стоп" includeIn="monitor" click="{stop()}"/>
 		<s:Button label="Старт" includeIn="config" click="{start()}"/>

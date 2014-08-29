@@ -6,8 +6,9 @@
 						   keyDown="skinnablepopupcontainer1_keyDownHandler(event)">
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.mysql.entities.Order;
-			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
+			import com.photodispatcher.model.mysql.services.OrderService;
 			
 			import flash.globalization.DateTimeStyle;
 			
@@ -15,6 +16,8 @@
 			import mx.collections.ArrayList;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.components.gridClasses.GridColumn;
 			import spark.formatters.DateTimeFormatter;
@@ -31,7 +34,8 @@
 				
 				var a:Array=[];
 				var col:GridColumn;
-				col= new GridColumn('id'); col.headerText='ID'; col.width=85; a.push(col);
+				col= new GridColumn('order_id'); col.headerText='Заказ'; col.width=85; a.push(col);
+				col= new GridColumn('sub_id'); col.headerText='Подзаказ'; col.width=70; a.push(col);
 				col= new GridColumn('source_code'); col.headerText='Код источника'; col.width=50; a.push(col);
 				col= new GridColumn('source_name'); col.headerText='Источник'; col.width=70; a.push(col);
 				col= new GridColumn('state_name'); col.headerText='Статус'; col.width=90; a.push(col); 
@@ -53,24 +57,39 @@
 			}
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
-				if (tiOrderId.text){
-					var dao:OrderDAO=new OrderDAO();
-					ordersList= dao.findeById(tiOrderId.text);
-					if(ordersList && ordersList.length>0){
-						if(ordersList.length==1){
-							useOrder((ordersList.getItemAt(0) as Order));
-							return;
-						}else{
-							currentState='found';
-						}
-					}else{
-						currentState='notFound';
+				if (!tiOrderId.text) return;
+				/*
+				var dao:OrderDAO=new OrderDAO();
+				ordersList= dao.findeById(tiOrderId.text);
+				*/
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch=svc.findeSuborder(tiOrderId.text);
+				latch.addEventListener(Event.COMPLETE,onOrderFinde);
+				latch.start();
+			}
+			private function onOrderFinde(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				ordersList=null;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderFinde);
+					if(latch.complite){
+						ordersList=latch.lastDataAC;
 					}
+				}
+				if(ordersList && ordersList.length>0){
+					if(ordersList.length==1){
+						useOrder((ordersList.getItemAt(0) as SubOrder));
+						return;
+					}else{
+						currentState='found';
+					}
+				}else{
+					currentState='notFound';
 				}
 			}
 			
-			protected function useOrder(order:Order):void{
-				close(true,order);
+			protected function useOrder(order:SubOrder):void{
+				close(true,SubOrder);
 			}
 			
 			protected function skinnablepopupcontainer1_keyDownHandler(event:KeyboardEvent):void{
@@ -84,8 +103,8 @@
 			}
 			
 			protected function dgOrders_clickHandler(event:MouseEvent):void{
-				var order:Order	=dgOrders.selectedItem as Order;
-				if(order) useOrder(order);
+				var order:SubOrder	=dgOrders.selectedItem as SubOrder;
+				if(SubOrder) useOrder(SubOrder);
 			}
 			
 		]]>
