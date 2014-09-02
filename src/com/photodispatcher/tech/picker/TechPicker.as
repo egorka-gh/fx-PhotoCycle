@@ -1245,7 +1245,7 @@ package com.photodispatcher.tech.picker{
 			var ei:OrderExtraInfo;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onOrderFinde);
-				ei=latch.lastItem as OrderExtraInfo;
+				ei=latch.lastDataItem as OrderExtraInfo;
 			}
 			if(!ei){
 				//read error or not exists

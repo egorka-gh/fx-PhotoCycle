@@ -93,7 +93,7 @@
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
-					order=latch.lastItem as Order;
+					order=latch.lastDataItem as Order;
 				}
 					
 				if(!order || !order.printGroups) return;

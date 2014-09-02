@@ -14,15 +14,15 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class SubordersTemplateBase extends AbstractEntity {
 
-        private var _folder:int;
+        private var _folder:String;
         private var _id:int;
         private var _src_type:int;
         private var _sub_src_type:int;
 
-        public function set folder(value:int):void {
+        public function set folder(value:String):void {
             _folder = value;
         }
-        public function get folder():int {
+        public function get folder():String {
             return _folder;
         }
 
@@ -49,7 +49,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
-            _folder = input.readObject() as int;
+            _folder = input.readObject() as String;
             _id = input.readObject() as int;
             _src_type = input.readObject() as int;
             _sub_src_type = input.readObject() as int;

@@ -8,7 +8,7 @@ package com.photodispatcher.model{
 	
 	import spark.components.gridClasses.GridColumn;
 
-	public class ContentFilter extends DBRecord{
+	public class ContentFilterKill extends DBRecord{
 
 		private static var _filters:Array;
 		public static function get filters():Array{

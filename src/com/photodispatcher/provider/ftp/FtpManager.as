@@ -210,6 +210,14 @@ package com.photodispatcher.provider.ftp{
 		}
 
 		private function saveOrder(order:Order):void{
+			//TODO set order state
+			if(order.state<OrderState.CANCELED) order.state=order.is_preload?OrderState.PRN_WAITE_ORDER_STATE:OrderState.PRN_WAITE;
+			if(order.hasSuborders){
+				for each(var so:SubOrder in order.suborders) if(so.state<OrderState.CANCELED) so.state=order.state;
+			}
+			if(order.printGroups){
+				for each(var pg:PrintGroup in order.printGroups) if(pg.state<OrderState.CANCELED) pg.state=order.state;
+			}
 			writeOrders.push(order);
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch();

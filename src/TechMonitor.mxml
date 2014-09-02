@@ -277,6 +277,8 @@
 				Alert.show('Ошибка COM \n'+event.error+';\n данные com: '+bar,'Ошибка');
 			}
 
+			//TODO 4 debug
+			private var techMonitor:Object;
 			protected function button2_clickHandler(event:MouseEvent):void{
 				if(techMonitor) techMonitor.stop();
 				serialProxy.stop();
@@ -463,7 +465,7 @@
 
 	</s:VGroup>
 	
-	<view:TechMonitorMonitor id="techMonitor" includeIn="monitor" top="20" left="20" right="5" bottom="50"/>
+	<!--<view:TechMonitorMonitor id="techMonitor" includeIn="monitor" top="20" left="20" right="5" bottom="50"/>-->
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
 		

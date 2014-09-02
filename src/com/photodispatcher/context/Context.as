@@ -1,12 +1,12 @@
 package com.photodispatcher.context{
 	import com.photodispatcher.model.AppConfig;
-	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.dao.AppConfigDAO;
 	import com.photodispatcher.model.dao.AttrTypeDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.AttrJsonMap;
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.ContentFilter;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabResize;
@@ -38,6 +38,7 @@ package com.photodispatcher.context{
 	import mx.collections.IList;
 	import mx.rpc.AsyncToken;
 	
+	import org.granite.meta;
 	import org.granite.tide.Tide;
 	import org.granite.tide.events.TideResultEvent;
 
@@ -69,6 +70,7 @@ package com.photodispatcher.context{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoCycle';
 			//register services
+			
 			Tide.getInstance().addComponents([
 				DictionaryService, 
 				SourceService, 

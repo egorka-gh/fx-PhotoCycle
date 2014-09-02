@@ -22,6 +22,59 @@ package com.photodispatcher.model.mysql.entities {
 			return result;
 		}
 
+		private static var _filters:Array;
+		public static function get filters():Array{
+			//if(!_filters) initFilters();
+			return [];
+		}
+		
+		private static function initFilters():void{
+			/*
+			var d:ContentFilterDAO= new ContentFilterDAO();
+			var arr:Array=d.findAllArray(true);
+			if(!arr) return;
+			var f:ContentFilter;
+			for each (f in arr){
+				if(!f.loadAliases()) return;
+			}
+			_filters=arr;
+			*/
+		}
+
+		public function loadAliases():Boolean{
+			return true;
+			/*
+			if (!is_alias_filter) return true;
+			var d:ContentFilterAliasDAO= new ContentFilterAliasDAO();
+			var arr:Array=d.findByFilter(id);
+			var a:ContentFilterAlias;
+			if(arr){
+				aliases=[];
+				for each(a in arr) aliases.push(a.alias);
+				return true;
+			}
+			return false;
+			*/
+		}
+		
+		public function allowAlias(alias:int):Boolean{
+			return true;
+			/*
+			if(!is_alias_filter) return true;
+			if(!aliases) return true; // not init??
+			return aliases.indexOf(alias)!=-1;
+			*/
+		}
+		
+		public function allowPrintGroup(pg:com.photodispatcher.model.mysql.entities.PrintGroup):Boolean{
+			/*
+			if(!pg) return false;
+			if(pg.book_type==0 && !is_photo_allow) return false;
+			if(pg.bookTemplate && !allowAlias(pg.bookTemplate.book)) return false;
+			*/
+			return true; 
+		}
+
     }
 
 }

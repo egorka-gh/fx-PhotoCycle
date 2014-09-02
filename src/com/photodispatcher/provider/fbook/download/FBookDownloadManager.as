@@ -3,8 +3,8 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.json.JsonUtil;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.model.ContentFilter;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.ContentFilter;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;

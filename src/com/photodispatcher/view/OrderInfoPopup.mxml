@@ -133,7 +133,8 @@
 				var latch:DbLatch=e.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
-					order=latch.lastItem as Order;
+					if(!latch.complite) return;
+					order=latch.lastDataItem as Order;
 					var aa:Array;
 					if(order){
 						pgList=order.printGroups as ArrayCollection;
@@ -181,12 +182,6 @@
 						
 					}
 				}
-			}
-
-			
-			
-			public function show(orderId:String, techMode:Boolean=false):void{
-				refresh(orderId);
 				if(order){
 					this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
 					this.width=FlexGlobals.topLevelApplication.width-50;
@@ -200,7 +195,30 @@
 				}else{
 					Alert.show('Заказ "'+orderId+'" не найден');
 				}
-				
+			}
+
+			
+			private var techMode:Boolean;
+			private var orderId:String;
+			public function show(orderId:String, techMode:Boolean=false):void{
+				this.techMode=techMode;
+				this.orderId=orderId;
+				refresh(orderId);
+				/*
+				if(order){
+					this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+					this.width=FlexGlobals.topLevelApplication.width-50;
+					this.height=FlexGlobals.topLevelApplication.height-100;
+					PopUpManager.centerPopUp(this);
+					if(techMode){
+						currentState='infoTech';
+					}else{
+						vsSubInfo.selectedChild= ncPrintGroups;
+					}
+				}else{
+					Alert.show('Заказ "'+orderId+'" не найден');
+				}
+				*/
 			}
 			
 			private function filterPgList(item:Object):Boolean {
@@ -556,7 +574,7 @@
 						</s:NavigatorContent>
 						<s:NavigatorContent id="ncPrintGroups" label="Группы печати" backgroundAlpha="0" width="100%" height="100%"  includeIn="infoFull">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
-								<s:List id="lstFilterPg" dataProvider="{soFilterList}" labelField="src_id"
+								<s:List id="lstFilterPg" dataProvider="{soFilterList}" labelField="sub_id"
 										width="100" height="100%" change="{applyPgFilter()}"/>
 								<s:DataGrid id="dgPGroups" selectionMode="none" width="100%" height="100%"
 											dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.shortGridColumns()}"/>

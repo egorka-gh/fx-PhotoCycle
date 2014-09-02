@@ -8,10 +8,7 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
-			import com.photodispatcher.model.AppConfig;
-			import com.photodispatcher.model.ContentFilter;
-			import com.photodispatcher.model.dao.AppConfigDAO;
-			import com.photodispatcher.model.dao.BaseDAO;
+			import com.photodispatcher.model.mysql.entities.ContentFilter;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.CleanDatabasePopup;
@@ -27,9 +24,11 @@
 			import spark.events.PopUpEvent;
 			import spark.events.TextOperationEvent;
 			
+			/*
 			[Bindable]
 			private var conf:AppConfig;
 			private var confDAO:AppConfigDAO;
+			*/
 			
 			[Bindable]
 			private var workFolder:String;
@@ -59,10 +58,12 @@
 			private var contentFiltersAC:ArrayCollection;
 			[Bindable]
 			private var currCFilter:ContentFilter;
+			[Bindable]
+			private var syncInterval:int;
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
-				confDAO=new AppConfigDAO();
-				conf=confDAO.getItem();
+				//confDAO=new AppConfigDAO();
+				//conf=confDAO.getItem();
 				
 				imPath=Context.getAttribute('imPath');
 				workFolder=Context.getAttribute('workFolder');
@@ -84,6 +85,8 @@
 				reversPrint=so.data.reversPrint;
 				contentFiltersAC=new ArrayCollection(ContentFilter.filters);
 				currCFilter=Context.getAttribute('contentFilter') as ContentFilter;
+				syncInterval=so.data.syncInterval;
+				if(!syncInterval) syncInterval=10;
 			}
 			
 			private function pingIM():void{
@@ -177,9 +180,11 @@
 			}
 			
 			protected function btBdOptimize_clickHandler(event:MouseEvent):void{
+				/*
 				var dao:BaseDAO= new BaseDAO();
 				dao.vacuumDatabase();
 				dao.analyzeDatabase();
+				*/
 			}
 			
 			private static function leadingZero(value:Number):String{
@@ -230,12 +235,12 @@
 					so.data.cFilterId=currCFilter.id;
 					so.flush();  
 				}
-				*/
 				if(currCFilter){
 					conf.content_filter=currCFilter.id;
 				}else{
 					conf.content_filter=0;
 				}
+				*/
 				Context.setAttribute('contentFilter',currCFilter);
 			}
 			
@@ -265,8 +270,10 @@
 			}
 			
 			protected function btBdClean_clickHandler(event:MouseEvent):void{
+				/*
 				var popup:CleanDatabasePopup= new CleanDatabasePopup();
 				popup.show();
+				*/
 			}
 			
 			protected function reconnectBdServer():void{
@@ -287,6 +294,16 @@
 				so.data.bdServer = bdServer;
 				so.flush();  
 				reconnectBdServer();
+			}
+			
+			protected function tiSyncInterval_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				syncInterval=int(tiSyncInterval.text);
+				if(syncInterval>0){
+					Context.setAttribute('syncInterval', syncInterval);
+					so.data.syncInterval = syncInterval;
+					so.flush();  
+				}
 			}
 			
 		]]>
@@ -326,9 +343,9 @@
 			</s:FormItem> 
 
 			<s:FormItem label="Интервал синхронизации (мин)">
-				<s:TextInput id="tiSyncInterval" text="{conf.monitor_interval}"
+				<s:TextInput id="tiSyncInterval" text="{syncInterval}"
 							 restrict="0123456789"
-							 change="{conf.monitor_interval=int(tiSyncInterval.text)}"
+							 change="tiSyncInterval_changeHandler(event)"
 							 width="50"/>
 			</s:FormItem> 
 
@@ -384,8 +401,8 @@
 			</s:FormItem> 
 
 		</s:Form>
-		<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
+		<!--<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
 			<s:Button id="btSave" label="Сохранить" click="{confDAO.save(conf)}"/>
-		</s:HGroup>
+		</s:HGroup>-->
 	</s:VGroup>
 </s:Group>

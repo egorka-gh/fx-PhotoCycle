@@ -179,6 +179,7 @@ package com.photodispatcher.model.mysql.entities {
 		public function addFile(file:PrintGroupFile):void{
 			if(!file) return;
 			if(!files) files=new ArrayCollection();
+			file.print_group=id;
 			files.addItem(file);
 			file_num=files.length;
 		}

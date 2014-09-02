@@ -71,7 +71,7 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		
-		public static function gridColumns(labType:int=SourceType.LAB_NORITSU):ArrayList{
+		public static function gridColumns(labType:int=3):ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
 			var visible:Boolean=labType!=SourceType.LAB_NORITSU_NHF;
@@ -96,7 +96,7 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		
-		public function key(srcType:int=SourceType.LAB_NORITSU,fullness:int=0):String{
+		public function key(srcType:int=3,fullness:int=0):String{
 			var sizeKey:String;
 			switch(fullness){
 				case 1:

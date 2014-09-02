@@ -32,7 +32,7 @@
 	
 	<fx:Declarations>
 		<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>
-		<s:ArrayCollection id="aclDevices" source="{lab.devices}"/>
+		<!--<s:ArrayCollection id="aclDevices" source="{lab.devices}"/>-->
 	</fx:Declarations>
 
 	<s:Image id="btClose" visible="{isPopup}" source="assets/offLine.png" 
@@ -83,7 +83,7 @@
 		<s:VGroup gap="5" height="100%" width="100%">
 			<s:Label text="Устройства" fontWeight="bold"/>
 			<s:Scroller width="750" height="100%">
-				<s:DataGroup dataProvider="{aclDevices}" itemRenderer="com.photodispatcher.view.itemRenderer.LabDeviceRenderer">
+				<s:DataGroup dataProvider="{lab.devices}" itemRenderer="com.photodispatcher.view.itemRenderer.LabDeviceRenderer">
 					<s:layout>
 						<s:VerticalLayout gap="5"/>
 					</s:layout>

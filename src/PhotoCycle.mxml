@@ -16,10 +16,6 @@
 			import com.akmeful.fotokniga.book.data.Book;
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
-			import com.photodispatcher.model.AppConfig;
-			import com.photodispatcher.model.ContentFilter;
-			import com.photodispatcher.model.dao.AppConfigDAO;
-			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.mysql.AsyncLatch;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Roll;
@@ -134,6 +130,7 @@
 				var prtPath:String;
 				var serverIP:String;
 				var configPass:String;
+				var syncInterval:int=10;
 				//var cFilterId:int;
 				if (so.size>0){
 					workFolder = so.data.workFolder;
@@ -142,7 +139,10 @@
 					serverIP=so.data.serverIP;
 					configPass=so.data.configPass;
 					//cFilterId=so.data.cFilterId;
+					if(so.data.syncInterval) syncInterval=so.data.syncInterval;
 				}
+				
+				Context.setAttribute('syncInterval',syncInterval);
 				
 				Context.setAttribute('configPass',configPass);
 				Context.setAttribute('workFolder',workFolder);
@@ -273,11 +273,11 @@
 					  width="100%" height="100%"/>
 	</s:VGroup>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10"  verticalAlign="middle">
-		<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
+		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
 		<s:Image source="{IMRuner.isRunning?'assets/imgProcRun.png':'assets/imgProc.png'}" width="24" height="24" toolTip="Обработка в IM"/>
 		<s:Group width="5">
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000" toolTip="{BaseDAO.lastErrMsg}"/>
-		</s:Group>
+		</s:Group>-->
 		<s:Spacer width="100%"/>
 		<s:Button label="Настройки" includeIn="monitor" click="button1_clickHandler(event)"/>
 		<s:Button label="Монитор" includeIn="config" click="button2_clickHandler(event)"/>

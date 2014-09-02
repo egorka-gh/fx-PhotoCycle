@@ -72,7 +72,7 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onDevAdd);
 					if(latch.complite){
-						var dev:LabDevice=latch.lastItem as LabDevice;
+						var dev:LabDevice=latch.lastDMLItem as LabDevice;
 						if(dev){
 							currentItem.devices.addItem(dev);
 							currentItem.devices.refresh();

@@ -44,9 +44,11 @@ package com.photodispatcher.service{
 			if (isRunning) return;
 			if (!sources) return;
 
+			/*
 			popup= new ModalPopUp();
 			popup.label='Синхронизация';
 			popup.open(null);
+			*/
 			webSync();
 		}
 		

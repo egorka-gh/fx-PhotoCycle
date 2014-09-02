@@ -82,7 +82,7 @@ package com.photodispatcher.model.mysql
 			}
 			return result;
 		}
-		public function get lastItem():Object{
+		public function get lastDMLItem():Object{
 			if(lastResult && lastResult is DmlResult){
 				return (lastResult as DmlResult).item;
 			}

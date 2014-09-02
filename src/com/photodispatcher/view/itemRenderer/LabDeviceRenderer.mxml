@@ -137,9 +137,9 @@
 	</fx:Script>
 
 	<fx:Declarations>
-		<s:ArrayCollection id="aclActiveRolls" source="{dev.rolls}" filterFunction="{filterActiveRolls}"/>
-		<s:ArrayCollection id="aclRolls" source="{dev.rolls}" filterFunction="{rollsFilter}"/>
-		<s:ArrayCollection id="aclTimeTable" source="{dev.timetable}"/>
+		<s:ArrayCollection id="aclActiveRolls" source="{dev.rolls.toArray()}" filterFunction="{filterActiveRolls}"/>
+		<s:ArrayCollection id="aclRolls" source="{dev.rolls.toArray()}" filterFunction="{rollsFilter}"/>
+		<!--<s:ArrayCollection id="aclTimeTable" source="{dev.timetable}"/>-->
 	</fx:Declarations>
 
 	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="2">
@@ -177,7 +177,7 @@
 					</s:VGroup>
 				</s:NavigatorContent>
 				<s:NavigatorContent label="Расписание" width="100%">
-					<config:ItemsGrid id="gridTimeTable" editable="false" currentData="{aclTimeTable}" requestedRowCount="7" currentColumns="{LabTimetable.gridColumns()}" width="100%"/>
+					<config:ItemsGrid id="gridTimeTable" editable="false" currentData="{dev.timetable as ArrayCollection}" requestedRowCount="7" currentColumns="{LabTimetable.gridColumns()}" width="100%"/>
 				</s:NavigatorContent>
 			</mx:ViewStack>
 		</s:VGroup>
