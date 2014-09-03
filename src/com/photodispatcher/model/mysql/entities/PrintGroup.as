@@ -373,6 +373,7 @@ package com.photodispatcher.model.mysql.entities {
 		/**
 		 *
 		 * load PrintGroupFiles, create copies (if required)
+		 * dumy method
 		 *
 		 */
 		public function preparePrint():void{

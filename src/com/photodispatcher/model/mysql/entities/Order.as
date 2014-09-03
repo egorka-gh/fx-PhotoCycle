@@ -75,9 +75,10 @@ package com.photodispatcher.model.mysql.entities {
 		
 		/**
 		 * runtime
-		 * is order checked in bd, used in PrintManager 
+		 * is order checked in bd, used in PrintManager
+		 * unused 
 		 */
-		public var bdCheckComplete:Boolean=false;
+		//public var bdCheckComplete:Boolean=false;
 		
 		/**
 		 * runtime

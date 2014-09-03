@@ -22,19 +22,19 @@
     <application path="PhotoTech.mxml">
       <airExcludes/>
     </application>
-    <application path="PhotoHelper.mxml">
+    <application path="TechSpy.mxml">
       <airExcludes/>
     </application>
-    <application path="TechSpy.mxml">
+    <application path="PhotoHelper.mxml">
       <airExcludes/>
     </application>
     <application path="Laboratory.mxml">
       <airExcludes/>
     </application>
-    <application path="PhotoCycle.mxml">
+    <application path="TechOTK.mxml">
       <airExcludes/>
     </application>
-    <application path="TechOTK.mxml">
+    <application path="PhotoCycle.mxml">
       <airExcludes/>
     </application>
     <application path="PhotoPicker.mxml">
