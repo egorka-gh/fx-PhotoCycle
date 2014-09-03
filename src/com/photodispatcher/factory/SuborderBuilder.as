@@ -119,15 +119,15 @@ package com.photodispatcher.factory{
 									if(poz!=-1){
 										txt=txt.substring(0,poz);
 										//var subId:int=int(txt);
-										//if(subId){
+										if(txt){
 											newSo=so.clone();
 											newSo.sub_id=txt;
 											//newSo.fillId();
 											//newSo.fillFolder();
 											order.addSuborder(newSo);
-										//}else{
+										}else{
 											return 'Ошибка определения подзаказа: '+line;
-										//}
+										}
 									}
 								}
 							}
