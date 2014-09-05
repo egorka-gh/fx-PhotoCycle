@@ -14,7 +14,7 @@ package com.photodispatcher.model.mysql.services {
     public class OrderStateService extends OrderStateServiceBase {
 		
 		override public function logState(arg0:StateLog, resultHandler:Object=null, faultHandler:Function=null):AsyncToken{
-			if(!arg0) return;
+			if(!arg0) return null;
 			if(arg0.comment && arg0.comment.length>250) arg0.comment=arg0.comment.substr(0,250);
 			return super.logState(arg0, resultHandler, faultHandler);
 		}

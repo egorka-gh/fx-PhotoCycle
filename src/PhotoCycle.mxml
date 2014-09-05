@@ -56,7 +56,8 @@
 			private function bdPopClose(e:PopUpEvent):void{
 				if(e.commit){
 					//connected
-					initApp_ms();
+					//initApp_ms();
+					fillContext();
 					//if(vMonitor) vMonitor.start();
 				}else{
 					//no connection
@@ -84,6 +85,7 @@
 
 				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
 				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
+				
 				//run hallo
 				Tide.getInstance().addComponents([HalloService]);
 				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
