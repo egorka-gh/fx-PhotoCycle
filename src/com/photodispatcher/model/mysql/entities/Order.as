@@ -129,6 +129,9 @@ package com.photodispatcher.model.mysql.entities {
 			if(eso){
 				eso.prt_qty++;
 			}else{
+				//reassign id
+				so.order_id=this.id;
+				so.fillId();
 				suborders.addItem(so);
 			}
 		}

@@ -87,7 +87,9 @@ package com.photodispatcher.model.mysql.entities {
 		//runtime, 4 Laboratory config
 		public var isSelected:Boolean;
 		
-		
+		//runtime
+		public var fbookSid:String;
+
 		public function getWrkFolder():String{
 			var wrkFolder:String=Context.getAttribute('workFolder');
 			wrkFolder=wrkFolder+File.separator+StrUtil.toFileName(this.name);

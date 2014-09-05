@@ -92,6 +92,10 @@ package com.photodispatcher.provider.fbook.download{
 				flowError('Не верная рабочая папка');
 				return false;
 			}
+			//use main login, no auth needed
+			_isStarted=true;
+			checkQueue();
+/*
 			if(source.type == SourceType.SRC_PROFOTO){
 				//use main login, no auth needed
 				_isStarted=true;
@@ -115,6 +119,7 @@ package com.photodispatcher.provider.fbook.download{
 					checkQueue();
 				}
 			}
+*/
 			return true;
 		}
 		
@@ -229,6 +234,9 @@ package com.photodispatcher.provider.fbook.download{
 			if(r.result){
 				//start service
 				_isStarted=true;
+				trace('FBook login complite sid='+r.sid);
+				//store sid
+				if(r.sid) source.fbookSid=r.sid;
 				//dispatchEvent(new Event('isStartedChange'));
 				checkQueue();
 			} else {
@@ -268,6 +276,7 @@ package com.photodispatcher.provider.fbook.download{
 			if(!isStarted || forceStop) return;//stoped
 			if(currentOrder) return; //is busy
 			if(!queue || queue.length==0) return; //nothing to load
+			trace('FBookDownloadManager check queue');
 			var order:Order;
 			var newOrder:Order;
 			var restartOrder:Order;
@@ -304,11 +313,13 @@ package com.photodispatcher.provider.fbook.download{
 			//start to load
 			if(!newOrder) newOrder=restartOrder;//start reseted at this iteration
 			if(newOrder){
+				trace('FBookDownloadManager start dload order '+newOrder.id);
 				currentOrder=newOrder;
 				currentOrder.state=OrderState.FTP_LOAD;
 				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,'','Загрузка подзаказов');
 				nextSubOrder();
 			}else{
+				trace('FBookDownloadManager nothing to start recheck queue');
 				checkQueue();
 			}
 		}
@@ -332,6 +343,7 @@ package com.photodispatcher.provider.fbook.download{
 				}
 			}
 			if(!toLoad){
+				trace('FBookDownloadManager nextSubOrder order complite '+currentOrder.id);
 				//currentOrder completed
 				currentOrder.state=OrderState.FTP_COMPLETE;
 				currentOrder.resetErrCounter();
@@ -345,13 +357,45 @@ package com.photodispatcher.provider.fbook.download{
 				return;
 			}
 			currentSubOrder=toLoad;
+			trace('FBookDownloadManager nextSubOrder get project suborder '+currentSubOrder.sub_id);
 			//load project
 			currentSubOrder.state=OrderState.FTP_GET_PROJECT;
 			if(!projectLoader){
 				projectLoader= new FBookProjectLoader(source);
 				projectLoader.addEventListener(Event.COMPLETE, onProjectLoaded);
 			}
-			projectLoader.fetchProject(int(currentSubOrder.sub_id));
+			projectLoader.fetchProject(int(currentSubOrder.sub_id), currentSubOrder.native_type);
+		}
+		private function relogin():void{
+			if(source.type == SourceType.SRC_PROFOTO){
+				//use main login, no auth needed
+				_isStarted=true;
+				checkQueue();
+			}else{
+				//check login
+				var auth:AuthService=AuthService.instance;
+				if(!AuthService.instance){ 
+					auth= new AuthService();
+					auth.method='POST';
+					auth.resultFormat='text';
+				}
+				//attempt to login
+				auth.baseUrl=source.fbookService.url;
+				var token:AsyncToken;
+				token=auth.siteLogin(source.fbookService.user,source.fbookService.pass);
+				token.addResponder(new AsyncResponder(onRelogin,login_FaultHandler));
+			}
+		}
+		private function onRelogin(event:ResultEvent, token:AsyncToken):void {
+			var r:Object = JsonUtil.decode(event.result as String);
+			if(r.result){
+				//fetch
+				projectLoader.fetchProject(int(currentSubOrder.sub_id), currentSubOrder.native_type);
+			} else {
+				_isStarted=false;
+				flowError('Ошибка подключения к '+source.fbookService.url);
+			}
+			//token=null;
 		}
 		
 		private function onProjectLoaded(event:Event):void{
@@ -360,6 +404,7 @@ package com.photodispatcher.provider.fbook.download{
 			var project:FBookProject=projectLoader.lastFetchedProject;
 			var workFolder:File;
 			if(project){
+				trace('FBookDownloadManager nextSubOrder get project complite suborder '+currentSubOrder.sub_id);
 				//currentSubOrder.ftp_folder=currentOrder.ftp_folder+File.separator+'fb'+project.id.toString();
 				//chek create suborder folder
 				var file:File=new File(localFolder);
@@ -438,6 +483,7 @@ package com.photodispatcher.provider.fbook.download{
 		private var contentLoader:FBookContentDownloadManager;
 		private function startContentLoader(workFolder:File):void{
 			if(!currentOrder || !currentSubOrder) return;
+			trace('FBookDownloadManager startContentLoader, suborder '+currentSubOrder.sub_id);
 			contentLoader = new FBookContentDownloadManager(source.fbookService,currentSubOrder.project);
 			contentLoader.addEventListener(Event.COMPLETE,contentLoaded);
 			contentLoader.addEventListener(ProgressEvent.PROGRESS,contentLoadProgress);
@@ -454,6 +500,7 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		private function contentLoaded(event:Event):void{
+			trace('FBookDownloadManager content loaded, suborder '+currentSubOrder.sub_id);
 			contentLoader.removeEventListener(Event.COMPLETE,contentLoaded);
 			contentLoader.removeEventListener(ProgressEvent.PROGRESS,contentLoadProgress);
 			//TODO remove other listeners

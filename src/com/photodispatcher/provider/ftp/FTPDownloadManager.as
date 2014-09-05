@@ -362,7 +362,7 @@ package com.photodispatcher.provider.ftp{
 				//cnn.addEventListener(ProgressEvent.PROGRESS, onProgress);
 				cnn.download(downloadApplicant,localFolder);
 				result=true;
-			}else if(listCandidate && !listApplicant){
+			}else if(listCandidate && !listApplicant && listCandidate.ftp_folder){
 				//start list
 				listApplicant=listCandidate;
 				if(DEBUG_TRACE) trace('FTPDownloadManager startTask start list '+listApplicant.ftp_folder);
@@ -374,6 +374,11 @@ package com.photodispatcher.provider.ftp{
 				cnn.scanFolder(listApplicant.ftp_folder);
 				result=true;
 			}else{
+				if(listCandidate && !listCandidate.ftp_folder && listCandidate.hasSuborders){
+					//fbook order run suborders load
+					order.state=OrderState.FTP_LOAD;
+					checkDownload();
+				}
 				//release connection
 				if(DEBUG_TRACE) trace('FTPDownloadManager startTask release connection '+ftpService.url);
 				connectionManager.release(cnn);
@@ -412,25 +417,30 @@ package com.photodispatcher.provider.ftp{
 			}
 			if(!fileStructureOk){
 				trace('FTPDownloadManager empty ftp folder '+orderId);
-				order.state=OrderState.ERR_FTP;
-				if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов. Папка заказа не найдена или пуста');
-				if(order.exceedErrLimit){
-					//remove from download
-					idx=downloadOrders.indexOf(order);
-					if(idx!=-1) downloadOrders.splice(idx,1);
-					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.LOAD_FAULT_EVENT,order,'Пустой список файлов'));
+				if(!order.hasSuborders){
+					order.state=OrderState.ERR_FTP;
+					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов. Папка заказа не найдена или пуста');
+					if(order.exceedErrLimit){
+						//remove from download
+						idx=downloadOrders.indexOf(order);
+						if(idx!=-1) downloadOrders.splice(idx,1);
+						dispatchEvent(new ImageProviderEvent(ImageProviderEvent.LOAD_FAULT_EVENT,order,'Пустой список файлов'));
+					}
+				}else{
+					//fbook order run suborders load
+					order.state=OrderState.FTP_LOAD;
+					checkDownload();
 				}
 				loadProgress();
 				reuseConnection(cnn);
-				//connectionManager.reconnect(cnn); //may be some problem vs connection
 				return;
 			}
 			//buid suborders
-			var soArr:Array;
+			//var soArr:Array;
 			try{
-				soArr= SuborderBuilder.build(source,fileStructure,order);
+				//soArr= 
+				SuborderBuilder.build(source,fileStructure,order);
 			}catch (e:Error){
-				//kill
 				trace('FTPDownloadManager error while build suborders '+orderId);
 				order.state=OrderState.ERR_READ_LOCK;
 				if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе подзаказов.');
@@ -445,7 +455,6 @@ package com.photodispatcher.provider.ftp{
 			try{
 				pgArr= pgBuilder.build(source,fileStructure,orderId);
 			}catch (e:Error){
-				//kill
 				trace('FTPDownloadManager error while build print group'+orderId);
 				order.state=OrderState.ERR_READ_LOCK;
 				if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе групп печати.'); 
@@ -520,7 +529,7 @@ package com.photodispatcher.provider.ftp{
 			//can download
 			order.local_folder=fl.parent.nativePath;
 			order.printGroups=new ArrayCollection(pgArr);
-			order.suborders=new ArrayCollection(soArr);
+			//order.suborders=new ArrayCollection(soArr);
 			order.state=OrderState.FTP_LOAD;
 			order.ftpQueue=ftpQueue;
 			order.resetErrCounter();

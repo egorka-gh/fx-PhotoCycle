@@ -102,7 +102,7 @@ package com.photodispatcher.provider.fbook.makeup{
 					pgArr=builder.buildFromSuborders(order);
 				}catch (e:Error){
 					trace('FBookMakeupManager error while build print group'+order.id+', error: '+e.message);
-					releaseWithErr(OrderState.ERR_READ_LOCK,'Блокировка чтения при парсе групп печати.');
+					releaseWithErr(OrderState.ERR_READ_LOCK,'Блокировка чтения или ошибка шаблона (FBookMakeupManager).');
 					return;
 				}
 				//run post process

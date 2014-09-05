@@ -18,7 +18,9 @@ package com.photodispatcher.model.mysql.entities {
 		
 		//runtime
 		public  var project:FBookProject;
-
+		//runtime 
+		public var native_type:int=-1;
+		
 		public function SubOrder(){
 			super();
 			state=OrderState.FTP_WAITE_SUBORDER;
@@ -35,9 +37,10 @@ package com.photodispatcher.model.mysql.entities {
 			return super.sub_id;
 		}
 		
-		private function fillId():void{
+		public function fillId():void{
 			//id=order_id+'.'+src_id;
-			ftp_folder='fb'+sub_id;
+			//ftp_folder='fb'+sub_id;
+			if(native_type!=1 && !ftp_folder) ftp_folder='fb'+sub_id; //foto proj, holds order root ftp_folder 
 		}
 
 		public function clone():SubOrder{

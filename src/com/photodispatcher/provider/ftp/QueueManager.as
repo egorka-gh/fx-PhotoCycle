@@ -486,6 +486,7 @@ package com.photodispatcher.provider.ftp{
 				//open cnn & get files list
 				trace('QueueManager.getOrderHandle; web check Ok; push to download manager '+startOrder.ftp_folder);
 				startOrder.state=OrderState.FTP_WEB_OK;
+				if(!startOrder.ftp_folder) startOrder.ftp_folder=startOrder.id;
 
 				//fill extra info
 				startOrder.extraInfo= new OrderExtraInfo();

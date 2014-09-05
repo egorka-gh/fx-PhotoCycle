@@ -5,6 +5,8 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.OrderTemp;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	
 	public class OrderBuilder{
 
@@ -58,7 +60,11 @@ package com.photodispatcher.factory{
 									if(forSync && ajm.field=='src_id'){
 										//create id
 										//removes subNumber (-#) for fotokniga
-										src_id=cleanId(val as String);
+										if (val is String){
+											src_id=cleanId(val as String);
+										}else{
+											src_id=int(val);
+										}
 										if(src_id) order.id=source.id.toString()+'_'+src_id.toString();
 									}
 
@@ -89,6 +95,41 @@ package com.photodispatcher.factory{
 								}
 							}
 						}
+						
+						//parse suborders
+						if (source.type==SourceType.SRC_FBOOK && jo.hasOwnProperty('items') && jo.items is Array){
+							var subMap:Array=AttrJsonMap.getSubOrderJson(source.type);
+							var subRaw:Array= jo.items as Array;
+							var subOrder:SubOrder;
+							if(subRaw && subRaw.length>0 && subMap && subMap.length>0){
+								for each(var so:Object in subRaw){
+									subOrder = new SubOrder();
+									for each(ajm in subMap){
+										if(subOrder.hasOwnProperty(ajm.field)){
+											//params array
+											val=getRawVal(ajm.json_key, so);
+											if(val){
+												if(ajm.field.indexOf('date')!=-1){
+													//convert date
+													d=parseDate(val.toString());
+													subOrder[ajm.field]=d;
+												}else{
+													subOrder[ajm.field]=val;
+												}
+											}
+										}
+									}
+									if(subOrder.native_type==1){
+										//foto print, reset root ftp folder
+										order.ftp_folder=subOrder.ftp_folder;
+									}else{
+										order.addSuborder(subOrder);
+									}
+								}
+							}
+							if(!order.ftp_folder) order.ftp_folder=order.id;
+						}
+
 					}
 					if(!forSync || order.id) result.push(order); //skip if id empty
 				}

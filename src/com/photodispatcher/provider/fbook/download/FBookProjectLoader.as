@@ -13,6 +13,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotocanvas.data.FotocanvasProject;
 	import com.akmeful.fotocup.data.FotocupProject;
 	import com.akmeful.fotokniga.book.data.Book;
+	import com.akmeful.fotokniga.net.AuthService;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.provider.fbook.FBookProject;
@@ -83,6 +84,9 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		public function fetchProject(projId:int, projType:int=-1):void{
+			if(!AuthService.instance.authorized){
+				trace('FBook AuthService:login fault');
+			}
 			lastFetchedProject=null;
 			lastErr='';
 			if(!source || !source.fbookService || !source.fbookService.url){

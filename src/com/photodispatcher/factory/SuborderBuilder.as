@@ -27,15 +27,16 @@ package com.photodispatcher.factory{
 		 * 
 	  	 * trows ERR_READ_LOCK
 		 */
-		public static function build(source:Source, map:Dictionary, order:Order):Array{
-			if(!source || !map || !order) return [];
+		public static function build(source:Source, map:Dictionary, order:Order):void{
+			if(!source || !map || !order) return;
 			var path:String;
 			var t:SubordersTemplate;
 			var o:SubOrder;
-			var result:Array;
+			//var result:Array;
 
 			//for profoto type
 			if(source.type==SourceType.SRC_PROFOTO){
+				order.resetSuborders();
 				for (path in map){
 					if(path){
 						t=SubordersTemplate.translatePath(path,source.type);
@@ -44,8 +45,11 @@ package com.photodispatcher.factory{
 							o.order_id=order.id;
 							o.src_type=t.sub_src_type;
 							o.ftp_folder=path;
+							/*
 							if(!result) result=[];
 							result.push(o);
+							*/
+							order.addSuborder(o);
 							delete map[path];
 						}
 					}
@@ -53,6 +57,7 @@ package com.photodispatcher.factory{
 			}
 			//for fotokniga type
 			if(source.type==SourceType.SRC_FOTOKNIGA && order.src_id){
+				order.resetSuborders();
 				//get subOrder id (-#)
 				var subId:String; //:int;
 				var a:Array=order.src_id.split('-');
@@ -64,11 +69,14 @@ package com.photodispatcher.factory{
 					o.src_type=SourceType.SRC_FBOOK;
 					//o.ftp_folder=order.ftp_folder;
 					//o.ftp_folder='';
+					/*
 					if(!result) result=[];
 					result.push(o);
+					*/
+					order.addSuborder(o);
 				}
 			}
-			return result;
+			//return result;
 		}
 
 		public static function buildFromFileSystem(source:Source, order:Order):String{

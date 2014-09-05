@@ -21,6 +21,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		private static var baseJsonMap:Object;
 		private static var extraJsonMap:Object;
+		private static var soMap:Object; 
 		
 		public static function initJsonMap():DbLatch{
 			var service:DictionaryService=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
@@ -37,6 +38,12 @@ package com.photodispatcher.model.mysql.entities {
 			extraLatch.addLatch(service.getOrderJsonAttr(AttrType.FAMILY_ORDER_EXTRA),'extra');
 			extraLatch.start();
 			latch.join(extraLatch);
+
+			var soLatch:DbLatch= new DbLatch();
+			soLatch.addEventListener(Event.COMPLETE, onLoad);
+			soLatch.addLatch(service.getOrderJsonAttr(AttrType.FAMILY_SUBORDER),'suborder');
+			soLatch.start();
+			latch.join(soLatch);
 
 			
 			latch.start();
@@ -65,6 +72,8 @@ package com.photodispatcher.model.mysql.entities {
 						baseJsonMap=newMap;
 					}else if(latch.lastToken.tag=='extra'){
 						extraJsonMap=newMap;
+					}else if(latch.lastToken.tag=='suborder'){
+						soMap=newMap;
 					}
 				}
 			}
@@ -76,6 +85,14 @@ package com.photodispatcher.model.mysql.entities {
 				return;
 			}
 			return baseJsonMap[sourceType.toString()] as Array;
+		}
+
+		public static function getSubOrderJson(sourceType:int):Array{
+			if(!soMap){
+				throw new Error('Ошибка инициализации AttrJsonMap.initJsonMap',OrderState.ERR_APP_INIT);
+				return;
+			}
+			return soMap[sourceType.toString()] as Array;
 		}
 
 		public static function getOrderExtraJson(sourceType:int):Array{

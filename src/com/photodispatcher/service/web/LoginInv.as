@@ -25,6 +25,7 @@ package com.photodispatcher.service.web{
 				case Responses.COMPLETE:
 					if (loginSuccess){
 						var logEvent:WebEvent = new WebEvent(WebEvent.LOGGED);
+						logEvent.data=evt.data;
 						release(logEvent);
 					}else{
 						releaseWithError('Не верный пароль или пользователь');

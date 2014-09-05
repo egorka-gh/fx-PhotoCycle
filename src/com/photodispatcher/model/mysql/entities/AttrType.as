@@ -13,6 +13,6 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FAMILY_PRINT:int=1;
 		public static const FAMILY_ORDER:int=2;
 		public static const FAMILY_ORDER_EXTRA:int=3;
-
+		public static const FAMILY_SUBORDER:int=4;
     }
 }
