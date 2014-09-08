@@ -9,6 +9,7 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.LayerAllocation;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Layerset;
 			import com.photodispatcher.model.mysql.entities.TechPoint;

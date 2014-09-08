@@ -313,7 +313,7 @@
 			}
 			
 			//TODO 4 debug
-			private var techPickerView:Object;
+			//private var techPickerView:Object;
 			
 			private function stop():void{
 				if(techPickerView) techPickerView.stop();
@@ -542,7 +542,7 @@
 	<config:TechLayerConfig includeIn="templates" top="5" left="5" right="5" bottom="50"/>
 
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<!--<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
+		<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
 							 serialProxy="{serialProxy}"
 							 reversOrder="{reversOrder}" turnInterval="{turnInterval}"
 							 engineOnStartOn="{engineOnStartOn}"
@@ -552,7 +552,7 @@
 							 stopOnComplite="{stopOnComplite}"
 							 pauseOnComplite="{pauseOnComplite}"
 							 layerOnComplite="{layerOnComplite}"
-							 width="100%" height="100%"/>-->
+							 width="100%" height="100%"/>
 	</s:VGroup>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
