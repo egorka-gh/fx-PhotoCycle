@@ -37,6 +37,12 @@ package com.photodispatcher.model.mysql.entities {
 			return super.sub_id;
 		}
 		
+		public function get humanId():String{
+			var res:String=order_id;
+			if(sub_id) res=res+':'+sub_id;
+			return res;
+		}
+		
 		public function fillId():void{
 			//id=order_id+'.'+src_id;
 			//ftp_folder='fb'+sub_id;
@@ -45,7 +51,7 @@ package com.photodispatcher.model.mysql.entities {
 
 		public function clone():SubOrder{
 			var result:SubOrder= new SubOrder;
-			result.ftp_folder=ftp_folder;
+			//result.ftp_folder=ftp_folder;
 			result.order_id=order_id;
 			result.sub_id=sub_id;
 			result.src_type=src_type;

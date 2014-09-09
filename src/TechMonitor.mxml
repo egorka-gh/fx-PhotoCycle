@@ -152,8 +152,8 @@
 					var configPass:String=so.data.configPass;;
 					if(configPass) Context.setAttribute('configPass',configPass);
 				}
-				if(startTechType) startTechTypeIdx=ArrayUtil.searchItemIdx('id',startTechType,techTypeAC.source);
-				if(endTechType) endTechTypeIdx=ArrayUtil.searchItemIdx('id',endTechType,techTypeAC.source);
+				if(startTechType) startTechTypeIdx=ArrayUtil.searchItemIdx('value',startTechType,techTypeAC.source);
+				if(endTechType) endTechTypeIdx=ArrayUtil.searchItemIdx('value',endTechType,techTypeAC.source);
 				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
 				//if(compliteTechType) compliteTechTypeIdx=ArrayUtil.searchItemIdx('value',compliteTechType,techTypeAC.source);
 				
@@ -408,7 +408,7 @@
 
 		<s:Spacer height="10"/>
 		<s:HGroup id="gStartTT" gap="5" verticalAlign="baseline">
-			<s:Label text="Базовая операция" width="{lbLong.width}"/>
+			<s:Label text="Стартовая операция" width="{lbLong.width}" toolTip="Предыдущая операция"/>
 			<s:DropDownList id="ddStartTechType" selectedIndex="{startTechTypeIdx}" dataProvider="{techTypeAC}" 
 							change="ddStartTechType_changeHandler(event)" width="200"/>
 		</s:HGroup>
@@ -451,7 +451,7 @@
 
 		<s:Spacer height="10"/>
 		<s:HGroup gap="10" verticalAlign="baseline">
-			<s:CheckBox id="tgFinalOp" selected="@{finalOperation}" change="tgFinalOp_changeHandler(event)"/>
+			<s:CheckBox id="tgFinalOp" selected="@{finalOperation}" enabled="false" change="tgFinalOp_changeHandler(event)"/>
 			<s:Label text="Финальная операция"/>
 		</s:HGroup>
 		

@@ -18,6 +18,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _complete:Boolean;
         private var _errCode:int;
         private var _errMesage:String;
+        private var _resultCode:int;
         private var _sql:String;
 
         public function set complete(value:Boolean):void {
@@ -41,6 +42,13 @@ package com.photodispatcher.model.mysql.entities {
             return _errMesage;
         }
 
+        public function set resultCode(value:int):void {
+            _resultCode = value;
+        }
+        public function get resultCode():int {
+            return _resultCode;
+        }
+
         public function set sql(value:String):void {
             _sql = value;
         }
@@ -52,6 +60,7 @@ package com.photodispatcher.model.mysql.entities {
             _complete = input.readObject() as Boolean;
             _errCode = input.readObject() as int;
             _errMesage = input.readObject() as String;
+            _resultCode = input.readObject() as int;
             _sql = input.readObject() as String;
         }
 
@@ -59,6 +68,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_complete is IPropertyHolder) ? IPropertyHolder(_complete).object : _complete);
             output.writeObject((_errCode is IPropertyHolder) ? IPropertyHolder(_errCode).object : _errCode);
             output.writeObject((_errMesage is IPropertyHolder) ? IPropertyHolder(_errMesage).object : _errMesage);
+            output.writeObject((_resultCode is IPropertyHolder) ? IPropertyHolder(_resultCode).object : _resultCode);
             output.writeObject((_sql is IPropertyHolder) ? IPropertyHolder(_sql).object : _sql);
         }
     }

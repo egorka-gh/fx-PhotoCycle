@@ -59,6 +59,7 @@
 			}
 
 			private function onBarCode(event:BarCodeEvent):void{
+				newOrder=null;
 				var orderId:String=event.barcode;
 				if(!manualAdd || !orderId) return;
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
@@ -115,6 +116,7 @@
 				gridColumnsAC= new ArrayCollection();
 				
 				var col:GridColumn = new GridColumn('id'); col.headerText='Заказ'; gridColumnsAC.addItem(col);
+				col= new GridColumn('sub_id'); col.headerText='Подзаказ'; gridColumnsAC.addItem(col);
 				col= new GridColumn('state_name'); col.headerText='Начальный статус'; gridColumnsAC.addItem(col); 
 				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 				col= new GridColumn('state_date'); col.headerText='Дата'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
@@ -150,7 +152,7 @@
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onRefresh);
-				latch.addLatch(svc.loadMonitorEState(startTechType.value, techPoint.tech_type, endTechType.value));
+				latch.addLatch(svc.loadMonitorEState((startTechType?startTechType.value:0), techPoint.tech_type, endTechType.value));
 				latch.start();
 			}
 			private function onRefresh(e:Event):void{
@@ -167,6 +169,13 @@
 				if(dgMonitor){
 					//dgMonitor.sortByColumns(new Vector.<int>([]),true);
 					dgMonitor.columnHeaderGroup.visibleSortIndicatorIndices=new Vector.<int>([]);
+					if(newOrder){
+						// finde and select newOrder
+						var obj:Object=ArrayUtil.searchItem('humanId',newOrder.humanId,listAC.source);
+						if(obj) dgMonitor.selectedItem=obj;
+						newOrder=null;
+					}
+
 				}
 				startTimer();
 			}
@@ -181,16 +190,19 @@
 				timer.start();
 			}
 			private function onTimer(evt:TimerEvent):void{
+				if(dgMonitor && dgMonitor.selectedItem) newOrder=dgMonitor.selectedItem as SubOrder;
 				refresh();
 			}
 
 			protected function btAddOrder_clickHandler(event:MouseEvent):void{
-				newOrderId='';
+				//newOrderId='';
+				newOrder=null;
 				var pop:OrderAddPopup=new OrderAddPopup();
 				pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
 				pop.open(null,true);
 			}
 			
+			/*
 			private function checkOrder(orderId:String):Boolean{
 				if(!orderId) return false;
 				var dao:OrderExtraStateDAO= new OrderExtraStateDAO();
@@ -215,16 +227,46 @@
 				}
 				return false;
 			}
+			*/
 			
-			private var newOrderId:String;
+			//private var newOrderId:String;
 			private function onOrderAdd(event:PopUpEvent):void{
 				var pop:OrderAddPopup=event.target as OrderAddPopup;
 				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
 				if(event.commit){
+					var so:SubOrder=event.data as SubOrder;
 					addOrder(event.data as SubOrder);
 				}
 			}
+			private var newOrder:SubOrder;
 			private function addOrder(order:SubOrder):void{
+				if(!order) return;
+				newOrder=order;
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onAddOrder);
+				latch.addLatch(svc.extraStateStartMonitor(order.order_id, order.sub_id, techPoint.tech_type, (startTechType?startTechType.value:0)));
+				latch.start();
+			}
+			private function onAddOrder(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onAddOrder);
+					if(latch.complite){
+						if(latch.lastResult.resultCode==1){
+							Alert.show('Заказ "'+newOrder.humanId+'" уже добавлен');
+						}else if(latch.lastResult.resultCode==2){
+							Alert.show('Заказ "'+newOrder.humanId+'" уже прошел технологическую операцию');	
+							newOrder=null;
+						}
+						refresh();
+					}else{
+						newOrder=null;
+					}
+				}
+			}
+
+			/*
 				newOrderId='';
 				if(order && checkOrder(order.id)){
 					newOrderId=order.id;
@@ -247,6 +289,7 @@
 				}
 				newOrderId='';
 			}
+			*/
 			
 			private var ordersGridMenu:GridContexMenu;
 			protected function dgMonitor_creationCompleteHandler(event:FlexEvent):void{
@@ -269,12 +312,12 @@
 				}
 			}
 			
-			private var cancelItem:Object;
+			private var cancelItem:OrderExtraState;
 			private function cancelMonitorCallBack(grid:DataGrid,param:int):void{
 				cancelItem=null;
 				var onItem:Object;
 				onItem=grid.selectedItem;
-				if(onItem && onItem.id) cancelItem=onItem;
+				if(onItem && onItem.id) cancelItem=onItem as OrderExtraState;
 				if(cancelItem) checkCfgPass();
 			}
 			protected function checkCfgPass():void{
@@ -294,6 +337,23 @@
 			}
 			private function cancelMonitor():void{
 				if(!cancelItem) return;
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onCancelOrder);
+				latch.addLatch(svc.extraStateReset(cancelItem.id, cancelItem.sub_id, techPoint.tech_type));
+				if(startTechType) latch.addLatch(svc.extraStateReset(cancelItem.id, cancelItem.sub_id, startTechType.value));
+				latch.start();
+			}
+			private function onCancelOrder(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onCancelOrder);
+					if(latch.complite){
+						refresh();		
+					}
+				}
+			}
+				/*
 				var dao:OrderDAO= new OrderDAO();
 				dao.resetExtraStateByTech(cancelItem.id, techPoint.tech_type);
 				dao= new OrderDAO();
@@ -310,6 +370,7 @@
 					Alert.show(event.error);
 				}
 			}
+				*/
 
 			
 			private function completeCallBack(grid:DataGrid,param:int):void{
@@ -331,9 +392,26 @@
 			}
 			
 			private function setComplete():void{
-				var onItem:Object;
-				onItem=dgMonitor.selectedItem;
-				if(onItem && onItem.id){
+				var onItem:OrderExtraState;
+				onItem=dgMonitor.selectedItem as OrderExtraState;
+				if(!onItem) return;
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onCompleteOrder);
+				latch.addLatch(svc.extraStateSet(onItem.id, onItem.sub_id, techPoint.tech_type, new Date()));
+				latch.start();
+			}
+			private function onCompleteOrder(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onCompleteOrder);
+					if(latch.complite){
+						refresh();		
+					}
+				}
+			}
+				/*
+				{
 					var dao:OrderDAO= new OrderDAO();
 					dao.execOnItem=onItem;
 					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
@@ -367,7 +445,8 @@
 					Alert.show(event.error);
 				}
 			}
-			
+			*/
+				
 			private function onKey(e:KeyboardEvent):void{
 				if(e.ctrlKey && e.keyCode==70){
 					//order lookup

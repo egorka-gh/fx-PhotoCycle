@@ -2,7 +2,7 @@
 <s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
 						   xmlns:s="library://ns.adobe.com/flex/spark" 
 						   xmlns:mx="library://ns.adobe.com/flex/mx" 
-						   width="450" minHeight="30"
+						   width="550" minHeight="30"
 						   keyDown="skinnablepopupcontainer1_keyDownHandler(event)">
 	<fx:Script>
 		<![CDATA[
@@ -89,7 +89,7 @@
 			}
 			
 			protected function useOrder(order:SubOrder):void{
-				close(true,SubOrder);
+				close(true,order);
 			}
 			
 			protected function skinnablepopupcontainer1_keyDownHandler(event:KeyboardEvent):void{
@@ -104,7 +104,7 @@
 			
 			protected function dgOrders_clickHandler(event:MouseEvent):void{
 				var order:SubOrder	=dgOrders.selectedItem as SubOrder;
-				if(SubOrder) useOrder(SubOrder);
+				if(order) useOrder(order);
 			}
 			
 		]]>

@@ -84,7 +84,7 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		public function fetchProject(projId:int, projType:int=-1):void{
-			if(!AuthService.instance.authorized){
+			if(!AuthService.instance || !AuthService.instance.authorized){
 				trace('FBook AuthService:login fault');
 			}
 			lastFetchedProject=null;

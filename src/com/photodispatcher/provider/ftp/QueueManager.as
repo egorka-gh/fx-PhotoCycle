@@ -249,7 +249,7 @@ package com.photodispatcher.provider.ftp{
 			var stopedOrders:Array=[];
 			if(downloadManager) stopedOrders=downloadManager.stop();
 			//TODO close 4 debug
-			if(fbDownloadManager) stopedOrders=stopedOrders.concat(fbDownloadManager.stop());
+			//if(fbDownloadManager) stopedOrders=stopedOrders.concat(fbDownloadManager.stop());
 			for each(order in stopedOrders){
 				if(order){
 					resetOrder(order);
