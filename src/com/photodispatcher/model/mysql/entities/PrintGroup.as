@@ -774,7 +774,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static function bookFromBookBarcode(code:String):int{
 			if(!code || code.length<8) return 0;
 			if(code.indexOf('_')!=-1) return 0; //old barcode (x_xx_x)
-			if(code.indexOf(':')!=-1) return 0; //old barcode (x_xx_x)
+			if(code.indexOf(':')!=-1) return 0; //old barcode (x_xx_x:book)
 			/*
 			//src id
 			var src:int= parseInt(code.substr(0,2));

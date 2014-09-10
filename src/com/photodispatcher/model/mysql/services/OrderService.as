@@ -45,9 +45,15 @@ package com.photodispatcher.model.mysql.services {
 
 		public function findeSuborder(id:String, byBarcode:Boolean=false):DbLatch{
 			var byPg:Boolean=false;
-			
-			if(!id) return null;
+			var barcode:String=id;
 			var latch:DbLatch= new DbLatch();
+			
+			if(!id){
+				latch.complite=false;
+				latch.hasError=true;
+				latch.error='Не верный ШК';
+				return latch;
+			}
 			if ((id.charAt(0) >= 'A' && id.charAt(0) <= 'Z') || (id.charAt(0) >= 'a' && id.charAt(0) <= 'z')){
 				//old barcode
 				var codeChar:String=id.charAt(0);
@@ -64,7 +70,12 @@ package com.photodispatcher.model.mysql.services {
 				}else{
 					byPg=true;
 					id=PrintGroup.idFromBookBarcode(id);
-					if(!id) return null;
+					if(!id){
+						latch.complite=false;
+						latch.hasError=true;
+						latch.error='Не верный ШК :'+barcode;
+						return latch;
+					}
 				}
 			}
 			if(byPg){

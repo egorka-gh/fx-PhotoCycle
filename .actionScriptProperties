@@ -40,6 +40,9 @@
     <application path="PhotoPicker.mxml">
       <airExcludes/>
     </application>
+    <application path="PhotoTechS.mxml">
+      <airExcludes/>
+    </application>
   </applications>
   <modules/>
   <buildCSSFiles/>

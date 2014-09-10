@@ -8,24 +8,22 @@
 
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.event.BarCodeEvent;
-			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.OrderExtraState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.model.TechPrintGroup;
-			import com.photodispatcher.model.dao.OrderDAO;
-			import com.photodispatcher.model.dao.OrderExtraStateDAO;
-			import com.photodispatcher.model.dao.PrintGroupDAO;
-			import com.photodispatcher.model.dao.local.TechLogLocalDAO;
-			import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.PopUpEvent;
 
@@ -58,15 +56,16 @@
 			*/
 
 			private var lastScanId:String;
-			private var lastOrderId:String;
+			private var lastSubOrder:SubOrder;
 			private var lastBook:int;
+			private var newScanId:String;
 
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
-				var newScanId:String;
 				var newBook:int;
-				var isOld:Boolean;
-				
+				if(newScanId) return; //previouse scan incomplite
+				//var isOld:Boolean;
+				/*
 				//parse
 				var idx:int=barcode.indexOf(':');
 				if(idx!=-1){
@@ -92,34 +91,55 @@
 					newScanId=barcode;//.substr(0, barcode.length-3)
 					//newScanId=barcode;
 				}
+				*/
+				newScanId=PrintGroup.idFromBookBarcode(barcode);
+				newBook=PrintGroup.bookFromBookBarcode(barcode);
 				if(!newScanId){
 					Alert.show('Не верный ШК: "'+barcode+'".');
 					return;
 				}
+				lastBook=newBook;
 				//check if same id
-				if(newScanId==lastScanId && lastOrderId){
+				if(newScanId==lastScanId && lastSubOrder){
 					//show
-					lastBook=newBook;
-					if(vInfo) vInfo.show(lastOrderId,lastBook, currentState=='book');
+					if(vInfo) vInfo.show(lastSubOrder,lastBook, currentState=='book');
 					currentState='book';
 					return;
 				}
 
+				/*
 				var dao:OrderDAO=new OrderDAO();
 				var ordersList:ArrayCollection= dao.findeById(newScanId,true);
+				*/
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch=svc.findeSuborder(barcode,true);
+				latch.addEventListener(Event.COMPLETE,onOrderFinde);
+				latch.start();
+			}
+			private function onOrderFinde(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				var ordersList:ArrayCollection;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderFinde);
+					if(latch.complite){
+						ordersList=latch.lastDataAC;
+					}
+				}
 				if(!ordersList){
 					lastScanId='';
+					newScanId='';
 					return;
 				}
-				lastBook=newBook;
 				if(ordersList.length==1){
 					lastScanId=newScanId;
-					addOrder(ordersList.getItemAt(0) as Order);
+					newScanId='';
+					addOrder(ordersList.getItemAt(0) as SubOrder);
 				}else{
 					lastScanId='';
 					var pop:OrderAddPopup=new OrderAddPopup();
 					pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
 					pop.show(newScanId,ordersList);
+					newScanId='';
 				}
 			}
 			
@@ -134,16 +154,18 @@
 				var pop:OrderAddPopup=event.target as OrderAddPopup;
 				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
 				if(event.commit){
-					addOrder(event.data as Order);
+					addOrder(event.data as SubOrder);
 				}
 			}
-			private function addOrder(order:Order):void{
-				lastOrderId='';
+			private function addOrder(order:SubOrder):void{
+				if(!order) return;
+				lastSubOrder=order;
+				/*
 				if(order){
 					switch(checkOrder(order.id)){
 						case 1:
 							//started
-							lastOrderId=order.id;
+							lastSubOrder=order.id;
 							showOrder();
 							break;
 						case 0:
@@ -152,19 +174,43 @@
 							break;
 					}
 				}
+			}*/
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onAddOrder);
+				latch.addLatch(svc.extraStateStartOTK(order.order_id, order.sub_id, techPoint.tech_type));
+				latch.start();
 			}
-			
+			private function onAddOrder(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onAddOrder);
+					if(latch.complite){
+						if(latch.lastResult.resultCode<2){
+							//started 
+							showOrder();
+						}else if(latch.lastResult.resultCode==2){
+							Alert.show('Заказ "'+lastSubOrder.humanId+'" уже прошел технологическую операцию');	
+							lastSubOrder=null;
+						}
+					}else{
+						lastSubOrder=null;
+					}
+				}
+			}
+
+			/*
 			private function startOrder(orderId:String):void{
 				var booksTotal:int=getBooksTotal(orderId);
 				if(booksTotal==0){
-					Alert.show('Не определено количество книг в заказе '+lastOrderId);
-					lastOrderId='';
+					Alert.show('Не определено количество книг в заказе '+lastSubOrder);
+					lastSubOrder='';
 					return;
 				}
-				lastOrderId=orderId;
+				lastSubOrder=orderId;
 				var dao:OrderDAO= new OrderDAO();
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderStarted);
-				dao.startExtraStateByTech(lastOrderId, techPoint.tech_type, techPoint.id);
+				dao.startExtraStateByTech(lastSubOrder, techPoint.tech_type, techPoint.id);
 			}
 			
 			private function onOrderStarted(event:AsyncSQLEvent):void{
@@ -173,17 +219,18 @@
 				if(event.result!=AsyncSQLEvent.RESULT_COMLETED){
 					//save in lockal db
 					var tdao:TechLogLocalDAO= new TechLogLocalDAO();
-					tdao.log(lastOrderId,0,techPoint.id);
+					tdao.log(lastSubOrder,0,techPoint.id);
 				}
 				showOrder();
 			}
-			
+			*/
 			private function showOrder():void{
-				if(!lastOrderId) return;
-				if(vInfo) vInfo.show(lastOrderId,lastBook);
+				if(!lastSubOrder) return;
+				if(vInfo) vInfo.show(lastSubOrder,lastBook);
 				currentState='book';
 			}
 			
+			/*
 			private function checkOrder(orderId:String):int{ //-1 wrong id, 0-not started, 1 - started
 				if(!orderId) return -1;
 				var dao:OrderExtraStateDAO= new OrderExtraStateDAO();
@@ -203,6 +250,7 @@
 				}
 				return 0;
 			}
+			*/
 
 			private function getBooksTotal(orderId:String):int{
 				/*
@@ -250,7 +298,7 @@
 				var onItem:OrderExtraState=grid.selectedItem as OrderExtraState;
 				if(onItem && onItem.id){
 					lastBook=0;
-					lastOrderId=onItem.id;
+					lastSubOrder=onItem.id;
 					showOrder();
 				}
 			}
@@ -264,7 +312,7 @@
 			}
 			
 			protected function vInfo_creationCompleteHandler(event:FlexEvent):void{
-				if(lastOrderId) vInfo.show(lastOrderId,lastBook);
+				if(lastSubOrder) vInfo.show(lastSubOrder,lastBook);
 			}
 			
 		]]>
