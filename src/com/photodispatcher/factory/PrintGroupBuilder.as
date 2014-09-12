@@ -27,10 +27,11 @@ package com.photodispatcher.factory{
 	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
 	import mx.collections.ListCollectionView;
-
+	import mx.controls.Alert;
+	
 	public class PrintGroupBuilder{
 		private static const ALLOWED_EXTENSIONS:Object={jpg:true,jpeg:true,png:true,tif:true,tiff:true,bmp:true,gif:true};
-
+		
 		/**
 		 * parse PrintGroups from file structure
 		 * 
@@ -61,6 +62,7 @@ package com.photodispatcher.factory{
 					af=map[path] as Array;
 					//parse pg from path, exact synonym
 					bookSynonym=BookSynonym.translatePath(path,source.type);
+					//if(!bookSynonym && preview) bookSynonym=BookSynonym.translateAlias( Path(path,source.type);
 					if (bookSynonym){
 						//reset book_type 4 preview 
 						if(preview && bookSynonym.book_type==BookSynonym.BOOK_TYPE_JOURNAL) bookSynonym.book_type=BookSynonym.BOOK_TYPE_BOOK;
@@ -175,7 +177,7 @@ package com.photodispatcher.factory{
 			}
 			return resultArr;
 		}
-
+		
 		private function parseFile(pgroup:PrintGroup,fileName:String):PrintGroup{
 			if (!pgroup || !fileName) return null;
 			//check if valid file type
@@ -204,7 +206,7 @@ package com.photodispatcher.factory{
 			pg.addFile(f);
 			return pg;
 		}
-
+		
 		private function isBookFile(name:String):Boolean{
 			var ext:String=StrUtil.getFileExtension(name);
 			if(!ALLOWED_EXTENSIONS[ext]) return false;
@@ -288,7 +290,7 @@ package com.photodispatcher.factory{
 			}
 			return res;
 		}
-
+		
 		private function fillCovers(pg:PrintGroup, dst:PrintGroup):void{
 			if(!pg.files) return;
 			var f:PrintGroupFile;
@@ -308,7 +310,7 @@ package com.photodispatcher.factory{
 				dst.files= new ArrayCollection(arr);
 			}
 		}
-
+		
 		private function fillInsert(pg:PrintGroup, dst:PrintGroup):void{
 			if(!pg.files) return;
 			//var res:Array=[];
@@ -327,7 +329,7 @@ package com.photodispatcher.factory{
 				dst.files= new ArrayCollection(arr);
 			}
 		}
-
+		
 		private function fillSheets(pg:PrintGroup, dst:PrintGroup, preview:Boolean):void{
 			if(!pg.files) return;
 			var f:PrintGroupFile;
@@ -363,7 +365,7 @@ package com.photodispatcher.factory{
 				dst.files= new ArrayCollection(arr);
 			}
 		}
-
+		
 		public function buildFromSuborders(order:Order):Array{
 			var result:Array=[];
 			if(!order || !order.suborders || order.suborders.length==0) return result;
@@ -377,7 +379,7 @@ package com.photodispatcher.factory{
 			var slicePixels:Point;
 			var blockPixels:Point;
 			var bookSynonym:BookSynonym;
-
+			
 			var pgCover:PrintGroup;
 			var pgBody:PrintGroup;
 			//var pg:PrintGroup;
@@ -393,10 +395,10 @@ package com.photodispatcher.factory{
 					pgCover=null;
 					pgBody=null;
 					bookSynonym=null;
-
+					
 					//set suborder project type
 					so.proj_type=proj.bookType;
-
+					
 					if (proj.bookType==BookSynonym.BOOK_TYPE_BCARD){
 						//set print qtty 4 Card project
 						var bcp:CardProject=proj.project as CardProject;
@@ -561,6 +563,65 @@ package com.photodispatcher.factory{
 				}
 			}
 			return result;
+		}
+		
+		public function buildPreview(order:Order):Boolean{
+			if(!order) return false;
+			if(!order.printGroups || order.printGroups.length==0) return false;
+			var src:Source=Context.getSource(order.source);
+			if(!src) return false;
+			//check
+			if(!Context.getAttribute('workFolder')){
+				Alert.show('Не задана рабочая папка');
+				return false;
+			}
+			var pg:PrintGroup=order.printGroups[0] as PrintGroup;
+			var bookSynonym:BookSynonym;
+			if(!pg) return false;
+
+			//build file list
+			var fName:String=src.getWrkFolder()+File.separator+order.ftp_folder+File.separator+pg.path;
+			var fl:File=new File(fName);
+			if(!fl.exists || !fl.isDirectory){
+				Alert.show('Папка заказа не найдена');
+				return false;
+			}
+			var rootDir:File=fl;
+			var a:Array=rootDir.getDirectoryListing();
+			var fNames:Array=[];
+			for each(fl in a){
+				if(!fl.isDirectory) fNames.push(fl.name);
+			}
+			//parse files & book params
+			var ppg:PrintGroup=parseBookFiles(fNames);
+			if(!ppg) return false;
+			
+			//try get synonym
+			try{
+				bookSynonym=BookSynonym.translatePath(pg.path,src.type);
+			} catch(error:Error){
+				trace('buildPreview err: '+error.message);
+			}
+			for each(pg in order.printGroups){
+				if(pg.book_type!=0){
+					//build book prview
+					//reset book_type 4 preview 
+					if(pg.book_type==BookSynonym.BOOK_TYPE_JOURNAL) pg.book_type=BookSynonym.BOOK_TYPE_BOOK;
+					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
+						if(bookSynonym) pg.bookTemplate=bookSynonym.blockTemplate;
+						fillSheets(ppg, pg, true);
+					}else if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT){
+						if(bookSynonym) pg.bookTemplate=bookSynonym.coverTemplate;
+						fillInsert(ppg,pg);
+					}
+
+					pg.book_num=ppg.book_num;
+					pg.pageNumber=ppg.pageNumber;
+					pg.file_num=pg.files.length;
+				}
+				
+			}
+			return true;
 		}
 	}
 }

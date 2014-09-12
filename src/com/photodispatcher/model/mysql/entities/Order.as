@@ -55,6 +55,10 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		
+		/**
+		 * runtime subid 4 otk
+		 */
+		public var otkSubid:String;
 		
 		//remote source state (4 check if canceled) runtime
 		public var src_state:String;

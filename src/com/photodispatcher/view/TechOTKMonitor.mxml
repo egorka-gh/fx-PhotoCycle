@@ -102,8 +102,7 @@
 				//check if same id
 				if(newScanId==lastScanId && lastSubOrder){
 					//show
-					if(vInfo) vInfo.show(lastSubOrder,lastBook, currentState=='book');
-					currentState='book';
+					showOrder();
 					return;
 				}
 
@@ -159,6 +158,12 @@
 			}
 			private function addOrder(order:SubOrder):void{
 				if(!order) return;
+				if(order.prt_qty==0){
+					Alert.show('Не определено количество книг в заказе '+lastSubOrder.humanId);
+					lastSubOrder=null;
+					return;
+				}
+
 				lastSubOrder=order;
 				/*
 				if(order){
@@ -250,20 +255,14 @@
 				}
 				return 0;
 			}
-			*/
 
 			private function getBooksTotal(orderId:String):int{
-				/*
-				var tpgDAO:TechPrintGroupDAO= new TechPrintGroupDAO();
-				var tpg:TechPrintGroup=tpgDAO.getById(orderId);
-				//if(tpg) return tpg.books;
-				if(tpg) return -1;
-				*/
 				var pgDao:PrintGroupDAO= new PrintGroupDAO();
 				var pg:PrintGroup= pgDao.getByID(orderId+'_1');
 				if(!pg) return 0;
 				return pg.book_num;
 			}
+			*/
 
 			
 			[Bindable]
@@ -271,14 +270,27 @@
 			
 			private function refresh():void{
 				/*
-				var dao:TechPrintGroupDAO= new TechPrintGroupDAO();
-				var a:Array=dao.findeIncomplete();
-				if (a) orderListAC= new ArrayCollection(a);
-				*/
 				var dao:OrderExtraStateDAO= new OrderExtraStateDAO();
 				var a:Array=dao.getOtkOrders();
 				if (a) orderListAC= new ArrayCollection(a);
+				
+			}*/
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onRefresh);
+				latch.addLatch(svc.loadSubOrdersOtk());
+				latch.start();
 			}
+			private function onRefresh(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onRefresh);
+					if(latch.complite){
+						orderListAC=latch.lastDataAC;
+					}
+				}
+			}
+
 			
 			public function start():void{
 				refresh();
@@ -295,10 +307,11 @@
 			}
 			private function openCallBack(grid:DataGrid,param:int):void{
 				//var onItem:TechPrintGroup=grid.selectedItem as TechPrintGroup;
-				var onItem:OrderExtraState=grid.selectedItem as OrderExtraState;
-				if(onItem && onItem.id){
+				//var onItem:OrderExtraState=grid.selectedItem as OrderExtraState;
+				var onItem:SubOrder=grid.selectedItem as SubOrder;
+				if(onItem){
 					lastBook=0;
-					lastSubOrder=onItem.id;
+					lastSubOrder=onItem;
 					showOrder();
 				}
 			}
@@ -332,7 +345,7 @@
 					fontSize="14" width="100%" height="100%"
 					creationComplete="dgMonitor_creationCompleteHandler(event)"
 					doubleClickEnabled="true" doubleClick="dgMonitor_doubleClickHandler(event)"
-					dataProvider="{orderListAC}" locale="ru_RU" columns="{OrderExtraState.gridColumnsOTK()}"/>
+					dataProvider="{orderListAC}" locale="ru_RU" columns="{SubOrder.gridColumnsOTK()}"/>
 		<s:Button id="btAdd" label="Добавить" fontSize="14" click="btAdd_clickHandler(event)"/>
 	</s:VGroup>
 	

@@ -24,7 +24,7 @@ package com.photodispatcher.provider.fbook.model{
 
 		public static const SCRIPT_FILE_PREFIX:String='page';
 		public static const SCRIPT_FILE_EXT:String='.msl';
-		public static const OUT_FILE_PREFIX:String='000_';//dummy book num
+		public static const OUT_FILE_PREFIX:String='000-';//dummy book num
 		public static const OUT_FILE_SLICE_SUFIX:String='_sl';
 		public static const OUT_FILE_EXT:String='.jpg';
 		public static const WRK_FILE_PREFIX:String='page';

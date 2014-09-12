@@ -8,9 +8,12 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.provider.fbook.FBookProject;
 	
+	import flash.globalization.DateTimeStyle;
+	
 	import mx.collections.ArrayList;
 	
 	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.SubOrder")]
@@ -137,6 +140,18 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('extraInfo.corner_type'); col.headerText='Углы'; result.push(col);
 			col= new GridColumn('extraInfo.kaptal'); col.headerText='Каптал'; result.push(col);
 			
+			return new ArrayList(result);
+		}
+
+		public static function gridColumnsOTK():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			col= new GridColumn('order_id'); col.headerText='Заказ';  col.width=150; result.push(col);
+			col= new GridColumn('sub_id'); col.headerText='Под заказ';  col.width=150; result.push(col);
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
+			col= new GridColumn('state_date'); col.headerText='Начат'; col.formatter=fmt; col.width=150; result.push(col);
+			col= new GridColumn('prt_qty'); col.headerText='Всего книг'; col.width=100; result.push(col);
+			col= new GridColumn('books_done'); col.headerText='Выполнено'; col.width=100; result.push(col);
 			return new ArrayList(result);
 		}
 

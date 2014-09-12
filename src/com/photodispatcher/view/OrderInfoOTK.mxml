@@ -11,21 +11,16 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.TechLogLocal;
-			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.model.TechPrintGroup;
-			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.PrintGroupDAO;
-			import com.photodispatcher.model.dao.TechLogDAO;
-			import com.photodispatcher.model.dao.local.LocalDAO;
-			import com.photodispatcher.model.dao.local.TechLogLocalDAO;
-			import com.photodispatcher.model.dao.local.TechPrintGroupDAO;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechLog;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.model.mysql.services.TechService;
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;
@@ -43,20 +38,6 @@
 			[Bindable]
 			private var currBook:int;
 			
-			public function show(orderId:String, book:int, checkClose:Boolean=false):void{
-				if(order && order.id==orderId){
-					if(checkClose && book!=0 && currBook==book){
-						//complite book
-						btComplite_clickHandler(null);
-						return;
-					}
-					refreshBooks();
-				}else{
-					refresh(orderId);
-				}
-				currBook=book;
-			}
-			
 			[Bindable]
 			private var order:Order;
 			[Bindable]
@@ -71,14 +52,29 @@
 			private var bookComplited:int;
 			
 			
-			private function refresh(orderId:String):void{
+			public function show(showOrder:SubOrder, book:int, checkClose:Boolean=false):void{
+				checkAfterRefresh=false;
+				if(order && order.id==showOrder.order_id && order.otkSubid==showOrder.sub_id){
+					if(checkClose && book!=0 && currBook==book){
+						//complite book
+						btComplite_clickHandler(null);
+						return;
+					}
+					refreshBooks();
+				}else{
+					refresh(showOrder);
+				}
+				currBook=book;
+			}
+			
+			private function refresh(subOrder:SubOrder):void{
 				pgCover=null;
 				pgBlok=null;
 				order=null;
 				bookListAC=new ArrayCollection();
 				bookTotal=0;
 				bookComplited=0;
-				if(!orderId) return;
+				if(!subOrder) return;
 				/*
 					var dao:OrderDAO= new OrderDAO();
 					order=dao.getItem(orderId,true);
@@ -86,7 +82,7 @@
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onOrderLoad);
-				latch.addLatch(svc.loadOrderVsChilds(orderId));
+				latch.addLatch(svc.loadOrder4Otk(subOrder.order_id, subOrder.sub_id));
 				latch.start();
 			}
 			private function onOrderLoad(event:Event):void{
@@ -97,6 +93,11 @@
 				}
 					
 				if(!order || !order.printGroups) return;
+				if(order.hasSuborders){
+					order.otkSubid=(order.suborders.getItemAt(0) as SubOrder).sub_id;
+				}else{
+					order.otkSubid='';
+				}
 				/*
 				var pDao:PrintGroupDAO=new PrintGroupDAO();
 				var a:Array=pDao.getByOrder(order.id);
@@ -125,9 +126,24 @@
 				if(!order || !order.id){
 					return;
 				}
-
+				/*
 				var tlDao:TechLogDAO= new TechLogDAO();
 				var a:Array=tlDao.getOTKBooks(order.id);
+				*/
+				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onBooksLoad);
+				latch.addLatch(svc.loadBooks4Otk(order.id, order.otkSubid));
+				latch.start();
+			}
+			private function onBooksLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				var a:Array;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onBooksLoad);
+					a=latch.lastDataArr;
+				}
+
 				var aa:Array;
 				var i:int;
 				if(a){
@@ -149,6 +165,13 @@
 				}
 				bookListAC.source=aa;
 				bookListAC.refresh();
+				if(checkAfterRefresh){
+					checkAfterRefresh=false;
+					if(bookTotal==bookComplited){
+						//compltete
+						Alert.show('Все книги проверены. Заказ выполнен?','',Alert.YES|Alert.NO,this,onCompleteAlert);
+					}
+				}
 			}
 
 			protected function btClose_clickHandler(event:MouseEvent):void{
@@ -163,14 +186,36 @@
 				//check book
 				var tll:TechLog=lstBookList.selectedItem as TechLog;
 				if(!tll || tll.log_date){
-					//TODO write loged
 					checkComplited();
 					return;
 				}
+				/*
 				var dao:TechLogLocalDAO= new TechLogLocalDAO();
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
 				dao.log(order.id,tll.sheet,techPoint.id);
+				*/
+				var tl:TechLog= new TechLog()
+				tl.order_id=order.id;
+				tl.sub_id=order.otkSubid;
+				tl.print_group='';
+				tl.src_id=techPoint.id;
+				tl.log_date= new Date();
+				tl.sheet=tll.sheet;
+				
+				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onBookLog);
+				latch.addLatch(svc.log(tl));
+				latch.start();
 			}
+			private function onBookLog(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onBookLog);
+					if(latch.complite) checkComplited();
+				}
+			}
+/*
 			private function onLocalLog(evt:AsyncSQLEvent):void{
 				var lDao:TechLogLocalDAO=evt.target as TechLogLocalDAO;
 				if (lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
@@ -179,31 +224,45 @@
 				checkAfterTransfer=true;
 				transferLocal();
 			}
-			
+	*/		
 
+			private var checkAfterRefresh:Boolean; 
 			private function checkComplited():void{
-				checkAfterTransfer=false;
+				checkAfterRefresh=true;
 				refreshBooks();
-				if(bookTotal==bookComplited){
-					//compltete
-					Alert.show('Все книги проверены. Закрывать заказ?','',Alert.YES|Alert.NO,this,onCompleteAlert);
-				}
 			}
 			private function onCompleteAlert(evt:CloseEvent):void {
 				if (evt.detail == Alert.YES) {
 					setComplete();
-				}else{
+				/*}else{
 					closeView();
+					*/
 				}
 			}
 			private function setComplete():void{
+				/*
 				checkAfterTransfer=false;
 				//create local record for write to main db
 				var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
 				lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteMark);
 				//lDao.startLoged(order.id);
 				lDao.setComplite(order.id);
+				*/
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onCompliteSet);
+				latch.addLatch(svc.extraStateSet(order.id,order.otkSubid,techPoint.tech_type, new Date()));
+				latch.start();
 			}
+			private function onCompliteSet(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onCompliteSet);
+					if(latch.complite) closeView();
+				}
+			}
+
+			/*
 			private function onOrderCompleteMark(event:AsyncSQLEvent):void{
 				var lDao:TechPrintGroupDAO=event.target as TechPrintGroupDAO;
 				if(lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteMark);
@@ -211,7 +270,8 @@
 					transferLocal();
 				}
 			}
-
+			*/
+/*
 			protected var complited:Array=[];
 			protected var isWriting:Boolean;
 			protected var checkAfterTransfer:Boolean;
@@ -322,6 +382,7 @@
 				complited.shift();
 				writeNext();
 			}
+			*/
 
 			protected function lstBookList_changeHandler(event:IndexChangeEvent):void{
 				//currBookIdx=lstBookList.selectedIndex;

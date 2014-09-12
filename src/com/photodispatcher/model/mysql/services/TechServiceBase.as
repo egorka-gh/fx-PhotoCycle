@@ -18,6 +18,17 @@ package com.photodispatcher.model.mysql.services {
 
     public class TechServiceBase extends Component {    
         
+        public function log(arg0:TechLog, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("log", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("log", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("log", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function logByPg(arg0:TechLog, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("logByPg", arg0, resultHandler, faultHandler) as AsyncToken;
@@ -25,6 +36,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("logByPg", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("logByPg", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadBooks4Otk(arg0:String, arg1:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadBooks4Otk", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadBooks4Otk", arg0, arg1, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadBooks4Otk", arg0, arg1) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }

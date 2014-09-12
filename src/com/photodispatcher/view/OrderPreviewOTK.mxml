@@ -14,15 +14,12 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.factory.PrintGroupBuilder;
-			import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.model.dao.TechLogDAO;
 			import com.photodispatcher.view.itemRenderer.BookSheetPreviewRenderer;
 			
 			import mx.collections.ArrayCollection;
@@ -77,6 +74,11 @@
 					return false;
 				}
 				rootDir=fl;
+
+				//fill pgs vs files
+				var builder:PrintGroupBuilder= new PrintGroupBuilder();
+				if(!builder.buildPreview(order)) return false;
+				/*
 				var a:Array=rootDir.getDirectoryListing();
 				var fNames:Array=[];
 				for each(fl in a){
@@ -87,16 +89,16 @@
 				var map:Dictionary = new Dictionary();
 				map[pg.path]=fNames;
 				try{
-					a=builder.build(src,map,'',true);
+					a=builder.buildREFACTOR(src,map,'',true);
 				}catch(error:Error){}
-				
 				if(!a || a.length==0){
 					Alert.show('Ошибка шаблона книи (build)');
 					return false;
 				}
+				*/
 				var cover:PrintGroup;
 				var block:PrintGroup;
-				for each(pg in a){
+				for each(pg in order.printGroups){
 					if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) cover=pg;
 					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) block=pg;
 				}
@@ -105,7 +107,7 @@
 					return false;
 				}
 
-				var doublePage:Boolean=(block.is_pdf && !block.bookTemplate.is_sheet_ready);
+				var doublePage:Boolean=(block.is_pdf && block.bookTemplate && !block.bookTemplate.is_sheet_ready);
 				//prevent empty pages
 				block.is_duplex=false;
 				var item:BookPreviewSheet;
@@ -118,7 +120,7 @@
 				//fill sheets
 				bookSheets=[];
 				for (i=0; i < block.book_num; i++){
-					a=[];
+					var a:Array =[];
 					//cover
 					item= new BookPreviewSheet();
 					item.sheet=0;
