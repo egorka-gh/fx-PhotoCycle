@@ -602,20 +602,34 @@ package com.photodispatcher.factory{
 			} catch(error:Error){
 				trace('buildPreview err: '+error.message);
 			}
+			var template:BookPgTemplate;
+			if(!bookSynonym){
+				template=new BookPgTemplate;
+				template.is_pdf=false;
+				template.is_sheet_ready= false;
+			}
 			for each(pg in order.printGroups){
 				if(pg.book_type!=0){
 					//build book prview
 					//reset book_type 4 preview 
 					if(pg.book_type==BookSynonym.BOOK_TYPE_JOURNAL) pg.book_type=BookSynonym.BOOK_TYPE_BOOK;
 					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
-						if(bookSynonym) pg.bookTemplate=bookSynonym.blockTemplate;
+						if(bookSynonym){
+							pg.bookTemplate=bookSynonym.blockTemplate;
+						}else{
+							pg.bookTemplate=template;
+						}
 						fillSheets(ppg, pg, true);
 					}else if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT){
-						if(bookSynonym) pg.bookTemplate=bookSynonym.coverTemplate;
+						if(bookSynonym){
+							pg.bookTemplate=bookSynonym.coverTemplate;
+						}else{
+							pg.bookTemplate=template;
+						}
 						fillInsert(ppg,pg);
 					}
 
-					pg.book_num=ppg.book_num;
+					//pg.book_num=ppg.book_num;
 					pg.pageNumber=ppg.pageNumber;
 					pg.file_num=pg.files.length;
 				}

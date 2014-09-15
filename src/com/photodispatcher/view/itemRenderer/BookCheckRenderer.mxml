@@ -11,6 +11,8 @@
 			private var book:TechLog;
 			[Bindable]
 			private var strDate:String;
+			[Bindable]
+			private var book_num:String;
 			
 			override public function set data(value:Object):void{
 				super.data = value;
@@ -19,6 +21,7 @@
 				backFill.color=0xeeeeee;
 				book=value as TechLog;
 				if(book){
+					book_num=book.book.toString();
 					if(book.log_date){
 						strDate = dtfmt.format(book.log_date);
 						backFill.color=0x99EE99;
@@ -64,7 +67,7 @@
 		</s:stroke>
 	</s:Rect>
 	<s:HGroup gap="10" top="5" left="5" right="2" bottom="2" verticalAlign="bottom">
-		<s:Label id="lbBook" fontSize="18" text="{book.book.toString()}" fontWeight="bold"/>
+		<s:Label id="lbBook" fontSize="18" text="{book_num}" fontWeight="bold"/>
 		<s:Label id="lbDate" fontSize="14" text="{strDate}" width="100%" textAlign="center"/>
 	</s:HGroup>
 	

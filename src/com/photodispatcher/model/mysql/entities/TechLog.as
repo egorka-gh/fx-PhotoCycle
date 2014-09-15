@@ -49,22 +49,24 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		//calc
-		public function get book_num():int{
+		public function get book():int{
 			return Math.floor(sheet/100);
 		}
 		
-		public function get page_num():int{
-			return sheet-book_num*100;
+		public function get page():int{
+			return sheet-book*100;
 		}
 
+		/*
 		//runtime view
 		public var book:int;
 		public var page:int;
+		*/
 		
 		override public function set sheet(value:int):void{
 			super.sheet = value;
-			book=Math.floor(value/100);
-			page=value-book*100;
+			//book=Math.floor(value/100);
+			//page=value-book*100;
 		}
 		override public function get sheet():int{
 			return super.sheet;

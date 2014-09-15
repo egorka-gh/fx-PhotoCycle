@@ -480,7 +480,7 @@ package com.photodispatcher.model.mysql.entities {
 			var imgFront:PrintGroupFile;
 			var imgBackLeft:PrintGroupFile;
 			var imgBackRight:PrintGroupFile;
-			if(is_pdf && book_type==BookSynonym.BOOK_TYPE_JOURNAL && !bookTemplate.is_sheet_ready){
+			if(is_pdf && book_type==BookSynonym.BOOK_TYPE_JOURNAL && bookTemplate && !bookTemplate.is_sheet_ready){
 				//pdf journal 
 				detectPagesNumber();
 				_bookFiles=new Array(book_num*3);

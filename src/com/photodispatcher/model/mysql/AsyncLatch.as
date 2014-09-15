@@ -5,6 +5,8 @@ package com.photodispatcher.model.mysql{
 	
 	import mx.controls.Alert;
 	
+	import spark.formatters.DateTimeFormatter;
+	
 	[Event(name="complete", type="flash.events.Event")]
 	public class AsyncLatch extends EventDispatcher{
 		public var complite:Boolean=false;
@@ -67,7 +69,11 @@ package com.photodispatcher.model.mysql{
 		}
 		
 		public function showError():void{
-			if(hasError) Alert.show(error);
+			var dtFmt:DateTimeFormatter= new DateTimeFormatter;
+			dtFmt.dateTimePattern='dd.MM.yy HH:mm';
+			var dtStr:String=dtFmt.format(new Date());
+			dtStr=dtStr+': '+error;
+			if(hasError) Alert.show(dtStr);
 		}
 		
 		public function checkComplite():void{
