@@ -43,6 +43,18 @@
     <application path="PhotoTechS.mxml">
       <airExcludes/>
     </application>
+    <application path="TechMonitorS.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechOTKS.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoPickerS.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechSpyS.mxml">
+      <airExcludes/>
+    </application>
   </applications>
   <modules/>
   <buildCSSFiles/>

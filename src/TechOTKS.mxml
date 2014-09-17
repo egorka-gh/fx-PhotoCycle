@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:view="com.photodispatcher.view.*"
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*" 
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   showStatusBar="false"
+					   creationComplete="{initApp()}"  
+					   closing="windowedapplication1_closingHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.TechPointService;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.ModalPopUp;
+			import com.photodispatcher.view.PasswPopup;
+			import com.photodispatcher.view.config.DatabasePopup;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			
+			[Bindable]
+			private var techPiontsAC:ArrayCollection;
+			
+			[Bindable]
+			private var techPointObj:TechPoint;
+			private var techPoint:int;
+			
+			[Bindable]
+			private var refreshInterval:int;
+			
+			[Bindable]
+			private var comReader:ComInfo; 
+			
+			[Bindable]
+			private var workFolder:String;
+			
+			
+			private var bdPopup:DatabasePopup;
+			private function initApp():void{
+				//BaseDAO.MAX_WAITE=15000;
+				bdPopup= new DatabasePopup();
+				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
+				bdPopup.chekConnect();//SQLMode.UPDATE,false);
+			}
+			private function bdPopClose(e:PopUpEvent):void{
+				var connected:Boolean=e.commit;
+				/*
+				if(connected){
+				//create local connection
+				connected=LocalDAO.connect();
+				}
+				*/
+				if(connected){
+					//connected
+					init();
+				}else{
+					//no connection
+					currentState='disconnected';
+					bdPopup.open(null);
+				}
+			}
+			
+			private var startPopup:ModalPopUp;
+			
+			private function init():void{
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+				
+				var initLatch:DbLatch=Context.initTechOTK();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+				
+				var latch:DbLatch= new DbLatch();
+				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				latch.addEventListener(Event.COMPLETE,onTPLoad);
+				latch.addLatch(svc.loadAll(SourceType.TECH_OTK));
+				latch.start();
+				initLatch.join(latch);
+				//TODO REFACTOR !!!
+				//var dao:TechPointDAO=new TechPointDAO();
+				//techPiontsAC=dao.findAll(false, SourceType.TECH_OTK);
+				
+				initLatch.start();
+			}
+			private function onTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPLoad);
+					if(latch.complite){
+						techPiontsAC=latch.lastDataAC;
+					}
+				}
+			}
+			private function onInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						return;
+					}
+				}
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					techPoint=so.data.monitorTechPoint;
+					//compliteTechType=so.data.compliteTechType;
+					refreshInterval=so.data.refreshInterval;
+					var configPass:String=so.data.configPass;;
+					if(configPass) Context.setAttribute('configPass',configPass);
+					workFolder=so.data.workFolder;
+				}
+				Context.setAttribute("workFolder", workFolder);
+				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
+				
+				var coms:Array=ComInfo.load();
+				var ci:ComInfo;
+				for each (ci in coms){
+					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReader=ci;
+				}
+				if(!comReader){
+					comReader= new ComInfo(); comReader.type=ComInfo.COM_TYPE_BARREADER;
+				}
+				
+				startPopup.close();
+				startPopup=null;
+				
+				checkCfgPass();
+				currentState='config';
+			}
+			
+			
+			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
+				techPointObj= ddTechPoint.selectedItem as TechPoint;
+				if(techPointObj){
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.monitorTechPoint = techPointObj.id;
+					so.flush();  
+				}
+			}
+			
+			[Bindable]
+			private var barcodeReader:ComReader;
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				//var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
+				//var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
+				if(!techPointObj){ // || !startTT ||!endTT){
+					Alert.show('Монитор не настроен');
+					return;
+				}
+				if(comReader.num){
+					serialProxy.start([comReader]);
+					if(serialProxy.isStarted){
+						//start barcode reader
+						if(barcodeReader){
+							barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+							barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED, onBarcode);
+							barcodeReader=null;
+						}
+						var pr:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
+						if(pr){
+							barcodeReader= new ComReader();
+							barcodeReader.comPort=pr;
+							barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+							barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED, onBarcode);
+							barcodeReader.start();
+						}
+					}
+				}
+				/*
+				techMonitor.techPoint=techPointObj;
+				techMonitor.startTechType=startTT;
+				techMonitor.manualAdd=manualAdd;
+				techMonitor.endTechType=endTT;
+				techMonitor.refreshInterval=refreshInterval;
+				techMonitor.start();
+				*/
+				if(techMonitor) techMonitor.start();
+				currentState='monitor';
+			}
+			
+			//TODO 4 debug
+			//private var techMonitor:Object;
+			
+			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
+				if(barcodeReader) barcodeReader.stop();
+				serialProxy.stop();
+				var bar:String=event.barcode;
+				bar = bar.replace(String.fromCharCode(13),'[LF]');
+				bar = bar.replace(String.fromCharCode(10),'[CR]');
+				Alert.show('Ошибка COM \n'+event.error+';\n данные com: '+bar,'Ошибка');
+			}
+			
+			[Bindable]
+			private var lastBarcode:String;
+			
+			private function onBarcode(event:BarCodeEvent):void{
+				lastBarcode=event.barcode;
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void{
+				if(techMonitor) techMonitor.stop();
+				serialProxy.stop();
+				cfgEnabled=false;
+				currentState='config';
+			}
+			
+			protected function state1_enterStateHandler(event:FlexEvent):void{
+				cfgEnabled=false;
+				/*
+				techMonitor.techPoint=techPointObj;
+				techMonitor.startTechType=startTT;
+				techMonitor.manualAdd=manualAdd;
+				techMonitor.finalOperation=finalOperation;
+				techMonitor.endTechType=endTT;
+				techMonitor.refreshInterval=refreshInterval;
+				techMonitor.barcodeReader=barcodeReader;
+				techMonitor.start();
+				*/
+			}
+			
+			protected function btSetPass_clickHandler(event:MouseEvent):void{
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPass);
+				passPop.show('',true);
+			}
+			protected function onCfgPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(!passPop) return;
+				passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					var newPass:String=passPop.pass;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.configPass = newPass;
+					so.flush();  
+					Context.setAttribute('configPass', newPass);
+				}
+			}
+			
+			protected function btOffPass_clickHandler(event:MouseEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.configPass = '';
+				so.flush();  
+				Context.setAttribute('configPass', '');
+			}
+			[Bindable]
+			private var cfgEnabled:Boolean;
+			
+			protected function checkCfgPass(ask:Boolean=false):void{
+				var configPass:String=Context.getAttribute('configPass');
+				if(!configPass){
+					cfgEnabled=true;
+					return;
+				}
+				cfgEnabled=false;
+				if(!ask) return;
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPassCheck);
+				passPop.show(configPass);
+			}
+			protected function onCfgPassCheck(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(passPop) passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPassCheck);
+				if(event.commit){
+					cfgEnabled=true;
+				}
+			}
+			
+			
+			protected function button3_clickHandler(event:MouseEvent):void{
+				checkCfgPass(true);
+			}
+			
+			protected function btSaveCom_clickHandler(event:MouseEvent):void{
+				ComInfo.save([comReader]);
+			}
+			
+			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
+				Alert.show('Ошибка COM (SerialProxy) \n '+event.error,'Ошибка');
+			}
+			
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				if(serialProxy) serialProxy.stop();
+			}
+			
+			protected function button4_clickHandler(event:MouseEvent):void{
+				if(serialProxy) serialProxy.stop();
+				FlexGlobals.topLevelApplication.exit()
+			}
+			
+			protected function btWrkFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var sPath:String='';
+				var fl:File = File.userDirectory;
+				fl.addEventListener(Event.SELECT,wrkFolderSet);
+				fl.browseForDirectory('Выбирите рабочую папку');
+			}
+			protected function wrkFolderSet(event:Event):void{
+				var fl:File = event.target as File;
+				if(fl){
+					fl.removeEventListener(Event.SELECT,wrkFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					workFolder=fl.nativePath;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.workFolder = workFolder;
+					so.flush();  
+					Context.setAttribute("workFolder", workFolder);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="disconnected"/>
+		<s:State name="config"/>
+		<s:State name="monitor" enterState="state1_enterStateHandler(event)"/>
+	</s:states>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
+			  top="5" right="5"/>
+	
+	<s:VGroup  includeIn="config" enabled="{cfgEnabled}" 
+			   gap="5" top="20" left="20" right="5" bottom="50">
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label id="lbLong"  text="Технологическая точка:"/>
+			<s:DropDownList id="ddTechPoint" dataProvider="{techPiontsAC}" selectedItem="{techPointObj}" 
+							labelField="name"  width="250" change="ddTechPoint_changeHandler(event)"/>
+		</s:HGroup>
+		
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Рабочая папка:" width="{lbLong.width}"/>
+			<s:TextInput id="tiWrkFolder" text="{workFolder}" editable="false" width="400"/>
+			<s:Button id="btWrkFolder" label="..." click="btWrkFolder_clickHandler(event)"/>
+		</s:HGroup>
+		
+		<!--<s:Spacer height="10"/>
+		<s:HGroup id="gStartTT" gap="5" verticalAlign="baseline">
+		<s:Label text="Базовая операция" width="{lbLong.width}"/>
+		<s:DropDownList id="ddStartTechType" selectedIndex="{startTechTypeIdx}" dataProvider="{techTypeAC}" labelField="name"
+		change="ddStartTechType_changeHandler(event)" width="200"/>
+		</s:HGroup>
+		<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">
+		<s:CheckBox id="tgManualAdd" selected="@{manualAdd}" change="tgManualAdd_changeHandler(event)"/>
+		<s:Label text="Ручное добавление"/>
+		</s:HGroup>
+		
+		<s:Spacer height="10"/>
+		<s:HGroup id="gEndTT" gap="5" verticalAlign="baseline">
+		<s:Label text="Ожидать операцию" width="{lbLong.width}"/>
+		<s:DropDownList id="ddEndTechType" selectedIndex="{endTechTypeIdx}" dataProvider="{techTypeAC}"  labelField="name"
+		change="ddEndTechType_changeHandler(event)" width="200"/>
+		</s:HGroup>-->
+		<!--<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">
+		<s:CheckBox id="tgYelloyState" selected="@{yelloyState}" change="tgYelloyState_changeHandler(event)"/>
+		<s:Label text="Проверять начало операции (желтый статус)"/>
+		</s:HGroup>-->
+		
+		<!--<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+		<s:Label id="lbLong" text="Выполнен - операция"/>
+		<s:DropDownList id="ddCompliteTechType" selectedIndex="{compliteTechTypeIdx}" dataProvider="{techTypeAC}" 
+		change="ddCompliteTechType_changeHandler(event)" width="200"/>
+		</s:HGroup>-->
+		
+		<!--<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+		<s:Label text="Интервал обновления (мин)"/>
+		<s:NumericStepper id="nsRefresh" value="@{refreshInterval}" change="numericstepper1_changeHandler(event)" 
+		minimum="10" maximum="200" snapInterval="1" width="50"/>
+		</s:HGroup>-->
+		
+		<!--<s:Spacer height="10"/>
+		<s:HGroup gap="10" verticalAlign="baseline">
+		<s:CheckBox id="tgFinalOp" selected="@{finalOperation}" change="tgFinalOp_changeHandler(event)"/>
+		<s:Label text="Финальная операция"/>
+		</s:HGroup>-->
+		
+		<s:Spacer height="10"/>
+		<s:Label text="Сканер ШК" fontWeight="bold"/>
+		<itemRenderer:ComInfoRenderer  data="{comReader}" lockType="true"/>
+		<s:HGroup >
+			<s:Spacer width="230"/>
+			<s:Button id="btSaveCom" label="Сохранить" click="btSaveCom_clickHandler(event)"/>
+		</s:HGroup>
+		
+		<s:Spacer height="20"/>
+		<s:HGroup gap="10" verticalAlign="baseline">
+			<s:Label text="Защита конфигурации"/>
+			<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
+			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+		</s:HGroup>
+		
+		
+	</s:VGroup>
+	
+	<view:TechOTKMonitor id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}"
+						 top="20" left="20" right="20" bottom="50"/>
+	
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
+		<s:Group width="5">
+		<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
+		</s:Group>
+		<s:Image source="{LocalDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в локальную базу данных"/>
+		<s:Group width="5">
+		<s:Label text="{LocalDAO.lastErrMsg}" color="#cc0000"/>
+		</s:Group>-->
+		<s:Label text="{lastBarcode}" height="100%" verticalAlign="bottom"/>
+		<s:Spacer width="100%"/>
+		<s:Button label="Конфигурация" includeIn="monitor" click="button2_clickHandler(event)"/>
+		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
+		<s:Button label="Монитор" includeIn="config" click="button1_clickHandler(event)"/>
+		<s:Button label="Закрыть программу" click="button4_clickHandler(event)" />
+	</s:HGroup>
+	
+</s:WindowedApplication>

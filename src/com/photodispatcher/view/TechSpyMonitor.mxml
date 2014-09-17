@@ -7,12 +7,13 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
-			import com.photodispatcher.model.mysql.entities.SourceType;
-			import com.photodispatcher.model.dao.BaseDAO;
-			import com.photodispatcher.model.dao.OrderDAO;
+			import com.photodispatcher.model.mysql.entities.SpyData;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			import com.photodispatcher.view.print.PrintDataGridView;
@@ -27,6 +28,8 @@
 			import mx.managers.CursorManager;
 			import mx.printing.FlexPrintJob;
 			import mx.printing.PrintDataGrid;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.collections.Sort;
 			import spark.collections.SortField;
@@ -67,10 +70,7 @@
 
 			private var initComplite:Boolean=false;
 			private function init():void{
-				//TODO REFACTOR
-				//var stDao:SourceTypeDAO= new SourceTypeDAO();
-				//techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
-				
+				techTypeAC=Context.getAttribute('tech_typeValueList') as ArrayCollection;
 				createColumnsAC();
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
@@ -84,15 +84,16 @@
 				if(!startState) startState= OrderState.PRN_POST;
 				if(!endState) endState= OrderState.TECH_COVER_BLOK_PICKING;
 				if(techTypeAC){
+					/*
 					var sort:Sort= new Sort();
 					sort.fields=[new SortField('state',false,true)];
 					techTypeAC.sort=sort;
 					techTypeAC.refresh();
-					
+					*/
 					var arr:Array=techTypeAC.source;
-					var it:SourceType=ArrayUtil.searchItem('state',startState,arr) as SourceType;
+					var it:FieldValue=ArrayUtil.searchItem('value',startState,arr) as FieldValue; 
 					if(it && ddStartOp) ddStartOp.selectedItem=it;
-					it=ArrayUtil.searchItem('state',endState,arr) as SourceType;
+					it=ArrayUtil.searchItem('value',endState,arr) as FieldValue;
 					if(it && ddEndOp) ddEndOp.selectedItem=it;
 				}
 				initComplite=true;
@@ -118,14 +119,16 @@
 				gridColumnsAC= new ArrayCollection();
 				
 				var col:GridColumn = new GridColumn('id'); col.headerText='Заказ'; gridColumnsAC.addItem(col);
-				col= new GridColumn('path'); col.headerText='Алиас'; gridColumnsAC.addItem(col); 
+				col= new GridColumn('sub_id'); col.headerText='Подзаказ'; gridColumnsAC.addItem(col); 
+				col= new GridColumn('bt_name'); col.headerText='Тип'; gridColumnsAC.addItem(col); 
+				col= new GridColumn('alias'); col.headerText='Алиас'; gridColumnsAC.addItem(col); 
 				col= new GridColumn('op_name'); col.headerText='Операция'; gridColumnsAC.addItem(col); 
 				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 				col= new GridColumn('start_date'); col.headerText='Старт'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
 				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 				col= new GridColumn('state_date'); col.headerText='Конец'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
 				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
-				col= new GridColumn('reset_date'); col.headerText='Сброс'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
+				col= new GridColumn('resetDate'); col.headerText='Сброс'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
 				col= new GridColumn('bp_name'); col.headerText='Часть книги'; gridColumnsAC.addItem(col);
 				col= new GridColumn('delay'); col.headerText='Задержка'; gridColumnsAC.addItem(col);
 
@@ -133,6 +136,7 @@
 				var pc:DataGridColumn;
 				
 				pc= new DataGridColumn('id'); pc.headerText='Заказ'; pc.width=70;  printGridColumns.push(pc);
+				pc= new DataGridColumn('sub_id'); pc.headerText='Подзаказ'; pc.width=50;  printGridColumns.push(pc);
 				pc= new DataGridColumn('op_name'); pc.headerText='Операция'; printGridColumns.push(pc);
 				pc= new DataGridColumn('path'); pc.headerText='Алиас'; printGridColumns.push(pc);
 				pc= new DataGridColumn('start_date'); pc.headerText='Старт';  pc.width=80; pc.labelFunction=dateLabelFunction; printGridColumns.push(pc);
@@ -158,29 +162,8 @@
 				var bPart:int=0;
 				if(ddBookPart.selectedItem) bPart=ddBookPart.selectedItem.id;
 				if(delayInterval) dt= new Date(dt.fullYear,dt.month,dt.date,dt.hours-delayInterval,dt.minutes);
-				/*
-				var sql:String='SELECT oe2.id, oe2.state, oe2.start_date, oe2.state_date, st.name op_name, st.book_part, bp.name bp_name,'+
-									" (strftime('%s', ?) - strftime('%s',IFNULL(oe2.state_date,oe2.start_date)))/3600 AS delay"+	
-								' FROM'+
-								' (SELECT o.id, MAX(IFNULL(oe.state_date,oe.start_date)) lastdt'+ 
-									' FROM orders o'+
-									' INNER JOIN order_extra_state oe ON oe.id=o.id and oe.state BETWEEN ? AND ?'+
-									' WHERE o.state < ?'+  
-									' GROUP BY o.id'+
-									' HAVING MAX(IFNULL(oe.state_date,oe.start_date)) < ?) t'+
-								' INNER JOIN order_extra_state oe2 ON t.id=oe2.id AND t.lastdt IN (oe2.start_date,oe2.state_date)'+
-								' INNER JOIN config.src_type st ON oe2.state=st.state AND st.loc_type=3 AND (0=? OR st.book_part IN(0,?))'+
-								' INNER JOIN config.book_part bp ON bp.id = st.book_part'+
-								' ORDER BY IFNULL(oe2.state_date,oe2.start_date)';
-				var params:Array=[dt, startState, endState, OrderState.TECH_OTK, dt, bPart, bPart];
-				var dao:BaseDAO= new BaseDAO();
-				CursorManager.setBusyCursor();
-				if (dao.runSelect(sql,params)){
-					listAC=dao.rawList;
-				}
-				CursorManager.removeBusyCursor();
-				*/
 				
+				/*
 				var dao:BaseDAO= new BaseDAO();
 				var sql:String;
 				var params:Array
@@ -199,7 +182,6 @@
 						' GROUP BY o.id'+
 						' HAVING MAX(IFNULL(oe.state_date,oe.start_date)) < ?) t'+
 						' INNER JOIN order_extra_state oe2 ON t.id=oe2.id AND t.lastdt IN (oe2.start_date,oe2.state_date)';
-					/* + ' INNER JOIN config.src_type st ON oe2.state=st.state AND st.loc_type=3 AND (0=? OR st.book_part IN(0,?))'; */
 					//params=[startState, endState, OrderState.TECH_OTK, dt, bPart, bPart];
 					params=[startState, endState, bPart, bPart, OrderState.TECH_OTK, dt];
 					if (dao.executeSync(sql,params)){
@@ -213,12 +195,6 @@
 								' WHERE NOT EXISTS'+
 								' (SELECT 1 FROM print_group pg WHERE pg.order_id=tmp_orders_spy.id AND pg.book_type IN (1,2,3))';
 							if (dao.executeSync(sql)){
-								/*
-								//del prolonged
-								sql='DELETE FROM tmp_orders_spy'+
-									' WHERE EXISTS'+
-									' (SELECT 1 FROM order_exstate_prolong so WHERE so.id=tmp_orders_spy.id AND so.state=tmp_orders_spy.state AND so.state_date >= ?)';
-								*/
 								//set reset date
 								sql='UPDATE tmp_orders_spy'+
 									' SET reset_date =(SELECT max(so.state_date) FROM order_exstate_prolong so WHERE so.id=tmp_orders_spy.id AND so.state=tmp_orders_spy.state)'+
@@ -255,6 +231,30 @@
 				if(dgMonitor) dgMonitor.columnHeaderGroup.visibleSortIndicatorIndices=new Vector.<int>([]);
 				startTimer();
 			}
+				*/
+				listAC=null;
+				var latch:DbLatch=new DbLatch();
+				//latch.debugName='initSourceLists';
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				latch.addEventListener(Event.COMPLETE,onDataLoad);
+				latch.addLatch(svc.loadSpyData(dt, startState, endState, bPart));
+				latch.start();
+				return;
+			}
+			private function onDataLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onDataLoad);
+					if(latch.complite){
+						listAC=latch.lastDataAC;
+						listAC.filterFunction=filterList;
+						listAC.refresh();
+					}
+				}
+				if(dgMonitor) dgMonitor.columnHeaderGroup.visibleSortIndicatorIndices=new Vector.<int>([]);
+				startTimer();
+			}
+
 			
 			private function filterList(item:Object):Boolean {
 				if (chkReset.selected) return true;
@@ -278,9 +278,9 @@
 			}
 			
 			protected function ddStartOp_changeHandler(event:IndexChangeEvent):void{
-				var it:SourceType=ddStartOp.selectedItem as SourceType;
+				var it:FieldValue=ddStartOp.selectedItem as FieldValue;
 				if(!it) return;
-				startState=it.state;
+				startState=it.value;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.startState = startState;
 				so.flush();
@@ -288,9 +288,9 @@
 			}
 			
 			protected function ddEndOp_changeHandler(event:IndexChangeEvent):void{
-				var it:SourceType=ddEndOp.selectedItem as SourceType;
+				var it:FieldValue=ddEndOp.selectedItem as FieldValue;
 				if(!it) return;
-				endState=it.state;
+				endState=it.value;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.endState = endState;
 				so.flush();
@@ -374,13 +374,30 @@
 			}
 			private function resetOrder(comment:String):void{
 				if(!comment) return;
+				/*
 				var onItem:Object=dgMonitor.selectedItem;
 				if(onItem && onItem.id && onItem.state){
 					var dao:OrderDAO= new OrderDAO();
 					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderReset);
 					dao.prolongExtraState(onItem.id, onItem.state, comment);
 				}
+				*/
+				var onItem:SpyData=dgMonitor.selectedItem as SpyData;
+				if(onItem){
+					var latch:DbLatch=new DbLatch();
+					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+					latch.addEventListener(Event.COMPLETE,onItemReset);
+					latch.addLatch(svc.extraStateProlong(onItem.id,onItem.sub_id, onItem.state,comment));
+					latch.start();
+				}
 			}
+			private function onItemReset(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch) latch.removeEventListener(Event.COMPLETE,onItemReset);
+				refresh();
+			}
+
+			/*
 			private function onOrderReset(event:AsyncSQLEvent):void{
 				var dao:OrderDAO=event.target as OrderDAO;
 				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderReset);
@@ -390,6 +407,7 @@
 					Alert.show(event.error,'',4,null,refresh);
 				}
 			}
+			*/
 
 			private var writeQueue:Array=[];
 			private var isWriting:Boolean=false;
@@ -397,9 +415,9 @@
 				var items:Vector.<Object>;
 				items=grid.selectedItems;
 				if(!items || items.length==0) return;
-				var onItem:Object;
+				var onItem:SpyData;
 				for each(onItem in items){
-					if (writeQueue.indexOf(onItem.id)==-1) writeQueue.push(onItem.id);
+					if (onItem) writeQueue.push(onItem);
 				}
 				if(!isWriting) writeNext();
 			}
@@ -411,10 +429,36 @@
 					refresh();
 					return;
 				}
+				/*
 				var dao:OrderDAO= new OrderDAO();
 				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
 				dao.setExtraStateByTech(writeQueue[0], SourceType.TECH_OTK);
+				*/
+				var onItem:SpyData=writeQueue[0] as SpyData;
+				if(onItem){
+					var latch:DbLatch=new DbLatch();
+					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+					latch.addEventListener(Event.COMPLETE,onItemComplite);
+					latch.addLatch(svc.extraStateSet(onItem.id, onItem.sub_id, OrderState.TECH_OTK, new Date()));
+					latch.start();
+				}else{
+					writeQueue.shift();
+					writeNext()
+				}
 			}
+			private function onItemComplite(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onItemComplite);
+					if(latch.complite){
+						writeQueue.shift();
+					}else{
+						writeQueue=[];
+					}
+					writeNext();
+				}
+			}
+			/*
 			private function onOrderCompleteSet(event:AsyncSQLEvent):void{
 				var dao:OrderDAO=event.target as OrderDAO;
 				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
@@ -426,6 +470,7 @@
 					Alert.show(event.error,'',4,null,refresh);
 				}
 			}
+			*/
 
 		]]>
 	</fx:Script>
@@ -438,12 +483,12 @@
 		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
 			<s:Spacer width="5"/>
 			<s:Label text="Начало"/>
-			<s:DropDownList id="ddStartOp" dataProvider="{techTypeAC}" labelField="name" width="180"
+			<s:DropDownList id="ddStartOp" dataProvider="{techTypeAC}" width="180"
 							change="ddStartOp_changeHandler(event)"/>
 
 			<s:Spacer width="5"/>
 			<s:Label text="Конец" />
-			<s:DropDownList id="ddEndOp" dataProvider="{techTypeAC}" labelField="name" width="180"
+			<s:DropDownList id="ddEndOp" dataProvider="{techTypeAC}" width="180"
 							change="ddEndOp_changeHandler(event)"/>
 
 			<s:Spacer width="5"/>
