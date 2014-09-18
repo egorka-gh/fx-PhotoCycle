@@ -64,12 +64,14 @@ package com.photodispatcher.tech{
 			var idx:int=book-1;
 			lastBook=book;
 			lastSheet=sheet;
+			var log:Boolean=false;
 			if(regArray[idx] == undefined) regArray[idx]=new Array(sheets+1);//+1 for 0
 			if(regArray[idx][sheet] == undefined){
 				regArray[idx][sheet]=new Date();
 				registred++;
+				log=true;
 			}
-			logRegistred(book,sheet);
+			if(log) logRegistred(book,sheet);
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		

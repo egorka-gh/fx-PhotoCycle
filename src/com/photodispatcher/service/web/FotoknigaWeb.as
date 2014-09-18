@@ -219,7 +219,9 @@ package com.photodispatcher.service.web{
 					var arr:Array=OrderBuilder.build(source,[result.result]);
 					if(arr && arr.length>0){
 						var to:Order=arr[0] as Order;
-						if(to){
+						if(to && to.extraInfo){
+							_getOrder.extraInfo=to.extraInfo;
+							/*
 							_getOrder.extraInfo= new OrderExtraInfo();
 							if(to.extraInfo){
 							_getOrder.extraInfo.calc_type=to.extraInfo.calc_type;
@@ -230,6 +232,7 @@ package com.photodispatcher.service.web{
 							_getOrder.extraInfo.corner_type=to.extraInfo.corner_type;
 							_getOrder.extraInfo.kaptal=to.extraInfo.kaptal;
 							}
+							*/
 						}
 					}
 					endGetOrder();

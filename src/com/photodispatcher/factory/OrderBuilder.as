@@ -33,8 +33,6 @@ package com.photodispatcher.factory{
 						order.state_date=syncDate;
 					}else{
 						order=new Order();
-						einfo=new OrderExtraInfo();
-						order.extraInfo=einfo;
 					}
 					//var src_id:int;
 					var o:Object;
@@ -74,6 +72,7 @@ package com.photodispatcher.factory{
 					}
 					
 					if(!forSync){
+						einfo=new OrderExtraInfo();
 						//extra info
 						if(ejMap && ejMap.length>0){
 							for each(o in ejMap){
@@ -95,7 +94,7 @@ package com.photodispatcher.factory{
 								}
 							}
 						}
-						
+						if(!einfo.isEmpty) order.extraInfo=einfo;
 						//parse suborders
 						if (source.type==SourceType.SRC_FBOOK && jo.hasOwnProperty('items') && jo.items is Array){
 							var subMap:Array=AttrJsonMap.getSubOrderJson(source.type);

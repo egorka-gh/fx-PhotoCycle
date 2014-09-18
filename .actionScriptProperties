@@ -22,10 +22,10 @@
     <application path="PhotoTech.mxml">
       <airExcludes/>
     </application>
-    <application path="TechSpy.mxml">
+    <application path="PhotoHelper.mxml">
       <airExcludes/>
     </application>
-    <application path="PhotoHelper.mxml">
+    <application path="TechSpy.mxml">
       <airExcludes/>
     </application>
     <application path="Laboratory.mxml">
@@ -40,6 +40,9 @@
     <application path="PhotoPicker.mxml">
       <airExcludes/>
     </application>
+    <application path="PhotoPickerS.mxml">
+      <airExcludes/>
+    </application>
     <application path="PhotoTechS.mxml">
       <airExcludes/>
     </application>
@@ -49,10 +52,10 @@
     <application path="TechOTKS.mxml">
       <airExcludes/>
     </application>
-    <application path="PhotoPickerS.mxml">
+    <application path="TechSpyS.mxml">
       <airExcludes/>
     </application>
-    <application path="TechSpyS.mxml">
+    <application path="TechJoin.mxml">
       <airExcludes/>
     </application>
   </applications>

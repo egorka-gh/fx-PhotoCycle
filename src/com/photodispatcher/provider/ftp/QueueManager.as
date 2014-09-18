@@ -489,6 +489,8 @@ package com.photodispatcher.provider.ftp{
 				if(!startOrder.ftp_folder) startOrder.ftp_folder=startOrder.id;
 
 				//fill extra info
+				if(pw.getLastOrder().extraInfo) startOrder.extraInfo=pw.getLastOrder().extraInfo;
+				/*
 				startOrder.extraInfo= new OrderExtraInfo();
 				startOrder.extraInfo.calc_type=pw.getLastOrder().extraInfo.calc_type;
 				startOrder.extraInfo.endpaper=pw.getLastOrder().extraInfo.endpaper;
@@ -496,6 +498,7 @@ package com.photodispatcher.provider.ftp{
 				startOrder.extraInfo.cover=pw.getLastOrder().extraInfo.cover;
 				startOrder.extraInfo.format=pw.getLastOrder().extraInfo.format;
 				startOrder.extraInfo.corner_type=pw.getLastOrder().extraInfo.corner_type;
+				*/
 
 				//remove from queue
 				removeOrder(startOrder);

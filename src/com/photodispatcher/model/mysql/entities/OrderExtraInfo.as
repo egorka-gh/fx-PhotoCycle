@@ -6,9 +6,27 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import org.granite.reflect.Field;
+	import org.granite.reflect.Type;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.OrderExtraInfo")]
     public class OrderExtraInfo extends OrderExtraInfoBase {
+		
+		public function get isEmpty():Boolean{
+			var result:Boolean=true;
+			var type:Type= Type.forClass(OrderExtraInfo);
+			var props:Array=type.properties;
+			if(!props || props.length==0) return result;
+			var prop:Field;
+			for each(prop in props){
+				if(this[prop.name]){
+					result=false;
+					break;
+				}
+			}
+			return result;
+		}
+		
     }
 }
