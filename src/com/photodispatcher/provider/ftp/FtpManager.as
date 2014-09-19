@@ -221,6 +221,7 @@ package com.photodispatcher.provider.ftp{
 			writeOrders.push(order);
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch();
+			latch.debugName='Заказ "'+order.id+'" (fillUpOrder)';
 			latch.addEventListener(Event.COMPLETE,onOrderSave);
 			latch.addLatch(svc.fillUpOrder(order),order.id);
 			latch.start();

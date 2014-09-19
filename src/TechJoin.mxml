@@ -121,7 +121,7 @@
 				var latch:DbLatch= new DbLatch();
 				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
 				latch.addEventListener(Event.COMPLETE,onTPLoad);
-				latch.addLatch(svc.loadAll(0));
+				latch.addLatch(svc.loadAll(OrderState.TECH_COVER_BLOK_JOIN));
 				latch.start();
 				/*
 				var dao:TechPointDAO=new TechPointDAO();

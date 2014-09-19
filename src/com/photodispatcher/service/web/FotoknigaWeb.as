@@ -125,9 +125,10 @@ package com.photodispatcher.service.web{
 			endSync();
 		}
 		
-		private var _getOrder:Order;
+		//private var _getOrder:Order;
 		override public function get lastOrderId():String{
-			return _getOrder?_getOrder.id:'';
+			//return _getOrder?_getOrder.id:'';
+			return lastOrder?lastOrder.id:'';
 		}
 		override public function isValidLastOrder(forLoad:Boolean=false):Boolean{
 			if(forLoad){
@@ -137,7 +138,7 @@ package com.photodispatcher.service.web{
 			}
 		}
 		override public function getOrder(order:Order):void{
-			lastOrder=null;
+			lastOrder=order;
 			//DO NOT KILL used in print check web state 
 			if(order && !order.src_id && order.id){
 				//create src_id from order.id
@@ -148,7 +149,7 @@ package com.photodispatcher.service.web{
 				abort('Не верная иннициализация команды');
 				return;
 			}
-			_getOrder=order;
+			//_getOrder=order;
 			cmd=CMD_CHECK_STATE;
 			_hasError=false;
 			_errMesage='';
@@ -214,13 +215,14 @@ package com.photodispatcher.service.web{
 						abort(result.error?result.error:'Ошибка структуры данных');
 						return;
 					}
-					_getOrder.src_state=result.result.status;
+					//_getOrder.src_state=result.result.status;
+					lastOrder.src_state=result.result.status;
 					//parse extra data
 					var arr:Array=OrderBuilder.build(source,[result.result]);
 					if(arr && arr.length>0){
 						var to:Order=arr[0] as Order;
 						if(to && to.extraInfo){
-							_getOrder.extraInfo=to.extraInfo;
+							lastOrder.extraInfo=to.extraInfo;
 							/*
 							_getOrder.extraInfo= new OrderExtraInfo();
 							if(to.extraInfo){
@@ -245,7 +247,7 @@ package com.photodispatcher.service.web{
 			_hasError=false;
 			_errMesage='';
 			stopListen();
-			lastOrder=_getOrder;
+			//lastOrder=_getOrder;
 			trace('FotoknigaWeb loaded order id:'+lastOrder.src_id);
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
