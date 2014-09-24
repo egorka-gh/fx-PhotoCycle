@@ -46,7 +46,7 @@
 			
 			public function show(orderId:String, ordersList:ArrayCollection):void{
 				this.ordersList=ordersList;
-				super.open(FlexGlobals.topLevelApplication as DisplayObjectContainer, true);
+				open(FlexGlobals.topLevelApplication as DisplayObjectContainer, true);
 				PopUpManager.centerPopUp(this);
 				tiOrderId.text=orderId;
 				if(ordersList && ordersList.length>0){

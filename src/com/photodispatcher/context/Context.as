@@ -383,6 +383,13 @@ package com.photodispatcher.context{
 			if(!sourcesMap) return null;
 			return (sourcesMap[id] as Source);
 		}
+		public static function getSourceIdByCode(code:String):int{
+			if(!code) return 0;
+			var arr:Array=getSources();
+			if(!arr) return 0;
+			var src:Source=ArrayUtil.searchItem('code',code,arr) as Source;
+			return src?src.id:0;
+		}
 		public static function initSourceLists():DbLatch{
 			var latch:DbLatch=new DbLatch();
 			//latch.debugName='initSourceLists';

@@ -265,10 +265,10 @@ package com.photodispatcher.provider.ftp{
 					}
 					//reset errors
 					if(order.state<0 && order.state!=OrderState.ERR_WRITE_LOCK){
-						if(!order.exceedErrLimit) {
+						//if(!order.exceedErrLimit) {
 							resetOrder(order);
 							resetOrderState(order);
-						}
+						//}
 					}
 				}
 			}
@@ -311,10 +311,22 @@ package com.photodispatcher.provider.ftp{
 			for each (order in queue){
 				if(order){
 					if (syncMap[order.id]){
-						//replace
-						toReplace.push(order);
-						//remove from map
-						delete syncMap[order.id];
+						//some bug vs ftp list, may be wrong order data
+						var o:Order;
+						if(order.state<0 && order.exceedErrLimit) o=syncMap[order.id] as Order;
+						if(o){
+							//new wlbe added from syncMap vs err limt
+							o.state=order.state;
+							o.state_date=order.state_date;
+							o.setErrLimit();
+							//del old from queue
+							toKill.push(order);
+						}else{
+							//replace
+							toReplace.push(order);
+							//remove from map
+							delete syncMap[order.id];
+						}
 					}else{
 						toKill.push(order);
 					}
@@ -334,7 +346,9 @@ package com.photodispatcher.provider.ftp{
 			for each (order in toReplace){
 				if(order){
 					idx=ArrayUtil.searchItemIdx('id',order.id,orders);
-					if(idx!=-1) orders[idx]=order;
+					if(idx!=-1){
+						orders[idx]=order;
+					}
 				}
 			}
 			//add new to queue

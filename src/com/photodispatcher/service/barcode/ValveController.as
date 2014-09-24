@@ -59,6 +59,7 @@ package com.photodispatcher.service.barcode{
 		public static const MSG_CONTROLLER_ACKNOWLEDGE2:String='*okey'; //'*okey0x0d
 		public static const MSG_CONTROLLER_SENSOR_PREFIXF:String='s'; //'*s';//*s0=1 + LRC + 0x0d
 		public static const MSG_CONTROLLER_SENSOR_PREFIXF2:String='*s'; //'*s';//*s0=1 + LRC + 0x0d
+		public static const MSG_CONTROLLER_ALERT_PREFIX:String='*al'; //
 
 		public static const MSG_CONTROLLER_ERROR_PREFIX:String='err';//err1+0x0d
 		/*
@@ -142,6 +143,12 @@ package com.photodispatcher.service.barcode{
 				dispatchEvent(new Event(Event.COMPLETE));
 				return;
 			}
+			//alert, not implemented
+			if(msg.substr(0,MSG_CONTROLLER_ALERT_PREFIX.length)==MSG_CONTROLLER_ALERT_PREFIX){
+				log('ignore ' +msg);
+				return;
+			}
+			
 			/*
 			//read vs LRC
 			if(msg.length<3){

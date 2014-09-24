@@ -6,6 +6,7 @@
  */
 
 package com.photodispatcher.model.mysql.services {
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
@@ -47,6 +48,7 @@ package com.photodispatcher.model.mysql.services {
 			var byPg:Boolean=false;
 			var barcode:String=id;
 			var latch:DbLatch= new DbLatch();
+			var codeChar:String=null;
 			
 			if(!id){
 				latch.complite=false;
@@ -56,13 +58,14 @@ package com.photodispatcher.model.mysql.services {
 			}
 			if ((id.charAt(0) >= 'A' && id.charAt(0) <= 'Z') || (id.charAt(0) >= 'a' && id.charAt(0) <= 'z')){
 				//old barcode
-				var codeChar:String=id.charAt(0);
+				codeChar=id.charAt(0);
 				id=id.substr(1);
 				//remove leading 0
 				if(id.charAt(0)=='0') id=id.substr(1);
 				//remove book
 				var idx:int=id.indexOf(':');
 				if(idx!=-1)	id=id.substring(0,idx);
+				id='%\\_'+id;
 			}else{
 				if(!byBarcode){
 					//manual search
@@ -81,7 +84,7 @@ package com.photodispatcher.model.mysql.services {
 			if(byPg){
 				latch.addLatch(loadSubOrderByPg(id));
 			}else{
-				latch.addLatch(loadSubOrderByOrder(id));
+				latch.addLatch(loadSubOrderByOrder(id,codeChar));
 			}
 			return latch;
 		}

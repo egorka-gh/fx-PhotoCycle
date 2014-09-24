@@ -109,12 +109,15 @@ package com.photodispatcher.model.mysql.entities {
 			if(super.state != value) state_name= OrderState.getStateName(value);
 			super.state = value;
 			state_date= new Date();
-			if(value!=OrderState.ERR_READ_LOCK && 
+			if(value<0 &&
+				value!=OrderState.ERR_READ_LOCK && 
 				value!=OrderState.ERR_WRITE_LOCK && 
 				//_state!=OrderState.ERR_FILE_SYSTEM &&
 				//_state!=OrderState.ERR_FTP &&
 				value!=OrderState.ERR_WEB){
-				if(value<0 && (lastErrCode==value || lastErrCode==0)) errCount++;
+					if(lastErrCode!=value || lastErrCode==0) errCount=0;
+					errCount++;
+					lastErrCode=value;
 			}
 		}
 		override public function get state():int{

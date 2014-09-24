@@ -417,22 +417,25 @@ package com.photodispatcher.provider.ftp{
 			}
 			if(!fileStructureOk){
 				trace('FTPDownloadManager empty ftp folder '+orderId);
-				if(!order.hasSuborders){
-					order.state=OrderState.ERR_FTP;
-					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов. Папка заказа не найдена или пуста');
-					if(order.exceedErrLimit){
-						//remove from download
+				order.state=OrderState.ERR_FTP;
+				if(order.exceedErrLimit){
+					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов. Папка '+order.ftp_folder);
+					if(!order.hasSuborders){
+						//remove from download (double err)
 						idx=downloadOrders.indexOf(order);
 						if(idx!=-1) downloadOrders.splice(idx,1);
 						dispatchEvent(new ImageProviderEvent(ImageProviderEvent.LOAD_FAULT_EVENT,order,'Пустой список файлов'));
+					}else{
+						//fbook order run suborders load
+						order.resetErrCounter();
+						order.state=OrderState.FTP_LOAD;
+						checkDownload();
 					}
-				}else{
-					//fbook order run suborders load
-					order.state=OrderState.FTP_LOAD;
-					checkDownload();
 				}
 				loadProgress();
-				reuseConnection(cnn);
+				//reuseConnection(cnn);
+				//reconnect ftp
+				connectionManager.reconnect(cnn);
 				return;
 			}
 			//buid suborders
