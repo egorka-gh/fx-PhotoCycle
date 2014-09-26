@@ -1,24 +1,26 @@
 package pl.maliboo.ftp.invokers
 {
 	import flash.events.Event;
+	import flash.events.IOErrorEvent;
 	import flash.events.ProgressEvent;
 	import flash.net.Socket;
 	
 	import pl.maliboo.ftp.Commands;
-	import pl.maliboo.ftp.core.FTPClient;
 	import pl.maliboo.ftp.FTPCommand;
 	import pl.maliboo.ftp.FTPFile;
-	import pl.maliboo.ftp.core.FTPInvoker;
 	import pl.maliboo.ftp.Responses;
+	import pl.maliboo.ftp.core.FTPClient;
+	import pl.maliboo.ftp.core.FTPInvoker;
+	import pl.maliboo.ftp.errors.InvokeError;
 	import pl.maliboo.ftp.events.FTPEvent;
 	import pl.maliboo.ftp.utils.PassiveSocketInfo;
-	import pl.maliboo.ftp.errors.InvokeError;
 
 	public class ListInv extends FTPInvoker{
 		
 		private var passiveSocket:Socket;
 		private var listing:String;
 		private var directory:String;
+		private var listingSend:Boolean=false;
 		
 		public function ListInv(client:FTPClient, directory:String)
 		{
@@ -34,12 +36,13 @@ package pl.maliboo.ftp.invokers
 		
 		override protected function responseHandler(evt:FTPEvent):void{
 			resetTimeoutTimer();
+			//trace('list responce: '+evt.response.code.toString()+'-'+evt.response.message);
 			switch (evt.response.code){
 				case Responses.ENTERING_PASV:
 					try{
 						passiveSocket =	PassiveSocketInfo.createPassiveSocket(evt.response.message,
 							handlePassiveConnect,
-							handleListing);
+							handleListing, ioErrorHandlerPass);
 					} catch(e:Error){
 						releaseWithError(new InvokeError(e.message));
 						return;
@@ -53,12 +56,33 @@ package pl.maliboo.ftp.invokers
 					//file action successful
 					//completed
 					//trace('DATA_CONN_CLOSE:\n'+listing);
-					var listEvt:FTPEvent = new FTPEvent(FTPEvent.LISTING);
-					listEvt.listing = FTPFile.parseFormListing(listing, (directory?directory:client.workingDirectory));
-					release(listEvt);				
+					if(!listingSend){
+						listingSend=true;
+						if(passiveSocket && passiveSocket.connected) handleListing(null);
+						var listEvt:FTPEvent = new FTPEvent(FTPEvent.LISTING);
+						//trace('list complite attempt to parse');
+						if(listing){
+							try{
+								listEvt.listing = FTPFile.parseFormListing(listing, (directory?directory:client.workingDirectory));
+							}catch(error:Error){
+								trace('parse err ' +error.message);
+							}
+						}
+						if(listEvt.listing){
+							release(listEvt);
+						}else{
+							releaseWithError(new InvokeError('Ошибка парса списка файлов'));
+							trace('parse err listing: '+listing);
+						}
+					}
 					break;
 				case Responses.FILE_STATUS_OK:
 					//Here comes the directory listing. message
+					if(!passiveSocket || !passiveSocket.connected){
+						releaseWithError(new InvokeError('Passive not connected'));
+					}else{
+						handleListing(null);
+					}
 					/*
 					if(passiveSocket.connected){
 					listing += passiveSocket.readUTFBytes(passiveSocket.bytesAvailable);
@@ -93,8 +117,11 @@ package pl.maliboo.ftp.invokers
 		
 		override protected function cleanUp ():void{
 			if(passiveSocket!=null){
-				passiveSocket.removeEventListener(ProgressEvent.SOCKET_DATA, handlePassiveConnect);
+				passiveSocket.removeEventListener(Event.CONNECT, handlePassiveConnect);
 				passiveSocket.removeEventListener(ProgressEvent.SOCKET_DATA, handleListing);
+				passiveSocket.removeEventListener(IOErrorEvent.IO_ERROR, ioErrorHandlerPass);
+				//passiveSocket.removeEventListener(Event.CLOSE, closeHandlerPass);
+
 				//if(passiveSocket.connected) passiveSocket.close();
 				try{
 					if(passiveSocket.connected) passiveSocket.close();
@@ -102,7 +129,11 @@ package pl.maliboo.ftp.invokers
 				passiveSocket=null;
 			}
 		}
-		
+
+		private function ioErrorHandlerPass (evt:IOErrorEvent):void{
+			releaseWithError(new InvokeError('Passive socket err: '+evt.text));
+		}
+
 		private function handlePassiveConnect (evt:Event):void{
 			resetTimeoutTimer();
 			//sendCommand(new FTPCommand(Commands.LIST, directory+"-l"));
@@ -111,7 +142,7 @@ package pl.maliboo.ftp.invokers
 		
 		private function handleListing (evt:ProgressEvent):void{
 			resetTimeoutTimer();
-			if(passiveSocket.connected) listing += passiveSocket.readUTFBytes(passiveSocket.bytesAvailable);
+			if(passiveSocket.connected && passiveSocket.bytesAvailable>0) listing += passiveSocket.readUTFBytes(passiveSocket.bytesAvailable);
 			//just accumulate socket response
 			/*
 			var listEvt:FTPEvent = new FTPEvent(FTPEvent.LISTING);

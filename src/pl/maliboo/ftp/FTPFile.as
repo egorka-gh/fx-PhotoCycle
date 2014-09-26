@@ -57,9 +57,11 @@ package pl.maliboo.ftp{
 			return _isDir;
 		}
 		
-		public static function parseFromListEntry (entry:String, dir:String):FTPFile{			
+		public static function parseFromListEntry (entry:String, dir:String):FTPFile{
+			trace('parse entry ' + entry);
 			var file:FTPFile = new FTPFile();
 			var fields:Array = entry.split(/ +/g);
+			
 			var isDir:Boolean = fields[0].charAt(0).toLowerCase() == "d";
 			var name:String = fields[8];			
 			var path:String = dir;

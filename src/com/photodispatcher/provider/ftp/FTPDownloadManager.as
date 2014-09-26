@@ -566,7 +566,7 @@ package com.photodispatcher.provider.ftp{
 			if(!cnn) return;
 			stopListen(cnn);
 			var orderId:String=cnn.orderId;
-			trace('FTPDownloadManager scan folder fault '+orderId);
+			trace('FTPDownloadManager scan folder fault '+orderId+'; err: '+(e.error?e.error.message:''));
 			if(!orderId || !order){
 				connectionManager.reconnect(cnn);
 				return;

@@ -221,9 +221,10 @@ package com.photodispatcher.provider.ftp{
 				fl=foldersToScan.shift() as FTPFile;
 				if(fl){
 					currFolder=fl;
-					//trace('FtpTask scan subdir, folder :'+fl.fullPath);
+					trace('FtpTask scan subdir, folder :'+fl.fullPath);
 					ftpClient.list(fl.fullPath);
 				}else{
+					trace('ftp scan subdir bug');
 					//TODO posible bug (hung if !fl)
 				}
 			}else{

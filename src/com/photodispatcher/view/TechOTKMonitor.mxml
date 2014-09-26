@@ -92,8 +92,14 @@
 					//newScanId=barcode;
 				}
 				*/
-				newScanId=PrintGroup.idFromBookBarcode(barcode);
-				newBook=PrintGroup.bookFromBookBarcode(barcode);
+				if ((barcode.charAt(0) >= 'A' && barcode.charAt(0) <= 'Z') || (barcode.charAt(0) >= 'a' && barcode.charAt(0) <= 'z')){
+					//old barcode vsout bookNum
+					newBook=0;
+					newScanId=barcode;
+				}else{
+					newScanId=PrintGroup.idFromBookBarcode(barcode);
+					newBook=PrintGroup.bookFromBookBarcode(barcode);
+				}
 				if(!newScanId){
 					Alert.show('Не верный ШК: "'+barcode+'".');
 					return;
@@ -102,6 +108,7 @@
 				//check if same id
 				if(newScanId==lastScanId && lastSubOrder){
 					//show
+					newScanId='';
 					showOrder();
 					return;
 				}
