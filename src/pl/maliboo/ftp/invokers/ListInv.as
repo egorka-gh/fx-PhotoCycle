@@ -42,7 +42,9 @@ package pl.maliboo.ftp.invokers
 					try{
 						passiveSocket =	PassiveSocketInfo.createPassiveSocket(evt.response.message,
 							handlePassiveConnect,
-							handleListing, ioErrorHandlerPass);
+							handleListing, 
+							ioErrorHandlerPass, 
+							handleClose);
 					} catch(e:Error){
 						releaseWithError(new InvokeError(e.message));
 						return;
@@ -56,24 +58,33 @@ package pl.maliboo.ftp.invokers
 					//file action successful
 					//completed
 					//trace('DATA_CONN_CLOSE:\n'+listing);
+					
 					if(!listingSend){
-						listingSend=true;
 						if(passiveSocket && passiveSocket.connected) handleListing(null);
 						var listEvt:FTPEvent = new FTPEvent(FTPEvent.LISTING);
 						//trace('list complite attempt to parse');
 						if(listing){
+							listingSend=true;
 							try{
 								listEvt.listing = FTPFile.parseFormListing(listing, (directory?directory:client.workingDirectory));
 							}catch(error:Error){
 								trace('parse err ' +error.message);
+								trace('parse err listing: '+listing);
+								listEvt.listing=[];
 							}
+							if(!listEvt.listing) listEvt.listing=[];
+							release(listEvt);
+						}else{
+							trace('Server says list send, but listing empty, waite data socket close');
 						}
+						/*
 						if(listEvt.listing){
 							release(listEvt);
 						}else{
 							releaseWithError(new InvokeError('Ошибка парса списка файлов'));
 							trace('parse err listing: '+listing);
 						}
+						*/
 					}
 					break;
 				case Responses.FILE_STATUS_OK:
@@ -120,7 +131,7 @@ package pl.maliboo.ftp.invokers
 				passiveSocket.removeEventListener(Event.CONNECT, handlePassiveConnect);
 				passiveSocket.removeEventListener(ProgressEvent.SOCKET_DATA, handleListing);
 				passiveSocket.removeEventListener(IOErrorEvent.IO_ERROR, ioErrorHandlerPass);
-				//passiveSocket.removeEventListener(Event.CLOSE, closeHandlerPass);
+				passiveSocket.removeEventListener(Event.CLOSE, handleClose);
 
 				//if(passiveSocket.connected) passiveSocket.close();
 				try{
@@ -130,6 +141,22 @@ package pl.maliboo.ftp.invokers
 			}
 		}
 
+		private function handleClose (evt:Event):void{
+			var listEvt:FTPEvent = new FTPEvent(FTPEvent.LISTING);
+			//trace('list complite attempt to parse');
+			if(listing){
+				try{
+					listEvt.listing = FTPFile.parseFormListing(listing, (directory?directory:client.workingDirectory));
+				}catch(error:Error){
+					trace('parse err ' +error.message);
+					trace('parse err listing: '+listing);
+					listEvt.listing=[];
+				}
+			}
+			if(!listEvt.listing) listEvt.listing=[];
+			release(listEvt);
+		}
+		
 		private function ioErrorHandlerPass (evt:IOErrorEvent):void{
 			releaseWithError(new InvokeError('Passive socket err: '+evt.text));
 		}

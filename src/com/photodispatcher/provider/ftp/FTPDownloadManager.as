@@ -340,6 +340,7 @@ package com.photodispatcher.provider.ftp{
 								if(ftpFile.loadState==FTPFile.LOAD_WAIT || ftpFile.loadState==FTPFile.LOAD_ERR){
 									if(ftpFile.loadState==FTPFile.LOAD_ERR){
 										//TODO add err counter & errLimit check
+										trace('ftp download err, restart');
 										ftpFile.loadState=FTPFile.LOAD_WAIT;
 									}
 									downloadApplicant=ftpFile;

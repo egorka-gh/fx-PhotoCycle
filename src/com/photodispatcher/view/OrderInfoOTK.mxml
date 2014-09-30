@@ -60,11 +60,12 @@
 						btComplite_clickHandler(null);
 						return;
 					}
+					currBook=book;
 					refreshBooks();
 				}else{
+					currBook=book;
 					refresh(showOrder);
 				}
-				currBook=book;
 			}
 			
 			private function refresh(subOrder:SubOrder):void{
@@ -165,6 +166,7 @@
 				}
 				bookListAC.source=aa;
 				bookListAC.refresh();
+				if (lstBookList && currBook>0) lstBookList.selectedIndex=currBook-1;
 				if(checkAfterRefresh){
 					checkAfterRefresh=false;
 					if(bookTotal==bookComplited){

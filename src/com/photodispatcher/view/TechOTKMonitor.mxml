@@ -109,7 +109,7 @@
 				if(newScanId==lastScanId && lastSubOrder){
 					//show
 					newScanId='';
-					showOrder();
+					showOrder(true);
 					return;
 				}
 
@@ -236,9 +236,9 @@
 				showOrder();
 			}
 			*/
-			private function showOrder():void{
+			private function showOrder(checkClose:Boolean=false):void{
 				if(!lastSubOrder) return;
-				if(vInfo) vInfo.show(lastSubOrder,lastBook);
+				if(vInfo) vInfo.show(lastSubOrder,lastBook,checkClose);
 				currentState='book';
 			}
 			

@@ -58,7 +58,7 @@ package pl.maliboo.ftp{
 		}
 		
 		public static function parseFromListEntry (entry:String, dir:String):FTPFile{
-			trace('parse entry ' + entry);
+			//trace('parse entry ' + entry);
 			var file:FTPFile = new FTPFile();
 			var fields:Array = entry.split(/ +/g);
 			

@@ -87,7 +87,11 @@ package pl.maliboo.ftp.invokers
 						//passiveSocket.removeEventListener(ProgressEvent.SOCKET_DATA, handleData);
 						release(downloadEvent);
 					}else{
+						trace('Server says finish download, but transfer incomplete, waite data socket close');
+						/*
+						trace('Data connection closed (transfer completed), wrong data len, loaded: ' +bytes.toString()+', need: '+bytesTotal.toString()) ;
 						releaseWithError(new InvokeError('Data connection closed'));
+						*/
 					}
 					break;
 				case Responses.MORE_INFO:
@@ -122,6 +126,7 @@ package pl.maliboo.ftp.invokers
 						pauseEvent.process="downloading";
 						release(pauseEvent);
 					}else{
+						trace('Data connection closed (transfer aborted)') ;
 						releaseWithError(new InvokeError('Data connection closed'));
 					}
 					break;
@@ -141,11 +146,30 @@ package pl.maliboo.ftp.invokers
 		}
 
 		private function handleIOErr (evt:IOErrorEvent):void{
+			trace('IO err '+evt.text);
 			releaseWithError(new InvokeError(evt.text));
 		}
 		private function handleClose (evt:Event):void{
 			//releaseWithError(new InvokeError('Data socket closed'));
+			/*
 			if(bytes<bytesTotal && !aborted){
+				trace('Data socket closed, incomplite download');
+				releaseWithError(new InvokeError('Data connection closed'));
+			}
+			*/
+			if(aborted) return;
+
+			if(bytes>=bytesTotal){
+				trace('Data connection closed (data Socket close), download complite') ;
+				if(targetFile) targetFile.close();	
+				var downloadEvent:FTPEvent = new FTPEvent(FTPEvent.DOWNLOAD);
+				downloadEvent.bytesTotal = bytesTotal;
+				downloadEvent.file = localFile;
+				cleanUpPassiveSocket();
+				//passiveSocket.removeEventListener(ProgressEvent.SOCKET_DATA, handleData);
+				release(downloadEvent);
+			}else{
+				trace('Data connection closed (data Socket close), wrong data len, loaded: ' +bytes.toString()+', need: '+bytesTotal.toString()) ;
 				releaseWithError(new InvokeError('Data connection closed'));
 			}
 
