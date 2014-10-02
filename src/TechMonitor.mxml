@@ -291,7 +291,7 @@
 				var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
 				var endTT:FieldValue=ddEndTechType.selectedItem as FieldValue;
 				techMonitor.techPoint=techPointObj;
-				techMonitor.startTechType=startTT;
+				//techMonitor.startTechType=startTT;
 				techMonitor.manualAdd=manualAdd;
 				techMonitor.finalOperation=finalOperation;
 				techMonitor.endTechType=endTT;

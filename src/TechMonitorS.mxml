@@ -45,9 +45,9 @@
 			private var techPointObj:TechPoint;
 			private var techPoint:int;
 			
-			[Bindable]
-			private var startTechTypeIdx:int;
-			private var startTechType:int;
+			//[Bindable]
+			//private var startTechTypeIdx:int;
+			//private var startTechType:int;
 			[Bindable]
 			private var manualAdd:Boolean;
 			[Bindable]
@@ -142,7 +142,7 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					techPoint=so.data.monitorTechPoint;
-					startTechType=so.data.startTechType;
+					//startTechType=so.data.startTechType;
 					manualAdd=Boolean(so.data.manualAdd);
 					finalOperation=Boolean(so.data.finalOperation);
 					endTechType=so.data.endTechType;
@@ -152,7 +152,7 @@
 					var configPass:String=so.data.configPass;;
 					if(configPass) Context.setAttribute('configPass',configPass);
 				}
-				if(startTechType) startTechTypeIdx=ArrayUtil.searchItemIdx('value',startTechType,techTypeAC.source);
+				//if(startTechType) startTechTypeIdx=ArrayUtil.searchItemIdx('value',startTechType,techTypeAC.source);
 				if(endTechType) endTechTypeIdx=ArrayUtil.searchItemIdx('value',endTechType,techTypeAC.source);
 				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
 				//if(compliteTechType) compliteTechTypeIdx=ArrayUtil.searchItemIdx('value',compliteTechType,techTypeAC.source);
@@ -170,6 +170,7 @@
 				currentState='config';
 			}
 			
+			/*
 			protected function ddStartTechType_changeHandler(event:IndexChangeEvent):void{
 				var st:FieldValue= ddStartTechType.selectedItem as FieldValue;
 				if (!st) return;
@@ -178,6 +179,7 @@
 				so.data.startTechType = startTechType;
 				so.flush();  
 			}
+			*/
 			
 			protected function tgManualAdd_changeHandler(event:Event):void{
 				manualAdd=tgManualAdd.selected;
@@ -234,9 +236,10 @@
 			private var barcodeReader:ComReader;
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
-				var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
+				//var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
 				var endTT:FieldValue=ddEndTechType.selectedItem as FieldValue;
-				if(!techPointObj || !startTT ||!endTT){
+				//if(!techPointObj || !startTT ||!endTT){
+				if(!techPointObj ||!endTT){
 					Alert.show('Монитор не настроен');
 					return;
 				}
@@ -288,10 +291,10 @@
 			
 			protected function state1_enterStateHandler(event:FlexEvent):void{
 				cfgEnabled=false;
-				var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
+				//var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
 				var endTT:FieldValue=ddEndTechType.selectedItem as FieldValue;
 				techMonitor.techPoint=techPointObj;
-				techMonitor.startTechType=startTT;
+				//techMonitor.startTechType=startTT;
 				techMonitor.manualAdd=manualAdd;
 				techMonitor.finalOperation=finalOperation;
 				techMonitor.endTechType=endTT;
@@ -407,11 +410,11 @@
 		</s:HGroup>
 		
 		<s:Spacer height="10"/>
-		<s:HGroup id="gStartTT" gap="5" verticalAlign="baseline">
+		<!--<s:HGroup id="gStartTT" gap="5" verticalAlign="baseline">
 			<s:Label text="Стартовая операция" width="{lbLong.width}" toolTip="Предыдущая операция"/>
 			<s:DropDownList id="ddStartTechType" selectedIndex="{startTechTypeIdx}" dataProvider="{techTypeAC}" 
 							change="ddStartTechType_changeHandler(event)" width="200"/>
-		</s:HGroup>
+		</s:HGroup>-->
 		<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">
 			<s:CheckBox id="tgManualAdd" selected="@{manualAdd}" change="tgManualAdd_changeHandler(event)"/>
 			<s:Label text="Ручное добавление"/>

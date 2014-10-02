@@ -136,14 +136,14 @@
 				var pc:DataGridColumn;
 				
 				pc= new DataGridColumn('id'); pc.headerText='Заказ'; pc.width=70;  printGridColumns.push(pc);
-				pc= new DataGridColumn('sub_id'); pc.headerText='Подзаказ'; pc.width=50;  printGridColumns.push(pc);
+				pc= new DataGridColumn('sub_id'); pc.headerText='Подзаказ'; pc.width=40;  printGridColumns.push(pc);
 				pc= new DataGridColumn('op_name'); pc.headerText='Операция'; printGridColumns.push(pc);
-				pc= new DataGridColumn('path'); pc.headerText='Алиас'; printGridColumns.push(pc);
+				pc= new DataGridColumn('alias'); pc.headerText='Алиас'; printGridColumns.push(pc);
 				pc= new DataGridColumn('start_date'); pc.headerText='Старт';  pc.width=80; pc.labelFunction=dateLabelFunction; printGridColumns.push(pc);
 				pc= new DataGridColumn('state_date'); pc.headerText='Конец';  pc.width=80; pc.labelFunction=dateLabelFunction; printGridColumns.push(pc);
-				pc= new DataGridColumn('reset_date'); pc.headerText='Сброс';  pc.width=80; pc.labelFunction=dateLabelFunction; printGridColumns.push(pc);
-				pc= new DataGridColumn('bp_name'); pc.headerText='Часть книги'; pc.width=70; printGridColumns.push(pc);
-				pc= new DataGridColumn('delay'); pc.headerText='Задержка'; pc.width=60; printGridColumns.push(pc);
+				pc= new DataGridColumn('resetDate'); pc.headerText='Сброс';  pc.width=80; pc.labelFunction=dateLabelFunction; printGridColumns.push(pc);
+				pc= new DataGridColumn('bp_name'); pc.headerText='Часть книги'; pc.width=50; printGridColumns.push(pc);
+				pc= new DataGridColumn('delay'); pc.headerText='Задержка'; pc.width=50; printGridColumns.push(pc);
 			}
 			
 			private function dateLabelFunction(item:Object, column:DataGridColumn):String{

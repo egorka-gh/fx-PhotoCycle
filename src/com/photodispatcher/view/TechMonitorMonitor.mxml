@@ -36,7 +36,7 @@
 			import spark.formatters.DateTimeFormatter;
 			
 			public var techPoint:TechPoint;
-			public var startTechType:FieldValue;
+			//public var startTechType:FieldValue;
 			[Bindable]
 			public var manualAdd:Boolean;
 			public var finalOperation:Boolean;
@@ -119,7 +119,7 @@
 				col= new GridColumn('sub_id'); col.headerText='Подзаказ'; gridColumnsAC.addItem(col);
 				col= new GridColumn('state_name'); col.headerText='Начальный статус'; gridColumnsAC.addItem(col); 
 				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
-				col= new GridColumn('state_date'); col.headerText='Дата'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
+				col= new GridColumn('start_date'); col.headerText='Дата'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
 
 				col= new GridColumn('state_name2'); col.headerText='Ожидаемый статус'; gridColumnsAC.addItem(col); 
 				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
@@ -152,7 +152,7 @@
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onRefresh);
-				latch.addLatch(svc.loadMonitorEState((startTechType?startTechType.value:0), techPoint.tech_type, endTechType.value));
+				latch.addLatch(svc.loadMonitorEState(techPoint.tech_type, endTechType.value));
 				latch.start();
 			}
 			private function onRefresh(e:Event):void{
@@ -245,7 +245,7 @@
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onAddOrder);
-				latch.addLatch(svc.extraStateStartMonitor(order.order_id, order.sub_id, techPoint.tech_type, (startTechType?startTechType.value:0)));
+				latch.addLatch(svc.extraStateStartMonitor(order.order_id, order.sub_id, techPoint.tech_type));
 				latch.start();
 			}
 			private function onAddOrder(event:Event):void{
@@ -341,7 +341,7 @@
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onCancelOrder);
 				latch.addLatch(svc.extraStateReset(cancelItem.id, cancelItem.sub_id, techPoint.tech_type));
-				if(startTechType) latch.addLatch(svc.extraStateReset(cancelItem.id, cancelItem.sub_id, startTechType.value));
+				//if(startTechType) latch.addLatch(svc.extraStateReset(cancelItem.id, cancelItem.sub_id, startTechType.value));
 				latch.start();
 			}
 			private function onCancelOrder(event:Event):void{
