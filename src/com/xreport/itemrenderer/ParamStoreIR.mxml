@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				creationComplete="{init()}"
+				autoDrawBackground="false"
+				width="100%">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			
+			import org.granite.tide.BaseContext;
+			import org.granite.tide.Context;
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
+			import org.xreport.entities.Parameter;
+			import org.xreport.entities.Source;
+			import org.xreport.entities.UkmStore;
+			import org.xreport.services.XReportService;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var param:Parameter;
+			[Bindable]
+			private var storeLst:ArrayCollection=new ArrayCollection();
+			
+			//[Inject]
+			//public var xReportService:XReportService;
+
+			//private var tideContext:BaseContext = Tide.getInstance().getContext() as BaseContext;
+
+			protected function init():void{
+				//tideContext.byType(MyComponent)
+				var tideContext:BaseContext = Tide.getInstance().getContext();
+				if(!tideContext) return;
+				//var xReportService:XReportService=tideContext.xReportService;
+				var xReportService:XReportService=tideContext.byType(XReportService) as XReportService;
+				var source:Source=tideContext.source;
+				if(xReportService && source) xReportService.getStores(source.id, onList, onFault)
+			}
+			private function onList(event:TideResultEvent):void {
+				storeLst = ArrayCollection(event.result);
+				if(storeLst && storeLst.length>0){
+					ddChoise.selectedIndex=0; 
+					ddChoise_changeHandler(null);
+				}
+			}
+			private function onFault(event:TideFaultEvent):void {
+				//Alert.show(event.fault.faultString);
+			}
+
+			override public function set data(value:Object):void{
+				super.data = value;
+				if(value && value is Parameter){
+					param=value as Parameter; 
+				}else{
+					param= null;
+				}
+			}
+
+			protected function ddChoise_changeHandler(event:IndexChangeEvent):void{
+				//if(param) param.valInt=ddChoise.selectedItem.store_id;
+				var store:UkmStore= ddChoise.selectedItem as UkmStore; 
+				if(param && store) param.valString=store.store_id.toString();
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:HGroup gap="5" horizontalAlign="left" verticalAlign="middle" width="100%">
+		<s:Label text="{param.name}"/>
+		<s:Spacer width="5"/>
+		<s:DropDownList id="ddChoise" dataProvider="{storeLst}" labelField="name" change="ddChoise_changeHandler(event)" width="100%"/>
+	</s:HGroup>
+	
+</s:ItemRenderer>

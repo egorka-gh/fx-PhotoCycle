@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.report.Parameter;
+			
+			[Bindable]
+			private var param:Parameter;
+
+			override public function set data(value:Object):void{
+				super.data = value;
+				if(value && value is Parameter){
+					param=value as Parameter; 
+				}else{
+					param= null;
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup gap="5" horizontalAlign="left" verticalAlign="middle">
+		<s:Label text="{param.name}"/>
+		<s:Spacer width="5"/>
+		<s:TextInput id="tiValue" text="@{param.valString}" width="150"/>
+	</s:HGroup>
+	
+</s:ItemRenderer>

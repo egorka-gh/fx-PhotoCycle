@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.report.Parameter;
+			
+			[Bindable]
+			private var param:Parameter;
+
+			[Bindable]
+			private var dayNames:Array=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+			[Bindable]
+			private var mnthNames:Array=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+			override public function set data(value:Object):void{
+				super.data = value;
+				if(value && value is Parameter){
+					param=value as Parameter; 
+				}else{
+					param= null;
+				}
+				if(param){
+					var dt:Date= new Date();
+					if(!param.valFrom){
+						param.valFrom=new Date(dt.fullYear,dt.month, 1);
+						
+					}
+					if(!param.valTo) param.valTo=new Date(dt.fullYear,dt.month, dt.date);
+				}
+			}
+			
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup gap="5" horizontalAlign="left" verticalAlign="middle">
+
+		<s:Label text="{param.name}"/>
+		<s:Spacer width="5"/>
+		
+		<s:Label text="C"/>
+		<mx:DateField id="dcFrom" selectedDate="@{param.valFrom}" formatString="DD.MM.YY" dayNames="{dayNames}" firstDayOfWeek="1" monthNames="{mnthNames}"/>
+		<s:Spacer width="5"/>
+
+		<s:Label text="По"/>
+		<mx:DateField id="dcTo" selectedDate="@{param.valTo}" formatString="DD.MM.YY" dayNames="{dayNames}" firstDayOfWeek="1" monthNames="{mnthNames}"/>
+	</s:HGroup>
+	
+</s:ItemRenderer>
