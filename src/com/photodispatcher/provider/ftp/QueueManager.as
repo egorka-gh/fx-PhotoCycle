@@ -566,13 +566,15 @@ package com.photodispatcher.provider.ftp{
 					dispatchEvent(new Event('queueLenthChange'));
 				}
 			}else if(order.hasSuborders){
-				/*
-				//TODO skip while not implemented
-				dispatchEvent(event.clone());
-				return
-				*/
 				if(!fbDownloadManager){
-					dispatchEvent(event.clone());//fbookservice not configured
+					//dispatchEvent(event.clone());
+					//fbookservice not configured
+					trace('QueueManager.onDownloadManagerLoad; fbook service not configured; order id '+order.id);
+					order.state=OrderState.ERR_GET_PROJECT;
+					if(!remoteMode) StateLog.log(OrderState.ERR_GET_PROJECT,order.id,'','Сервис Fbook не настроен');
+					order.setErrLimit();
+					resetOrder(order);
+					queue.push(order);
 				}else{
 					fbDownloadManager.download(order);
 				}

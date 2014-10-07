@@ -253,6 +253,7 @@
 								currentItem.ftpService.loaded=true;
 								currentItem.hotFolder.loaded=true;
 								currentItem.webService.loaded=true;
+								detectState();
 							}
 						}
 					}

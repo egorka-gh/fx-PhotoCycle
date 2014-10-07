@@ -3,6 +3,8 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.model.mysql.entities.TechLog;
 	import com.photodispatcher.model.mysql.services.TechService;
 	
+	import flash.events.Event;
+	
 	import org.granite.tide.Tide;
 
 	public class TechRegisterFolding extends TechRegisterBase{
@@ -24,12 +26,18 @@ package com.photodispatcher.tech{
 
 				var latch:DbLatch=new DbLatch();
 				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
-				//latch.addEventListener(Event.COMPLETE,onLog);
+				latch.addEventListener(Event.COMPLETE, onLogComplie);
 				latch.addLatch(svc.logByPg(tl));
 				latch.start();
 			}
 		}
-		
+		private function onLogComplie(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch && !latch.complite){
+				logSequeceErr('Ошибка базы данных: '+latch.error);
+			}
+		}
+
 
 		/*
 		private var startLoged:Boolean=false;

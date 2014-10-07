@@ -5,9 +5,16 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.provider.fbook.FBookAuthService;
 	import com.photodispatcher.util.ArrayUtil;
+	import com.photodispatcher.util.JsonUtil;
 	
 	import flash.events.Event;
+	
+	import mx.rpc.AsyncResponder;
+	import mx.rpc.AsyncToken;
+	import mx.rpc.events.FaultEvent;
+	import mx.rpc.events.ResultEvent;
 	
 	import pl.maliboo.ftp.FTPFile;
 
@@ -45,6 +52,69 @@ package com.photodispatcher.service.web{
 		private var preloadStates:Array=[];
 		private var is_preload:Boolean;
 		private var fetchState:int=-1;
+		private var auth:FBookAuthService;
+		
+		
+		private function login():void{
+			if(!source.fbookService || !source.fbookService.url){
+				//has no fbook service
+				login_ResultHandler(null,null);
+				return;
+			}
+			//check login
+			//var auth:AuthService=AuthService.instance;
+			if(!auth){ 
+				auth= new FBookAuthService(); //AuthService();
+				auth.method='POST';
+				auth.resultFormat='text';
+			}
+			if(!auth.authorized){ // || !source.fbookSid){
+				//attempt to login
+				auth.baseUrl=source.fbookService.url;
+				var token:AsyncToken;
+				token=auth.siteLogin(source.fbookService.user,source.fbookService.pass);
+				token.addResponder(new AsyncResponder(login_ResultHandler,login_FaultHandler));
+				trace('FBook start login');
+			}else{
+				login_ResultHandler(null,null);
+			}
+		}
+		private function login_ResultHandler(event:ResultEvent, token:AsyncToken):void {
+			var r:Object;
+			if(event) r=JsonUtil.decode(event.result as String);
+			if(event==null || r.result){
+				trace('FBook login complite or not configured');
+				switch (cmd){
+					case CMD_SYNC:
+						orderes=[];
+						is_preload=true;
+						preloadStates=PARAM_STATUS_PRELOAD_VALUES.concat();
+						startListen();
+						getData();
+						break;
+					case CMD_CHECK_STATE:
+						orderes=[];
+						startListen();
+						//ask order sate
+						var post:Object;
+						post= new Object();
+						post[PARAM_KEY]=API_KEY;
+						post[PARAM_COMMAND]=COMMAND_GET_ORDER_INFO;
+						post[PARAM_ORDER_ID]=cleanId(lastOrder.src_id);
+						if(source.fbookSid) post.sid=source.fbookSid;
+						trace('FBook web check project '+lastOrder.src_id);
+						client.getData( new InvokerUrl(baseUrl+URL_API),post);
+						break;
+				}
+			} else {
+				abort('Ошибка подключения к '+source.fbookService.url);
+			}
+		}
+		private function login_FaultHandler(event:FaultEvent, token:AsyncToken):void {
+			abort('Ошибка подключения к '+source.fbookService.url+': '+event.fault.faultString);
+		}
+
+		
 
 		override public function sync():void{
 			if(!source || source.type!=SourceType.SRC_FOTOKNIGA){
@@ -54,11 +124,14 @@ package com.photodispatcher.service.web{
 			cmd=CMD_SYNC;
 			_hasError=false;
 			_errMesage='';
+			login();
+			/*
 			orderes=[];
 			is_preload=true;
 			preloadStates=PARAM_STATUS_PRELOAD_VALUES.concat();
 			startListen();
 			getData();
+			*/
 			/*
 			//ask orders
 			var post:Object;
@@ -149,10 +222,11 @@ package com.photodispatcher.service.web{
 				abort('Не верная иннициализация команды');
 				return;
 			}
-			//_getOrder=order;
 			cmd=CMD_CHECK_STATE;
 			_hasError=false;
 			_errMesage='';
+			login();
+			/*
 			orderes=[];
 			startListen();
 			//ask order sate
@@ -167,6 +241,7 @@ package com.photodispatcher.service.web{
 			if(source.fbookSid) post.sid=source.fbookSid;
 			
 			client.getData( new InvokerUrl(baseUrl+URL_API),post);
+			*/
 		}
 		private function cleanId(src_id:String):int{
 			//TODO removes subNumber (-#) for fotokniga

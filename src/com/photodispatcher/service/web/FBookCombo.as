@@ -7,6 +7,7 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
+	import com.photodispatcher.provider.fbook.FBookAuthService;
 	import com.photodispatcher.util.JsonUtil;
 	
 	import flash.events.Event;
@@ -47,12 +48,13 @@ package com.photodispatcher.service.web{
 		private var preloadStates:Array=[];
 		private var is_preload:Boolean;
 		private var fetchState:int=-1;
+		private var auth:FBookAuthService;
 		
 		private function login():void{
 			//check login
-			var auth:AuthService=AuthService.instance;
+			//var auth:AuthService=AuthService.instance;
 			if(!auth){ 
-				auth= new AuthService();
+				auth= new FBookAuthService(); //AuthService();
 				auth.method='POST';
 				auth.resultFormat='text';
 			}

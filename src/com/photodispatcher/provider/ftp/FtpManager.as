@@ -14,6 +14,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.provider.preprocess.CaptionSetter;
 	import com.photodispatcher.provider.preprocess.PreprocessManager;
 	import com.photodispatcher.util.ArrayUtil;
@@ -234,6 +235,12 @@ package com.photodispatcher.provider.ftp{
 				if(id){
 					var idx:int=ArrayUtil.searchItemIdx('id',id,writeOrders);
 					if(idx!=-1) writeOrders.splice(idx,1);
+					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+					latch=new DbLatch();
+					//latch.addEventListener(Event.COMPLETE,onCompleteOrder);
+					//set PRN_WAITE extra state 
+					latch.addLatch(svc.extraStateSet(id, '',OrderState.PRN_WAITE, new Date()));
+					latch.start();
 				}
 			}
 		}

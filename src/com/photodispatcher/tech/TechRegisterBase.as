@@ -86,8 +86,16 @@ package com.photodispatcher.tech{
 			var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
 			//latch.addEventListener(Event.COMPLETE,onLog);
 			latch.addLatch(svc.logByPg(tl));
+			latch.addEventListener(Event.COMPLETE, onLogComplie);
 			latch.start();
 		}
+		private function onLogComplie(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch && !latch.complite){
+				logSequeceErr('Ошибка базы данных: '+latch.error);
+			}
+		}
+		
 		
 		public function get isComplete():Boolean{
 			if(inexactBookSequence) return false;//can't detect

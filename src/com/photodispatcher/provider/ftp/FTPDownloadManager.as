@@ -416,6 +416,10 @@ package com.photodispatcher.provider.ftp{
 					break;
 				}
 			}
+			if(source.type==SourceType.SRC_FOTOKNIGA){
+				//build so from src_id (mainId-subId)
+				SuborderBuilder.build(source,fileStructure,order);
+			}
 			if(!fileStructureOk){
 				trace('FTPDownloadManager empty ftp folder '+orderId);
 				order.state=OrderState.ERR_FTP;
@@ -432,6 +436,12 @@ package com.photodispatcher.provider.ftp{
 						order.state=OrderState.FTP_LOAD;
 						checkDownload();
 					}
+					//check queue
+					if(downloadOrders.length==0){
+						//ask for order
+						if(DEBUG_TRACE) trace('FTPDownloadManager checkQueue ask for order '+ftpService.url);
+						dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FETCH_NEXT_EVENT));
+					}
 				}
 				loadProgress();
 				//reuseConnection(cnn);
@@ -439,18 +449,18 @@ package com.photodispatcher.provider.ftp{
 				connectionManager.reconnect(cnn);
 				return;
 			}
-			//buid suborders
-			//var soArr:Array;
-			try{
-				//soArr= 
-				SuborderBuilder.build(source,fileStructure,order);
-			}catch (e:Error){
-				trace('FTPDownloadManager error while build suborders '+orderId);
-				order.state=OrderState.ERR_READ_LOCK;
-				if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе подзаказов.');
-				loadProgress();
-				reuseConnection(cnn);
-				return;
+			if(source.type==SourceType.SRC_PROFOTO){
+				//buid suborders (book folder) 
+				try{
+					SuborderBuilder.build(source,fileStructure,order);
+				}catch (e:Error){
+					trace('FTPDownloadManager error while build suborders '+orderId);
+					order.state=OrderState.ERR_READ_LOCK;
+					if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе подзаказов.');
+					loadProgress();
+					reuseConnection(cnn);
+					return;
+				}
 			}
 			
 			//build print groups 

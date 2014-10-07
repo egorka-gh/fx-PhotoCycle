@@ -40,6 +40,7 @@
 				reConnect();
 			}
 
+			[Bindable]
 			private var bdServer:String;
 			private function reConnect():void{
 				_connected=false;
@@ -263,7 +264,7 @@
 	<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Сервер базы данных"/>
-			<s:TextInput id="tiBDPath" width="300"  enter="tiBDPath_enterHandler(event)"/>
+			<s:TextInput id="tiBDPath" width="300"  text="{bdServer}" enter="tiBDPath_enterHandler(event)"/>
 			<!--<s:Button id="btBrowse" label="..." width="30"
 					  click="btBrowse_clickHandler(event)"/>-->
 		</s:HGroup>

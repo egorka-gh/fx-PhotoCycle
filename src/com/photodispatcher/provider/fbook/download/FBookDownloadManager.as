@@ -1,5 +1,5 @@
 package com.photodispatcher.provider.fbook.download{
-	import com.akmeful.fotokniga.net.AuthService;
+	//import com.akmeful.fotokniga.net.AuthService;
 	import com.akmeful.json.JsonUtil;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
@@ -228,7 +228,7 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			removeFromQueue(order);
 		}
-		
+		/*
 		private function login_ResultHandler(event:ResultEvent, token:AsyncToken):void {
 			var r:Object = JsonUtil.decode(event.result as String);
 			if(r.result){
@@ -250,7 +250,7 @@ package com.photodispatcher.provider.fbook.download{
 			flowError('Ошибка подключения к '+source.fbookService.url+': '+event.fault.faultString);
 			//token=null;
 		}
-		
+		*/
 		public function download(order:Order):void{
 			var so:SubOrder;
 			if(order){
@@ -366,6 +366,7 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			projectLoader.fetchProject(int(currentSubOrder.sub_id), currentSubOrder.native_type);
 		}
+		/*
 		private function relogin():void{
 			if(source.type == SourceType.SRC_PROFOTO){
 				//use main login, no auth needed
@@ -397,7 +398,7 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			//token=null;
 		}
-		
+		*/
 		private function onProjectLoaded(event:Event):void{
 			//var order:Order;
 			if(!currentSubOrder || !currentOrder) return;
