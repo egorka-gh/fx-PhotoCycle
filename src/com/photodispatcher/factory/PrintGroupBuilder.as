@@ -398,6 +398,8 @@ package com.photodispatcher.factory{
 					
 					//set suborder project type
 					so.proj_type=proj.bookType;
+					//save alias
+					so.alias=proj.printAlias;
 					
 					if (proj.bookType==BookSynonym.BOOK_TYPE_BCARD){
 						//set print qtty 4 Card project

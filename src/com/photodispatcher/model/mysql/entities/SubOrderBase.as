@@ -14,6 +14,7 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class SubOrderBase extends AbstractEntity {
 
+        private var _alias:String;
         private var _books_done:int;
         private var _extraInfo:OrderExtraInfo;
         private var _ftp_folder:String;
@@ -29,6 +30,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _state_date:Date;
         private var _state_name:String;
         private var _sub_id:String;
+
+        public function set alias(value:String):void {
+            _alias = value;
+        }
+        public function get alias():String {
+            return _alias;
+        }
 
         public function set books_done(value:int):void {
             _books_done = value;
@@ -137,6 +145,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _alias = input.readObject() as String;
             _books_done = input.readObject() as int;
             _extraInfo = input.readObject() as OrderExtraInfo;
             _ftp_folder = input.readObject() as String;
@@ -156,6 +165,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_alias is IPropertyHolder) ? IPropertyHolder(_alias).object : _alias);
             output.writeObject((_books_done is IPropertyHolder) ? IPropertyHolder(_books_done).object : _books_done);
             output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);
             output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);

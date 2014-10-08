@@ -22,6 +22,7 @@ package com.photodispatcher.model.mysql.entities {
 			var col:GridColumn;
 			
 			col= new GridColumn('id'); col.headerText='id'; col.visible=false; result.push(col);
+			col= new GridColumn('sub_id'); col.headerText='Подзаказ'; result.push(col); col.width=60;
 			col= new GridColumn('state_name'); col.headerText='Статус'; result.push(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
 			col= new GridColumn('start_date'); col.headerText='Начало'; col.formatter=fmt;  col.width=110; result.push(col);

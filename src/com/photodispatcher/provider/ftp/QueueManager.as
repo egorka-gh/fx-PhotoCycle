@@ -502,7 +502,7 @@ package com.photodispatcher.provider.ftp{
 				startOrder.state=OrderState.FTP_WEB_OK;
 				if(!startOrder.ftp_folder) startOrder.ftp_folder=startOrder.id;
 
-				//fill extra info
+				//fill extra info ???
 				if(pw.getLastOrder().extraInfo) startOrder.extraInfo=pw.getLastOrder().extraInfo;
 				/*
 				startOrder.extraInfo= new OrderExtraInfo();

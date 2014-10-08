@@ -296,8 +296,9 @@ package com.photodispatcher.service.web{
 					var arr:Array=OrderBuilder.build(source,[result.result]);
 					if(arr && arr.length>0){
 						var to:Order=arr[0] as Order;
-						if(to && to.extraInfo){
-							lastOrder.extraInfo=to.extraInfo;
+						if(to){
+							if(to.extraInfo) lastOrder.extraInfo=to.extraInfo;
+							if(to.fotos_num>0) lastOrder.fotos_num=to.fotos_num;
 							/*
 							_getOrder.extraInfo= new OrderExtraInfo();
 							if(to.extraInfo){

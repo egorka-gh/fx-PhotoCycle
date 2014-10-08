@@ -11,8 +11,8 @@ package com.photodispatcher.tech{
 		
 		public function TechRegisterFolding(printGroup:String, books:int, sheets:int){
 			super(printGroup, books, sheets);
-			_canInterrupt=true;
-			_strictSequence=true;
+			//_canInterrupt=true;
+			//_strictSequence=true;
 		}
 		
 		override protected function logRegistred(book:int, sheet:int):void{

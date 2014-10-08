@@ -26,6 +26,8 @@
 			import spark.formatters.DateTimeFormatter;
 			import spark.utils.TextFlowUtil;
 		
+			public static const LOG_LEN_LIMIT:int=4000;
+			
 			public var techPoint:TechPoint;
 			private var _barcodeReader:ComReader;
 			public function get barcodeReader():ComReader{
@@ -77,6 +79,7 @@
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				fmt.dateTimePattern='HH:mm:ss';
 				_barText += fmt.format(new Date())+': '+ value;
+				if(_barText.length>LOG_LEN_LIMIT) _barText=_barText.substr(_barText.length-LOG_LEN_LIMIT);
 			}
 
 
@@ -190,6 +193,13 @@
 				fmt.dateTimePattern='HH:mm:ss';
 				logText += "<span>" + fmt.format(new Date()) + " </span>";
 				logText += "<span color="+color+" "+bold+">" + msg + "</span> <br />";
+				//cut
+				if(logText.length> LOG_LEN_LIMIT){
+					var idx:int=logText.indexOf('<br />',logText.length-LOG_LEN_LIMIT);
+					if(idx!=-1){
+						logText=logText.substr(idx+6);
+					}
+				}
 				try{
 					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
 				}catch(error:Error){

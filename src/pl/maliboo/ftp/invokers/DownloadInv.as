@@ -87,7 +87,7 @@ package pl.maliboo.ftp.invokers
 						//passiveSocket.removeEventListener(ProgressEvent.SOCKET_DATA, handleData);
 						release(downloadEvent);
 					}else{
-						trace('Server says finish download, but transfer incomplete, waite data socket close');
+						//trace('Server says finish download, but transfer incomplete, waite data socket close');
 						/*
 						trace('Data connection closed (transfer completed), wrong data len, loaded: ' +bytes.toString()+', need: '+bytesTotal.toString()) ;
 						releaseWithError(new InvokeError('Data connection closed'));

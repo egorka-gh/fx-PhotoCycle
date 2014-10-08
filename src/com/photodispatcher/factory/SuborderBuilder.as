@@ -67,6 +67,7 @@ package com.photodispatcher.factory{
 					o.order_id=order.id;
 					o.sub_id=subId;
 					o.src_type=SourceType.SRC_FBOOK;
+					if(order.fotos_num>0) o.prt_qty=order.fotos_num;
 					//o.ftp_folder=order.ftp_folder;
 					//o.ftp_folder='';
 					/*
