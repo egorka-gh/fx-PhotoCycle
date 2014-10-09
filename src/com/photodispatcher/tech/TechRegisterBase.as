@@ -22,22 +22,43 @@ package com.photodispatcher.tech{
 		public static const ERROR_SEQUENCE:int=1;
 
 		public var techPoint:TechPoint;
+		[Bindable]
 		public var printGroupId:String;
+		[Bindable]
 		public var books:int;
+		[Bindable]
 		public var sheets:int;
+		[Bindable]
 		public var revers:Boolean=false;
 		public var flap:ValveCom;
 		public var inexactBookSequence:Boolean=false;
 		public var detectFirstBook:Boolean=false;
+		public var hasWrongSequence:Boolean=false;
 		
 		private var regArray:Array;
 		private var bookPart:int;
 		private var lastBook:int;
 		private var lastSheet:int;
-		private var registred:int;
+		[Bindable]
+		public var registred:int;
 		
 		protected var logOk:Boolean;
+
+		protected var _canInterrupt:Boolean=false;
+		public function get canInterrupt():Boolean{
+			return _canInterrupt;
+		}
 		
+		protected var _strictSequence:Boolean=false;
+		public function get strictSequence():Boolean{
+			return _strictSequence;
+		}
+
+		protected var _logSequenceErr:Boolean=true;
+		public function get logSequenceErr():Boolean{
+			return _logSequenceErr;
+		}
+
 		public function TechRegisterBase(printGroup:String, books:int,sheets:int){
 			super(null);
 			printGroupId=printGroup;
@@ -151,16 +172,6 @@ package com.photodispatcher.tech{
 			var endSheet:int=revers?1:sheets;
 			return lastSheet==endSheet;
 		}
-
-		protected var _canInterrupt:Boolean=false;
-		public function get canInterrupt():Boolean{
-			return _canInterrupt;
-		}
-
-		protected var _strictSequence:Boolean=false;
-		public function get strictSequence():Boolean{
-			return _strictSequence;
-		}
 		
 		public function finalise():Boolean{
 			var result:Boolean=true;
@@ -197,7 +208,15 @@ package com.photodispatcher.tech{
 			result=dBook==book && dSheet==sheet;
 			if(!result){
 				if(canInterrupt && flap) flap.setOff();
-				logSequeceErr('Не верная последовательность: '+ StrUtil.sheetName(book,sheet) +' вместо '+ StrUtil.sheetName(dBook,dSheet));
+				if(logSequenceErr){
+					logSequeceErr('Не верная последовательность: '+ StrUtil.sheetName(book,sheet)+' вместо '+ StrUtil.sheetName(dBook,dSheet));
+				}else{
+					if(lastBook==book && lastSheet==sheet){
+						logSequeceErr('Повтор последовательности: '+ StrUtil.sheetName(book,sheet));
+					}
+					if(!hasWrongSequence) logSequeceErr('Не верная последовательность');
+				}
+				hasWrongSequence=true;
 			}
 			return result;
 		}

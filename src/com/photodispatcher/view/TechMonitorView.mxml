@@ -20,13 +20,18 @@
 			import com.photodispatcher.tech.TechRegisterCommon;
 			import com.photodispatcher.tech.TechRegisterFolding;
 			import com.photodispatcher.tech.TechRegisterPrint;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
 			
 			import org.granite.tide.Tide;
 			
+			import spark.components.gridClasses.GridColumn;
 			import spark.formatters.DateTimeFormatter;
 			import spark.utils.TextFlowUtil;
 		
-			public static const LOG_LEN_LIMIT:int=4000;
+			public static const LOG_LEN_LIMIT:int=2000;
+			//public static const BAR_LEN_LIMIT:int=2000;
 			
 			public var techPoint:TechPoint;
 			private var _barcodeReader:ComReader;
@@ -78,8 +83,8 @@
 				}
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				fmt.dateTimePattern='HH:mm:ss';
-				_barText += fmt.format(new Date())+': '+ value;
-				if(_barText.length>LOG_LEN_LIMIT) _barText=_barText.substr(_barText.length-LOG_LEN_LIMIT);
+				var txt:String=fmt.format(new Date())+': '+ value+_barText; 
+				_barText=txt;
 			}
 
 
@@ -148,6 +153,7 @@
 			private function onRegisterComplite(event:Event):void{
 			}
 
+			[Bindable]
 			private var currRegister:TechRegisterBase;
 			
 			private function onBarCode(event:BarCodeEvent):void{
@@ -182,8 +188,10 @@
 					//start new
 					barText='';
 					barText=barcode+'\n';
+					regList= new ArrayCollection();
 					currRegister.register(bookNum,pageNum);
 				}
+				regList.addItemAt({log_date:new Date(), page: StrUtil.sheetName(bookNum,pageNum)},0);
 			}
 
 			private function logToScreen(msg:String, isError:Boolean=false):void{
@@ -191,8 +199,8 @@
 				var bold:String=isError?"fontWeight='bold'":'';
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				fmt.dateTimePattern='HH:mm:ss';
-				logText += "<span>" + fmt.format(new Date()) + " </span>";
-				logText += "<span color="+color+" "+bold+">" + msg + "</span> <br />";
+				logText ="<span>"+fmt.format(new Date())+" </span>"+"<span color="+color+" "+bold+">"+msg+"</span> <br />"+logText ;
+				/*
 				//cut
 				if(logText.length> LOG_LEN_LIMIT){
 					var idx:int=logText.indexOf('<br />',logText.length-LOG_LEN_LIMIT);
@@ -200,15 +208,21 @@
 						logText=logText.substr(idx+6);
 					}
 				}
+				*/
 				try{
 					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
 				}catch(error:Error){
 					trace('TextFlow err, txt: '+logText);
 					trace(error.message);
 				}
-				logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
+				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
 			}
 
+			[Bindable]
+			private var regList:ArrayCollection;
+			[Bindable]
+			private var regListColumnth:ArrayCollection;
+			
 			public function start():void{
 				cleanLog();
 				barText='';
@@ -216,6 +230,18 @@
 					//TODO rise err or log in screen
 					logToScreen('---------- Не задана технологическая точка ----------',true);
 				}
+				regList=new ArrayCollection();
+				createGridColumns();
+			}
+
+			public function createGridColumns():void{
+				var result:Array= [];
+				var col:GridColumn;
+				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateTimePattern='HH:mm:ss';
+				col= new GridColumn('log_date'); col.headerText='Время'; col.formatter=fmt;  col.width=70; result.push(col);
+				//col= new GridColumn('book'); col.headerText='Книга'; col.width=45; result.push(col);
+				col= new GridColumn('page'); col.headerText='Лист'; col.width=70; result.push(col);
+				regListColumnth=new ArrayCollection(result);
 			}
 
 			public function stop():void{
@@ -231,6 +257,7 @@
 			private function cleanLog():void{
 				logText='';
 				logTextArea.text='';
+				regList= new ArrayCollection();
 			}
 			
 			protected function btFlapOn_clickHandler(event:MouseEvent):void{
@@ -246,9 +273,19 @@
 	
 	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
 			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" >
+			<s:Label text="Порядок: {currRegister.revers?'Обратный':'Прямой'}"/>
+			<s:Spacer width="100%"/>
+			<s:Label text="Заказ: {currRegister.printGroupId}"/>
+			<s:Label text="Книг: {currRegister.books}"/>
+			<s:Label text="Листов: {currRegister.sheets}"/>
+			<s:Label text="Выполнено: {currRegister.registred.toString()}"/>
+		</s:HGroup>
 		<s:HGroup gap="5" width="100%" height="100%">
 			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
-			<s:TextArea id="barTextArea" text="{barText}" fontSize="10" width="170" height="100%" editable="false"/>
+			<s:DataGrid width="160" height="100%" fontSize="10"
+						dataProvider="{regList}" locale="ru_RU" columns="{regListColumnth}"/>
+			<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="150" height="100%" editable="false"/>
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%">
 			<s:Button label="Очистить" click="{cleanLog()}"/>
