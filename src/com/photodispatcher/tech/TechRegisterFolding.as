@@ -12,6 +12,7 @@ package com.photodispatcher.tech{
 		public function TechRegisterFolding(printGroup:String, books:int, sheets:int){
 			super(printGroup, books, sheets);
 			_logSequenceErr=false;
+			logOk=false;
 			//_canInterrupt=true;
 			//_strictSequence=true;
 		}

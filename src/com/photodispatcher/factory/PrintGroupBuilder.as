@@ -127,8 +127,12 @@ package com.photodispatcher.factory{
 								var s:String=o as String;
 								if(s){
 									fpg=parseFile(pg,s);
-									//TODO use prt_qty only 4 SRC_FOTOKNIGA
-									if(source.type!= SourceType.SRC_FOTOKNIGA){
+									
+									/*old implementation use prt_qty only 4 SRC_FOTOKNIGA
+									/if(source.type!= SourceType.SRC_FOTOKNIGA){*/
+									
+									//TODO reset prt_qty 4 SRC_PROFOTO
+									if(source.type==SourceType.SRC_PROFOTO){
 										if(fpg && fpg.files && fpg.files.length>0){
 											(fpg.files[0] as PrintGroupFile).prt_qty=1;
 										}

@@ -5,6 +5,7 @@ package com.photodispatcher.tech{
 		
 		public function TechRegisterCommon(printGroup:String, books:int, sheets:int){
 			super(printGroup, books, sheets);
+			logOk=false;
 		}
 		
 		/*

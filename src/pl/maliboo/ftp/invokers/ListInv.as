@@ -59,6 +59,9 @@ package pl.maliboo.ftp.invokers
 					//completed
 					//trace('DATA_CONN_CLOSE:\n'+listing);
 					
+					//do nothing wait data socket close
+					trace('Server says list send, waite data socket close');
+					/*
 					if(!listingSend){
 						if(passiveSocket && passiveSocket.connected) handleListing(null);
 						var listEvt:FTPEvent = new FTPEvent(FTPEvent.LISTING);
@@ -77,15 +80,8 @@ package pl.maliboo.ftp.invokers
 						}else{
 							trace('Server says list send, but listing empty, waite data socket close');
 						}
-						/*
-						if(listEvt.listing){
-							release(listEvt);
-						}else{
-							releaseWithError(new InvokeError('Ошибка парса списка файлов'));
-							trace('parse err listing: '+listing);
-						}
-						*/
 					}
+					*/
 					break;
 				case Responses.FILE_STATUS_OK:
 					//Here comes the directory listing. message
