@@ -9,11 +9,11 @@
 	<![CDATA[
 		import com.photodispatcher.context.Context;
 		import com.photodispatcher.event.AsyncSQLEvent;
-		import com.photodispatcher.model.mysql.entities.SourceType;
 		import com.photodispatcher.model.dao.BaseDAO;
 		import com.photodispatcher.model.mysql.DbLatch;
 		import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 		import com.photodispatcher.model.mysql.entities.BookSynonym;
+		import com.photodispatcher.model.mysql.entities.SourceType;
 		import com.photodispatcher.model.mysql.services.BookSynonymService;
 		import com.photodispatcher.util.ArrayUtil;
 		
@@ -28,6 +28,8 @@
 		private var currentList:ArrayCollection=new ArrayCollection();
 		[Bindable]
 		private var bookTypeFilterList:ArrayCollection;
+		[Bindable]
+		private var synonymTypeFilterList:ArrayCollection;
 
 		[Bindable]
 		private var currentBook:BookSynonym;
@@ -37,8 +39,6 @@
 		private var service:BookSynonymService;
 
 		private function refresh():void{
-			//var dao:BookSynonymDAO=new BookSynonymDAO();
-			//currentList.source=dao.findAllArray(SourceType.SRC_FOTOKNIGA);
 			var latch:DbLatch= new DbLatch(false);
 			latch.addEventListener(Event.COMPLETE, onLoad);
 			latch.addLatch(service.loadAll(SourceType.SRC_FOTOKNIGA,0),'synonim');
@@ -78,6 +78,13 @@
 						}
 						if (currentBook) currentBook.templates=templatesList;
 						currentState='itemEdit';
+					}else if(latch.lastToken.tag=='copy'){
+						if(latch.lastResult.resultCode!=0){
+							//resultCode has inserted id
+							lastSelectedBook= new Object();
+							lastSelectedBook.id=latch.lastResult.resultCode;
+							refresh();
+						}
 					}else if(latch.lastToken.tag=='save'){
 						refresh();
 					}
@@ -91,6 +98,7 @@
 		
 		private function init():void{
 			bookTypeFilterList=Context.getAttribute('book_typeList');
+			synonymTypeFilterList=Context.getAttribute('synonym_typeList'); 
 			service=Tide.getInstance().getContext().byType(BookSynonymService,true) as BookSynonymService;
 			refresh();
 		}
@@ -114,15 +122,32 @@
 			}
 		}
 
+		private function copyItem():void{
+			if(currentState!='list') return;
+			if(!itemsGrid || itemsGrid.currentIndex==-1) return;
+			var item:BookSynonym = itemsGrid.currentItem as BookSynonym;
+			if(!item || !item.loaded || item.id==0) return;
+			var latch:DbLatch= new DbLatch(false);
+			latch.addEventListener(Event.COMPLETE, onLoad);
+			latch.addLatch(service.clone(item.id),'copy');
+			latch.start();
+		}
+
 		[Bindable]
 		private var lockView:Boolean=false;
 		private var lastSelectedBook:Object;
 		private function saveAll():void{
+			if(!currentList) return;
 			var item:BookSynonym;
 			var temp:BookPgTemplate;
-			var itemsToSave:ArrayCollection= new ArrayCollection(); //:ListCollectionView= new ListCollectionView(new ArrayList());
-			for each (item in currentList){
+			var itemsToSave:ArrayCollection= new ArrayCollection(); 
+			for each (item in currentList.source){
 				if(item){
+					/*
+					if(item.id==284){
+						trace('debug');
+					}
+					*/
 					if(!item.loaded || item.changed){
 						itemsToSave.addItem(item);
 					}else if(item.templates){
@@ -159,25 +184,22 @@
 			if(!synonym) return false;
 			if(tiSynonymFilter && tiSynonymFilter.text && synonym.synonym.substr(0,tiSynonymFilter.text.length)!=tiSynonymFilter.text) return false;
 			if(ddBookTypeFilter && ddBookTypeFilter.selectedIndex>0 && synonym.book_type!=ddBookTypeFilter.selectedItem.value) return false;
+			if(!ddSynonymTypeFilter || ddSynonymTypeFilter.selectedIndex<=0){
+				//hide deleted
+				if(synonym.synonym_type==-1) return false;
+			}else{
+				if(synonym.synonym_type!=ddSynonymTypeFilter.selectedItem.value) return false;
+			}
 			return true;
 		}
 
 		protected function btEdit_clickHandler(event:MouseEvent):void{
 			currentBook = itemsGrid.currentItem as BookSynonym;
-			//templatesList.source=null;
 			if(currentBook){
 				if(!currentBook.loaded){
 					Alert.show('Необходимо сохранить новую запись.');
 					return;
 				}
-				/*
-				if (!currentBook.templates){
-					if(!currentBook.loadTemplates()) return;
-				}
-				if (!currentBook.templates) currentBook.templates=[];
-				templatesList.source=currentBook.templates;
-				currentState='itemEdit';
-				*/
 				var latch:DbLatch= new DbLatch(false);
 				latch.addEventListener(Event.COMPLETE, onLoad);
 				latch.addLatch(service.loadTemplates(currentBook.id),'template');
@@ -209,6 +231,10 @@
 			<s:TextInput id="tiSynonymFilter" width="300" change="{applyFilter()}"/>
 			
 			<s:Spacer width="5"/>
+			<s:Label text="Тип синонима"/>
+			<s:DropDownList id="ddSynonymTypeFilter" dataProvider="{synonymTypeFilterList}" change="{applyFilter()}"/>
+			
+			<s:Spacer width="5"/>
 			<s:Label text="Тип книги"/>
 			<s:DropDownList id="ddBookTypeFilter" dataProvider="{bookTypeFilterList}" change="{applyFilter()}"/>
 			
@@ -227,6 +253,8 @@
 		<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="left">
 			<!--TODO implement DELETE-->
 			<s:Button id="btAdd" label="Добавить" click="{addItem()}"/>
+			<s:Button id="btCopy" label="Копировать" enabled="true" enabled.itemEdit="false" click="{copyItem()}"/>
+			<s:Spacer width="20"/>
 			<s:Button id="btEdit" enabled="true" enabled.itemEdit="false" label="Состав книги" click="btEdit_clickHandler(event)"/>
 			<s:Button id="btSave" label="Сохранить" click="{saveAll()}"/>
 			<s:Button id="btCancel" label="Отмена" click="{currentState='list';refresh();}"/>

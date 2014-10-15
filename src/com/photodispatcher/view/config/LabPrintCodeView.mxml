@@ -41,6 +41,12 @@
 			[Bindable]
 			private var cuttingFilterList:ArrayCollection;
 
+			private function copyItem():void{
+				var citem:LabPrintCode=itemsGrid.currentItem as LabPrintCode;
+				if(!citem) return;
+				//not implemented
+			}
+
 			private function addItem():void{
 				//get lab type
 				var type:int=0;
@@ -263,6 +269,7 @@
 		<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="left">
 			<!--TODO implement DELETE-->
 			<s:Button id="btAdd" label="Добавить" click="{addItem()}"/>
+			<!--<s:Button id="btCopy" label="Дублировать" click="{copyItem()}"/>-->
 			<s:Button id="btSave" label="Сохранить" click="{saveAll()}"/>
 			<s:Button id="btCancel" label="Отмена" click="{refresh()}"/>
 		</s:HGroup>

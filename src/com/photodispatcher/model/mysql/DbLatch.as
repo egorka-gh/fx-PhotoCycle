@@ -99,7 +99,11 @@ package com.photodispatcher.model.mysql
 			lastResult=event.result.result as SqlResult;
 			if(lastResult){
 				if(!lastResult.complete){
-					releaseError('DbLatch SQL error: code-' +lastResult.errCode.toString() + '; ' + lastResult.errMesage+ '\n' +lastResult.sql);
+					var errMsg:String=lastResult.errMesage;
+					if(lastResult.errCode==1062){
+						errMsg=errMsg.replace('Duplicate entry','Повтор уникального значения');
+					}
+					releaseError('DbLatch SQL error: code-' +lastResult.errCode.toString() + '; '+errMsg+'\n' +lastResult.sql);
 					return;
 				}
 			}

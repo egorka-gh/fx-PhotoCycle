@@ -53,7 +53,7 @@
 			public var disableSorting:Boolean=false;
 		
 			protected function dgItems_gridItemEditorSessionSaveHandler(event:GridItemEditorEvent):void{
-				if(dgItems.selectedItem){
+				if(dgItems.selectedItem && dgItems.selectedItem.hasOwnProperty('changed')){
 					dgItems.selectedItem.changed=true;
 				}
 			}
