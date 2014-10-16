@@ -142,6 +142,7 @@
 					configPass=so.data.configPass;
 					//cFilterId=so.data.cFilterId;
 					if(so.data.syncInterval) syncInterval=so.data.syncInterval;
+					Context.setAttribute('printRotated',Boolean(so.data.printRotated));
 				}
 				
 				Context.setAttribute('syncInterval',syncInterval);

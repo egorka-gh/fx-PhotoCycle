@@ -52,6 +52,7 @@ package com.photodispatcher.print{
 
 		public function post(pg:PrintGroup, revers:Boolean):void{
 			if(!pg) return;
+
 			if (!canPrint(pg)){
 				pg.state=OrderState.ERR_PRINT_POST;
 				dispatchErr(pg,'Группа печати '+pg.id+' не может быть распечатана в '+name+'.');

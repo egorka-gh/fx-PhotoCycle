@@ -224,6 +224,7 @@ package com.photodispatcher.print{
 						if(pg.state == OrderState.ERR_WRITE_LOCK 
 							|| pg.state == OrderState.PRN_WEB_CHECK
 							|| pg.state == OrderState.PRN_WEB_OK
+							|| pg.state == OrderState.PRN_PREPARE
 							|| pg.state == OrderState.PRN_POST) printGrps.unshift(pg);
 					}
 				}

@@ -103,23 +103,40 @@ package com.photodispatcher.print{
 			}
 
 		}
-		
+
 		public function post():void{
 			if(!printGrp || !lab){
 				if(printGrp) printGrp.state=OrderState.ERR_PRINT_POST;
 				dispatchErr('Не верные параметры запуска.');
 				return;
 			}
-			/*
-			//check channel 
-			if (!lab.canPrint(printGrp)){
-				printGrp.state=OrderState.ERR_PRINT_POST;
-				dispatchErr('Группа печати '+printGrp.id+' не может быть распечатана в '+lab.name+'.');
-				return;
+			printGrp.printRotated=false;
+			if(printGrp.book_type!=0 
+				&& (lab.src_type==SourceType.LAB_NORITSU || lab.src_type==SourceType.LAB_NORITSU_NHF) 
+				&& Context.getAttribute('printRotated')){
+				var rotate:RotateTask= new RotateTask(printGrp,lab);
+				rotate.addEventListener(Event.COMPLETE, onRotate);
+				rotate.run();
+			}else{
+				postInternal();
 			}
-			*/
-			printContext[KEY_CHANNEL]=lab.printChannelCode(printGrp);
+		}
 
+		private function onRotate(evt:Event):void{
+			var rotate:RotateTask=evt.target as RotateTask;
+			if(rotate){
+				rotate.removeEventListener(Event.COMPLETE, onRotate);
+				if(rotate.hasErr){
+					dispatchErr(rotate.errMsg);
+				}else{
+					postInternal();
+				}
+			}
+		}
+		
+		private function postInternal():void{
+			printContext[KEY_CHANNEL]=lab.printChannelCode(printGrp);
+			lab.stateCaption='Копирование';
 			//check dest folder
 			try{
 				dstFolder= new File(lab.hot);
@@ -138,6 +155,7 @@ package com.photodispatcher.print{
 			if(src){
 				//check print folder
 				srcFName=src.getPrtFolder()+File.separator+printGrp.order_folder+File.separator+printGrp.path;
+				if(printGrp.printRotated) srcFName=srcFName+File.separator+RotateTask.ROTATE_FOLDER;
 				try{ 
 					srcFolder=new File(srcFName);
 				}catch(e:Error){}
@@ -288,7 +306,12 @@ package com.photodispatcher.print{
 				
 				//set state
 				printGrp.state=OrderState.PRN_PRINT;
-
+				//clean rotate
+				if(printGrp.printRotated){
+					try{
+						srcFolder.deleteDirectory(true); 
+					}catch(e:Error){}
+				}
 				dispatchEvent(new Event(Event.COMPLETE));
 				return;
 			}

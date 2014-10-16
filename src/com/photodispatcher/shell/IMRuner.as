@@ -92,7 +92,7 @@ package  com.photodispatcher.shell{
 			this.imPath=imPath;
 		}
 		
-		public function start(command:IMCommand):void{
+		public function start(command:IMCommand, register:Boolean=true):void{
 			_command=command;
 			if (proc){
 				hasError=true;
@@ -119,7 +119,7 @@ package  com.photodispatcher.shell{
 				dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,command,true,errorResponse));
 				return;
 			}
-			runCommand();
+			runCommand(register);
 		}
 		
 		public function stop():void{
@@ -136,7 +136,7 @@ package  com.photodispatcher.shell{
 			}
 		}
 		
-		private function runCommand():void{
+		private function runCommand(register:Boolean):void{
 			hasError=false;
 			command.state=IMCommand.STATE_STARTED;
 			trace('IMRuner run cmd: '+workFolder+' '+command.toString());
@@ -161,7 +161,7 @@ package  com.photodispatcher.shell{
 					dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,command,true,errorResponse));
 					return;
 				}
-				IMRuner.registerInstance(this);
+				if(register) IMRuner.registerInstance(this);
 			}else{
 				hasError=true;
 				errorResponse='Не верная папка ImageMagick или не верная рабочая папка';

@@ -60,6 +60,9 @@
 			private var currCFilter:ContentFilter;
 			[Bindable]
 			private var syncInterval:int;
+			[Bindable]
+			private var printRotated:Boolean;
+
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
 				//confDAO=new AppConfigDAO();
@@ -87,6 +90,7 @@
 				currCFilter=Context.getAttribute('contentFilter') as ContentFilter;
 				syncInterval=so.data.syncInterval;
 				if(!syncInterval) syncInterval=10;
+				printRotated=Boolean(so.data.printRotated)
 			}
 			
 			private function pingIM():void{
@@ -306,6 +310,14 @@
 				}
 			}
 			
+			protected function tg_rotatePrint_changeHandler(event:Event):void{
+				printRotated =tg_rotatePrint.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.printRotated = printRotated;
+				so.flush();  
+				Context.setAttribute('printRotated', printRotated);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -383,6 +395,10 @@
 
 			<s:FormItem label="Реверсная печать">
 				<s:CheckBox id="tg_reversPrint" selected="{reversPrint}" change="tg_reversPrint_changeHandler(event)"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Переворачивать при печати на Noritsu">
+				<s:CheckBox id="tg_rotatePrint" selected="{printRotated}" change="tg_rotatePrint_changeHandler(event)"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Удаление заказов">

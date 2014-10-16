@@ -138,6 +138,11 @@ package com.photodispatcher.model.mysql.entities {
 		 * post to lab (used in PrintManager) 
 		 */
 		public var destinationLab:LabGeneric;
+		/**
+		 * runtime
+		 * used in PrintManager to rotate before print 
+		 */
+		public var printRotated:Boolean;
 
 		
 		public function PrintGroup(){
