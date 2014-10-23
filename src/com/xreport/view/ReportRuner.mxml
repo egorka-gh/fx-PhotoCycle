@@ -14,6 +14,7 @@
         <![CDATA[
 			import com.photodispatcher.model.mysql.entities.report.Parameter;
 			import com.photodispatcher.model.mysql.entities.report.Report;
+			import com.photodispatcher.model.mysql.entities.report.ReportGroup;
 			import com.photodispatcher.model.mysql.entities.report.ReportResult;
 			import com.photodispatcher.model.mysql.entities.report.ReportSource;
 			import com.photodispatcher.model.mysql.services.XReportService;
@@ -29,6 +30,8 @@
 			import org.granite.tide.events.TideFaultEvent;
 			import org.granite.tide.events.TideResultEvent;
 			
+			import spark.events.IndexChangeEvent;
+			
             
 			[Inject]
 			public var xReportService:XReportService;
@@ -39,6 +42,9 @@
 			public var sourceLst:ArrayCollection;
 
 			[Bindable]
+			public var groupLst:ArrayCollection;
+
+			[Bindable]
 			public var reportLst:ArrayCollection;
 
 			[Bindable]
@@ -47,6 +53,8 @@
 			[Bindable]
 			public var stList:ArrayCollection;
 
+			private var rgInclude2Swc:ReportGroup;
+			
 			private function getSourceLst():void {
 				xReportService.getSources(onSourceLst, helloFault)
 			}
@@ -58,6 +66,21 @@
 				}
 			}
 
+			private function getGroupLst():void {
+				var src:ReportSource;
+				if (ddSource.selectedItem) src=ddSource.selectedItem as ReportSource;
+				if(!src) return;
+				xReportService.getGroups(src.type, onGroupLst, helloFault)
+			}
+			private function onGroupLst(event:TideResultEvent):void {
+				groupLst = ArrayCollection(event.result);
+				if(groupLst && groupLst.length>0){
+					ddGroup.selectedIndex=0;
+					//apply filter
+					if(reportLst) reportLst.refresh();
+				}
+			}
+
 			private function getReportLst():void {
 				var src:ReportSource;
 				if (ddSource.selectedItem) src=ddSource.selectedItem as ReportSource;
@@ -66,8 +89,17 @@
 			}
 			private function onReportLst(event:TideResultEvent):void {
 				reportLst= ArrayCollection(event.result);
+				if(reportLst) reportLst.filterFunction=filterReport;
 			}
 			
+			private function filterReport(item:Object):Boolean {
+				var r:Report=item as Report;
+				if(!r) return false;
+				if(ddGroup && ddGroup.selectedItem 
+					&& ddGroup.selectedItem.id!=0 && r.group!=0 && r.group!=ddGroup.selectedItem.id) return false;
+				return true;
+			}
+
 			[Bindable]
 			private var curReport:Report; 
 			private function getParamLst():void {
@@ -99,6 +131,7 @@
 
 			protected function ddSource_changeHandler(event:Event):void{
 				source=ddSource.selectedItem as ReportSource;
+				getGroupLst();
 				getReportLst();
 			}
 			
@@ -166,6 +199,12 @@
 				}
 				return classFactory;
 			}
+			
+			protected function ddGroup_changeHandler(event:IndexChangeEvent):void{
+				//apply reports filter
+				if(reportLst) reportLst.refresh();
+			}
+			
 		]]>
     </fx:Script>
 	
@@ -180,6 +219,10 @@
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Источник"/>
 			<s:DropDownList id="ddSource" dataProvider="{sourceLst}" labelField="name" creationComplete="{getSourceLst()}" change="ddSource_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Группа"/>
+			<s:DropDownList id="ddGroup" dataProvider="{groupLst}" labelField="name" change="ddGroup_changeHandler(event)"/>
 		</s:HGroup>
         <!--<s:Label id="lMessage" color="#ff0000" maxDisplayedLines="-1" width="100%"/>-->
 		<s:HGroup height="100%" width="100%">

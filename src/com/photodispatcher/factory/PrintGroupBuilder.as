@@ -411,8 +411,10 @@ package com.photodispatcher.factory{
 						so.prt_qty= so.prt_qty*bcp.getTemplate().formatPageCount;
 					}
 					
-					//try to use print alias
+					//try to finde print alias (fbook type first)
 					bookSynonym=BookSynonym.translateAlias(proj.printAlias);
+					//maybe common alias look in pro synonyms 
+					if(!bookSynonym) bookSynonym=BookSynonym.translatePath(proj.printAlias,SourceType.SRC_FOTOKNIGA); 
 					if(!bookSynonym){
 						//detect paper
 						var fv:FieldValue=FieldValue.translateWord(SourceType.SRC_FBOOK,proj.paperId,'paper');
