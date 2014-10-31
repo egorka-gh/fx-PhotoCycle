@@ -7,12 +7,19 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
+	import com.photodispatcher.provider.fbook.FBookAuthService;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
+	import com.photodispatcher.util.JsonUtil;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.Event;
 	import flash.events.ProgressEvent;
 	import flash.filesystem.File;
+	
+	import mx.rpc.AsyncResponder;
+	import mx.rpc.AsyncToken;
+	import mx.rpc.events.FaultEvent;
+	import mx.rpc.events.ResultEvent;
 	
 	public class QueueManagerFBManual extends QueueManager{
 		
@@ -120,6 +127,8 @@ package com.photodispatcher.provider.ftp{
 		
 		private function startNext():void{
 			if(!isStarted || forceStop) return;
+			login();
+			/*
 			var newOrder:Order=fetch();
 			if(newOrder){
 				//create suborder
@@ -131,9 +140,54 @@ package com.photodispatcher.provider.ftp{
 				newOrder.addSuborder(so);
 				fbDownloadManager.download(newOrder);
 			}
-			//loadCaption();
+			*/
 		}
 
+		private function loadNext():void{
+			var newOrder:Order=fetch();
+			if(newOrder){
+				//create suborder
+				var so:SubOrder= new SubOrder();
+				so.order_id=newOrder.id;
+				so.sub_id=newOrder.src_id;
+				so.src_type=SourceType.SRC_FBOOK;
+				so.prt_qty=newOrder.fotos_num;
+				newOrder.addSuborder(so);
+				fbDownloadManager.download(newOrder);
+			}
+		}
+		
+		private function login():void{
+			if(!source.fbookService || !source.fbookService.url){
+				//has no fbook service
+				flowError('Не настроен fbook сервис для '+source.name);
+				return;
+			}
+			//attempt to login
+			//var auth:AuthService=AuthService.instance;
+			var auth:FBookAuthService= new FBookAuthService(); 
+			auth.method='POST';
+			auth.resultFormat='text';
+			auth.baseUrl=source.fbookService.url;
+			var token:AsyncToken;
+			token=auth.siteLogin(source.fbookService.user,source.fbookService.pass);
+			token.addResponder(new AsyncResponder(login_ResultHandler,login_FaultHandler));
+			trace('FBook '+source.name+' start login');
+		}
+		private function login_ResultHandler(event:ResultEvent, token:AsyncToken):void {
+			var r:Object;
+			if(event) r=JsonUtil.decode(event.result as String);
+			if(r.result){
+				trace('FBook login complite');
+				loadNext();
+			} else {
+				flowError('Ошибка подключения к '+source.fbookService.url);
+			}
+		}
+		private function login_FaultHandler(event:FaultEvent, token:AsyncToken):void {
+			flowError('Ошибка подключения к '+source.fbookService.url+': '+event.fault.faultString);
+		}
+		
 		private function onFBDownloadManagerLoad(event:ImageProviderEvent):void{
 			dispatchEvent(event.clone());
 			startNext();

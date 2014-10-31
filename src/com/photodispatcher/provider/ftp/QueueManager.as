@@ -275,11 +275,11 @@ package com.photodispatcher.provider.ftp{
 			
 			dispatchEvent(new Event('queueLenthChange'));
 			dispatchEvent(new Event('isStartedChange'));
-			trace('QueueManager stop '+source.ftpService.url);
+			trace('QueueManager stop '+(source.ftpService?source.ftpService.url:source.name));
 		}
 
 		public function reSync(orders:Array):void{
-			trace('QueueManager reSync '+source.ftpService.url);
+			trace('QueueManager reSync '+(source.ftpService?source.ftpService.url:source.name));
 			//empty responce from DAO?
 			if(!orders) return;
 			

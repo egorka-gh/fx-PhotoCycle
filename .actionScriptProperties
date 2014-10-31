@@ -46,6 +46,9 @@
     <application path="PhotoTechS.mxml">
       <airExcludes/>
     </application>
+    <application path="TechJoin.mxml">
+      <airExcludes/>
+    </application>
     <application path="TechMonitorS.mxml">
       <airExcludes/>
     </application>
@@ -53,9 +56,6 @@
       <airExcludes/>
     </application>
     <application path="TechSpyS.mxml">
-      <airExcludes/>
-    </application>
-    <application path="TechJoin.mxml">
       <airExcludes/>
     </application>
   </applications>

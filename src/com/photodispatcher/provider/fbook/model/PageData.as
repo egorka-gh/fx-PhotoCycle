@@ -8,8 +8,8 @@ package com.photodispatcher.provider.fbook.model{
 	import com.akmeful.fotokniga.book.layout.BookLayout;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.provider.fbook.FBookProject;
+	import com.photodispatcher.provider.fbook.makeup.IMLayer;
 	import com.photodispatcher.provider.fbook.makeup.IMMsl;
-	import com.photodispatcher.provider.fbook.makeup.IMScript;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -38,39 +38,28 @@ package com.photodispatcher.provider.fbook.model{
 		public var sheetNum:int;
 
 		protected var book:FBookProject;
-		//public var previewFile:String;
-		//public var outFileDebug:String;
-		/*
-		[Bindable]
-		public var state:int;
-		[Bindable]
-		public var error:String;
-		*/
-		
-		/*
-		//script's to show
-		[Bindable]
-		public var script:String;
-		*/
 
 		//page build vars
 		//commands
-		public var commands:Array;
+		//public var commands:Array;
 		//public var finalCommands:Array;
 		//msl scripts
-		public var msls:Array=[];
-		public var finalMontageCommand:IMCommand;
+		//public var msls:Array=[];
+		//public var finalMontageCommand:IMCommand;
 		//final montage command
 		public var backgroundCommand:IMCommand;
 		//build sizes
 		public var pageSize:Point;
 		//public var outFilePath:String;
-		
+		public var rootLayer:IMLayer;
+
 		private var pageOffset:Point;
 		//private var wrkFolder:String;
 		private var outFolder:String
 		//нарезка финальной сборки на фотовставки (для BookCoverPrintType.PARTIAL), массив Rectangle
 		private var slices:Array;
+
+		private var layerStack:Array;
 
 		public function PageData(book:FBookProject, pageNum:int, outFolder:String, sheetNum:int){
 			this.book=book;
@@ -78,10 +67,29 @@ package com.photodispatcher.provider.fbook.model{
 			this.sheetNum=sheetNum;
 			adjustSizes();
 			this.outFolder=outFolder;
-			finalMontageCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
-			commands=[];
+			//finalMontageCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
+			//commands=[];
+			layerStack=[];
+			//create default layer
+			rootLayer= new IMLayer();
+			layerStack.push(rootLayer);
 		}
 
+		public function get currentLayer():IMLayer{
+			return layerStack[layerStack.length-1] as IMLayer;
+		}
+		public function layerAdd(layer:IMLayer):void{
+			layerStack.push(layer);
+		}
+		public function layerPop():IMLayer{
+			if(layerStack.length>1){
+				return layerStack.pop() as IMLayer;
+			}else{
+				return layerStack[0] as IMLayer;
+			}
+		}
+
+		
 		public function get pageName():String{
 			return 'p'+pageNum.toString();
 		}
@@ -97,32 +105,32 @@ package com.photodispatcher.provider.fbook.model{
 			var i:int;
 			var msl:IMMsl;
 			//add msls to commands
-			for (i=msls.length-1;i>=0;i--){
-				msl=msls[i] as IMMsl;
+			for (i=rootLayer.msls.length-1;i>=0;i--){
+				msl=rootLayer.msls[i] as IMMsl;
 				msl.fileName=scriptFileName(i);
 				//add msl script
 				gc = new IMCommand(IMCommand.IM_CMD_MSL); gc.add(msl.fileName);
 				gc.setProfile('MSL скрипт (подготовка рамок), страница #'+pageNum, msl.fileName);
-				commands.unshift(gc);
+				rootLayer.commands.unshift(gc);
 			}
 
-			finalMontageCommand.prepend(backgroundCommand);
+			rootLayer.finalMontageCommand.prepend(backgroundCommand);
 
 			var outFilePath:String=outFileName(); ////default output to wrk folder
 			
 			//specific processing
 			if(book.type==FBookProject.PROJECT_TYPE_BCARD){
 				//save tile template to wrk folder
-				setOutputParams(finalMontageCommand);
-				finalMontageCommand.add(outFilePath);
-				finalMontageCommand.setProfile('Сборка tile #'+pageNum,outFilePath);
-				commands.push(finalMontageCommand);
+				setOutputParams(rootLayer.finalMontageCommand);
+				rootLayer.finalMontageCommand.add(outFilePath);
+				rootLayer.finalMontageCommand.setProfile('Сборка tile #'+pageNum,outFilePath);
+				rootLayer.commands.push(rootLayer.finalMontageCommand);
 				//create result page
-				finalMontageCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
+				rootLayer.finalMontageCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 				//tile vs template
 				var bcp:CardProject=book.project as CardProject;
-				finalMontageCommand.add('-size'); finalMontageCommand.add(bcp.getTemplate().getFormat().realWidth+'x'+bcp.getTemplate().getFormat().realHeight);
-				finalMontageCommand.add('tile:'+outFilePath);
+				rootLayer.finalMontageCommand.add('-size'); rootLayer.finalMontageCommand.add(bcp.getTemplate().getFormat().realWidth+'x'+bcp.getTemplate().getFormat().realHeight);
+				rootLayer.finalMontageCommand.add('tile:'+outFilePath);
 				//outFilePath=outFileName(); //bug if !outFolder
 				pageSize= new Point(bcp.getTemplate().getFormat().realWidth,bcp.getTemplate().getFormat().realHeight);
 			}else if(book.type==FotocupProject.PROJECT_TYPE){
@@ -130,29 +138,29 @@ package com.photodispatcher.provider.fbook.model{
 				if (fc.template.printWidth>fc.template.format.realWidth){
 					//resize to fc.template.printWidth
 					//remove virtual canvas
-					finalMontageCommand.add('+repage'); finalMontageCommand.add('-flatten'); 
+					rootLayer.finalMontageCommand.add('+repage'); rootLayer.finalMontageCommand.add('-flatten'); 
 					//crop
 					var sheetCrop:String=fc.template.printWidth.toString()+'x'+fc.template.format.realHeight.toString()
 						+'+'+fc.template.printShift.toString()+'+0!';
-					finalMontageCommand.add('-gravity'); finalMontageCommand.add('West');
-					finalMontageCommand.add('-background'); finalMontageCommand.add('white');
-					finalMontageCommand.add('-crop'); finalMontageCommand.add(sheetCrop);
-					finalMontageCommand.add('-flatten');
+					rootLayer.finalMontageCommand.add('-gravity'); rootLayer.finalMontageCommand.add('West');
+					rootLayer.finalMontageCommand.add('-background'); rootLayer.finalMontageCommand.add('white');
+					rootLayer.finalMontageCommand.add('-crop'); rootLayer.finalMontageCommand.add(sheetCrop);
+					rootLayer.finalMontageCommand.add('-flatten');
 					pageSize= new Point(fc.template.printWidth,fc.template.format.realHeight);
 				}
 				//Reflect in the horizontal direction
-				finalMontageCommand.add('-flop');
+				rootLayer.finalMontageCommand.add('-flop');
 			}
 			if(!(book.isPageSliced(pageNum) || book.type==MagnetProject.PROJECT_TYPE)){ //Sliced & magnet will stay in wrk
 				//redirect to output folder
 				if(outFolder) outFilePath=outFolder+File.separator+outFilePath;
 			}
 			//set depth & quality
-			setOutputParams(finalMontageCommand);
+			setOutputParams(rootLayer.finalMontageCommand);
 			//save
-			finalMontageCommand.add(outFilePath);
-			finalMontageCommand.setProfile('Сборка страницы #'+pageNum,outFilePath);
-			commands.push(finalMontageCommand);
+			rootLayer.finalMontageCommand.add(outFilePath);
+			rootLayer.finalMontageCommand.setProfile('Сборка страницы #'+pageNum,outFilePath);
+			rootLayer.commands.push(rootLayer.finalMontageCommand);
 
 			//generate sices
 			if(book.isPageSliced(pageNum)){
@@ -174,7 +182,7 @@ package com.photodispatcher.provider.fbook.model{
 							gc.add(sliceOutPath);
 							gc.setProfile('Фотовставка #'+sNum.toString()+' страницы #'+StrUtil.lPad(pageNum.toString(),2),sliceOutPath);
 							//finalCommands.push(gc);
-							commands.push(gc);
+							rootLayer.commands.push(gc);
 						}
 					}
 				}
@@ -209,18 +217,6 @@ package com.photodispatcher.provider.fbook.model{
 		}
 
 		public function outFileName(sliceNum:int=0):String{
-			/*
-			var captionNum:int=pageNum;
-			if (book.isPageEndPaper(1)){
-				//first page in blok skipped (end paper), restore page order
-				if(captionNum>0) captionNum--;
-			}else if(book.type==FBookProject.PROJECT_TYPE_BCARD
-				|| book.type==FotocalendarProject.PROJECT_TYPE
-				|| book.type==MagnetProject.PROJECT_TYPE){
-				//pages starts from 1 (0- 4 book cover only)
-				captionNum++;
-			}
-			*/
 			if(sliceNum<=0){
 				//simple out file name
 				return OUT_FILE_PREFIX+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_EXT;

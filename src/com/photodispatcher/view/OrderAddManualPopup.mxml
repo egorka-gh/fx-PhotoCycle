@@ -8,6 +8,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.services.OrderService;
@@ -65,6 +66,7 @@
 				
 				order.id=order.source.toString()+'_'+order.src_id;
 				order.ftp_folder=order.src_id;
+				order.state=OrderState.WAITE_FTP;
 				
 				//save
 				/*

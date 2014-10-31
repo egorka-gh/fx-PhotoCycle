@@ -145,16 +145,10 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 		}
 		
-		
-		//private var totalCommads:int;
-		//private var doneCommads:int;
-		//private var currPage:int;
-		//private var pages:Array;
 		private function buildScripts():void{
 			var pages:Array;
 			var outFolder:String=prtFolder+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+PrintGroup.SUBFOLDER_PRINT;
-			//var scripBuilder:IMScript=new IMScript(currSuborder.project,outFolder);
-			var scripBuilder:IMScript=new IMScript(currSuborder.project,sourceDir.nativePath+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder); //use suborder folder (currSuborder.ftp_folder)
+			var scripBuilder:IMScriptL=new IMScriptL(currSuborder.project,sourceDir.nativePath+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder); //use suborder folder (currSuborder.ftp_folder)
 			scripBuilder.build();
 			pages=scripBuilder.pages;
 			var p:PageData;
@@ -185,8 +179,8 @@ package com.photodispatcher.provider.fbook.makeup{
 			for each (p in pages){
 				if(p){
 					//save msl script
-					for (i=0;i<p.msls.length;i++){
-						msl=p.msls[i] as IMMsl;
+					for (i=0;i<p.rootLayer.msls.length;i++){
+						msl=p.rootLayer.msls[i] as IMMsl;
 						file=dir.resolvePath(msl.fileName);
 						try{
 							var fs:FileStream = new FileStream();
@@ -201,25 +195,15 @@ package com.photodispatcher.provider.fbook.makeup{
 				}
 			}
 			
-			//doneCommads=0;
-			//currPage=0;
-			//totalCommads=0;
-			
-			//start pages theads
 			var cmd:IMCommand;
 			var sequences:Array=[];
 			for each (p in pages){
 				//set commands work folder
-				for each(cmd in p.commands){
+				for each(cmd in p.rootLayer.commands){
 					cmd.folder=dir.nativePath;
 				}
-				sequences.push(p.commands);
+				sequences.push(p.rootLayer.commands);
 			}
-			/*
-			for (i=0; i<Math.min(maxThreads,pages.length); i++){
-				nextPage();
-			}
-			*/
 			var runner:IMMultiSequenceRuner= new IMMultiSequenceRuner();
 			runner.addEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
 			runner.addEventListener(IMRunerEvent.IM_COMPLETED, onPagesComplite);

@@ -94,5 +94,13 @@ package com.photodispatcher.util{
 		public static function sheetName(book:int,sheet:int):String{
 			return StrUtil.lPad(book.toString(),3)+'_'+StrUtil.lPad(sheet.toString(),2);
 		}
+		
+		public static function contentIdToFileName(contentId:String):String{
+			if(!contentId) return contentId;
+			//namespaces to sub dirs sup:: -> sup\
+			var s:String=contentId.replace('::',File.separator);
+			return s;
+		}
+
 	}
 }

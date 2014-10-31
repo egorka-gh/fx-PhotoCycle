@@ -31,7 +31,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import flash.utils.getQualifiedClassName;
 	
 	
-	public class IMScript{
+	public class IMScriptOld{
 		public static const GM_XML_HEAD:String='<?xml version="1.0" encoding="UTF-8"?>\n';
 		public static const PAGE_PREVIEW_BOUND:int=250;
 		public static const IMAGE_DEPTH:String='8';
@@ -43,7 +43,7 @@ package com.photodispatcher.provider.fbook.makeup{
 		private var elementNumber:int=0;
 		private var _pages:Array=[];//PageData
 		
-		public function IMScript(book:FBookProject, outFolder:String){ 
+		public function IMScriptOld(book:FBookProject, outFolder:String){ 
 			_book=book;
 			this.outFolder=outFolder;
 			_pages=[];

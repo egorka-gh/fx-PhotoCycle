@@ -391,7 +391,7 @@
 	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
 	<s:Group top="30" left="10" right="10" bottom="10">
 		<s:HGroup id="gState" includeIn="stateView" gap="10" top="0" left="0" right="0" bottom="0">
-			<s:VGroup gap="10">
+			<s:VGroup gap="10" height="100%">
 				<s:Label text="Web синхронизация"/>
 				<s:HGroup gap="10">
 					<s:Button id="btStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить синхронизацию" 
@@ -399,12 +399,14 @@
 					<s:Button id="btStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить синхронизацию"
 							  click="{stop()}" enabled="{isRuning}"/>
 				</s:HGroup>
-				<s:DataGroup dataProvider="{sources}" itemRenderer="com.photodispatcher.view.itemRenderer.SourceItemRenderer"
-							 width="220">
-					<s:layout>
-						<s:VerticalLayout gap="0"/>
-					</s:layout>
-				</s:DataGroup>
+				<s:Scroller width="220" height="100%">
+					<s:DataGroup dataProvider="{sources}" itemRenderer="com.photodispatcher.view.itemRenderer.SourceItemRenderer"
+								 width="220">
+						<s:layout>
+							<s:VerticalLayout gap="0"/>
+						</s:layout>
+					</s:DataGroup>
+				</s:Scroller>
 			</s:VGroup>
 			<s:VGroup gap="10" width="510" height="100%">
 				<s:Label text="FTP"/>
