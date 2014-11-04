@@ -107,7 +107,7 @@ package com.photodispatcher.factory{
 										if(subOrder.hasOwnProperty(ajm.field)){
 											//params array
 											val=getRawVal(ajm.json_key, so);
-											if(val){
+											if(val!=null){
 												if(ajm.field.indexOf('date')!=-1){
 													//convert date
 													d=parseDate(val.toString());

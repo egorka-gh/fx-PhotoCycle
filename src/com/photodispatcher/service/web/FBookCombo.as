@@ -40,7 +40,6 @@ package com.photodispatcher.service.web{
 		public static const COMMAND_GET_ORDER_INFO:String='order';
 		//public static const PARAM_ORDER_ID:String='args[number]';
 		
-		
 		public function FBookCombo(source:Source){
 			super(source);
 		}
@@ -48,26 +47,24 @@ package com.photodispatcher.service.web{
 		private var preloadStates:Array=[];
 		private var is_preload:Boolean;
 		private var fetchState:int=-1;
-		private var auth:FBookAuthService;
+		//private var auth:FBookAuthService;
 		
 		private function login():void{
 			//check login
-			//var auth:AuthService=AuthService.instance;
-			if(!auth){ 
-				auth= new FBookAuthService(); //AuthService();
-				auth.method='POST';
-				auth.resultFormat='text';
-			}
-			if(!auth.authorized || !source.fbookSid){
-				//attempt to login
-				auth.baseUrl=source.fbookService.url;
-				var token:AsyncToken;
-				token=auth.siteLogin(source.fbookService.user,source.fbookService.pass);
-				token.addResponder(new AsyncResponder(login_ResultHandler,login_FaultHandler));
-				trace('FBook start login');
-			}else{
+			if(source.fbookSid){
+				//login - ok
 				login_ResultHandler(null,null);
+				return;
 			}
+			var auth:FBookAuthService= new FBookAuthService();
+			auth.method='POST';
+			auth.resultFormat='text';
+			//attempt to login
+			auth.baseUrl=source.fbookService.url;
+			var token:AsyncToken;
+			token=auth.siteLogin(source.fbookService.user,source.fbookService.pass);
+			token.addResponder(new AsyncResponder(login_ResultHandler,login_FaultHandler));
+			trace('FBook start login');
 		}
 		private function login_ResultHandler(event:ResultEvent, token:AsyncToken):void {
 			var r:Object;
@@ -216,6 +213,7 @@ package com.photodispatcher.service.web{
 			var result:Object=parseOrders(e.data);
 			if(!result){
 				abort('Ошибка web: '+e.data);
+				source.fbookSid='';
 				return;
 			}
 			//check sid

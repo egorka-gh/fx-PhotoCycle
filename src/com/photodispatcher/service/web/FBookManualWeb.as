@@ -24,6 +24,6 @@ package com.photodispatcher.service.web{
 		override public function isValidLastOrder(forLoad:Boolean=false):Boolean{
 			return true;
 		}
-
+		
 	}
 }

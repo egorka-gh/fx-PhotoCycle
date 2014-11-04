@@ -473,6 +473,7 @@ package com.photodispatcher.provider.fbook.download{
 				//load project content
 				startContentLoader(workFolder);
 			}else{
+				source.fbookSid='';
 				currentSubOrder.state=OrderState.ERR_WEB;
 				currentOrder.state=OrderState.ERR_WEB;
 				if(!remoteMode) StateLog.log(OrderState.ERR_WEB,currentOrder.id,currentSubOrder.sub_id,'Не найден проект заказа '+currentSubOrder.sub_id+': '+projectLoader.lastErr);
@@ -508,6 +509,7 @@ package com.photodispatcher.provider.fbook.download{
 			if(!currentOrder || !currentSubOrder || !currentSubOrder.project) return;
 			if(currentSubOrder.project.downloadState==TripleState.TRIPLE_STATE_ERR){
 				//TODO check auth??
+				source.fbookSid='';
 				currentSubOrder.state=OrderState.ERR_FTP;
 				currentOrder.state=OrderState.ERR_FTP;
 				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Ошибка загрузки подзаказа ' +currentSubOrder.sub_id+' :'+contentLoader.errorText);

@@ -13,10 +13,10 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotocanvas.data.FotocanvasProject;
 	import com.akmeful.fotocup.data.FotocupProject;
 	import com.akmeful.fotokniga.book.data.Book;
-	//import com.akmeful.fotokniga.net.AuthService;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.provider.fbook.FBookProject;
+	import com.photodispatcher.util.JsonUtil;
 	
 	import flash.events.Event;
 	import flash.events.IEventDispatcher;
@@ -79,7 +79,10 @@ package com.photodispatcher.provider.fbook.download{
 						break;
 				}
 			}
-			lastErr='FBookProjectLoader: ' +event.text;
+			var oe:*=JsonUtil.decode(event.text);
+			var subErr:String='';
+			if (oe && oe.debug_error) subErr='('+oe.debug_error+') '; 
+			lastErr='FBookProjectLoader: '+subErr+event.text;
 			dispatchEvent(new Event(Event.COMPLETE));  
 		}
 		
