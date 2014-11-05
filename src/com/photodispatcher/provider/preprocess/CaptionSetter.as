@@ -10,7 +10,8 @@ package com.photodispatcher.provider.preprocess{
 
 	public class CaptionSetter{
 		
-		public static const RELATIONS_FILE_NAME:String= 'relations.txt';
+		public static const RELATIONS_FILE_NAME:String= 'relations';
+		public static const RELATIONS_FILE_EXT:String= '.txt';
 		//public static const CAPTION_MAX_LEN:int=12;
 		
 		public static function restoreFileCaption(order:Order, rootFolder:String):void{
@@ -41,19 +42,28 @@ package com.photodispatcher.provider.preprocess{
 			
 			var pgFolder:File=orderFolder.resolvePath(pg.path);
 			if(!pgFolder.exists || !pgFolder.isDirectory) return;
-			var relationsFile:File=pgFolder.resolvePath(RELATIONS_FILE_NAME);
-			if(!relationsFile.exists || relationsFile.isDirectory) return;
+			var i:int=0;
+			var fileName:String=RELATIONS_FILE_NAME+RELATIONS_FILE_EXT;
+			var relationsFile:File=pgFolder.resolvePath(fileName);
+			var txt:String='';
 			
-			//read relations.txt
-			var txt:String;
-			try{
-				var fs:FileStream=new FileStream();
-				fs.open(relationsFile,FileMode.READ);
-				txt=fs.readUTFBytes(fs.bytesAvailable);
-				fs.close();
-			} catch(err:Error){
-				return;
+			//if(!relationsFile.exists || relationsFile.isDirectory) return;
+			while (relationsFile.exists && !relationsFile.isDirectory){
+				//read relations.txt
+				try{
+					var fs:FileStream=new FileStream();
+					fs.open(relationsFile,FileMode.READ);
+					txt+=fs.readUTFBytes(fs.bytesAvailable);
+					fs.close();
+				} catch(err:Error){
+					return;
+				}
+				i++;
+				fileName=RELATIONS_FILE_NAME+i.toString()+RELATIONS_FILE_EXT;
+				relationsFile=pgFolder.resolvePath(fileName);
 			}
+			
+			if(!txt) return;
 			
 			/*
 			0000 - DSC_0059.JPG 

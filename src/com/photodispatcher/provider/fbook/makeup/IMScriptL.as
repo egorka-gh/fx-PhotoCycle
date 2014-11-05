@@ -118,9 +118,9 @@ package com.photodispatcher.provider.fbook.makeup{
 						}
 					}
 					//correct layers hierrarh?
+					pages.push(pageData);
+					_book.projectPages.push(pageData);
 				}
-				pages.push(pageData);
-				_book.projectPages.push(pageData);
 			}
 		}
 

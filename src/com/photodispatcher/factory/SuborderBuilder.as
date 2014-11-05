@@ -27,8 +27,8 @@ package com.photodispatcher.factory{
 		 * 
 	  	 * trows ERR_READ_LOCK
 		 */
-		public static function build(source:Source, map:Dictionary, order:Order):void{
-			if(!source || !map || !order) return;
+		public static function build(source:Source, order:Order):void{
+			if(!source || !order || !order.fileStructure) return;
 			var path:String;
 			var t:SubordersTemplate;
 			var o:SubOrder;
@@ -37,7 +37,7 @@ package com.photodispatcher.factory{
 			//for profoto type
 			if(source.type==SourceType.SRC_PROFOTO){
 				order.resetSuborders();
-				for (path in map){
+				for (path in order.fileStructure){
 					if(path){
 						t=SubordersTemplate.translatePath(path,source.type);
 						if(t){
@@ -50,7 +50,7 @@ package com.photodispatcher.factory{
 							result.push(o);
 							*/
 							order.addSuborder(o);
-							delete map[path];
+							delete order.fileStructure[path];
 						}
 					}
 				}

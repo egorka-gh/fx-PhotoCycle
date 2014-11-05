@@ -118,12 +118,15 @@ package com.photodispatcher.factory{
 											}
 										}
 									}
+									/*
 									if(subOrder.native_type==1){
 										//foto print, reset root ftp folder
 										order.ftp_folder=subOrder.ftp_folder;
 									}else{
 										order.addSuborder(subOrder);
 									}
+									*/
+									order.addSuborder(subOrder);
 								}
 							}
 							if(!order.ftp_folder) order.ftp_folder=order.id;

@@ -18,6 +18,8 @@ package pl.maliboo.ftp{
 		public var _date:String;
 		public var _isDir:Boolean;
 		public var tag:String;
+		public var moveTo:String;
+		public var renameTo:String;
 		public var loadState:int=LOAD_WAIT;
 		
 		public function FTPFile (name:String="",

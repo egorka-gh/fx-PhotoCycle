@@ -1,5 +1,6 @@
 package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	
 	import flash.events.Event;
@@ -312,16 +313,26 @@ package com.photodispatcher.provider.ftp{
 			ftpClient.addEventListener(FTPEvent.DOWNLOAD, downloadListener);
 			downloadFile=ftpFile;
 			localFolder=dstFolder;
-			var dstDir:String=dstFolder+File.separator+ ftpFile.path;
-			var f:File=new File(dstDir);
+			var f:File=new File(destPath());
 			//TODO try/catch
 			f.createDirectory();
 			//add .tmp ext'n (download incompleted)
-			f=f.resolvePath(ftpFile.name+'.tmp');
+			f=f.resolvePath(destName()+'.tmp');
 			trace('FtpTask. Start download file: '+ftpFile.fullPath);
 			ftpFile.loadState=FTPFile.LOAD_STARTED;
 			ftpClient.getFile(ftpFile.fullPath, ftpFile.size, f.nativePath, 0);
 			
+		}
+		
+		private function destPath():String{
+			var dstDir:String=localFolder+File.separator+ downloadFile.path;
+			if(downloadFile.moveTo) dstDir=localFolder+File.separator+downloadFile.moveTo+File.separator+downloadFile.parentDir;
+			return dstDir;
+		}
+		private function destName():String{
+			var dstName:String=downloadFile.name;
+			if(downloadFile.renameTo) dstName=downloadFile.renameTo;
+			return dstName;
 		}
 
 		private function downloadListener(evt:FTPEvent):void{
@@ -336,11 +347,13 @@ package com.photodispatcher.provider.ftp{
 			trace('FtpTask. Complited download file: '+downloadFile.fullPath);
 
 			var err:FTPEvent;
-			var f:File=new File(localFolder+File.separator+downloadFile.path+File.separator+downloadFile.name+'.tmp');
+			//var f:File=new File(localFolder+File.separator+downloadFile.path+File.separator+downloadFile.name+'.tmp');
+			var f:File=new File(destPath()+File.separator+destName()+'.tmp');
 			if(f.exists){
 				//rename
 				var ff:File=f.parent;
-				ff=ff.resolvePath(downloadFile.name);
+				//ff=ff.resolvePath(downloadFile.name);
+				ff=ff.resolvePath(destName());
 				try{
 					f.moveTo(ff,true);
 				}catch (error:Error){
@@ -365,25 +378,26 @@ package com.photodispatcher.provider.ftp{
 		 * @return map key->fileParentDir value->arrayFileNames 
 		 * 
 		 */
-		public function getFileStructure():Dictionary{
+		public function fillFileStructure(order:Order):void{
 			var fl:FTPFile;
 			var path:String;
-			var map:Dictionary=new Dictionary;
-			if(!ftpFiles) return map; 
+			if(!order) return;
+			if(!order.fileStructure) order.fileStructure=new Dictionary;
+			if(!ftpFiles) return;
+			var arr:Array;
 			for each(fl in ftpFiles){
 				if(fl){
 					path=fl.parentDir;
-					var arr:Array=map[path] as Array;
+					arr=order.fileStructure[path] as Array;
 					if(!arr){
 						arr=new Array();
-						map[path]=arr;
+						order.fileStructure[path]=arr;
 					}
 					arr.push(fl.name);
 				}
 			}
 			//remove root
-			delete map[folderToScan];
-			return map;
+			delete order.fileStructure[folderToScan];
 		}
 		
 		private var idleTimer:Timer;

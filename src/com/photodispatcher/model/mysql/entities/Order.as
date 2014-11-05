@@ -9,6 +9,7 @@ package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.globalization.DateTimeStyle;
+	import flash.utils.Dictionary;
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
@@ -83,6 +84,20 @@ package com.photodispatcher.model.mysql.entities {
 		 * unused 
 		 */
 		//public var bdCheckComplete:Boolean=false;
+		
+		/**
+		 * runtime
+		 *map vs ftp file structure (filename arrays maped by parent folder)
+		 */
+		public var fileStructure:Dictionary;
+		
+		public function get isFileStructureOk():Boolean{
+			if(!fileStructure) return false;
+			for (var key:String in fileStructure){
+				if(key) return true;
+			}
+			return false;
+		}
 		
 		/**
 		 * runtime

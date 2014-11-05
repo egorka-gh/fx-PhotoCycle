@@ -12,6 +12,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.mysql.entities.SourceSvc;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -345,6 +346,7 @@ package com.photodispatcher.provider.ftp{
 									}
 									downloadApplicant=ftpFile;
 									downloadApplicant.tag=order.id;
+									if(source.type==SourceType.SRC_FBOOK) downloadApplicant.moveTo=order.ftp_folder;
 									break;
 								}
 							}
@@ -363,68 +365,143 @@ package com.photodispatcher.provider.ftp{
 				//cnn.addEventListener(ProgressEvent.PROGRESS, onProgress);
 				cnn.download(downloadApplicant,localFolder);
 				result=true;
-			}else if(listCandidate && !listApplicant && listCandidate.ftp_folder){
-				//start list
-				listApplicant=listCandidate;
-				if(DEBUG_TRACE) trace('FTPDownloadManager startTask start list '+listApplicant.ftp_folder);
-				listApplicant.state=OrderState.FTP_LIST;
-				cnn.orderId=listApplicant.id;
-				cnn.addEventListener(FTPEvent.SCAN_DIR,onList);
-				cnn.addEventListener(FTPEvent.INVOKE_ERROR,onListFault);
-				cnn.addEventListener(FTPEvent.DISCONNECTED,onListDisconnected);
-				cnn.scanFolder(listApplicant.ftp_folder);
-				result=true;
-			}else{
-				if(listCandidate && !listCandidate.ftp_folder && listCandidate.hasSuborders){
-					//fbook order run suborders load
-					order.state=OrderState.FTP_LOAD;
-					checkDownload();
+			//}else if(listCandidate && !listApplicant && listCandidate.ftp_folder){
+			}else if(!listApplicant){// && !listApplicant && startList(listCandidate,cnn)){
+				//try to list
+				if(listCandidate){
+					if(startList(listCandidate,cnn)){
+						//list started
+						result=true;
+					}else if(listCandidate.hasSuborders){
+						//fbook order run suborders load
+						order.state=OrderState.FTP_LOAD;
+						checkDownload();
+					}
 				}
-				//release connection
+				if(!result){
+					connectionManager.release(cnn);
+					checkQueue();
+					//reuseConnection(cnn);
+				}
+			}else{
+				//nothing to load but list in process, release connection
 				if(DEBUG_TRACE) trace('FTPDownloadManager startTask release connection '+ftpService.url);
 				connectionManager.release(cnn);
+				//nothing to do ask 4 order 
+				//dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FETCH_NEXT_EVENT));
 			}
 			return result;
+		}
+		
+		private function startList(order:Order, cnn:FtpTask):Boolean{
+			order.ftpQueue=[];
+			order.fileStructure=null;
+			var rootFolder:String;
+			if(source.type==SourceType.SRC_FBOOK){
+				//reset suborders state
+				var so:SubOrder;
+				if(order.hasSuborders){
+					for each(so in order.suborders){
+						if(so.native_type==1 && so.ftp_folder){
+							if(!rootFolder){
+								rootFolder=so.ftp_folder;
+								so.state=OrderState.FTP_LIST;
+							}else{
+								so.state=OrderState.FTP_WAITE_SUBORDER;
+							}
+						}
+					}
+				}
+			}else{
+				rootFolder=order.ftp_folder;
+			}
+			if(!rootFolder) return false;
+			listApplicant=order;
+			listApplicant.state=OrderState.FTP_LIST;
+			cnn.orderId=listApplicant.id;
+			cnn.addEventListener(FTPEvent.SCAN_DIR,onList);
+			cnn.addEventListener(FTPEvent.INVOKE_ERROR,onListFault);
+			cnn.addEventListener(FTPEvent.DISCONNECTED,onListDisconnected);
+			if(DEBUG_TRACE) trace('FTPDownloadManager startTask start list '+rootFolder);
+			cnn.scanFolder(rootFolder);
+			return true;
+		}
+
+		private function listNext(cnn:FtpTask):Boolean{
+			var rootFolder:String;
+			if(source.type==SourceType.SRC_FBOOK){
+				//reset suborders state
+				var so:SubOrder;
+				if(listApplicant.hasSuborders){
+					for each(so in listApplicant.suborders){
+						if(so.native_type==1 && so.state==OrderState.FTP_WAITE_SUBORDER && so.ftp_folder){
+							rootFolder=so.ftp_folder;
+							so.state=OrderState.FTP_LIST;
+							break;
+						}
+					}
+				}
+			}
+			if(!rootFolder) return false;
+			if(DEBUG_TRACE) trace('FTPDownloadManager start list '+rootFolder);
+			cnn.scanFolder(rootFolder);
+			return true;
 		}
 
 		private function onList(e:FTPEvent):void{
 			var idx:int;
 			var cnn:FtpTask=e.target as FtpTask;
-			var order:Order=listApplicant;
-			listApplicant=null;
+			//flow checks
 			if(!cnn) return;
-			stopListen(cnn);
 			var orderId:String=cnn.orderId;
 			if(DEBUG_TRACE) trace('FTPDownloadManager scan folder complited '+orderId);
-			if(!orderId || !order){
+			if(!orderId || !listApplicant){
+				listApplicant=null;
+				stopListen(cnn);
 				reuseConnection(cnn);
 				return;
 			}
-			if(order.id!=orderId){
+			if(listApplicant.id!=orderId){
 				//wrong list sequence, reset
-				order.state=OrderState.FTP_WEB_OK;
+				listApplicant.state=OrderState.FTP_WEB_OK;
+				listApplicant=null;
+				stopListen(cnn);
 				reuseConnection(cnn);
 				return;
 			}
+			//fill order vs result
+			cnn.fillFileStructure(listApplicant);
+			if(e.listing) listApplicant.ftpQueue=listApplicant.ftpQueue.concat(e.listing);
+			//next folder
+			if(listNext(cnn)) return;
 			
-			var fileStructure:Dictionary=cnn.getFileStructure();
-			//check 4 empty fileStructure
-			var fileStructureOk:Boolean=false;
-			for (var key:String in fileStructure){
-				if(key){
-					fileStructureOk=true;
-					break;
+			//list complited
+			var order:Order=listApplicant;
+			listApplicant=null;
+			stopListen(cnn);
+			
+			if(source.type==SourceType.SRC_FBOOK){
+				//remove photo suborders 
+				var so:SubOrder;
+				var newso:Array=[];
+				if(order.hasSuborders){
+					for each(so in order.suborders){
+						if(so.native_type!=1) newso.push(so);
+					}
+					order.suborders= new ArrayCollection(newso);
 				}
 			}
+			
 			if(source.type==SourceType.SRC_FOTOKNIGA){
 				//build so from src_id (mainId-subId)
-				SuborderBuilder.build(source,fileStructure,order);
+				SuborderBuilder.build(source,order);
 			}
-			if(!fileStructureOk){
+			//check 4 empty fileStructure
+			if(!order.isFileStructureOk){
 				trace('FTPDownloadManager empty ftp folder '+orderId);
 				order.state=OrderState.ERR_FTP;
 				if(order.exceedErrLimit){
-					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов. Папка '+order.ftp_folder);
+					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов.');
 					if(!order.hasSuborders){
 						//remove from download (double err)
 						idx=downloadOrders.indexOf(order);
@@ -452,7 +529,7 @@ package com.photodispatcher.provider.ftp{
 			if(source.type==SourceType.SRC_PROFOTO){
 				//buid suborders (book folder) 
 				try{
-					SuborderBuilder.build(source,fileStructure,order);
+					SuborderBuilder.build(source,order);
 				}catch (e:Error){
 					trace('FTPDownloadManager error while build suborders '+orderId);
 					order.state=OrderState.ERR_READ_LOCK;
@@ -462,12 +539,21 @@ package com.photodispatcher.provider.ftp{
 					return;
 				}
 			}
-			
+			if(source.type==SourceType.SRC_FBOOK){
+				//can has more then 1 relations.txt, rename
+				var i:int=0;
+				for each(ff in order.ftpQueue){
+					if(ff && ff._name=='relations.txt'){
+						if(i>0) ff.renameTo='relations'+i.toString()+'.txt';
+						i++;
+					}
+				}
+			}
 			//build print groups 
 			var pgBuilder:PrintGroupBuilder= new PrintGroupBuilder();
 			var pgArr:Array;
 			try{
-				pgArr= pgBuilder.build(source,fileStructure,orderId);
+				pgArr= pgBuilder.build(source,order.fileStructure,orderId);
 			}catch (e:Error){
 				trace('FTPDownloadManager error while build print group'+orderId);
 				order.state=OrderState.ERR_READ_LOCK;
@@ -477,7 +563,7 @@ package com.photodispatcher.provider.ftp{
 				return;
 			}
 			
-			var ftpQueue:Array=e.listing;
+			//var ftpQueue:Array=e.listing;
 			var ff:FTPFile;
 			
 			/*
@@ -507,7 +593,7 @@ package com.photodispatcher.provider.ftp{
 			//TODO check disk space
 			var avail:Number=fl.spaceAvailable;
 			var need:Number=0;
-			for each(ff in ftpQueue){
+			for each(ff in order.ftpQueue){
 				if(ff){
 					need+=ff.size;
 				}
@@ -545,7 +631,6 @@ package com.photodispatcher.provider.ftp{
 			order.printGroups=new ArrayCollection(pgArr);
 			//order.suborders=new ArrayCollection(soArr);
 			order.state=OrderState.FTP_LOAD;
-			order.ftpQueue=ftpQueue;
 			order.resetErrCounter();
 			trace('FTPDownloadManager start download order '+order.ftp_folder+', printGroups:'+order.printGroups.length.toString()+', ftpQueue:'+order.ftpQueue.length.toString());
 			if(order.ftpQueue && order.ftpQueue.length>0){
