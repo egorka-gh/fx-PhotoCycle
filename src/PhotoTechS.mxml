@@ -83,23 +83,15 @@
 			
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
-				//BaseDAO.MAX_WAITE=15000;
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
 				bdPopup.chekConnect();//SQLMode.UPDATE,false);
 			}
 			private function bdPopClose(e:PopUpEvent):void{
 				var connected:Boolean=e.commit;
-				/*
-				if(connected){
-				//create local connection
-				connected=LocalDAO.connect();
-				}
-				*/
 				if(connected){
 					//connected
 					init();
-					//if(vMonitor) vMonitor.start();
 				}else{
 					//no connection
 					currentState='disconnected';
@@ -123,11 +115,6 @@
 				latch.addEventListener(Event.COMPLETE,onTPLoad);
 				latch.addLatch(svc.loadAll(0));
 				latch.start();
-				/*
-				var dao:TechPointDAO=new TechPointDAO();
-				techPionts=dao.findAll();
-				*/
-				
 				initLatch.join(latch);
 				initLatch.start();
 			}
@@ -156,19 +143,11 @@
 				
 				coms.source=ComInfo.load();
 				
-				//var serverIP:String;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
-					/*
-					serverIP=so.data.serverIP;
-					*/
 					techPointID=so.data.techPoint;
 					reversOrder=so.data.reversOrder; 
 				}
-				
-				/*
-				Context.setAttribute('serverIP',serverIP);
-				*/
 				
 				if(techPointObj && coms.length>0){
 					start();
@@ -267,13 +246,6 @@
 				so.data.reversOrder = reversOrder;
 				so.flush();  
 			}
-			
-			/*
-			protected function btRecreateBD_clickHandler(event:MouseEvent):void{
-			LocalDAO.recreateBD();
-			}
-			*/
-			
 		]]>
 	</fx:Script>
 	
@@ -321,7 +293,6 @@
 		</s:VGroup>
 		
 		<s:Spacer height="10"/>
-		<!--<s:Button id="btRecreateBD" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"/>-->
 	</s:VGroup>
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
@@ -330,14 +301,6 @@
 	</s:VGroup>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
-		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
-		<s:Group width="5">
-		<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
-		</s:Group>
-		<s:Image source="{LocalDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в локальную базу данных"/>
-		<s:Group width="5">
-		<s:Label text="{LocalDAO.lastErrMsg}" color="#cc0000"/>
-		</s:Group>-->
 		<s:Spacer width="100%"/>
 		<s:Button label="Стоп" includeIn="monitor" click="{stop()}"/>
 		<s:Button label="Старт" includeIn="config" click="{start()}"/>

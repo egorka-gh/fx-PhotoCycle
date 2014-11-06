@@ -15,9 +15,11 @@
 			import com.photodispatcher.model.mysql.entities.OrderExtraState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.SubOrder;
+			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.model.mysql.services.TechService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -36,7 +38,6 @@
 			import spark.formatters.DateTimeFormatter;
 			
 			public var techPoint:TechPoint;
-			//public var startTechType:FieldValue;
 			[Bindable]
 			public var manualAdd:Boolean;
 			public var finalOperation:Boolean;
@@ -76,10 +77,6 @@
 						ordersList=latch.lastDataAC;
 					}
 				}
-				/*
-				var dao:OrderDAO=new OrderDAO();
-				var ordersList:ArrayCollection= dao.findeById(orderId,true);
-				*/
 				if(!ordersList) return;
 				if(ordersList.length==1){
 					addOrder(ordersList.getItemAt(0) as SubOrder);
@@ -132,23 +129,6 @@
 			private function refresh():void{
 				if(timer && timer.running) timer.stop();
 				listAC=null;
-				/*
-				var sql:String='SELECT es.id, es.state, es.state_date, os.name state_name,'+
-									' (CASE WHEN es2.id IS NULL THEN 1000 WHEN es2.state_date IS NULL THEN 900 ELSE es2.state END) state2, es2.start_date start_date2, es2.state_date state_date2, os2.name state_name2'+  
-								' FROM order_extra_state es'+
-								' INNER JOIN config.order_state os ON os.id=es.state'+
-								' LEFT OUTER JOIN order_extra_state es2 ON es.id=es2.id and es2.state=?'+
-								' LEFT OUTER JOIN config.order_state os2 ON os2.id=es2.state'+
-								' LEFT OUTER JOIN order_extra_state es3 ON es.id=es3.id and es3.state=?'+
-								' WHERE es.state=? and es3.state_date IS NULL'+
-								' ORDER BY (CASE WHEN es2.id IS NULL THEN 1000 WHEN es2.state_date IS NULL THEN 900 ELSE es2.state END), es.state_date';
-				var params:Array=[endTechType.state, techPoint.tech_state, startTechType.state];
-				var dao:BaseDAO= new BaseDAO();
-				if (dao.runSelect(sql,params)){
-					listAC=dao.rawList;
-					listAC.filterFunction=filterOrdersList;
-				}
-				*/
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onRefresh);
@@ -202,34 +182,6 @@
 				pop.open(null,true);
 			}
 			
-			/*
-			private function checkOrder(orderId:String):Boolean{
-				if(!orderId) return false;
-				var dao:OrderExtraStateDAO= new OrderExtraStateDAO();
-				var arr:Array=dao.getByOrder(orderId);
-				if(!arr) return false;
-				if(arr.length==0) return true;
-				var es:OrderExtraState;
-				var isStarted:Boolean;
-				var isComplite:Boolean;
-				for each(es in arr){
-					if(es.state==startTechType.value) isStarted=true;
-					if(es.state==techPoint.tech_type){
-						isStarted=true;
-						if(es.state_date) isComplite=true; 
-					}
-				}
-				if(!isStarted && !isComplite) return true;
-				if(isComplite){
-					Alert.show('Заказ "'+orderId+'" уже прошел технологическую операцию');
-				}else{
-					Alert.show('Заказ "'+orderId+'" уже добавлен');
-				}
-				return false;
-			}
-			*/
-			
-			//private var newOrderId:String;
 			private function onOrderAdd(event:PopUpEvent):void{
 				var pop:OrderAddPopup=event.target as OrderAddPopup;
 				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
@@ -266,31 +218,6 @@
 				}
 			}
 
-			/*
-				newOrderId='';
-				if(order && checkOrder(order.id)){
-					newOrderId=order.id;
-					var dao:OrderDAO= new OrderDAO();
-					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
-					dao.setExtraStateByTech(order.id,startTechType.id);
-				}
-			}
-			private function onOrderAdded(event:AsyncSQLEvent):void{
-				var dao:OrderDAO=event.target as OrderDAO;
-				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderAdded);
-				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
-					refresh();
-					var obj:Object=ArrayUtil.searchItem('id',newOrderId,listAC.source);
-					if(obj && dgMonitor) dgMonitor.selectedItem=obj;
-					dao= new OrderDAO();
-					dao.startExtraStateByTech(newOrderId, techPoint.tech_type, techPoint.id);
-				}else{
-					Alert.show(event.error);
-				}
-				newOrderId='';
-			}
-			*/
-			
 			private var ordersGridMenu:GridContexMenu;
 			protected function dgMonitor_creationCompleteHandler(event:FlexEvent):void{
 				ordersGridMenu= new GridContexMenu(dgMonitor); //, [GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
@@ -341,7 +268,6 @@
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onCancelOrder);
 				latch.addLatch(svc.extraStateReset(cancelItem.id, cancelItem.sub_id, techPoint.tech_type));
-				//if(startTechType) latch.addLatch(svc.extraStateReset(cancelItem.id, cancelItem.sub_id, startTechType.value));
 				latch.start();
 			}
 			private function onCancelOrder(event:Event):void{
@@ -353,25 +279,6 @@
 					}
 				}
 			}
-				/*
-				var dao:OrderDAO= new OrderDAO();
-				dao.resetExtraStateByTech(cancelItem.id, techPoint.tech_type);
-				dao= new OrderDAO();
-				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCanceled);
-				dao.resetExtraStateByTech(cancelItem.id,startTechType.id);
-				cancelItem=null;
-			}
-			private function onOrderCanceled(event:AsyncSQLEvent):void{
-				var dao:OrderDAO=event.target as OrderDAO;
-				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCanceled);
-				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
-					refresh();
-				}else{
-					Alert.show(event.error);
-				}
-			}
-				*/
-
 			
 			private function completeCallBack(grid:DataGrid,param:int):void{
 				var onItem:Object;
@@ -400,6 +307,18 @@
 				latch.addEventListener(Event.COMPLETE,onCompleteOrder);
 				latch.addLatch(svc.extraStateSet(onItem.id, onItem.sub_id, techPoint.tech_type, new Date()));
 				latch.start();
+				//log 2 tech log
+				var tl:TechLog= new TechLog();
+				tl.log_date=new Date();
+				tl.setSheet(0,0);
+				tl.order_id=onItem.id;
+				tl.sub_id=onItem.sub_id
+				tl.src_id= techPoint.id;
+				latch=new DbLatch();
+				var svcT:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+				latch.addLatch(svcT.log(tl));
+				latch.start();
+
 			}
 			private function onCompleteOrder(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
@@ -410,42 +329,6 @@
 					}
 				}
 			}
-				/*
-				{
-					var dao:OrderDAO= new OrderDAO();
-					dao.execOnItem=onItem;
-					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
-					dao.setExtraStateByTech(onItem.id, techPoint.tech_type, techPoint.id);
-				}
-			}
-			private function onOrderCompleteSet(event:AsyncSQLEvent):void{
-				var dao:OrderDAO=event.target as OrderDAO;
-				var onItem:Object;
-				if(dao){
-					dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
-					onItem=dao.execOnItem;
-				}
-				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
-					if(finalOperation && onItem){
-						dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderFinalSet);
-						dao.setExtraStateByTech(onItem.id, SourceType.TECH_OTK);
-					}else{
-						refresh();
-					}
-				}else{
-					Alert.show(event.error);
-				}
-			}
-			private function onOrderFinalSet(event:AsyncSQLEvent):void{
-				var dao:OrderDAO=event.target as OrderDAO;
-				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onOrderCompleteSet);
-				if(event.result==AsyncSQLEvent.RESULT_COMLETED){
-					refresh();
-				}else{
-					Alert.show(event.error);
-				}
-			}
-			*/
 				
 			private function onKey(e:KeyboardEvent):void{
 				if(e.ctrlKey && e.keyCode==70){

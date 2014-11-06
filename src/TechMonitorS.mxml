@@ -45,9 +45,6 @@
 			private var techPointObj:TechPoint;
 			private var techPoint:int;
 			
-			//[Bindable]
-			//private var startTechTypeIdx:int;
-			//private var startTechType:int;
 			[Bindable]
 			private var manualAdd:Boolean;
 			[Bindable]
@@ -57,11 +54,6 @@
 			private var endTechType:int;
 			[Bindable]
 			private var yelloyState:Boolean;
-			/*
-			[Bindable]
-			private var compliteTechTypeIdx:int;
-			private var compliteTechType:int;
-			*/
 			[Bindable]
 			private var refreshInterval:int;
 			
@@ -106,11 +98,6 @@
 				latch.addLatch(svc.loadAll(0));
 				latch.start();
 				
-				/*
-				var stDao:SourceTypeDAO= new SourceTypeDAO();
-				techTypeAC=stDao.findAll(Source.LOCATION_TYPE_TECH_POINT);
-				*/
-				
 				initLatch.join(latch);
 				initLatch.start();
 			}
@@ -142,20 +129,16 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					techPoint=so.data.monitorTechPoint;
-					//startTechType=so.data.startTechType;
 					manualAdd=Boolean(so.data.manualAdd);
 					finalOperation=Boolean(so.data.finalOperation);
 					endTechType=so.data.endTechType;
 					yelloyState=Boolean(so.data.yelloyState);
-					//compliteTechType=so.data.compliteTechType;
 					refreshInterval=so.data.refreshInterval;
 					var configPass:String=so.data.configPass;;
 					if(configPass) Context.setAttribute('configPass',configPass);
 				}
-				//if(startTechType) startTechTypeIdx=ArrayUtil.searchItemIdx('value',startTechType,techTypeAC.source);
 				if(endTechType) endTechTypeIdx=ArrayUtil.searchItemIdx('value',endTechType,techTypeAC.source);
 				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
-				//if(compliteTechType) compliteTechTypeIdx=ArrayUtil.searchItemIdx('value',compliteTechType,techTypeAC.source);
 				
 				var coms:Array=ComInfo.load();
 				var ci:ComInfo;
@@ -169,17 +152,6 @@
 				checkCfgPass();
 				currentState='config';
 			}
-			
-			/*
-			protected function ddStartTechType_changeHandler(event:IndexChangeEvent):void{
-				var st:FieldValue= ddStartTechType.selectedItem as FieldValue;
-				if (!st) return;
-				startTechType=st.value;
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.startTechType = startTechType;
-				so.flush();  
-			}
-			*/
 			
 			protected function tgManualAdd_changeHandler(event:Event):void{
 				manualAdd=tgManualAdd.selected;
@@ -196,25 +168,6 @@
 				so.data.endTechType = endTechType;
 				so.flush();  
 			}
-			
-			/*
-			protected function tgYelloyState_changeHandler(event:Event):void{
-			yelloyState=tgYelloyState.selected;
-			var so:SharedObject = SharedObject.getLocal('appProps','/');
-			so.data.yelloyState = yelloyState;
-			so.flush();  
-			}
-			*/
-			/*
-			protected function ddCompliteTechType_changeHandler(event:IndexChangeEvent):void{
-			var tp:FieldValue= ddCompliteTechType.selectedItem as FieldValue;
-			if (!tp) return;
-			compliteTechType=tp.value;
-			var so:SharedObject = SharedObject.getLocal('appProps','/');
-			so.data.compliteTechType = compliteTechType;
-			so.flush();  
-			}
-			*/
 			
 			protected function numericstepper1_changeHandler(event:Event):void{
 				refreshInterval=nsRefresh.value;
@@ -236,9 +189,7 @@
 			private var barcodeReader:ComReader;
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
-				//var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
 				var endTT:FieldValue=ddEndTechType.selectedItem as FieldValue;
-				//if(!techPointObj || !startTT ||!endTT){
 				if(!techPointObj ||!endTT){
 					Alert.show('Монитор не настроен');
 					return;
@@ -260,14 +211,6 @@
 						}
 					}
 				}
-				/*
-				techMonitor.techPoint=techPointObj;
-				techMonitor.startTechType=startTT;
-				techMonitor.manualAdd=manualAdd;
-				techMonitor.endTechType=endTT;
-				techMonitor.refreshInterval=refreshInterval;
-				techMonitor.start();
-				*/
 				currentState='monitor';
 			}
 			
@@ -280,8 +223,6 @@
 				Alert.show('Ошибка COM \n'+event.error+';\n данные com: '+bar,'Ошибка');
 			}
 			
-			//TODO 4 debug
-			//private var techMonitor:Object;
 			protected function button2_clickHandler(event:MouseEvent):void{
 				if(techMonitor) techMonitor.stop();
 				serialProxy.stop();
@@ -291,10 +232,8 @@
 			
 			protected function state1_enterStateHandler(event:FlexEvent):void{
 				cfgEnabled=false;
-				//var startTT:FieldValue=ddStartTechType.selectedItem as FieldValue;
 				var endTT:FieldValue=ddEndTechType.selectedItem as FieldValue;
 				techMonitor.techPoint=techPointObj;
-				//techMonitor.startTechType=startTT;
 				techMonitor.manualAdd=manualAdd;
 				techMonitor.finalOperation=finalOperation;
 				techMonitor.endTechType=endTT;
@@ -410,11 +349,6 @@
 		</s:HGroup>
 		
 		<s:Spacer height="10"/>
-		<!--<s:HGroup id="gStartTT" gap="5" verticalAlign="baseline">
-			<s:Label text="Стартовая операция" width="{lbLong.width}" toolTip="Предыдущая операция"/>
-			<s:DropDownList id="ddStartTechType" selectedIndex="{startTechTypeIdx}" dataProvider="{techTypeAC}" 
-							change="ddStartTechType_changeHandler(event)" width="200"/>
-		</s:HGroup>-->
 		<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">
 			<s:CheckBox id="tgManualAdd" selected="@{manualAdd}" change="tgManualAdd_changeHandler(event)"/>
 			<s:Label text="Ручное добавление"/>
@@ -426,17 +360,6 @@
 			<s:DropDownList id="ddEndTechType" selectedIndex="{endTechTypeIdx}" dataProvider="{techTypeAC}"
 							change="ddEndTechType_changeHandler(event)" width="200"/>
 		</s:HGroup>
-		<!--<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">
-		<s:CheckBox id="tgYelloyState" selected="@{yelloyState}" change="tgYelloyState_changeHandler(event)"/>
-		<s:Label text="Проверять начало операции (желтый статус)"/>
-		</s:HGroup>-->
-		
-		<!--<s:Spacer height="10"/>
-		<s:HGroup gap="5" verticalAlign="baseline">
-		<s:Label id="lbLong" text="Выполнен - операция"/>
-		<s:DropDownList id="ddCompliteTechType" selectedIndex="{compliteTechTypeIdx}" dataProvider="{techTypeAC}" 
-		change="ddCompliteTechType_changeHandler(event)" width="200"/>
-		</s:HGroup>-->
 		
 		<s:Spacer height="10"/>
 		<s:HGroup gap="5" verticalAlign="baseline">
@@ -471,12 +394,6 @@
 	<view:TechMonitorMonitor id="techMonitor" includeIn="monitor" top="20" left="20" right="5" bottom="50"/>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
-		
-		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
-		<s:Group width="5">
-		<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
-		</s:Group>-->
-		
 		<s:Spacer width="100%"/>
 		<s:Button label="Конфигурация" includeIn="monitor" click="button2_clickHandler(event)"/>
 		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
