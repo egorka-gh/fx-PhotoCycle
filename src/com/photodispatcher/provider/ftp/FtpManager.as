@@ -213,6 +213,7 @@ package com.photodispatcher.provider.ftp{
 		private function saveOrder(order:Order):void{
 			//TODO set order state
 			if(order.state<OrderState.CANCELED) order.state=order.is_preload?OrderState.PRN_WAITE_ORDER_STATE:OrderState.PRN_WAITE;
+			order.state_date=new Date();
 			if(order.hasSuborders){
 				for each(var so:SubOrder in order.suborders) if(so.state<OrderState.CANCELED) so.state=order.state;
 			}
@@ -234,7 +235,13 @@ package com.photodispatcher.provider.ftp{
 				var id:String= latch.lastTag;
 				if(id){
 					var idx:int=ArrayUtil.searchItemIdx('id',id,writeOrders);
-					if(idx!=-1) writeOrders.splice(idx,1);
+					var order:Order;					
+					if(idx!=-1){
+						order= writeOrders[idx] as Order;
+						writeOrders.splice(idx,1);
+					}
+					if(!order || order.state!=OrderState.PRN_WAITE) return;
+					//set extra state
 					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 					latch=new DbLatch();
 					//latch.addEventListener(Event.COMPLETE,onCompleteOrder);
