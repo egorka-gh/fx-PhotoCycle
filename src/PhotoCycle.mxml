@@ -195,7 +195,14 @@
 						startPopup.close();
 						startPopup=null;
 					}else{
-						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						if(latchIM.complite){
+							startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						}else{
+							startPopup.close();
+							startPopup=null;
+							currentState='config';
+							Alert.show(latchIM.error);
+						}
 						//latch.showError();
 					}
 				}

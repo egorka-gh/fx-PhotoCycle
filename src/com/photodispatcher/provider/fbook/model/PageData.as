@@ -19,7 +19,8 @@ package com.photodispatcher.provider.fbook.model{
 
 	public class PageData{
 		public static const OUT_FILE_DEPTH:String='8';
-		public static const OUT_FILE_DENSITY:String='300';
+		public static const OUT_FILE_UNIT:String='PixelsPerInch';
+		public static const OUT_FILE_DENSITY:String='300x300';
 		public static const OUT_FILE_QUALITY:String='99%';
 
 		public static const SCRIPT_FILE_PREFIX:String='page';
@@ -205,6 +206,10 @@ package com.photodispatcher.provider.fbook.model{
 			if(OUT_FILE_DEPTH){
 				command.add('-depth');
 				command.add(OUT_FILE_DEPTH);
+			}
+			if(OUT_FILE_UNIT){
+				command.add('-units');
+				command.add(OUT_FILE_UNIT);
 			}
 			if(OUT_FILE_DENSITY){
 				command.add('-density');

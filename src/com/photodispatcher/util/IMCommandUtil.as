@@ -180,6 +180,12 @@ package com.photodispatcher.util{
 			}
 		}
 
+		public static function setOutputParams(command:IMCommand):void{
+			command.add('-units'); command.add('PixelsPerInch');
+			command.add('-density'); command.add('300x300');
+			command.add('-quality'); command.add('100');
+		}
+		
 		public static function expandImageV(command:IMCommand, amountMM:int, imageGravity:String='North'):void{
 			if(amountMM>0){
 				//expand to right

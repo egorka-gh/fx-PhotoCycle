@@ -151,8 +151,11 @@ package com.photodispatcher.provider.preprocess{
 						//expand (left side)
 						IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
 						//save file
+						/*
 						command.add('-density'); command.add('300x300');
 						command.add('-quality'); command.add('100');
+						*/
+						IMCommandUtil.setOutputParams(command);
 						outName=FILENAME_COVER_BACK+(i+1).toString()+'.jpg';
 						command.add(outName);
 						commands.push(command);
@@ -287,8 +290,11 @@ package com.photodispatcher.provider.preprocess{
 					
 					command.folder=folder;
 					//save file
+					/*
 					command.add('-density'); command.add('300x300');
 					command.add('-quality'); command.add('100');
+					*/
+					IMCommandUtil.setOutputParams(command);
 					outName=FILENAME_SHEET+(i+1).toString()+'.jpg';
 					command.add(outName);
 					commands.push(command);
@@ -546,9 +552,11 @@ package com.photodispatcher.provider.preprocess{
 				IMCommandUtil.drawBarcode(folder,command,barSize,printGroup.techBarcode(file),'', barOffset, -90, gravity, printGroup.bookTemplate.tech_bar_step, parseInt(printGroup.bookTemplate.tech_bar_color,16));
 				*/
 			}
-
+			/*
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add('100');
+			*/
+			IMCommandUtil.setOutputParams(command);
 			command.add(fileName);
 			return command;
 		}
@@ -612,9 +620,11 @@ package com.photodispatcher.provider.preprocess{
 				IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,parseInt(printGroup.bookTemplate.tech_bar_color,16));
 				*/
 			}
-
+			/*
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add('100');
+			/*/
+			IMCommandUtil.setOutputParams(command);
 			return command;
 		}
 

@@ -9,6 +9,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMRuner;
+	import com.photodispatcher.util.IMCommandUtil;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -129,8 +130,11 @@ package com.photodispatcher.print{
 					command.add(item.file_name);
 					command.add('-rotate');
 					command.add('180');
+					/*
 					command.add('-density'); command.add('300x300');
 					command.add('-quality'); command.add('100');
+					*/
+					IMCommandUtil.setOutputParams(command);
 					command.add(ROTATE_FOLDER+File.separator+item.file_name);
 					commands.push(command);
 				}

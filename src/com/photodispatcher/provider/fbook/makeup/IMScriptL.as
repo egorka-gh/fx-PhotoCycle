@@ -206,6 +206,9 @@ package com.photodispatcher.provider.fbook.makeup{
 					cmd.add('-depth'); cmd.add(PageData.OUT_FILE_DEPTH);
 				}
 				if(PageData.OUT_FILE_DENSITY){
+					cmd.add('-units'); cmd.add(PageData.OUT_FILE_UNIT);
+				}
+				if(PageData.OUT_FILE_DENSITY){
 					cmd.add('-density'); cmd.add(PageData.OUT_FILE_DENSITY);
 				}
 				if(PageData.OUT_FILE_QUALITY){
