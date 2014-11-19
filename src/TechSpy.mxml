@@ -77,6 +77,15 @@
 				techMonitor.start();
 			}
 			
+			protected function btMonitorState_clickHandler(event:MouseEvent):void{
+				if(!techMonitor) return;
+				if(techMonitor.currentState=='monitor'){
+					techMonitor.currentState='report';
+				}else{
+					techMonitor.currentState='monitor';
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -106,6 +115,9 @@
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
 		</s:Group>-->
 		<s:Spacer width="100%"/>
+		<s:Button id="btMonitorState" label="{techMonitor.currentState=='monitor'?'Отчеты':'Монитор'}" includeIn="monitor" 
+				  click="btMonitorState_clickHandler(event)" />
+		<s:Spacer width="10"/>
 		<s:Button label="Конфигурация" includeIn="monitor" click="{currentState='config'; techMonitor.stop();}"/>
 		<s:Button label="Монитор" includeIn="config" click="{currentState='monitor'}"/>
 		<s:Button label="Закрыть" click="{FlexGlobals.topLevelApplication.exit()}" />

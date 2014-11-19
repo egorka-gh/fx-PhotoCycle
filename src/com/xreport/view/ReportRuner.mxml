@@ -19,6 +19,7 @@
 			import com.photodispatcher.model.mysql.entities.report.ReportSource;
 			import com.photodispatcher.model.mysql.services.XReportService;
 			import com.photodispatcher.util.ArrayUtil;
+			import com.xreport.common.IReportViewer;
 			import com.xreport.itemrenderer.ParamDateIR;
 			import com.xreport.itemrenderer.ParamPeriodIR;
 			import com.xreport.itemrenderer.ParamStoreIR;
@@ -52,6 +53,9 @@
 
 			[Bindable]
 			public var stList:ArrayCollection;
+			
+			[Bindable]
+			public var reportViewer:IReportViewer;
 
 			private var rgInclude2Swc:ReportGroup;
 			
@@ -158,9 +162,12 @@
 				if(result.hasError){
 					Alert.show(result.error);
 				}
-				if(result.url){
+				if(result.url && reportViewer){
+					reportViewer.open(result.url,getReport(result.id));
+					/*
 					var urlRequest:URLRequest = new URLRequest(result.url);
 					navigateToURL(urlRequest,'_new');
+					*/
 				}
 			}
 			private function onBuildReportFault(event:TideFaultEvent):void {
@@ -168,10 +175,13 @@
 			}
 
 			private function releaseReport(id:String):void{
-				var r:Report=ArrayUtil.searchItem('id',id,reportLst.source) as Report;
+				var r:Report=getReport(id);
 				if(r) r.isRunning=false;
 			}
 			
+			private function getReport(id:String):Report{
+				return ArrayUtil.searchItem('id',id,reportLst.source) as Report;
+			}
 			
 			private function paramRenderer(item:Object):ClassFactory {
 				var p:Parameter= item as Parameter;
@@ -249,7 +259,7 @@
 							<s:HGroup width="100%" horizontalAlign="right">
 								<s:Label text="Выполнение отчета" visible="{curReport &amp;&amp; curReport.isRunning}"/>
 								<s:Button id="btRunRep" icon="assets/xls.png" 
-										  enabled="{!curReport.isRunning}" 
+										  enabled="{reportViewer &amp;&amp; !curReport.isRunning}" 
 										  click="btRunRep_clickHandler(event)" width="40"/>
 							</s:HGroup>
 						</s:VGroup> 

@@ -29,9 +29,11 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.TechPickerService;
 	import com.photodispatcher.model.mysql.services.TechPointService;
 	import com.photodispatcher.model.mysql.services.TechService;
+	import com.photodispatcher.model.mysql.services.XReportService;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
+	import flash.net.SharedObject;
 	import flash.utils.Dictionary;
 	
 	import mx.collections.ArrayCollection;
@@ -306,7 +308,8 @@ package com.photodispatcher.context{
 				TechPointService,
 				TechPickerService,
 				TechService,
-				OrderService //+
+				OrderService,
+				XReportService //+
 			]);
 			
 			//fill from config
@@ -407,6 +410,17 @@ package com.photodispatcher.context{
 					setSources(latch.lastDataArr);
 				}
 			}
+		}
+		
+		private static var serverRootUrl:String;
+		public static function getServerRootUrl():String{
+			if(!serverRootUrl){
+				var str:String;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				str=so.data.bdServer;
+				if(str) serverRootUrl='http://'+str+':8080/PhCServer';
+			}
+			return serverRootUrl;
 		}
 
 		private static var latchAttributeLists:DbLatch;

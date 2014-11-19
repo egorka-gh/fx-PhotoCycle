@@ -12,6 +12,7 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
@@ -50,11 +51,13 @@
 				startPopup= new ModalPopUp();
 				startPopup.label='Инициализация';
 				startPopup.open(null);
-				
+
 				var initLatch:DbLatch=Context.initTechSpy();
 				initLatch.addEventListener(Event.COMPLETE, onInit);
 				initLatch.start();
 				//currentState='monitor';
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				ooPath=so.data.ooPath;
 			}
 			private function onInit(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
@@ -65,6 +68,8 @@
 					if(!latch.complite){
 						Alert.show('Ошибка инициализации'+'/n'+latch.error);
 					}else{
+						var oo:OORuner= new OORuner();
+						oo.check(ooPath);
 						currentState='monitor';
 					}
 				}
@@ -77,6 +82,43 @@
 				techMonitor.start();
 			}
 			
+			protected function btMonitorState_clickHandler(event:MouseEvent):void{
+				if(!techMonitor) return;
+				if(techMonitor.currentState=='monitor'){
+					techMonitor.currentState='report';
+				}else{
+					techMonitor.currentState='monitor';
+				}
+			}
+
+			[Bindable]
+			private var ooPathValid:Boolean;
+			[Bindable]
+			private var ooPath:String;
+			protected function btOOFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var fl:File = File.userDirectory;
+				fl.addEventListener(Event.SELECT,onOOFolderSet);
+				fl.browseForDirectory('Выбирите папку ImageMagick');
+			}
+			protected function onOOFolderSet(event:Event):void{
+				ooPathValid=false;
+				var fl:File = event.target as File;
+				if(fl){
+					fl.removeEventListener(Event.SELECT,onOOFolderSet);
+					ooPath=fl.nativePath;
+					var oo:OORuner= new OORuner();
+					if(oo.check(ooPath)){
+						ooPathValid=true;
+						ooPath=oo.ooPath;
+						//save last selection
+						var so:SharedObject = SharedObject.getLocal('appProps','/');
+						so.data.ooPath = ooPath;
+						so.flush();  
+					}
+				}
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -98,6 +140,15 @@
 	
 	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}" top="5" right="5"/>
 	
+	<s:VGroup top="50" left="10" right="10" bottom="50" gap="5" includeIn="config">
+		<s:Label text="Параметры печати"/>
+		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+			<s:Label text="Путь к OpenOffice"/>
+			<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}"/>
+			<s:Button id="btOOFolder" label="..." click="btOOFolder_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+	
 	<view:TechSpyMonitor id="techMonitor" includeIn="monitor" top="10" left="10" right="10" bottom="50"/>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
@@ -106,6 +157,9 @@
 		<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
 		</s:Group>-->
 		<s:Spacer width="100%"/>
+		<s:Button id="btMonitorState" label="{techMonitor.currentState=='monitor'?'Отчеты':'Монитор'}" includeIn="monitor" 
+				  click="btMonitorState_clickHandler(event)" />
+		<s:Spacer width="10"/>
 		<s:Button label="Конфигурация" includeIn="monitor" click="{currentState='config'; techMonitor.stop();}"/>
 		<s:Button label="Монитор" includeIn="config" click="{currentState='monitor'}"/>
 		<s:Button label="Закрыть" click="{FlexGlobals.topLevelApplication.exit()}" />
