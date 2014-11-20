@@ -14,8 +14,12 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.SpyData;
+			import com.photodispatcher.model.mysql.entities.report.Parameter;
+			import com.photodispatcher.model.mysql.entities.report.Report;
+			import com.photodispatcher.model.mysql.entities.report.ReportResult;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.XReportService;
+			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			import com.photodispatcher.view.print.PrintDataGridView;
@@ -33,6 +37,8 @@
 			import mx.printing.PrintDataGrid;
 			
 			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
 			
 			import spark.collections.Sort;
 			import spark.collections.SortField;
@@ -59,6 +65,12 @@
 			[Bindable]
 			private var xReportService:XReportService;
 
+			[Bindable]
+			private var reportViewer:ReportViewer;
+			[Bindable]
+			private var reportPrinter:OORuner;
+			
+
 			private var startState:int;
 			private var endState:int;
 			
@@ -78,7 +90,10 @@
 			private function init():void{
 				
 				xReportService=Tide.getInstance().getContext().byType(XReportService,true) as XReportService;
-
+				reportViewer=new ReportViewer();
+				reportPrinter=new OORuner();
+				
+				curReport= new Report();
 				techTypeAC=Context.getAttribute('tech_typeValueList') as ArrayCollection;
 				createColumnsAC();
 				
@@ -374,6 +389,59 @@
 				}
 			}
 
+			[Bindable]
+			private var curReport:Report; 
+			private var printCurReport:Boolean;
+			
+			protected function btToXLS_clickHandler(event:MouseEvent):void{
+				printCurReport=false;
+				runReport();
+			}
+			private function runReport():void {
+				if(!reportViewer) return;
+				if(curReport && curReport.isRunning) return;
+				var dt:Date= new Date();
+				var bPart:int=0;
+				if(ddBookPart.selectedItem) bPart=ddBookPart.selectedItem.id;
+				if(delayInterval) dt= new Date(dt.fullYear,dt.month,dt.date,dt.hours-delayInterval,dt.minutes);
+
+				curReport=new Report();
+				curReport.id='spyMonitorFrm';
+				curReport.parameters=[];
+				var param:Parameter;
+				param=new Parameter(); param.id='pdatetime'; param.valDate=dt; curReport.parameters.push(param);
+				param=new Parameter(); param.id='pstate'; param.valString=startState.toString(); curReport.parameters.push(param);
+				param=new Parameter(); param.id='pstateto'; param.valString=endState.toString(); curReport.parameters.push(param);
+				param=new Parameter(); param.id='pbookpart'; param.valString=bPart.toString(); curReport.parameters.push(param);
+				param=new Parameter(); param.id='ptoggle'; param.valString=chkReset.selected?'1':'0'; curReport.parameters.push(param);
+
+				curReport.isRunning=true;
+				xReportService.buildReport(curReport, 'dataSource',onBuildReport, onBuildReportFault)
+			}
+			private function onBuildReport(event:TideResultEvent):void {
+				curReport.isRunning=false;
+				var result:ReportResult=event.result as ReportResult;
+				if (!result) return; //alert?
+				if(result.hasError){
+					Alert.show(result.error);
+				}
+				if(result.url){
+					if(printCurReport && reportPrinter && reportPrinter.enabled && !reportPrinter.busy){
+						reportPrinter.print(result.url);
+					}else if(reportViewer){
+						reportViewer.open(result.url,curReport);
+					}
+				}
+			}
+			private function onBuildReportFault(event:TideFaultEvent):void {
+				Alert.show(event.fault.faultString);
+			}
+
+			protected function btPrint_clickHandler(event:MouseEvent):void{
+				printCurReport=true;
+				runReport();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -427,10 +495,20 @@
 					dataProvider="{listAC}" locale="ru_RU" columns="{gridColumnsAC}"
 					creationComplete="dgMonitor_creationCompleteHandler(event)">
 		</s:DataGrid>
+		<s:HGroup gap="10" width="100%" horizontalAlign="right" verticalAlign="middle">
+			<s:Button id="btPrint" icon="assets/print32.png" 
+					  enabled="{reportViewer &amp;&amp; !curReport.isRunning &amp;&amp; !reportPrinter.busy}" 
+					  click="btPrint_clickHandler(event)"
+					  width="40"/>
+			<s:Button id="btToXLS" icon="assets/xls.png" 
+					  enabled="{reportViewer &amp;&amp; !curReport.isRunning}" 
+					  click="btToXLS_clickHandler(event)"
+					  width="40"/>
+		</s:HGroup>
 		<!--<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)" enabled="{manualAdd}"/>-->
 	</s:VGroup>
 	
 	<view:ReportRuner top="0" left="0" right="0" bottom="0" includeIn="report"
-					  reportViewer="{new ReportViewer()}"
+					  reportViewer="{reportViewer}"
 					  xReportService="{xReportService}"/>
 </s:Group>
