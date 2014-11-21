@@ -427,7 +427,7 @@
 				}
 				if(result.url){
 					if(printCurReport && reportPrinter && reportPrinter.enabled && !reportPrinter.busy){
-						reportPrinter.print(result.url);
+						reportPrinter.print(result.url, Context.getAttribute('printer'));
 					}else if(reportViewer){
 						reportViewer.open(result.url,curReport);
 					}

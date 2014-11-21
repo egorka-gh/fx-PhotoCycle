@@ -21,6 +21,7 @@
 			import mx.events.FlexEvent;
 			
 			import spark.events.PopUpEvent;
+			import spark.events.TextOperationEvent;
 			
 			[Bindable]
 			private var refreshInterval:int;
@@ -58,6 +59,8 @@
 				//currentState='monitor';
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				ooPath=so.data.ooPath;
+				printer=so.data.printer;
+				if(printer) Context.setAttribute('printer',printer);
 			}
 			private function onInit(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
@@ -69,7 +72,7 @@
 						Alert.show('Ошибка инициализации'+'/n'+latch.error);
 					}else{
 						var oo:OORuner= new OORuner();
-						oo.check(ooPath);
+						ooPathValid=oo.check(ooPath);
 						currentState='monitor';
 					}
 				}
@@ -95,6 +98,9 @@
 			private var ooPathValid:Boolean;
 			[Bindable]
 			private var ooPath:String;
+			[Bindable]
+			private var printer:String;
+			
 			protected function btOOFolder_clickHandler(event:MouseEvent):void{
 				//browse
 				var fl:File = File.userDirectory;
@@ -119,6 +125,13 @@
 				}
 			}
 
+			protected function tiPrinter_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.printer = printer;
+				so.flush();
+				Context.setAttribute('printer',printer);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -141,11 +154,16 @@
 	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}" top="5" right="5"/>
 	
 	<s:VGroup top="50" left="10" right="10" bottom="50" gap="5" includeIn="config">
-		<s:Label text="Параметры печати"/>
+		<s:Label text="Параметры печати" fontWeight="bold"/>
 		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
 			<s:Label text="Путь к OpenOffice"/>
-			<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}"/>
+			<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}" textAlign="left"/>
 			<s:Button id="btOOFolder" label="..." click="btOOFolder_clickHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+			<s:Label text="Принтер" fontWeight="bold"/>
+			<s:Label text="(если не указан, используется принтер по умолчанию)"/>
+			<s:TextInput id="tiPrinter" text="@{printer}" width="210" change="tiPrinter_changeHandler(event)" textAlign="left"/>
 		</s:HGroup>
 	</s:VGroup>
 	

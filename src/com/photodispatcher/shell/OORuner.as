@@ -145,7 +145,12 @@ package com.photodispatcher.shell{
 			
 			runner= new ProcessRunner(ooPath+File.separator+EXECUTABLE_OFFICE);
 			var args:Vector.<String>=new Vector.<String>();
-			args.push(PRINT_OPTION_DEFAULT_PRINTER);
+			if(printer){
+				args.push(PRINT_OPTION_NAMED_PRINTER);
+				args.push('"'+printer+'"');
+			}else{
+				args.push(PRINT_OPTION_DEFAULT_PRINTER);
+			}
 			args.push('"'+path+'"');
 			proc= runner.prepare(File.userDirectory.nativePath,args);
 			busy=true;
