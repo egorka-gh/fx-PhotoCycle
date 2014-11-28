@@ -14,22 +14,45 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class OrderExtraInfoBase extends AbstractEntity {
 
+        private var _bookThickness:Number;
         private var _book_type:int;
+        private var _books:int;
         private var _calc_type:String;
         private var _corner_type:String;
         private var _cover:String;
+        private var _coverMaterial:String;
+        private var _dateIn:Date;
+        private var _dateOut:Date;
         private var _endpaper:String;
         private var _format:String;
+        private var _groupId:int;
         private var _id:String;
         private var _interlayer:String;
         private var _kaptal:String;
+        private var _paper:String;
+        private var _remark:String;
+        private var _sheets:int;
         private var _sub_id:String;
+
+        public function set bookThickness(value:Number):void {
+            _bookThickness = value;
+        }
+        public function get bookThickness():Number {
+            return _bookThickness;
+        }
 
         public function set book_type(value:int):void {
             _book_type = value;
         }
         public function get book_type():int {
             return _book_type;
+        }
+
+        public function set books(value:int):void {
+            _books = value;
+        }
+        public function get books():int {
+            return _books;
         }
 
         public function set calc_type(value:String):void {
@@ -53,6 +76,27 @@ package com.photodispatcher.model.mysql.entities {
             return _cover;
         }
 
+        public function set coverMaterial(value:String):void {
+            _coverMaterial = value;
+        }
+        public function get coverMaterial():String {
+            return _coverMaterial;
+        }
+
+        public function set dateIn(value:Date):void {
+            _dateIn = value;
+        }
+        public function get dateIn():Date {
+            return _dateIn;
+        }
+
+        public function set dateOut(value:Date):void {
+            _dateOut = value;
+        }
+        public function get dateOut():Date {
+            return _dateOut;
+        }
+
         public function set endpaper(value:String):void {
             _endpaper = value;
         }
@@ -65,6 +109,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get format():String {
             return _format;
+        }
+
+        public function set groupId(value:int):void {
+            _groupId = value;
+        }
+        public function get groupId():int {
+            return _groupId;
         }
 
         public function set id(value:String):void {
@@ -88,6 +139,27 @@ package com.photodispatcher.model.mysql.entities {
             return _kaptal;
         }
 
+        public function set paper(value:String):void {
+            _paper = value;
+        }
+        public function get paper():String {
+            return _paper;
+        }
+
+        public function set remark(value:String):void {
+            _remark = value;
+        }
+        public function get remark():String {
+            return _remark;
+        }
+
+        public function set sheets(value:int):void {
+            _sheets = value;
+        }
+        public function get sheets():int {
+            return _sheets;
+        }
+
         public function set sub_id(value:String):void {
             _sub_id = value;
         }
@@ -97,29 +169,47 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _bookThickness = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _book_type = input.readObject() as int;
+            _books = input.readObject() as int;
             _calc_type = input.readObject() as String;
             _corner_type = input.readObject() as String;
             _cover = input.readObject() as String;
+            _coverMaterial = input.readObject() as String;
+            _dateIn = input.readObject() as Date;
+            _dateOut = input.readObject() as Date;
             _endpaper = input.readObject() as String;
             _format = input.readObject() as String;
+            _groupId = input.readObject() as int;
             _id = input.readObject() as String;
             _interlayer = input.readObject() as String;
             _kaptal = input.readObject() as String;
+            _paper = input.readObject() as String;
+            _remark = input.readObject() as String;
+            _sheets = input.readObject() as int;
             _sub_id = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_bookThickness is IPropertyHolder) ? IPropertyHolder(_bookThickness).object : _bookThickness);
             output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
+            output.writeObject((_books is IPropertyHolder) ? IPropertyHolder(_books).object : _books);
             output.writeObject((_calc_type is IPropertyHolder) ? IPropertyHolder(_calc_type).object : _calc_type);
             output.writeObject((_corner_type is IPropertyHolder) ? IPropertyHolder(_corner_type).object : _corner_type);
             output.writeObject((_cover is IPropertyHolder) ? IPropertyHolder(_cover).object : _cover);
+            output.writeObject((_coverMaterial is IPropertyHolder) ? IPropertyHolder(_coverMaterial).object : _coverMaterial);
+            output.writeObject((_dateIn is IPropertyHolder) ? IPropertyHolder(_dateIn).object : _dateIn);
+            output.writeObject((_dateOut is IPropertyHolder) ? IPropertyHolder(_dateOut).object : _dateOut);
             output.writeObject((_endpaper is IPropertyHolder) ? IPropertyHolder(_endpaper).object : _endpaper);
             output.writeObject((_format is IPropertyHolder) ? IPropertyHolder(_format).object : _format);
+            output.writeObject((_groupId is IPropertyHolder) ? IPropertyHolder(_groupId).object : _groupId);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_interlayer is IPropertyHolder) ? IPropertyHolder(_interlayer).object : _interlayer);
             output.writeObject((_kaptal is IPropertyHolder) ? IPropertyHolder(_kaptal).object : _kaptal);
+            output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
+            output.writeObject((_remark is IPropertyHolder) ? IPropertyHolder(_remark).object : _remark);
+            output.writeObject((_sheets is IPropertyHolder) ? IPropertyHolder(_sheets).object : _sheets);
             output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
         }
     }

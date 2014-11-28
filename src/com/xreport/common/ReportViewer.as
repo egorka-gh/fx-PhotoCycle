@@ -5,20 +5,25 @@ package com.xreport.common{
 	
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
+	import flash.events.EventDispatcher;
 	
 	import mx.controls.Alert;
-	
-	public class ReportViewer implements IReportViewer{
+
+	[Event(name="complete", type="flash.events.Event")]
+	public class ReportViewer extends EventDispatcher implements IReportViewer{
 		
 		public var url:String;
 		public var report:Report;
+		public var silent:Boolean;
+		
+		public function ReportViewer(){
+			super(null);
+		}
 		
 		private var _loader:RemoteFileLoader;
-
 		public function get loader():RemoteFileLoader{
 			return _loader;
 		}
-
 		public function set loader(value:RemoteFileLoader):void{
 			if(_loader){
 				//stop listen
@@ -49,10 +54,12 @@ package com.xreport.common{
 			url=null;
 			report=null;
 			loader=null;
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 
 		private function onError(evt : ErrorEvent):void{
-			Alert.show(evt.text);
+			if(!silent) Alert.show(evt.text);
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 	}
 }

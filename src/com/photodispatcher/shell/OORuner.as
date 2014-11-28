@@ -15,6 +15,7 @@ package com.photodispatcher.shell{
 	import mx.managers.CursorManager;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
+	[Event(name="complete", type="flash.events.Event")]
 	public class OORuner extends EventDispatcher{
 		public static const TRANSPORT_URL:int=0;
 		public static const TRANSPORT_FILESYSTEM:int=1;
@@ -46,8 +47,6 @@ package com.photodispatcher.shell{
 		}
 
 		private var respond:String;
-		private var timer:Timer;
-
 		
 		public function OORuner(path:String=null){
 			super(null);

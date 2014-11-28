@@ -23,6 +23,7 @@
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.shell.IMRuner;
+			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.OrderSearchPopup;
@@ -143,6 +144,13 @@
 					//cFilterId=so.data.cFilterId;
 					if(so.data.syncInterval) syncInterval=so.data.syncInterval;
 					Context.setAttribute('printRotated',Boolean(so.data.printRotated));
+					
+					var ooPath:String=so.data.ooPath;
+					var oo:OORuner= new OORuner();
+					oo.check(ooPath);
+					var printer:String=so.data.printer;
+					if(printer) Context.setAttribute('printer',printer);
+
 				}
 				
 				Context.setAttribute('syncInterval',syncInterval);

@@ -1,11 +1,12 @@
 package com.photodispatcher.view.menu{
 	import com.photodispatcher.event.AsyncSQLEvent;
-	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.printer.Printer;
 	import com.photodispatcher.view.OrderInfoPopup;
 	
 	import flash.events.Event;
@@ -29,6 +30,7 @@ package com.photodispatcher.view.menu{
 		public static const FORVARD_FTP:int=2;
 		public static const SHOW_ORDER:int=3;
 		public static const RESET_ERRLIMIT:int=4;
+		public static const PRINT_TICKET:int=5;
 		
 		private var grid:DataGrid;
 		[Bindable]
@@ -65,6 +67,10 @@ package com.photodispatcher.view.menu{
 							break;
 						case RESET_ERRLIMIT:
 							item={label:'Сбросить ошибку',enabled:false,callBack:null,newState:0, action:RESET_ERRLIMIT};
+							menuItems.addItem(item);
+							break;
+						case PRINT_TICKET:
+							item={label:'Печать квитка',enabled:false,callBack:null,newState:0, action:PRINT_TICKET};
 							menuItems.addItem(item);
 							break;
 					}
@@ -118,6 +124,9 @@ package com.photodispatcher.view.menu{
 				case RESET_ERRLIMIT:
 					resetOrdersErrLimit();
 					break;
+				case PRINT_TICKET:
+					printTickets();
+					break;
 				
 				default:
 					//check external callBack
@@ -159,6 +168,16 @@ package com.photodispatcher.view.menu{
 				if(order && order.state==OrderState.WAITE_FTP){
 					order.state=OrderState.FTP_FORWARD;
 					order.ftpForwarded=true;
+				}
+			}
+		}
+
+		public function printTickets():void{
+			var pg:PrintGroup;
+			for each(var o:Object in grid.selectedItems){
+				pg=o as PrintGroup;
+				if(pg && pg.id){
+					Printer.instance.printOrderTicket(pg);
 				}
 			}
 		}

@@ -316,7 +316,7 @@
 			}
 
 			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
-				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.CANCEL_ORDER,GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
+				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.CANCEL_ORDER,GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER,GridContexMenu.PRINT_TICKET]);
 			}
 			
 			protected function btRefreshLab_clickHandler(event:MouseEvent):void{

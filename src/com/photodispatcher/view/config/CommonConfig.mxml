@@ -10,6 +10,7 @@
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.mysql.entities.ContentFilter;
 			import com.photodispatcher.shell.IMRuner;
+			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.CleanDatabasePopup;
 			import com.photodispatcher.view.PasswPopup;
@@ -56,12 +57,19 @@
 			private var reversPrint:Boolean=false;
 			[Bindable]
 			private var contentFiltersAC:ArrayCollection;
-			[Bindable]
-			private var currCFilter:ContentFilter;
+			//[Bindable]
+			//private var currCFilter:ContentFilter;
 			[Bindable]
 			private var syncInterval:int;
 			[Bindable]
 			private var printRotated:Boolean;
+
+			[Bindable]
+			private var ooPathValid:Boolean;
+			[Bindable]
+			private var ooPath:String;
+			[Bindable]
+			private var printer:String;
 
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
@@ -86,11 +94,16 @@
 				if(so.data.pdfPageLimit) pdfPageLimit=so.data.pdfPageLimit;
 				if(!pdfPageLimit) pdfPageLimit=100;
 				reversPrint=so.data.reversPrint;
-				contentFiltersAC=new ArrayCollection(ContentFilter.filters);
-				currCFilter=Context.getAttribute('contentFilter') as ContentFilter;
+				//contentFiltersAC=new ArrayCollection(ContentFilter.filters);
+				//currCFilter=Context.getAttribute('contentFilter') as ContentFilter;
 				syncInterval=so.data.syncInterval;
 				if(!syncInterval) syncInterval=10;
-				printRotated=Boolean(so.data.printRotated)
+				printRotated=Boolean(so.data.printRotated);
+				
+				ooPath=so.data.ooPath;
+				printer=so.data.printer;
+				var oo:OORuner= new OORuner();
+				ooPathValid=oo.check(ooPath);
 			}
 			
 			private function pingIM():void{
@@ -230,10 +243,10 @@
 				so.flush();  
 				Context.setAttribute('reversPrint', reversPrint);
 			}
-			
+	
+			/*
 			protected function cbCFilter_changeHandler(event:IndexChangeEvent):void{
 				currCFilter=cbCFilter.selectedItem as ContentFilter;
-				/*
 				if(currCFilter){
 					var so:SharedObject = SharedObject.getLocal('appProps','/');
 					so.data.cFilterId=currCFilter.id;
@@ -244,9 +257,9 @@
 				}else{
 					conf.content_filter=0;
 				}
-				*/
 				Context.setAttribute('contentFilter',currCFilter);
 			}
+			*/
 			
 			protected function btSetPass_clickHandler(event:MouseEvent):void{
 				var passPop:PasswPopup= new PasswPopup();
@@ -273,12 +286,12 @@
 				Context.setAttribute('configPass', '');
 			}
 			
+			/*
 			protected function btBdClean_clickHandler(event:MouseEvent):void{
-				/*
 				var popup:CleanDatabasePopup= new CleanDatabasePopup();
 				popup.show();
-				*/
 			}
+			*/
 			
 			protected function reconnectBdServer():void{
 				if(bdServer){
@@ -318,13 +331,45 @@
 				Context.setAttribute('printRotated', printRotated);
 			}
 			
+			protected function btOOFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var fl:File = File.userDirectory;
+				fl.addEventListener(Event.SELECT,onOOFolderSet);
+				fl.browseForDirectory('Выбирите папку ImageMagick');
+			}
+			protected function onOOFolderSet(event:Event):void{
+				ooPathValid=false;
+				var fl:File = event.target as File;
+				if(fl){
+					fl.removeEventListener(Event.SELECT,onOOFolderSet);
+					ooPath=fl.nativePath;
+					var oo:OORuner= new OORuner();
+					if(oo.check(ooPath)){
+						ooPathValid=true;
+						ooPath=oo.ooPath;
+						//save last selection
+						var so:SharedObject = SharedObject.getLocal('appProps','/');
+						so.data.ooPath = ooPath;
+						so.flush();  
+					}
+				}
+			}
+			
+			protected function tiPrinter_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.printer = printer;
+				so.flush();
+				Context.setAttribute('printer',printer);
+			}
+
+			
 		]]>
 	</fx:Script>
 	
 	<s:VGroup>
 		<s:Form>
 			<s:layout>
-				<s:FormLayout gap="-10"/>
+				<s:FormLayout gap="-9"/>
 			</s:layout>
 
 			<s:FormItem label="Сервер базы данных">
@@ -346,9 +391,9 @@
 				</mx:HBox>
 			</s:FormItem> 
 
-			<s:FormItem label="Фильтр загрузки">
+			<!--<s:FormItem label="Фильтр загрузки">
 				<s:ComboBox id="cbCFilter" selectedItem="{currCFilter}" dataProvider="{contentFiltersAC}" labelField="name" change="cbCFilter_changeHandler(event)"/>
-			</s:FormItem> 
+			</s:FormItem>--> 
 
 			<s:FormItem label="IP компьютера">
 				<s:TextInput id="tiServerIP" text="@{serverIP}" editable="true"  width="300" change="tiServerIP_changeHandler(event)"/>
@@ -401,13 +446,26 @@
 				<s:CheckBox id="tg_rotatePrint" selected="{printRotated}" change="tg_rotatePrint_changeHandler(event)"/>
 			</s:FormItem> 
 
-			<s:FormItem label="Удаление заказов">
+			<!--<s:FormItem label="Удаление заказов">
 				<s:Button id="btBdClean" label="Выполнить" click="btBdClean_clickHandler(event)"/>
-			</s:FormItem> 
+			</s:FormItem> -->
 
 			<!--<s:FormItem label="Сжать базу данных">
 				<s:Button id="btBdOptimize" label="Выполнить" click="btBdOptimize_clickHandler(event)"/>
 			</s:FormItem> -->
+
+			<s:FormItem label="Параметры печати">
+				<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+					<s:Label text="Путь к OpenOffice"/>
+					<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}" textAlign="left"/>
+					<s:Button id="btOOFolder" label="..." click="btOOFolder_clickHandler(event)"/>
+				</s:HGroup>
+				<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+					<s:Label text="Принтер (если не указан, используется принтер по умолчанию)"/>
+					<s:TextInput id="tiPrinter" text="@{printer}" width="210" textAlign="left" change="tiPrinter_changeHandler(event)"/>
+				</s:HGroup>
+				
+			</s:FormItem> 
 
 			<s:FormItem label="Защита конфигурации">
 				<s:HGroup gap="10">
@@ -417,6 +475,7 @@
 			</s:FormItem> 
 
 		</s:Form>
+		<s:DropDownList skinClass="com.photodispatcher.view.skins.ButtonDropDownListSkin" width="50"/>
 		<!--<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
 			<s:Button id="btSave" label="Сохранить" click="{confDAO.save(conf)}"/>
 		</s:HGroup>-->

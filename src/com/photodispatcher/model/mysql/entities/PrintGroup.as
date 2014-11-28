@@ -696,7 +696,20 @@ package com.photodispatcher.model.mysql.entities {
 			if (result) result+=StrUtil.lPad(file.book_num.toString(),3);
 			return result;
 		}
-		
+
+		/**
+		 * 
+		 * @return 
+		 * getDigitId+полседние 3и символа книга (всегда 000)
+		 * 2 символа источник+idзаказа+2 символа номер группы печати+3и символа книга 
+		 */		
+		public function orderBarcode():String{
+			if(!id) return '';
+			var result:String=getDigitId();
+			if (result) result+='000';
+			return result;
+		}
+
 		
 		/**
 		 * 
@@ -780,16 +793,6 @@ package com.photodispatcher.model.mysql.entities {
 			if(!code || code.length<8) return 0;
 			if(code.indexOf('_')!=-1) return 0; //old barcode (x_xx_x)
 			if(code.indexOf(':')!=-1) return 0; //old barcode (x_xx_x:book)
-			/*
-			//src id
-			var src:int= parseInt(code.substr(0,2));
-			if(isNaN(src)) return '';
-			//order id
-			var order:String=code.substr(2,code.length-7);
-			//pg #
-			var pg:int=parseInt(code.substr(code.length-5,2));
-			if(isNaN(pg)) return '';
-			*/
 			//book #
 			var book:int=parseInt(code.substr(code.length-3,3));
 			if(isNaN(book)) return 0;

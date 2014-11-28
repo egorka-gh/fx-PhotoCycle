@@ -183,7 +183,7 @@
 			}
 			
 			private function createContextMenu(full:Boolean=false):void{
-				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER]);
+				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER, GridContexMenu.PRINT_TICKET]);
 				if(!full) return;
 				gridMenu.addItem('Отменить печать',cancelPrintCallBack);
 				gridMenu.addItem('Напечатан',setPrintedCallBack);

@@ -416,7 +416,7 @@
 				param=new Parameter(); param.id='ptoggle'; param.valString=chkReset.selected?'1':'0'; curReport.parameters.push(param);
 
 				curReport.isRunning=true;
-				xReportService.buildReport(curReport, 'dataSource',onBuildReport, onBuildReportFault)
+				xReportService.buildReport(curReport, 'dataSource',onBuildReport, onBuildReportFault);
 			}
 			private function onBuildReport(event:TideResultEvent):void {
 				curReport.isRunning=false;
