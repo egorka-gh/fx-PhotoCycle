@@ -18,6 +18,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverPrintImage;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.akmeful.util.GeomUtil;
+	import com.akmeful.util.RectangleTransformation;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
 	import com.photodispatcher.provider.fbook.model.FrameData;
@@ -186,6 +187,10 @@ package com.photodispatcher.provider.fbook.makeup{
 				}
 			}
 			//finalize
+			// "-virtual-pixel" "Transparent"
+			var cmd:IMCommand=new IMCommand();
+			cmd.add('-virtual-pixel'); cmd.add('Transparent');
+			layer.finalMontageCommand.prepend(cmd);
 			if(layer.fileName && !layer.isRoot){
 				//create transparent background
 				layer.finalMontageCommand.prepend(cmdSolidColorImage(page.pageSize));
@@ -305,25 +310,51 @@ package com.photodispatcher.provider.fbook.makeup{
 			return gc;
 		}
 		
-		private function cmdDrawImage(file:String, matrix:Matrix=null, offset:Point=null):IMCommand{
+		private function notOnCanvas(pd:PageData, elementSize:Point, matrix:Matrix):Boolean{
+				if(!pd || !elementSize) return true;
+				var canvasSize:Point=pd.pageSize;
+				var cRect:Rectangle= new Rectangle(0,0,canvasSize.x,canvasSize.y); 
+				var m:Matrix=pd.addPageOffset(matrix);
+				var rect:RectangleTransformation= new RectangleTransformation(new Rectangle(0,0,elementSize.x,elementSize.y),m);
+				if(cRect.containsPoint(rect.tl) 
+					|| cRect.containsPoint(rect.tr)
+					|| cRect.containsPoint(rect.bl)
+					|| cRect.containsPoint(rect.br)) return false;
+				return true;
+		}
+		
+		private function cmdDrawImage(file:String, matrix:Matrix=null):IMCommand{  //, offset:Point=null):IMCommand{
 			var result:IMCommand=new IMCommand();
 			var m:Matrix;
-			if(matrix==null){
+			if(!matrix){
 				m=new Matrix();
 			}else{
 				m=matrix.clone();
 			}
+			/*
 			if(offset!=null){
 				m.tx+=offset.x;
 				m.ty+=offset.y;
 			}
+			*/
 			m = toGMMatrix(m);
 			//check if zero transform matrix			
 			if(m.a!=1 || m.b!=0 || m.c!=0 || m.d!=1){
 				//transform
+				/*
 				//-draw " affine 0.984025,-0.178029,0.178029,0.984025,1278,1650 image over 0,0 0,0 'b2_p3_5_fu.png' "
 				result.add('-draw');
 				result.add(paramMatrix(m)+' image over 0,0 0,0 \''+file+'\'');
+				*/
+				// "-virtual-pixel" "Transparent" 
+				//"(" "art\631.png"  +distort AffineProjection ".5,-.866,.866,.5,5072,457" ")"  -flatten
+				result.add('(');
+				result.add(file);
+				result.add('+distort');
+				result.add('AffineProjection');
+				result.add(m.a.toFixed(6)+','+m.b.toFixed(6)+','+m.c.toFixed(6)+','+m.d.toFixed(6)+','+Math.round(m.tx).toString()+','+Math.round(m.ty).toString());
+				result.add(')');
+				result.add('-flatten');
 			}else{
 				//simple offset
 				result.add('-draw');
@@ -436,9 +467,16 @@ package com.photodispatcher.provider.fbook.makeup{
 			if(hasFrame) hasFrame = !isNotLoaded(fd.id,pd); 
 			var filePrefix:String=pd.pageName+'_'+elementNumber.toString();//+'_ui.png'; '_fr.png';
 			
-			if(!hasPhoto && !hasFrame){
-				return;
-			}
+			if(!hasPhoto && !hasFrame) return;
+
+			var frameSize:Point=new Point(fd.width,fd.height);
+			var frameExtent:Point= new Point();
+			if (hasFrame) frameExtent=new Point(fdInfo.padding.x,fdInfo.padding.y);
+			frameSize.x=frameSize.x+2*frameExtent.x;
+			frameSize.y=frameSize.y+2*frameExtent.y;
+			
+			if(notOnCanvas(pd, new Point(frameSize.x,frameSize.y), fd.matrix)) return;
+			
 			if(hasPhoto){
 				//resize & crop photo
 				drawUserImage(pd,layer,fd);
@@ -451,19 +489,13 @@ package com.photodispatcher.provider.fbook.makeup{
 			
 			//add to page
 			//calc farme size
-			var frameSize:Point=new Point(fd.width,fd.height);
 			var photoSize:Point=new Point(fd.width,fd.height);
-			var frameExtent:Point= new Point();
-			if (hasFrame){
-				//has frame
-				frameExtent=new Point(fdInfo.padding.x,fdInfo.padding.y);
-			}
 			var fm:Matrix=toGMMatrix(fd.matrix);
 			var scX:Number=GeomUtil.getScaleX(fd.matrix);
 			var scY:Number=GeomUtil.getScaleY(fd.matrix);
 			//frame size after scaling
-			frameSize.x=Math.round((frameSize.x+2*frameExtent.x)*scX);
-			frameSize.y=Math.round((frameSize.y+2*frameExtent.y)*scY);
+			frameSize.x=Math.round(frameSize.x*scX);
+			frameSize.y=Math.round(frameSize.y*scY);
 			//photo size after scaling
 			photoSize.x=Math.round(photoSize.x*scX);
 			photoSize.y=Math.round(photoSize.y*scY);
@@ -522,7 +554,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			rotateMatrix.rotate(GeomUtil.getRotationRadians(fm));
 			rotateMatrix.tx=fm.tx-extOffset.x;
 			rotateMatrix.ty=fm.ty-extOffset.y;
-			layer.finalMontageCommand.append(cmdDrawImage(fileOut,rotateMatrix,pd.getPageOffset(fd.fromRight)));
+			layer.finalMontageCommand.append(cmdDrawImage(fileOut, pd.addPageOffset(rotateMatrix)));// ,pd.getPageOffset(fd.fromRight)));
 		}
 		
 		private function drawFrameMasked(pd:PageData, layer:IMLayer, fmd:FrameMaskedData):void{
@@ -531,12 +563,15 @@ package com.photodispatcher.provider.fbook.makeup{
 			var hasMask:Boolean=(fmd.id)?true:false;
 			var info:FrameMaskInfo = fmd.size as FrameMaskInfo;
 			if(hasMask) hasMask = !isNotLoaded(info.imgName,pd);
-			if(!hasPhoto && !hasMask){
-				return;
-			}
+			
+			if(!hasPhoto && !hasMask) return;
+			
+			var frameSize:Point=new Point(fmd.width,fmd.height);
+			
+			if(notOnCanvas(pd, new Point(frameSize.x,frameSize.y), fmd.matrix)) return;
+			
 			var filePrefix:String = pd.pageName+'_'+elementNumber.toString();
 			var maskFile:String;
-			var frameSize:Point=new Point(fmd.width,fmd.height);
 			frameSize.x=Math.round(frameSize.x*GeomUtil.getScaleX(fmd.matrix));
 			frameSize.y=Math.round(frameSize.y*GeomUtil.getScaleY(fmd.matrix));
 			var gc:IMCommand;
@@ -548,7 +583,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				var fileName:String = artSubDir + info.imgName;
 				gc = new IMCommand(IMCommand.IM_CMD_CONVERT);
 				gc.append(cmdSolidColorImage(frameSize, 'black'));
-				gc.append(cmdDrawImage(fileName, maskMatrix, null));
+				gc.append(cmdDrawImage(fileName, maskMatrix)); //, null));
 				gc.add(maskFile);
 				gc.setProfile('Подготовка маски, страница #'+ pd.pageNum,maskFile);
 				layer.commands.push(gc);
@@ -562,7 +597,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			rotateMatrix.rotate(GeomUtil.getRotationRadians(fm));
 			rotateMatrix.tx=fm.tx;
 			rotateMatrix.ty=fm.ty;
-			layer.finalMontageCommand.append(cmdDrawImage(fileOut,rotateMatrix,pd.getPageOffset(fmd.fromRight)));
+			layer.finalMontageCommand.append(cmdDrawImage(fileOut,pd.addPageOffset(rotateMatrix))); //,pd.getPageOffset(fmd.fromRight)));
 		}
 		
 		private function drawUserImage(pd:PageData, layer:IMLayer, fd:FrameDataCommon, maskFile:String = null):void{
@@ -583,7 +618,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			var gc:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			//gc.add('-depth'); gc.add(IMAGE_DEPTH);
 			gc.append(cmdSolidColorImage(frameSize));
-			gc.append(cmdDrawImage(fileName, iMatrix, null));
+			gc.append(cmdDrawImage(fileName, iMatrix)); //, null));
 			//gc.append(cmdSolidColorImage(frameSize));
 			//save
 			gc.add(tmpFile);
@@ -734,9 +769,10 @@ package com.photodispatcher.provider.fbook.makeup{
 		}
 		
 		private function drawClipartImage(pd:PageData, layer:IMLayer, element:CanvasImage):void{
-			var fileName:String=artSubDir+StrUtil.contentIdToFileName(element.imageId);
 			var m:Matrix=element.transformData.matrix.clone();
-			layer.finalMontageCommand.append(cmdDrawImage(fileName,m,pd.getPageOffset(element.fromRight)));
+			if(notOnCanvas(pd, new Point(element.width,element.height),m)) return;
+			var fileName:String=artSubDir+StrUtil.contentIdToFileName(element.imageId);
+			layer.finalMontageCommand.append(cmdDrawImage(fileName,pd.addPageOffset(m))); //,pd.getPageOffset(element.fromRight)));
 		}
 		
 		private function drawBackgroundImage(pd:PageData, layer:IMLayer, element:CanvasBackgroundImage, subDir:String):void{
@@ -746,7 +782,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			var fileName:String=subDir+StrUtil.contentIdToFileName(element.imageId);
 			m=element.transformData.matrix;
 			//add offset relative canvas 0,0 or reset tx ty
-			result=cmdDrawImage(fileName,m,pd.getPageOffset());
+			result=cmdDrawImage(fileName,pd.addPageOffset(m)); //,pd.getPageOffset());
 			layer.finalMontageCommand.append(result);	
 		}
 		
@@ -768,7 +804,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				layer.commands.push(gc);
 				//draw on page
 				var m:Matrix=bf.transformData.matrix.clone();
-				layer.finalMontageCommand.append(cmdDrawImage(fileName,m,pd.getPageOffset()));
+				layer.finalMontageCommand.append(cmdDrawImage(fileName,pd.addPageOffset(m))); //,pd.getPageOffset()));
 				
 			}else{
 				//regular background
@@ -817,16 +853,16 @@ package com.photodispatcher.provider.fbook.makeup{
 				m.ty-=bts.fontSize;
 			}
 			
-			layer.finalMontageCommand.append(cmdDrawImage(fileName,m,pd.getPageOffset(fromRight)));
+			layer.finalMontageCommand.append(cmdDrawImage(fileName,pd.addPageOffset(m))); //,pd.getPageOffset(fromRight)));
 		}
 		
-		private function drawLayer(page:PageData, layer:IMLayer, drawLayer:IMLayer):void{
-			if(!drawLayer) return;
+		private function drawLayer(page:PageData, layer:IMLayer, dLayer:IMLayer):void{
+			if(!dLayer) return;
 			//save layer to
-			drawLayer.fileName=page.pageName+'_'+elementNumber.toString()+'_layer.png';
-			buildLayer(page, drawLayer);
-			layer.joinScrips(drawLayer);
-			layer.finalMontageCommand.append(cmdDrawImage(drawLayer.fileName));	
+			dLayer.fileName=page.pageName+'_'+elementNumber.toString()+'_layer.png';
+			buildLayer(page, dLayer);
+			layer.joinScrips(dLayer);
+			layer.finalMontageCommand.append(cmdDrawImage(dLayer.fileName));	
 		}
 		
 		private function applyLayerMask(page:PageData, layer:IMLayer):void{

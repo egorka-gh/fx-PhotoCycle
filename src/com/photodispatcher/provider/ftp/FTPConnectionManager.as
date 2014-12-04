@@ -55,7 +55,7 @@ package com.photodispatcher.provider.ftp{
 				flowError('Не заданы параметры подключения (FTPConnectionManager)');
 				return;
 			}
-			if(canConnect()){
+			if(canConnectInternal()){
 				waiteConnect=true;
 				var cnn:FtpTask=new FtpTask(source);
 				listenLogin(cnn);
@@ -114,7 +114,7 @@ package com.photodispatcher.provider.ftp{
 			if(DEBUG_TRACE) trace('FTPConnectionManager release '+ftpService.url);
 			var idx:int=inuse.indexOf(cnn);
 			if(idx!=-1) inuse.splice(idx,1);
-			if(cnn.isConnected && canConnect()){
+			if(cnn.isConnected && canConnectInternal()){
 				listenConnection(cnn);
 				free.push(cnn);
 			}
@@ -161,9 +161,14 @@ package com.photodispatcher.provider.ftp{
 			reportConnections();
 			return arr;
 		}
-		
-		
-		private function canConnect():Boolean{
+
+		public function canConnect():Boolean{
+			if(!source || !ftpService) return false;
+			if(free.length>0) return true;
+			return inuse.length < limit;
+		}
+
+		private function canConnectInternal():Boolean{
 			if(!source || !ftpService) return false;
 			var count:int=inuse.length+free.length;
 			return count < limit;
@@ -246,7 +251,7 @@ package com.photodispatcher.provider.ftp{
 			if(idx!=-1){
 				pending.splice(idx,1);
 				//add to free
-				if(cnn.isConnected && canConnect()){
+				if(cnn.isConnected && canConnectInternal()){
 					free.push(cnn);
 				}else{
 					listenConnection(cnn,false);

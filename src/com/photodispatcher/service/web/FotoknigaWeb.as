@@ -297,7 +297,11 @@ package com.photodispatcher.service.web{
 					if(arr && arr.length>0){
 						var to:Order=arr[0] as Order;
 						if(to){
-							if(to.extraInfo) lastOrder.extraInfo=to.extraInfo;
+							if(to.extraInfo){
+								to.extraInfo.id=lastOrder.id;
+								to.extraInfo.sub_id='';
+								lastOrder.extraInfo=to.extraInfo;
+							}
 							if(to.fotos_num>0) lastOrder.fotos_num=to.fotos_num;
 							/*
 							_getOrder.extraInfo= new OrderExtraInfo();

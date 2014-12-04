@@ -8,6 +8,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
@@ -97,14 +98,6 @@ package com.photodispatcher.print{
 			latch.addEventListener(Event.COMPLETE,onLabsLoad);
 			latch.addLatch(svc.loadAll(false));
 			latch.start();
-			/*
-				var dao:LabDAO= new LabDAO();
-				var rawLabs:Array=dao.findActive(true);
-				if(rawLabs==null){
-					initErr('Блокировка чтения при инициализации менеджера печати');
-					return;
-				}
-			*/
 		}
 		private function onLabsLoad(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
@@ -160,14 +153,6 @@ package com.photodispatcher.print{
 				_reSync(printGrps);
 				return;
 			}
-			/*
-			if (!printGrps){
-				var pgDao:PrintGroupDAO=new PrintGroupDAO();
-				printGrps=pgDao.findAllArray(OrderState.PRN_WAITE,OrderState.PRN_PRINT);
-
-			}
-			if (!printGrps) return; //read lock
-			*/
 			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onLoadPgSync);
@@ -382,167 +367,6 @@ package com.photodispatcher.print{
 			checkWebComplite();
 		}
 		
-		/*
-		private function dumy():void{
-			
-			//fill webQueue
-			for each(var o:Object in printGrps){
-				pg= o as PrintGroup;
-				if(pg && (pg.state==OrderState.PRN_WAITE || pg.state==OrderState.PRN_CANCEL || pg.state<0) && pg.state!=OrderState.ERR_WRITE_LOCK && pg.order_folder){
-					//force load printgroup files
-					pg.preparePrint();
-					pg.destinationLab=lab;
-					pg.state=OrderState.PRN_QUEUE;
-					
-					//check if reprint
-					if(pg.is_reprint){
-						//skip check's
-						pg.state=OrderState.PRN_WEB_OK;
-						//add to postQueue
-						postQueue.push(pg);
-						//post to lab
-						var revers:Boolean=Context.getAttribute('reversPrint');
-						pg.destinationLab.post(pg,revers);
-						
-					}else{
-						//push to webQueue (check print group state) 
-						var srcOrders:Object=webQueue[pg.source_id.toString()];
-						if(!srcOrders){
-							srcOrders=new Object();
-							webQueue[pg.source_id.toString()]=srcOrders;
-						}
-						var order:Order= srcOrders[pg.order_id] as Order;
-						if(!order){
-							order=new Order();
-							order.id=pg.order_id;
-							order.source=pg.source_id;
-							order.ftp_folder=pg.order_folder;
-							order.printGroups=new ArrayCollection();
-							order.state=OrderState.PRN_QUEUE;
-							srcOrders[pg.order_id]=order;
-						}
-						if(order.printGroups.length==0 || order.printGroups.getItemIndex(pg)==-1) order.printGroups.addItem(pg);
-					}
-				}
-			}
-			checkOrders();
-			
-		
-		//old commented code
-			//start check web state
-			//scan sources
-			var orderId:String;
-			var src_id:String;
-			for(src_id in webQueue){
-				//var svc:ProfotoWeb=webServices[src_id] as ProfotoWeb;
-				var svc:BaseWeb=webServices[src_id] as BaseWeb;
-				if(!svc){
-					//svc= new ProfotoWeb(Context.getSource(int(src_id)));
-					svc= WebServiceBuilder.build(Context.getSource(int(src_id)));
-					svc.addEventListener(Event.COMPLETE,serviceCompliteHandler);
-					webServices[src_id]=svc;
-				}
-				if(!svc.isRunning) serviceCheckNext(svc);
-			}
-			checkWebComplite();
-		//old commented code
-		}
-*/
-		/*
-		private function checkOrders():void{
-			var oMap:Object;
-			//first check in database
-			var dbReadOk:Boolean=true;
-			var dbStateOk:Boolean=true;
-			var order:Order;
-			var bdOrder:Order;
-			var key:String;
-			var idsAC:ArrayCollection= new ArrayCollection();
-			for each(oMap in webQueue){
-				for (key in oMap){
-					order=oMap[key] as Order;
-					if(order.state==OrderState.PRN_QUEUE && !order.bdCheckComplete){
-						idsAC.addItem(order.id);
-					}
-				}
-			}
-			if(idsAC.length>0){
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onOrdersLoad);
-				latch.addLatch(svc.loadOrdersByIds(idsAC));
-				latch.start();
-			}
-		}
-		*/
-		/*
-		private function onOrdersLoad(evt:Event):void{
-			var latch:DbLatch= evt.target as DbLatch;
-			if(latch){
-				latch.removeEventListener(Event.COMPLETE,onOrdersLoad);
-				if(latch.complite){
-					var result:Array=latch.lastDataArr;
-					var oMap:Object;
-					var dbStateOk:Boolean=true;
-					var order:Order;
-					var bdOrder:Order;
-					var key:String;
-					if(result){
-						for each(oMap in webQueue){
-							for (key in oMap){
-								order=oMap[key] as Order;
-								//look in result
-								bdOrder=ArrayUtil.searchItem('id',order.id,result) as Order;
-								if(!bdOrder){
-									delete oMap[key];
-								}else{
-									//check state
-									if(bdOrder.state!=OrderState.PRN_WAITE && bdOrder.state!=OrderState.PRN_CANCEL && bdOrder.state!=OrderState.PRN_POST){
-										dbStateOk=false;
-										//set to order state
-										var pg:Object;
-										for each (pg in order.printGroups) pg.state=bdOrder.state;
-										delete oMap[key];
-									}else{
-										order.bdCheckComplete=true;
-									}
-								}
-							}
-						}
-						if(!dbStateOk) dispatchManagerErr('Часть заказов не размещена из-за не сответствия статуса заказа.');
-						
-						//clean up webQueue, remove empty orders map
-						var srcKey:String;
-						for (srcKey in webQueue){
-							oMap=webQueue[srcKey];
-							key='';
-							for (key in oMap){
-								if(key) break;
-							}
-							if(!key) delete webQueue[srcKey];
-						}
-						//start check web state
-						//scan sources
-						var orderId:String;
-						var src_id:String;
-						for(src_id in webQueue){
-							//var svc:ProfotoWeb=webServices[src_id] as ProfotoWeb;
-							var svc:BaseWeb=webServices[src_id] as BaseWeb;
-							if(!svc){
-								//svc= new ProfotoWeb(Context.getSource(int(src_id)));
-								svc= WebServiceBuilder.build(Context.getSource(int(src_id)));
-								svc.addEventListener(Event.COMPLETE,serviceCompliteHandler);
-								webServices[src_id]=svc;
-							}
-							if(!svc.isRunning) serviceCheckNext(svc);
-						}
-						checkWebComplite();
-					}
-				}
-			}
-		}
-		*/
-
 		private function checkWebComplite():Boolean{
 			//check if any source in process
 			var src_id:String='';
@@ -608,6 +432,17 @@ package com.photodispatcher.print{
 				}else{
 					//TODO order can be in state PRN_POST, so check both remote state  
 					if(svc.isValidLastOrder()){
+						//update extra info 4  FOTOKNIGA type
+						if(svc.source.type==SourceType.SRC_FOTOKNIGA && svc.getLastOrder()){
+							var ei:OrderExtraInfo=svc.getLastOrder().extraInfo;
+							if(ei){
+								ei.persistState=-1;
+								var osvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+								var latch:DbLatch= new DbLatch(true);
+								latch.addLatch(osvc.persistExtraInfo(ei));
+								latch.start();
+							}
+						}
 						//set state 
 						for each (pg in order.printGroups){
 							prnGrp= pg as PrintGroup;

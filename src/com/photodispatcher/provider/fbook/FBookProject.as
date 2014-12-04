@@ -393,12 +393,10 @@ package com.photodispatcher.provider.fbook{
 			if(isPageCover(0) && bp.template.cover.printType!=BookCoverPrintType.EMPTY) result=ArrayUtil.searchItem('pageNum',0,projectPages) as PageData;
 			return result; 
 		}
-		
 
-		[Bindable]
 		public function get log():String{
 			return _log;
-		}
+		} 
 		public function set log(value:String):void{
 			var dt:Date= new Date();
 			var df:DateFormatter = new DateFormatter();
@@ -412,7 +410,6 @@ package com.photodispatcher.provider.fbook{
 		public function resetlog():void{
 			_log ='';
 		}
-		
 
 		public static function getWorkSubDirs():Array{
 			return [SUBDIR_ART,SUBDIR_USER];

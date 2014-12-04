@@ -14,6 +14,7 @@ package com.photodispatcher.provider.fbook.model{
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.filesystem.File;
+	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 
@@ -238,6 +239,20 @@ package com.photodispatcher.provider.fbook.model{
 		public function getPageOffset(isRightSideElement:Boolean=false):Point{
 			var result:Point=pageOffset.clone();
 			return result;
+		}
+
+		public function addPageOffset(matrix:Matrix):Matrix{
+			var m:Matrix;
+			if(!matrix){
+				m=new Matrix();
+			}else{
+				m=matrix.clone();
+			}
+			if(pageOffset){
+				m.tx+=pageOffset.x;
+				m.ty+=pageOffset.y;
+			}
+			return m;
 		}
 		
 		public function addSlice(rect:Rectangle):void{

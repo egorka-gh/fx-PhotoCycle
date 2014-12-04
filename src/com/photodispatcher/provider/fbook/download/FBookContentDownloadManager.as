@@ -335,7 +335,7 @@ package com.photodispatcher.provider.fbook.download{
 			book.log='Book id:'+book.id+'. Error download url:'+event.text;
 			trace (event); // outputs more information
 			errType='Download Error';
-			errText=event.text;
+			errText='Error download url:'+event.text;
 
 			//don't stop on load err 16.04.2012
 			//_hasError=true;
@@ -362,10 +362,18 @@ package com.photodispatcher.provider.fbook.download{
 					book.notLoadedItems.push(errItm);
 					loader.remove(item);
 				}
+				/*
 				_totalLoaded+=errItms.length;
 				//dispatch events
 				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,_totalLoaded, _itemsToLoad));
 				//dispatchEvent(new ItemDownloadedEvent(errItms.length));
+				*/
+
+				//stop on err 2014.12.4 
+				_hasError=true;
+				listenLoader=false;
+				if (loader.isRunning) loader.pauseAll();
+				finalizeLoad();
 			}
 			
 			return;
@@ -521,14 +529,27 @@ package com.photodispatcher.provider.fbook.download{
 		private function finalizeLoad():void{
 			if (!hasError){
 				book.downloadState=TripleState.TRIPLE_STATE_OK;
-			}else if(!hasFatalError()){
-				book.downloadState=TripleState.TRIPLE_STATE_WARNING;
+			/*}else if(!hasFatalError()){
+				book.downloadState=TripleState.TRIPLE_STATE_WARNING;*/
 			}else{
 				book.downloadState=TripleState.TRIPLE_STATE_ERR;
 			}
 			listenLoader=false;
 			loader.clear();
 			bytesLoaded=0;
+			
+			//write log
+			var logTxt:String=book.log;
+			logTxt=logTxt.replace(/\n/g,String.fromCharCode(13, 10));
+			var file:File=workFolder.resolvePath('log.txt');
+			var fs:FileStream = new FileStream();
+			try{
+				fs = new FileStream();
+				fs.open(file, FileMode.WRITE);
+				fs.writeUTFBytes(logTxt);
+				fs.close();
+			} catch(err:Error){}
+
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0, 0));
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
@@ -545,6 +566,8 @@ package com.photodispatcher.provider.fbook.download{
 		}
 
 		public function hasFatalError():Boolean{
+			return errorItems && errorItems.length>0; 
+			/*
 			if(!errorItems || errorItems.length==0){
 				return false;
 			}
@@ -558,6 +581,7 @@ package com.photodispatcher.provider.fbook.download{
 				}
 			}
 			return false;
+			*/
 		}
 		public function get errorText():String{
 			if (!errType && !errText) return '';

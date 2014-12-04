@@ -247,8 +247,8 @@ package com.photodispatcher.provider.ftp{
 			switch(hasTask()){
 				case -1:
 					//ask for order
-					if(DEBUG_TRACE) trace('FTPDownloadManager checkQueue ask for order '+ftpService.url);
-					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FETCH_NEXT_EVENT));
+					trace('FTPDownloadManager checkQueue ask for order '+ftpService.url);
+					if(connectionManager.canConnect()) dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FETCH_NEXT_EVENT));
 					break;
 				case 1:
 					//ask for connection
@@ -260,17 +260,6 @@ package com.photodispatcher.provider.ftp{
 					if(DEBUG_TRACE) trace('FTPDownloadManager checkQueue waite list complite '+ftpService.url);
 					break;
 			}
-			/*
-			if(!hasTask()){
-				//ask for order
-				if(DEBUG_TRACE) trace('FTPDownloadManager checkQueue ask for order '+ftpService.url);
-				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FETCH_NEXT_EVENT));
-				return;
-			}
-			//ask for connection
-			if(DEBUG_TRACE) trace('FTPDownloadManager checkQueue ask for connection '+ftpService.url);
-			connectionManager.connect();
-			*/
 		}
 		
 		public function get isRunning():Boolean{
@@ -284,10 +273,7 @@ package com.photodispatcher.provider.ftp{
 			var result:int=-1;
 			for each(order in downloadOrders){
 				if(order){
-					if(order.state==OrderState.FTP_WEB_OK && result!=0) result=1;//cnn 4 list
-					if(order.state<0 && !order.exceedErrLimit && result!=0) result=1;//cnn 4 list (reload)
-					if(order.state==OrderState.FTP_LIST && !listApplicant) result=1;//cnn 4 list (list canceled)
-					if(order.state==OrderState.FTP_LIST && listApplicant && listApplicant.id==order.id) result=0;//list in process (wait till comlite)
+					//has item to load
 					if(order.state==OrderState.FTP_LOAD && order.ftpQueue){
 						for each(ftpFile in order.ftpQueue){
 							if(ftpFile){
@@ -295,6 +281,13 @@ package com.photodispatcher.provider.ftp{
 								if(ftpFile.loadState==FTPFile.LOAD_ERR) return 1;//cnn 4 load //??? TODO add err counter & errLimit check
 							}
 						}
+					}
+					//list in process 
+					if(order.state==OrderState.FTP_LIST && listApplicant && listApplicant.id==order.id) result=0;//list in process (wait till comlite)
+					if(result!=0){
+						if(order.state<0 && !order.exceedErrLimit) result=1;//cnn 4 list (reload)
+						if(order.state==OrderState.FTP_WEB_OK) result=1;//cnn 4 list
+						if(order.state==OrderState.FTP_LIST && !listApplicant) result=1;//cnn 4 list (list canceled)
 					}
 				}
 			}
@@ -516,7 +509,7 @@ package com.photodispatcher.provider.ftp{
 					//check queue
 					if(downloadOrders.length==0){
 						//ask for order
-						if(DEBUG_TRACE) trace('FTPDownloadManager checkQueue ask for order '+ftpService.url);
+						trace('FTPDownloadManager onList ask for order '+ftpService.url);
 						dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FETCH_NEXT_EVENT));
 					}
 				}
@@ -696,7 +689,8 @@ package com.photodispatcher.provider.ftp{
 				stopListen(cnn);
 				if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_FTP,cnn.orderId,'','Ошибка загрузки "'+cnn.downloadFile.name+'": '+(e.error?e.error.message:''));
 			}
-			reuseConnection(cnn);
+			//reuseConnection(cnn);
+			connectionManager.reconnect(cnn);
 			//TODO err limit????
 		}
 		private function onDownloadDisconnected(e:FTPEvent):void{
