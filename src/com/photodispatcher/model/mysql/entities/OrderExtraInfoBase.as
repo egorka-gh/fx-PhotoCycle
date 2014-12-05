@@ -9,6 +9,7 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
+    import mx.collections.ListCollectionView;
     import org.granite.tide.IPropertyHolder;
 
     [Bindable]
@@ -17,6 +18,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _bookThickness:Number;
         private var _book_type:int;
         private var _books:int;
+        private var _calcAlias:String;
+        private var _calcTitle:String;
         private var _calc_type:String;
         private var _corner_type:String;
         private var _cover:String;
@@ -29,10 +32,12 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:String;
         private var _interlayer:String;
         private var _kaptal:String;
+        private var _messagesLog:ListCollectionView;
         private var _paper:String;
         private var _remark:String;
         private var _sheets:int;
         private var _sub_id:String;
+        private var _weight:int;
 
         public function set bookThickness(value:Number):void {
             _bookThickness = value;
@@ -53,6 +58,20 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get books():int {
             return _books;
+        }
+
+        public function set calcAlias(value:String):void {
+            _calcAlias = value;
+        }
+        public function get calcAlias():String {
+            return _calcAlias;
+        }
+
+        public function set calcTitle(value:String):void {
+            _calcTitle = value;
+        }
+        public function get calcTitle():String {
+            return _calcTitle;
         }
 
         public function set calc_type(value:String):void {
@@ -139,6 +158,13 @@ package com.photodispatcher.model.mysql.entities {
             return _kaptal;
         }
 
+        public function set messagesLog(value:ListCollectionView):void {
+            _messagesLog = value;
+        }
+        public function get messagesLog():ListCollectionView {
+            return _messagesLog;
+        }
+
         public function set paper(value:String):void {
             _paper = value;
         }
@@ -167,11 +193,20 @@ package com.photodispatcher.model.mysql.entities {
             return _sub_id;
         }
 
+        public function set weight(value:int):void {
+            _weight = value;
+        }
+        public function get weight():int {
+            return _weight;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _bookThickness = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _book_type = input.readObject() as int;
             _books = input.readObject() as int;
+            _calcAlias = input.readObject() as String;
+            _calcTitle = input.readObject() as String;
             _calc_type = input.readObject() as String;
             _corner_type = input.readObject() as String;
             _cover = input.readObject() as String;
@@ -184,10 +219,12 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as String;
             _interlayer = input.readObject() as String;
             _kaptal = input.readObject() as String;
+            _messagesLog = input.readObject() as ListCollectionView;
             _paper = input.readObject() as String;
             _remark = input.readObject() as String;
             _sheets = input.readObject() as int;
             _sub_id = input.readObject() as String;
+            _weight = input.readObject() as int;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -195,6 +232,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_bookThickness is IPropertyHolder) ? IPropertyHolder(_bookThickness).object : _bookThickness);
             output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
             output.writeObject((_books is IPropertyHolder) ? IPropertyHolder(_books).object : _books);
+            output.writeObject((_calcAlias is IPropertyHolder) ? IPropertyHolder(_calcAlias).object : _calcAlias);
+            output.writeObject((_calcTitle is IPropertyHolder) ? IPropertyHolder(_calcTitle).object : _calcTitle);
             output.writeObject((_calc_type is IPropertyHolder) ? IPropertyHolder(_calc_type).object : _calc_type);
             output.writeObject((_corner_type is IPropertyHolder) ? IPropertyHolder(_corner_type).object : _corner_type);
             output.writeObject((_cover is IPropertyHolder) ? IPropertyHolder(_cover).object : _cover);
@@ -207,10 +246,12 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_interlayer is IPropertyHolder) ? IPropertyHolder(_interlayer).object : _interlayer);
             output.writeObject((_kaptal is IPropertyHolder) ? IPropertyHolder(_kaptal).object : _kaptal);
+            output.writeObject((_messagesLog is IPropertyHolder) ? IPropertyHolder(_messagesLog).object : _messagesLog);
             output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
             output.writeObject((_remark is IPropertyHolder) ? IPropertyHolder(_remark).object : _remark);
             output.writeObject((_sheets is IPropertyHolder) ? IPropertyHolder(_sheets).object : _sheets);
             output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
+            output.writeObject((_weight is IPropertyHolder) ? IPropertyHolder(_weight).object : _weight);
         }
     }
 }

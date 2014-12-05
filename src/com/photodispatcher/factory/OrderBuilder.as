@@ -94,7 +94,12 @@ package com.photodispatcher.factory{
 								}
 							}
 						}
-						if(!einfo.isEmpty) order.extraInfo=einfo;
+						if(!einfo.isEmpty){
+							einfo.id=order.id;
+							einfo.sub_id='';
+							einfo.parseMessages();
+							order.extraInfo=einfo;
+						}
 						//parse suborders
 						if (source.type==SourceType.SRC_FBOOK && jo.hasOwnProperty('items') && jo.items is Array){
 							var subMap:Array=AttrJsonMap.getSubOrderJson(source.type);

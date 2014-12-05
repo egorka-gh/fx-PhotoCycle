@@ -6,12 +6,16 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import mx.collections.ArrayCollection;
+	
 	import org.granite.reflect.Field;
 	import org.granite.reflect.Type;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.OrderExtraInfo")]
     public class OrderExtraInfo extends OrderExtraInfoBase {
+		
+		public var rawMessages:String;
 		
 		public function get isEmpty():Boolean{
 			var result:Boolean=true;
@@ -27,6 +31,30 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			return result;
 		}
-		
+
+		public function parseMessages():void{
+			if(!id) return;
+			messagesLog= new ArrayCollection();
+			if(!rawMessages) return;
+			var str:String=rawMessages.replace(String.fromCharCode(10),'');
+			var arr:Array=str.split(String.fromCharCode(13));
+			var subArr:Array;
+			var subStr:String;
+			var it:OrderExtraMessage;
+			for each(subStr in arr){
+				subArr=subStr.split('|');
+				if(subArr && subArr.length==3 && subArr[0]){
+					it= new OrderExtraMessage();
+					it.id=id;
+					it.sub_id=(sub_id?sub_id:'');
+					it.lod_key=subArr[0];
+					it.log_user=subArr[1];
+					it.message=subArr[2];
+					it.persistState=AbstractEntity.PERSIST_NEW;
+					messagesLog.addItem(it);
+				}
+			}
+		}
+
     }
 }

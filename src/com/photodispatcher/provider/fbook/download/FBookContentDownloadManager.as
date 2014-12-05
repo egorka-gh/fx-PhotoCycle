@@ -34,6 +34,8 @@ package com.photodispatcher.provider.fbook.download{
 	import flash.net.URLVariables;
 	import flash.utils.ByteArray;
 	
+	import mx.formatters.DateFormatter;
+	
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="flowError", type="com.photodispatcher.event.ImageProviderEvent")]
@@ -294,6 +296,9 @@ package com.photodispatcher.provider.fbook.download{
 			this.workFolder=workFolder;
 			prepare();
 			book.log='Book id:'+book.id+'.Start download.';
+			book.log='Type:'+book.typeCaption;
+			var df:DateFormatter = new DateFormatter(); df.formatString='DD.MM.YY J:NN:SS';
+			book.log='Create date:'+df.format(book.project.createDate);
 			listenLoader=true;
 			lastItemsLoaded=0;
 			_totalLoaded=0;
@@ -490,6 +495,7 @@ package com.photodispatcher.provider.fbook.download{
 			book.log='Book id:'+book.id+'. Download complited.';
 			trace('Book id:'+book.id+'. Download complited.');
 			//finalizeLoad();
+			if(hasError) return;
 			loadFonts();
 		}
 		
