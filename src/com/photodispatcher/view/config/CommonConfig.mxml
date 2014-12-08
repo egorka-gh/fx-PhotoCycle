@@ -361,7 +361,17 @@
 				so.flush();
 				Context.setAttribute('printer',printer);
 			}
-
+			
+			protected function btOOFolderClear_clickHandler(event:MouseEvent):void{
+				//clear oo path
+				ooPathValid=false;
+				ooPath='';
+				Context.setAttribute('ooPath','');
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.ooPath = ooPath;
+				so.flush();  
+			}
 			
 		]]>
 	</fx:Script>
@@ -459,6 +469,7 @@
 					<s:Label text="Путь к OpenOffice"/>
 					<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}" textAlign="left"/>
 					<s:Button id="btOOFolder" label="..." click="btOOFolder_clickHandler(event)"/>
+					<s:Button id="btOOFolderClear" label="x" click="btOOFolderClear_clickHandler(event)"/>
 				</s:HGroup>
 				<s:HGroup width="100%" gap="5" verticalAlign="baseline">
 					<s:Label text="Принтер (если не указан, используется принтер по умолчанию)"/>
@@ -475,7 +486,7 @@
 			</s:FormItem> 
 
 		</s:Form>
-		<s:DropDownList skinClass="com.photodispatcher.view.skins.ButtonDropDownListSkin" width="50"/>
+		<!--<s:DropDownList skinClass="com.photodispatcher.view.skins.ButtonDropDownListSkin" width="50"/>-->
 		<!--<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
 			<s:Button id="btSave" label="Сохранить" click="{confDAO.save(conf)}"/>
 		</s:HGroup>-->

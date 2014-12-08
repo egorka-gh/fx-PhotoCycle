@@ -111,6 +111,7 @@ package com.photodispatcher.printer{
 			var param:Parameter;
 			param=new Parameter(); param.id='pgid'; param.valString=pg.id; report.parameters.push(param);
 			param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(pg.orderBarcode()); report.parameters.push(param);
+			param=new Parameter(); param.id='pbarcodebest'; param.valString=Code128.codeIt(pg.orderBarcodeBest()); report.parameters.push(param);
 			print(report);
 		}
 		

@@ -710,6 +710,21 @@ package com.photodispatcher.model.mysql.entities {
 			return result;
 		}
 
+		public function orderBarcodeBest():String{
+			var sourceId:int=source_id;
+			var text:String='';
+			if(!sourceId && id){
+				var arr:Array=id.split('_');
+				if(arr && arr.length>0) sourceId=arr[0];
+			}
+			if(!sourceId) return '';
+			var src:Source=Context.getSource(sourceId);
+			if(!src) return '';
+			text+=(src.code?src.code:'u');
+			text+=orderHumanId;
+			return text;
+		}
+
 		
 		/**
 		 * 

@@ -316,10 +316,13 @@ package com.photodispatcher.provider.fbook.makeup{
 				var cRect:Rectangle= new Rectangle(0,0,canvasSize.x,canvasSize.y); 
 				var m:Matrix=pd.addPageOffset(matrix);
 				var rect:RectangleTransformation= new RectangleTransformation(new Rectangle(0,0,elementSize.x,elementSize.y),m);
+				/*
 				if(cRect.containsPoint(rect.tl) 
 					|| cRect.containsPoint(rect.tr)
 					|| cRect.containsPoint(rect.bl)
 					|| cRect.containsPoint(rect.br)) return false;
+				*/
+				if (cRect.intersects(rect)) return false;
 				return true;
 		}
 		

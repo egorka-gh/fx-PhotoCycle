@@ -173,6 +173,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			//save msl's
 			var i:int;
 			var file:File;
+			var fs:FileStream;
 			var msl:IMMsl;
 
 			dir=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
@@ -183,7 +184,7 @@ package com.photodispatcher.provider.fbook.makeup{
 						msl=p.rootLayer.msls[i] as IMMsl;
 						file=dir.resolvePath(msl.fileName);
 						try{
-							var fs:FileStream = new FileStream();
+							fs = new FileStream();
 							fs.open(file, FileMode.WRITE);
 							fs.writeUTFBytes(msl.getMslString());
 							fs.close();
@@ -197,13 +198,27 @@ package com.photodispatcher.provider.fbook.makeup{
 			
 			var cmd:IMCommand;
 			var sequences:Array=[];
+			var txt:String='Build scripts'+'\n';
 			for each (p in pages){
+				txt=txt+'Page #'+p.pageNum.toString()+'\n';
 				//set commands work folder
 				for each(cmd in p.rootLayer.commands){
 					cmd.folder=dir.nativePath;
+					txt=txt+cmd.toString()+'\n';
 				}
 				sequences.push(p.rootLayer.commands);
 			}
+			//add commands to log
+			txt=txt.replace(/\n/g,String.fromCharCode(13, 10));
+			file=dir.resolvePath('log.txt');
+			fs= new FileStream();
+			try{
+				fs = new FileStream();
+				fs.open(file, FileMode.APPEND);
+				fs.writeUTFBytes(txt);
+				fs.close();
+			} catch(err:Error){}
+
 			var runner:IMMultiSequenceRuner= new IMMultiSequenceRuner();
 			runner.addEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
 			runner.addEventListener(IMRunerEvent.IM_COMPLETED, onPagesComplite);
