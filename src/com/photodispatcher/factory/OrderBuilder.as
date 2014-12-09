@@ -55,7 +55,7 @@ package com.photodispatcher.factory{
 									}else{
 										order[ajm.field]=val;
 									}
-									if(forSync && ajm.field=='src_id'){
+									if(ajm.field=='src_id'){
 										//create id
 										//removes subNumber (-#) for fotokniga
 										if (val is String){
@@ -94,12 +94,13 @@ package com.photodispatcher.factory{
 								}
 							}
 						}
-						if(!einfo.isEmpty){
+						if(!einfo.isEmpty) order.extraInfo=einfo;
+						/*if(!einfo.isEmpty){
 							einfo.id=order.id;
 							einfo.sub_id='';
 							einfo.parseMessages();
 							order.extraInfo=einfo;
-						}
+						}*/
 						//parse suborders
 						if (source.type==SourceType.SRC_FBOOK && jo.hasOwnProperty('items') && jo.items is Array){
 							var subMap:Array=AttrJsonMap.getSubOrderJson(source.type);
@@ -202,8 +203,20 @@ package com.photodispatcher.factory{
 			var a2:Array=(a1[0] as String).split('-');
 			if(!a2 || a2.length!=3) return d;
 			var a3:Array=(a1[1] as String).split(':');
-			if(!a3 || a3.length<3) return d;
-			return new Date(a2[0],a2[1]-1,a2[2],a3[0],a3[1],a3[2]);
+			if(!a3 || a3.length<3){
+				try{
+					d= new Date(int(a2[0]), int(a2[1])-1, int(a2[2]), 0, 0, 0);
+				}catch(error:Error){	
+					d=new Date();
+				}
+			}else{
+				try{
+					d=new Date(int(a2[0]), int(a2[1])-1, int(a2[2]), int(a3[0]), int(a3[1]), int(a3[2]));
+				}catch(error:Error){	
+					d=new Date();
+				}
+			}
+			return d;
 		}
 		
 		private static function cleanId(src_id:String):int{

@@ -84,6 +84,8 @@ package com.photodispatcher.model.mysql.entities {
 			raw.src_type=src_type;
 			raw.proj_type=proj_type;
 			raw.prt_qty=prt_qty;
+			raw.alias=alias;
+			
 			//extra
 			if(extraInfo){
 				raw.calc_type=extraInfo.calc_type;
@@ -109,6 +111,7 @@ package com.photodispatcher.model.mysql.entities {
 			suborder.src_type=raw.src_type;
 			suborder.proj_type=raw.proj_type;
 			suborder.prt_qty=raw.prt_qty;
+			suborder.alias=raw.alias;
 			//extra
 			suborder.extraInfo= new OrderExtraInfo();
 			suborder.extraInfo.calc_type=raw.calc_type;
@@ -127,11 +130,13 @@ package com.photodispatcher.model.mysql.entities {
 			var result:Array= [];
 			var col:GridColumn;
 			
-			col= new GridColumn('src_type_name'); col.headerText='Тип источника'; result.push(col);
 			col= new GridColumn('sub_id'); col.headerText='ID'; col.width=80; result.push(col);
+			col= new GridColumn('src_type_name'); col.headerText='Тип источника'; result.push(col);
 			col= new GridColumn('proj_type_name'); col.headerText='Тип книги'; result.push(col);
+			col= new GridColumn('alias'); col.headerText='Алиас'; result.push(col); 
 			col= new GridColumn('ftp_folder'); col.headerText='Папка'; result.push(col);
 			col= new GridColumn('prt_qty'); col.headerText='Кол-во'; result.push(col);
+			/*
 			col= new GridColumn('extraInfo.calc_type'); col.headerText='Тип'; result.push(col);
 			col= new GridColumn('extraInfo.cover'); col.headerText='Обложка'; result.push(col);
 			col= new GridColumn('extraInfo.format'); col.headerText='Формат'; result.push(col);
@@ -139,6 +144,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('extraInfo.interlayer'); col.headerText='Прослойка'; result.push(col);
 			col= new GridColumn('extraInfo.corner_type'); col.headerText='Углы'; result.push(col);
 			col= new GridColumn('extraInfo.kaptal'); col.headerText='Каптал'; result.push(col);
+			*/
 			
 			return new ArrayList(result);
 		}

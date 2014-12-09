@@ -300,6 +300,7 @@ package com.photodispatcher.service.web{
 							if(to.extraInfo){
 								to.extraInfo.id=lastOrder.id;
 								to.extraInfo.sub_id='';
+								to.extraInfo.parseMessages();
 								lastOrder.extraInfo=to.extraInfo;
 							}
 							if(to.fotos_num>0) lastOrder.fotos_num=to.fotos_num;

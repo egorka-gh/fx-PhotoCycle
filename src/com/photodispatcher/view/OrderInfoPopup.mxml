@@ -10,6 +10,8 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
+			import com.photodispatcher.model.mysql.entities.OrderExtraMessage;
 			import com.photodispatcher.model.mysql.entities.OrderExtraState;
 			import com.photodispatcher.model.mysql.entities.OrderExtraStateProlong;
 			import com.photodispatcher.model.mysql.entities.OrderState;
@@ -39,6 +41,8 @@
 			private var pgList:ArrayCollection;
 			[Bindable]
 			private var soList:ArrayCollection;
+			[Bindable]
+			private var currEI:OrderExtraInfo;
 			[Bindable]
 			private var soFilterList:ArrayCollection;
 			[Bindable]
@@ -73,61 +77,6 @@
 					latch.addLatch(svc.loadOrderFull(orderId));
 					latch.start();
 				}
-				/*
-				if(order){
-					var pDao:PrintGroupDAO=new PrintGroupDAO();
-					var a:Array=pDao.getByOrder(order.id);
-					pgList.source=a;
-					pgList.filterFunction=filterPgList;
-					
-					var pg:PrintGroup= new PrintGroup(); pg.id='-';
-					var aa:Array=a.slice();
-					aa.unshift(pg);
-					pgFilterList.source=aa;
-					
-					aa=a.slice();
-					pg= new PrintGroup(); pg.id=order.id;
-					aa.unshift(pg);
-					pg= new PrintGroup(); pg.id='-';
-					aa.unshift(pg);
-					logFilterList.source=aa;
-					
-					var soDAO:SuborderDAO= new SuborderDAO();
-					a=soDAO.getByOrder(order.id, true);
-					soList.source=a;
-					aa=a.slice();
-					var so:SubOrder= new SubOrder(); so.ftp_folder=so.sub_id='-';
-					aa.unshift(so);
-					soFilterList.source=aa;
-					
-					var pfDao:PrintGroupFileDAO=new PrintGroupFileDAO();
-					a=pfDao.getByOrder(order.id);
-					fileList.source=a;
-					fileList.filterFunction=filterFileList;
-					
-					var tDao:TechLogDAO= new TechLogDAO();
-					a=tDao.getTechByOrder(order.id);
-					techList=new ArrayCollection(a);
-					techList.filterFunction=filterTechList;
-					techList.refresh();
-					
-					//a=tDao.getTechByOrderAgg(order.id);
-					var oeDAO:OrderExtraStateDAO= new OrderExtraStateDAO();
-					a=oeDAO.getByOrder(order.id);
-					techListAgg= new ArrayCollection(a);
-					
-					var oespDAO:OrderExtraStateProlongDAO= new OrderExtraStateProlongDAO();
-					a=oespDAO.getByOrder(order.id);
-					techListResetAC= new ArrayCollection(a);
-					techListResetAC.filterFunction=filterTechListReset;
-					techListResetAC.refresh();
-					
-					var lDao:StateLogDAO=new StateLogDAO();
-					a=lDao.getByOrder(order.id);
-					logList.source=a;
-					logList.filterFunction=filterLogList;
-				}
-				*/
 			}
 			private function onOrderLoad(e:Event):void{
 				var latch:DbLatch=e.target as DbLatch;
@@ -149,27 +98,25 @@
 							logFilterList= new ArrayCollection(aa);
 						}
 						
-						soList=order.suborders as ArrayCollection;
-						if(soList){
-							aa=soList.source.slice();
-							var so:SubOrder= new SubOrder(); so.ftp_folder=so.sub_id='-';
-							aa.unshift(so);
-							soFilterList= new ArrayCollection(aa);
+						if(!order.suborders){
+							soList= new ArrayCollection();
+						}else{
+							soList=order.suborders as ArrayCollection;
 						}
+						aa=soList.source.slice();
+						var so:SubOrder= new SubOrder(); so.sub_id='-'; so.prt_qty=0; so.ftp_folder='';
+						so.extraInfo=order.extraInfo;
+						currEI=order.extraInfo;
+						aa.unshift(so);
+						soList= new ArrayCollection(aa);
+						soFilterList= new ArrayCollection(aa);
 						
-						/*
-						var pfDao:PrintGroupFileDAO=new PrintGroupFileDAO();
-						a=pfDao.getByOrder(order.id);
-						fileList.source=a;
-						fileList.filterFunction=filterFileList;
-						*/
 						techList=order.techLog as ArrayCollection;
 						if(techList){
 							techList.filterFunction=filterTechList;
 							techList.refresh();
 						}
 						
-						//a=tDao.getTechByOrderAgg(order.id);
 						techListAgg=order.extraState as ArrayCollection;
 						
 						techListResetAC=order.extraStateProlong as ArrayCollection;
@@ -204,21 +151,6 @@
 				this.techMode=techMode;
 				this.orderId=orderId;
 				refresh(orderId);
-				/*
-				if(order){
-					this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
-					this.width=FlexGlobals.topLevelApplication.width-50;
-					this.height=FlexGlobals.topLevelApplication.height-100;
-					PopUpManager.centerPopUp(this);
-					if(techMode){
-						currentState='infoTech';
-					}else{
-						vsSubInfo.selectedChild= ncPrintGroups;
-					}
-				}else{
-					Alert.show('Заказ "'+orderId+'" не найден');
-				}
-				*/
 			}
 			
 			private function filterPgList(item:Object):Boolean {
@@ -237,12 +169,6 @@
 				var es:OrderExtraState=dgTechAgg.selectedItem as OrderExtraState;
 				if(!f || !es) return false;
 				if(f.tech_state==es.state) return true;
-				/*
-				var ft:TechLog=dgTechAgg.selectedItem as TechLog;
-				if(!f || !ft) return false;
-				if(ft.print_group==f.print_group && ft.src_id==f.src_id && ft.tech_state==f.tech_state) return true;
-				//if(lstFilterTech && lstFilterTech.selectedIndex>0 && lstFilterTech.selectedItem.id!=f.print_group) return false;
-				*/
 				return false;
 			}
 			private function filterTechListReset(item:Object):Boolean {
@@ -270,16 +196,11 @@
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if (!order) return;
-				/*
-				var dao:OrderDAO= new OrderDAO();
-				dao.cleanUp(order);
-				*/
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onOrderClean);
 				latch.addLatch(svc.cleanUpOrder(order.id));
 				latch.start();
-				//close();
 			}
 			private function onOrderClean(e:Event):void{
 				var latch:DbLatch=e.target as DbLatch;
@@ -330,8 +251,6 @@
 					var src:Source=Context.getSource(order.source);
 					if(src){
 						orderPath=src.getPrtFolder()+File.separator+order.ftp_folder;
-						//orderPath=Context.getAttribute('workFolder')+File.separator+StrUtil.toFileName(src.name)+File.separator+order.ftp_folder;
-						//pgPath=Context.getAttribute('workFolder')+File.separator+StrUtil.toFileName(src.name)+File.separator+order.ftp_folder+File.separator+_currReprintPg.path;
 					}
 				}
 				
@@ -412,12 +331,6 @@
 					}
 				}
 				if(arrPG.length==0) return;
-				/*
-				var dao:PrintGroupDAO= new PrintGroupDAO();
-				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWriteReprint);
-				trace('PrintManager write PrintGroup to db '+ pg.id);
-				dao.createReprintGroups(arrPG);
-				*/
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onReprint);
@@ -432,21 +345,6 @@
 				close();
 			}
 
-			/*
-			private function onWriteReprint(e:AsyncSQLEvent):void{
-				var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
-				if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWriteReprint);
-				if(e.result==AsyncSQLEvent.RESULT_COMLETED){
-					trace('Reprint groups created');
-					close();
-				}else{
-					Alert.show('Ошибка: '+e.error+'/n Группы печати не созданы.');
-					btReprint.enabled=true;
-					btLookup.enabled=true;
-				}
-			}
-			*/
-			
 			protected function btReprintAll_clickHandler(event:MouseEvent):void{
 				if(!reprintFileList) return;
 				var pgf:PrintGroupFile;
@@ -467,6 +365,14 @@
 				}
 			}
 			
+			private function messagesLogLabelFunc(item:Object):String{
+				var res:String='';
+				var msg:OrderExtraMessage=item as OrderExtraMessage;
+				if(msg){
+					res=msg.lod_key+': '+ msg.log_user+': '+msg.message;
+				}
+				return res;
+			}
 		]]>
 	</fx:Script>
 	
@@ -501,57 +407,56 @@
 						<s:SolidColorStroke color="0" weight="1"/>
 					</s:stroke>
 				</s:Rect>
-				<s:Form id="frmOrder" width="100%" height="100%" backgroundAlpha="0">
-					<s:layout>
-						<s:FormLayout gap="-12"/>
-					</s:layout>
-					
-					<s:FormItem label="ID">
-						<s:TextInput id="tiID" text="{order.id}" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Источник">
-						<s:TextInput id="tiSource" text="{order.source_name}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Дата источника">
-						<s:TextInput id="tiSourceDate" text="{dtFormater.format(order.src_date)}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Id источника">
-						<s:TextInput id="tiSourceId" text="{order.src_id}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Статус">
-						<s:TextInput id="tiState" text="{order.state_name}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Дата статуса">
-						<s:TextInput id="tiStateDate" text="{dtFormater.format(order.state_date)}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="FTP папка">
-						<s:TextInput id="tiFtpFolder" text="{order.ftp_folder}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Кол фото">
-						<s:TextInput id="tiFotosNum" text="{order.fotos_num.toString()}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Тип">
-						<s:TextInput text="{order.extraInfo.calc_type}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Обложка">
-						<s:TextInput text="{order.extraInfo.cover}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Формат">
-						<s:TextInput text="{order.extraInfo.format}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Форзац">
-						<s:TextInput text="{order.extraInfo.endpaper}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Прослойка">
-						<s:TextInput text="{order.extraInfo.interlayer}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Углы">
-						<s:TextInput text="{order.extraInfo.corner_type}" editable="false" width="150"/>
-					</s:FormItem> 
-					<s:FormItem label="Каптал">
-						<s:TextInput text="{order.extraInfo.kaptal}" editable="false" width="150"/>
-					</s:FormItem> 
-				</s:Form>
+				<!--<s:Scroller top="0" left="0" right="0" bottom="20" >-->
+					<s:Form id="frmOrder" backgroundAlpha="0" top="0" left="0" right="0" bottom="20">
+						<s:layout>
+							<s:FormLayout gap="-12"/>
+						</s:layout>
+						
+						<s:FormItem label="ID">
+							<s:TextInput id="tiID" text="{order.id}" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Id источника">
+							<s:TextInput id="tiSourceId" text="{order.source_code?order.source_code:''}{order.src_id}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Источник">
+							<s:TextInput id="tiSource" text="{order.source_name}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Дата источника">
+							<s:TextInput id="tiSourceDate" text="{dtFormater.format(order.src_date)}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Статус">
+							<s:TextInput id="tiState" text="{order.state_name}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Дата статуса">
+							<s:TextInput id="tiStateDate" text="{dtFormater.format(order.state_date)}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="FTP папка">
+							<s:TextInput id="tiFtpFolder" text="{order.ftp_folder}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Кол фото">
+							<s:TextInput id="tiFotosNum" text="{order.fotos_num.toString()}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Тип">
+							<s:TextInput text="{order.extraInfo.calc_type}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Программа">
+							<s:TextInput text="{order.extraInfo.calcTitle}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Кол книг">
+							<s:TextInput  text="{order.extraInfo.books}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Кол разворотов">
+							<s:TextInput  text="{order.extraInfo.sheets}({order.extraInfo.books*order.extraInfo.sheets})" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Обложка">
+							<s:TextInput text="{order.extraInfo.cover}" editable="false" width="150"/>
+						</s:FormItem> 
+						<s:FormItem label="Формат">
+							<s:TextInput text="{order.extraInfo.format}" editable="false" width="150"/>
+						</s:FormItem> 
+					</s:Form>
+				<!--</s:Scroller>-->
 				<s:Button label="Сброс" bottom="10" right="10" click="button1_clickHandler(event)" includeIn="infoFull"/>
 			</s:Group>
 			
@@ -568,9 +473,78 @@
 						</s:stroke>
 					</s:Rect>
 					<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
-						<s:NavigatorContent label="Подзаказы" backgroundAlpha="0" width="100%" height="100%" includeIn="infoFull">
-							<s:DataGrid id="dgSuborders" selectionMode="none" top="10" left="10" right="10" bottom="10"
-										dataProvider="{soList}" locale="ru_RU" columns="{SubOrder.gridColumns()}"/>
+						<s:NavigatorContent label="Информация" backgroundAlpha="0" width="100%" height="100%" includeIn="infoFull">
+							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
+								<s:VGroup width="450" height="100%" gap="5">
+									<s:Label text="Подзаказы"/>
+									<s:DataGrid id="dgSuborders" selectionMode="singleRow" width="100%" height="100%" 
+												selectionChange="{currEI=dgSuborders.selectedItem.extraInfo as OrderExtraInfo}" 
+												dataProvider="{soList}" locale="ru_RU" columns="{SubOrder.gridColumns()}"/>
+								</s:VGroup>
+								<s:Scroller width="100%" height="100%">
+									<s:Group>
+										<s:Form backgroundAlpha="0">
+											<s:layout>
+												<s:FormLayout gap="-12"/>
+											</s:layout>
+											
+											<s:FormItem label="Группа заказа">
+												<s:TextInput text="{currEI.groupId}" editable="false" width="150"/>
+											</s:FormItem> 
+											<s:FormItem label="Дата принятия">
+												<s:TextInput text="{dtFormater.format(currEI.dateIn)}" editable="false" width="150"/>
+											</s:FormItem> 
+											<s:FormItem label="Дата изготовления">
+												<s:TextInput text="{dtFormater.format(currEI.dateOut)}" editable="false" width="150"/>
+											</s:FormItem> 
+											<s:FormItem label="Программа">
+												<s:TextInput text="{currEI.calcTitle}" editable="false" width="500"/>
+											</s:FormItem> 
+											<s:FormItem label="Кол книг">
+												<s:TextInput  text="{currEI.books}" editable="false" width="150"/>
+											</s:FormItem> 
+											<s:FormItem label="Кол разворотов">
+												<s:TextInput  text="{currEI.sheets}({currEI.books*currEI.sheets})" editable="false" width="150"/>
+											</s:FormItem> 
+											<s:FormItem label="Формат">
+												<s:TextInput text="{currEI.format}" editable="false" width="500"/>
+											</s:FormItem> 
+											<s:FormItem label="Обложка">
+												<s:TextInput text="{currEI.cover}" editable="false" width="500"/>
+											</s:FormItem> 
+											<s:FormItem label="Материал обложки">
+												<s:TextInput text="{currEI.coverMaterial}" editable="false" width="500"/>
+											</s:FormItem> 
+											<s:FormItem label="Форзац">
+												<s:TextInput text="{currEI.endpaper}" editable="false" width="500"/>
+											</s:FormItem> 
+											<s:FormItem label="Прослойка">
+												<s:TextInput text="{currEI.interlayer}" editable="false" width="500"/>
+											</s:FormItem> 
+											<s:FormItem label="Углы">
+												<s:TextInput text="{currEI.corner_type}" editable="false" width="500"/>
+											</s:FormItem> 
+											<s:FormItem label="Каптал">
+												<s:TextInput text="{currEI.kaptal}" editable="false" width="500"/>
+											</s:FormItem> 
+											<s:FormItem label="Толщина">
+												<s:TextInput text="{Math.round(currEI.bookThickness*100)/100}" editable="false" width="150"/>
+											</s:FormItem> 
+											<s:FormItem label="Вес(г)">
+												<s:TextInput text="{currEI.weight.toString()}" editable="false" width="150"/>
+											</s:FormItem> 
+											<s:FormItem label="Примечания">
+												<s:TextInput text="{currEI.remark}" editable="false" width="500"/>
+												<s:List dataProvider="{currEI.messagesLog}" width="500" labelFunction="messagesLogLabelFunc">
+													<s:layout>
+														<s:VerticalLayout gap="0" requestedRowCount="4"/>
+													</s:layout>
+												</s:List>
+											</s:FormItem> 
+										</s:Form>
+									</s:Group>
+								</s:Scroller>
+							</s:HGroup>
 						</s:NavigatorContent>
 						<s:NavigatorContent id="ncPrintGroups" label="Группы печати" backgroundAlpha="0" width="100%" height="100%"  includeIn="infoFull">
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">

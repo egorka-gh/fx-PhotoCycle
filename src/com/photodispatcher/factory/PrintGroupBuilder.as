@@ -562,6 +562,10 @@ package com.photodispatcher.factory{
 						pgBody.sub_id=so.sub_id;
 						pgBody.id=order.id+'_'+pgNum.toString();
 						pgBody.sheet_num=pgBody.files.length;
+						if(so.extraInfo){
+							so.extraInfo.books=pgBody.book_num;
+							so.extraInfo.sheets=pgBody.sheet_num;
+						}
 						pgBody.prints=pgBody.book_num*pgBody.sheet_num;
 						if(!order.printGroups) order.printGroups=new ArrayCollection();
 						order.printGroups.addItem(pgBody);

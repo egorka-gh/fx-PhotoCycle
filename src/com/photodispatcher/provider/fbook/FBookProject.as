@@ -463,8 +463,25 @@ package com.photodispatcher.provider.fbook{
 					var b:Book=(project as Book);
 					if(b){
 						result=b.template.cover.name;
+						/*
 						if(BookCoverPrintType.hasFabric(b.template.cover.printType)){
 							result= result+' '+b.template.fabric.name;
+						}
+						*/
+					}
+					break;
+			}
+			return result?result:'';
+		}
+		public function get coverMaterial():String{
+			if(!project) return '';
+			var result:String='';
+			switch(type){
+				case Book.PROJECT_TYPE:
+					var b:Book=(project as Book);
+					if(b){
+						if(BookCoverPrintType.hasFabric(b.template.cover.printType)){
+							result= b.template.fabric.name;
 						}
 					}
 					break;
