@@ -18,6 +18,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _lod_key:String;
         private var _log_user:String;
         private var _message:String;
+        private var _msg_type:int;
         private var _sub_id:String;
 
         public function set id(value:String):void {
@@ -48,6 +49,13 @@ package com.photodispatcher.model.mysql.entities {
             return _message;
         }
 
+        public function set msg_type(value:int):void {
+            _msg_type = value;
+        }
+        public function get msg_type():int {
+            return _msg_type;
+        }
+
         public function set sub_id(value:String):void {
             _sub_id = value;
         }
@@ -61,6 +69,7 @@ package com.photodispatcher.model.mysql.entities {
             _lod_key = input.readObject() as String;
             _log_user = input.readObject() as String;
             _message = input.readObject() as String;
+            _msg_type = input.readObject() as int;
             _sub_id = input.readObject() as String;
         }
 
@@ -70,6 +79,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_lod_key is IPropertyHolder) ? IPropertyHolder(_lod_key).object : _lod_key);
             output.writeObject((_log_user is IPropertyHolder) ? IPropertyHolder(_log_user).object : _log_user);
             output.writeObject((_message is IPropertyHolder) ? IPropertyHolder(_message).object : _message);
+            output.writeObject((_msg_type is IPropertyHolder) ? IPropertyHolder(_msg_type).object : _msg_type);
             output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
         }
     }

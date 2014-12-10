@@ -304,18 +304,6 @@ package com.photodispatcher.service.web{
 								lastOrder.extraInfo=to.extraInfo;
 							}
 							if(to.fotos_num>0) lastOrder.fotos_num=to.fotos_num;
-							/*
-							_getOrder.extraInfo= new OrderExtraInfo();
-							if(to.extraInfo){
-							_getOrder.extraInfo.calc_type=to.extraInfo.calc_type;
-							_getOrder.extraInfo.endpaper=to.extraInfo.endpaper;
-							_getOrder.extraInfo.interlayer=to.extraInfo.interlayer;
-							_getOrder.extraInfo.cover=to.extraInfo.cover;
-							_getOrder.extraInfo.format=to.extraInfo.format;
-							_getOrder.extraInfo.corner_type=to.extraInfo.corner_type;
-							_getOrder.extraInfo.kaptal=to.extraInfo.kaptal;
-							}
-							*/
 						}
 					}
 					endGetOrder();

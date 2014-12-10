@@ -416,6 +416,9 @@
 						<s:FormItem label="ID">
 							<s:TextInput id="tiID" text="{order.id}" width="150"/>
 						</s:FormItem> 
+						<s:FormItem label="Группа заказа">
+							<s:TextInput text="{order.groupId}" editable="false" width="150"/>
+						</s:FormItem> 
 						<s:FormItem label="Id источника">
 							<s:TextInput id="tiSourceId" text="{order.source_code?order.source_code:''}{order.src_id}" editable="false" width="150"/>
 						</s:FormItem> 
@@ -489,7 +492,7 @@
 											</s:layout>
 											
 											<s:FormItem label="Группа заказа">
-												<s:TextInput text="{currEI.groupId}" editable="false" width="150"/>
+												<s:TextInput text="{order.groupId}" editable="false" width="150"/>
 											</s:FormItem> 
 											<s:FormItem label="Дата принятия">
 												<s:TextInput text="{dtFormater.format(currEI.dateIn)}" editable="false" width="150"/>

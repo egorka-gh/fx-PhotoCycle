@@ -14,8 +14,11 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.OrderExtraInfo")]
     public class OrderExtraInfo extends OrderExtraInfoBase {
+		public static const MESSAGE_TYPE_GROUP:int=1;
+		public static const MESSAGE_TYPE_ORDER:int=2;
 		
-		public var rawMessages:String;
+		public var rawMessagesGroup:String;
+		public var rawMessagesOrder:String;
 		
 		public function get isEmpty():Boolean{
 			var result:Boolean=true;
@@ -35,8 +38,13 @@ package com.photodispatcher.model.mysql.entities {
 		public function parseMessages():void{
 			if(!id) return;
 			messagesLog= new ArrayCollection();
-			if(!rawMessages) return;
-			var str:String=rawMessages.replace(String.fromCharCode(10),'');
+			_parseMessages(MESSAGE_TYPE_GROUP, rawMessagesGroup);
+			_parseMessages(MESSAGE_TYPE_ORDER, rawMessagesOrder);
+		}
+		
+		private function _parseMessages(type:int, raw:String):void{
+			if(!raw) return;
+			var str:String=raw.replace(String.fromCharCode(10),'');
 			var arr:Array=str.split(String.fromCharCode(13));
 			var subArr:Array;
 			var subStr:String;
@@ -47,6 +55,7 @@ package com.photodispatcher.model.mysql.entities {
 					it= new OrderExtraMessage();
 					it.id=id;
 					it.sub_id=(sub_id?sub_id:'');
+					it.msg_type=type;
 					it.lod_key=subArr[0];
 					it.log_user=subArr[1];
 					it.message=subArr[2];

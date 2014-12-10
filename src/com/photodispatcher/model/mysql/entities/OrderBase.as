@@ -21,6 +21,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _extraStateProlong:ListCollectionView;
         private var _fotos_num:int;
         private var _ftp_folder:String;
+        private var _groupId:int;
         private var _id:String;
         private var _is_preload:Boolean;
         private var _local_folder:String;
@@ -78,6 +79,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get ftp_folder():String {
             return _ftp_folder;
+        }
+
+        public function set groupId(value:int):void {
+            _groupId = value;
+        }
+        public function get groupId():int {
+            return _groupId;
         }
 
         public function set id(value:String):void {
@@ -200,6 +208,7 @@ package com.photodispatcher.model.mysql.entities {
             _extraStateProlong = input.readObject() as ListCollectionView;
             _fotos_num = input.readObject() as int;
             _ftp_folder = input.readObject() as String;
+            _groupId = input.readObject() as int;
             _id = input.readObject() as String;
             _is_preload = input.readObject() as Boolean;
             _local_folder = input.readObject() as String;
@@ -226,6 +235,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_extraStateProlong is IPropertyHolder) ? IPropertyHolder(_extraStateProlong).object : _extraStateProlong);
             output.writeObject((_fotos_num is IPropertyHolder) ? IPropertyHolder(_fotos_num).object : _fotos_num);
             output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
+            output.writeObject((_groupId is IPropertyHolder) ? IPropertyHolder(_groupId).object : _groupId);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_is_preload is IPropertyHolder) ? IPropertyHolder(_is_preload).object : _is_preload);
             output.writeObject((_local_folder is IPropertyHolder) ? IPropertyHolder(_local_folder).object : _local_folder);

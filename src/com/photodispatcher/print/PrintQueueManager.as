@@ -5,6 +5,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.factory.LabBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.AbstractEntity;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.Order;
@@ -436,7 +437,7 @@ package com.photodispatcher.print{
 						if(svc.source.type==SourceType.SRC_FOTOKNIGA && svc.getLastOrder()){
 							var ei:OrderExtraInfo=svc.getLastOrder().extraInfo;
 							if(ei){
-								ei.persistState=-1;
+								ei.persistState=AbstractEntity.PERSIST_CHANGED;
 								var osvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 								var latch:DbLatch= new DbLatch(true);
 								latch.addLatch(osvc.persistExtraInfo(ei));
