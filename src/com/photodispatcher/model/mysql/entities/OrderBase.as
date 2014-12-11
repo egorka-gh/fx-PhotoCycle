@@ -15,6 +15,7 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class OrderBase extends AbstractEntity {
 
+        private var _clientId:int;
         private var _data_ts:String;
         private var _extraInfo:OrderExtraInfo;
         private var _extraState:ListCollectionView;
@@ -38,6 +39,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _suborders:ListCollectionView;
         private var _sync:int;
         private var _techLog:ListCollectionView;
+
+        public function set clientId(value:int):void {
+            _clientId = value;
+        }
+        public function get clientId():int {
+            return _clientId;
+        }
 
         public function set data_ts(value:String):void {
             _data_ts = value;
@@ -202,6 +210,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _clientId = input.readObject() as int;
             _data_ts = input.readObject() as String;
             _extraInfo = input.readObject() as OrderExtraInfo;
             _extraState = input.readObject() as ListCollectionView;
@@ -229,6 +238,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_clientId is IPropertyHolder) ? IPropertyHolder(_clientId).object : _clientId);
             output.writeObject((_data_ts is IPropertyHolder) ? IPropertyHolder(_data_ts).object : _data_ts);
             output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);
             output.writeObject((_extraState is IPropertyHolder) ? IPropertyHolder(_extraState).object : _extraState);

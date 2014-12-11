@@ -14,9 +14,11 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     public class OrderTempBase extends AbstractEntity {
 
+        private var _clientId:int;
         private var _data_ts:String;
         private var _fotos_num:int;
         private var _ftp_folder:String;
+        private var _groupId:int;
         private var _id:String;
         private var _is_preload:Boolean;
         private var _local_folder:String;
@@ -26,6 +28,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _state:int;
         private var _state_date:Date;
         private var _sync:int;
+
+        public function set clientId(value:int):void {
+            _clientId = value;
+        }
+        public function get clientId():int {
+            return _clientId;
+        }
 
         public function set data_ts(value:String):void {
             _data_ts = value;
@@ -46,6 +55,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get ftp_folder():String {
             return _ftp_folder;
+        }
+
+        public function set groupId(value:int):void {
+            _groupId = value;
+        }
+        public function get groupId():int {
+            return _groupId;
         }
 
         public function set id(value:String):void {
@@ -113,9 +129,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _clientId = input.readObject() as int;
             _data_ts = input.readObject() as String;
             _fotos_num = input.readObject() as int;
             _ftp_folder = input.readObject() as String;
+            _groupId = input.readObject() as int;
             _id = input.readObject() as String;
             _is_preload = input.readObject() as Boolean;
             _local_folder = input.readObject() as String;
@@ -129,9 +147,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_clientId is IPropertyHolder) ? IPropertyHolder(_clientId).object : _clientId);
             output.writeObject((_data_ts is IPropertyHolder) ? IPropertyHolder(_data_ts).object : _data_ts);
             output.writeObject((_fotos_num is IPropertyHolder) ? IPropertyHolder(_fotos_num).object : _fotos_num);
             output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
+            output.writeObject((_groupId is IPropertyHolder) ? IPropertyHolder(_groupId).object : _groupId);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_is_preload is IPropertyHolder) ? IPropertyHolder(_is_preload).object : _is_preload);
             output.writeObject((_local_folder is IPropertyHolder) ? IPropertyHolder(_local_folder).object : _local_folder);

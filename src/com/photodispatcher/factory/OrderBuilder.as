@@ -7,6 +7,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
+	import com.photodispatcher.util.StrUtil;
 	
 	public class OrderBuilder{
 
@@ -94,13 +95,12 @@ package com.photodispatcher.factory{
 								}
 							}
 						}
-						if(!einfo.isEmpty) order.extraInfo=einfo;
-						/*if(!einfo.isEmpty){
-							einfo.id=order.id;
-							einfo.sub_id='';
-							einfo.parseMessages();
+						if(!einfo.isEmpty){
+							einfo.cover=StrUtil.siteCode2Char(einfo.cover);
+							//einfo.coverMaterial=StrUtil.siteCode2Char(einfo.coverMaterial);
 							order.extraInfo=einfo;
-						}*/
+						}
+
 						//parse suborders
 						if (source.type==SourceType.SRC_FBOOK && jo.hasOwnProperty('items') && jo.items is Array){
 							var subMap:Array=AttrJsonMap.getSubOrderJson(source.type);

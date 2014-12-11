@@ -6,7 +6,6 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
-	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.StateLog;
@@ -504,15 +503,6 @@ package com.photodispatcher.provider.ftp{
 
 				//fill extra info ???
 				if(pw.getLastOrder().extraInfo) startOrder.extraInfo=pw.getLastOrder().extraInfo;
-				/*
-				startOrder.extraInfo= new OrderExtraInfo();
-				startOrder.extraInfo.calc_type=pw.getLastOrder().extraInfo.calc_type;
-				startOrder.extraInfo.endpaper=pw.getLastOrder().extraInfo.endpaper;
-				startOrder.extraInfo.interlayer=pw.getLastOrder().extraInfo.interlayer;
-				startOrder.extraInfo.cover=pw.getLastOrder().extraInfo.cover;
-				startOrder.extraInfo.format=pw.getLastOrder().extraInfo.format;
-				startOrder.extraInfo.corner_type=pw.getLastOrder().extraInfo.corner_type;
-				*/
 
 				//remove from queue
 				removeOrder(startOrder);

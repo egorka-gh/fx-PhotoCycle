@@ -44,14 +44,14 @@ package com.photodispatcher.model.mysql.entities {
 		
 		private function _parseMessages(type:int, raw:String):void{
 			if(!raw) return;
-			var str:String=raw.replace(String.fromCharCode(10),'');
-			var arr:Array=str.split(String.fromCharCode(13));
+			var str:String=raw.replace(String.fromCharCode(13),'');
+			var arr:Array=str.split(String.fromCharCode(10));
 			var subArr:Array;
 			var subStr:String;
 			var it:OrderExtraMessage;
 			for each(subStr in arr){
 				subArr=subStr.split('|');
-				if(subArr && subArr.length==3 && subArr[0]){
+				if(subArr && subArr.length>2 && subArr[0]){
 					it= new OrderExtraMessage();
 					it.id=id;
 					it.sub_id=(sub_id?sub_id:'');

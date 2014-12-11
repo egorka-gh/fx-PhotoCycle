@@ -28,7 +28,6 @@ package com.photodispatcher.model.mysql.entities {
         private var _dateOut:Date;
         private var _endpaper:String;
         private var _format:String;
-        private var _groupId:int;
         private var _id:String;
         private var _interlayer:String;
         private var _kaptal:String;
@@ -130,13 +129,6 @@ package com.photodispatcher.model.mysql.entities {
             return _format;
         }
 
-        public function set groupId(value:int):void {
-            _groupId = value;
-        }
-        public function get groupId():int {
-            return _groupId;
-        }
-
         public function set id(value:String):void {
             _id = value;
         }
@@ -215,7 +207,6 @@ package com.photodispatcher.model.mysql.entities {
             _dateOut = input.readObject() as Date;
             _endpaper = input.readObject() as String;
             _format = input.readObject() as String;
-            _groupId = input.readObject() as int;
             _id = input.readObject() as String;
             _interlayer = input.readObject() as String;
             _kaptal = input.readObject() as String;
@@ -242,7 +233,6 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_dateOut is IPropertyHolder) ? IPropertyHolder(_dateOut).object : _dateOut);
             output.writeObject((_endpaper is IPropertyHolder) ? IPropertyHolder(_endpaper).object : _endpaper);
             output.writeObject((_format is IPropertyHolder) ? IPropertyHolder(_format).object : _format);
-            output.writeObject((_groupId is IPropertyHolder) ? IPropertyHolder(_groupId).object : _groupId);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_interlayer is IPropertyHolder) ? IPropertyHolder(_interlayer).object : _interlayer);
             output.writeObject((_kaptal is IPropertyHolder) ? IPropertyHolder(_kaptal).object : _kaptal);

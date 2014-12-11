@@ -102,5 +102,24 @@ package com.photodispatcher.util{
 			return s;
 		}
 
+		public static function siteCode2Char(message:String):String{
+			if(!message) return '';
+			//&#92;
+			var re:RegExp=/&#\d+;/g;
+			var matches:Array=message.match(re);
+			if(!matches || matches.length==0) return message;
+			var match:String;
+			var code:String;
+			var result:String=message;
+			for each(match in matches){
+				if(result.indexOf(match)!=-1){
+					re=/[&#;]/g;
+					code=match.replace(re,'');
+					code=String.fromCharCode(int(code));
+					result=result.replace(match,code);
+				}
+			}
+			return result;
+		}
 	}
 }
