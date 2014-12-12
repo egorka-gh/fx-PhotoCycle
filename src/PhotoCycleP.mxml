@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:view="com.photodispatcher.view.*" 
+					   xmlns:config="com.photodispatcher.view.config.*"
+					   xmlns:config1="com.akmeful.fotokniga.config.*"
+					   xmlns:config2="com.akmeful.fotocalendar.config.*"
+					   xmlns:cfg="com.akmeful.fotakrama.cfg.*"
+					   xmlns:download="com.photodispatcher.provider.fbook.download.*" 
+					   showStatusBar="false"
+					   creationComplete="{initApp()}" 
+					   closing="{destroy()}">
+	<fx:Script>
+		<![CDATA[
+			import com.akmeful.fotokniga.book.data.Book;
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.IMRunerEvent;
+			import com.photodispatcher.model.mysql.AsyncLatch;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Roll;
+			import com.photodispatcher.model.mysql.services.ContentFilterService;
+			import com.photodispatcher.model.mysql.services.HalloService;
+			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.shell.IMRuner;
+			import com.photodispatcher.shell.OORuner;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.ModalPopUp;
+			import com.photodispatcher.view.OrderSearchPopup;
+			import com.photodispatcher.view.PasswPopup;
+			import com.photodispatcher.view.config.DatabasePopup;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
+			import org.granite.tide.service.DefaultServiceInitializer;
+			import org.granite.tide.spring.Spring;
+			
+			import spark.events.PopUpEvent;
+
+			private var bdPopup:DatabasePopup;
+
+			private function destroy():void{
+				IMRuner.stopAll();
+				if(vMonitor && vMonitor.chatServer) vMonitor.chatServer.close();
+			}
+
+			private function initApp():void{
+				bdPopup= new DatabasePopup();
+				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
+				bdPopup.chekConnect();
+			}
+			private function bdPopClose(e:PopUpEvent):void{
+				if(e.commit){
+					//connected
+					//initApp_ms();
+					fillContext();
+					//if(vMonitor) vMonitor.start();
+				}else{
+					//no connection
+					currentState='disconnected';
+					bdPopup.open(null);
+				}
+			}
+			
+			private function initApp_ms():void{
+				pingBdServer();
+			}
+
+			private var startPopup:ModalPopUp;
+			private function pingBdServer():void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				var bdServer:String=so.data.bdServer;
+				if(!bdServer){
+					Alert.show('Не указан сервер базы данных');
+					//currentState='config';
+					return;
+				}
+				startPopup= new ModalPopUp();
+				startPopup.label='Подключение к Базе данных';
+				startPopup.open(null);
+
+				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
+				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
+				
+				//run hallo
+				Tide.getInstance().addComponents([HalloService]);
+				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
+				hallosvc.ping(onPingServer, onPingServerFault);
+			}
+			private function onPingServer(event:TideResultEvent):void {
+				startPopup.close();
+				startPopup=null;
+				fillContext();
+			}
+			private function onPingServerFault(event:TideFaultEvent):void {
+				startPopup.label='Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(vMonitor){
+					vMonitor.stop();
+					vMonitor.ftpStop();
+				}
+				currentState='config';
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void{
+				fillContext();
+				//currentState='monitor';
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void{
+				if(vMonitor){
+					vMonitor.stop();
+					vMonitor.ftpStop();
+				}
+				FlexGlobals.topLevelApplication.exit();
+			}
+			
+			private var latchIM:AsyncLatch;
+			
+			private function fillContext():void{
+				//detect local setings
+				Context.setAttribute('imThreads',0);
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				var imPath:String;
+				var workFolder:String;
+				var prtPath:String;
+				var serverIP:String;
+				var configPass:String;
+				var syncInterval:int=10;
+				//var cFilterId:int;
+				if (so.size>0){
+					workFolder = so.data.workFolder;
+					imPath = so.data.imPath;
+					prtPath = so.data.prtPath;
+					serverIP=so.data.serverIP;
+					configPass=so.data.configPass;
+					//cFilterId=so.data.cFilterId;
+					if(so.data.syncInterval) syncInterval=so.data.syncInterval;
+					Context.setAttribute('printRotated',Boolean(so.data.printRotated));
+					
+					var ooPath:String=so.data.ooPath;
+					var oo:OORuner= new OORuner();
+					oo.check(ooPath);
+					var printer:String=so.data.printer;
+					if(printer) Context.setAttribute('printer',printer);
+
+				}
+				
+				Context.setAttribute('syncInterval',syncInterval);
+				
+				Context.setAttribute('configPass',configPass);
+				Context.setAttribute('workFolder',workFolder);
+				if(!prtPath) prtPath=workFolder;
+				Context.setAttribute('prtPath',prtPath);
+				Context.setAttribute('serverIP',serverIP);
+				Context.setAttribute('imPath',imPath);
+
+				//get force start
+				so= SharedObject.getLocal('appProps','/');
+				var hh:int=so.data.forceStarHour;
+				var mi:int=so.data.forceStarMinute;
+				Context.setAttribute("forceStarHour", hh);
+				Context.setAttribute("forceStarMinute", mi);
+				//get pdf pages limit
+				var pdfPageLimit:int=so.data.pdfPageLimit;
+				if(!pdfPageLimit) pdfPageLimit=100;
+				Context.setAttribute("pdfPageLimit", pdfPageLimit);
+				Context.setAttribute('reversPrint', so.data.reversPrint);
+
+				//init app
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+
+				//detect IM
+				if (imPath){
+					latchIM=new AsyncLatch(true);
+					latchIM.start();
+					var f:File=File.applicationStorageDirectory;
+					var im:IMRuner= new IMRuner(imPath,f.nativePath);
+					im.addEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+					im.ping(imPath);
+				}
+
+				var latch:DbLatch=Context.initPhotoCycle();
+				if(latchIM) latch.join(latchIM);
+				latch.addEventListener(Event.COMPLETE, onConextInit);
+				latch.start();
+			}
+			private function onConextInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onConextInit);
+					if(latch.complite){
+						postInit();
+						startPopup.close();
+						startPopup=null;
+					}else{
+						if(latchIM.complite){
+							startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						}else{
+							startPopup.close();
+							startPopup=null;
+							currentState='config';
+							Alert.show(latchIM.error);
+						}
+						//latch.showError();
+					}
+				}
+			}
+			private function postInit():void{
+				//init print manager
+				PrintQueueManager.instance.init();
+				currentState='monitor';
+				if(vMonitor) vMonitor.init(); 
+			}
+			private function onImPing(e:IMRunerEvent):void{
+				var im:IMRuner=e.target as IMRuner;
+				im.removeEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+				if(!e.hasError){
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					var imThreads:int=so.data.imThreads;
+					if(!imThreads || imThreads<=0) imThreads=0;
+					Context.setAttribute('imThreads',imThreads);
+					latchIM.release();
+				}else{
+					latchIM.releaseError('ImageMagick не доступен: '+e.error);
+					//Alert.show('ImageMagick не доступен: '+e.error);
+				}
+			}
+			
+			[Bindable]
+			private var cfgEnabled:Boolean;
+			protected function state1_enterStateHandler(event:FlexEvent):void{
+				var configPass:String=Context.getAttribute('configPass');
+				if(!configPass){
+					cfgEnabled=true;
+					return;
+				}
+				cfgEnabled=false;
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPass);
+				passPop.show(configPass);
+			}
+			protected function onCfgPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(passPop) passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					cfgEnabled=true;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<config1:PathAlias />
+		<config2:PathAlias />
+		<cfg:PathAlias id="pathAlias">
+			<cfg:defaultAliases>
+				<fx:Array>
+					<fx:Object key="/magnet/" />
+					<fx:Object key="/magnet/?id=" />
+					<fx:Object key="/magnet/list/" />
+					<fx:Object key="/magnet/view/" />
+				</fx:Array>
+			</cfg:defaultAliases>
+		</cfg:PathAlias>
+		<download:FontDownloadManager/>
+	</fx:Declarations>
+
+	<fx:Style source="../src-book/stylesFonts.css" />
+
+	<s:states>
+		<s:State name="disconnected"/>
+		<s:State name="config" enterState="state1_enterStateHandler(event)"/>
+		<s:State name="monitor"/>
+	</s:states>
+	<s:VGroup gap="10" top="5" left="5" right="5" bottom="35">
+		<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"/>
+		<config:ConfigView includeIn="config" enabled="{cfgEnabled}" width="100%" height="100%"/>
+		<view:Monitor id="vMonitor" includeIn="monitor" lockLoad="true"
+					  width="100%" height="100%"/>
+	</s:VGroup>
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10"  verticalAlign="middle">
+		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>-->
+		<s:Image source="{IMRuner.isRunning?'assets/imgProcRun.png':'assets/imgProc.png'}" width="24" height="24" toolTip="Обработка в IM"/>
+		<!--<s:Group width="5">
+			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000" toolTip="{BaseDAO.lastErrMsg}"/>
+		</s:Group>-->
+		<s:Spacer width="100%"/>
+		<s:Button label="Настройки" includeIn="monitor" click="button1_clickHandler(event)"/>
+		<s:Button label="Монитор" includeIn="config" click="button2_clickHandler(event)"/>
+		<s:Button label="Выход" click="button3_clickHandler(event)"/>
+	</s:HGroup>
+
+</s:WindowedApplication>

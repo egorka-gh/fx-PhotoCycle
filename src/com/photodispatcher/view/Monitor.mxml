@@ -44,7 +44,10 @@
 			private var isRuning:Boolean=false;
 			[Bindable]
 			private var sources:ArrayCollection;
-			
+
+			[Bindable]
+			public var lockLoad:Boolean=false;
+
 			private var syncService:SyncService;
 			[Bindable]
 			private var ftpManager:FtpManager;
@@ -97,6 +100,11 @@
 				
 				//TODO refactor, incorrect implementation
 				//startForceStarTimer();
+				
+				if(lockLoad && tbView){
+					tbView.selectedIndex=2;
+					detectState();
+				}
 				
 				if(focusManager) focusManager.setFocus(focusHolder);
 			}
@@ -390,7 +398,7 @@
 
 	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
 	<s:Group top="30" left="10" right="10" bottom="10">
-		<s:HGroup id="gState" includeIn="stateView" gap="10" top="0" left="0" right="0" bottom="0">
+		<s:HGroup id="gState" includeIn="stateView" gap="10" top="0" left="0" right="0" bottom="0" enabled="{!lockLoad}">
 			<s:VGroup gap="10" height="100%">
 				<s:Label text="Web синхронизация"/>
 				<s:HGroup gap="10">
