@@ -42,12 +42,16 @@
 
 			[Bindable]
 			private var bdServer:String;
+			[Bindable]
+			private var bdServerPort:String;
 			private function reConnect():void{
 				_connected=false;
 				if(statusMessage) statusMessage.text='';
 
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				bdServer=so.data.bdServer;
+				bdServerPort=so.data.bdServerPort;
+				if(!bdServerPort) bdServerPort='8080';
 				if(!bdServer){
 					if(isOpen){
 						statusMessage.text='Не указан сервер базы данных';
@@ -63,7 +67,8 @@
 				if(isOpen) statusMessage.text='Подключение к базе данных '+bdServer;
 				
 				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
-				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
+				//Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
+				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: bdServerPort,contextRoot: "/PhCServer" });
 				//run hallo
 				Tide.getInstance().addComponents([HalloService]);
 				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
@@ -245,6 +250,7 @@
 				bdServer=tiBDPath.text;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.bdServer = bdServer;
+				so.data.bdServerPort = bdServerPort;
 				so.flush();
 				reConnect();
 			}
@@ -264,11 +270,15 @@
 	<s:VGroup paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10">
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Сервер базы данных"/>
-			<s:TextInput id="tiBDPath" width="300"  text="{bdServer}" enter="tiBDPath_enterHandler(event)"/>
-			<!--<s:Button id="btBrowse" label="..." width="30"
-					  click="btBrowse_clickHandler(event)"/>-->
+			<s:TextInput id="tiBDPath" width="200"  text="{bdServer}" enter="tiBDPath_enterHandler(event)"/>
+			<s:Label text="порт:"/>
+			<s:TextInput id="tiBDPort" width="50"  text="{bdServerPort}" enter="tiBDPath_enterHandler(event)"/>
 		</s:HGroup>
-		<s:HGroup gap="5" verticalAlign="baseline" horizontalAlign="right">
+		<!--<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="порт:"/>
+			<s:TextInput id="tiBDPort" width="300"  text="{bdServerPort}" enter="tiBDPath_enterHandler(event)"/>
+		</s:HGroup>-->
+		<s:HGroup gap="5" verticalAlign="baseline" horizontalAlign="right" width="100%">
 			<s:Label id="statusMessage" color="{_connected?0x00ff00:0xff0000}" width="100%"/>
 			<s:Button id="btCheck" label="Подключить" enabled="{!_connected}" click="{tiBDPath_enterHandler(null)}"/>
 			<s:Button id="btClose" label="Закрыть" enabled="{_connected}" click="{close()}"/>

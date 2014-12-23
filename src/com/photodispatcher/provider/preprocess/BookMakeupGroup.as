@@ -39,6 +39,8 @@ package com.photodispatcher.provider.preprocess{
 
 		public var state:int=STATE_WAITE;
 		
+		protected var jpgQuality:String='100';
+		
 		public function BookMakeupGroup(printGroup:PrintGroup, order_id:String, folder:String, prtFolder:String){
 			this.printGroup=printGroup;
 			this.order_id=order_id;

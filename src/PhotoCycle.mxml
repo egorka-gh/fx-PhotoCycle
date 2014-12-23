@@ -169,8 +169,11 @@
 				Context.setAttribute("forceStarHour", hh);
 				Context.setAttribute("forceStarMinute", mi);
 				//get pdf pages limit
+				var pdfJpgQuality:int=so.data.pdfJpgQuality;
+				if(!pdfJpgQuality) pdfJpgQuality=100;
 				var pdfPageLimit:int=so.data.pdfPageLimit;
 				if(!pdfPageLimit) pdfPageLimit=100;
+				Context.setAttribute("pdfJpgQuality", pdfJpgQuality);
 				Context.setAttribute("pdfPageLimit", pdfPageLimit);
 				Context.setAttribute('reversPrint', so.data.reversPrint);
 

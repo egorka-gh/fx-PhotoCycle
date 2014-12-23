@@ -54,6 +54,8 @@
 			[Bindable]
 			private var pdfPageLimit:int=100;
 			[Bindable]
+			private var pdfJpgQuality:int=100;
+			[Bindable]
 			private var reversPrint:Boolean=false;
 			[Bindable]
 			private var contentFiltersAC:ArrayCollection;
@@ -373,6 +375,16 @@
 				so.flush();  
 			}
 			
+			protected function nsJpgQuality_changeHandler(event:Event):void{
+				var newVal:int=nsJpgQuality.value;
+				if(!newVal) return;
+				pdfJpgQuality=newVal;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.pdfJpgQuality = pdfJpgQuality;
+				so.flush();  
+				Context.setAttribute("pdfJpgQuality", pdfJpgQuality);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -441,6 +453,11 @@
 									 change="tiIMThreads_changeHandler(event)"/>
 					</s:HGroup>
 				</s:VGroup>
+			</s:FormItem> 
+
+			<s:FormItem label="Сжатие jpg в PDF файле">
+				<s:NumericStepper id="nsJpgQuality" value="@{pdfJpgQuality}" 
+								  minimum="50" maximum="100" snapInterval="5" width="50" change="nsJpgQuality_changeHandler(event)"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Кол-во страниц в PDF файле">

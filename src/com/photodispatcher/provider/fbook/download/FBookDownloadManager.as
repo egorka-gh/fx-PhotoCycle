@@ -444,17 +444,24 @@ package com.photodispatcher.provider.fbook.download{
 				currentSubOrder.project=project;
 				
 				//fill extra info
-				currentSubOrder.extraInfo= new OrderExtraInfo();
-				currentSubOrder.extraInfo.calcTitle='Онлайн редактор'+(project.typeCaption?(' '+project.typeCaption):'');
-				currentSubOrder.extraInfo.dateIn=project.project.createDate;
-				currentSubOrder.extraInfo.endpaper=project.endpaperName;
-				currentSubOrder.extraInfo.interlayer=project.interlayerName;
-				currentSubOrder.extraInfo.cover=project.coverName;
-				currentSubOrder.extraInfo.coverMaterial=project.coverMaterial;
-				currentSubOrder.extraInfo.format=project.formatName;
-				currentSubOrder.extraInfo.corner_type=project.cornerTypeName;
-				currentSubOrder.extraInfo.book_type=project.bookType;
-				currentSubOrder.extraInfo.books=currentSubOrder.prt_qty;
+				/*
+				if(source.type==SourceType.SRC_FOTOKNIGA && currentOrder.extraInfo){
+					//clone order extraInfo
+					currentSubOrder.extraInfo= currentOrder.extraInfo.clone();
+				}else{
+				*/
+					currentSubOrder.extraInfo= new OrderExtraInfo();
+					currentSubOrder.extraInfo.calcTitle='Онлайн редактор'+(project.typeCaption?(' '+project.typeCaption):'');
+					currentSubOrder.extraInfo.dateIn=project.project.createDate;
+					currentSubOrder.extraInfo.endpaper=project.endpaperName;
+					currentSubOrder.extraInfo.interlayer=project.interlayerName;
+					currentSubOrder.extraInfo.cover=project.coverName;
+					currentSubOrder.extraInfo.coverMaterial=project.coverMaterial;
+					currentSubOrder.extraInfo.format=project.formatName;
+					currentSubOrder.extraInfo.corner_type=project.cornerTypeName;
+					currentSubOrder.extraInfo.book_type=project.bookType;
+					currentSubOrder.extraInfo.books=currentSubOrder.prt_qty;
+				/*}*/
 
 				//check content filter
 				var cFilter:ContentFilter=Context.getAttribute('contentFilter') as ContentFilter;

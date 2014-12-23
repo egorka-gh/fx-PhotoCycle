@@ -32,6 +32,7 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		override public function createCommands():void{
+			if(Context.getAttribute("pdfJpgQuality")) jpgQuality=Context.getAttribute("pdfJpgQuality");
 			commands=[];
 			finalCommands=[];
 			if(state==STATE_ERR) return;
@@ -155,7 +156,7 @@ package com.photodispatcher.provider.preprocess{
 						command.add('-density'); command.add('300x300');
 						command.add('-quality'); command.add('100');
 						*/
-						IMCommandUtil.setOutputParams(command);
+						IMCommandUtil.setOutputParams(command, jpgQuality);
 						outName=FILENAME_COVER_BACK+(i+1).toString()+'.jpg';
 						command.add(outName);
 						commands.push(command);
@@ -294,7 +295,7 @@ package com.photodispatcher.provider.preprocess{
 					command.add('-density'); command.add('300x300');
 					command.add('-quality'); command.add('100');
 					*/
-					IMCommandUtil.setOutputParams(command);
+					IMCommandUtil.setOutputParams(command, jpgQuality);
 					outName=FILENAME_SHEET+(i+1).toString()+'.jpg';
 					command.add(outName);
 					commands.push(command);
@@ -556,7 +557,7 @@ package com.photodispatcher.provider.preprocess{
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add('100');
 			*/
-			IMCommandUtil.setOutputParams(command);
+			IMCommandUtil.setOutputParams(command, jpgQuality);
 			command.add(fileName);
 			return command;
 		}
@@ -624,7 +625,7 @@ package com.photodispatcher.provider.preprocess{
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add('100');
 			/*/
-			IMCommandUtil.setOutputParams(command);
+			IMCommandUtil.setOutputParams(command, jpgQuality);
 			return command;
 		}
 

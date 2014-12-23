@@ -34,6 +34,18 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			return result;
 		}
+		
+		public function clone():OrderExtraInfo{
+			var ei:OrderExtraInfo= new OrderExtraInfo();
+			var type:Type= Type.forClass(OrderExtraInfo);
+			var props:Array=type.properties;
+			if(!props || props.length==0) return ei;
+			var prop:Field;
+			for each(prop in props){
+				ei[prop.name]=this[prop.name];
+			}
+			return ei;
+		}
 
 		public function parseMessages():void{
 			if(!id) return;
