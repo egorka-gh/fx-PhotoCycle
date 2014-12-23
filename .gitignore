@@ -5,3 +5,4 @@ libs/
 data/
 doc/
 /[source path] src
+/.flexProperties

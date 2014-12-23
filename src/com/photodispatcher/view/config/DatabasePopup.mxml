@@ -248,6 +248,7 @@
 			
 			protected function tiBDPath_enterHandler(event:FlexEvent):void{
 				bdServer=tiBDPath.text;
+				bdServerPort=tiBDPort.text;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.bdServer = bdServer;
 				so.data.bdServerPort = bdServerPort;

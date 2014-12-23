@@ -95,6 +95,8 @@
 				forceStarMinute=so.data.forceStarMinute;
 				if(so.data.pdfPageLimit) pdfPageLimit=so.data.pdfPageLimit;
 				if(!pdfPageLimit) pdfPageLimit=100;
+				if(so.data.pdfJpgQuality) pdfJpgQuality=so.data.pdfJpgQuality;
+				if(!pdfJpgQuality) pdfJpgQuality=100;
 				reversPrint=so.data.reversPrint;
 				//contentFiltersAC=new ArrayCollection(ContentFilter.filters);
 				//currCFilter=Context.getAttribute('contentFilter') as ContentFilter;
