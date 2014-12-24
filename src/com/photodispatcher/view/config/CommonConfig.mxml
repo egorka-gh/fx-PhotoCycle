@@ -387,6 +387,19 @@
 				Context.setAttribute("pdfJpgQuality", pdfJpgQuality);
 			}
 			
+			protected function tiIMFolder_enterHandler(event:FlexEvent):void{
+				imPathValid=false;
+				imPath=tiIMFolder.text;
+				//if(!imPath) return
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imPath = imPath;
+				so.flush();  
+				Context.setAttribute("imPath", imPath);
+				
+				if(imPath) pingIM();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -444,7 +457,7 @@
 				<s:VGroup gap="3">
 					<s:VGroup gap="3">
 						<s:HGroup gap="5">
-							<s:TextInput id="tiIMFolder" text="{imPath}" editable="false" width="400" color="{imPathValid?0:0xff0000}"/>
+							<s:TextInput id="tiIMFolder" text="{imPath}" width="400" color="{imPathValid?0:0xff0000}" enter="tiIMFolder_enterHandler(event)"/>
 							<s:Button id="btIMFolder" label="..." click="btIMFolder_clickHandler(event)"/>
 						</s:HGroup>
 						<s:Label text="{imRespond}" color="{imPathValid?0:0xff0000}"/>
