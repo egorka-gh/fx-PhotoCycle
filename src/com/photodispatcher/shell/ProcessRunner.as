@@ -10,7 +10,11 @@ package com.photodispatcher.shell{
 		private var _executable:String;
 		private var _startupInfo:NativeProcessStartupInfo;
 		private var _process:NativeProcess;
-		
+
+		public static function isWindows():Boolean{
+			return Capabilities.os.indexOf('Windows') >= 0;
+		}
+
 		public function ProcessRunner(executable:String){
 			_executable=executable;
 		}

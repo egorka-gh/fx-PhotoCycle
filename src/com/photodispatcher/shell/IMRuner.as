@@ -55,7 +55,7 @@ package  com.photodispatcher.shell{
 
 		
 		private static const PING_TIMEOUT:int=2000;
-		private static const PING_EXECUTABLE:String='convert.exe';
+	//	private static const PING_EXECUTABLE:String='convert.exe';
 
 		private var workFolder:String;
 		//private var outFolder:String;
@@ -226,7 +226,7 @@ package  com.photodispatcher.shell{
 			timer.addEventListener(TimerEvent.TIMER,onTimeout);
 
 			respond='';
-			imFolder=imFolder + File.separator+PING_EXECUTABLE;
+			imFolder=imFolder + File.separator+IMCommand.IM_CMD_CONVERT; //PING_EXECUTABLE;
 			runner.executable = imFolder;
 			var args:Vector.<String>=new Vector.<String>();
 			args.push('-version');

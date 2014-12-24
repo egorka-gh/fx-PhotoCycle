@@ -1,8 +1,24 @@
 package com.photodispatcher.shell{
 	public class IMCommand{
+		/*
 		public static const IM_CMD_CONVERT:String='convert.exe';
 		public static const IM_CMD_MSL:String='conjure.exe';
 		public static const IM_CMD_MONTAGE:String='montage.exe';
+		*/
+		public static function get IM_CMD_CONVERT():String{
+			if (ProcessRunner.isWindows()) return 'convert.exe';
+			return 'convert';
+		}
+
+		public static function get IM_CMD_MSL():String{
+			if (ProcessRunner.isWindows()) return 'conjure.exe';
+			return 'conjure';
+		}
+
+		public static function get IM_CMD_MONTAGE():String{
+			if (ProcessRunner.isWindows()) return 'montage.exe';
+			return 'montage';
+		}
 
 		public static const STATE_WAITE:int=0;
 		public static const STATE_STARTED:int=1;
