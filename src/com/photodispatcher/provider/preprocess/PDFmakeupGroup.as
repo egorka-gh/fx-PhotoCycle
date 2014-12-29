@@ -115,6 +115,7 @@ package com.photodispatcher.provider.preprocess{
 							printGroup.addFile(newFile);
 
 							//finalyze pdf cmd
+							command2.add('-quality'); command2.add(jpgQuality);
 							command2.add('-compress'); command2.add('jpeg');
 							command2.add(outPath(pdfName));
 							finalCommands.push(command2);
@@ -156,7 +157,7 @@ package com.photodispatcher.provider.preprocess{
 						command.add('-density'); command.add('300x300');
 						command.add('-quality'); command.add('100');
 						*/
-						IMCommandUtil.setOutputParams(command, jpgQuality);
+						IMCommandUtil.setOutputParams(command);
 						outName=FILENAME_COVER_BACK+(i+1).toString()+'.jpg';
 						command.add(outName);
 						commands.push(command);
@@ -167,6 +168,7 @@ package com.photodispatcher.provider.preprocess{
 					}
 					//finalyze pdf cmd
 					pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
+					command2.add('-quality'); command2.add(jpgQuality);
 					command2.add('-compress'); command2.add('jpeg');
 					command2.add(outPath(pdfName));
 					finalCommands.push(command2);
@@ -183,6 +185,7 @@ package com.photodispatcher.provider.preprocess{
 						if(pdfPageNum==pageLimit){
 							//finalyze pdf cmd
 							pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
+							command2.add('-quality'); command2.add(jpgQuality);
 							command2.add('-compress'); command2.add('jpeg');
 							command2.add(outPath(pdfName));
 							finalCommands.push(command2);
@@ -226,6 +229,7 @@ package com.photodispatcher.provider.preprocess{
 					}
 					//finalyze pdf cmd
 					pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
+					command2.add('-quality'); command2.add(jpgQuality);
 					command2.add('-compress'); command2.add('jpeg');
 					command2.add(outPath(pdfName));
 					finalCommands.push(command2);
@@ -267,6 +271,7 @@ package com.photodispatcher.provider.preprocess{
 					if(pdfPageNum==pageLimit){
 						//finalyze pdf cmd
 						pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
+						command2.add('-quality'); command2.add(jpgQuality);
 						command2.add('-compress'); command2.add('jpeg');
 						command2.add(outPath(pdfName));
 						finalCommands.push(command2);
@@ -295,7 +300,7 @@ package com.photodispatcher.provider.preprocess{
 					command.add('-density'); command.add('300x300');
 					command.add('-quality'); command.add('100');
 					*/
-					IMCommandUtil.setOutputParams(command, jpgQuality);
+					IMCommandUtil.setOutputParams(command);
 					outName=FILENAME_SHEET+(i+1).toString()+'.jpg';
 					command.add(outName);
 					commands.push(command);
@@ -315,6 +320,7 @@ package com.photodispatcher.provider.preprocess{
 
 				//finalyze pdf cmd
 				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
+				command2.add('-quality'); command2.add(jpgQuality);
 				command2.add('-compress'); command2.add('jpeg');
 				command2.add(outPath(pdfName));
 				finalCommands.push(command2);
@@ -557,7 +563,7 @@ package com.photodispatcher.provider.preprocess{
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add('100');
 			*/
-			IMCommandUtil.setOutputParams(command, jpgQuality);
+			IMCommandUtil.setOutputParams(command);
 			command.add(fileName);
 			return command;
 		}
@@ -625,7 +631,7 @@ package com.photodispatcher.provider.preprocess{
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add('100');
 			/*/
-			IMCommandUtil.setOutputParams(command, jpgQuality);
+			IMCommandUtil.setOutputParams(command);
 			return command;
 		}
 

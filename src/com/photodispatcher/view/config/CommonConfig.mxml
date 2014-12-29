@@ -384,7 +384,7 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.pdfJpgQuality = pdfJpgQuality;
 				so.flush();  
-				Context.setAttribute("pdfJpgQuality", pdfJpgQuality);
+				Context.setAttribute("pdfJpgQuality", pdfJpgQuality.toString());
 			}
 			
 			protected function tiIMFolder_enterHandler(event:FlexEvent):void{
@@ -472,7 +472,7 @@
 
 			<s:FormItem label="Сжатие jpg в PDF файле">
 				<s:NumericStepper id="nsJpgQuality" value="@{pdfJpgQuality}" 
-								  minimum="50" maximum="100" snapInterval="5" width="50" change="nsJpgQuality_changeHandler(event)"/>
+								  minimum="70" maximum="100" snapInterval="1" width="50" change="nsJpgQuality_changeHandler(event)"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Кол-во страниц в PDF файле">
