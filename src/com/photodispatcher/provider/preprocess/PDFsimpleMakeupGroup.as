@@ -18,6 +18,7 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		override public function createCommands():void{
+			if(Context.getAttribute("pdfJpgQuality")) jpgQuality=Context.getAttribute("pdfJpgQuality");
 			commands=[];
 			finalCommands=[];
 			
@@ -83,6 +84,7 @@ package com.photodispatcher.provider.preprocess{
 				if(pdfPageNum==pageLimit){
 					//finalyze pdf cmd
 					pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
+					command2.add('-quality'); command2.add(jpgQuality);
 					command2.add('-compress'); command2.add('jpeg');
 					command2.add(outPath(pdfName));
 					finalCommands.push(command2);
@@ -114,6 +116,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 			//finalyze pdf cmd
 			pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
+			command2.add('-quality'); command2.add(jpgQuality);
 			command2.add('-compress'); command2.add('jpeg');
 			command2.add(outPath(pdfName));
 			finalCommands.push(command2);
