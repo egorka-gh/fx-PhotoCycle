@@ -5,6 +5,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.shell.IMCommand;
+	import com.photodispatcher.util.IMCommandUtil;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.filesystem.File;
@@ -84,8 +85,7 @@ package com.photodispatcher.provider.preprocess{
 				if(pdfPageNum==pageLimit){
 					//finalyze pdf cmd
 					pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
-					command2.add('-quality'); command2.add(jpgQuality);
-					command2.add('-compress'); command2.add('jpeg');
+					IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
 					command2.add(outPath(pdfName));
 					finalCommands.push(command2);
 					//add to printGroup.files
@@ -116,8 +116,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 			//finalyze pdf cmd
 			pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
-			command2.add('-quality'); command2.add(jpgQuality);
-			command2.add('-compress'); command2.add('jpeg');
+			IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
 			command2.add(outPath(pdfName));
 			finalCommands.push(command2);
 			//add to printGroup.files

@@ -185,6 +185,14 @@ package com.photodispatcher.util{
 			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add(quality);
 		}
+
+		public static function setPDFOutputParams(command:IMCommand, quality:String='100'):void{
+			command.add('-units'); command.add('PixelsPerInch');
+			command.add('-density'); command.add('300x300');
+			command.add('-quality'); command.add(quality);
+			command.add('-compress'); command.add('jpeg');
+
+		}
 		
 		public static function expandImageV(command:IMCommand, amountMM:int, imageGravity:String='North'):void{
 			if(amountMM>0){

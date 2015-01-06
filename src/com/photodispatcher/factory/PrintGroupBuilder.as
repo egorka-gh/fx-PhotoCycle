@@ -171,7 +171,7 @@ package com.photodispatcher.factory{
 					prints=0;
 					if(pg.book_type==0){
 						//photo print
-						for each(pgf in pg) prints+=pgf.prt_qty>0?pgf.prt_qty:1;
+						for each(pgf in pg.files) prints+=(pgf.prt_qty>0?pgf.prt_qty:1);
 					}else{
 						//book
 						prints=pg.book_num*pg.sheet_num;
