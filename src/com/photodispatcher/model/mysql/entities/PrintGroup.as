@@ -150,6 +150,10 @@ package com.photodispatcher.model.mysql.entities {
 			state_date= new Date();
 		}
 		
+		public function toString():String {
+			return this.id + ": " + this.path;
+		}
+		
 		private var _prev_state:int;
 		override public function set state(value:int):void{
 			state_date= new Date();

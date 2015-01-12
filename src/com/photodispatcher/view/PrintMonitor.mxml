@@ -187,6 +187,7 @@
 				if(!full) return;
 				gridMenu.addItem('Отменить печать',cancelPrintCallBack);
 				gridMenu.addItem('Напечатан',setPrintedCallBack);
+				gridMenu.addItem('Эмулировать печать', emulatePrintingCallBack);
 			}
 
 			private function cancelPrintCallBack(grid:DataGrid,param:int):void{
@@ -220,6 +221,29 @@
 				if(a.length>0){
 					PrintQueueManager.instance.setPrintedState(a);
 				}
+			}
+			
+			private function emulatePrintingCallBack(grid:DataGrid,param:int):void {
+				
+				var a:Array=[];
+				var pg:PrintGroup;
+				for each(var o:Object in grid.selectedItems){
+					
+					pg= o as PrintGroup;
+					if(pg && pg.state==OrderState.PRN_PRINT){
+						a.push(pg);
+					}
+					
+				}
+				
+				if(a.length>0){
+					
+					var popup:EmulatePrintingPopup = new EmulatePrintingPopup;
+					popup.printGroups = a;
+					popup.show();
+					
+				}
+				
 			}
 
 			protected function dfDateFilter_creationCompleteHandler(event:FlexEvent):void{

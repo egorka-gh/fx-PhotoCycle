@@ -86,7 +86,8 @@ package com.photodispatcher.context{
 				TechPickerService,
 				OrderService,
 				PrintGroupService,
-				XReportService //+
+				XReportService,
+				TechService//+
 			]);
 			
 			//fill from config

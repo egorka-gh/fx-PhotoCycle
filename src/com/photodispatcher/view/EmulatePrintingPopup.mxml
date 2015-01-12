@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="400" minHeight="300">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.LabDevice;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.TechLog;
+			import com.photodispatcher.model.mysql.services.TechService;
+			import com.photodispatcher.print.LabGeneric;
+			import com.photodispatcher.print.PrintQueueManager;
+			
+			import mx.collections.ArrayList;
+			import mx.collections.IList;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
+			
+			
+			[Bindable]
+			public var printGroups:Array;
+			
+			public function show():void{
+				
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				PopUpManager.centerPopUp(this);
+			}
+			
+			protected function btOk_clickHandler(event:MouseEvent):void
+			{
+				logRegistred((pgs.selectedItem as PrintGroup).id, int(deviceIdInput.text), int(bookNumInput.text), int(sheetNumInput.text));
+				//close();
+			}
+			
+			protected function btCancel_clickHandler(event:MouseEvent):void
+			{
+				close();
+			}
+			
+			protected function printGroupsList(arr:Array):IList {
+				
+				return new ArrayList(arr);
+				
+			}
+			
+			private static function labDescription(pg:PrintGroup):Object
+			{
+				var t:String = null;
+				
+				if(pg){
+					var lab:LabGeneric = PrintQueueManager.instance.labMap[pg.destination];
+					t = lab.name + " (";
+					for each (var d:LabDevice in lab.getOnlineDevices()){
+						t += d.tech_point;
+					}
+					t += ")";
+				}
+				
+				return t;
+			}
+			
+			protected function logRegistred(printGroupId:String, techPointId:int, book:int,sheet:int):void{
+				//log to data base
+				var tl:TechLog= new TechLog();
+				tl.log_date=new Date();
+				tl.setSheet(book,sheet);
+				tl.print_group=printGroupId;
+				tl.src_id= techPointId;
+				
+				var latch:DbLatch=new DbLatch();
+				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+				latch.addLatch(svc.logByPg(tl));
+				latch.addEventListener(Event.COMPLETE, completeHandler);
+				latch.start();
+			}
+			
+			protected function completeHandler(event:Event):void
+			{
+				
+				
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	
+	<s:VGroup verticalCenter="0" horizontalCenter="0">
+		
+		
+		<s:DropDownList id="pgs" dataProvider="{printGroupsList(printGroups)}" width="200" requireSelection="true" />
+		
+		<s:Label text="Фотолаба: {labDescription(pgs.selectedItem as PrintGroup)}" />
+		
+		<s:HGroup verticalAlign="baseline">
+			<s:Label text="Id устройства:" />
+			<s:TextInput id="deviceIdInput" />
+		</s:HGroup>
+		
+		<s:HGroup verticalAlign="baseline">
+			<s:Label text="BookNum:" />
+			<s:TextInput id="bookNumInput" />
+		</s:HGroup>
+		
+		<s:HGroup verticalAlign="baseline">
+			<s:Label text="SheetNum:" />
+			<s:TextInput id="sheetNumInput" />
+		</s:HGroup>
+		
+		<s:HGroup gap="10">
+			<s:Button id="btOk" label="Ok" click="btOk_clickHandler(event)"/>
+			<s:Button id="btCancel" label="Отмена" click="btCancel_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+	
+</s:SkinnablePopUpContainer>
