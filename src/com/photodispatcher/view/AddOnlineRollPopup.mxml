@@ -16,7 +16,6 @@
 			import spark.collections.Sort;
 			import spark.collections.SortField;
 			import spark.events.IndexChangeEvent;
-			import spark.events.TextOperationEvent;
 
 			private var rollMap:Object;
 			private var _rolls:ArrayCollection;
@@ -85,13 +84,6 @@
 			private function applyRollsFilter():void{
 				_rolls.refresh();
 			}
-
-			protected function tiLen_changeHandler(event:TextOperationEvent):void{
-				if(ddRoll.selectedIndex==-1) return
-				var r:LabRoll=ddRoll.selectedItem as LabRoll;
-				if(!r) return;
-				r.len=int(tiLen.text);
-			}
 			
 			protected function lstPrefe_changeHandler(event:IndexChangeEvent):void{
 				if(lstPrefe.selectedIndex==-1) return;
@@ -108,11 +100,17 @@
 				if(ddRoll.selectedIndex==-1) return;
 				var r:LabRoll=ddRoll.selectedItem as LabRoll;
 				if(!r) return;
+				r.len=int(tiLen.text);
 				close(true,r);
 			}
 			
 			protected function btCancel_clickHandler(event:MouseEvent):void{
 				close(false);
+			}
+			
+			protected function resetRollLen_clickHandler(event:MouseEvent):void
+			{
+				tiLen.text = ddRoll.selectedItem.len_std;
 			}
 			
 		]]>
@@ -145,10 +143,14 @@
 		</s:HGroup>
 
 		<s:Spacer width="5"/>
+		
+		<s:Label text="Длина нового (мм): {ddRoll.selectedItem.len_std}"/>
+		
 		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Длина:"/>
+			<s:Label text="Длина текущего (мм):"/>
 			<s:TextInput id="tiLen" text="{ddRoll.selectedItem.len}" enabled="{ddRoll.selectedIndex!=-1}"
-						 restrict="0-9" change="tiLen_changeHandler(event)" width="80"/>
+						 restrict="0-9" width="80"/>
+			<s:Button label="Сбросить" click="resetRollLen_clickHandler(event)" enabled="{ddRoll.selectedIndex!=-1}" />
 		</s:HGroup>
 
 		<s:Spacer height="5"/>

@@ -10,13 +10,17 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.LabDevice;
 			import com.photodispatcher.model.mysql.entities.LabRoll;
 			import com.photodispatcher.model.mysql.entities.LabTimetable;
+			import com.photodispatcher.model.mysql.services.RollService;
 			import com.photodispatcher.view.AddOnlineRollPopup;
 			import com.photodispatcher.view.LabInfo;
 			
 			import spark.events.PopUpEvent;
+			
+			import org.granite.tide.Tide;
 			
 
 			[Bindable]
@@ -69,11 +73,8 @@
 				item.is_online= false;
 				applyActiveRollsFilter();
 				refreshParentOnlineRolls();
-				/*TODO refactor
-				var dao:LabRollDAO= new LabRollDAO();
-				dao.saveOnlineState(item);
-				applyActiveRollsFilter();
-				*/
+				updateRollItem(item);
+				
 			}
 			
 			
@@ -125,12 +126,27 @@
 						item.is_online=true;
 						applyActiveRollsFilter();
 						refreshParentOnlineRolls();
-						/*TODO refactor
-						var dao:LabRollDAO= new LabRollDAO();
-						dao.saveOnlineState(item,true);
-						*/
+						
+						updateRollItem(item);
+						
 					}
 				}
+			}
+			
+			private function updateRollItem(item:LabRoll):void {
+				
+				item.changed = true;
+				var svc:RollService=Tide.getInstance().getContext().byType(RollService,true) as RollService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onRollUpdate);
+				latch.addLatch(svc.persistRoll(item));
+				latch.start();
+				
+			}
+			
+			protected function onRollUpdate(event:Event):void
+			{
+				
 			}
 			
 		]]>
