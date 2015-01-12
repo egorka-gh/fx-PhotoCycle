@@ -87,6 +87,10 @@
 				PopUpManager.centerPopUp(pop);
 			}
 			
+			private function stateLabel(state:int):String {
+				return LabGeneric.LABELS_STATE[state];
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -107,7 +111,7 @@
 	</s:Rect>
 	<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
 		<!--<s:Image source="assets/Noritsu_logo_24.png" height="16" smooth="true" scaleMode="letterbox" horizontalAlign="left"/>-->
-		<s:HGroup gap="0" verticalAlign="middle" width="100%">
+		<s:HGroup gap="0" verticalAlign="middle" width="100%" toolTip="{stateLabel(lab.onlineState)}">
 			<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
 			<s:Spacer width="5"/>
 			<s:Label text="{lab.name}" fontSize="12" fontWeight="bold" width="100%" maxDisplayedLines="1"/>

@@ -17,6 +17,7 @@ package com.photodispatcher.print{
 
 	[Event(name="postComplete", type="com.photodispatcher.event.PrintEvent")]
 	public class LabGeneric extends Lab implements IEventDispatcher{
+		
 		public static const STATE_ERROR:int=-1;
 		public static const STATE_OFF:int=0;
 		public static const STATE_ON:int=1;
@@ -24,6 +25,17 @@ package com.photodispatcher.print{
 		public static const STATE_SCHEDULED_OFF:int=3;
 		public static const STATE_ON_WARN:int=4;
 		public static const STATE_MANUAL:int=10;
+		
+		public static const LABELS_STATE:Object = 
+			{
+				"-1": "STATE_ERROR",
+				"0": "STATE_OFF",
+				"1": "STATE_ON",
+				"2": "STATE_SCHEDULED_ON",
+				"3": "STATE_SCHEDULED_OFF",
+				"4": "STATE_ON_WARN",
+				"10": "STATE_MANUAL"
+			};
 		
 		[Bindable]
 		public var enabled:Boolean=true;//??????

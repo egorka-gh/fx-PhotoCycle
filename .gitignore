@@ -6,3 +6,6 @@ data/
 doc/
 /[source path] src
 /.flexProperties
+work-folder
+orders-folder
+labs

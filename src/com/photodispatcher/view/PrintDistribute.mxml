@@ -2,7 +2,6 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx" 
-		 width="100%" height="100%" 
 		 creationComplete="{init()}">
 	<fx:Script>
 		<![CDATA[
@@ -325,73 +324,69 @@
 			
 		]]>
 	</fx:Script>
-	<s:HGroup gap="10" width="100%" height="100%">
-		<s:VGroup gap="5" width="230" height="100%">
-			<s:Label text="Заказов - {ordTotal}" left="0" verticalCenter="0"/>
-			<s:Label text="Групп печати - {pgTotal}"/>
-			<s:Label text="Кол. отпечатков - {phTotal}"/>
-			<s:Spacer height="5"/>
-			<s:Label text="Варианты магазинов"/>
-			<s:List id="lstSizes" width="100%" height="100%"
-					labelFunction="sizesListLabel" dataProvider="{sizesList}"
-					change="lstSizes_changeHandler(event)"/>
-		</s:VGroup>
-		<s:VGroup gap="5" width="100%" height="100%">
-			<s:Label id="lbManagerError" color="#ff0000" width="100%" maxDisplayedLines="1"/>
-			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
-				<s:Label text="Фильтрация" fontWeight="bold"/>
-				
-				<s:Spacer width="5"/>
-				<s:Label text="Источник"/>
-				<s:DropDownList id="ddSourceFilter" dataProvider="{sourceFilterList}" labelField="name" change="{applyFilter()}" width="100"/>
-				
-				<s:Spacer width="5"/>
-				<s:Label text="ID"/>
-				<s:TextInput id="tiOrderFilter" width="80" change="{applyFilter()}"/>
-				
-				<s:Spacer width="5"/>
-				<s:Label text="Статус"/>
-				<s:DropDownList id="ddStateFilter" dataProvider="{statesFilterList}" width="150" labelField="name" change="{applyFilter()}"/>
-				
-				<s:Spacer width="5"/>
-				<s:Label text="Размер"/>
-				<s:DropDownList id="ddSizeFilter" dataProvider="{sizesFilterList}" labelField="name" change="{applyFilter()}"  width="60"/>
-				
-				<s:Spacer width="5"/>
-				<s:Label text="Бумага"/>
-				<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" labelField="name" change="{applyFilter()}" width="100"/>
-
-				<s:Spacer width="5"/>
-				<s:Label text="Книга"/>
-				<s:DropDownList id="ddIsBookFilter" dataProvider="{booleanFilterList}" change="{applyFilter()}" width="60"/>
-
-				<s:Spacer width="5"/>
-				<s:Label text="PDF"/>
-				<s:DropDownList id="ddIsPdfFilter" dataProvider="{booleanFilterList}" change="{applyFilter()}" width="60"/>
-				
-				<s:Spacer width="100%"/>
-				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refreshPgList()}"
-						  cornerRadius="4" width="22" height="22" baseline="4"/>
-			</s:HGroup>
-			<s:DataGrid id="dgPGroups" selectionMode="multipleRows"
-						width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
-						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns()}"/>
-		</s:VGroup>
-		<s:Group height="100%">
-			<s:Button id="btPost" label="{printManager.isBusy?'!':'>'}" width="30" fontWeight="bold" verticalCenter="0" 
+	
+	<s:layout>
+		<s:HorizontalLayout gap="5" />
+	</s:layout>
+	
+	<s:VGroup gap="5" width="230" height="100%">
+		<s:Label text="Заказов - {ordTotal}" left="0" verticalCenter="0"/>
+		<s:Label text="Групп печати - {pgTotal}"/>
+		<s:Label text="Кол. отпечатков - {phTotal}"/>
+		<s:Spacer height="5"/>
+		<s:Label text="Варианты магазинов"/>
+		<s:List id="lstSizes" width="100%" height="100%"
+				labelFunction="sizesListLabel" dataProvider="{sizesList}"
+				change="lstSizes_changeHandler(event)"/>
+	</s:VGroup>
+	<s:VGroup gap="5" width="100%" height="100%">
+		<s:Label id="lbManagerError" color="#ff0000" width="100%" maxDisplayedLines="1"/>
+		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refreshPgList()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+			
+			<s:Label text="Сайт"/>
+			<s:DropDownList id="ddSourceFilter" dataProvider="{sourceFilterList}" labelField="name" change="{applyFilter()}" width="100"/>
+			
+			<s:Label text="ID"/>
+			<s:TextInput id="tiOrderFilter" width="80" change="{applyFilter()}"/>
+			
+			<s:Label text="Статус"/>
+			<s:DropDownList id="ddStateFilter" dataProvider="{statesFilterList}" width="150" labelField="name" change="{applyFilter()}"/>
+			
+			<s:Label text="Размер"/>
+			<s:DropDownList id="ddSizeFilter" dataProvider="{sizesFilterList}" labelField="name" change="{applyFilter()}"  width="60"/>
+			
+			<s:Label text="Бумага"/>
+			<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" labelField="name" change="{applyFilter()}" width="100"/>
+			
+			<s:Label text="Книга"/>
+			<s:DropDownList id="ddIsBookFilter" dataProvider="{booleanFilterList}" change="{applyFilter()}" width="60"/>
+			
+			<s:Label text="PDF"/>
+			<s:DropDownList id="ddIsPdfFilter" dataProvider="{booleanFilterList}" change="{applyFilter()}" width="60"/>
+			
+			<s:Spacer width="100%"/>
+			
+			<s:Button id="btPost" label="{printManager.isBusy?'!':'>'}" width="30"  fontWeight="bold" color="#ff0000"
 					  enabled="{printManager.isBusy?false:true}" click="btPost_clickHandler(event)"/>
-		</s:Group>
-		<s:VGroup gap="5" width="200" height="100%">
-			<s:HGroup gap="10" verticalAlign="middle" width="100%">
-				<s:Label text="Лаборатории"/>
-				<s:Spacer width="100%"/>
-				<s:Button id="btRefreshLab" icon="assets/icon-refresh.gif" click="btRefreshLab_clickHandler(event)"
-						  cornerRadius="4" width="22" height="22" baseline="4"/>
-
-			</s:HGroup>
-			<s:List id="lstLabs" width="100%" height="100%"
-					dataProvider="{printManager.labs}" useVirtualLayout="false"
-					itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRenderer"/>
-		</s:VGroup>
-	</s:HGroup>
+			
+		</s:HGroup>
+		<s:DataGrid id="dgPGroups" selectionMode="multipleRows"
+					width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
+					dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns()}"/>
+	</s:VGroup>
+	<s:VGroup gap="5" width="150" height="100%">
+		<s:HGroup gap="10" verticalAlign="middle" width="100%">
+			<s:Label text="Лаборатории"/>
+			<s:Spacer width="100%"/>
+			<s:Button id="btRefreshLab" icon="assets/icon-refresh.gif" click="btRefreshLab_clickHandler(event)"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+			
+		</s:HGroup>
+		<s:List id="lstLabs" width="100%" height="100%"
+				dataProvider="{printManager.labs}" useVirtualLayout="false"
+				itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRenderer"/>
+	</s:VGroup>
 </s:Group>

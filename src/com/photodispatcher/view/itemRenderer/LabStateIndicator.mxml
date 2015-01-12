@@ -18,19 +18,19 @@
 				_state=value;
 				switch(_state){
 					case LabGeneric.STATE_MANUAL:
-						stateColor.color=0x0000ff;
+						stateColor.color=0x0000ff; //синий
 						break;
 					case LabGeneric.STATE_ON_WARN:
-						stateColor.color=0xf9f900;
+						stateColor.color=0xf9f900; //желтый
 						break;
 					case LabGeneric.STATE_ON:
-						stateColor.color=0x00DD00;
+						stateColor.color=0x00DD00; //зеленый
 						break;
 					case LabGeneric.STATE_ERROR:
-						stateColor.color=0xDD0000;
+						stateColor.color=0xDD0000; //красный
 						break;
 					default:
-						stateColor.color=0xbbbbbb;
+						stateColor.color=0xbbbbbb; //серый
 				}
 			}
 			
