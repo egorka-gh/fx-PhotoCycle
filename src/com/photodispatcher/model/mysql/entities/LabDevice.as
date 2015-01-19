@@ -9,9 +9,9 @@ package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.print.LabGeneric;
 	import com.photodispatcher.util.ArrayUtil;
 
-    [Bindable]
-    [RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabDevice")]
-    public class LabDevice extends LabDeviceBase {
+	[Bindable]
+	[RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabDevice")]
+	public class LabDevice extends LabDeviceBase {
 		
 		//run time
 		public var onlineState:int=0;
@@ -57,6 +57,38 @@ package com.photodispatcher.model.mysql.entities {
 		public function get lastRool():LabRoll{
 			return _lastRoll;
 		}
+		
+		private var _lastPrintDate:Date;
+		
+		/**
+		 * время печати последнего листа, берется по логу тех.точки
+		 */
+		public function get lastPrintDate():Date
+		{
+			return _lastPrintDate;
+		}
+
+		public function set lastPrintDate(value:Date):void
+		{
+			_lastPrintDate = value;
+		}
+		
+		
+		private var _lastStopLog:LabStopLog;
+		
+		/**
+		 * лог текущего простоя
+		 */
+		public function get lastStopLog():LabStopLog
+		{
+			return _lastStopLog;
+		}
+
+		public function set lastStopLog(value:LabStopLog):void
+		{
+			_lastStopLog = value;
+		}
+
 		
 		public function refresh():Boolean{
 			if(!tech_point){
@@ -134,6 +166,18 @@ package com.photodispatcher.model.mysql.entities {
 			return onlineState==LabGeneric.STATE_ON;
 		}
 		
+		/**
+		 * возвращает актуальное расписание относительно определенной даты
+		 */
+		public function getCurrentTimeTableByDate(date:Date):LabTimetable {
+			
+			var tt:LabTimetable = ArrayUtil.searchItem('day_id',date.day, timetable.toArray()) as LabTimetable;
+			if(tt && tt.is_online){
+				tt = tt.createCurrent(date);
+			}
+			return tt;
+		}
+		
 		//minutes till device on
 		public function timeToOn():int{
 			if(!timetable){
@@ -177,6 +221,12 @@ package com.photodispatcher.model.mysql.entities {
 			}else{
 				return 0;
 			}
+		}
+		
+		public static function findDeviceByTechPointId(deviceList:Array, techPointId:int):LabDevice {
+			
+			return ArrayUtil.searchItem('tech_point', techPointId, deviceList) as LabDevice;
+			
 		}
 
     }

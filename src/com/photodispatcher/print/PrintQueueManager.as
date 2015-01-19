@@ -24,7 +24,6 @@ package com.photodispatcher.print{
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
-	import flash.events.IEventDispatcher;
 	import flash.events.IOErrorEvent;
 	import flash.events.SecurityErrorEvent;
 	import flash.filesystem.File;
@@ -76,6 +75,12 @@ package com.photodispatcher.print{
 		public function get labs():ArrayCollection{
 			return _labs;
 		}
+		
+		protected var _devices:ArrayCollection;
+		[Bindable(event="devicesChange")]
+		public function get devices():ArrayCollection {
+			return _devices;
+		}
 
 		public function PrintQueueManager(){
 			super(null);
@@ -113,24 +118,34 @@ package com.photodispatcher.print{
 		private function fillLabs(rawLabs:Array):void{
 			//fill labs 
 			var lab:Lab;
-			var dev:LabDevice;
 			var result:Array=[];
+			var devArr:Array = [];
+			var lb:LabGeneric;
 			labNamesMap= new Object();
 			for each(lab in rawLabs){
 				labNamesMap[lab.id.toString()]=lab.name;
-				var lb:LabGeneric=LabBuilder.build(lab);
+				lb=LabBuilder.build(lab);
 				lb.refresh();
 				result.push(lb);
+				devArr = devArr.concat(lb.devices.toArray());
 			}
 			_labs.source=result;
 			refreshLabs(true);
+			
+			//fill devices
+			_devices = new ArrayCollection(devArr);
+			dispatchEvent(new Event("devicesChange"));
+			
 			_initCompleted=true;
 			dispatchEvent(new Event("labsChange"));
+			
 		}
 		
 		private function initErr(msg:String):void{
 			_labs.source=[];
 			dispatchEvent(new Event("labsChange"));
+			_devices = null;
+			dispatchEvent(new Event("devicesChange"));
 			dispatchManagerErr(msg);
 		}
 		private function dispatchManagerErr(msg:String):void{
@@ -144,6 +159,18 @@ package com.photodispatcher.print{
 			for each(lab in _labs.source){
 				if(lab){
 					result[lab.id.toString()]=lab;
+				}
+			}
+			return result;
+		}
+		
+		public function get labDeviceMap():Object {
+			if(!initCompleted) return null;
+			var result:Object= new Object();
+			var dev:LabDevice;
+			for each(dev in _devices.source){
+				if(dev){
+					result[dev.id.toString()]=dev;
 				}
 			}
 			return result;

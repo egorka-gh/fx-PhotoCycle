@@ -10,23 +10,18 @@
 					   xmlns:download="com.photodispatcher.provider.fbook.download.*" 
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="{destroy()}">
+					   closing="{destroy()}" xmlns:print="com.photodispatcher.print.*">
 	<fx:Script>
 		<![CDATA[
-			import com.akmeful.fotokniga.book.data.Book;
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.mysql.AsyncLatch;
 			import com.photodispatcher.model.mysql.DbLatch;
-			import com.photodispatcher.model.mysql.entities.Roll;
-			import com.photodispatcher.model.mysql.services.ContentFilterService;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.shell.OORuner;
-			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.ModalPopUp;
-			import com.photodispatcher.view.OrderSearchPopup;
 			import com.photodispatcher.view.PasswPopup;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
@@ -34,16 +29,16 @@
 			import mx.core.FlexGlobals;
 			import mx.events.FlexEvent;
 			
+			import spark.events.PopUpEvent;
+			
 			import org.granite.tide.Tide;
 			import org.granite.tide.events.TideFaultEvent;
 			import org.granite.tide.events.TideResultEvent;
 			import org.granite.tide.service.DefaultServiceInitializer;
 			import org.granite.tide.spring.Spring;
-			
-			import spark.events.PopUpEvent;
 
 			private var bdPopup:DatabasePopup;
-
+			
 			private function destroy():void{
 				IMRuner.stopAll();
 				if(vMonitor && vMonitor.chatServer) vMonitor.chatServer.close();
@@ -220,7 +215,10 @@
 			}
 			private function postInit():void{
 				//init print manager
-				PrintQueueManager.instance.init();
+				printQueueManager.init();
+				labConfigManager.init();
+				printPulseManager.init();
+				
 				currentState='monitor';
 				if(vMonitor) vMonitor.init(); 
 			}
@@ -277,7 +275,15 @@
 				</fx:Array>
 			</cfg:defaultAliases>
 		</cfg:PathAlias>
+		
 		<download:FontDownloadManager/>
+		
+		<print:LabConfigManager id="labConfigManager" />
+		<print:PrintQueueManager id="printQueueManager" />
+		<print:PrintPulseManager id="printPulseManager" 
+								 labs="{printQueueManager.labs}" 
+								 devices="{printQueueManager.devices}"
+								 />
 	</fx:Declarations>
 
 	<fx:Style source="../src-book/stylesFonts.css" />

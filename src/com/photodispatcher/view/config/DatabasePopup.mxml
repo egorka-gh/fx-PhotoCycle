@@ -14,13 +14,13 @@
 			import mx.events.FlexEvent;
 			import mx.managers.PopUpManager;
 			
+			import spark.events.PopUpEvent;
+			
 			import org.granite.tide.Tide;
 			import org.granite.tide.events.TideFaultEvent;
 			import org.granite.tide.events.TideResultEvent;
 			import org.granite.tide.service.DefaultServiceInitializer;
 			import org.granite.tide.spring.Spring;
-			
-			import spark.events.PopUpEvent;
 			//public static const DEFAULT_DB_FILE_PATH:String = 'app-storage:/data/data.sqlite';
 
 			//private var _databaseFile:File;
@@ -68,7 +68,8 @@
 				
 				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
 				//Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
-				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: bdServerPort,contextRoot: "/PhCServer" });
+				var spring:Spring = Spring.getInstance();
+				spring.addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: bdServerPort,contextRoot: "/PhCServer" });
 				//run hallo
 				Tide.getInstance().addComponents([HalloService]);
 				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;

@@ -15,27 +15,33 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.akmeful.util.ArrayUtil;
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.LabDevice;
+			import com.photodispatcher.model.mysql.entities.LabStopLog;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.StateLog;
+			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.provider.ftp.FtpManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
 			import com.photodispatcher.service.SyncService;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 			
-			import org.granite.tide.Tide;
-			
 			import spark.events.GridSelectionEvent;
 			import spark.events.PopUpEvent;
+			
+			import org.granite.tide.Tide;
 			
 			public static const REFRESH_INTERVAL:int=10;//min
 			public static const FORCE_START_INTERVAL:int=10;//min
@@ -76,7 +82,10 @@
 			private var forceStarHour:int=0;
 			private var forceStarMinute:int=0;
 			private var forceStarTimer:Timer;
-
+			
+			[Bindable]
+			private var stopLogList:IList;
+			
 			public function init():void{
 				sources=new ArrayCollection(Context.getSources());
 				
@@ -236,6 +245,11 @@
 					case 5:
 						currentState='logView';
 						break;
+					
+					case 6:
+						currentState='stopLogView';
+						break;
+					
 				}
 				focusManager.setFocus(focusHolder);
 			}
@@ -363,6 +377,43 @@
 				if(evt.commit) fillOrdersPendingList();
 			}
 			
+			protected function btRefreshStopLog(date:Date):void
+			{
+				var to:Date = new Date(date.time + 1000*60*60*24); // прибавим 24 часа
+				var from:Date = date;
+				
+				var svc:LabService = Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadLabStops);
+				latch.addLatch(svc.getLabStops(from,to));
+				latch.start();
+				
+				
+			}
+			
+			protected function onLoadLabStops(event:Event):void
+			{
+				
+				var latch:DbLatch= event.target as DbLatch;
+				var devMap:Object = PrintQueueManager.instance.labDeviceMap;
+				var f:int;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadLabStops);
+					if(!latch.complite) return;
+					
+					stopLogList = latch.lastDataAC;
+					
+					for each (var ls:LabStopLog in stopLogList){
+						
+						ls.labDeviceName = (devMap[ls.lab_device] as LabDevice).name;
+						
+					}
+					
+					
+				}
+				
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -377,6 +428,7 @@
 		<s:State name="printPrint"/>
 		<s:State name="printReady"/>
 		<s:State name="logView"/>
+		<s:State name="stopLogView" />
 	</s:states>
 
 	<s:Rect top="0" left="0" right="0" bottom="0">
@@ -392,7 +444,8 @@
 			<fx:String>Заказы ожидающие распределения</fx:String> 
 			<fx:String>Печать</fx:String> 
 			<fx:String>Напечатаны</fx:String> 
-			<fx:String>Лог</fx:String> 
+			<fx:String>Лог</fx:String>
+			<fx:String>Простой</fx:String>
 		</mx:ArrayCollection>
 	</s:TabBar>
 
@@ -536,7 +589,65 @@
 						width="100%" height="100%" creationComplete="dgErrors_creationCompleteHandler(event)"
 						dataProvider="{logList}" locale="ru_RU" columns="{StateLog.gridColumns(true)}"/>
 		</s:VGroup>
-
+		
+		<s:HGroup includeIn="stopLogView" gap="5" top="0" left="0" right="0" bottom="0">
+			
+			<s:VGroup width="50%" height="100%">
+				<s:Label text="Текущее состояние:"/>
+				<s:DataGrid width="100%" height="100%" dataProvider="{PrintQueueManager.instance.devices}">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn dataField="name" headerText="Устройство" />
+							<s:GridColumn dataField="tech_point_name" headerText="Тех. точка" />
+							<s:GridColumn dataField="lastPrintDate" headerText="Последняя печать">
+								<s:formatter>
+									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
+								</s:formatter>
+							</s:GridColumn>
+							<s:GridColumn dataField="lastStopLog" headerText="Простой" />
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>
+			</s:VGroup>
+			
+			<s:VGroup width="50%">
+				
+				<s:HGroup verticalAlign="baseline">
+					<s:Label text="Лог простоя:"/>
+					<mx:DateField id="stopLogDateField" formatString="DD.MM.YYYY" />
+					<s:Button icon="assets/icon-refresh.gif" click="btRefreshStopLog(stopLogDateField.selectedDate)"
+							  cornerRadius="4" width="22" height="22" baseline="4"/>
+				</s:HGroup>
+				
+				<s:DataGrid width="100%" height="100%" dataProvider="{stopLogList}">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn dataField="labDeviceName" headerText="Устройство" />
+							<s:GridColumn dataField="lab_stop_type_name" headerText="Причина" />
+							<s:GridColumn dataField="time_from" headerText="Начало" width="100">
+								<s:formatter>
+									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
+								</s:formatter>
+							</s:GridColumn>
+							<s:GridColumn dataField="time_to" headerText="Конец" width="100">
+								<s:formatter>
+									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
+								</s:formatter>
+							</s:GridColumn>
+							<s:GridColumn dataField="time_created" headerText="Добавлен" width="100">
+								<s:formatter>
+									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
+								</s:formatter>
+							</s:GridColumn>
+							<s:GridColumn dataField="log_comment" headerText="Комментарий" />
+						</s:ArrayList>
+					</s:columns>
+				</s:DataGrid>
+				
+			</s:VGroup>
+			
+		</s:HGroup>
+		
 	</s:Group>
 	
 </s:Group>
