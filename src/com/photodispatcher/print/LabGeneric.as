@@ -7,12 +7,10 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.LabRoll;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
-	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
-	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 
 	[Event(name="postComplete", type="com.photodispatcher.event.PrintEvent")]
@@ -123,8 +121,10 @@ package com.photodispatcher.print{
 			return result?result.prt_code:'';
 		}
 
-		public function printChannel(printGroup:PrintGroup):LabPrintCode{
-			var cm:Object=chanelMap;
+		public function printChannel(printGroup:PrintGroup, rolls:Array = null):LabPrintCode {
+			
+			var cm:Object = rolls? channelMapByOnRolls(rolls) : chanelMap;
+			
 			if(!cm || !printGroup) return null;
 			var result:LabPrintCode=cm[printGroup.key(src_type)] as LabPrintCode;
 			if(!result && printGroup.book_type!=0 
@@ -151,9 +151,10 @@ package com.photodispatcher.print{
 		}
 		
 		// Lazy loading chanels
+		
 		protected function get chanelMap():Object{
 			if(!_chanelMap){
-				var chanels:Array= LabPrintCode.getChanels(this.src_type);
+				var chanels:Array = LabPrintCode.getChanels(this.src_type);
 				if(chanels){
 					_chanelMap=new Object;
 					for each(var o:Object in chanels){
@@ -165,6 +166,47 @@ package com.photodispatcher.print{
 				}
 			}
 			return _chanelMap;
+		}
+		
+		/**
+		 * возвращает карту каналов по списку рулонов
+		 */
+		protected function channelMapByOnRolls(rolls:Array):Object {
+			
+			var chanels:Array = LabPrintCode.getChanels(this.src_type);
+			
+			if(chanels == null){
+				return null;
+			}
+			
+			var map:Object = new Object;
+			
+			for each (var code:LabPrintCode in chanels){
+				if(code){
+					
+					if(checkCodeForRolls(code, rolls)){
+						
+						map[code.key(src_type)] = code;
+						
+					}
+					
+				}
+			}
+			
+			return map;
+		}
+		
+		/**
+		 * проверяет, может ли канал печататься на любом из рулонов в списке
+		 */
+		protected function checkCodeForRolls(code:LabPrintCode, rolls:Array):Boolean {
+			
+			return rolls.some(
+				function(item:LabRoll):Boolean {
+					return item.paper == code.paper && item.width == code.width;
+				}
+			);
+			
 		}
 		
 		public function getOnlineRolls():Array{

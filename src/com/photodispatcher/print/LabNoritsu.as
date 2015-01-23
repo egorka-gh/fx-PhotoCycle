@@ -46,9 +46,9 @@ package com.photodispatcher.print{
 			return super.printChannelCode(printGroup);
 		}
 		
-		override public function printChannel(printGroup:PrintGroup):LabPrintCode{
-			var result:LabPrintCode=super.printChannel(printGroup);
-			if(!result && nhfLab) result=nhfLab.printChannel(printGroup);
+		override public function printChannel(printGroup:PrintGroup, rolls:Array = null):LabPrintCode{
+			var result:LabPrintCode=super.printChannel(printGroup, rolls);
+			if(!result && nhfLab) result=nhfLab.printChannel(printGroup, rolls);
 			return result;
 		}
 		

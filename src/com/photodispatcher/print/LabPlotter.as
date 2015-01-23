@@ -20,12 +20,12 @@ package com.photodispatcher.print{
 			return printChannel(printGroup)?hot:'';
 		}
 		
-		override public function printChannel(printGroup:PrintGroup):LabPrintCode{
+		override public function printChannel(printGroup:PrintGroup, rolls:Array = null):LabPrintCode{
 			if(!printGroup || printGroup.is_pdf || printGroup.is_duplex) return null;
 			//if has correction or frame
 			if(printGroup.correction!=0 || printGroup.frame!=0 || printGroup.cutting!=0) return null;
 			
-			var cm:Object=chanelMap;
+			var cm:Object = rolls? channelMapByOnRolls(rolls) : chanelMap;
 			if(!cm) return null;
 			
 			//lookup channel by closest size

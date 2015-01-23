@@ -50,7 +50,7 @@ package com.photodispatcher.print{
 			return 'virtual';
 		}
 		
-		override public function printChannel(printGroup:PrintGroup):LabPrintCode{
+		override public function printChannel(printGroup:PrintGroup, rolls:Array = null):LabPrintCode {
 			return channelFromPG(printGroup);
 		}
 		
