@@ -20,11 +20,11 @@ package com.photodispatcher.model.mysql.entities {
 	import org.granite.tide.Tide;
 	
 	import spark.components.gridClasses.GridColumn;
-
-    [Bindable]
-    [RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabPrintCode")]
-    public class LabPrintCode extends LabPrintCodeBase {
-
+	
+	[Bindable]
+	[RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabPrintCode")]
+	public class LabPrintCode extends LabPrintCodeBase {
+		
 		private static var chanelMap:Object;
 		
 		public static function initChanelMap():DbLatch{
@@ -69,7 +69,7 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			return chanelMap[src_type.toString()] as Array;
 		}
-
+		
 		
 		public static function gridColumns(labType:int=3):ArrayList{
 			var result:ArrayList= new ArrayList();
@@ -94,7 +94,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('cutting'); col.headerText='Обрезка'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=visible; result.addItem(col);
 			return result;
 		}
-
+		
 		
 		public function key(srcType:int=3,fullness:int=0):String{
 			var sizeKey:String;
@@ -157,6 +157,6 @@ package com.photodispatcher.model.mysql.entities {
 			result.cutting_name=cutting_name;
 			return result; 
 		}
-
-    }
+		
+	}
 }
