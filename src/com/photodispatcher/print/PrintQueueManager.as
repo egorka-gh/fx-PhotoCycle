@@ -8,6 +8,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.AbstractEntity;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.LabTimetable;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
@@ -81,7 +82,8 @@ package com.photodispatcher.print{
 		public function get devices():ArrayCollection {
 			return _devices;
 		}
-
+		
+		
 		public function PrintQueueManager(){
 			super(null);
 			if(_instance == null){
@@ -247,6 +249,9 @@ package com.photodispatcher.print{
 			//TODO recalc totals
 		}
 		
+		/**
+		 * deprecated
+		 */
 		public function autoPost():void{
 			//labs is refreshed
 			//queue is in sync
@@ -257,7 +262,10 @@ package com.photodispatcher.print{
 			if (getAvailableLabs().length==0) return;
 			
 		}
-
+		
+		/**
+		 * deprecated
+		 */
 		private function getAvailableLabs():Array{
 			if(labs.length==0) return [];
 			var lab:LabGeneric;
@@ -727,6 +735,54 @@ package com.photodispatcher.print{
 			dstFolder.removeEventListener(Event.COMPLETE,onDelete);
 			deleteNextFolder();
 		}
-
+		
+		/**
+		 * функция автоматической постановки на печать, должна вызываться периодически
+		 */
+		public function updatePrintQueue():void 
+		{
+			
+			/* 
+			нужно пробежаться по всем лабам/девайсам и посмотреть зафиксирован ли простой, дальше нужно проверить расписание девайса, 
+			если девайс/лаба активен, то нужно посмотреть размер очереди для конкретного девайса + нужно проверить loadQueue и postQueue, и определить какие группы печати (ширина/бумага) мы можем добавить в очередь
+			получаем список подготовленных для печати групп, какое-то фиксированное количество, дальше распределяем по рулонам и смотрим, чтобы каждый девайс был загружен,
+			если девайс не загружен, то нужно сделать выборку групп печати для незагруженных девайсов, эту выборку мы сохраняем и добавляем в список, 
+			который приходит со следующим основным запросом  
+			так мы пытаемся гарантировать постоянную загруженность
+			
+			дальше у нас есть список групп печати (карта списков по девайсам?)
+			нужно распределить его по лабам
+			
+			*/
+			
+			var now:Date = new Date
+			var readyDevices:Array = [];
+			var tt:LabTimetable;
+			
+			for each (var dev:LabDevice in devices.toArray()){
+				
+				// проверяем лог простоя
+				if(dev.lastStopLog == null || (dev.lastStopLog && dev.lastStopLog.time_to && dev.lastStopLog.time_to.time < now.time)){
+					// если простоя нет или он уже закончился
+					tt = dev.getCurrentTimeTableByDate(now);
+					
+					if(tt && now.time>=tt.time_from.time && now.time<=tt.time_to.time){
+						// если девайс работает по расписанию
+						
+						
+					} else if(tt && (tt.time_from.time - now.time) <= 1000*60){
+						// если девайс начнет работать по расписанию меньше чем через минуту
+						
+						
+					}
+					
+				}
+				
+				
+			}
+			
+			
+		}
+		
 	}
 }

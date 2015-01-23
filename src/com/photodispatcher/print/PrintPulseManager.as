@@ -18,6 +18,7 @@ package com.photodispatcher.print
 	
 	import org.granite.tide.Tide;
 	
+	[Event(name="complete", type="flash.events.Event")]
 	public class PrintPulseManager extends EventDispatcher
 	{
 		
@@ -248,10 +249,7 @@ package com.photodispatcher.print
 										dev.lastStopLog = openLabStop(dev.id, new Date(dev.lastPrintDate.time));
 									}
 									
-									
 								}
-								
-								
 								
 							}
 							
@@ -278,6 +276,8 @@ package com.photodispatcher.print
 				}
 				
 			}
+			
+			dispatchEvent(new Event(Event.COMPLETE));
 			
 			if(timer){
 				timer.start();
