@@ -174,6 +174,8 @@ package com.photodispatcher.model.mysql.entities {
 			var tt:LabTimetable = ArrayUtil.searchItem('day_id',date.day, timetable.toArray()) as LabTimetable;
 			if(tt && tt.is_online){
 				tt = tt.createCurrent(date);
+			} else {
+				tt = null;
 			}
 			return tt;
 		}
