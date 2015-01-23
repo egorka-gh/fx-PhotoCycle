@@ -8,6 +8,8 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.print.LabGeneric;
 	import com.photodispatcher.util.ArrayUtil;
+	
+	import mx.collections.ListCollectionView;
 
 	[Bindable]
 	[RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabDevice")]
@@ -91,7 +93,36 @@ package com.photodispatcher.model.mysql.entities {
 		{
 			_lastStopLog = value;
 		}
-
+		
+		override public function set rolls(value:ListCollectionView):void {
+			
+			super.rolls = value;
+			
+			if(value){
+				rollsOnline = new ListCollectionView(rolls);
+				rollsOnline.filterFunction = filterOnlineRolls;
+				rollsOnline.refresh();
+			} else {
+				rollsOnline = null;
+			}
+			
+		}
+		
+		protected var _rollsOnline:ListCollectionView;
+		
+		public function set rollsOnline(value:ListCollectionView):void {
+			_rollsOnline = value;
+		}
+		
+		public function get rollsOnline():ListCollectionView {
+			return _rollsOnline;
+		}
+		
+		private static function filterOnlineRolls(item:LabRoll):Boolean {
+			
+			return item.is_online;
+			
+		}
 		
 		public function refresh():Boolean{
 			if(!tech_point){
