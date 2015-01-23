@@ -16,6 +16,9 @@ package com.photodispatcher.model.mysql.entities {
 		//run time
 		public var onlineState:int=0;
 		
+		/**
+		 * используется для определения должен ли работать девайс по расписанию
+		 */
 		public function get isOnline():Boolean{
 			return onlineState==LabGeneric.STATE_ON || onlineState==LabGeneric.STATE_ON_WARN;
 		}
@@ -112,6 +115,9 @@ package com.photodispatcher.model.mysql.entities {
 			return true;
 		}
 		
+		/**
+		 * deprecated
+		 */
 		private function resetOnlineRolls():void{
 			if(rolls){
 				var roll:LabRoll;
@@ -119,6 +125,9 @@ package com.photodispatcher.model.mysql.entities {
 			}
 		}
 		
+		/**
+		 * deprecated
+		 */
 		private function hasOnlineRolls():Boolean{
 			if(!rolls) return false;
 			var roll:LabRoll;
@@ -128,6 +137,9 @@ package com.photodispatcher.model.mysql.entities {
 			return false;
 		}
 		
+		/**
+		 * deprecated
+		 */
 		public function setRollByChanel(byChanel:LabPrintCode):LabRoll{
 			_lastRoll=null;
 			if(!byChanel || !rolls) return null;

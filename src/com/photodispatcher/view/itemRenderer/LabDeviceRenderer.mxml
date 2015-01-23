@@ -90,7 +90,7 @@
 			private function refreshParentOnlineRolls():void{
 				var parent:LabInfo=getParentLabInfo();
 				if(parent){
-					parent.lab.printQueue.refreshOnlineRolls();
+					//parent.lab.printQueue.refreshOnlineRolls();
 				}
 			}
 

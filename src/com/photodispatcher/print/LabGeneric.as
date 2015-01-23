@@ -37,17 +37,30 @@ package com.photodispatcher.print{
 		
 		[Bindable]
 		public var enabled:Boolean=true;//??????
+		
 		[Bindable]
 		public var stateCaption:String;
+		
+		/**
+		 * deprecated??
+		 * никак не используется, нужно отвязать view?
+		 */
 		[Bindable]
 		public var printQueue:PrintQueue;
-
+		
+		/**
+		 * deprecated??
+		 * используется для определения работает ли лаба по расписанию
+		 * сейчас никак не используется, кроме индикации
+		 */
 		[Bindable]
 		public var onlineState:int=STATE_OFF;
 
 		//public var currentPG:PrintGroup;
 		
+		
 		protected var printTasks:Array=[];
+		
 		protected var _chanelMap:Object;
 		
 		public function LabGeneric(lab:Lab){
@@ -209,6 +222,9 @@ package com.photodispatcher.print{
 			
 		}
 		
+		/**
+		 * deprecated
+		 */
 		public function getOnlineRolls():Array{
 			var result:Array=[];
 			var dev:LabDevice;
@@ -225,7 +241,10 @@ package com.photodispatcher.print{
 			}
 			return result;
 		}
-
+		
+		/**
+		 * deprecated
+		 */
 		public function getOnlineRoll(paper:int,width:int):LabRoll{
 			var dev:LabDevice;
 			var roll:LabRoll;
@@ -263,6 +282,9 @@ package com.photodispatcher.print{
 		}
 		*/
 		
+		/**
+		 * deprecated
+		 */
 		public function getOnlineDevices():Array{
 			var result:Array=[];
 			var dev:LabDevice;
@@ -277,7 +299,10 @@ package com.photodispatcher.print{
 			}
 			return result;
 		}
-
+		
+		/**
+		 * deprecated
+		 */
 		public function setRollSpeed(roll:LabRoll):void{
 			if(!roll || !devices) return;
 			roll.speed=0;
@@ -293,17 +318,28 @@ package com.photodispatcher.print{
 				if(speed!=int.MAX_VALUE) roll.speed=speed;
 			}
 		}
-
+		
+		/**
+		 * deprecated
+		 */
 		public function refresh():void{
 			//TODO closed while not in use
 			return;
 			refreshOnlineState();
 			refreshPrintQueue();
 		}
-
+		
+		/**
+		 * deprecated
+		 */
 		public function refreshPrintQueue():void{
-			printQueue.refresh();	
+			// deprecated, не нужно
+			// printQueue.refresh();	
 		}
+		
+		/**
+		 * deprecated
+		 */
 		public function refreshOnlineState():void{
 			var dev:LabDevice;
 			var newState:int=STATE_OFF;

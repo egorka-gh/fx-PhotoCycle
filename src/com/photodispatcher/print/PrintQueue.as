@@ -40,7 +40,10 @@ package com.photodispatcher.print{
 		public function PrintQueue(lab:LabGeneric){
 			this.lab=lab;
 		}
-
+		
+		/**
+		 * deprecated
+		 */
 		public function refreshOnlineRolls():void{
 			var roll:LabRoll;
 			var temp:LabRoll;
@@ -64,7 +67,10 @@ package com.photodispatcher.print{
 			}
 			recalc();
 		}
-
+		
+		/**
+		 * deprecated
+		 */
 		public function refresh():void{
 			if(!lab) return;
 			//read print groups in Print state
@@ -75,6 +81,10 @@ package com.photodispatcher.print{
 			latch.start();
 			//_refresh();
 		}
+		
+		/**
+		 * deprecated
+		 */
 		private function onLoadPg(evt:Event):void{ //_refresh():void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(!latch || !latch.complite) return;
