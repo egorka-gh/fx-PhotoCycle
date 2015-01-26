@@ -126,7 +126,10 @@
 			<s:FormItem label="Очередь печати (мин)" >
 				<s:NumericStepper value="@{currentItem.queue_limit}" minimum="0" maximum="240" stepSize="10"
 								  enabled="{currentItem.is_managed}" change="{currentItem.changed=true}"/>
-			</s:FormItem> 
+			</s:FormItem>
+			<s:FormItem label="Скорость обработки (файлов/мин)" toolTip="Количество файлов, которое обрабатывается софтом за 1 мин при постановке на печать">
+				<s:TextInput text="@{currentItem.soft_speed}" restrict="0-9" change="{currentItem.changed=true}" />
+			</s:FormItem>
 			<s:FormItem label="Активна">
 				<s:CheckBox id="chbOnline" selected="@{currentItem.is_active}" change="{currentItem.changed=true}"/>
 			</s:FormItem> 

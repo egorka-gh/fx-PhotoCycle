@@ -28,6 +28,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_managed:Boolean;
         private var _name:String;
         private var _queue_limit:int;
+        private var _soft_speed:int;
         private var _src_type:int;
         private var _src_type_name:String;
 
@@ -87,6 +88,13 @@ package com.photodispatcher.model.mysql.entities {
             return _queue_limit;
         }
 
+        public function set soft_speed(value:int):void {
+            _soft_speed = value;
+        }
+        public function get soft_speed():int {
+            return _soft_speed;
+        }
+
         public function set src_type(value:int):void {
             _src_type = value;
         }
@@ -112,6 +120,7 @@ package com.photodispatcher.model.mysql.entities {
             _is_managed = input.readObject() as Boolean;
             _name = input.readObject() as String;
             _queue_limit = input.readObject() as int;
+            _soft_speed = input.readObject() as int;
             _src_type = input.readObject() as int;
             _src_type_name = input.readObject() as String;
         }
@@ -127,6 +136,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_is_managed is IPropertyHolder) ? IPropertyHolder(_is_managed).object : _is_managed);
             output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
             output.writeObject((_queue_limit is IPropertyHolder) ? IPropertyHolder(_queue_limit).object : _queue_limit);
+            output.writeObject((_soft_speed is IPropertyHolder) ? IPropertyHolder(_soft_speed).object : _soft_speed);
             output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
             output.writeObject((_src_type_name is IPropertyHolder) ? IPropertyHolder(_src_type_name).object : _src_type_name);
         }
