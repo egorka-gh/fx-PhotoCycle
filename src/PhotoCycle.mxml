@@ -283,7 +283,7 @@
 		<print:PrintPulseManager id="printPulseManager" 
 								 labs="{printQueueManager.labs}" 
 								 devices="{printQueueManager.devices}"
-								 complete="{printQueueManager.updatePrintQueue()}"
+								 printQueueManager="{printQueueManager}"
 								 />
 	</fx:Declarations>
 

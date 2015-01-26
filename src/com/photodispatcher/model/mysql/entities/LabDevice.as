@@ -9,6 +9,7 @@ package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.print.LabGeneric;
 	import com.photodispatcher.util.ArrayUtil;
 	
+	import mx.collections.IList;
 	import mx.collections.ListCollectionView;
 
 	[Bindable]
@@ -24,7 +25,13 @@ package com.photodispatcher.model.mysql.entities {
 		public function get isOnline():Boolean{
 			return onlineState==LabGeneric.STATE_ON || onlineState==LabGeneric.STATE_ON_WARN;
 		}
-
+		
+		/**
+		 * хранит список PrintGroup
+		 */
+		[Bindable]
+		public var printQueue:IList;
+		
 		private var _currentBusyTime:int=0;//sek
 		/**
 		 * время на печать текущей группы печати

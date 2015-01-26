@@ -223,6 +223,31 @@ package com.photodispatcher.print{
 		}
 		
 		/**
+		 * возвращает массив элементов {dev: dev (LabDevice), code: code (LabPrintCode)}
+		 */
+		public function getCompatiableDevices(pg:PrintGroup):Array {
+			
+			var result:Array = [];
+			var dev:LabDevice;
+			var code:LabPrintCode;
+			if(devices){
+				
+				for each (dev in devices){
+					
+					code = printChannel(pg, dev.rollsOnline.toArray());
+					
+					if(code){
+						result.push({dev: dev, code: code});
+					}
+					
+				}
+				
+			}
+			
+			return result;
+		}
+		
+		/**
 		 * deprecated
 		 */
 		public function getOnlineRolls():Array{
