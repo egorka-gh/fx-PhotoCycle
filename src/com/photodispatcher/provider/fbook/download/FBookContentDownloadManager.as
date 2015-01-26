@@ -16,10 +16,12 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverFrameImage;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.mysql.entities.SourceSvc;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
 	import com.photodispatcher.provider.fbook.model.FrameData;
 	import com.photodispatcher.util.JsonUtil;
+	import com.photodispatcher.util.StrUtil;
 	
 	import flash.errors.IOError;
 	import flash.events.Event;
@@ -56,7 +58,8 @@ package com.photodispatcher.provider.fbook.download{
 		public static const CONTENT_FRAME_MASKED_IMAGE:String =  CanvasFrameMaskedImage.TYPE;
 
 		private var service:SourceSvc;
-		private var book:FBookProject;
+		private var subOrder:SubOrder;
+		//private var book:FBookProject;
 		//private var workFolder:String;
 		private var loader:BulkLoader;
 		private var _itemsToLoad:int=0;
@@ -73,18 +76,17 @@ package com.photodispatcher.provider.fbook.download{
 		private var lastItemsLoaded:int=0;
 		private var fontMap:Object;
 
-		public function FBookContentDownloadManager(service:SourceSvc, book:FBookProject){
+		public function FBookContentDownloadManager(service:SourceSvc, subOrder:SubOrder){ //, book:FBookProject){
 			//TODO implement cache
 			super(null);
 			this.service=service;
-			this.book=book;
+			this.subOrder=subOrder;
 		}
 
 		private function prepare():void{
 			fontMap= new Object();
-			var pageNum:int=0;
 			//chek and clear loader if exists vs same id
-			var loaderId:String=service.src_id.toString()+'.'+service.srvc_id+'.'+book.id.toString()
+			var loaderId:String=service.src_id.toString()+'.'+service.srvc_id+'.'+subOrder.sub_id; //+book.id.toString()
 			var l:BulkLoader=BulkLoader.getLoader(loaderId);
 			if(l){
 				l.clear();
@@ -92,133 +94,159 @@ package com.photodispatcher.provider.fbook.download{
 			}else{
 				loader= new BulkLoader(loaderId,service.connections);
 			}
-			book.log='Book id:'+book.id+'.Prepare download.';
-
-			for each (var bp:ProjectBookPage in book.bookPages){
-				//TODO element as Class?
-				for each (var contentElement:Object in bp.content){
-					if(contentElement.hasOwnProperty('type')){
-						var name:String;
-						var req:URLRequest;
-						switch(contentElement.type){
-							case ClipartType.BG:
-							case ClipartType.FILL:
-							case ClipartType.IMG:
-								//TODO refactor to addLoadingItem + implement cache
-								name=contentElement.id;
-								req=createRequest(name,clipartPath(name),pageNum);
-								if(req){
-									//save to art subdir
-									name=FBookProject.artSubDir+name;
-									loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id});
-									//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
-								}
-								break;
-							case CanvasPhotoBackgroundImage.TYPE: //BookPhotoBackgroundImage.TYPE:
-								name=contentElement.id;
-								req=createRequest(name,userImagePath(),pageNum);
-								if(req){
-									//save to user subdir
-									name=FBookProject.userSubDir+name;
-									loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_PHOTO_BG, content_id:contentElement.id});
-								}
-								break;
-							case BookCoverFrameImage.TYPE:
-								//cover frame (sliced cover)
-								//process as BookFrameImage 
-							case CanvasFrameImage.TYPE: 
-								//TODO id==0 no frame images?
-								if(contentElement.id && contentElement.id!='0'){
-									name=contentElement.id;
-									for each(var el:String in FrameData.FRAME_ELEMENTS){
-										req=createRequest(name,framePath(),pageNum,el);
+			subOrder.resetlog();
+			subOrder.log='Prepare download.';
+			var proj:FBookProject;
+			var pageNum:int=0;
+			for each (var obj:Object in subOrder.projects){
+				proj=obj as FBookProject;
+				if(proj){
+					pageNum=0;
+					subOrder.log='Book id:'+proj.id;
+					subOrder.log='Type:'+proj.typeCaption;
+					var df:DateFormatter = new DateFormatter(); df.formatString='DD.MM.YY J:NN:SS';
+					subOrder.log='Create date:'+df.format(proj.project.createDate);
+					
+					for each (var bp:ProjectBookPage in proj.bookPages){
+						//TODO element as Class?
+						for each (var contentElement:Object in bp.content){
+							if(contentElement.hasOwnProperty('type')){
+								var name:String;
+								var req:URLRequest;
+								switch(contentElement.type){
+									case ClipartType.BG:
+									case ClipartType.FILL:
+									case ClipartType.IMG:
+										//TODO refactor to addLoadingItem + implement cache
+										name=contentElement.id;
+										req=createRequest(proj, name,clipartPath(name),pageNum);
 										if(req){
 											//save to art subdir
-											var sub_name:String= FBookProject.artSubDir+name+FrameData.getFileNameSufix(el);
-											//var fileSufix:String=FrameData.getFileNameSufix(el);
-											loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id});
-											//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
+											name=FBookProject.artSubDir+getItemName(name);
+											loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id});
+											//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
 										}
-									}
-								}
-								//load frame photo
-								if(contentElement.iId){
-									name=contentElement.iId;
-									req=createRequest(name,userImagePath(),pageNum);
-									if(req){
-										//save to user subdir
-										name=FBookProject.userSubDir+name;
-										loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
-									}
-								}
-								break;
-							case CanvasFrameMaskedImage.TYPE:
-								if(contentElement.iId){
-									name=contentElement.iId;
-									//req=createRequest(name,MediaPath.userImagePath(),pageNum);
-									req=createRequest(name,userImagePath(),pageNum);
-									if(req){
-										//save to user subdir
-										name=FBookProject.userSubDir+name;
-										loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:contentElement.iId});
-									}
-									if(contentElement.size){
-										var maskElement:Object = JsonUtil.decode(contentElement.size);
-										name=maskElement.id;
-										req=createRequest(name,clipartPath(name),pageNum);
-										//req=createClipartRequest(name,pageNum);
+										break;
+									case CanvasPhotoBackgroundImage.TYPE: //BookPhotoBackgroundImage.TYPE:
+										name=contentElement.id;
+										req=createRequest(proj, name,userImagePath(),pageNum);
 										if(req){
-											//save to art subdir
-											name=FBookProject.artSubDir+name;
-											loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:maskElement.id});
+											//save to user subdir
+											name=FBookProject.userSubDir+getItemName(name);
+											loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_PHOTO_BG, content_id:contentElement.id});
 										}
-									}
-								}
-								break;
-							case CanvasText.TYPE: //BookText.TYPE:
-								//fonts to load list 
-								if (contentElement.hasOwnProperty('index') 
-									&& contentElement.transform && contentElement.text 
-									&& contentElement.w>0 && contentElement.h){
-									//check text is not default, user made some changes or txt is calendar date
-									if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
-										var ts:CanvasTextStyle;
-										if(contentElement.hasOwnProperty('style')){
-											ts = new CanvasTextStyle(contentElement.style);
-										} else {
-											ts = CanvasTextStyle.defaultTextStyle();
-										}
-										if(ts.fontFamily){
-											if(!FontDownloadManager.instance.hasFont(ts.fontFamily, ts.isBold, ts.isItalic)){
-												fontMap[ts.fontFamily]=ts;
-												//book.log='Page# '+pageNum+'. Request font : '+ts.fontFamily;
-												//trace('Page# '+pageNum+'. Request font : '+ts.fontFamily);
-												req=createFontRequest(ts.fontFamily, pageNum);
+										break;
+									case BookCoverFrameImage.TYPE:
+										//cover frame (sliced cover)
+										//process as BookFrameImage 
+									case CanvasFrameImage.TYPE: 
+										//TODO id==0 no frame images?
+										if(contentElement.id && contentElement.id!='0'){
+											name=contentElement.id;
+											for each(var el:String in FrameData.FRAME_ELEMENTS){
+												req=createRequest(proj, name,framePath(),pageNum,el);
 												if(req){
-													//save to user subdir
-													//name=MakeupConfig.userSubDir+ts.fontFamily+'.swf';
-													name=ts.fontFamily;
-													loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CanvasText.TYPE, content_id: name});
+													//save to art subdir
+													var sub_name:String= FBookProject.artSubDir+getItemName(name)+FrameData.getFileNameSufix(el);
+													//var fileSufix:String=FrameData.getFileNameSufix(el);
+													loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id});
+													//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
 												}
-												
 											}
 										}
-									}
+										//load frame photo
+										if(contentElement.iId){
+											name=contentElement.iId;
+											req=createRequest(proj, name,userImagePath(),pageNum);
+											if(req){
+												//save to user subdir
+												name=FBookProject.userSubDir+getItemName(name);
+												loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+											}
+										}
+										break;
+									case CanvasFrameMaskedImage.TYPE:
+										if(contentElement.iId){
+											name=contentElement.iId;
+											//req=createRequest(name,MediaPath.userImagePath(),pageNum);
+											req=createRequest(proj, name,userImagePath(),pageNum);
+											if(req){
+												//save to user subdir
+												name=FBookProject.userSubDir+getItemName(name);
+												loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:contentElement.iId});
+											}
+											if(contentElement.size){
+												var maskElement:Object = JsonUtil.decode(contentElement.size);
+												name=maskElement.id;
+												req=createRequest(proj, name,clipartPath(name),pageNum);
+												//req=createClipartRequest(name,pageNum);
+												if(req){
+													//save to art subdir
+													name=FBookProject.artSubDir+getItemName(name);
+													loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:maskElement.id});
+												}
+											}
+										}
+										break;
+									case CanvasText.TYPE: //BookText.TYPE:
+										//fonts to load list 
+										if (contentElement.hasOwnProperty('index') 
+											&& contentElement.transform && contentElement.text 
+											&& contentElement.w>0 && contentElement.h){
+											//check text is not default, user made some changes or txt is calendar date
+											if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
+												var ts:CanvasTextStyle;
+												if(contentElement.hasOwnProperty('style')){
+													ts = new CanvasTextStyle(contentElement.style);
+												} else {
+													ts = CanvasTextStyle.defaultTextStyle();
+												}
+												if(ts.fontFamily){
+													if(!FontDownloadManager.instance.hasFont(ts.fontFamily, ts.isBold, ts.isItalic)){
+														fontMap[ts.fontFamily]=ts;
+														//book.log='Page# '+pageNum+'. Request font : '+ts.fontFamily;
+														//trace('Page# '+pageNum+'. Request font : '+ts.fontFamily);
+														req=createFontRequest(ts.fontFamily, pageNum);
+														if(req){
+															//save to user subdir
+															//name=MakeupConfig.userSubDir+ts.fontFamily+'.swf';
+															name=ts.fontFamily;
+															loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CanvasText.TYPE, content_id: name});
+														}
+														
+													}
+												}
+											}
+										}
+										break;
+									default:
+										trace('unrecognized contentElement: '+contentElement.type);
 								}
-								break;
-							default:
-								trace('unrecognized contentElement: '+contentElement.type);
+							}
 						}
+						pageNum++;
 					}
 				}
-				pageNum++;
 			}
 			_itemsToLoad=loader.itemsTotal;
 			trace('ContentDownloadManager itemsToLoad: ' +_itemsToLoad.toString());
 			_totalLoaded=0;
 		}
 		
-		private function createRequest(name:String, url:String, pageNum:int, corner:String=''):URLRequest{
+		private function getItemName(id:String):String{
+			if(id){
+				/*
+				var arr:Array=id.split('::');
+				if(arr.length > 1){ // && arr[0]==ProjectNS.SUP){
+					return arr[1];
+				}
+				*/
+				id=StrUtil.contentIdToFileName(id);
+			}
+			return id;
+		}
+			
+		private function createRequest(book:FBookProject, name:String, url:String, pageNum:int, corner:String=''):URLRequest{
 			var result:URLRequest;
 			if(!name){
 				return null;
@@ -237,7 +265,8 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			itemId=ns[1];
 			
-			itemId=name.split('.')[0];
+			//itemId=name.split('.')[0];
+			itemId=itemId.split('.')[0];
 			var param:URLVariables=new URLVariables;
 			param.id=itemId;
 			if(secure){
@@ -252,8 +281,8 @@ package com.photodispatcher.provider.fbook.download{
 			result.url = url;
 			result.method = URLRequestMethod.POST;
 			result.data = param;
-			book.log='Page# '+pageNum+'. Request url: '+url+'; POST id:'+itemId+';  corner:'+corner+';  secure:'+secure;
-			trace('Page# '+pageNum+'. Request url: '+url+'; POST id:'+itemId+';  corner:'+corner+';  secure:'+secure);
+			subOrder.log='Page# '+pageNum+'. Request url: '+url+'; POST id:'+itemId+';  corner:'+corner+';  secure:'+secure;
+			//trace('Page# '+pageNum+'. Request url: '+url+'; POST id:'+itemId+';  corner:'+corner+';  secure:'+secure);
 			return result;
 		}
 
@@ -265,8 +294,8 @@ package com.photodispatcher.provider.fbook.download{
 			var url:String=getBaseURL()+FontDownloadManager.instance.getPackUrl(name);
 			result=new URLRequest();
 			result.url = url;
-			book.log='Page# '+pageNum+'. Request font url: '+url;
-			trace('Page# '+pageNum+'. Request font url: '+url);
+			subOrder.log='Page# '+pageNum+'. Request font url: '+url;
+			//trace('Page# '+pageNum+'. Request font url: '+url);
 			return result;
 		}
 
@@ -289,22 +318,28 @@ package com.photodispatcher.provider.fbook.download{
 
 		private var workFolder:File;
 		public function start(workFolder:File):void{
-			if (!service || !book || !workFolder || service.connections<=0){
+			if (!service || !subOrder || !subOrder.projects || subOrder.projects.length==0 || !workFolder || service.connections<=0){
 				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FLOW_ERROR_EVENT,null,'Ошибка инициализации FBookContentDownloadManager.start'));
 				return;
 			}
 			this.workFolder=workFolder;
+			_hasFatalError=false;
 			prepare();
-			book.log='Book id:'+book.id+'.Start download.';
-			book.log='Type:'+book.typeCaption;
-			var df:DateFormatter = new DateFormatter(); df.formatString='DD.MM.YY J:NN:SS';
-			book.log='Create date:'+df.format(book.project.createDate);
+			//subOrder.resetlog();
+			subOrder.log='Start download.';
 			listenLoader=true;
 			lastItemsLoaded=0;
 			_totalLoaded=0;
 			bytesLoaded=0;
 			startTime= new Date();
-			book.notLoadedItems=[];
+
+			//book.notLoadedItems=[];
+			var proj:FBookProject;
+			for each (var obj:Object in subOrder.projects){
+				proj=obj as FBookProject; 
+				if(proj) proj.notLoadedItems=[];
+			}
+
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,_totalLoaded, _itemsToLoad));
 			if (_itemsToLoad==0){
 				allLoadCompleted(null);
@@ -334,10 +369,19 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		
+		private function addNotLoadedItem(errItm:DownloadErrorItem):void{
+			_hasFatalError=true;
+			var proj:FBookProject;
+			for each (var obj:Object in subOrder.projects){
+				proj= obj as FBookProject;
+				proj.notLoadedItems.push(errItm);
+			}
+		}
+		
 		private function onLoadError(event:flash.events.ErrorEvent):void{
 			var l:BulkLoader=event.target as BulkLoader;
 			
-			book.log='Book id:'+book.id+'. Error download url:'+event.text;
+			subOrder.log=' Error download url:'+event.text;
 			trace (event); // outputs more information
 			errType='Download Error';
 			errText='Error download url:'+event.text;
@@ -364,7 +408,8 @@ package com.photodispatcher.provider.fbook.download{
 					errItm.path=p['id'];
 					errItm.content_type=p['content_type'];
 					errItm.id=p['content_id'];
-					book.notLoadedItems.push(errItm);
+					//book.notLoadedItems.push(errItm);
+					addNotLoadedItem(errItm);
 					loader.remove(item);
 				}
 				/*
@@ -447,7 +492,7 @@ package com.photodispatcher.provider.fbook.download{
 					bytesLoaded+=ba.length;
 					if(item.properties['content_type']==CanvasText.TYPE){
 						FontDownloadManager.instance.addPackpackBinary(item.id,ba);
-						book.log='Book id:'+book.id+'. Font bynary downloaded: '+item.id;
+						subOrder.log='Font bynary downloaded: '+item.id;
 					}else{
 						var file:File=workFolder.resolvePath(item.id);
 						trace('Save downloaded file: '+file.nativePath+'.');
@@ -455,12 +500,12 @@ package com.photodispatcher.provider.fbook.download{
 						fs.open(file, FileMode.WRITE);
 						fs.writeBytes(ba);
 						fs.close();
-						book.log='Book id:'+book.id+'. File downloaded: '+file.nativePath;
+						subOrder.log='File downloaded: '+file.nativePath;
 					}
 				}else{
 					result=false;
 					trace('ContentDownloadManager empty response: '+item.id);
-					book.log='Book id:'+book.id+'. item:'+item.id+'. Save downloaded file error: empty response.';
+					subOrder.log='Item:'+item.id+'. Save downloaded file error: empty response.';
 					_hasError=true;
 					errType='IOError';
 					errText = 'empty response';
@@ -470,13 +515,14 @@ package com.photodispatcher.provider.fbook.download{
 					errItm.path=p['id'];
 					errItm.content_type=p['content_type'];
 					errItm.id=p['content_id'];
-					book.notLoadedItems.push(errItm);
+					//book.notLoadedItems.push(errItm);
+					addNotLoadedItem(errItm);
 					
 				}
 			}catch (err:IOError){
 				result=false;
 				trace('file write error. file:'+file.nativePath+'; err:'+err.message);
-				book.log='Book id:'+book.id+'. File:'+file.nativePath+'. Save downloaded file error:'+err.message;
+				subOrder.log='File:'+file.nativePath+'. Save downloaded file error:'+err.message;
 				_hasError=true;
 				errType='IOError';
 				errText = err.message;
@@ -486,21 +532,22 @@ package com.photodispatcher.provider.fbook.download{
 				errItm.path=p['id'];
 				errItm.content_type=p['content_type'];
 				errItm.id=p['content_id'];
-				book.notLoadedItems.push(errItm);
+				//book.notLoadedItems.push(errItm);
+				addNotLoadedItem(errItm);
 			}
 			return result;
 		}
 		
 		private function allLoadCompleted(event:Event):void{
-			book.log='Book id:'+book.id+'. Download complited.';
-			trace('Book id:'+book.id+'. Download complited.');
+			subOrder.log='Download complited.';
+			trace('Download complited. subOrder: '+subOrder.sub_id);
 			//finalizeLoad();
 			if(hasError) return;
 			loadFonts();
 		}
 		
 		private function loadFonts():void{
-			book.log='Book id:'+book.id+'. Load fonts.';
+			subOrder.log='Load fonts.';
 			var ts:CanvasTextStyle;
 			var fonts:Array=[];
 			for each (ts in fontMap){
@@ -516,7 +563,7 @@ package com.photodispatcher.provider.fbook.download{
 			fontLoader.removeEventListener(Event.COMPLETE, fontsLoaded);
 			if (fontLoader.hasError){
 				trace('font load error. font:'+fontLoader.errorFont+'; err:'+fontLoader.errorString);
-				book.log='Book id:'+book.id+'. Font:"'+fontLoader.errorFont+'". Load error: '+fontLoader.errorString;
+				subOrder.log='Font:"'+fontLoader.errorFont+'". Load error: '+fontLoader.errorString;
 				_hasError=true;
 				errType='IOError';
 				errText = fontLoader.errorString;
@@ -525,27 +572,39 @@ package com.photodispatcher.provider.fbook.download{
 				errItm.path=fontLoader.errorFont;
 				errItm.content_type='Text';
 				errItm.id=fontLoader.errorFont;
-				book.notLoadedItems.push(errItm);
+				//book.notLoadedItems.push(errItm);
+				addNotLoadedItem(errItm);
 			}else{
-				book.log='Book id:'+book.id+'. Fonts loaded.';
+				subOrder.log='Fonts loaded.';
 			}
 			finalizeLoad();
 		}
 		
 		private function finalizeLoad():void{
+			var proj:FBookProject;
+			var obj:Object;
 			if (!hasError){
-				book.downloadState=TripleState.TRIPLE_STATE_OK;
+				//book.downloadState=TripleState.TRIPLE_STATE_OK;
+				for each (obj in subOrder.projects){
+					proj= obj as FBookProject;
+					proj.downloadState=TripleState.TRIPLE_STATE_OK;
+				}
+
 			/*}else if(!hasFatalError()){
 				book.downloadState=TripleState.TRIPLE_STATE_WARNING;*/
 			}else{
-				book.downloadState=TripleState.TRIPLE_STATE_ERR;
+				//book.downloadState=TripleState.TRIPLE_STATE_ERR;
+				for each (obj in subOrder.projects){
+					proj= obj as FBookProject;
+					proj.downloadState=TripleState.TRIPLE_STATE_ERR;
+				}
 			}
 			listenLoader=false;
 			loader.clear();
 			bytesLoaded=0;
 			
 			//write log
-			var logTxt:String=book.log;
+			var logTxt:String=subOrder.log;
 			logTxt=logTxt.replace(/\n/g,String.fromCharCode(13, 10));
 			var file:File=workFolder.resolvePath('log.txt');
 			var fs:FileStream = new FileStream();
@@ -565,15 +624,29 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		public function get hasError():Boolean{
-			return book.notLoadedItems.length>0;
+			if(!subOrder.projects || subOrder.projects.length==0) return false;
+			var proj:FBookProject=subOrder.projects[0] as FBookProject;
+			if(!proj) return false;
+			return proj.notLoadedItems && proj.notLoadedItems.length>0;
 		}
+		
+		private var _hasFatalError:Boolean=false;
+		public function hasFatalError():Boolean{
+			return _hasFatalError;
+		}
+		/*
 		public function get errorItems():Array{
-			return book.notLoadedItems;
+			//return book.notLoadedItems;
+			if(!subOrder.projects || subOrder.projects.length==0) return [];
+			var proj:FBookProject=subOrder.projects[0] as FBookProject;
+			if(!proj) return [];
+			return proj.notLoadedItems;
 		}
 
 		public function hasFatalError():Boolean{
-			return errorItems && errorItems.length>0; 
-			/*
+			var itms:Array=errorItems;
+			return itms && itms.length>0; 
+			//comented
 			if(!errorItems || errorItems.length==0){
 				return false;
 			}
@@ -587,8 +660,9 @@ package com.photodispatcher.provider.fbook.download{
 				}
 			}
 			return false;
-			*/
+			//comented
 		}
+	*/
 		public function get errorText():String{
 			if (!errType && !errText) return '';
 			return errType+':'+errText;

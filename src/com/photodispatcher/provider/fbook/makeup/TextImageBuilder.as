@@ -4,6 +4,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.download.FontDownloadManager;
 	
@@ -47,7 +48,8 @@ package com.photodispatcher.provider.fbook.makeup{
 			return errText; 
 		}
 
-		private var book:FBookProject;
+		//private var book:FBookProject;
+		private var suborder:SubOrder;
 		private var workFolder:File;
 		private var errNum:int=0;
 		private var errText:String;
@@ -56,16 +58,18 @@ package com.photodispatcher.provider.fbook.makeup{
 		private var filesSaved:int=0;
 		private var rendererHolder:Group;
 
-		public function TextImageBuilder(book:FBookProject,renderContainer:Group=null){
+		//public function TextImageBuilder(book:FBookProject,renderContainer:Group=null){
+		public function TextImageBuilder(suborder:SubOrder,renderContainer:Group=null){
 			super(null);
-			this.book=book;
+			//this.book=book;
+			this.suborder=suborder;
 			this.renderContainer=renderContainer;
 		}
 		
 		public function build(workFolder:File):Boolean{
-			//TODO check if top level app is visible
-			//if(!book || !book.pages || !renderContainer || !workFolder){
-			if(!book || !book.bookPages  || !workFolder){
+			//TODO check if top level app is visible?
+			//if(!book || !book.bookPages  || !workFolder){
+			if(!suborder || !suborder.projects || suborder.projects.length==0 || !workFolder){
 				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FLOW_ERROR_EVENT,null,'Ошибка инициализации TextImageBuilder.build'));
 				return false;
 			}
@@ -96,7 +100,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			if(errText){
 				errNum=OrderState.ERR_PREPROCESS;
 				errText = 'Не загружены шрифты '+errText;
-				book.log='Book id:'+book.id+'. '+errText;
+				suborder.log='Suborder id:'+suborder.sub_id+'. '+errText;
 				destroyRender();
 				dispatchEvent(new Event(Event.COMPLETE));
 				return false;
@@ -107,7 +111,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				dispatchEvent(new Event(Event.COMPLETE));
 				return true;
 			}
-			book.log='Book id:'+book.id+'. Text render started. Items to proccess:'+textItems.length;
+			suborder.log='Suborder id:'+suborder.sub_id+'. Text render started. Items to proccess:'+textItems.length;
 			startRender();
 			return true;
 		}
@@ -157,34 +161,41 @@ package com.photodispatcher.provider.fbook.makeup{
 			var ts:CanvasTextStyle;
 			fontMap= new Object();
 			
-			for each (var page:ProjectBookPage in book.bookPages){
-				for each (var contentElement:Object in page.content){
-					if (contentElement.type==CanvasText.TYPE){
-						if (contentElement.hasOwnProperty('index') 
-							&& contentElement.transform && contentElement.text 
-							&& contentElement.w>0 && contentElement.h){
-							//check text is not default, user made some changes or txt is calendar date
-							if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
-								//collect fonts
-								ts =null;
-								if(contentElement.hasOwnProperty('style')) ts = new CanvasTextStyle(contentElement.style);
-								if(ts && ts.fontFamily) fontMap[ts.fontFamily]=ts;
-
-								//text to render
-								var bt:CanvasText= new CanvasText();
-								bt.importRaw(contentElement);
-								bt.transform.matrix = new Matrix();
-								//TODO hardcoded t_[pageNum]_[index].png
-								bt.fileName='t_'+pageNum.toString()+'_'+contentElement.index+'.png';
-								bt.x=0; bt.y=0; 
-								textItems.push(bt);
+			var project:FBookProject;
+			for each (project in suborder.projects){
+				pageNum=0;
+				for each (var page:ProjectBookPage in project.bookPages){
+					for each (var contentElement:Object in page.content){
+						if (contentElement.type==CanvasText.TYPE){
+							if (contentElement.hasOwnProperty('index') 
+								&& contentElement.transform && contentElement.text 
+								&& contentElement.w>0 && contentElement.h){
+								//check text is not default, user made some changes or txt is calendar date
+								if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
+									//collect fonts
+									ts =null;
+									if(contentElement.hasOwnProperty('style')) ts = new CanvasTextStyle(contentElement.style);
+									if(ts && ts.fontFamily) fontMap[ts.fontFamily]=ts;
+									
+									//text to render
+									var bt:CanvasText= new CanvasText();
+									bt.importRaw(contentElement);
+									bt.transform.matrix = new Matrix();
+									
+									//bt.fileName='t_'+pageNum.toString()+'_'+contentElement.index+'.png';
+									//'b'+book.bookNumber.toString()+'_p'+pageNum.toString();
+									bt.fileName= 'b'+project.bookNumber.toString()+ '_p'+pageNum.toString()+'_'+contentElement.index+'_txt.png';
+									
+									bt.x=0; bt.y=0; 
+									textItems.push(bt);
+								}
 							}
 						}
 					}
+					pageNum++;
 				}
-				pageNum++;
 			}
-			book.log='Book id:'+book.id+' has '+textItems.length+' texts.';
+			//suborder.log='Suborder id:'+suborder.sub_id+' has '+textItems.length+' texts.';
 		}
 		
 		private function startRender():void{
@@ -219,7 +230,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			try{
 				bd.draw(renderContainer);
 			}catch (e:Error){
-				book.log='Book id:'+book.id+'. Draw text bitmap error:'+e.message;
+				suborder.log='Draw text bitmap error:'+e.message;
 				errNum=OrderState.ERR_PREPROCESS;
 				errText = 'Draw text bitmap error:'+e.message;
 				destroyRender();
@@ -229,7 +240,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			var encoder:PNGEncoder= new PNGEncoder();
 			var imgByteArr:ByteArray = encoder.encode(bd);
 			var file:File= workFolder.resolvePath(currentBookText.fileName); 
-			book.log='Book id:'+book.id+'. Save text bitmap "'+currentBookText.text+'". File:'+file.nativePath;
+			suborder.log='Save text bitmap "'+currentBookText.text+'". File:'+file.nativePath;
 			var fs:FileStream = new FileStream();
 			fs.addEventListener(Event.CLOSE,fileSaved);
 			fs.addEventListener(IOErrorEvent.IO_ERROR,fileSaveError);
@@ -238,7 +249,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			fs.close();
 			
 			if(rendered == textItems.length){
-				book.log='Book id:'+book.id+'. All texts rendered.';
+				suborder.log='All texts rendered.';
 			}else{
 				renderNext();
 			}
@@ -252,7 +263,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			filesSaved++;
 			if(filesSaved==textItems.length){
 				//complited
-				book.log='Book id:'+book.id+'. All text bitmaps saved.';
+				suborder.log='All text bitmaps saved.';
 				destroyRender();
 				dispatchEvent(new Event(Event.COMPLETE));
 				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0,0));
@@ -267,40 +278,12 @@ package com.photodispatcher.provider.fbook.makeup{
 			fs.removeEventListener(IOErrorEvent.IO_ERROR,fileSaveError);
 			filesSaved++;
 			trace (event); 	
-			book.log='Book id:'+book.id+'. Save text bitmap error:'+event.text;
+			suborder.log='Save text bitmap error:'+event.text;
 			errNum=OrderState.ERR_FILE_SYSTEM;
 			errText = event.text;
 			destroyRender();
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
-		/*
-		private function bookTextRenderHandler(event:Event):void{
-		var bt:CanvasText; //BookText;
-		if (event.target is CanvasText){ // BookText){
-		rendered++;
-		bt=event.target as CanvasText; //BookText);
-		bt.removeEventListener(Event.RENDER,bookTextRenderHandler);
-		var bd:BitmapData= new BitmapData(bt.width, bt.height,true,0x00ffffff);
-		bd.draw(bt);
-		var encoder:PNGEncoder= new PNGEncoder();
-		var imgByteArr:ByteArray = encoder.encode(bd);
-		var file:File= new File(book.workFolder);
-		file=file.resolvePath(bt.fileName);
-		book.log='Book id:'+book.id+'. Save text bitmap "'+bt.text+'". File:'+file.nativePath;
-		var fs:FileStream = new FileStream();
-		fs.addEventListener(Event.CLOSE,fileSaved);
-		fs.addEventListener(IOErrorEvent.IO_ERROR,fileSaveError);
-		fs.openAsync(file, FileMode.WRITE);
-		fs.writeBytes(imgByteArr);
-		fs.close();
-		
-		}
-		if(rendered == textItems.length){
-		book.log='Book id:'+book.id+'. All texts rendered.';
-		}
-		}
-		*/
-
 	}
 }

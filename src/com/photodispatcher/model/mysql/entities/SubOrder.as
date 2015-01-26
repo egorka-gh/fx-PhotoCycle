@@ -7,10 +7,12 @@
 
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.provider.fbook.FBookProject;
+	import com.photodispatcher.provider.fbook.model.PageData;
 	
 	import flash.globalization.DateTimeStyle;
 	
 	import mx.collections.ArrayList;
+	import mx.formatters.DateFormatter;
 	
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
@@ -20,9 +22,29 @@ package com.photodispatcher.model.mysql.entities {
     public class SubOrder extends SubOrderBase {
 		
 		//runtime
-		public  var project:FBookProject;
-		//runtime 
-		public var native_type:int=-1;
+		public  var projectIds:Array=[];
+		//public  var project:FBookProject;
+		public  var projects:Array=[];
+		public  var native_type:int=-1;
+		
+		private var _log:String;
+		public function get log():String{
+			return _log;
+		} 
+		public function set log(value:String):void{
+			var dt:Date= new Date();
+			var df:DateFormatter = new DateFormatter();
+			df.formatString='DD.MM.YY J:NN:SS';
+			if(_log){
+				_log=_log +'\n'+ df.format(dt)+': '+value;
+			}else{
+				_log =df.format(dt)+': '+value;
+			}
+		}
+		public function resetlog():void{
+			_log ='';
+		}
+
 		
 		public function SubOrder(){
 			super();
@@ -75,9 +97,49 @@ package com.photodispatcher.model.mysql.entities {
 			return result;
 		}
 
+		public function get isMultibook():Boolean{
+			if((projectIds && projectIds.length>1) || (projects && projects.length>1)) return true;
+			return false;
+		}
+		
+		public function get referenceProject():FBookProject{
+			var project:FBookProject;
+			if (projects && projects.length>0) project=projects[0] as FBookProject;
+			return project;
+		}
+		
+		/***
+		 * valid after fetching all projects from site
+		***/
+		public function get books_num():int{
+			var result:int=prt_qty;
+			if(isMultibook){
+				result=projects.length;
+			}
+			return result;
+		}
+
+		/***
+		 * valid after generating all IM scripts
+		 * retuns sheets number for body
+		 * 4 cover use book_num (1 cover per book)
+		 ***/
+		public function get sheets_num():int{
+			var result:int=0;
+			var project:FBookProject=referenceProject;
+			if(!project) return result;
+			var page:PageData;
+			for each(page in project.projectPages){
+				if(page) result=Math.max(result,page.sheetNum);
+			}
+			return result;
+		}
+		
 		public function toRaw():Object{
 			//serialize props 4 build only 
 			var raw:Object= new Object;
+		
+			/*
 			//raw.id=id;
 			raw.order_id=order_id;
 			raw.sub_id=sub_id;
@@ -98,11 +160,13 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			
 			if(project) raw.project=project.toRaw();
-			
+			*/
 			return raw;
 		}
 		
 		public static function fromRaw(raw:Object):SubOrder{
+			return null;
+			/*
 			if(!raw) return null;
 			var suborder:SubOrder= new SubOrder();
 			//suborder.id=raw.id;
@@ -124,6 +188,7 @@ package com.photodispatcher.model.mysql.entities {
 			
 			suborder.project=FBookProject.fromRaw(raw.project);
 			return suborder;
+			*/
 		}
 		
 		public static function gridColumns():ArrayList{

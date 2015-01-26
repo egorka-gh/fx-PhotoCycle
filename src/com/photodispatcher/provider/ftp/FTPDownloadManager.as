@@ -484,11 +484,12 @@ package com.photodispatcher.provider.ftp{
 					order.suborders= new ArrayCollection(newso);
 				}
 			}
-			
+			/*
 			if(source.type==SourceType.SRC_FOTOKNIGA){
 				//build so from src_id (mainId-subId)
 				SuborderBuilder.build(source,order);
 			}
+			*/
 			//check 4 empty fileStructure
 			if(!order.isFileStructureOk){
 				trace('FTPDownloadManager empty ftp folder '+orderId);

@@ -88,7 +88,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			reportProgress();
 			var so:SubOrder;
 			for each(so in order.suborders){
-				if(so && so.project && so.state==OrderState.PREPROCESS_WAITE){
+				if(so && so.projects && so.projects.length>0 && so.state==OrderState.PREPROCESS_WAITE){
 					currSuborder=so;
 					break;
 				}
@@ -114,9 +114,20 @@ package com.photodispatcher.provider.fbook.makeup{
 				return;
 			}
 			currSuborder.state=OrderState.PREPROCESS_PDF;
+			currSuborder.resetlog();
+			if(currSuborder.isMultibook){
+				//numerate books
+				var project:FBookProject;
+				var book:int=0;
+				for each (project in currSuborder.projects){
+					book++;
+					project.bookNumber=book;
+				}
+			}
+
 			if(logStates) StateLog.log(currSuborder.state,order.id,currSuborder.sub_id,'');
 			var dir:File=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
-			textBuilder=new TextImageBuilder(currSuborder.project);
+			textBuilder=new TextImageBuilder(currSuborder);
 			textBuilder.addEventListener(Event.COMPLETE, onTxtComplite);
 			textBuilder.addEventListener(ProgressEvent.PROGRESS, onTxtProgress);
 			textBuilder.addEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onTxtFlowError);
@@ -146,13 +157,7 @@ package com.photodispatcher.provider.fbook.makeup{
 		}
 		
 		private function buildScripts():void{
-			var pages:Array;
 			var outFolder:String=prtFolder+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+PrintGroup.SUBFOLDER_PRINT;
-			var scripBuilder:IMScriptL=new IMScriptL(currSuborder.project,sourceDir.nativePath+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder); //use suborder folder (currSuborder.ftp_folder)
-			scripBuilder.build();
-			pages=scripBuilder.pages;
-			var p:PageData;
-
 			var dir:File;
 			//create print folder
 			try{
@@ -170,45 +175,63 @@ package com.photodispatcher.provider.fbook.makeup{
 				return;
 			}
 			
-			//save msl's
-			var i:int;
-			var file:File;
-			var fs:FileStream;
-			var msl:IMMsl;
+			var project:FBookProject;
+			var scripBuilder:IMScriptL;//=new IMScriptL(currSuborder.project,sourceDir.nativePath+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder); //use suborder folder (currSuborder.ftp_folder)
+			var pages:Array;
+			var p:PageData;
+			var sequences:Array=[];
+			var txt:String=currSuborder.log+'\n';
+			currSuborder.resetlog();
+			for each (var obj:Object in currSuborder.projects){
+				project=obj as FBookProject;
+				if(project){
+					scripBuilder=new IMScriptL(project,sourceDir.nativePath+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder); 
+					scripBuilder.build();
+					pages=scripBuilder.pages;
 
-			dir=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
-			for each (p in pages){
-				if(p){
-					//save msl script
-					for (i=0;i<p.rootLayer.msls.length;i++){
-						msl=p.rootLayer.msls[i] as IMMsl;
-						file=dir.resolvePath(msl.fileName);
-						try{
-							fs = new FileStream();
-							fs.open(file, FileMode.WRITE);
-							fs.writeUTFBytes(msl.getMslString());
-							fs.close();
-						} catch(err:Error){
-							releaseWithErr(OrderState.ERR_FILE_SYSTEM,err.message);
-							return;
+					//save msl's
+					var i:int;
+					var file:File;
+					var fs:FileStream;
+					var msl:IMMsl;
+					dir=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
+					for each (p in pages){
+						if(p){
+							//save msl script
+							for (i=0;i<p.rootLayer.msls.length;i++){
+								msl=p.rootLayer.msls[i] as IMMsl;
+								file=dir.resolvePath(msl.fileName);
+								try{
+									fs = new FileStream();
+									fs.open(file, FileMode.WRITE);
+									fs.writeUTFBytes(msl.getMslString());
+									fs.close();
+								} catch(err:Error){
+									releaseWithErr(OrderState.ERR_FILE_SYSTEM,err.message);
+									return;
+								}
+							}
 						}
 					}
+					
+					//add sripts 2 sequences
+					txt=txt+'-----------------------------------'+'\n';
+					txt=txt+'Project id:'+project.id +' scripts'+'\n';
+					var cmd:IMCommand;
+					for each (p in pages){
+						txt=txt+'Page #'+p.pageNum.toString()+'\n';
+						//set commands work folder
+						for each(cmd in p.rootLayer.commands){
+							cmd.folder=dir.nativePath;
+							txt=txt+cmd.toString()+'\n';
+						}
+						sequences.push(p.rootLayer.commands);
+					}
+
 				}
 			}
-			
-			var cmd:IMCommand;
-			var sequences:Array=[];
-			var txt:String='Build scripts'+'\n';
-			for each (p in pages){
-				txt=txt+'Page #'+p.pageNum.toString()+'\n';
-				//set commands work folder
-				for each(cmd in p.rootLayer.commands){
-					cmd.folder=dir.nativePath;
-					txt=txt+cmd.toString()+'\n';
-				}
-				sequences.push(p.rootLayer.commands);
-			}
-			//add commands to log
+
+			//save log
 			txt=txt.replace(/\n/g,String.fromCharCode(13, 10));
 			file=dir.resolvePath('log.txt');
 			fs= new FileStream();
@@ -238,43 +261,6 @@ package com.photodispatcher.provider.fbook.makeup{
 		private function onCommandsProgress(evt:ProgressEvent):void{
 			reportProgress('Подготовка книги',evt.bytesLoaded,evt.bytesTotal);
 		}
-
-		/*
-		private function nextPage():void{
-			var pageBuilder:FBookPageBuilder;
-			trace('FBookMakeupManager. Start to build page '+currPage.toString()+' Suborder:'+ currSuborder.src_id);
-			if(currPage<pages.length){
-				var wrkFolder:String=sourceDir.nativePath+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK;
-				pageBuilder= new FBookPageBuilder(pages[currPage] as PageData, wrkFolder);
-				pageBuilder.addEventListener(Event.COMPLETE, onPageComplete);
-				pageBuilder.addEventListener(IMRunerEvent.IM_COMPLETED, onCommandComplete);
-				currPage++;
-				pageBuilder.build();
-			}else{
-				//complited
-				nextSuborder();
-			}
-		}
-
-		private function onPageComplete(evt:Event):void{
-			var pageBuilder:FBookPageBuilder=evt.target as FBookPageBuilder;
-			if(pageBuilder){
-				pageBuilder.removeEventListener(Event.COMPLETE, onPageComplete);
-				pageBuilder.removeEventListener(IMRunerEvent.IM_COMPLETED, onCommandComplete);
-				if(pageBuilder.hasErr){
-					trace('FBookMakeupManager. Book makeup error, book:'+currSuborder.src_id+', error: '+pageBuilder.error);
-					IMRuner.stopAll();
-					releaseWithErr(OrderState.ERR_PREPROCESS,pageBuilder.error);
-					return;
-				}
-			}
-		}
-
-		private function onCommandComplete(evt:IMRunerEvent):void{
-			doneCommads++;
-			reportProgress('Подготовка книги',doneCommads,totalCommads);
-		}
-		*/
 
 		private function postProcess(printGroups:Array):void{
 			var pg:PrintGroup;

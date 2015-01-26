@@ -55,6 +55,7 @@ package com.photodispatcher.factory{
 					}
 				}
 			}
+			/*
 			//for fotokniga type
 			if(source.type==SourceType.SRC_FOTOKNIGA && order.src_id){
 				order.resetSuborders();
@@ -68,15 +69,10 @@ package com.photodispatcher.factory{
 					o.sub_id=subId;
 					o.src_type=SourceType.SRC_FBOOK;
 					if(order.fotos_num>0) o.prt_qty=order.fotos_num;
-					//o.ftp_folder=order.ftp_folder;
-					//o.ftp_folder='';
-					/*
-					if(!result) result=[];
-					result.push(o);
-					*/
 					order.addSuborder(o);
 				}
 			}
+			*/
 			//return result;
 		}
 
@@ -133,6 +129,7 @@ package com.photodispatcher.factory{
 											newSo.sub_id=txt;
 											//newSo.fillId();
 											//newSo.fillFolder();
+											newSo.projectIds.push(newSo.sub_id);
 											order.addSuborder(newSo);
 										}else{
 											return 'Ошибка определения подзаказа: '+line;

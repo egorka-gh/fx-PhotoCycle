@@ -357,57 +357,54 @@ package com.photodispatcher.provider.fbook.download{
 				return;
 			}
 			currentSubOrder=toLoad;
+			currentSubOrder.projects=[];
 			trace('FBookDownloadManager nextSubOrder get project suborder '+currentSubOrder.sub_id);
 			//load project
 			currentSubOrder.state=OrderState.FTP_GET_PROJECT;
+			
 			if(!projectLoader){
 				projectLoader= new FBookProjectLoader(source);
 				projectLoader.addEventListener(Event.COMPLETE, onProjectLoaded);
 			}
-			projectLoader.fetchProject(int(currentSubOrder.sub_id), currentSubOrder.native_type);
-		}
-		/*
-		private function relogin():void{
-			if(source.type == SourceType.SRC_PROFOTO){
-				//use main login, no auth needed
-				_isStarted=true;
+			//projectLoader.fetchProject(int(currentSubOrder.sub_id), currentSubOrder.native_type);
+			if(!loadNextProject()){
+				currentSubOrder.state=OrderState.ERR_WEB;
+				currentOrder.state=OrderState.ERR_WEB;
+				if(!remoteMode) StateLog.log(OrderState.ERR_WEB,currentOrder.id,currentSubOrder.sub_id,'Пустой список id проектов '+currentSubOrder.sub_id);
+				releaseWithError(currentOrder,'Пустой список id проектов '+currentSubOrder.sub_id);
 				checkQueue();
-			}else{
-				//check login
-				var auth:AuthService=AuthService.instance;
-				if(!AuthService.instance){ 
-					auth= new AuthService();
-					auth.method='POST';
-					auth.resultFormat='text';
-				}
-				//attempt to login
-				auth.baseUrl=source.fbookService.url;
-				var token:AsyncToken;
-				token=auth.siteLogin(source.fbookService.user,source.fbookService.pass);
-				token.addResponder(new AsyncResponder(onRelogin,login_FaultHandler));
 			}
 		}
-		private function onRelogin(event:ResultEvent, token:AsyncToken):void {
-			var r:Object = JsonUtil.decode(event.result as String);
-			if(r.result){
-				//fetch
-				projectLoader.fetchProject(int(currentSubOrder.sub_id), currentSubOrder.native_type);
-			} else {
-				_isStarted=false;
-				flowError('Ошибка подключения к '+source.fbookService.url);
+		
+		private function loadNextProject():Boolean{
+			if(!currentSubOrder || !currentOrder) return false;
+			if(!currentSubOrder.projectIds || currentSubOrder.projectIds.length==0) return false;
+			var nextId:String=currentSubOrder.projectIds.shift();
+			if(!nextId) return loadNextProject();
+			if(!projectLoader){
+				projectLoader= new FBookProjectLoader(source);
+				projectLoader.addEventListener(Event.COMPLETE, onProjectLoaded);
 			}
-			//token=null;
+			projectLoader.fetchProject(int(nextId), currentSubOrder.native_type);
+			return true;
 		}
-		*/
+		
 		private function onProjectLoaded(event:Event):void{
 			//var order:Order;
 			if(!currentSubOrder || !currentOrder) return;
 			var project:FBookProject=projectLoader.lastFetchedProject;
-			var workFolder:File;
+			
 			if(project){
-				trace('FBookDownloadManager nextSubOrder get project complite suborder '+currentSubOrder.sub_id);
-				//currentSubOrder.ftp_folder=currentOrder.ftp_folder+File.separator+'fb'+project.id.toString();
+				//currentSubOrder.project=project;
+				currentSubOrder.projects.push(project);
+				trace('FBookDownloadManager nextSubOrder get project complite suborder: '+currentSubOrder.sub_id+', projId: '+project.id);
+				if(loadNextProject()){
+					//fetching next
+					return;
+				}
+				//all projects fetched
 				//chek create suborder folder
+				var workFolder:File;
 				var file:File=new File(localFolder);
 				file=file.resolvePath(currentOrder.ftp_folder+File.separator+currentSubOrder.ftp_folder);
 				try{
@@ -441,7 +438,7 @@ package com.photodispatcher.provider.fbook.download{
 					checkQueue();
 					return;
 				}
-				currentSubOrder.project=project;
+				
 				
 				//fill extra info
 				/*
@@ -497,7 +494,7 @@ package com.photodispatcher.provider.fbook.download{
 		private function startContentLoader(workFolder:File):void{
 			if(!currentOrder || !currentSubOrder) return;
 			trace('FBookDownloadManager startContentLoader, suborder '+currentSubOrder.sub_id);
-			contentLoader = new FBookContentDownloadManager(source.fbookService,currentSubOrder.project);
+			contentLoader = new FBookContentDownloadManager(source.fbookService,currentSubOrder);
 			contentLoader.addEventListener(Event.COMPLETE,contentLoaded);
 			contentLoader.addEventListener(ProgressEvent.PROGRESS,contentLoadProgress);
 			contentLoader.start(workFolder);
@@ -517,8 +514,9 @@ package com.photodispatcher.provider.fbook.download{
 			contentLoader.removeEventListener(Event.COMPLETE,contentLoaded);
 			contentLoader.removeEventListener(ProgressEvent.PROGRESS,contentLoadProgress);
 			//TODO remove other listeners
-			if(!currentOrder || !currentSubOrder || !currentSubOrder.project) return;
-			if(currentSubOrder.project.downloadState==TripleState.TRIPLE_STATE_ERR){
+			if(!currentOrder || !currentSubOrder) return;
+			//if(currentSubOrder.project.downloadState==TripleState.TRIPLE_STATE_ERR){
+			if(contentLoader.hasFatalError()){
 				//TODO check auth??
 				source.fbookSid='';
 				currentSubOrder.state=OrderState.ERR_FTP;

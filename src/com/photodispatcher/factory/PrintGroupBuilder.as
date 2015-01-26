@@ -389,7 +389,7 @@ package com.photodispatcher.factory{
 			//var pg:PrintGroup;
 			var pgf:PrintGroupFile;
 			for each(so in order.suborders){
-				proj=so.project;
+				proj=so.referenceProject;
 				if(proj && so.state<OrderState.CANCELED){
 					//reset vars
 					paper=0;
@@ -487,6 +487,7 @@ package com.photodispatcher.factory{
 						}
 					}
 					//create print gruops
+					//covers
 					if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK ||
 						proj.bookType==BookSynonym.BOOK_TYPE_JOURNAL ||
 						proj.bookType==BookSynonym.BOOK_TYPE_LEATHER){
@@ -496,7 +497,7 @@ package com.photodispatcher.factory{
 							pgCover.order_id=order.id;
 							pgCover.path=so.ftp_folder;
 							pgCover.book_type=proj.bookType; 
-							pgCover.book_num=so.prt_qty;
+							pgCover.book_num=so.books_num; //.prt_qty;
 							pgCover.height=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
 							//pgCover.bookTemplate.sheet_len=Math.max(coverPixels.x,coverPixels.y);
 						}else{
@@ -506,7 +507,7 @@ package com.photodispatcher.factory{
 								pgCover.order_id=order.id;
 								pgCover.path=so.ftp_folder;
 								pgCover.book_type=proj.bookType; 
-								pgCover.book_num=so.prt_qty;
+								pgCover.book_num=so.books_num; // .prt_qty;
 							}
 						}
 					}
@@ -515,43 +516,51 @@ package com.photodispatcher.factory{
 					pgBody.order_id=order.id;
 					pgBody.path=so.ftp_folder;
 					pgBody.book_type=proj.bookType; 
-					pgBody.book_num=so.prt_qty;
+					pgBody.book_num=so.books_num; //so.prt_qty;
 					
-					//fill
-					for each(page in proj.projectPages){
-						if(page){
-							//add file
-							pgf= new PrintGroupFile();
-							if(!proj.isPageSliced(page.pageNum)){
-								pgf.file_name=page.outFileName();
-							}else{
-								pgf.file_name=page.outFileName(1); //first & only one slice
-							}
-							//pgf.page_num=page.pageNum;
-							//pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.pageNum.toString(),2);
-							pgf.page_num=page.sheetNum;
-							pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.sheetNum.toString(),2);
-							pgf.book_num=0;
-							pgf.prt_qty=1;
-							if(proj.isPageCover(page.pageNum)){
-								if(pgCover){
-									if(pgCover.butt){
-										//add butt to caption
-										pgf.caption=pgf.caption+' t'+pgCover.butt.toString();
+					//fill files
+					for each (var obj:Object in so.projects){
+						proj=obj as FBookProject;
+						if(proj){
+							for each(page in proj.projectPages){
+								if(page){
+									//add file
+									pgf= new PrintGroupFile();
+									if(!proj.isPageSliced(page.pageNum)){
+										pgf.file_name=page.outFileName();
+									}else{
+										pgf.file_name=page.outFileName(1); //first & only one slice
 									}
-									pgCover.addFile(pgf);
+									pgf.page_num=page.sheetNum;
+									pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.sheetNum.toString(),2);
+									pgf.book_num=proj.bookNumber;
+									pgf.prt_qty=1;
+									if(proj.isPageCover(page.pageNum)){
+										if(pgCover){
+											if(pgCover.butt){
+												//add butt to caption
+												pgf.caption=pgf.caption+' t'+pgCover.butt.toString();
+											}
+											pgCover.addFile(pgf);
+										}
+									}else{
+										pgBody.addFile(pgf);
+									}
 								}
-							}else{
-								pgBody.addFile(pgf);
 							}
 						}
 					}
-					
+
+					if(so.extraInfo){
+						so.extraInfo.books=so.books_num;
+						so.extraInfo.sheets=so.sheets_num;
+					}
+
 					//add to order
 					if(pgCover && pgCover.files && pgCover.files.length>0){
 						pgCover.sub_id=so.sub_id;
 						pgCover.id=order.id+'_'+pgNum.toString();
-						pgCover.sheet_num=pgCover.files.length;
+						pgCover.sheet_num=so.books_num; //pgCover.files.length;
 						pgCover.prints=pgCover.book_num*pgCover.sheet_num;
 						if(!order.printGroups) order.printGroups=new ArrayCollection();
 						order.printGroups.addItem(pgCover);
@@ -561,11 +570,13 @@ package com.photodispatcher.factory{
 					if(pgBody.files && pgBody.files.length>0){
 						pgBody.sub_id=so.sub_id;
 						pgBody.id=order.id+'_'+pgNum.toString();
-						pgBody.sheet_num=pgBody.files.length;
+						pgBody.sheet_num=so.sheets_num; //pgBody.files.length;
+						/*
 						if(so.extraInfo){
 							so.extraInfo.books=pgBody.book_num;
 							so.extraInfo.sheets=pgBody.sheet_num;
 						}
+						*/
 						pgBody.prints=pgBody.book_num*pgBody.sheet_num;
 						if(!order.printGroups) order.printGroups=new ArrayCollection();
 						order.printGroups.addItem(pgBody);

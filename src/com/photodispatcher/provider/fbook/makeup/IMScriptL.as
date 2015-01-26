@@ -21,6 +21,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.util.RectangleTransformation;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
+	import com.photodispatcher.provider.fbook.download.FBookContentDownloadManager;
 	import com.photodispatcher.provider.fbook.model.FrameData;
 	import com.photodispatcher.provider.fbook.model.FrameDataCommon;
 	import com.photodispatcher.provider.fbook.model.FrameMaskedData;
@@ -286,6 +287,12 @@ package com.photodispatcher.provider.fbook.makeup{
 			return dir;
 		}
 		
+		/*
+		private function getItemName(id:String):String{
+			return FBookContentDownloadManager.getItemName(id);
+		}
+		*/
+		
 		/*-----------------------------------------------------------*/
 		/*commands*/
 		/*-----------------------------------------------------------*/
@@ -352,6 +359,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				// "-virtual-pixel" "Transparent" 
 				//"(" "art\631.png"  +distort AffineProjection ".5,-.866,.866,.5,5072,457" ")"  -flatten
 				result.add('(');
+				result.add('-virtual-pixel'); result.add('Transparent');
 				result.add(file);
 				result.add('+distort');
 				result.add('AffineProjection');
@@ -617,7 +625,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			frameSize.y=Math.round(frameSize.y*GeomUtil.getScaleY(fd.matrix));
 			
 			//generate sized photo
-			var fileName:String=userSubDir+fd.imageId;
+			var fileName:String=userSubDir+StrUtil.contentIdToFileName(fd.imageId);
 			var gc:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			//gc.add('-depth'); gc.add(IMAGE_DEPTH);
 			gc.append(cmdSolidColorImage(frameSize));
@@ -833,7 +841,9 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 			var fromRight:Boolean=Boolean(contentElement.r);
 			//TODO hardcoded t_[pageNum]_[index].png
-			var fileName:String='t_'+pd.pageNum.toString()+'_'+contentElement.index+'.png' 
+			//var fileName:String='t_'+pd.pageNum.toString()+'_'+contentElement.index+'.png'
+			//bt.fileName= 'b'+project.bookNumber.toString()+ '_p'+pageNum.toString()+'_'+contentElement.index+'_txt.png';
+			var fileName:String=pd.pageName+'_'+contentElement.index+'_txt.png';
 			var m:Matrix = TransformData.fromString(contentElement.transform).matrix;
 			
 			var bts:CanvasTextStyle=CanvasTextStyle.defaultTextStyle();

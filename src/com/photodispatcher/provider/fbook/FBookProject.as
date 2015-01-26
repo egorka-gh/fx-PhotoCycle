@@ -35,6 +35,7 @@ package com.photodispatcher.provider.fbook{
 		public var notLoadedItems:Array; //DownloadErrorItem
 		public var projectPages:Array=[]; //PageData, has data after IMScrip.build 
 
+		public var bookNumber:int=0; 
 		
 		private var _log:String;
 		private var _project:ProjectBook;

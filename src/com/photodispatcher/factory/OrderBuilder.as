@@ -11,7 +11,7 @@ package com.photodispatcher.factory{
 	
 	public class OrderBuilder{
 
-		public static function build(source:Source, raw:Array, forSync:Boolean=false):Array{
+		public static function build(source:Source, raw:Array, forSync:Boolean=false, comboId:String=''):Array{
 			if(!source || !raw || raw.length==0) return [];
 			
 			var result:Array=[];
@@ -102,10 +102,10 @@ package com.photodispatcher.factory{
 						}
 
 						//parse suborders
+						var subOrder:SubOrder;
 						if (source.type==SourceType.SRC_FBOOK && jo.hasOwnProperty('items') && jo.items is Array){
 							var subMap:Array=AttrJsonMap.getSubOrderJson(source.type);
 							var subRaw:Array= jo.items as Array;
-							var subOrder:SubOrder;
 							if(subRaw && subRaw.length>0 && subMap && subMap.length>0){
 								for each(var so:Object in subRaw){
 									subOrder = new SubOrder();
@@ -132,10 +132,34 @@ package com.photodispatcher.factory{
 										order.addSuborder(subOrder);
 									}
 									*/
+									subOrder.projectIds.push(subOrder.sub_id);
 									order.addSuborder(subOrder);
 								}
 							}
 							if(!order.ftp_folder) order.ftp_folder=order.id;
+						}else if(source.type==SourceType.SRC_FOTOKNIGA){
+							order.src_id=comboId;
+							//get subOrder id (-#)
+							var subId:String; //:int;
+							var a:Array=order.src_id.split('-');
+							if(a && a.length>=2) subId=a[1];
+							if(subId){
+								subOrder= new SubOrder();
+								subOrder.order_id=order.id;
+								subOrder.sub_id=subId;
+								subOrder.src_type=SourceType.SRC_FBOOK;
+								if (jo.hasOwnProperty('projects') && jo.projects is Array){
+									//multy book
+									for each(subId in jo.projects) subOrder.projectIds.push(subId);
+									subOrder.prt_qty=subOrder.projectIds.length;//book_mun
+									order.addSuborder(subOrder);
+								}else{
+									//simple project
+									if(order.fotos_num>0) subOrder.prt_qty=order.fotos_num;
+									subOrder.projectIds.push(subOrder.sub_id);
+									order.addSuborder(subOrder);
+								}
+							}
 						}
 
 					}

@@ -5,6 +5,7 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookAuthService;
 	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.JsonUtil;
@@ -226,22 +227,6 @@ package com.photodispatcher.service.web{
 			_hasError=false;
 			_errMesage='';
 			login();
-			/*
-			orderes=[];
-			startListen();
-			//ask order sate
-			var post:Object;
-			post= new Object();
-			post[PARAM_KEY]=API_KEY;
-			//post[PARAM_COMMAND]=COMMAND_GET_ORDER_STATE;
-			//TODO use insted COMMAND_GET_ORDER_STATE
-			post[PARAM_COMMAND]=COMMAND_GET_ORDER_INFO;
-			post[PARAM_ORDER_ID]=cleanId(order.src_id);
-			
-			if(source.fbookSid) post.sid=source.fbookSid;
-			
-			client.getData( new InvokerUrl(baseUrl+URL_API),post);
-			*/
 		}
 		private function cleanId(src_id:String):int{
 			//TODO removes subNumber (-#) for fotokniga
@@ -293,7 +278,7 @@ package com.photodispatcher.service.web{
 					//_getOrder.src_state=result.result.status;
 					lastOrder.src_state=result.result.status;
 					//parse extra data
-					var arr:Array=OrderBuilder.build(source,[result.result]);
+					var arr:Array=OrderBuilder.build(source,[result.result],false,lastOrder.src_id);
 					if(arr && arr.length>0){
 						var to:Order=arr[0] as Order;
 						if(to){
@@ -304,6 +289,18 @@ package com.photodispatcher.service.web{
 								lastOrder.extraInfo=to.extraInfo;
 							}
 							if(to.fotos_num>0) lastOrder.fotos_num=to.fotos_num;
+							if(to.hasSuborders){
+								lastOrder.resetSuborders();
+								//can be just 1 so
+								var so:SubOrder=to.suborders.getItemAt(0) as SubOrder;
+								if(so) lastOrder.addSuborder(so);
+								/*
+								for each(var so:SubOrder in to.suborders){
+									lastOrder.addSuborder(so);
+								}
+								*/
+							}
+
 						}
 					}
 					endGetOrder();

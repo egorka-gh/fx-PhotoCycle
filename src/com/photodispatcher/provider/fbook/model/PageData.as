@@ -42,13 +42,6 @@ package com.photodispatcher.provider.fbook.model{
 		protected var book:FBookProject;
 
 		//page build vars
-		//commands
-		//public var commands:Array;
-		//public var finalCommands:Array;
-		//msl scripts
-		//public var msls:Array=[];
-		//public var finalMontageCommand:IMCommand;
-		//final montage command
 		public var backgroundCommand:IMCommand;
 		//build sizes
 		public var pageSize:Point;
@@ -93,7 +86,7 @@ package com.photodispatcher.provider.fbook.model{
 
 		
 		public function get pageName():String{
-			return 'p'+pageNum.toString();
+			return 'b'+book.bookNumber.toString()+'_p'+pageNum.toString();
 		}
 		
 		private function adjustSizes():void{
@@ -225,15 +218,18 @@ package com.photodispatcher.provider.fbook.model{
 		public function outFileName(sliceNum:int=0):String{
 			if(sliceNum<=0){
 				//simple out file name
-				return OUT_FILE_PREFIX+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_EXT;
+				//return OUT_FILE_PREFIX+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_EXT;
+				return StrUtil.lPad(book.bookNumber.toString(),3)+'-'+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_EXT;
 			}else{
 				//slice
-				return OUT_FILE_PREFIX+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_SLICE_SUFIX+sliceNum.toString()+OUT_FILE_EXT;
+				//return OUT_FILE_PREFIX+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_SLICE_SUFIX+sliceNum.toString()+OUT_FILE_EXT;
+				return StrUtil.lPad(book.bookNumber.toString(),3)+'-'+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_SLICE_SUFIX+sliceNum.toString()+OUT_FILE_EXT;
 			}
 		}
 
 		private function scriptFileName(scriptNum:int):String{
-			return SCRIPT_FILE_PREFIX+pageNum+'_'+scriptNum.toString()+SCRIPT_FILE_EXT;
+			//return SCRIPT_FILE_PREFIX+pageNum+'_'+scriptNum.toString()+SCRIPT_FILE_EXT;
+			return pageName+'_'+scriptNum.toString()+SCRIPT_FILE_EXT;
 		}
 		
 		public function getPageOffset(isRightSideElement:Boolean=false):Point{
