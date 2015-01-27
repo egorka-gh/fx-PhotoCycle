@@ -215,7 +215,7 @@ package com.photodispatcher.print{
 		protected function checkCodeForRolls(code:LabPrintCode, rolls:Array):Boolean {
 			
 			return rolls.some(
-				function(item:LabRoll):Boolean {
+				function(item:LabRoll, index:int, array:Array):Boolean {
 					return item.paper == code.paper && item.width == code.width;
 				}
 			);
