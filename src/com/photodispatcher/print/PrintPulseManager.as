@@ -1,6 +1,5 @@
 package com.photodispatcher.print
 {
-	import com.google.zxing.common.flexdatatypes.ArrayList;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabStopLog;
@@ -20,6 +19,7 @@ package com.photodispatcher.print
 	import flash.utils.Timer;
 	
 	import mx.collections.ArrayCollection;
+	import mx.collections.ArrayList;
 	import mx.collections.IList;
 	import mx.collections.IViewCursor;
 	
@@ -624,6 +624,8 @@ package com.photodispatcher.print
 				
 			}
 			
+			return readyDevices;
+			
 		}
 		
 		protected function addToQueue(printGroups:Array, devices:Array):void {
@@ -634,22 +636,32 @@ package com.photodispatcher.print
 				
 			}
 			
-			var devList:ArrayCollection = new ArrayCollection(devices);
+			var devList:Array = devices.slice();
 			var devCursor:IViewCursor = devList.createCursor();
 			var pg:PrintGroup;
 			var lab:LabGeneric;
 			var dev:LabDevice;
+			
+			//devCursor.
+			
+			var readyPgList:Array = [];
 			
 			for each (pg in printGroups){
 				
 				dev = devCursor.current as LabDevice;
 				lab = labMap[dev.id] as LabGeneric;
 				
-				if(lab.printChannel(pg, dev.rollsOnline.toArray())){
+				if(lab.printChannel(pg, dev.rollsOnline.toArray()) && checkDevicePrintQueueReady(dev)){
 					
-					
+					pg.destinationLab = lab;
+					dev.printQueue.addItem(pg);
+					readyPgList.push(pg);
 					
 				}
+				
+			}
+			
+			if(readyPgList.length > 0){
 				
 			}
 			
