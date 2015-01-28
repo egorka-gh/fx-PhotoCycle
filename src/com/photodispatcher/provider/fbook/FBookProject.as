@@ -495,7 +495,10 @@ package com.photodispatcher.provider.fbook{
 			var result:String='';
 			switch(type){
 				case Book.PROJECT_TYPE:
-					if((project as Book).template.interlayer) result=(project as Book).template.interlayer.name;
+					if((project as Book).template.interlayer){
+						result=(project as Book).template.interlayer.alias;
+						if(!result) result=(project as Book).template.interlayer.name;
+					}
 					break;
 			}
 			return result?result:'';
@@ -506,7 +509,10 @@ package com.photodispatcher.provider.fbook{
 			var result:String='';
 			switch(type){
 				case Book.PROJECT_TYPE:
-					if((project as Book).template.endpaper) result=(project as Book).template.endpaper.name;
+					if((project as Book).template.endpaper){
+						result=(project as Book).template.endpaper.alias;
+						if(!result) result=(project as Book).template.endpaper.name;
+					}
 					break;
 			}
 			return result?result:'';
@@ -517,7 +523,9 @@ package com.photodispatcher.provider.fbook{
 			var result:String='';
 			switch(type){
 				case Book.PROJECT_TYPE:
-					if((project as Book).template.corner) result=(project as Book).template.corner.name;
+					if((project as Book).template.corner){
+						result=(project as Book).template.corner.name;
+					}
 					break;
 			}
 			return result?result:'';

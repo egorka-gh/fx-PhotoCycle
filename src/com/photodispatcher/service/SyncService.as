@@ -85,6 +85,7 @@ package com.photodispatcher.service{
 				if(src && src.online && src.type!=SourceType.SRC_FBOOK_MANUAL){
 					var syncSvc:BaseWeb=WebServiceBuilder.build(src);
 					if(syncSvc){
+						src.syncState.items=0;
 						src.syncState.setState(ProcessState.STATE_RUNINNG,'Синхронизация.');
 						//waitWebSync.push(syncSvc);
 						aLath=new AsyncLatch();
@@ -130,6 +131,10 @@ package com.photodispatcher.service{
 				//if(waitWebSync.length==0) endSync();
 				//return;
 			}else{
+				if(proSync.orderes){
+					proSync.source.syncState.items=proSync.orderes.length;
+				}
+				proSync.source.syncState.caption='Web ok. Элементов: '+proSync.source.syncState.items.toString();
 				syncItems=syncItems.concat(proSync.orderes);
 			}
 			proSync.latch.release();
@@ -196,7 +201,8 @@ package com.photodispatcher.service{
 								target=ArrayUtil.searchItem('id',result.id, sources) as Source;
 								if(target){
 									if(result.sync_state){
-										s='Синхронизирован в '+df.format(new Date());
+										//s='Синхронизирован в '+df.format(new Date());
+										s='Ok. Элементов: '+target.syncState.items.toString()+', в '+df.format(new Date());
 										target.syncState.setState(ProcessState.STATE_OK_WAITE,s);
 									}else{
 										s='Ошибка синхронизации в '+df.format(new Date());

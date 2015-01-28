@@ -10,6 +10,8 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var caption:String;
 		[Bindable]
+		public var items:int;
+		[Bindable]
 		public var lastError:String;
 
 		public function ProcessState(state:int=STATE_OK_WAITE,caption:String='Ожидание'){
