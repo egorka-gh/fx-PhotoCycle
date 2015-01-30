@@ -14,6 +14,7 @@ package com.photodispatcher.provider.fbook{
 	import com.akmeful.fotokniga.book.layout.BookLayout;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
 	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.util.ArrayUtil;
@@ -498,6 +499,7 @@ package com.photodispatcher.provider.fbook{
 					if((project as Book).template.interlayer){
 						result=(project as Book).template.interlayer.alias;
 						if(!result) result=(project as Book).template.interlayer.name;
+						result=LayersetSynonym.translateInterlayer(result);
 					}
 					break;
 			}
@@ -512,6 +514,7 @@ package com.photodispatcher.provider.fbook{
 					if((project as Book).template.endpaper){
 						result=(project as Book).template.endpaper.alias;
 						if(!result) result=(project as Book).template.endpaper.name;
+						result=LayersetSynonym.translateEndPaper(result);
 					}
 					break;
 			}

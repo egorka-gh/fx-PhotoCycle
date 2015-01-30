@@ -6,13 +6,88 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.services.TechPickerService;
+	
+	import flash.events.Event;
+	
 	import mx.collections.ArrayList;
+	
+	import org.granite.tide.Tide;
 	
 	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.LayersetSynonym")]
     public class LayersetSynonym extends LayersetSynonymBase {
+		
+		private static var endPaperSynonymMap:Object;
+		private static var interlayerSynonymMap:Object;
+		
+		public static function initMap():DbLatch{
+			endPaperSynonymMap= new Object;
+			interlayerSynonymMap= new Object;
+			var latch:DbLatch=new DbLatch();
+			
+			var svc:TechPickerService=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
+			var epLatch:DbLatch= new DbLatch();
+			var ilLatch:DbLatch= new DbLatch();
+
+			epLatch.addEventListener(Event.COMPLETE, onLoad);
+			epLatch.addLatch(svc.loadLayersets(Layerset.LAYERSET_TYPE_ENDPAPER, 0),'ep');
+			epLatch.start();
+			latch.join(epLatch);
+
+			ilLatch.addEventListener(Event.COMPLETE, onLoad);
+			ilLatch.addLatch(svc.loadLayersets(Layerset.LAYERSET_TYPE_INTERLAYER, 0),'il');
+			ilLatch.start();
+			latch.join(ilLatch);
+
+			latch.start();
+			return latch;
+		}
+
+		private static function onLoad(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoad);
+				if(latch.complite){
+					var a:Array=latch.lastDataArr;
+					if(!a) return;
+					var map:Object;
+					if(latch.lastToken.tag=='ep'){
+						map=endPaperSynonymMap;
+					}else if(latch.lastToken.tag=='il'){
+						map=interlayerSynonymMap;
+					}else{
+						map=new Object;
+					}
+
+					var ls:Layerset;
+					for each(ls in a){
+						if(ls && ls.synonyms){
+							for each (var syn:String in ls.synonyms) map[syn]=ls.name;
+						}
+					}
+				}
+			}
+		}
+
+		public static function translateEndPaper(name:String):String{
+			if(name && endPaperSynonymMap){
+				var result:String=endPaperSynonymMap[name];
+				if(result) return result;
+			}
+			return name;
+		}
+
+		public static function translateInterlayer(name:String):String{
+			if(name && interlayerSynonymMap){
+				var result:String=interlayerSynonymMap[name];
+				if(result) return result;
+			}
+			return name;
+		}
 		
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();

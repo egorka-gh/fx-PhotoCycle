@@ -145,14 +145,11 @@
 			}
 
 			protected function btSaveLayersets_clickHandler(event:MouseEvent):void{
-				//var dao:LayersetDAO;
 				var items:ArrayCollection= new ArrayCollection();
 				var ls:Layerset;
 				for each(ls in templatesAC){
 					if (ls.changed || !ls.loaded){
 						items.addItem(ls);
-						//dao= new LayersetDAO;
-						//dao.save(ls);
 					}
 				}
 				if(items.length==0) return;

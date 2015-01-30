@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}" xmlns:config="com.photodispatcher.view.config.*"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Staff;
+			import com.photodispatcher.model.mysql.entities.StaffActivityType;
+			import com.photodispatcher.model.mysql.services.ConfigService;
+			import com.photodispatcher.model.mysql.services.StaffActivityService;
+			
+			import flashx.textLayout.factory.TruncationOptions;
+			
+			import mx.collections.ArrayCollection;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var staffAC:ArrayCollection;
+			[Bindable]
+			private var currStaff:Object;
+
+			[Bindable]
+			private var activityGroupAC:ArrayCollection;
+			[Bindable]
+			private var activityTypeAC:ArrayCollection;
+			[Bindable]
+			private var currActivityType:Object;
+
+			private var cfgService:ConfigService;
+			private var staffActivityService:StaffActivityService;
+
+			private function init():void{
+				
+				activityGroupAC=Context.getAttribute('sa_groupValueList') as ArrayCollection;
+				if(ddActivityGroup && activityGroupAC && activityGroupAC.length>0) ddActivityGroup.selectedIndex=0;
+				
+				cfgService=Tide.getInstance().getContext().byType(ConfigService,true) as ConfigService;
+				staffActivityService=Tide.getInstance().getContext().byType(StaffActivityService,true) as StaffActivityService;
+
+				var initLatch:DbLatch= new DbLatch();
+
+				initLatch.join(loadStaff());
+				initLatch.join(loadStaffActivityTypes());
+				
+				initLatch.addEventListener(Event.COMPLETE, onInitComplite);
+				initLatch.start();
+
+			}
+			
+			private function onInitComplite(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInitComplite);
+					if(latch.complite){
+						
+					}
+				}
+			}
+
+			
+			private function loadStaff():DbLatch{
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onStaffLoad);
+				latch.addLatch(cfgService.loadStaff());
+				latch.start();
+				return latch;
+			}
+			private function onStaffLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				currStaff=null;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onStaffLoad);
+					if(latch.complite){
+						staffAC=latch.lastDataAC;
+					}else{
+						staffAC=null;
+					}
+				}
+			}
+
+			private function loadStaffActivityTypes():DbLatch{
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onStaffATLoad);
+				latch.addLatch(staffActivityService.loadType(0));
+				latch.start();
+				return latch;
+			}
+			private function onStaffATLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				currStaff=null;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onStaffATLoad);
+					if(latch.complite){
+						activityTypeAC=latch.lastDataAC;
+						activityTypeAC.filterFunction=activityTypeFilter;
+						activityTypeAC.refresh();
+					}else{
+						activityTypeAC=null;
+					}
+				}
+			}
+			
+			private function activityTypeFilter(item:Object):Boolean{
+				var it:StaffActivityType=item as StaffActivityType;
+				if(!it) return false;
+				if(!ddActivityGroup || ddActivityGroup.selectedIndex<0) return false;
+				return it.sa_group==ddActivityGroup.selectedItem.value;
+			}
+
+			protected function btAddStaff_clickHandler(event:MouseEvent):void{
+				var st:Staff=new Staff();
+				st.name='Новый сотрудник';
+				staffAC.addItem(st);
+				currStaff=st;
+			}
+			
+			protected function btSaveStaff_clickHandler(event:MouseEvent):void{
+				var items:ArrayCollection= new ArrayCollection();
+				var st:Staff;
+				for each(st in staffAC){
+					if (st.changed || !st.loaded) items.addItem(st);
+				}
+				if(items.length==0) return;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onStaffSave);
+				latch.addLatch(cfgService.persistStaff(items));
+				latch.start();
+			}
+			private function onStaffSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onStaffSave);
+					loadStaff();
+				}
+			}
+
+			protected function ddActivityGroup_changeHandler(event:IndexChangeEvent):void{
+				if(activityTypeAC) activityTypeAC.refresh();
+			}
+			
+			protected function btAddStaffAT_clickHandler(event:MouseEvent):void{
+				var grp:int=0;
+				if(!activityTypeAC || !ddActivityGroup || ddActivityGroup.selectedIndex<0) return;
+				grp=ddActivityGroup.selectedItem.value;
+				if(grp==0) return;
+				var item:StaffActivityType= new StaffActivityType();
+				item.sa_group=grp;
+				item.name='Новый тип';
+				activityTypeAC.addItem(item);
+				currActivityType=item;
+			}
+			
+			protected function btSaveStaffAT_clickHandler(event:MouseEvent):void{
+				var items:ArrayCollection= new ArrayCollection();
+				var st:StaffActivityType;
+				for each(st in activityTypeAC){
+					if (st.changed || !st.loaded) items.addItem(st);
+				}
+				if(items.length==0) return;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onStaffATSave);
+				latch.addLatch(staffActivityService.persistTypes(items));
+				latch.start();
+			}
+			private function onStaffATSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onStaffATSave);
+					loadStaffActivityTypes();
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup width="100%" height="100%" gap="5" paddingLeft="10">
+		<s:VGroup width="200" height="100%" gap="10">
+			<s:Label text="Сотрудники"/>
+			<config:ItemsGrid id="staffGrid" editable="true" 
+							  currentData="{staffAC}"
+							  currentColumns="{Staff.gridColumns()}"
+							  currentItem="@{currStaff}"
+							  width="100%"
+							  height="100%"/>
+			<s:HGroup width="100%" gap="5" horizontalAlign="right">
+				<s:Button id="btAddStaff" label="Добавить" click="btAddStaff_clickHandler(event)"/>
+				<s:Button id="btSaveStaff" label="Сохранить" click="btSaveStaff_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		<s:Spacer width="15"/>
+		<s:VGroup width="200" height="100%" gap="5">
+			<s:Label text="Причины(Типы) для"/>
+			<s:DropDownList id="ddActivityGroup" dataProvider="{activityGroupAC}" change="ddActivityGroup_changeHandler(event)" width="200"/> 
+						  
+			<config:ItemsGrid id="activityTypeGrid" editable="true" 
+							  currentData="{activityTypeAC}"
+							  currentColumns="{StaffActivityType.gridColumns()}"
+							  currentItem="@{currActivityType}"
+							  width="100%"
+							  height="100%"/>
+			<s:HGroup width="100%" gap="5" horizontalAlign="right">
+				<s:Button id="btAddStaffAT" label="Добавить" click="btAddStaffAT_clickHandler(event)"/>
+				<s:Button id="btSaveStaffAT" label="Сохранить" click="btSaveStaffAT_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+
+	</s:HGroup>
+	
+</s:Group>

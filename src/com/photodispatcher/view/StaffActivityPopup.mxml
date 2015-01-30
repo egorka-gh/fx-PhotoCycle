@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   width="800" minHeight="50">
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.StaffActivity;
+			import com.photodispatcher.model.mysql.entities.StaffActivityType;
+			import com.photodispatcher.model.mysql.services.StaffActivityService;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
+			
+			[Bindable]
+			public var activityGroup:int=0;
+			[Bindable]
+			public var pgId:String;
+			
+			public var staffActivity:StaffActivity;
+
+			[Bindable]
+			private var label:String;
+
+			[Bindable]
+			private var activityTypeAC:ArrayCollection;
+			[Bindable]
+			private var staffAC:ArrayCollection;
+
+			private var staffActivityService:StaffActivityService;
+			
+			public function show(activityGroup:int, label:String='', pgId:String=''):void{
+				if(activityGroup<=0) return;
+				staffActivity=null;
+				this.pgId=pgId;
+				this.label=label;
+				this.activityGroup=activityGroup;
+				
+				staffAC=Context.getAttribute('staffValueList') as ArrayCollection;
+				staffActivityService=Tide.getInstance().getContext().byType(StaffActivityService,true) as StaffActivityService;
+				loadStaffActivityTypes();
+				/*
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				PopUpManager.centerPopUp(this);
+				*/
+			}
+
+			protected function btOk_clickHandler(event:MouseEvent):void{
+				var staff:int=0;
+				var activityType:int=0;
+				var remark:String=tiRemark.text;
+				if(ddStaff && ddStaff.selectedIndex!=-1) staff=ddStaff.selectedItem.value;
+				if(ddType && ddType.selectedIndex!=-1){
+					var at:StaffActivityType= ddType.selectedItem as StaffActivityType;
+					if(at) activityType=at.id;
+				}
+				
+				//perfom checks
+				if(staff==0){
+					Alert.show("Не указан сотрудник");
+					return;
+				}
+				if(activityType==0 && ! remark){
+					Alert.show("Необходимо указать причину или коментарий");
+					return;
+				}
+				
+				staffActivity= new StaffActivity();
+				staffActivity.log_date= new Date;
+				staffActivity.remark=remark;
+				staffActivity.sa_group=activityGroup;
+				staffActivity.sa_type=activityType;
+				staffActivity.staff=staff;
+				if(pgId){
+					staffActivity.order_id=PrintGroup.orderIdFromId(pgId);
+					staffActivity.pg_id=pgId;
+				}
+				close(true, staffActivity);
+			}
+
+			
+			private function loadStaffActivityTypes():DbLatch{
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onStaffATLoad);
+				latch.addLatch(staffActivityService.loadType(activityGroup));
+				latch.start();
+				return latch;
+			}
+			private function onStaffATLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onStaffATLoad);
+					if(latch.complite){
+						activityTypeAC=latch.lastDataAC;
+						
+						//add default
+						var it:StaffActivityType= new StaffActivityType();
+						it.id=0;
+						it.sa_group=0;
+						it.name="";
+						if(!activityTypeAC) activityTypeAC= new ArrayCollection();
+						activityTypeAC.addItemAt(it,0);
+						this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+						PopUpManager.centerPopUp(this);
+					}else{
+						activityTypeAC=null;
+					}
+				}
+			}
+
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup gap="10" top="10" left="10" right="10" bottom="10" verticalAlign="middle">
+		<s:Label text="{label}" width="100%" maxDisplayedLines="1"/>
+		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+			<s:Label text="Сотрудник"/>
+			<s:DropDownList id="ddStaff" dataProvider="{staffAC}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Причина"/>
+			<s:DropDownList id="ddType" dataProvider="{activityTypeAC}" labelField="name"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Комментарий"/>
+			<s:TextInput id="tiRemark" width="100%"/>
+		</s:HGroup>
+		<s:HGroup width="100%" horizontalAlign="right">
+			<s:Button id="btOk" label="Ok" click="btOk_clickHandler(event)"/>
+			<s:Button id="btCancel" label="Отмена" click="{close()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

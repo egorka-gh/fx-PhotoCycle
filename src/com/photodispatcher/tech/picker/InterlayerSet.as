@@ -55,34 +55,6 @@ package com.photodispatcher.tech.picker{
 				}
 			}
 			_prepared=true;
-			/*
-			//load
-			var ilDao:LayersetDAO= new LayersetDAO();
-			var arr:Array=ilDao.findAllArray(type,true,techGroup);
-			if(!arr) return false;
-			var ls:Layerset;
-			synonymMap=new Object;
-			for each(ls in arr){
-				ls.prepareTamplate();
-				if(!ls.prepared) return false;
-				//add to synonym map by set name
-				synonymMap[ls.name]=ls;
-			}
-			//fill synonym map
-			var ddao:DictionaryCommonDAO= new DictionaryCommonDAO();
-			var sarr:Array=ddao.getLayersetSynonyms(-1,true);
-			if(!sarr) return false;
-			var s:SynonymCommon;
-			for each(s in sarr){ 
-				ls=ArrayUtil.searchItem('id',s.item_id,arr) as Layerset;
-				if(ls){
-					synonymMap[s.synonym]=ls;
-				}
-			}
-			layersets= new ArrayCollection(arr);
-			_prepared=true;
-			return _prepared;
-			*/
 		}
 		
 		public function getBySynonym(synonym:String):Layerset{

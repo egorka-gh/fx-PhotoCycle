@@ -73,6 +73,10 @@ package com.photodispatcher.print{
 			return printGroup?printGroup.id:'';
 		}
 
+		/*
+		*ручная постановка в печать
+		*
+		*/
 		public function post(pg:PrintGroup, revers:Boolean):void{
 			if(!pg) return;
 

@@ -10,6 +10,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabResize;
+	import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
@@ -17,6 +18,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SubordersTemplate;
 	import com.photodispatcher.model.mysql.services.BookSynonymService;
+	import com.photodispatcher.model.mysql.services.ConfigService;
 	import com.photodispatcher.model.mysql.services.ContentFilterService;
 	import com.photodispatcher.model.mysql.services.DictionaryService;
 	import com.photodispatcher.model.mysql.services.LabResizeService;
@@ -26,6 +28,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
+	import com.photodispatcher.model.mysql.services.StaffActivityService;
 	import com.photodispatcher.model.mysql.services.TechPickerService;
 	import com.photodispatcher.model.mysql.services.TechPointService;
 	import com.photodispatcher.model.mysql.services.TechService;
@@ -87,7 +90,9 @@ package com.photodispatcher.context{
 				OrderService,
 				PrintGroupService,
 				XReportService,
-				TechService//+
+				TechService,
+				ConfigService,
+				StaffActivityService//+
 			]);
 			
 			//fill from config
@@ -105,6 +110,7 @@ package com.photodispatcher.context{
 			latch.join(AttrJsonMap.initJsonMap());
 			latch.join(SourceProperty.initMap());
 			latch.join(SubordersTemplate.initMap());
+			latch.join(LayersetSynonym.initMap());
 
 			//latch.start();//start at caller?
 			return latch;
@@ -525,6 +531,11 @@ package com.photodispatcher.context{
 			
 			//book synonym_type
 			latchAttributeLists.addLatch(dict.getBookSynonimTypeValueList(onFieldList),'synonym_type');
+
+			//staff
+			latchAttributeLists.addLatch(dict.getStaffValueList(onFieldList),'staff');
+			//staff activity group
+			latchAttributeLists.addLatch(dict.getStaffActivityGroupValueList(onFieldList),'sa_group');
 			
 			//order state 
 

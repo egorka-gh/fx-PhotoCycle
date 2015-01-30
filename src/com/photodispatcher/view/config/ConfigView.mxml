@@ -76,10 +76,7 @@
 						break;
 					case 1:
 						currentState='sourceList';
-						//dao= new SourcesDAO();
-						//currentList=dao.findAll();
 						currentColumns=Source.gridColumns();
-						//currentList=new ArrayCollection(Context.getSources());
 						currentList=null;
 						var svc:SourceService=Tide.getInstance().getContext().byType(SourceService,true) as SourceService;
 						latch=new DbLatch(false);
@@ -89,8 +86,6 @@
 						break;
 					case 2:
 						currentState='labList';
-						//var ldao:LabDAO= new LabDAO();
-						//currentList=ldao.findAll();
 						currentColumns=Lab.gridColumns();
 						var lsvc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
 						latch=new DbLatch(false);
@@ -132,6 +127,9 @@
 					case 8:
 						currentState='tech_layers';
 						break;
+					case 9:
+						currentState='staff';
+						break;
 				}
 			}
 			private function onNewCurrentList(event:Event):void{
@@ -169,16 +167,6 @@
 					currentList.refresh();
 					itemsGrid.dgItems.selectedItem=ti;
 					itemsGrid.ensureSelectionVisible();
-					/*
-					var ti:Source= new Source();
-					ti.name='Новая тех. точка';
-					ti.type_id=SourceType.TECH_PRINT;
-					ti.loc_type=Source.LOCATION_TYPE_TECH_POINT;
-					currentList.addItem(ti);
-					currentList.refresh();
-					itemsGrid.dgItems.selectedItem=ti;
-					itemsGrid.ensureSelectionVisible();
-					*/
 				}else if(currentState=='labList'){
 					var newLab:Lab=new Lab();
 					newLab.name='Новая лаба';
@@ -215,7 +203,6 @@
 							currentItem.id=id;
 							tk.add=true;
 							tk.tag=id;
-							//tk.addResponder(new AsyncResponder(onSourceAdd,null));
 						}else{
 							tk.add=false;
 							tk.tag=currentItem.id;
@@ -236,16 +223,11 @@
 						var tag:int=latch.lastToken.tag;
 						if(tag && currentItem && currentItem.id==tag){
 							if(latch.lastToken.add){
-								/*
-								currentItem.id=(latch.lastResult as DmlResult).lastId;
-								currentItem.loaded=true;
-								*/
 								currentItem=(latch.lastResult as DmlResult).item as Source;
 								if(currentItem){
 									currentItem.edit();
 									currentList.addItem(currentItem);
 								}
-								//currentList.refresh();
 							}else{
 								//reset changed
 								currentItem.loaded=true;
@@ -374,6 +356,7 @@
 		<s:State name="contentFilters"/>
 		<s:State name="tech_point" stateGroups="listEdit"/>
 		<s:State name="tech_layers"/>
+		<s:State name="staff"/>
 	</s:states>
 
 	<s:VGroup gap="10" width="100%" height="100%" paddingBottom="20">
@@ -388,6 +371,7 @@
 				<fx:String>Фильтры загрузки</fx:String> 
 				<fx:String>Технологические точки</fx:String> 
 				<fx:String>Листоподборка</fx:String> 
+				<fx:String>Сотрудники</fx:String> 
 			</mx:ArrayCollection>
 		</s:TabBar>
 		<config:CommonConfig  includeIn="common" width="100%" height="100%"/>
@@ -411,6 +395,7 @@
 			<s:Button id="btCancel" label="Отмена" includeIn="edit,listEdit,lab" click="{detectState()}"/>
 		</s:HGroup>
 		<config:TechLayerConfig includeIn="tech_layers" width="100%" height="100%"/>
+		<config:StaffConfig includeIn="staff" width="100%" height="100%"/>
 		<config:ContentFilterConfig includeIn="contentFilters" width="100%" height="100%"/>
 	</s:VGroup>
 </s:Group>
