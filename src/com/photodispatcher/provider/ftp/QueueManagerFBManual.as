@@ -150,6 +150,7 @@ package com.photodispatcher.provider.ftp{
 				var so:SubOrder= new SubOrder();
 				so.order_id=newOrder.id;
 				so.sub_id=newOrder.src_id;
+				so.projectIds=[newOrder.src_id];
 				so.src_type=SourceType.SRC_FBOOK;
 				so.prt_qty=newOrder.fotos_num;
 				newOrder.addSuborder(so);
