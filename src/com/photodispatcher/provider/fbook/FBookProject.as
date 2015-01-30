@@ -60,10 +60,12 @@ package com.photodispatcher.provider.fbook{
 			switch(p.type){
 				case Book.PROJECT_TYPE:
 					var b:Book= new Book(raw);
+					b.fixBeforePrint();
 					_project=b;
 					break;
 				case FotocalendarProject.PROJECT_TYPE:
 					var c:FotocalendarProject= new FotocalendarProject(raw);
+					c.fixBeforePrint();
 					_project=c;
 					//uncompres content
 					for each (bp in c.pages){
@@ -74,20 +76,24 @@ package com.photodispatcher.provider.fbook{
 					break;
 				case FotocanvasProject.PROJECT_TYPE:
 					var cc:FotocanvasProject= new FotocanvasProject('','',raw);
+					cc.fixBeforePrint();
 					_project=cc;
 					break;
 				case MagnetProject.PROJECT_TYPE:
 					//magnet = createItem(rawData) as MagnetProject;
 					var mp:MagnetProject= new MagnetProject(raw);
+					mp.fixBeforePrint();
 					_project=mp;
 					break;
 				case PROJECT_TYPE_BCARD:
 					var bcp:CardProject= new CardProject('','',raw);
+					bcp.fixBeforePrint();
 					_project=bcp;
 					break;
 				case FotocupProject.PROJECT_TYPE:
 					//magnet = createItem(rawData) as MagnetProject;
 					var fc:FotocupProject= new FotocupProject('','',raw);
+					fc.fixBeforePrint();
 					_project=fc;
 					break;
 			}
