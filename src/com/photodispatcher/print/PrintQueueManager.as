@@ -279,6 +279,7 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
+		/*
 		private function getPrintApplicant():PrintGroup{
 			if(!queue || queue.length==0) return null;
 			var result:PrintGroup;
@@ -290,11 +291,37 @@ package com.photodispatcher.print{
 			}
 			return result;
 		}
+		*/
 		
-		public function post(printGrps:Vector.<Object>,lab:LabGeneric):void{
-			var pg:PrintGroup;
+		/*
+		*ручная постановка в печать
+		*
+		*/
+		public function postManual(printGrps:Vector.<Object>,lab:LabGeneric):void{
+			/*
+			TODO 
+			1 check can print
+			2 web check
+			3 lock & fill pg (set state=203)
+			4 post
+			*/
 			if(!lab || !printGrps || printGrps.length==0) return;
+
+			var pg:PrintGroup;
+			var idx:int;
+
+			//check can print
+			var postList:Array=[];
+			for each(pg in printGrps){
+				if(lab.canPrint(pg)) postList.push(pg);
+			}
+			if(postList.length!=printGrps.length){
+				dispatchManagerErr('Часть заказов не может быть распечатана в ' +lab.name);
+			}
+			
 			lab.addEventListener(PrintEvent.POST_COMPLETE_EVENT,onPostComplete);
+			
+			//check web state
 			
 			//check state & fill vs files
 			var ids:ArrayCollection= new ArrayCollection();
@@ -303,7 +330,7 @@ package com.photodispatcher.print{
 					pg.destinationLab=lab;
 					pg.state=OrderState.PRN_QUEUE;
 					//put to load
-					var idx:int=loadQueue.indexOf(pg);
+					idx=loadQueue.indexOf(pg);
 					if(idx!=-1){
 						loadQueue[idx]=pg;
 					}else{

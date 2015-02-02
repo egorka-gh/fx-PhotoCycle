@@ -74,13 +74,13 @@ package com.photodispatcher.print{
 		}
 
 		/*
-		*ручная постановка в печать
+		*постановка в печать
 		*
 		*/
 		public function post(pg:PrintGroup, revers:Boolean):void{
 			if(!pg) return;
 
-			if (!canPrint(pg)){
+			if (!canPrintInternal(pg)){
 				pg.state=OrderState.ERR_PRINT_POST;
 				dispatchErr(pg,'Группа печати '+pg.id+' не может быть распечатана в '+name+'.');
 				return;
@@ -90,6 +90,16 @@ package com.photodispatcher.print{
 			//start post sequence
 			stateCaption='Копирование';
 			postNext();
+		}
+		
+		public function hasInPostQueue(pgId:String):Boolean{
+			if(!pgId) return false;
+			if(!printTasks || printTasks.length==0) return false;
+			var pt:PrintTask;
+			for each (pt in printTasks){
+				if (pt.printGrp.id==pgId) return true;
+			}
+			return false;
 		}
 		
 		protected function dispatchErr(pg:PrintGroup, msg:String):void{
@@ -162,7 +172,11 @@ package com.photodispatcher.print{
 			return result;
 		}
 
-		protected function canPrint(printGroup:PrintGroup):Boolean{
+		public function canPrint(printGroup:PrintGroup):Boolean{
+			return canPrintInternal(printGroup);
+		}
+
+		protected function canPrintInternal(printGroup:PrintGroup):Boolean{
 			var result:LabPrintCode=printChannel(printGroup);
 			return result?true:false;
 		}
