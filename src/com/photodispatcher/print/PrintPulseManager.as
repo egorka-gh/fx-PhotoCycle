@@ -229,7 +229,7 @@ package com.photodispatcher.print
 			
 			var latch:DbLatch= event.target as DbLatch;
 			if(latch){
-				latch.removeEventListener(Event.COMPLETE,onLoadLabStops);
+				latch.removeEventListener(Event.COMPLETE,onLoadPrintQueue);
 				if(!latch.complite) return;
 				printQueue = latch.lastDataArr;
 				checkPulse();
