@@ -232,8 +232,11 @@
 					Context.setAttribute('imThreads',imThreads);
 					latchIM.release();
 				}else{
+					//4 debug
+					//latchIM.release();
+					
 					latchIM.releaseError('ImageMagick не доступен: '+e.error);
-					//Alert.show('ImageMagick не доступен: '+e.error);
+					
 				}
 			}
 			
