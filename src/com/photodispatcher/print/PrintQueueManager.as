@@ -302,13 +302,6 @@ package com.photodispatcher.print{
 		*
 		*/
 		public function postManual(printGrps:Vector.<Object>,lab:LabGeneric):void{
-			/*
-			TODO 
-			1 check can print
-			2 web check
-			3 lock & fill pg (set state=203)
-			4 post
-			*/
 			if(!lab || !printGrps || printGrps.length==0) return;
 
 			var pg:PrintGroup;
@@ -317,10 +310,12 @@ package com.photodispatcher.print{
 			//check can print
 			var postList:Array=[];
 			for each(pg in printGrps){
-				if(lab.canPrint(pg)){
-					pg.destinationLab=lab;
-					pg.state=OrderState.PRN_QUEUE;
-					postList.push(pg);
+				if(pg.state<=OrderState.PRN_QUEUE){
+					if(lab.canPrint(pg)){
+						pg.destinationLab=lab;
+						pg.state=OrderState.PRN_QUEUE;
+						postList.push(pg);
+					}
 				}
 			}
 			if(postList.length!=printGrps.length){
