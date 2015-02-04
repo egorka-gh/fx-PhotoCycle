@@ -135,6 +135,15 @@ package com.photodispatcher.model.mysql.entities {
 			return result;
 		}
 		
+		public function destroyChilds():void{
+			if(!projects || projects.length==0) return;
+			var project:FBookProject;
+			for each(project in projects){
+				project.destroyChilds();
+			}
+			projects=[];
+		}
+		
 		public function toRaw():Object{
 			//serialize props 4 build only 
 			var raw:Object= new Object;

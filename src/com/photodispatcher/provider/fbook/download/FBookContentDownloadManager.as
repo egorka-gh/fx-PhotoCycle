@@ -614,6 +614,7 @@ package com.photodispatcher.provider.fbook.download{
 				fs.writeUTFBytes(logTxt);
 				fs.close();
 			} catch(err:Error){}
+			subOrder.resetlog();
 
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0, 0));
 			dispatchEvent(new Event(Event.COMPLETE));

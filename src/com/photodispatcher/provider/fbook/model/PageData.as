@@ -39,7 +39,7 @@ package com.photodispatcher.provider.fbook.model{
 		public var pageNum:int;
 		public var sheetNum:int;
 
-		protected var book:FBookProject;
+		public var book:FBookProject;
 
 		//page build vars
 		public var backgroundCommand:IMCommand;

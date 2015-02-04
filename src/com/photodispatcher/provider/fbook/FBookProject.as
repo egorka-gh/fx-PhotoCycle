@@ -402,6 +402,7 @@ package com.photodispatcher.provider.fbook{
 			return result; 
 		}
 
+		/*
 		public function get log():String{
 			return _log;
 		} 
@@ -418,6 +419,7 @@ package com.photodispatcher.provider.fbook{
 		public function resetlog():void{
 			_log ='';
 		}
+		*/
 
 		public static function getWorkSubDirs():Array{
 			return [SUBDIR_ART,SUBDIR_USER];
@@ -574,6 +576,18 @@ package com.photodispatcher.provider.fbook{
 			fbp.downloadState=raw.downloadState;//??
 			return fbp;
 		}
-
+		
+		public function destroyChilds():void{
+			if(projectPages && projectPages.length>0){
+				var page:PageData;
+				for each(page in projectPages) page.book=null;
+				projectPages=[];
+			}
+			notLoadedItems=[];
+			_project=null;
+			projectRaw=null;
+			_log='';
+			
+		}
 	}
 }
