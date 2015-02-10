@@ -58,6 +58,11 @@ package com.photodispatcher.print{
 			return result?true:false;
 		}
 		
+		override public function checkPrintGroupInLab(pg:PrintGroup):Boolean {
+			
+			return super.checkPrintGroupInLab(pg) || (nhfLab? nhfLab.checkPrintGroupInLab(pg) : false);
+			
+		}
 		
 		override public function post(pg:PrintGroup, revers:Boolean):void{
 			if(!pg) return;

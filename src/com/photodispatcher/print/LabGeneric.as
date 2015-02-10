@@ -61,6 +61,8 @@ package com.photodispatcher.print{
 		
 		protected var printTasks:Array=[];
 		
+		protected var currentPrintTask:PrintTask;
+		
 		protected var _chanelMap:Object;
 		
 		public function LabGeneric(lab:Lab){
@@ -72,7 +74,17 @@ package com.photodispatcher.print{
 		public function orderFolderName(printGroup:PrintGroup):String{
 			return printGroup?printGroup.id:'';
 		}
-
+		
+		public function checkPrintGroupInLab(pg:PrintGroup):Boolean {
+			
+			var _id:String = pg.id;
+			var _tasks:Array = currentPrintTask? printTasks.concat(currentPrintTask) : printTasks;
+			return _tasks.some(function (item:PrintTask, index:int, array:Array):Boolean {
+				return item.printGrp.id == _id;
+			});
+			
+		}
+		
 		/*
 		*ручная постановка в печать
 		*
@@ -106,6 +118,7 @@ package com.photodispatcher.print{
 			}
 			if(pt){
 				postRunning=true;
+				currentPrintTask = pt;
 				//StateLog.logByPGroup(OrderState.PRN_POST, pt.printGrp.id);
 				pt.addEventListener(Event.COMPLETE,taskComplete);
 				pt.post();
@@ -117,6 +130,7 @@ package com.photodispatcher.print{
 		
 		public function taskComplete(e:Event):void{
 			postRunning=false;
+			currentPrintTask = null;
 			var pt:PrintTask=e.target as PrintTask;
 			if(pt){
 				pt.removeEventListener(Event.COMPLETE,taskComplete);
