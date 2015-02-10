@@ -205,9 +205,9 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onAddOrder);
 					if(latch.complite){
-						if(latch.lastResult.resultCode==1){
+						if(latch.resultCode==1){
 							Alert.show('Заказ "'+newOrder.humanId+'" уже добавлен');
-						}else if(latch.lastResult.resultCode==2){
+						}else if(latch.resultCode==2){
 							Alert.show('Заказ "'+newOrder.humanId+'" уже прошел технологическую операцию');	
 							newOrder=null;
 						}

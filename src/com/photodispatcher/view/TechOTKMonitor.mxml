@@ -144,10 +144,10 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onAddOrder);
 					if(latch.complite){
-						if(latch.lastResult.resultCode<2){
+						if(latch.resultCode<2){
 							//started 
 							showOrder();
-						}else if(latch.lastResult.resultCode==2){
+						}else if(latch.resultCode==2){
 							Alert.show('Заказ "'+lastSubOrder.humanId+'" уже прошел технологическую операцию');	
 							lastSubOrder=null;
 						}

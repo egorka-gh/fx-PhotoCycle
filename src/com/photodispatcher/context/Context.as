@@ -450,7 +450,8 @@ package com.photodispatcher.context{
 					latchAttributeLists.start();
 					return;
 				}
-				fillAttributeLists((latch.lastResult as SelectResult));
+				//fillAttributeLists((latch.lastResult as SelectResult));
+				fillAttributeLists(latch.lastDataArr);
 			}
 		}
 
@@ -481,8 +482,8 @@ package com.photodispatcher.context{
 			}
 		}
 		
-		private static function fillAttributeLists(select:SelectResult):void{
-			if(!select){
+		private static function fillAttributeLists(data:Array):void{ 
+			if(!data){
 				latchAttributeLists.releaseError('Ошибка инициализации (Context.fillAttributeLists)');
 				latchAttributeLists.start();
 				return;
@@ -494,7 +495,7 @@ package com.photodispatcher.context{
 			//var t:AsyncToken;
 			
 			//var a:ArrayCollection;
-			for each (var o:Object in select.data){
+			for each (var o:Object in data){
 				at=o as AttrType;
 				if(at){
 					field=at.field;

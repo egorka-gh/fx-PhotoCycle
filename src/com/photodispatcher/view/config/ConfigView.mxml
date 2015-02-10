@@ -219,11 +219,11 @@
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onSourceSave);
-					if(latch.complite && latch.lastResult.complete){
+					if(latch.complite){
 						var tag:int=latch.lastToken.tag;
 						if(tag && currentItem && currentItem.id==tag){
 							if(latch.lastToken.add){
-								currentItem=(latch.lastResult as DmlResult).item as Source;
+								currentItem=latch.lastDMLItem as Source;
 								if(currentItem){
 									currentItem.edit();
 									currentList.addItem(currentItem);
@@ -261,7 +261,7 @@
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onBatchSave);
-					if(latch.complite && latch.lastResult.complete){
+					if(latch.complite){
 						var item:AbstractEntity;
 						for each (item in currentList){
 							if (item.changed || !item.loaded) item.loaded=true;
@@ -296,12 +296,12 @@
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onLabSave);
-					if(latch.complite && latch.lastResult.complete){
+					if(latch.complite){
 						if(currentLab.loaded){
 							detectState();
 							return;
 						}
-						currentLab=(latch.lastResult as DmlResult).item as Lab
+						currentLab=latch.lastDMLItem as Lab;
 					}
 				}
 			}

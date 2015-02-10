@@ -79,10 +79,10 @@
 						if (currentBook) currentBook.templates=templatesList;
 						currentState='itemEdit';
 					}else if(latch.lastToken.tag=='copy'){
-						if(latch.lastResult.resultCode!=0){
+						if(latch.resultCode!=0){
 							//resultCode has inserted id
 							lastSelectedBook= new Object();
-							lastSelectedBook.id=latch.lastResult.resultCode;
+							lastSelectedBook.id=latch.resultCode;
 							refresh();
 						}
 					}else if(latch.lastToken.tag=='save'){

@@ -59,8 +59,8 @@
 				newCode.frame=-1;
 				newCode.correction=-1;
 				newCode.cutting=-1;
-				newCode.is_duplex=-1;
-				newCode.is_pdf=0;
+				newCode.is_duplex=false;
+				newCode.is_pdf=false;
 				
 				newCode.src_type=type;
 				//newCode.is_pdf=type==SourceType.LAB_XEROX;
@@ -121,8 +121,8 @@
 					case SourceType.LAB_XEROX:
 						//result=sizeKey+'_'+paper.toString()+'_'+is_duplex.toString(); 
 						newCode.paper=paper; newCode.paper_name=paper_name;
-						newCode.is_pdf=1;
-						newCode.is_duplex=0;
+						newCode.is_pdf=true;
+						newCode.is_duplex=false;
 						break;
 					case SourceType.LAB_NORITSU_NHF:
 						//include w/h

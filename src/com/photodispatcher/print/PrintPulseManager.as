@@ -178,7 +178,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE,onLoadTechPulse);
 				if(!latch.complite) return;
 				lastUpdatedTechPoints = latch.lastDataArr;
-				latch.clearResult();
+				//latch.clearResult();
 				checkPulse();
 			}
 			
@@ -207,7 +207,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE,onLoadLabStops);
 				if(!latch.complite) return;
 				labStops = latch.lastDataArr;
-				latch.clearResult();
+				//latch.clearResult();
 				checkPulse();
 			}
 			
@@ -234,7 +234,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE,onLoadPrintQueue);
 				if(!latch.complite) return;
 				printQueue = latch.lastDataArr;
-				latch.clearResult();
+				//latch.clearResult();
 				checkPulse();
 			}
 			
