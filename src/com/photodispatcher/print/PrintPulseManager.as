@@ -1,5 +1,7 @@
 package com.photodispatcher.print
 {
+	import com.akmeful.util.ArrayUtil;
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabStopLog;
@@ -21,7 +23,6 @@ package com.photodispatcher.print
 	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
 	import mx.collections.IList;
-	import mx.collections.IViewCursor;
 	
 	import org.granite.tide.Tide;
 	
@@ -67,7 +68,10 @@ package com.photodispatcher.print
 		/**
 		 * Интервал проверки пульса в мс.
 		 */
-		public var timerDelay:Number = 1000*10;
+		public var timerDelay:Number = 10*1000;//mem leac? 1000*10;
+		
+		[Bindable]
+		public var autoPrinting:Boolean = false;
 		
 		public var printQueueManager:PrintQueueManager;
 		
@@ -176,6 +180,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE,onLoadTechPulse);
 				if(!latch.complite) return;
 				lastUpdatedTechPoints = latch.lastDataArr;
+				latch.clearResult();
 				checkPulse();
 			}
 			
@@ -204,6 +209,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE,onLoadLabStops);
 				if(!latch.complite) return;
 				labStops = latch.lastDataArr;
+				latch.clearResult();
 				checkPulse();
 			}
 			
@@ -227,9 +233,10 @@ package com.photodispatcher.print
 			
 			var latch:DbLatch= event.target as DbLatch;
 			if(latch){
-				latch.removeEventListener(Event.COMPLETE,onLoadLabStops);
+				latch.removeEventListener(Event.COMPLETE,onLoadPrintQueue);
 				if(!latch.complite) return;
 				printQueue = latch.lastDataArr;
+				latch.clearResult();
 				checkPulse();
 			}
 			
@@ -243,8 +250,6 @@ package com.photodispatcher.print
 				return;
 				
 			}
-			
-			// TODO исключить ситуацию, когда пульс обрабатывается одновременно с предыдущей постановкой на печать
 			
 			/*
 			нужно составить карту лаб по id
@@ -318,6 +323,10 @@ package com.photodispatcher.print
 					
 					// добавляем ГП в девайс с самой короткой очередью
 					devForPg.printQueue.addItem(pgQueued);
+					
+				} else {
+					
+					// TODO обработать ситуацию, когда ГП послана в лабу, в которой нет подходящих девайсов
 					
 				}
 				
@@ -554,8 +563,12 @@ package com.photodispatcher.print
 			
 			*/
 			
-			getPulse();
-			return;
+			if(!autoPrinting){
+				
+				getPulse();
+				return;
+				
+			} 
 			
 			var readyDevices:Array = getReadyDevices();
 			
@@ -563,19 +576,37 @@ package com.photodispatcher.print
 				
 				loadReadyForPrintingPgList(addToQueueAfterPgList);
 				
+			} else {
+				// нет свободных устройств
+				finishPulse();
 			}
 			
 		}
 		
-		protected function addToQueueAfterPgList(printGroups:Array):void {
+		protected function addToQueueAfterPgList(printGroups:Array, loadByDevices:Boolean = false):void {
 			
 			var readyDevices:Array = getReadyDevices();
 			
-			if(readyDevices.length > 0){
+			if(readyDevices.length > 0 && printGroups.length > 0){
 				
-				addToQueue(printGroups, readyDevices);
+				addToQueue(printGroups, readyDevices, loadByDevices);
 				
+			} else if(readyDevices.length > 0 && !loadByDevices){
+				
+				// нужно сделать запрос на дополнительные ГП
+				loadReadyForPrintingByDevices(getDeviceIds(readyDevices), addToQueueAfterPgList);
+				
+			} else {
+				
+				// нет свободных устройств
+				finishPulse();
 			}
+			
+		}
+		
+		protected function getDeviceIds(devices:Array):Array {
+			
+			return devices.map(function (dev:LabDevice, index:int, array:Array):int { return dev.id });
 			
 		}
 		
@@ -616,7 +647,7 @@ package com.photodispatcher.print
 				}
 				
 				// проверяем очередь
-				if(devIsReady && checkDevicePrintQueueReady(dev)){
+				if(devIsReady && checkDevicePrintQueueReady(dev.printQueue)){
 					
 					readyDevices.push(dev);
 					
@@ -628,7 +659,7 @@ package com.photodispatcher.print
 			
 		}
 		
-		protected function addToQueue(printGroups:Array, devices:Array):void {
+		protected function addToQueue(printGroups:Array, devices:Array, loadByDevices:Boolean):void {
 			
 			if(printGroups.length == 0 || devices.length == 0){
 				
@@ -637,31 +668,68 @@ package com.photodispatcher.print
 			}
 			
 			var devList:Array = devices.slice();
-			var devCursor:IViewCursor = devList.createCursor();
 			var pg:PrintGroup;
 			var lab:LabGeneric;
 			var dev:LabDevice;
-			
-			//devCursor.
+			var found:Boolean;
 			
 			var readyPgList:Array = [];
+			var i:int;
+			
+			/* 
+			копируем очереди девайсов, они нужны нам для равномерного распределения ГП по девайсам, 
+			а оригинальные очереди необходимо заполнить только после выставления статуса в базе
+			*/
+			var devPrintQueueMap:Object = {};
+			for each (dev in devList){
+				
+				devPrintQueueMap[dev.id] = new ArrayList(dev.printQueue.toArray());
+				
+			}
+			
 			
 			for each (pg in printGroups){
 				
-				dev = devCursor.current as LabDevice;
-				lab = labMap[dev.id] as LabGeneric;
+				i = 0;
+				found = false;
 				
-				if(lab.printChannel(pg, dev.rollsOnline.toArray()) && checkDevicePrintQueueReady(dev)){
+				while (i < devList.length && !found) {
 					
-					pg.destinationLab = lab;
-					dev.printQueue.addItem(pg);
-					readyPgList.push(pg);
+					dev = devList[i] as LabDevice;
+					lab = labMap[dev.lab] as LabGeneric;
 					
+					if(lab.printChannel(pg, dev.rollsOnline.toArray()) && checkDevicePrintQueueReady(devPrintQueueMap[dev.id])){
+						
+						pg.destination = lab.id;
+						(devPrintQueueMap[dev.id] as IList).addItem(pg);
+						readyPgList.push(pg);
+						
+						// подходящие девайс найден, выходим из цикла
+						found = true;
+						
+						if(i < devList.length - 1){
+							/* 
+							вращаем девайсы так, чтобы найденный девайс оказался в конце списка для следующей ГП 
+							так исключим ситуацию, когда первый в списке девайс будет ловить все подходящие ГП
+							*/
+							devList = ArrayUtil.rotateArray(i, devList);
+						}
+						
+					}
+					
+					i++;
 				}
 				
 			}
 			
-			if(readyPgList.length > 0){
+			
+			if(!loadByDevices){
+				// добавляем в очередь после загрузки общего списка
+				updatePgStatus(readyPgList, onUpdatePgStatusAfterPgList);
+				
+			} else {
+				// добавляем в очередь после загрузки списка по девайсам
+				updatePgStatus(readyPgList, onUpdatePgStatusAfterByDevices);
 				
 			}
 			
@@ -669,11 +737,118 @@ package com.photodispatcher.print
 		}
 		
 		/**
+		 * вызываем для того, чтобы заполнить очередь девайсов добавленными ГП
+		 */
+		protected function addToDeviceQueueAfterStatus(printGroups:Array):void {
+			
+			var compDevices:Array;
+			var devForPg:LabDevice;
+			var dev:LabDevice;
+			
+			for each (var pgQueued:PrintGroup in printGroups){
+				
+				if(pgQueued.state != OrderState.PRN_QUEUE){
+					// добавляем только те ГП у которых определен необходимый статус 203
+					continue;
+				}
+				
+				compDevices = (labMap[pgQueued.destination] as LabGeneric).getCompatiableDevices(pgQueued);
+				
+				if(compDevices.length > 0){
+					
+					devForPg = compDevices[0]['dev'] as LabDevice; // определяем по умолчанию первый доступный
+					
+					for each (dev in compDevices) {
+						
+						// определяем девайс с самой короткой очередью
+						if(devForPg != dev['dev'] && devForPg.printQueue.length > (dev['dev'] as LabDevice).printQueue.length){
+							devForPg = dev['dev'] as LabDevice;
+						}
+						
+					}
+					
+					// добавляем ГП в девайс с самой короткой очередью
+					devForPg.printQueue.addItem(pgQueued);
+					
+				} else {
+					
+					// TODO обработать ситуацию, когда ГП послана в лабу, в которой нет подходящих девайсов
+					
+				}
+				
+			}
+			
+			
+		}
+		
+		protected function updateLabQueue():void {
+			
+			var dev:LabDevice;
+			var pg:PrintGroup;
+			var lab:LabGeneric;
+			
+			for each (dev in devices){
+				
+				for each (pg in dev.printQueue) {
+					
+					if(pg.state == OrderState.PRN_QUEUE){
+						
+						// нужно добавить ГП в лабу, но перед этим проверить наличие этой ГП в соответствующей лабе
+						lab = labMap[pg.destination] as LabGeneric;
+						
+						if(!lab.checkPrintGroupInLab(pg)){
+							lab.post(pg, Context.getAttribute('reversPrint'));
+						}
+						
+						
+					}
+					
+				}
+				
+			}
+			
+			
+		}
+		
+		
+		/**
+		 * обрабатываем запрос к серверу на добавление ГП в очередь из ОБЩЕГО СПИСКА
+		 */
+		protected function onUpdatePgStatusAfterPgList(printGroups:Array):void {
+			
+			addToDeviceQueueAfterStatus(printGroups);
+			
+			// если статусы установлены после общего списка, необходимо проверить девайсы и дозаполнить запросом по девайсам
+			addToQueueAfterPgList([]);
+			
+		}
+		
+		/**
+		 * обрабатываем запрос к серверу на добавление ГП в очередь из СПИСКА ПО ДЕВАЙСАМ
+		 */
+		protected function onUpdatePgStatusAfterByDevices(printGroups:Array):void {
+			
+			addToDeviceQueueAfterStatus(printGroups);
+			
+			// если статусы установлены после запроса по девайсам, больше запрашивать нет смысла, заканчиваем пульс
+			finishPulse();
+			
+		}
+		
+		
+		protected function finishPulse():void {
+			
+			updateLabQueue();
+			getPulse();
+			
+		}
+		
+		/**
 		 * определяет, можно ли загрузить в девайс еще ГП
 		 */
-		protected function checkDevicePrintQueueReady(dev:LabDevice):Boolean {
+		protected function checkDevicePrintQueueReady(printQueue:IList):Boolean {
 			
-			return dev.printQueue.length < 2;
+			return printQueue.length < 2;
 			
 		}
 		
@@ -686,7 +861,9 @@ package com.photodispatcher.print
 			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 			var latch:DbLatch=new DbLatch();
 			latch.addEventListener(Event.COMPLETE, onLoadReadyForPrintingPgList);
-			latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_PRINT));
+			
+			// получаем список в статусе 200, готовые к печати
+			latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_QUEUE));
 			latch.start();
 			
 		}
@@ -694,11 +871,84 @@ package com.photodispatcher.print
 		private function onLoadReadyForPrintingPgList(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch){
-				latch.removeEventListener(Event.COMPLETE,onLoadReadyForPrintingPgList);
+				latch.removeEventListener(Event.COMPLETE, onLoadReadyForPrintingPgList);
 				if(!latch.complite) return;
-				if(loadReadyForPrintingPgListHandler) loadReadyForPrintingPgListHandler.apply(this, [latch.lastDataArr]);
+				if(loadReadyForPrintingPgListHandler != null) loadReadyForPrintingPgListHandler.apply(this, [latch.lastDataArr]);
 			}
+			
+			loadReadyForPrintingPgListHandler = null;
+			
 		}
+		
+		protected var loadReadyForPrintingByDevicesHandler:Function;
+		
+		protected function loadReadyForPrintingByDevices(deviceIds:Array, handler:Function):void
+		{
+			
+			loadReadyForPrintingByDevicesHandler = handler;
+			
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE, onLoadReadyForPrintingByDevices);
+			latch.addLatch(svc.loadPrintPostByDev(new ArrayCollection(deviceIds), 0));
+			latch.start();
+			
+		}
+		
+		private function onLoadReadyForPrintingByDevices(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE, onLoadReadyForPrintingByDevices);
+				if(!latch.complite) return;
+				if(loadReadyForPrintingByDevicesHandler != null) loadReadyForPrintingByDevicesHandler.apply(this, [latch.lastDataArr, true]);
+			}
+			
+			loadReadyForPrintingByDevicesHandler = null;
+			
+		}
+		
+		protected var updatePgStatusHandler:Function;
+		protected function updatePgStatus(printGroups:Array, handler:Function):void {
+			
+			updatePgStatusHandler = handler;
+			
+			// если список пуст, запрос не делаем, вызываем обработчик
+			if(printGroups.length == 0){
+				
+				if(updatePgStatusHandler != null) updatePgStatusHandler.apply(this, []);
+				return;
+				
+			}
+			
+			
+			// шлем запрос на установку 203 статуса, после чего ГП считается захваченной определенной лабой
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onUpdatePgStatus);
+			latch.addLatch(svc.capturePrintState(new ArrayCollection([printGroups]),false));
+			latch.start();
+			
+		}
+		
+		private function onUpdatePgStatus(evt:Event):void
+		{
+			
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				
+				latch.removeEventListener(Event.COMPLETE, onLoadReadyForPrintingByDevices);
+				
+				if(!latch.complite) {
+					if(updatePgStatusHandler != null) updatePgStatusHandler.apply(this, []);
+					return;
+				}
+				
+				if(updatePgStatusHandler != null) updatePgStatusHandler.apply(this, [latch.lastDataArr]);
+				
+			}
+			
+		}
+		
 		
 		
 	}

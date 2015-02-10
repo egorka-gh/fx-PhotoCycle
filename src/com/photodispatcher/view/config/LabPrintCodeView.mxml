@@ -54,14 +54,25 @@
 				if(type==0) return; 
 
 				var newCode:LabPrintCode= new LabPrintCode();
+				//fill vs default && filter vals
+				newCode.paper=-1;
+				newCode.frame=-1;
+				newCode.correction=-1;
+				newCode.cutting=-1;
+				newCode.is_duplex=-1;
+				newCode.is_pdf=0;
+				
 				newCode.src_type=type;
-				newCode.is_pdf=type==SourceType.LAB_XEROX;
-
-				//fill vs filter vals
+				//newCode.is_pdf=type==SourceType.LAB_XEROX;
 				if(tiWidthFilter && tiWidthFilter.text) newCode.width=int(tiWidthFilter.text);
 				if(tiHeightFilter && tiHeightFilter.text) newCode.height=int(tiHeightFilter.text);
+				if (type!=SourceType.LAB_NORITSU_NHF && type!=SourceType.LAB_PLOTTER){
+					if(tiCodeFilter && tiCodeFilter.text) newCode.prt_code=tiCodeFilter.text;
+				}
 				if (type==SourceType.LAB_NORITSU_NHF) newCode.prt_code='nhf';
 				if (type==SourceType.LAB_PLOTTER) newCode.prt_code='plotter';
+
+				/*
 				if (type!=SourceType.LAB_NORITSU_NHF){
 					if(ddPaperFilter && ddPaperFilter.selectedIndex>0){
 						newCode.paper=ddPaperFilter.selectedItem.value;
@@ -83,6 +94,55 @@
 						}
 					}
 				}
+*/
+				var paper:int=0; 
+				var paper_name:String='';
+				if(ddPaperFilter && ddPaperFilter.selectedIndex>0){
+					paper=ddPaperFilter.selectedItem.value;
+					paper_name=ddPaperFilter.selectedItem.label;
+				}
+				var frame:int=0; 
+				var frame_name:String='';
+				if(ddFrameFilter && ddFrameFilter.selectedIndex>0){
+					frame=ddFrameFilter.selectedItem.value;
+					frame_name=ddFrameFilter.selectedItem.label;
+				}
+
+				switch(type){
+					case SourceType.LAB_FUJI:
+						//result=sizeKey+'_'+paper.toString()+'_'+frame.toString(); 
+						newCode.paper=paper; newCode.paper_name=paper_name; 
+						newCode.frame=frame; newCode.frame_name=frame_name;
+						break;
+					case SourceType.LAB_PLOTTER:
+						//result=sizeKey+'_'+paper.toString();
+						newCode.paper=paper; newCode.paper_name=paper_name; 
+						break;
+					case SourceType.LAB_XEROX:
+						//result=sizeKey+'_'+paper.toString()+'_'+is_duplex.toString(); 
+						newCode.paper=paper; newCode.paper_name=paper_name;
+						newCode.is_pdf=1;
+						newCode.is_duplex=0;
+						break;
+					case SourceType.LAB_NORITSU_NHF:
+						//include w/h
+						break;
+					default:
+						//full key (SourceType.LAB_NORITSU or any)
+						newCode.paper=paper; newCode.paper_name=paper_name; 
+						newCode.frame=frame; newCode.frame_name=frame_name;
+						newCode.correction=0;
+						if(ddCorrectionFilter && ddCorrectionFilter.selectedIndex>0){
+							newCode.correction=ddCorrectionFilter.selectedItem.value;
+							newCode.correction_name=ddCorrectionFilter.selectedItem.label;
+						}
+						newCode.cutting=0;
+						if(ddCuttingFilter && ddCuttingFilter.selectedIndex>0){
+							newCode.cutting=ddCuttingFilter.selectedItem.value;
+							newCode.cutting_name=ddCuttingFilter.selectedItem.label;
+						}
+						break;
+				}
 
 				itemsGrid.addItem(newCode);
 			}
@@ -94,7 +154,7 @@
 				var item:LabPrintCode;
 				var itemsToSave:ArrayCollection= new ArrayCollection(); 
 				for each (item in currentList){
-					if(!item.loaded || item.changed) itemsToSave.addItem(item);
+					if((!item.loaded || item.changed) && item.width && item.height) itemsToSave.addItem(item);
 				}
 				if(itemsToSave.length!=0){
 					if(itemsGrid && itemsGrid.currentItem){

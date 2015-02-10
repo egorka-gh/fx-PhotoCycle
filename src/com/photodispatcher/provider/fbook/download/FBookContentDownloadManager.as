@@ -162,6 +162,7 @@ package com.photodispatcher.provider.fbook.download{
 												//save to user subdir
 												name=FBookProject.userSubDir+getItemName(name);
 												loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+												//loader.add(req,{id: name, type:BulkLoader.TYPE_TEXT, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
 											}
 										}
 										break;
@@ -614,6 +615,7 @@ package com.photodispatcher.provider.fbook.download{
 				fs.writeUTFBytes(logTxt);
 				fs.close();
 			} catch(err:Error){}
+			subOrder.resetlog();
 
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0, 0));
 			dispatchEvent(new Event(Event.COMPLETE));

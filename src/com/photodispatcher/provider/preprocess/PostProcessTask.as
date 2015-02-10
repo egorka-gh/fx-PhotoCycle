@@ -106,6 +106,7 @@ package com.photodispatcher.provider.preprocess{
 							}
 						}
 					}else if(printGroup.is_pdf){
+						//kill wrk files (keep fbook)
 						filePath=rootFolder+File.separator+order.ftp_folder+File.separator+printGroup.path+File.separator+PDFmakeupGroup.TEMP_FOLDER;
 						printFile=null;
 						try{
