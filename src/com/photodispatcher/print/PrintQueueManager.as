@@ -675,6 +675,7 @@ package com.photodispatcher.print{
 			if(idx!=-1){
 				postQueue.splice(idx,1);
 			}
+			/*
 			if(!e.hasErr){
 				//save
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
@@ -683,7 +684,15 @@ package com.photodispatcher.print{
 				latch.addLatch(svc.printPost(e.printGroup.id, e.printGroup.destination));
 				latch.start();
 			}
+			*/
+			if(!e.hasErr){
+				if(postQueue.length==0){
+					//complited refresh lab
+					refreshLabs();
+				}
+			}
 		}
+		
 		private function onPostWrite(evt:Event):void{ 
 			var latch:DbLatch=evt.target as DbLatch;
 			if(latch){

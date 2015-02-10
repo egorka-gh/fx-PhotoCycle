@@ -8,6 +8,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -19,6 +20,7 @@ package com.photodispatcher.print{
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
+	import flash.utils.flash_proxy;
 	
 	import mx.collections.ArrayCollection;
 	
@@ -116,6 +118,38 @@ package com.photodispatcher.print{
 				dispatchErr('Не верные параметры запуска.');
 				return;
 			}
+			if(!printGrp.files || printGrp.files.length==0){
+				//load files
+				var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+				var latch:DbLatch= new DbLatch(true);
+				latch.addEventListener(Event.COMPLETE,onFilesLoad);
+				latch.addLatch(svc.fillCaptured(printGrp.id));
+				latch.start();
+
+			}else{
+				runPrepare();
+			}
+		}
+		
+		private function onFilesLoad(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onFilesLoad);
+			if(!latch || !latch.complite){
+				printGrp.state=OrderState.ERR_READ_LOCK;
+				dispatchErr('Ошибка базы: ' +latch.error);
+				return;
+			}
+			var pgBd:PrintGroup=latch.lastDMLItem as PrintGroup;
+			if(!pgBd || pgBd.state!=OrderState.PRN_QUEUE){
+				dispatchErr('Не верный статус группы печати (fill Captured) '+printGrp.id);
+				return;
+			}
+			printGrp.files=pgBd.files;
+			runPrepare();
+		}
+
+		
+		private function runPrepare():void{
 			printGrp.printRotated=false;
 			if(printGrp.book_type!=0 
 				&& (lab.src_type==SourceType.LAB_NORITSU || lab.src_type==SourceType.LAB_NORITSU_NHF) 
@@ -357,7 +391,7 @@ package com.photodispatcher.print{
 						srcFolder.deleteDirectory(true); 
 					}catch(e:Error){}
 				}
-				dispatchEvent(new Event(Event.COMPLETE));
+				saveCompleted();
 				return;
 			}
 			var pf:PrintGroupFile=printGrp.printFiles[currCopyIdx] as PrintGroupFile;
@@ -432,6 +466,27 @@ package com.photodispatcher.print{
 			//printScript=printScript+script;
 
 		}
+		
+		private function saveCompleted():void{
+			//save
+			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onPostWrite);
+			latch.addLatch(svc.printPost(printGrp.id, printGrp.destination));
+			latch.start();
+
+		}
+		private function onPostWrite(evt:Event):void{ 
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onPostWrite);
+			if(!latch || !latch.complite){
+				printGrp.state=OrderState.ERR_READ_LOCK;
+				dispatchErr('Ошибка базы: ' +latch.error);
+				return;
+			}
+			dispatchEvent(new Event(Event.COMPLETE));
+		}
+
 		
 		private function copyComplete(e:Event):void{
 			stopListen();

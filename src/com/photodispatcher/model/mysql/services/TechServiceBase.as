@@ -68,6 +68,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("logByPg", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function testMail(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("testMail", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("testMail", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("testMail") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }
     }
 }
