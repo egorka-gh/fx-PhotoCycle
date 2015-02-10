@@ -19,6 +19,7 @@ package com.photodispatcher.print
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
 	
+	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
 	import mx.collections.IList;
 	
@@ -218,7 +219,6 @@ package com.photodispatcher.print
 			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onLoadPrintQueue);
-			// TODO  изменить на сервере в loadInPrint набор статусов по которым определяется, что ГП находится в очереди
 			latch.addLatch(svc.loadInPrint(0));
 			latch.start();
 			
@@ -738,6 +738,11 @@ package com.photodispatcher.print
 			
 			for each (var pgQueued:PrintGroup in printGroups){
 				
+				if(pgQueued.state != OrderState.PRN_QUEUE){
+					// добавляем только те ГП у которых определен необходимый статус 203
+					continue;
+				}
+				
 				compDevices = (labMap[pgQueued.destination] as LabGeneric).getCompatiableDevices(pgQueued);
 				
 				if(compDevices.length > 0){
@@ -776,9 +781,10 @@ package com.photodispatcher.print
 				
 				for each (pg in dev.printQueue) {
 					
-					if(pg.state == 203){
+					if(pg.state == OrderState.PRN_QUEUE){
 						
-						// TODO нужно добавить ГП в лабу, но перед этим проверить наличие этой ГП в очереди
+						// TODO нужно добавить ГП в лабу, но перед этим проверить наличие этой ГП в каждой лабе
+						
 						
 					}
 					
@@ -841,8 +847,8 @@ package com.photodispatcher.print
 			var latch:DbLatch=new DbLatch();
 			latch.addEventListener(Event.COMPLETE, onLoadReadyForPrintingPgList);
 			
-			// TODO изменить статусы в запросе для получения готовых к печати ГП
-			latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_PRINT));
+			// получаем список в статусе 200, готовые к печати
+			latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_QUEUE));
 			latch.start();
 			
 		}
@@ -896,8 +902,12 @@ package com.photodispatcher.print
 			}
 			
 			
-			// TODO шлем запрос на установку 203 статуса, после чего ГП считается захваченной определенной лабой
-			
+			// шлем запрос на установку 203 статуса, после чего ГП считается захваченной определенной лабой
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onUpdatePgStatus);
+			latch.addLatch(svc.capturePrintState(new ArrayCollection([printGroups]),false));
+			latch.start();
 			
 		}
 		
