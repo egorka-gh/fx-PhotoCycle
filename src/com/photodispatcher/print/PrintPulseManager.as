@@ -286,6 +286,7 @@ package com.photodispatcher.print
 			var compDevices:Array;
 			
 			var devForPg:LabDevice;
+			var devComp:Object;
 			
 			for each (var pgQueued:PrintGroup in printQueue){
 				
@@ -304,19 +305,19 @@ package com.photodispatcher.print
 					devForPg = compDevices[0]['dev'] as LabDevice; // определяем по умолчанию первый доступный
 					
 					// составляем карту
-					for each (dev in compDevices) {
+					for each (devComp in compDevices) {
 						
-						if(compMap[pgQueued.destination][dev['dev'].id] == null){
-							compMap[pgQueued.destination][dev['dev'].id] = [];
+						if(compMap[pgQueued.destination][devComp['dev'].id] == null){
+							compMap[pgQueued.destination][devComp['dev'].id] = [];
 						}
 						
-						(compMap[pgQueued.destination][dev['dev'].id] as Array).push(pgQueued);
+						(compMap[pgQueued.destination][devComp['dev'].id] as Array).push(pgQueued);
 						
 						(queueMap[pgQueued.destination] as Array).push(pgQueued);
 						
 						// определяем девайс с самой короткой очередью
-						if(devForPg != dev['dev'] && devForPg.printQueue.length > (dev['dev'] as LabDevice).printQueue.length){
-							devForPg = dev['dev'] as LabDevice;
+						if(devForPg != devComp['dev'] && devForPg.printQueue.length > (devComp['dev'] as LabDevice).printQueue.length){
+							devForPg = devComp['dev'] as LabDevice;
 						}
 						
 					}
@@ -701,6 +702,7 @@ package com.photodispatcher.print
 					if(lab.printChannel(pg, dev.rollsOnline.toArray()) && checkDevicePrintQueueReady(devPrintQueueMap[dev.id])){
 						
 						pg.destination = lab.id;
+						pg.state = OrderState.PRN_QUEUE;
 						(devPrintQueueMap[dev.id] as IList).addItem(pg);
 						readyPgList.push(pg);
 						
@@ -743,7 +745,7 @@ package com.photodispatcher.print
 			
 			var compDevices:Array;
 			var devForPg:LabDevice;
-			var dev:LabDevice;
+			var dev:Object;
 			
 			for each (var pgQueued:PrintGroup in printGroups){
 				
@@ -789,7 +791,7 @@ package com.photodispatcher.print
 			
 			for each (dev in devices){
 				
-				for each (pg in dev.printQueue) {
+				for each (pg in dev.printQueue.toArray()) {
 					
 					if(pg.state == OrderState.PRN_QUEUE){
 						
@@ -874,6 +876,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE, onLoadReadyForPrintingPgList);
 				if(!latch.complite) return;
 				if(loadReadyForPrintingPgListHandler != null) loadReadyForPrintingPgListHandler.apply(this, [latch.lastDataArr]);
+				latch.clearResult();
 			}
 			
 			loadReadyForPrintingPgListHandler = null;
@@ -901,6 +904,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE, onLoadReadyForPrintingByDevices);
 				if(!latch.complite) return;
 				if(loadReadyForPrintingByDevicesHandler != null) loadReadyForPrintingByDevicesHandler.apply(this, [latch.lastDataArr, true]);
+				latch.clearResult();
 			}
 			
 			loadReadyForPrintingByDevicesHandler = null;
@@ -915,7 +919,7 @@ package com.photodispatcher.print
 			// если список пуст, запрос не делаем, вызываем обработчик
 			if(printGroups.length == 0){
 				
-				if(updatePgStatusHandler != null) updatePgStatusHandler.apply(this, []);
+				if(updatePgStatusHandler != null) updatePgStatusHandler.apply(this, [new Array]);
 				return;
 				
 			}
@@ -925,7 +929,7 @@ package com.photodispatcher.print
 			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 			var latch:DbLatch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onUpdatePgStatus);
-			latch.addLatch(svc.capturePrintState(new ArrayCollection([printGroups]),false));
+			latch.addLatch(svc.capturePrintState(new ArrayCollection(printGroups),true));
 			latch.start();
 			
 		}
@@ -939,11 +943,12 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE, onLoadReadyForPrintingByDevices);
 				
 				if(!latch.complite) {
-					if(updatePgStatusHandler != null) updatePgStatusHandler.apply(this, []);
+					if(updatePgStatusHandler != null) updatePgStatusHandler.apply(this, [new Array]);
 					return;
 				}
 				
 				if(updatePgStatusHandler != null) updatePgStatusHandler.apply(this, [latch.lastDataArr]);
+				latch.clearResult();
 				
 			}
 			
