@@ -67,7 +67,7 @@ package com.photodispatcher.print
 		/**
 		 * Интервал проверки пульса в мс.
 		 */
-		public var timerDelay:Number =0;//mem leac? 1000*10;
+		public var timerDelay:Number = 1*1000;//mem leac? 1000*10;
 		
 		public var autoPrinting:Boolean = false;
 		
@@ -178,6 +178,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE,onLoadTechPulse);
 				if(!latch.complite) return;
 				lastUpdatedTechPoints = latch.lastDataArr;
+				latch.clearResult();
 				checkPulse();
 			}
 			
@@ -206,6 +207,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE,onLoadLabStops);
 				if(!latch.complite) return;
 				labStops = latch.lastDataArr;
+				latch.clearResult();
 				checkPulse();
 			}
 			
@@ -232,6 +234,7 @@ package com.photodispatcher.print
 				latch.removeEventListener(Event.COMPLETE,onLoadPrintQueue);
 				if(!latch.complite) return;
 				printQueue = latch.lastDataArr;
+				latch.clearResult();
 				checkPulse();
 			}
 			
@@ -588,16 +591,20 @@ package com.photodispatcher.print
 				
 			} else if(readyDevices.length > 0 && !loadByDevices){
 				
-				// TODO запрос на дополнительные ГП
-				finishPulse();
 				// нужно сделать запрос на дополнительные ГП
-				//loadReadyForPrintingByDevices(readyDevices, addToQueueAfterPgList);
+				loadReadyForPrintingByDevices(getDeviceIds(readyDevices), addToQueueAfterPgList);
 				
 			} else {
 				
 				// нет свободных устройств
 				finishPulse();
 			}
+			
+		}
+		
+		protected function getDeviceIds(devices:Array):Array {
+			
+			return devices.map(function (dev:LabDevice, index:int, array:Array):int { return dev.id });
 			
 		}
 		
@@ -867,12 +874,16 @@ package com.photodispatcher.print
 		
 		protected var loadReadyForPrintingByDevicesHandler:Function;
 		
-		protected function loadReadyForPrintingByDevices(devices:Array, handler:Function):void
+		protected function loadReadyForPrintingByDevices(deviceIds:Array, handler:Function):void
 		{
 			
 			loadReadyForPrintingByDevicesHandler = handler;
-			// TODO шлём запрос на список ГП для определенных девайсов
-
+			
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE, onLoadReadyForPrintingByDevices);
+			latch.addLatch(svc.loadPrintPostByDev(new ArrayCollection(deviceIds), 0));
+			latch.start();
 			
 		}
 		

@@ -124,5 +124,17 @@ package com.photodispatcher.model.mysql
 			releaseError('DbLatch RPC fault: ' +event.fault.faultString + '\n' + event.fault.faultDetail);
 		}
 		
+		
+		public function clearResult():void {
+			
+			// пробуем подчистить память
+			if(lastResult && (lastResult is SelectResult)){
+				
+				(lastResult as SelectResult).data = null;
+				
+			}
+			
+		}
+		
 	}
 }
