@@ -27,6 +27,7 @@
 			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.print.PrintPulseManager;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.provider.ftp.FtpManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
@@ -85,6 +86,9 @@
 			
 			[Bindable]
 			private var stopLogList:IList;
+			
+			[Bindable]
+			public var printPulseManager:PrintPulseManager;
 			
 			public function init():void{
 				sources=new ArrayCollection(Context.getSources());
@@ -247,7 +251,11 @@
 						break;
 					
 					case 6:
-						currentState='stopLogView';
+						currentState='stopLogView'; // лог простоя
+						break;
+					
+					case 7:
+						currentState='printPulse'; // автопостановка
 						break;
 					
 				}
@@ -429,6 +437,7 @@
 		<s:State name="printReady"/>
 		<s:State name="logView"/>
 		<s:State name="stopLogView" />
+		<s:State name="printPulse" />
 	</s:states>
 
 	<s:Rect top="0" left="0" right="0" bottom="0">
@@ -446,6 +455,7 @@
 			<fx:String>Напечатаны</fx:String> 
 			<fx:String>Лог</fx:String>
 			<fx:String>Простой</fx:String>
+			<fx:String>Автопечать</fx:String>
 		</mx:ArrayCollection>
 	</s:TabBar>
 
@@ -647,6 +657,11 @@
 			</s:VGroup>
 			
 		</s:HGroup>
+		
+		<s:Button includeIn="printPulse" label="{printPulseManager.autoPrinting? 'Выключить' : 'Включить'}" 
+				  color="{printPulseManager.autoPrinting? 0xff0000 : 0}" 
+				  click="{printPulseManager.autoPrinting = !printPulseManager.autoPrinting}"
+				  />
 		
 	</s:Group>
 	

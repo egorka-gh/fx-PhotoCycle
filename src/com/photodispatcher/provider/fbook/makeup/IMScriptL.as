@@ -314,6 +314,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			var gc:IMCommand=new IMCommand();
 			gc.add('-size'); gc.add(size.x+'x'+size.y);
 			gc.add('xc:'+color);
+			gc.add('-background'); gc.add('transparent');
 			return gc;
 		}
 		

@@ -4,7 +4,6 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.OrderBuildEvent;
 	import com.photodispatcher.event.OrderLoadedEvent;
-	import com.photodispatcher.event.OrderPreprocessEvent;
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
@@ -241,6 +240,11 @@ package com.photodispatcher.provider.ftp{
 						writeOrders.splice(idx,1);
 					}
 					if(!order || order.state!=OrderState.PRN_WAITE) return;
+					//clean
+					if(order.hasSuborders){
+						for each(var so:SubOrder in order.suborders) so.destroyChilds();
+					}
+
 					//set extra state
 					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 					latch=new DbLatch();

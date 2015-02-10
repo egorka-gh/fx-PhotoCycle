@@ -105,12 +105,16 @@ package com.photodispatcher.provider.fbook.makeup{
 					releaseWithErr(OrderState.ERR_READ_LOCK,'Блокировка чтения или ошибка шаблона (FBookMakeupManager).');
 					return;
 				}
+				//postProcess common way
+				dispatchEvent(new Event(Event.COMPLETE));
+				/*
 				//run post process
 				if(pgArr && pgArr.length>0){
 					postProcess(pgArr);
 				}else{
 					dispatchEvent(new Event(Event.COMPLETE));
 				}
+				*/
 				return;
 			}
 			currSuborder.state=OrderState.PREPROCESS_PDF;

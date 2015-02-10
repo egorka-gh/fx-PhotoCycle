@@ -94,6 +94,10 @@ package com.photodispatcher.model.mysql
 			lastToken=event.token;
 			lastTag=lastToken.tag?lastToken.tag:'';
 			var latch:int=lastToken.latch;
+
+			//remove latch
+			var idx:int=latches.indexOf(latch);
+			if(idx!=-1) latches.splice(idx,1);
 			
 			//check for sql error
 			lastResult=event.result.result as SqlResult;
@@ -107,9 +111,6 @@ package com.photodispatcher.model.mysql
 					return;
 				}
 			}
-			//remove latch
-			var idx:int=latches.indexOf(latch);
-			if(idx!=-1) latches.splice(idx,1);
 
 			// reDispatch?
 			//event.token.dispatchEvent(event);
@@ -121,6 +122,18 @@ package com.photodispatcher.model.mysql
 			lastToken=event.token;
 			lastTag=lastToken.tag?lastToken.tag:'';
 			releaseError('DbLatch RPC fault: ' +event.fault.faultString + '\n' + event.fault.faultDetail);
+		}
+		
+		
+		public function clearResult():void {
+			
+			// пробуем подчистить память
+			if(lastResult && (lastResult is SelectResult)){
+				
+				(lastResult as SelectResult).data = null;
+				
+			}
+			
 		}
 		
 	}
