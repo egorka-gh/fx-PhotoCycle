@@ -20,7 +20,7 @@ package com.photodispatcher.provider.preprocess{
 		//public static const TEXT_UNDERCOLOR:String='#ffffff80';
 		public static const TEXT_UNDERCOLOR:String='white';
 
-		public static const TEMP_FOLDER:String='wrk';
+		public static const TEMP_FOLDER:String='wrk_pdf';
 		protected static const FILENAME_SHEET:String=TEMP_FOLDER+'/sheet';
 		protected static const FILENAME_COVER:String=TEMP_FOLDER+'/cover';
 		protected static const FILENAME_COVER_BACK:String=TEMP_FOLDER+'/cover_back';

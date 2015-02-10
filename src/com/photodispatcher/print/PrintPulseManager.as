@@ -66,7 +66,7 @@ package com.photodispatcher.print
 		/**
 		 * Интервал проверки пульса в мс.
 		 */
-		public var timerDelay:Number = 1000*10;
+		public var timerDelay:Number =0;//mem leac? 1000*10;
 		
 		public var autoPrinting:Boolean = false;
 		

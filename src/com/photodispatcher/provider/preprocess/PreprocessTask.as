@@ -94,7 +94,8 @@ package com.photodispatcher.provider.preprocess{
 				dispatchErr(order.state,resizeTask.error);
 				return;
 			}
-			startPdfmakeup();
+			startFBookMakeup();
+			//startPdfmakeup();
 		}
 		
 		private var pdfItems:Array=[];
@@ -301,8 +302,8 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 			trace('PreprocessTask. postProcess complited, order '+order.id);
-			//dispatchEvent(new OrderPreprocessEvent(order));
-			startFBookMakeup();
+			dispatchEvent(new OrderPreprocessEvent(order));
+			//startFBookMakeup();
 		}
 		
 		private var fbookBuilder:FBookMakeupManager;
@@ -319,9 +320,14 @@ package com.photodispatcher.provider.preprocess{
 			reportProgress();
 			if(fbookBuilder.hasErr){
 				dispatchEvent(new OrderPreprocessEvent(order,fbookBuilder.errNum,fbookBuilder.error));
+				return;
+			}
+			/*
 			}else{
 				dispatchEvent(new OrderPreprocessEvent(order))
 			}
+			*/
+			startPdfmakeup();
 		}
 		
 

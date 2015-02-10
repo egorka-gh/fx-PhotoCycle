@@ -57,11 +57,14 @@ package com.photodispatcher.model.mysql{
 			hasError=true;
 			error=err;
 			trace((debugName?'Latch '+debugName+' error: ':'')+ error);
+			destroyJoint();
+			/*
 			if(joint && joint.length>0){
 				var latch:AsyncLatch;
 				for each(latch in joint) latch.removeEventListener(Event.COMPLETE,onJoinComplite);
 				joint=null;
 			}
+			*/
 			if(started){
 				dispatchEvent(new Event(Event.COMPLETE));
 				if(!silent) showError();
@@ -98,13 +101,26 @@ package com.photodispatcher.model.mysql{
 			var latch:AsyncLatch=event.target as AsyncLatch;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onJoinComplite);
-				var idx:int=joint.indexOf(latch);
-				if(idx!=-1) joint.splice(idx,1);
+				if(joint){
+					var idx:int=joint.indexOf(latch);
+					if(idx!=-1) joint.splice(idx,1);
+				}
 				if(latch.hasError){
 					releaseError(latch.error);
 				}else{
 					checkComplite();
 				}
+			}
+		}
+		
+		protected function destroyJoint():void{
+			if(joint && joint.length>0){
+				var latch:AsyncLatch;
+				for each(latch in joint){
+					latch.destroyJoint();
+					latch.removeEventListener(Event.COMPLETE,onJoinComplite);
+				}
+				joint=null;
 			}
 		}
 		
