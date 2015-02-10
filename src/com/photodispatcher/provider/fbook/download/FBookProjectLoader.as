@@ -20,10 +20,13 @@ package com.photodispatcher.provider.fbook.download{
 	
 	import flash.events.Event;
 	import flash.events.IEventDispatcher;
+	import flash.events.TimerEvent;
+	import flash.utils.Timer;
 
 	[Event(name="complete", type="flash.events.Event")]
 	public class FBookProjectLoader extends Library	{
-		
+		public static const FETCH_TIMEOUT:int = 20000;
+
 		public var lastFetchedProject:FBookProject;
 		public var lastFetchedType:int;
 		public var lastFetchedId:int;
@@ -53,6 +56,7 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		override protected function serviceErrorHandler(event:ProjectServiceErrorEvent):void{
+			stopTimer();
 			if(unknownType){
 				switch(lastFetchedType){
 					case Book.PROJECT_TYPE:
@@ -87,6 +91,7 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		
 		public function fetchProject(projId:int, projType:int=-1):void{
+			stopTimer();
 			/*
 			if(!AuthService.instance || !AuthService.instance.authorized){
 				trace('FBook AuthService:login fault');
@@ -147,10 +152,32 @@ package com.photodispatcher.provider.fbook.download{
 					service.execute(bvo);
 					break;
 			}
+			startTimer();
 		}
+		
+		protected var timer:Timer;
+		
+		private function startTimer():void{
+			if(!timer){
+				timer = new Timer(FETCH_TIMEOUT, 1);
+				timer.addEventListener(TimerEvent.TIMER_COMPLETE, timerCompleteHandler);
+			}
+			timer.start();
+		}
+
+		private function stopTimer():void{
+			if(timer) timer.reset();
+		}
+
+		protected function timerCompleteHandler(event:TimerEvent):void{
+			lastErr='FBookProjectLoader: fetch timeout';
+			dispatchEvent(new Event(Event.COMPLETE));  
+		}
+
 		
 		override protected function serviceHandler(event:ProjectServiceEvent):void {
 			super.serviceHandler(event);
+			stopTimer();
 			lastErr='';
 			switch(event.type){
 				case ProjectServiceEvent.VIEW:

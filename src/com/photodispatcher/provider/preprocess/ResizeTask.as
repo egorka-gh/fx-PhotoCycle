@@ -73,7 +73,7 @@ package com.photodispatcher.provider.preprocess{
 		private function prepare():void{
 			var pg:PrintGroup;
 			var pgf:PrintGroupFile;
-			var ri:ResizeItem
+			var ri:ResizeItem;
 			prepareItems=[];
 			resizeItems=[];
 			for each(pg in order.printGroups){
@@ -153,51 +153,53 @@ package com.photodispatcher.provider.preprocess{
 					preLoadNext();
 					return;
 				}
-				loader=new Loader();
-				loader.addEventListener(AsyncErrorEvent.ASYNC_ERROR, onLoaderErr);
-				loader.addEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-				loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onLoaderErr);
-				//loader.contentLoaderInfo.addEventListener(Event.INIT,onContentLoaderInfo);
-				loader.contentLoaderInfo.addEventListener(Event.COMPLETE,onContentLoaderInfo);
-				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-				loader.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
-				loader.contentLoaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
+				createLoader();
 				try{
-					//TODO remove
-					//StateLogDAO.logState(order.state,order.id,'','Определение размера: '+currResizeItem.printGroupFile.file_name); 
 					loader.load(new URLRequest(currResizeItem.fileFolder+File.separator+currResizeItem.printGroupFile.file_name));
 				}catch(err:Error) {
-					loader.removeEventListener(AsyncErrorEvent.ASYNC_ERROR, onLoaderErr);
-					loader.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-					loader.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onLoaderErr);
-					//loader.contentLoaderInfo.removeEventListener(Event.INIT,onContentLoaderInfo);
-					loader.contentLoaderInfo.removeEventListener(Event.COMPLETE,onContentLoaderInfo);
-					loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-					loader.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
-					loader.contentLoaderInfo.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
+					destroyLoader();
 					msg='Ошибка определения размера (loader.load): '+err.message+'; '+currResizeItem.fileFolder+File.separator+currResizeItem.printGroupFile.file_name;
 					trace('ResizeTask. '+msg);
 					if(logStates) StateLog.log(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'',msg); 
 					if (currResizeItem.isNotJPG){
 						resizeItems.push(currResizeItem);
 					}
-					loader=null;
 					preLoadNext();
 					return;
 				}
 			}
 		}
 		
+		private function createLoader():void{
+			if(loader) destroyLoader();
+			loader=new Loader();
+			loader.addEventListener(AsyncErrorEvent.ASYNC_ERROR, onLoaderErr);
+			loader.addEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
+			loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onLoaderErr);
+			//loader.contentLoaderInfo.addEventListener(Event.INIT,onContentLoaderInfo);
+			loader.contentLoaderInfo.addEventListener(Event.COMPLETE,onContentLoaderInfo);
+			loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
+			loader.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn);
+			loader.contentLoaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn);
+		}
+		private function destroyLoader():void{
+			if(!loader) return;
+			loader.removeEventListener(AsyncErrorEvent.ASYNC_ERROR, onLoaderErr);
+			loader.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
+			loader.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onLoaderErr);
+			//loader.contentLoaderInfo.addEventListener(Event.INIT,onContentLoaderInfo);
+			loader.contentLoaderInfo.removeEventListener(Event.COMPLETE,onContentLoaderInfo);
+			loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
+			loader.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn);
+			loader.contentLoaderInfo.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn);
+			try{
+				loader.unload();
+			}catch(err:Error){}
+			loader=null;
+		}
+		
 		private function onLoaderErrUn(event:UncaughtErrorEvent):void{
-			if(loader){
-				loader.removeEventListener(AsyncErrorEvent.ASYNC_ERROR, onLoaderErr);
-				loader.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-				loader.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onLoaderErr);
-				loader.contentLoaderInfo.removeEventListener(Event.COMPLETE,onContentLoaderInfo);
-				loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-				loader.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
-				loader.contentLoaderInfo.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
-			}
+			destroyLoader();
 			var msg:String='';
 			if(event.error is Error){
 				var error:Error = event.error as Error;
@@ -209,38 +211,24 @@ package com.photodispatcher.provider.preprocess{
 				trace('?????');
 			}
 			trace('ResizeTask. Ошибка определения размера: '+msg);
-			//TODO remove
-			//StateLogDAO.logState(order.state,order.id,'','Ошибка определения размера(un) : '+msg); 
 			if(currResizeItem){
 				if(logStates) StateLog.log(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'','Ошибка определения размера(un) : '+msg+'; '+ currResizeItem.printGroupFile.file_name); 
 				if (currResizeItem.isNotJPG){
 					resizeItems.push(currResizeItem);
 				}
 			}
-			loader=null;
 			preLoadNext();
 		}
 
 		private function onLoaderErr(e:ErrorEvent):void{
-			if(loader){
-				loader.removeEventListener(AsyncErrorEvent.ASYNC_ERROR, onLoaderErr);
-				loader.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-				loader.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onLoaderErr);
-				loader.contentLoaderInfo.removeEventListener(Event.COMPLETE,onContentLoaderInfo);
-				loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-				loader.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
-				loader.contentLoaderInfo.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
-			}
+			destroyLoader();
 			trace('ResizeTask. Ошибка определения размера: '+e.type+'; '+e.text);
-			//TODO remove
-			//StateLogDAO.logState(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'','Ошибка определения размера: '+e.type+'; '+e.text+'; '); 
 			if(currResizeItem){
 				if(logStates) StateLog.log(OrderState.ERR_FILE_SYSTEM,currResizeItem.order_id,'','Ошибка определения размера: '+e.type+'; '+e.text+'; '+ currResizeItem.printGroupFile.file_name); 
 				if (currResizeItem.isNotJPG){
 					resizeItems.push(currResizeItem);
 				}
 			}
-			loader=null;
 			preLoadNext();
 		}
 		private function onContentLoaderInfo(e:Event):void{
@@ -253,17 +241,7 @@ package com.photodispatcher.provider.preprocess{
 					currResizeItem.size.y=0;
 					//if(e.type==Event.INIT) return;//waite for complite event?
 				}
-				loader.removeEventListener(AsyncErrorEvent.ASYNC_ERROR, onLoaderErr);
-				loader.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-				loader.removeEventListener(SecurityErrorEvent.SECURITY_ERROR, onLoaderErr);
-				loader.contentLoaderInfo.removeEventListener(Event.COMPLETE,onContentLoaderInfo);
-				loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, onLoaderErr);
-				loader.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
-				loader.contentLoaderInfo.uncaughtErrorEvents.removeEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onLoaderErrUn)
-				try{
-					loader.unload();
-				}catch(err:Error){}
-				loader=null;
+				destroyLoader();
 			}
 			if (currResizeItem && (currResizeItem.mustToResize() || currResizeItem.isNotJPG)){
 				resizeItems.push(currResizeItem);
