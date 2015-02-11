@@ -1,6 +1,7 @@
 package com.photodispatcher.print
 {
 	import com.akmeful.util.ArrayUtil;
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabStopLog;
@@ -67,8 +68,9 @@ package com.photodispatcher.print
 		/**
 		 * Интервал проверки пульса в мс.
 		 */
-		public var timerDelay:Number = 1*1000;//mem leac? 1000*10;
+		public var timerDelay:Number = 10*1000;//mem leac? 1000*10;
 		
+		[Bindable]
 		public var autoPrinting:Boolean = false;
 		
 		public var printQueueManager:PrintQueueManager;
@@ -694,7 +696,7 @@ package com.photodispatcher.print
 				while (i < devList.length && !found) {
 					
 					dev = devList[i] as LabDevice;
-					lab = labMap[dev.id] as LabGeneric;
+					lab = labMap[dev.lab] as LabGeneric;
 					
 					if(lab.printChannel(pg, dev.rollsOnline.toArray()) && checkDevicePrintQueueReady(devPrintQueueMap[dev.id])){
 						
@@ -783,6 +785,7 @@ package com.photodispatcher.print
 			
 			var dev:LabDevice;
 			var pg:PrintGroup;
+			var lab:LabGeneric;
 			
 			for each (dev in devices){
 				
@@ -790,7 +793,12 @@ package com.photodispatcher.print
 					
 					if(pg.state == OrderState.PRN_QUEUE){
 						
-						// TODO нужно добавить ГП в лабу, но перед этим проверить наличие этой ГП в каждой лабе
+						// нужно добавить ГП в лабу, но перед этим проверить наличие этой ГП в соответствующей лабе
+						lab = labMap[pg.destination] as LabGeneric;
+						
+						if(!lab.checkPrintGroupInLab(pg)){
+							lab.post(pg, Context.getAttribute('reversPrint'));
+						}
 						
 						
 					}
