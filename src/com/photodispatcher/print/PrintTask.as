@@ -88,7 +88,7 @@ package com.photodispatcher.print{
 			printContext[KEY_GROUP_ID]=printGrp.humanId;
 			printContext[KEY_JOB_ID]=printGrp.numericId;
 			//printContext[KEY_IMG_COUNT]=printGrp.files.length;
-			printContext[KEY_IMG_COUNT]=printGrp.printFiles.length;
+			if(printGrp.printFiles) printContext[KEY_IMG_COUNT]=printGrp.printFiles.length;
 			var dtFmt:DateTimeFormatter=new DateTimeFormatter();
 			//4 noritsu
 			dtFmt.dateTimePattern='yyyy:MM:dd:HH:mm:ss';//2012:07:13:15:02:51
@@ -145,6 +145,7 @@ package com.photodispatcher.print{
 				return;
 			}
 			printGrp.files=pgBd.files;
+			printContext[KEY_IMG_COUNT]=printGrp.printFiles.length;
 			runPrepare();
 		}
 
