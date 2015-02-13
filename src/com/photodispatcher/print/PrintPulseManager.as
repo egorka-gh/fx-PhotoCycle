@@ -9,11 +9,13 @@ package com.photodispatcher.print
 	import com.photodispatcher.model.mysql.entities.LabTimetable;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.TechLog;
 	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.model.mysql.services.TechService;
+	import com.photodispatcher.printer.Printer;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -631,8 +633,10 @@ package com.photodispatcher.print
 				devIsReady = false;
 				
 				// проверяем лог простоя
-				if(dev.lastStopLog == null || (dev.lastStopLog && dev.lastStopLog.time_to && dev.lastStopLog.time_to.time < now.time)){
-					// если простоя нет или он уже закончился
+				if(dev.lastStopLog == null || 
+					(dev.lastStopLog && dev.lastStopLog.time_to && dev.lastStopLog.time_to.time < now.time) || 
+					(dev.lastStopLog && dev.lastStopLog.time_to == null && dev.lastStopLog.lab_stop_type == LabStopType.NO_ORDER)){
+					// если простоя нет или он уже закончился или простой из-за отсутствия заказов
 					tt = dev.getCurrentTimeTableByDate(now);
 					
 					if(tt && now.time>=tt.time_from.time && now.time<=tt.time_to.time){
@@ -726,15 +730,53 @@ package com.photodispatcher.print
 			
 			
 			if(!loadByDevices){
-				// добавляем в очередь после загрузки общего списка
-				updatePgStatus(readyPgList, onUpdatePgStatusAfterPgList);
+				// проверяем на сайте, после чего добавляем в очередь после загрузки общего списка
+				//updatePgStatus(readyPgList, onUpdatePgStatusAfterPgList);
+				checkWebReady(readyPgList, onUpdatePgStatusAfterPgList);
 				
 			} else {
-				// добавляем в очередь после загрузки списка по девайсам
-				updatePgStatus(readyPgList, onUpdatePgStatusAfterByDevices);
+				// проверяем на сайте, после чего добавляем в очередь после загрузки списка по девайсам
+				//updatePgStatus(readyPgList, onUpdatePgStatusAfterByDevices);
+				checkWebReady(readyPgList, onUpdatePgStatusAfterByDevices);
 				
 			}
 			
+			
+		}
+		
+		protected var webTask:PrintQueueWebTask;
+		protected var webTaskHandler:Function;
+		
+		protected function checkWebReady(printGroups:Array, handler:Function):void {
+			
+			webTaskHandler = handler;
+			
+			if(printGroups.length == 0){
+				updatePgStatus(printGroups, webTaskHandler);
+				return;
+			}
+			
+			webTask = new PrintQueueWebTask(printGroups);
+			webTask.addEventListener(Event.COMPLETE, checkWebReadyHandler);
+			webTask.execute();
+			
+		}
+		
+		protected function checkWebReadyHandler(event:Event):void
+		{
+			
+			var webReady:Array = webTask.getItemsReady();
+			
+			for each (var pg:PrintGroup in webReady){
+				// нужно поставить корректный статус для очереди, при веб проверке может меняться
+				pg.state = OrderState.PRN_QUEUE;
+			}
+			
+			//добавляем в очередь
+			updatePgStatus(webReady, webTaskHandler);
+			
+			webTask.removeEventListener(Event.COMPLETE, checkWebReadyHandler);
+			webTask = null;
 			
 		}
 		
@@ -800,6 +842,7 @@ package com.photodispatcher.print
 						
 						if(!lab.checkPrintGroupInLab(pg)){
 							lab.post(pg, Context.getAttribute('reversPrint'));
+							printTicket(pg);
 						}
 						
 						
@@ -812,6 +855,11 @@ package com.photodispatcher.print
 			
 		}
 		
+		protected function printTicket(pg:PrintGroup):void {
+			
+			Printer.instance.printOrderTicket(pg);
+			
+		}
 		
 		/**
 		 * обрабатываем запрос к серверу на добавление ГП в очередь из ОБЩЕГО СПИСКА
