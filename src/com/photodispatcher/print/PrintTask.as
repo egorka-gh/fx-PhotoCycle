@@ -144,7 +144,11 @@ package com.photodispatcher.print{
 				dispatchErr('Не верный статус группы печати (fill Captured) '+printGrp.id);
 				return;
 			}
-			printGrp.files=pgBd.files;
+			
+			printGrp.files = pgBd.files;
+			printGrp.source_id = pgBd.source_id;
+			printGrp.order_folder = pgBd.order_folder;
+			
 			printContext[KEY_IMG_COUNT]=printGrp.printFiles.length;
 			runPrepare();
 		}
