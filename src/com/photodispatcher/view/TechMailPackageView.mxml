@@ -85,13 +85,14 @@
 			private function openCallBack(grid:DataGrid,param:int):void{
 				var onItem:MailPackage=grid.selectedItem as MailPackage;
 				if(onItem){
-					showMP();
+					showMP(onItem);
 				}
 			}
 			
 			private function showMP(item:MailPackage):void{
 				if(!item) return;
 				var pop:MailPackagePopUp= new MailPackagePopUp();
+				//if(currentState=='inQueue')
 				pop.loadFromWeb(item.source, item.id);
 			}
 			

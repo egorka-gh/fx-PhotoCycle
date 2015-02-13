@@ -59,7 +59,7 @@
 				
 				if(pw.hasError){
 					trace('web getMailPackage err: '+pw.errMesage);
-					stateMsg='Ошибка загрузки с сайта: '+pw.errMesage);
+					stateMsg='Ошибка загрузки с сайта: '+pw.errMesage;
 					return;
 				}
 				mailPackage=pw.getLastMailPackage();
@@ -100,11 +100,22 @@
 		</s:Form>
 
 		<s:Spacer height="5"/>
-		<s:Label text="Атрибуты"/>
-		<s:DataGrid id="dgAtrs" selectionMode="singleRow" width="100%" height="100%" 
-					dataProvider="{mailPackage.properties}" locale="ru_RU" columns="{MailPackageProperty.gridColumns()}"/>
+		<s:HGroup width="100%" height="100%" gap="10">
+			<s:VGroup width="50%" height="100%" gap="5">
+				<s:Label text="Атрибуты"/>
+				<s:DataGrid id="dgAtrs" selectionMode="singleRow" width="100%" height="100%" 
+							dataProvider="{mailPackage.properties}" locale="ru_RU" columns="{MailPackageProperty.gridColumns()}"/>
+			</s:VGroup>
+			<s:VGroup width="50%" height="100%" gap="5">
+				<s:Label text="Заказы"/>
+				<s:DataGrid id="dgAtrs" selectionMode="singleRow" width="100%" height="100%" 
+							dataProvider="{mailPackage.properties}" locale="ru_RU" columns="{MailPackageProperty.gridColumns()}"/>
+				<s:Spacer height="5"/>
+				<s:Label text="Штрих коды"/>
+			</s:VGroup>
+		</s:HGroup>
 
-		<s:Spacer height="100%"/>
+		<s:Spacer height="5"/>
 		<s:HGroup width="100%" horizontalAlign="right">
 			<s:Button id="btClose" label="Закрыть" click="{close()}"/>
 		</s:HGroup>
