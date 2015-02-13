@@ -6,6 +6,9 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackage")]
@@ -13,6 +16,45 @@ package com.photodispatcher.model.mysql.entities {
 
         public function MailPackage() {
             super();
+			state=OrderState.TECH_OTK;
         }
+		
+		override public function set state(value:int):void{
+			super.state = value;
+			if(super.state != value){
+				state_name= OrderState.getStateName(value);
+				state_date= new Date();
+			}
+		}
+		
+		override public function get state():int{
+			return super.state;
+		}
+		
+		
+		
+		public static function inQueueColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			col= new GridColumn('source_name'); col.headerText='Источник'; result.addItem(col);
+			col= new GridColumn('source_code'); col.headerText='Код'; col.width=15; result.addItem(col); 
+			col= new GridColumn('id'); col.headerText='Группа'; result.addItem(col); 
+			col= new GridColumn('client_id'); col.headerText='Клиент'; result.addItem(col); 
+			col= new GridColumn('state_name'); col.headerText='Макс статус'; result.addItem(col); 
+			col= new GridColumn('min_ord_state_name'); col.headerText='Мин статус'; result.addItem(col); 
+			
+			/*
+			col= new GridColumn('id'); result.addItem(col);
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('src_date'); col.headerText='Размещен'; col.formatter=fmt;  result.addItem(col);
+			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('ftp_folder'); col.headerText='Ftp Папка'; result.addItem(col);
+			col= new GridColumn('fotos_num'); col.headerText='Кол фото'; result.addItem(col);
+			*/
+			return result;
+		}
+
     }
 }

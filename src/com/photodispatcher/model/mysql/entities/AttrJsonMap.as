@@ -22,6 +22,8 @@ package com.photodispatcher.model.mysql.entities {
 		private static var baseJsonMap:Object;
 		private static var extraJsonMap:Object;
 		private static var soMap:Object; 
+		private static var mpMap:Object; 
+		private static var mppMap:Object; 
 		
 		public static function initJsonMap():DbLatch{
 			var service:DictionaryService=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
@@ -45,6 +47,17 @@ package com.photodispatcher.model.mysql.entities {
 			soLatch.start();
 			latch.join(soLatch);
 
+			var mpLatch:DbLatch= new DbLatch();
+			mpLatch.addEventListener(Event.COMPLETE, onLoad);
+			mpLatch.addLatch(service.getOrderJsonAttr(AttrType.FAMILY_MAILPACKAGE),'mailpackage');
+			mpLatch.start();
+			latch.join(mpLatch);
+
+			var mppLatch:DbLatch= new DbLatch();
+			mppLatch.addEventListener(Event.COMPLETE, onLoad);
+			mppLatch.addLatch(service.getOrderJsonAttr(AttrType.FAMILY_MAILPACKAGE_PROP),'mailpackage_prop');
+			mppLatch.start();
+			latch.join(mppLatch);
 			
 			latch.start();
 			return latch;
@@ -74,6 +87,10 @@ package com.photodispatcher.model.mysql.entities {
 						extraJsonMap=newMap;
 					}else if(latch.lastToken.tag=='suborder'){
 						soMap=newMap;
+					}else if(latch.lastToken.tag=='mailpackage'){
+						mpMap=newMap;
+					}else if(latch.lastToken.tag=='mailpackage_prop'){
+						mppMap=newMap;
 					}
 				}
 			}
@@ -101,6 +118,22 @@ package com.photodispatcher.model.mysql.entities {
 				return;
 			}
 			return extraJsonMap[sourceType.toString()] as Array;
+		}
+
+		public static function getMailPackageJson(sourceType:int=0):Array{
+			if(!mpMap){
+				throw new Error('Ошибка инициализации AttrJsonMap.initJsonMap',OrderState.ERR_APP_INIT);
+				return;
+			}
+			return mpMap[sourceType.toString()] as Array;
+		}
+
+		public static function getMailPackagePropJson(sourceType:int=0):Array{
+			if(!mppMap){
+				throw new Error('Ошибка инициализации AttrJsonMap.initJsonMap',OrderState.ERR_APP_INIT);
+				return;
+			}
+			return mppMap[sourceType.toString()] as Array;
 		}
 
     }

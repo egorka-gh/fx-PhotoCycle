@@ -500,6 +500,7 @@ package com.photodispatcher.factory{
 							pgCover.book_num=so.books_num; //.prt_qty;
 							pgCover.height=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
 							//pgCover.bookTemplate.sheet_len=Math.max(coverPixels.x,coverPixels.y);
+							pgCover.height=pgCover.height+2*pgCover.bookTemplate.height_add;
 						}else{
 							//insert? 
 							pgCover=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_INSERT);

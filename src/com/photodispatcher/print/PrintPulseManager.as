@@ -100,6 +100,8 @@ package com.photodispatcher.print
 				waitForLabConfig = false;
 			}
 			
+			return; //bug in checkPulse
+			
 			loadPulse();
 			startTimer();
 		}

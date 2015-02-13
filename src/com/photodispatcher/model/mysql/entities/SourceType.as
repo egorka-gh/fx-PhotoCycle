@@ -34,6 +34,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const TECH_COVER_BLOK_JOIN:int=380;//20;
 		public static const TECH_PRINT_POST:int=210;//21;
 		public static const TECH_OTK:int=450;//22;
-
+		public static const TECH_PACKING:int=455;
+		
     }
 }

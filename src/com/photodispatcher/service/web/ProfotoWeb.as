@@ -192,7 +192,7 @@ package com.photodispatcher.service.web{
 			var result:Object;
 			switch (state){
 				case STATE_GET_ORDERS_NUM:
-					result=parseOrders(e.data);
+					result=parseRaw(e.data);
 					//TODO hardcoded totalCount
 					if(!result || !result.hasOwnProperty('totalCount')){
 						abort('Ошибка структуры данных');
@@ -220,7 +220,7 @@ package com.photodispatcher.service.web{
 					client.getData( new InvokerUrl(baseUrl+URL_ORDERS,baseUrl+URL_ORDERS),post);
 					break;
 				case STATE_GET_ORDERS:
-					result=parseOrders(e.data);
+					result=parseRaw(e.data);
 					//TODO hardcoded items
 					if(!result || !result.hasOwnProperty('items') || !(result.items is Array)){
 						abort('Ошибка структуры данных');
@@ -239,7 +239,7 @@ package com.photodispatcher.service.web{
 					getData();
 					break;
 				case STATE_CHECK_ORDER_STATE:
-					result=parseOrders(e.data);
+					result=parseRaw(e.data);
 					//TODO hardcoded items
 					if(!result || !result.hasOwnProperty('items') || !(result.items is Array)){
 						abort('Ошибка структуры данных');

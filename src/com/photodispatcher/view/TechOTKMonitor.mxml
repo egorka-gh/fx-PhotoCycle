@@ -29,6 +29,8 @@
 
 			[Bindable]
 			public var techPoint:TechPoint;
+			
+			public var isActive:Boolean;
 
 			private function init():void{
 				refresh();
@@ -54,6 +56,7 @@
 			private var newScanId:String;
 
 			private function onBarCode(event:BarCodeEvent):void{
+				if(!isActive) return;
 				var barcode:String=event.barcode;
 				var newBook:int;
 				if(newScanId) return; //previouse scan incomplite

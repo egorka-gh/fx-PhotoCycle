@@ -39,11 +39,17 @@
 			
 			[Bindable]
 			private var techPiontsAC:ArrayCollection;
+			[Bindable]
+			private var mailTechPiontsAC:ArrayCollection;
 			
 			[Bindable]
 			private var techPointObj:TechPoint;
 			private var techPoint:int;
-			
+
+			[Bindable]
+			private var mailTechPointObj:TechPoint;
+			private var mailTechPoint:int;
+
 			[Bindable]
 			private var refreshInterval:int;
 			
@@ -96,9 +102,12 @@
 				latch.addLatch(svc.loadAll(SourceType.TECH_OTK));
 				latch.start();
 				initLatch.join(latch);
-				//TODO REFACTOR !!!
-				//var dao:TechPointDAO=new TechPointDAO();
-				//techPiontsAC=dao.findAll(false, SourceType.TECH_OTK);
+				
+				latch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onMTPLoad);
+				latch.addLatch(svc.loadAll(SourceType.TECH_PACKING));
+				latch.start();
+				initLatch.join(latch);
 				
 				initLatch.start();
 			}
@@ -108,6 +117,15 @@
 					latch.removeEventListener(Event.COMPLETE,onTPLoad);
 					if(latch.complite){
 						techPiontsAC=latch.lastDataAC;
+					}
+				}
+			}
+			private function onMTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onMTPLoad);
+					if(latch.complite){
+						mailTechPiontsAC=latch.lastDataAC;
 					}
 				}
 			}
@@ -124,6 +142,7 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					techPoint=so.data.monitorTechPoint;
+					mailTechPoint=so.data.mailTechPoint;
 					//compliteTechType=so.data.compliteTechType;
 					refreshInterval=so.data.refreshInterval;
 					var configPass:String=so.data.configPass;;
@@ -132,6 +151,7 @@
 				}
 				Context.setAttribute("workFolder", workFolder);
 				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
+				if(mailTechPoint) mailTechPointObj=ArrayUtil.searchItem('id',mailTechPoint,mailTechPiontsAC.source) as TechPoint;
 				
 				var coms:Array=ComInfo.load();
 				var ci:ComInfo;
@@ -166,7 +186,7 @@
 				//var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
 				//var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
 				if(!techPointObj){ // || !startTT ||!endTT){
-					Alert.show('Монитор не настроен');
+					Alert.show('Не настроена тех точка ОТК');
 					return;
 				}
 				if(comReader.num){
@@ -330,6 +350,20 @@
 				}
 			}
 			
+			protected function button5_clickHandler(event:MouseEvent):void{
+				currentState='mail';
+				
+			}
+			
+			protected function ddMTechPoint_changeHandler(event:IndexChangeEvent):void{
+				mailTechPointObj= ddMTechPoint.selectedItem as TechPoint;
+				if(mailTechPointObj){
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.mailTechPoint = mailTechPointObj.id;
+					so.flush();  
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -341,6 +375,7 @@
 		<s:State name="disconnected"/>
 		<s:State name="config"/>
 		<s:State name="monitor" enterState="state1_enterStateHandler(event)"/>
+		<s:State name="mail" enterState="{cfgEnabled=false}"/>
 	</s:states>
 	
 	<s:Rect top="0" left="0" right="0" bottom="0">
@@ -355,11 +390,18 @@
 	<s:VGroup  includeIn="config" enabled="{cfgEnabled}" 
 			   gap="5" top="20" left="20" right="5" bottom="50">
 		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label id="lbLong"  text="Технологическая точка:"/>
+			<s:Label text="Технологическая точка ОТК:"/>
 			<s:DropDownList id="ddTechPoint" dataProvider="{techPiontsAC}" selectedItem="{techPointObj}" 
 							labelField="name"  width="250" change="ddTechPoint_changeHandler(event)"/>
 		</s:HGroup>
-		
+
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label id="lbLong"  text="Технологическая точка Упаковка:"/>
+			<s:DropDownList id="ddMTechPoint" dataProvider="{mailTechPiontsAC}" selectedItem="{mailTechPointObj}" 
+							labelField="name"  width="250" change="ddMTechPoint_changeHandler(event)"/>
+		</s:HGroup>
+
 		<s:Spacer height="10"/>
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Рабочая папка:" width="{lbLong.width}"/>
@@ -427,9 +469,10 @@
 		
 	</s:VGroup>
 	
-	<view:TechOTKMonitor id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}"
+	<view:TechOTKMonitor id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" isActive="{currentState=='techMonitor'}"
 						 top="20" left="20" right="20" bottom="50"/>
-	
+	<view:TechMailPackageView id="mpView" includeIn="mail"
+							  top="20" left="20" right="20" bottom="50"/>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
 		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
 		<s:Group width="5">
@@ -441,9 +484,10 @@
 		</s:Group>-->
 		<s:Label text="{lastBarcode}" height="100%" verticalAlign="bottom"/>
 		<s:Spacer width="100%"/>
-		<s:Button label="Конфигурация" includeIn="monitor" click="button2_clickHandler(event)"/>
+		<s:Button label="Конфигурация" includeIn="monitor,mail" click="button2_clickHandler(event)"/>
 		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
-		<s:Button label="Монитор" includeIn="config" click="button1_clickHandler(event)"/>
+		<s:Button label="ОТК" includeIn="config, mail" click="button1_clickHandler(event)"/>
+		<s:Button label="Упаковка" includeIn="config, monitor" click="button5_clickHandler(event)"/>
 		<s:Button label="Закрыть программу" click="button4_clickHandler(event)" />
 	</s:HGroup>
 	

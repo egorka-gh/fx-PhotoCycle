@@ -210,7 +210,7 @@ package com.photodispatcher.service.web{
 		
 		private var wrongSidCount:int=0;
 		override protected function handleData(e:WebEvent):void{
-			var result:Object=parseOrders(e.data);
+			var result:Object=parseRaw(e.data);
 			if(!result){
 				abort('Ошибка web: '+e.data);
 				source.fbookSid='';

@@ -3,6 +3,7 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.mysql.AsyncLatch;
+	import com.photodispatcher.model.mysql.entities.MailPackage;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.util.JsonUtil;
@@ -24,6 +25,7 @@ package com.photodispatcher.service.web{
 		protected static const CMD_SYNC:int=1;
 		protected static const CMD_CHECK_STATE:int=2;
 		protected static const CMD_SET_STATE:int=3;
+		protected static const CMD_GET_PACKAGE:int=4;
 
 		public var isRunning:Boolean=false;
 
@@ -50,6 +52,13 @@ package com.photodispatcher.service.web{
 			return _errMesage;
 		}
 		
+		protected var lastPackageId:int;
+		protected var lastPackage:MailPackage;
+		public function getLastMailPackage():MailPackage{
+			return lastPackage;
+		}
+		
+		
 		protected var client:WebClient;
 		protected var baseUrl:String;
 
@@ -67,6 +76,9 @@ package com.photodispatcher.service.web{
 			throw new Error("You need to override sync() in your concrete class");
 		}
 		public function getOrder(order:Order):void{
+			throw new Error("You need to override getOrder() in your concrete class");
+		}
+		public function getMailPackage(packageId:int):void{
 			throw new Error("You need to override getOrder() in your concrete class");
 		}
 		
@@ -139,7 +151,7 @@ package com.photodispatcher.service.web{
 		}
 
 		protected var lastRawData:Object;
-		protected function parseOrders(raw:Object):Object{
+		protected function parseRaw(raw:Object):Object{
 			lastRawData=raw;
 			var s:String=(raw as String);
 			if(!raw ||!s){

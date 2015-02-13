@@ -431,30 +431,6 @@ package com.photodispatcher.provider.ftp{
 		
 		private function checkQueue():void{
 			if(webApplicant || !isStarted || forceStop) return;
-			/*
-			var newOrder:Order;
-			var ord:Order;
-			//chek queue
-			for each (ord in queue){
-				if(ord && !ord.exceedErrLimit){
-					if(ord.state>0){
-						//if(ord.state==OrderState.FTP_WEB_CHECK) ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
-						//if(ord.state==OrderState.FTP_WEB_OK && ord.id!=listOrderId) ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
-						if(ord.state==OrderState.WAITE_FTP || ord.state==OrderState.FTP_FORWARD){
-							if(!newOrder){
-								newOrder=ord;
-							}else if(!newOrder.ftpForwarded && ord.ftpForwarded){
-								newOrder=ord;
-							}
-						}
-					}else if(ord.state!=OrderState.ERR_WRITE_LOCK){
-						//reset error
-						//ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
-						resetOrderState(ord);
-					}
-				}
-			}
-			*/
 			var newOrder:Order=fetch();
 			if(newOrder && !webApplicant){
 				trace('QueueManager.checkQueue web request '+newOrder.ftp_folder);

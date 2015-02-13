@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:DefaultGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/halo"
+						   implements="spark.components.gridClasses.IGridVisualElement"
+						   background="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.MailPackage;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			
+			import spark.components.Grid;
+			
+			public function prepareGridVisualElement(grid:Grid, rowIndex:int, columnIndex:int):void{
+				var mp:MailPackage;
+				if (!grid.dataProvider || rowIndex >= grid.dataProvider.length)
+					data = null;
+				else
+					data = grid.dataProvider.getItemAt(rowIndex);
+				mp= data as MailPackage;
+				if(mp){
+					if(mp.min_ord_state=0){
+						backgroundColor=0xFFFFFF;
+					}else if(mp.min_ord_state=OrderState.TECH_OTK){
+						backgroundColor=0x99EE99;	
+					}else{
+						backgroundColor=0xEEEE99;	
+					}
+				}else{
+					//backgroundColor=0xDDDDDD;
+					backgroundColor=0xFFFFFF;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+</s:DefaultGridItemRenderer>

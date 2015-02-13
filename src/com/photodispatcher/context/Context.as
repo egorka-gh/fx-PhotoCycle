@@ -23,6 +23,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.DictionaryService;
 	import com.photodispatcher.model.mysql.services.LabResizeService;
 	import com.photodispatcher.model.mysql.services.LabService;
+	import com.photodispatcher.model.mysql.services.MailPackageService;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
@@ -279,7 +280,8 @@ package com.photodispatcher.context{
 				TechPointService,
 				TechPickerService,
 				TechService,
-				OrderService //+
+				OrderService,
+				MailPackageService//+
 			]);
 			
 			//fill from config

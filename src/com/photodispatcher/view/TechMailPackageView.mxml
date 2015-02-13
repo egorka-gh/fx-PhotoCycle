@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+		 creationComplete="{init()}" 
+		 >
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.MailPackage;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayList;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+	
+			public var isActive:Boolean;
+			
+			[Bindable]
+			private var packagesAC:ArrayCollection;
+			[Bindable]
+			private var gridColumns:ArrayList;
+			
+			private function init():void{
+				refresh();
+			}
+			
+			private function detectState():void{
+				switch(tbView.selectedIndex){
+					case 0:
+						currentState='inQueue';
+						break;
+					case 1:
+						currentState='packageList';
+						break;
+					case 2:
+						currentState='forSendList';
+						break;
+				}
+				refresh();
+			}
+			
+			private function refresh():void{
+				packagesAC=null;
+				switch(currentState){
+					case 'inQueue':
+						gridColumns=MailPackage.inQueueColumns();
+						loadInQueue();
+						break;
+					case 'packageList':
+						break;
+					case 'forSendList':
+						break;
+				}
+			}
+
+			private function loadInQueue():void{
+				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onload);
+				latch.addLatch(svc.loadReady4Mail());
+				latch.start();
+			}
+			private function onload(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onload);
+					if(latch.complite){
+						packagesAC=latch.lastDataAC;
+					}
+				}
+			}
+			
+			
+			
+			protected function dgPackages_creationCompleteHandler(event:FlexEvent):void{
+				var gridMenu:GridContexMenu;
+				gridMenu= new GridContexMenu(dgPackages); 
+				gridMenu.addItem('Открыть',openCallBack);
+			}
+			private function openCallBack(grid:DataGrid,param:int):void{
+				var onItem:MailPackage=grid.selectedItem as MailPackage;
+				if(onItem){
+					showMP();
+				}
+			}
+			
+			private function showMP(item:MailPackage):void{
+				if(!item) return;
+				var pop:MailPackagePopUp= new MailPackagePopUp();
+				pop.loadFromWeb(item.source, item.id);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="inQueue"/>
+		<s:State name="packageList"/>
+		<s:State name="forSendList"/>
+		<s:State name="packageView"/>
+	</s:states>
+
+	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
+		<mx:ArrayCollection>
+			<fx:String>Ожидают упаковки</fx:String> 
+			<fx:String>На упаковке</fx:String> 
+			<fx:String>К отправке</fx:String> 
+		</mx:ArrayCollection>
+	</s:TabBar>
+	
+	<s:VGroup top="20" left="10" right="10" bottom="10">
+		<s:HGroup width="100%" horizontalAlign="right">
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<s:DataGrid id="dgPackages" selectionMode="singleRow"
+					fontSize="14" width="100%" height="100%"
+					creationComplete="dgPackages_creationCompleteHandler(event)"
+					dataProvider="{packagesAC}" locale="ru_RU" columns="{gridColumns}">
+			<s:rowBackground>
+				<fx:Component>
+					<itemRenderer:TechMailPDataGridRowBackground/>
+				</fx:Component>
+			</s:rowBackground>
+		</s:DataGrid>
+		
+	</s:VGroup>
+	
+</s:Group>

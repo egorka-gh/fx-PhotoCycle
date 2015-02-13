@@ -6,10 +6,22 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackageProperty")]
     public class MailPackageProperty extends MailPackagePropertyBase {
+
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			col= new GridColumn('property_name'); col.headerText='Наименование'; result.addItem(col);
+			col= new GridColumn('value'); col.headerText='Значение'; result.addItem(col);
+			return result;
+		}
 
         public function MailPackageProperty() {
             super();

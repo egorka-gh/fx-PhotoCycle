@@ -1,5 +1,6 @@
 package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
+	import com.photodispatcher.factory.MailPackageBuilder;
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
@@ -46,6 +47,9 @@ package com.photodispatcher.service.web{
 		public static const COMMAND_GET_ORDER_INFO:String='order';
 		//public static const PARAM_ORDER_ID:String='args[number]';
 
+		public static const COMMAND_GET_PACKAGE_INFO:String='group';
+		public static const PARAM_PACKAGE_ID:String='args[number]';
+
 		public function FotoknigaWeb(source:Source){
 			super(source);
 		}
@@ -85,6 +89,7 @@ package com.photodispatcher.service.web{
 			if(event) r=JsonUtil.decode(event.result as String);
 			if(event==null || r.result){
 				trace('FBook login complite or not configured');
+				var post:Object;
 				switch (cmd){
 					case CMD_SYNC:
 						orderes=[];
@@ -97,7 +102,6 @@ package com.photodispatcher.service.web{
 						orderes=[];
 						startListen();
 						//ask order sate
-						var post:Object;
 						post= new Object();
 						post[PARAM_KEY]=API_KEY;
 						post[PARAM_COMMAND]=COMMAND_GET_ORDER_INFO;
@@ -106,6 +110,16 @@ package com.photodispatcher.service.web{
 						trace('FBook web check project '+lastOrder.src_id);
 						client.getData( new InvokerUrl(baseUrl+URL_API),post);
 						break;
+					case CMD_GET_PACKAGE:
+						startListen();
+						//ask mail gruop
+						post= new Object();
+						post[PARAM_KEY]=API_KEY;
+						post[PARAM_COMMAND]=COMMAND_GET_PACKAGE_INFO;
+						post[PARAM_PACKAGE_ID]=lastPackageId;
+						if(source.fbookSid) post.sid=source.fbookSid;
+						trace('FBook web load mail package '+lastPackageId.toString());
+						client.getData( new InvokerUrl(baseUrl+URL_API),post);
 				}
 			} else {
 				abort('Ошибка подключения к '+source.fbookService.url);
@@ -126,22 +140,6 @@ package com.photodispatcher.service.web{
 			_hasError=false;
 			_errMesage='';
 			login();
-			/*
-			orderes=[];
-			is_preload=true;
-			preloadStates=PARAM_STATUS_PRELOAD_VALUES.concat();
-			startListen();
-			getData();
-			*/
-			/*
-			//ask orders
-			var post:Object;
-			post= new Object();
-			post[PARAM_KEY]=API_KEY;
-			post[PARAM_COMMAND]=COMMAND_LIST_ORDERS;
-			post[PARAM_STATUS]=PARAM_STATUS_ORDERED_VALUE;
-			client.getData( new InvokerUrl(baseUrl+URL_API),post);
-			*/
 		}
 
 		protected function getData():void{
@@ -246,21 +244,22 @@ package com.photodispatcher.service.web{
 		
 		override protected function handleData(e:WebEvent):void{
 			var result:Object;
+			result=parseRaw(e.data);
+			if(!result || !result.hasOwnProperty('result') || !result.result || result.error){
+				if(!result){
+					abort('FotoknigaWeb Ошибка web: '+e.data);
+				}else{
+					abort(result.error?result.error:'FotoknigaWeb Ошибка структуры данных');
+				}
+				return;
+			}
 			switch (cmd){
 				case CMD_SYNC:
-					result=parseOrders(e.data);
-					if(!result || !result.hasOwnProperty('result') || !(result.result is Array) || result.error){
-						if(!result){
-							abort('Ошибка web: '+e.data);
-						}else{
-							abort(result.error?result.error:'Ошибка структуры данных');
-						}
+					result=parseRaw(e.data);
+					if(!(result.result is Array)){
+						abort('FotoknigaWeb Ошибка структуры данных');
 						return;
 					}
-					/*
-					orderes=result.result;
-					endSync();
-					*/
 					//set preload mark
 					var a:Array=result.result;
 					var it:Object;
@@ -270,9 +269,9 @@ package com.photodispatcher.service.web{
 					getData();
 					break;
 				case CMD_CHECK_STATE:
-					result=parseOrders(e.data);
-					if(!result || !result.hasOwnProperty('result') || !result.result || !result.result.hasOwnProperty('status') || result.error){
-						abort(result.error?result.error:'Ошибка структуры данных');
+					result=parseRaw(e.data);
+					if(!result.result.hasOwnProperty('status')){
+						abort('FotoknigaWeb Ошибка структуры данных');
 						return;
 					}
 					//_getOrder.src_state=result.result.status;
@@ -294,16 +293,24 @@ package com.photodispatcher.service.web{
 								//can be just 1 so
 								var so:SubOrder=to.suborders.getItemAt(0) as SubOrder;
 								if(so) lastOrder.addSuborder(so);
-								/*
-								for each(var so:SubOrder in to.suborders){
-									lastOrder.addSuborder(so);
-								}
-								*/
 							}
 
 						}
 					}
 					endGetOrder();
+					break;
+				case CMD_GET_PACKAGE:
+					//parse package
+					lastPackage=MailPackageBuilder.build(source.id, result.result);
+					if(!lastPackage || lastPackage.id!=lastPackageId){
+						abort('FotoknigaWeb Ошибка загрузки MailPackage id: '+lastPackageId.toString());
+						return;
+					}
+					_hasError=false;
+					_errMesage='';
+					stopListen();
+					trace('FotoknigaWeb MailPackage loaded id: '+lastPackageId.toString());
+					dispatchEvent(new Event(Event.COMPLETE));
 					break;
 			}
 		}
@@ -316,6 +323,19 @@ package com.photodispatcher.service.web{
 			//lastOrder=_getOrder;
 			trace('FotoknigaWeb loaded order id:'+lastOrder.src_id);
 			dispatchEvent(new Event(Event.COMPLETE));
+		}
+		
+		override public function getMailPackage(packageId:int):void{
+			if(!source || !packageId){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			cmd=CMD_GET_PACKAGE;
+			lastPackageId=packageId;
+			_hasError=false;
+			_errMesage='';
+			login();
+			
 		}
 		
 	}
