@@ -20,6 +20,7 @@ package com.photodispatcher.model.mysql.entities {
 
         private var _attr_type:int;
         private var _field:String;
+        private var _field_name:String;
         private var _json_key:String;
         private var _list:Boolean;
         private var _persist:Boolean;
@@ -37,6 +38,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get field():String {
             return _field;
+        }
+
+        public function set field_name(value:String):void {
+            _field_name = value;
+        }
+        public function get field_name():String {
+            return _field_name;
         }
 
         public function set json_key(value:String):void {
@@ -71,6 +79,7 @@ package com.photodispatcher.model.mysql.entities {
             super.readExternal(input);
             _attr_type = input.readObject() as int;
             _field = input.readObject() as String;
+            _field_name = input.readObject() as String;
             _json_key = input.readObject() as String;
             _list = input.readObject() as Boolean;
             _persist = input.readObject() as Boolean;
@@ -81,6 +90,7 @@ package com.photodispatcher.model.mysql.entities {
             super.writeExternal(output);
             output.writeObject((_attr_type is IPropertyHolder) ? IPropertyHolder(_attr_type).object : _attr_type);
             output.writeObject((_field is IPropertyHolder) ? IPropertyHolder(_field).object : _field);
+            output.writeObject((_field_name is IPropertyHolder) ? IPropertyHolder(_field_name).object : _field_name);
             output.writeObject((_json_key is IPropertyHolder) ? IPropertyHolder(_json_key).object : _json_key);
             output.writeObject((_list is IPropertyHolder) ? IPropertyHolder(_list).object : _list);
             output.writeObject((_persist is IPropertyHolder) ? IPropertyHolder(_persist).object : _persist);

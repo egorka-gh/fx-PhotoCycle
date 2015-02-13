@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _barcodes:ListCollectionView;
         private var _client_id:int;
         private var _delivery_id:int;
         private var _delivery_name:String;
@@ -26,6 +27,10 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:int;
         private var _id_name:String;
         private var _mail_service:int;
+        private var _min_ord_state:int;
+        private var _min_ord_state_name:String;
+        private var _orders:ListCollectionView;
+        private var _orders_num:int;
         private var _properties:ListCollectionView;
         private var _source:int;
         private var _source_code:String;
@@ -35,6 +40,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _state:int;
         private var _state_date:Date;
         private var _state_name:String;
+
+        public function set barcodes(value:ListCollectionView):void {
+            _barcodes = value;
+        }
+        public function get barcodes():ListCollectionView {
+            return _barcodes;
+        }
 
         public function set client_id(value:int):void {
             _client_id = value;
@@ -83,6 +95,34 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get mail_service():int {
             return _mail_service;
+        }
+
+        public function set min_ord_state(value:int):void {
+            _min_ord_state = value;
+        }
+        public function get min_ord_state():int {
+            return _min_ord_state;
+        }
+
+        public function set min_ord_state_name(value:String):void {
+            _min_ord_state_name = value;
+        }
+        public function get min_ord_state_name():String {
+            return _min_ord_state_name;
+        }
+
+        public function set orders(value:ListCollectionView):void {
+            _orders = value;
+        }
+        public function get orders():ListCollectionView {
+            return _orders;
+        }
+
+        public function set orders_num(value:int):void {
+            _orders_num = value;
+        }
+        public function get orders_num():int {
+            return _orders_num;
         }
 
         public function set properties(value:ListCollectionView):void {
@@ -150,6 +190,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _barcodes = input.readObject() as ListCollectionView;
             _client_id = input.readObject() as int;
             _delivery_id = input.readObject() as int;
             _delivery_name = input.readObject() as String;
@@ -157,6 +198,10 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as int;
             _id_name = input.readObject() as String;
             _mail_service = input.readObject() as int;
+            _min_ord_state = input.readObject() as int;
+            _min_ord_state_name = input.readObject() as String;
+            _orders = input.readObject() as ListCollectionView;
+            _orders_num = input.readObject() as int;
             _properties = input.readObject() as ListCollectionView;
             _source = input.readObject() as int;
             _source_code = input.readObject() as String;
@@ -170,6 +215,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_barcodes is IPropertyHolder) ? IPropertyHolder(_barcodes).object : _barcodes);
             output.writeObject((_client_id is IPropertyHolder) ? IPropertyHolder(_client_id).object : _client_id);
             output.writeObject((_delivery_id is IPropertyHolder) ? IPropertyHolder(_delivery_id).object : _delivery_id);
             output.writeObject((_delivery_name is IPropertyHolder) ? IPropertyHolder(_delivery_name).object : _delivery_name);
@@ -177,6 +223,10 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_id_name is IPropertyHolder) ? IPropertyHolder(_id_name).object : _id_name);
             output.writeObject((_mail_service is IPropertyHolder) ? IPropertyHolder(_mail_service).object : _mail_service);
+            output.writeObject((_min_ord_state is IPropertyHolder) ? IPropertyHolder(_min_ord_state).object : _min_ord_state);
+            output.writeObject((_min_ord_state_name is IPropertyHolder) ? IPropertyHolder(_min_ord_state_name).object : _min_ord_state_name);
+            output.writeObject((_orders is IPropertyHolder) ? IPropertyHolder(_orders).object : _orders);
+            output.writeObject((_orders_num is IPropertyHolder) ? IPropertyHolder(_orders_num).object : _orders_num);
             output.writeObject((_properties is IPropertyHolder) ? IPropertyHolder(_properties).object : _properties);
             output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
             output.writeObject((_source_code is IPropertyHolder) ? IPropertyHolder(_source_code).object : _source_code);
