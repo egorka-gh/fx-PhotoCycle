@@ -38,7 +38,7 @@ package com.photodispatcher.model.mysql.entities {
 			
 			var col:GridColumn;
 			col= new GridColumn('source_name'); col.headerText='Источник'; result.addItem(col);
-			col= new GridColumn('source_code'); col.headerText='Код'; col.width=15; result.addItem(col); 
+			col= new GridColumn('source_code'); col.headerText='Код'; col.width=25; result.addItem(col); 
 			col= new GridColumn('id'); col.headerText='Группа'; result.addItem(col); 
 			col= new GridColumn('client_id'); col.headerText='Клиент'; result.addItem(col); 
 			col= new GridColumn('state_name'); col.headerText='Макс статус'; result.addItem(col); 

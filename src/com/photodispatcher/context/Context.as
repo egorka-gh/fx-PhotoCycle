@@ -290,13 +290,10 @@ package com.photodispatcher.context{
 			//init static maps
 			latch.join(Context.initSourceLists());
 			latch.join(Context.initAttributeLists());
-			//latch.join(LabResize.initSizeMap());
 			latch.join(OrderState.initStateMap());
 			latch.join(BookSynonym.initSynonymMap());
 			latch.join(FieldValue.initSynonymMap());
-			//latch.join(Roll.initItemsMap());
-			//latch.join(LabPrintCode.initChanelMap());
-			//latch.join(AttrJsonMap.initJsonMap());
+			latch.join(AttrJsonMap.initJsonMap());
 			
 			//latch.start();//start at caller?
 			return latch;

@@ -6,11 +6,23 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackageBarcode")]
     public class MailPackageBarcode extends MailPackageBarcodeBase {
 		public static const TYPE_SITE:int=1;
+
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			col= new GridColumn('barcode'); col.headerText='Штрихкод'; result.addItem(col);
+			
+			return result;
+		}
 
         public function MailPackageBarcode() {
             super();

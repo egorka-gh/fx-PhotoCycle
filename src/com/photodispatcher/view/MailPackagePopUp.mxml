@@ -8,14 +8,20 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.factory.WebServiceBuilder;
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
+			import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
 			import com.photodispatcher.model.mysql.entities.MailPackageProperty;
+			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.service.web.BaseWeb;
 			
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
 			
 			[Bindable]
 			private var stateMsg:String;
@@ -56,13 +62,28 @@
 			private function webHandler(e:Event):void{
 				var pw:BaseWeb=e.target as BaseWeb;
 				pw.removeEventListener(Event.COMPLETE,webHandler);
-				
+				//TODO load orders
 				if(pw.hasError){
 					trace('web getMailPackage err: '+pw.errMesage);
 					stateMsg='Ошибка загрузки с сайта: '+pw.errMesage;
 					return;
 				}
 				mailPackage=pw.getLastMailPackage();
+
+				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onload);
+				latch.addLatch(svc.loadChildOrders(mailPackage.id));
+				latch.start();
+			}
+			private function onload(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onload);
+					if(latch.complite){
+						mailPackage.orders=latch.lastDataAC;
+					}
+				}
 			}
 
 		]]>
@@ -72,11 +93,18 @@
 		<s:DateTimeFormatter id="dtFormater" dateTimePattern="dd.MM.yyyy HH:mm"/>
 	</fx:Declarations>
 
-	
-	<s:VGroup width="100%" height="100%" gap="5">
+	<s:Rect radiusX="6" top="0" left="0" right="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#444444" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:VGroup gap="5" top="10" left="10" right="10" bottom="10">
 		<s:Label text="{stateMsg}" width="100%"/>
 		
-		<s:Spacer height="5"/>
 		<s:Form id="frmOrder" backgroundAlpha="0" >
 			<s:layout>
 				<s:FormLayout gap="-12"/>
@@ -99,7 +127,6 @@
 			</s:FormItem> 
 		</s:Form>
 
-		<s:Spacer height="5"/>
 		<s:HGroup width="100%" height="100%" gap="10">
 			<s:VGroup width="50%" height="100%" gap="5">
 				<s:Label text="Атрибуты"/>
@@ -108,10 +135,13 @@
 			</s:VGroup>
 			<s:VGroup width="50%" height="100%" gap="5">
 				<s:Label text="Заказы"/>
-				<s:DataGrid id="dgAtrs" selectionMode="singleRow" width="100%" height="100%" 
-							dataProvider="{mailPackage.properties}" locale="ru_RU" columns="{MailPackageProperty.gridColumns()}"/>
+				<s:DataGrid id="dgProps" selectionMode="singleRow" width="100%" height="100%" 
+							dataProvider="{mailPackage.orders}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
 				<s:Spacer height="5"/>
 				<s:Label text="Штрих коды"/>
+				<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%" 
+							dataProvider="{mailPackage.barcodes}" locale="ru_RU" columns="{MailPackageBarcode.gridColumns()}"/>
+				<s:Spacer height="5"/>
 			</s:VGroup>
 		</s:HGroup>
 

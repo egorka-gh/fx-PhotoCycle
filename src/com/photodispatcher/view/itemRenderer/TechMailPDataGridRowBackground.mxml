@@ -20,9 +20,9 @@
 					data = grid.dataProvider.getItemAt(rowIndex);
 				mp= data as MailPackage;
 				if(mp){
-					if(mp.min_ord_state=0){
+					if(mp.min_ord_state==0){
 						backgroundColor=0xFFFFFF;
-					}else if(mp.min_ord_state=OrderState.TECH_OTK){
+					}else if(mp.min_ord_state==OrderState.TECH_OTK){
 						backgroundColor=0x99EE99;	
 					}else{
 						backgroundColor=0xEEEE99;	
