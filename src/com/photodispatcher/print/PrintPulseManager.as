@@ -87,6 +87,22 @@ package com.photodispatcher.print
 		protected var timer:Timer;
 		protected var waitForLabConfig:Boolean;
 		
+		[Bindable]
+		public var debugStr:String;
+		
+		protected var _printQueueList:ArrayList;
+		
+		[Bindable (event="printQueueListChanged")]
+		public function get printQueueList():IList {
+			return _printQueueList;
+		}
+		
+		protected function printQueueListChanged():void {
+			
+			_printQueueList = new ArrayList(printQueue);
+			dispatchEvent(new Event('printQueueListChanged'));
+			
+		}
 		
 		public function PrintPulseManager()
 		{
@@ -156,6 +172,7 @@ package com.photodispatcher.print
 			
 			//nowDate = new Date(2015, 0, 14, 14); // 14:00 14-01-2014 (14 янв);
 			nowDate = new Date;
+			debugStr = "";
 			loadTechPulse();
 			loadLabStops();
 			loadPrintQueue();
@@ -220,6 +237,7 @@ package com.photodispatcher.print
 		protected function loadPrintQueue():void {
 			
 			printQueue = null;
+			printQueueListChanged();
 			
 			// тут нужно послать запрос на загрузку очереди ГП, определяется по набору статусов
 			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
@@ -240,6 +258,7 @@ package com.photodispatcher.print
 				printQueue = latch.lastDataArr;
 				latch.clearResult();
 				checkPulse();
+				printQueueListChanged();
 			}
 			
 		}
@@ -252,6 +271,8 @@ package com.photodispatcher.print
 				return;
 				
 			}
+			
+			debugStr += "Очередь на печать: " + getPrintGroupIds(printQueue).join(", ") + "\n";
 			
 			/*
 			нужно составить карту лаб по id
@@ -301,6 +322,8 @@ package com.photodispatcher.print
 				}
 				
 				compDevices = (labIdToLabGenericMap[pgQueued.destination] as LabGeneric).getCompatiableDevices(pgQueued);
+				
+				pgQueued.lab_name = (labIdToLabGenericMap[pgQueued.destination] as LabGeneric).name;
 				
 				if(compDevices.length > 0){
 					
@@ -575,6 +598,8 @@ package com.photodispatcher.print
 			
 			var readyDevices:Array = getReadyDevices();
 			
+			debugStr += "Свободные устройства: " + getDeviceIds(readyDevices).join(", ") + "\n";
+			
 			if(readyDevices.length > 0){
 				
 				loadReadyForPrintingPgList(addToQueueAfterPgList);
@@ -589,6 +614,12 @@ package com.photodispatcher.print
 		protected function addToQueueAfterPgList(printGroups:Array, loadByDevices:Boolean = false):void {
 			
 			var readyDevices:Array = getReadyDevices();
+			
+			if(loadByDevices){
+				debugStr += "Общий список: " + getPrintGroupIds(printGroups).join(", ") + "\n";
+			} else {
+				debugStr += "Список по устройствам: " + getPrintGroupIds(printGroups).join(", ") + "\n";
+			}
 			
 			if(readyDevices.length > 0 && printGroups.length > 0){
 				
@@ -610,6 +641,12 @@ package com.photodispatcher.print
 		protected function getDeviceIds(devices:Array):Array {
 			
 			return devices.map(function (dev:LabDevice, index:int, array:Array):int { return dev.id });
+			
+		}
+		
+		protected function getPrintGroupIds(printGroups:Array):Array {
+			
+			return printGroups.map(function (item:PrintGroup, index:int, array:Array):String { return item.id });
 			
 		}
 		
@@ -692,7 +729,9 @@ package com.photodispatcher.print
 				
 			}
 			
+			var debugIds:Array = [];
 			
+			var printChannelReady:Boolean;
 			for each (pg in printGroups){
 				
 				i = 0;
@@ -703,7 +742,13 @@ package com.photodispatcher.print
 					dev = devList[i] as LabDevice;
 					lab = labMap[dev.lab] as LabGeneric;
 					
-					if(lab.printChannel(pg, dev.rollsOnline.toArray()) && checkDevicePrintQueueReady(devPrintQueueMap[dev.id])){
+					printChannelReady = lab.printChannel(pg, dev.rollsOnline.toArray()) != null;
+					
+					if(printChannelReady){
+						debugIds.push(pg.id);
+					}
+					
+					if(printChannelReady && checkDevicePrintQueueReady(devPrintQueueMap[dev.id])){
 						
 						pg.destination = lab.id;
 						pg.state = OrderState.PRN_QUEUE;
@@ -728,6 +773,7 @@ package com.photodispatcher.print
 				
 			}
 			
+			debugStr += "Проходят в канал: "+ debugIds.join(", ") +"\n";
 			
 			if(!loadByDevices){
 				// проверяем на сайте, после чего добавляем в очередь после загрузки общего списка
@@ -749,6 +795,8 @@ package com.photodispatcher.print
 		
 		protected function checkWebReady(printGroups:Array, handler:Function):void {
 			
+			debugStr += "Проверка на веб-статус: " + getPrintGroupIds(printGroups).join(", ") + "\n";
+			
 			webTaskHandler = handler;
 			
 			if(printGroups.length == 0){
@@ -766,6 +814,8 @@ package com.photodispatcher.print
 		{
 			
 			var webReady:Array = webTask.getItemsReady();
+			
+			debugStr += "Готовы для захвата в 203: " + getPrintGroupIds(webReady).join(", ") + "\n";
 			
 			for each (var pg:PrintGroup in webReady){
 				// нужно поставить корректный статус для очереди, при веб проверке может меняться
@@ -788,6 +838,8 @@ package com.photodispatcher.print
 			var compDevices:Array;
 			var devForPg:LabDevice;
 			var dev:Object;
+			
+			var debugIds:Array = [];
 			
 			for each (var pgQueued:PrintGroup in printGroups){
 				
@@ -813,6 +865,7 @@ package com.photodispatcher.print
 					
 					// добавляем ГП в девайс с самой короткой очередью
 					devForPg.printQueue.addItem(pgQueued);
+					debugIds.push(pgQueued.id);
 					
 				} else {
 					
@@ -822,6 +875,7 @@ package com.photodispatcher.print
 				
 			}
 			
+			debugStr += "Добавлены в 203: "+ debugIds.join(", ") +"\n";
 			
 		}
 		
@@ -830,6 +884,8 @@ package com.photodispatcher.print
 			var dev:LabDevice;
 			var pg:PrintGroup;
 			var lab:LabGeneric;
+			
+			var debugIds:Array = [];
 			
 			for each (dev in devices){
 				
@@ -841,6 +897,7 @@ package com.photodispatcher.print
 						lab = labMap[pg.destination] as LabGeneric;
 						
 						if(!lab.checkPrintGroupInLab(pg)){
+							debugIds.push(pg.id);
 							lab.post(pg, Context.getAttribute('reversPrint'));
 							printTicket(pg);
 						}
@@ -852,6 +909,7 @@ package com.photodispatcher.print
 				
 			}
 			
+			debugStr += "Отправлены в лабу: "+ debugIds.join(", ") +"\n";
 			
 		}
 		
@@ -889,6 +947,7 @@ package com.photodispatcher.print
 		protected function finishPulse():void {
 			
 			updateLabQueue();
+			trace(debugStr);
 			getPulse();
 			
 		}
