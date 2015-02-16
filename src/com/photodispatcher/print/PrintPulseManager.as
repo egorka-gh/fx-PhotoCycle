@@ -9,7 +9,6 @@ package com.photodispatcher.print
 	import com.photodispatcher.model.mysql.entities.LabTimetable;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
-	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.TechLog;
 	import com.photodispatcher.model.mysql.services.LabService;
@@ -74,6 +73,9 @@ package com.photodispatcher.print
 		
 		[Bindable]
 		public var autoPrinting:Boolean = false;
+		
+		[Bindable]
+		public var printGroupListLimit:int = 50;
 		
 		public var printQueueManager:PrintQueueManager;
 		
@@ -973,7 +975,8 @@ package com.photodispatcher.print
 			latch.addEventListener(Event.COMPLETE, onLoadReadyForPrintingPgList);
 			
 			// получаем список в статусе 200, готовые к печати
-			latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_QUEUE));
+			//latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_QUEUE));
+			latch.addLatch(svc.loadReady4Print(printGroupListLimit));
 			latch.start();
 			
 		}
