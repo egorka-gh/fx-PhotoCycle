@@ -591,7 +591,8 @@ package com.photodispatcher.print
 			
 			if(!autoPrinting){
 				
-				getPulse();
+				//getPulse();
+				finishPulse();
 				return;
 				
 			} 
