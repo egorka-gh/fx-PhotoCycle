@@ -538,6 +538,8 @@ package com.photodispatcher.print{
 					left.push(pg);
 				}else{
 					pgBd=result[idx] as PrintGroup;
+					//autoPost will complite post ??
+					/**/
 					if(pgBd){
 						if((pgBd.state!=OrderState.PRN_QUEUE) || !pgBd.files || pgBd.files.length==0){
 							//wrong state or empty files
@@ -555,6 +557,7 @@ package com.photodispatcher.print{
 							}
 						}
 					}
+					/**/
 				}
 			}
 			lockQueue=left;
