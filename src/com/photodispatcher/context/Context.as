@@ -281,7 +281,8 @@ package com.photodispatcher.context{
 				TechPickerService,
 				TechService,
 				OrderService,
-				MailPackageService//+
+				MailPackageService,
+				XReportService//+
 			]);
 			
 			//fill from config

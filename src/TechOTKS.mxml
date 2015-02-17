@@ -22,6 +22,7 @@
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.PasswPopup;
@@ -36,6 +37,7 @@
 			
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
+			import spark.events.TextOperationEvent;
 			
 			[Bindable]
 			private var techPiontsAC:ArrayCollection;
@@ -60,6 +62,16 @@
 			private var workFolder:String;
 			
 			
+			[Bindable]
+			private var ooPathValid:Boolean;
+			[Bindable]
+			private var ooPath:String;
+			[Bindable]
+			private var printer:String;
+			[Bindable]
+			private var termPrinter:String;
+			
+
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
 				//BaseDAO.MAX_WAITE=15000;
@@ -148,6 +160,16 @@
 					var configPass:String=so.data.configPass;;
 					if(configPass) Context.setAttribute('configPass',configPass);
 					workFolder=so.data.workFolder;
+
+					ooPath=so.data.ooPath;
+					printer=so.data.printer;
+					Context.setAttribute('printer',printer);
+					var oo:OORuner= new OORuner();
+					ooPathValid=oo.check(ooPath);
+					
+					termPrinter=so.data.termPrinter;
+					Context.setAttribute('termPrinter',termPrinter);
+
 				}
 				Context.setAttribute("workFolder", workFolder);
 				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
@@ -364,6 +386,56 @@
 				}
 			}
 			
+			
+			protected function btOOFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var fl:File = File.userDirectory;
+				fl.addEventListener(Event.SELECT,onOOFolderSet);
+				fl.browseForDirectory('Выбирите папку ImageMagick');
+			}
+			protected function onOOFolderSet(event:Event):void{
+				ooPathValid=false;
+				var fl:File = event.target as File;
+				if(fl){
+					fl.removeEventListener(Event.SELECT,onOOFolderSet);
+					ooPath=fl.nativePath;
+					var oo:OORuner= new OORuner();
+					if(oo.check(ooPath)){
+						ooPathValid=true;
+						ooPath=oo.ooPath;
+						//save last selection
+						var so:SharedObject = SharedObject.getLocal('appProps','/');
+						so.data.ooPath = ooPath;
+						so.flush();  
+					}
+				}
+			}
+			
+			protected function tiPrinter_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.printer = printer;
+				so.flush();
+				Context.setAttribute('printer',printer);
+			}
+			
+			protected function btOOFolderClear_clickHandler(event:MouseEvent):void{
+				//clear oo path
+				ooPathValid=false;
+				ooPath='';
+				Context.setAttribute('ooPath','');
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.ooPath = ooPath;
+				so.flush();  
+			}
+
+			protected function tiTermPrinter_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.termPrinter = termPrinter;
+				so.flush();
+				Context.setAttribute('termPrinter',termPrinter);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -466,6 +538,24 @@
 			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
 		</s:HGroup>
 		
+		<s:Spacer height="10"/>
+		<s:Label text="Параметры печати" fontWeight="bold"/>
+			<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+				<s:Label id="lbOOpath" text="Путь к OpenOffice"/>
+				<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}" textAlign="left"/>
+				<s:Button id="btOOFolder" label="..." click="btOOFolder_clickHandler(event)"/>
+				<s:Button id="btOOFolderClear" label="x" click="btOOFolderClear_clickHandler(event)"/>
+			</s:HGroup>
+		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+			<s:Label text="Принтер" width="{lbOOpath.width}"/>
+			<s:TextInput id="tiPrinter" text="@{printer}" width="210" textAlign="left" change="tiPrinter_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+			<s:Label text="Принтер этикеток" width="{lbOOpath.width+10}"/>
+			<s:TextInput id="tiTermPrinter" text="@{termPrinter}" width="210" textAlign="left" change="tiTermPrinter_changeHandler(event)"/>
+		</s:HGroup>
+			
+
 		
 	</s:VGroup>
 	

@@ -15,8 +15,10 @@
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
+			import com.photodispatcher.printer.Printer;
 			import com.photodispatcher.service.web.BaseWeb;
 			
+			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
@@ -73,7 +75,7 @@
 				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onload);
-				latch.addLatch(svc.loadChildOrders(mailPackage.id));
+				latch.addLatch(svc.loadChildOrders(mailPackage.source, mailPackage.id));
 				latch.start();
 			}
 			private function onload(event:Event):void{
@@ -86,6 +88,27 @@
 				}
 			}
 
+			protected function btAddBarcode_clickHandler(event:MouseEvent):void{
+				if(!mailPackage) return;
+				var bar:MailPackageBarcode= new MailPackageBarcode();
+				bar.source=mailPackage.source;
+				bar.id=mailPackage.id;
+				bar.barcode='';
+				bar.bar_type=0;
+				if(!mailPackage.barcodes) mailPackage.barcodes=new ArrayCollection();
+				mailPackage.barcodes.addItem(bar);
+				if(dgBarCode) dgBarCode.selectedItem=bar;
+			}
+			
+			protected function btPrintBarcode_clickHandler(event:MouseEvent):void{
+				if(!mailPackage) return;
+				var bar:MailPackageBarcode;
+				if(dgBarCode) bar=dgBarCode.selectedItem as MailPackageBarcode;
+				if(!bar && mailPackage.barcodes && mailPackage.barcodes.length>0) bar=mailPackage.barcodes.getItemAt(0) as MailPackageBarcode;
+				if(!bar) return;
+				Printer.instance.printMPBarcode(mailPackage.id_name, bar.barcode);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -139,8 +162,12 @@
 							dataProvider="{mailPackage.orders}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
 				<s:Spacer height="5"/>
 				<s:Label text="Штрих коды"/>
-				<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%" 
-							dataProvider="{mailPackage.barcodes}" locale="ru_RU" columns="{MailPackageBarcode.gridColumns()}"/>
+				<s:HGroup width="100%" height="100%" gap="10">
+					<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%"  editable="true"
+								dataProvider="{mailPackage.barcodes}" locale="ru_RU" columns="{MailPackageBarcode.gridColumns()}"/>
+					<s:Button id="btAddBarcode" label="Добавить" click="btAddBarcode_clickHandler(event)"/>
+					<s:Button id="btPrintBarcode" label="Печать" click="btPrintBarcode_clickHandler(event)"/>
+				</s:HGroup>
 				<s:Spacer height="5"/>
 			</s:VGroup>
 		</s:HGroup>

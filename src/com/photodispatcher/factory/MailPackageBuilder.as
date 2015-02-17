@@ -59,6 +59,7 @@ package com.photodispatcher.factory{
 			var props:Array=[];
 			var prop:MailPackageProperty;
 			var barcodes:Array=[];
+			var bar:MailPackageBarcode;
 			for each(ajm in mppMap){
 				val=JsonUtil.getRawVal(ajm.json_key, raw);
 				if(val){
@@ -75,7 +76,7 @@ package com.photodispatcher.factory{
 					props.push(prop);
 					//barcode?
 					if(prop.property=='sl_delivery_code'){
-						var bar:MailPackageBarcode= new MailPackageBarcode();
+						bar= new MailPackageBarcode();
 						bar.source=source;
 						bar.id=result.id;
 						bar.barcode=prop.value;
@@ -85,6 +86,20 @@ package com.photodispatcher.factory{
 				}
 			}
 			
+			//fill barcodes
+				if(raw.hasOwnProperty('barcodes') && raw.hasOwnProperty('barcodes') is Array){
+					for each(var barObj:Object in raw.barcodes){
+						if(barObj.hasOwnProperty('barcode') && barObj.barcode){
+							bar= new MailPackageBarcode();
+							bar.source=source;
+							bar.id=result.id;
+							bar.barcode=barObj.barcode;
+							bar.bar_type=MailPackageBarcode.TYPE_SITE;
+							barcodes.push(bar); 
+						}
+					}
+			}
+
 			result.properties= new ArrayCollection(props);
 			result.barcodes= new ArrayCollection(barcodes);
 			return result;

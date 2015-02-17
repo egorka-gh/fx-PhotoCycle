@@ -114,6 +114,20 @@ package com.photodispatcher.printer{
 			param=new Parameter(); param.id='pbarcodebest'; param.valString=Code128.codeIt(pg.orderBarcodeBest()); report.parameters.push(param);
 			print(report);
 		}
-		
+
+		public function printMPBarcode(idCaption:String, barcode:String):void{
+			if(!idCaption || !barcode) return;
+			
+			var report:Report=new Report();
+			
+			report.id='mpBarcodeFrm';
+			report.parameters=[];
+			var param:Parameter;
+			param=new Parameter(); param.id='pgroup_hm'; param.valString=idCaption; report.parameters.push(param);
+			param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode); report.parameters.push(param);
+			param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode; report.parameters.push(param);
+			print(report);
+		}
+
 	}
 }
