@@ -279,6 +279,12 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
+		public function checkAliasPrintCompatiable(alias:BookSynonym):Boolean {
+			
+			return alias? alias.lab_type > 0 && alias.lab_type == this.src_type: false;
+			
+		}
+		
 		/**
 		 * deprecated
 		 */

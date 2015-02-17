@@ -25,13 +25,24 @@ package com.photodispatcher.model.mysql.services {
         }
     
         
-        public function loadChildOrders(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+        public function load(arg0:int, arg1:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
-                return callProperty("loadChildOrders", arg0, resultHandler, faultHandler) as AsyncToken;
+                return callProperty("load", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
             else if (resultHandler is Function || resultHandler is ITideResponder)
-                return callProperty("loadChildOrders", arg0, resultHandler) as AsyncToken;
+                return callProperty("load", arg0, arg1, resultHandler) as AsyncToken;
             else if (resultHandler == null)
-                return callProperty("loadChildOrders", arg0) as AsyncToken;
+                return callProperty("load", arg0, arg1) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadChildOrders(arg0:int, arg1:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadChildOrders", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadChildOrders", arg0, arg1, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadChildOrders", arg0, arg1) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
@@ -54,6 +65,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("persist", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("persist", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function startPackaging(arg0:MailPackage, arg1:Boolean, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("startPackaging", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("startPackaging", arg0, arg1, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("startPackaging", arg0, arg1) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }
