@@ -24,6 +24,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:int;
         private var _is_allow:Boolean;
         private var _is_horizontal:Boolean;
+        private var _lab_type:int;
+        private var _lab_type_name:String;
         private var _src_type:int;
         private var _src_type_name:String;
         private var _synonym:String;
@@ -64,6 +66,20 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get is_horizontal():Boolean {
             return _is_horizontal;
+        }
+
+        public function set lab_type(value:int):void {
+            _lab_type = value;
+        }
+        public function get lab_type():int {
+            return _lab_type;
+        }
+
+        public function set lab_type_name(value:String):void {
+            _lab_type_name = value;
+        }
+        public function get lab_type_name():String {
+            return _lab_type_name;
         }
 
         public function set src_type(value:int):void {
@@ -115,6 +131,8 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as int;
             _is_allow = input.readObject() as Boolean;
             _is_horizontal = input.readObject() as Boolean;
+            _lab_type = input.readObject() as int;
+            _lab_type_name = input.readObject() as String;
             _src_type = input.readObject() as int;
             _src_type_name = input.readObject() as String;
             _synonym = input.readObject() as String;
@@ -130,6 +148,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_is_allow is IPropertyHolder) ? IPropertyHolder(_is_allow).object : _is_allow);
             output.writeObject((_is_horizontal is IPropertyHolder) ? IPropertyHolder(_is_horizontal).object : _is_horizontal);
+            output.writeObject((_lab_type is IPropertyHolder) ? IPropertyHolder(_lab_type).object : _lab_type);
+            output.writeObject((_lab_type_name is IPropertyHolder) ? IPropertyHolder(_lab_type_name).object : _lab_type_name);
             output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
             output.writeObject((_src_type_name is IPropertyHolder) ? IPropertyHolder(_src_type_name).object : _src_type_name);
             output.writeObject((_synonym is IPropertyHolder) ? IPropertyHolder(_synonym).object : _synonym);

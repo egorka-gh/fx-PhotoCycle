@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _alias:String;
         private var _book_num:int;
         private var _book_part:int;
         private var _book_part_name:String;
@@ -55,6 +56,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _state_name:String;
         private var _sub_id:String;
         private var _width:int;
+
+        public function set alias(value:String):void {
+            _alias = value;
+        }
+        public function get alias():String {
+            return _alias;
+        }
 
         public function set book_num(value:int):void {
             _book_num = value;
@@ -310,6 +318,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _alias = input.readObject() as String;
             _book_num = input.readObject() as int;
             _book_part = input.readObject() as int;
             _book_part_name = input.readObject() as String;
@@ -350,6 +359,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_alias is IPropertyHolder) ? IPropertyHolder(_alias).object : _alias);
             output.writeObject((_book_num is IPropertyHolder) ? IPropertyHolder(_book_num).object : _book_num);
             output.writeObject((_book_part is IPropertyHolder) ? IPropertyHolder(_book_part).object : _book_part);
             output.writeObject((_book_part_name is IPropertyHolder) ? IPropertyHolder(_book_part_name).object : _book_part_name);

@@ -3,6 +3,7 @@ package com.photodispatcher.print
 	import com.akmeful.util.ArrayUtil;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabStopLog;
 	import com.photodispatcher.model.mysql.entities.LabStopType;
@@ -76,6 +77,12 @@ package com.photodispatcher.print
 		
 		[Bindable]
 		public var printGroupListLimit:int = 50;
+		
+		[Bindable]
+		/**
+		 * Следует ли следить за размером очереди, при false пихает все ГП в лабы не проверяя загрузку
+		 */
+		public var checkQueue:Boolean;
 		
 		public var printQueueManager:PrintQueueManager;
 		
@@ -672,8 +679,9 @@ package com.photodispatcher.print
 				
 				devIsReady = false;
 				
-				// проверяем лог простоя
-				if(dev.lastStopLog == null || 
+				// если нет проверки очереди, то готовность определяем только по расписанию, иначе проверяем только лог простоя
+				if( !checkQueue || 
+					dev.lastStopLog == null || 
 					(dev.lastStopLog && dev.lastStopLog.time_to && dev.lastStopLog.time_to.time < now.time) || 
 					(dev.lastStopLog && dev.lastStopLog.time_to == null && dev.lastStopLog.lab_stop_type == LabStopType.NO_ORDER)){
 					// если простоя нет или он уже закончился или простой из-за отсутствия заказов
@@ -706,20 +714,9 @@ package com.photodispatcher.print
 		
 		protected function addToQueue(printGroups:Array, devices:Array, loadByDevices:Boolean):void {
 			
-			if(printGroups.length == 0 || devices.length == 0){
-				
-				return;
-				
-			}
-			
 			var devList:Array = devices.slice();
-			var pg:PrintGroup;
-			var lab:LabGeneric;
 			var dev:LabDevice;
-			var found:Boolean;
-			
 			var readyPgList:Array = [];
-			var i:int;
 			
 			/* 
 			копируем очереди девайсов, они нужны нам для равномерного распределения ГП по девайсам, 
@@ -734,6 +731,43 @@ package com.photodispatcher.print
 			
 			var debugIds:Array = [];
 			
+			var skippedList:Array = [];
+			
+			fillDevicesWithPrintGroups(printGroups, devList, devPrintQueueMap, readyPgList, skippedList, true, debugIds);
+			debugStr += "Проходят по алиасу: "+ debugIds.join(", ") +"\n";
+			
+			if(skippedList.length > 0){
+				printGroups = skippedList.concat();
+			}
+			
+			skippedList = [];
+			debugIds = [];
+			fillDevicesWithPrintGroups(printGroups, devList, devPrintQueueMap, readyPgList, skippedList, false, debugIds);
+			debugStr += "Проходят в канал: "+ debugIds.join(", ") +"\n";
+			
+			if(!loadByDevices){
+				// проверяем на сайте, после чего добавляем в очередь после загрузки общего списка
+				//updatePgStatus(readyPgList, onUpdatePgStatusAfterPgList);
+				checkWebReady(readyPgList, onUpdatePgStatusAfterPgList);
+				
+			} else {
+				// проверяем на сайте, после чего добавляем в очередь после загрузки списка по девайсам
+				//updatePgStatus(readyPgList, onUpdatePgStatusAfterByDevices);
+				checkWebReady(readyPgList, onUpdatePgStatusAfterByDevices);
+				
+			}
+			
+			
+		}
+		
+		protected function fillDevicesWithPrintGroups(printGroups:Array, devList:Array, devPrintQueueMap:Object, readyPgList:Array, skippedList:Array, checkAliases:Boolean, debugIds:Array):void {
+			
+			var pg:PrintGroup;
+			var lab:LabGeneric;
+			var dev:LabDevice;
+			var found:Boolean;
+			var i:int;
+			
 			var printChannelReady:Boolean;
 			for each (pg in printGroups){
 				
@@ -746,6 +780,12 @@ package com.photodispatcher.print
 					lab = labMap[dev.lab] as LabGeneric;
 					
 					printChannelReady = lab.printChannel(pg, dev.rollsOnline.toArray()) != null;
+					
+					if(checkAliases){
+						
+						printChannelReady = printChannelReady && lab.checkAliasPrintCompatiable(pg.bookSynonym);
+						
+					}
 					
 					if(printChannelReady){
 						debugIds.push(pg.id);
@@ -774,19 +814,9 @@ package com.photodispatcher.print
 					i++;
 				}
 				
-			}
-			
-			debugStr += "Проходят в канал: "+ debugIds.join(", ") +"\n";
-			
-			if(!loadByDevices){
-				// проверяем на сайте, после чего добавляем в очередь после загрузки общего списка
-				//updatePgStatus(readyPgList, onUpdatePgStatusAfterPgList);
-				checkWebReady(readyPgList, onUpdatePgStatusAfterPgList);
-				
-			} else {
-				// проверяем на сайте, после чего добавляем в очередь после загрузки списка по девайсам
-				//updatePgStatus(readyPgList, onUpdatePgStatusAfterByDevices);
-				checkWebReady(readyPgList, onUpdatePgStatusAfterByDevices);
+				if(!found){
+					skippedList.push(pg);
+				}
 				
 			}
 			
@@ -960,7 +990,7 @@ package com.photodispatcher.print
 		 */
 		protected function checkDevicePrintQueueReady(printQueue:IList):Boolean {
 			
-			return printQueue.length < 2;
+			return checkQueue? printQueue.length < 2 : true;
 			
 		}
 		
@@ -976,7 +1006,7 @@ package com.photodispatcher.print
 			
 			// получаем список в статусе 200, готовые к печати
 			//latch.addLatch(svc.loadByState(OrderState.PRN_WAITE,OrderState.PRN_QUEUE));
-			latch.addLatch(svc.loadReady4Print(printGroupListLimit));
+			latch.addLatch(svc.loadReady4Print(printGroupListLimit, true));
 			latch.start();
 			
 		}

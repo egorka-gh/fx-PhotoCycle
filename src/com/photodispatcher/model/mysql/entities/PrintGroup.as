@@ -790,6 +790,12 @@ package com.photodispatcher.model.mysql.entities {
 			return result+StrUtil.lPad(tStr,2);
 		}
 		
+		public function get bookSynonym():BookSynonym {
+			
+			return BookSynonym.translatePath(this.alias);
+			
+		}
+		
 		public static function idFromDigitId(digitId:String):String{
 			if(!digitId || digitId.length<5) return '';
 			if(digitId.indexOf('_')!=-1) return digitId; //old barcode (x_xx_x)
