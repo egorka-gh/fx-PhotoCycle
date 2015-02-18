@@ -785,7 +785,7 @@ package com.photodispatcher.print
 					
 					if(checkAliases){
 						
-						printChannelReady = printChannelReady && lab.checkAliasPrintCompatiable(pg.bookSynonym);
+						printChannelReady = printChannelReady && lab.checkAliasPrintCompatiable(pg);
 						
 					}
 					

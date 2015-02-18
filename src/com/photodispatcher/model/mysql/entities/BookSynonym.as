@@ -6,8 +6,8 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
-	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.services.BookSynonymService;
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
@@ -19,9 +19,9 @@ package com.photodispatcher.model.mysql.entities {
 	import mx.collections.ArrayList;
 	import mx.core.ClassFactory;
 	
-	import org.granite.tide.Tide;
-	
 	import spark.components.gridClasses.GridColumn;
+	
+	import org.granite.tide.Tide;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.BookSynonym")]
@@ -212,6 +212,17 @@ package com.photodispatcher.model.mysql.entities {
 				if(it.book_part==BOOK_PART_COVER || it.book_part==BOOK_PART_INSERT) return it;
 			}
 			return null;
+		}
+		
+		public function getBookPgTemplateByPart(bookPart:int):BookPgTemplate {
+			
+			var it:BookPgTemplate;
+			for each(it in templates){
+				if(it.book_part == bookPart) return it;
+			}
+			
+			return null;
+			
 		}
 
     }
