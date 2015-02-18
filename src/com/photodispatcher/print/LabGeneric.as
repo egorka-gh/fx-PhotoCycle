@@ -1,5 +1,6 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
+	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
@@ -279,9 +280,24 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
-		public function checkAliasPrintCompatiable(alias:BookSynonym):Boolean {
+		public function checkAliasPrintCompatiable(pg:PrintGroup):Boolean {
 			
-			return false; //alias? alias.lab_type > 0 && alias.lab_type == this.src_type: false;
+			var res:Boolean;
+			
+			var alias:BookSynonym = pg.bookSynonym;
+			if(alias) {
+				
+				var pgTemplate:BookPgTemplate = alias.getBookPgTemplateByPart(pg.book_part);
+				
+				if(pgTemplate){
+					
+					res = pgTemplate.lab_type == this.src_type;
+					
+				}
+				
+			}
+			
+			return res;
 			
 		}
 		
