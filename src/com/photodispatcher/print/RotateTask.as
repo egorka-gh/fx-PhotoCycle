@@ -1,12 +1,14 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.IMRunerEvent;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
+	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMRuner;
 	import com.photodispatcher.util.IMCommandUtil;
@@ -15,6 +17,10 @@ package com.photodispatcher.print{
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.filesystem.File;
+	
+	import mx.collections.ArrayCollection;
+	
+	import org.granite.tide.Tide;
 	
 	[Event(name="complete", type="flash.events.Event")]
 	public class RotateTask extends EventDispatcher{
@@ -43,6 +49,46 @@ package com.photodispatcher.print{
 				return;
 			}
 
+			//capture rotate state
+			printGrp.state=OrderState.PRN_PREPARE;
+			//call service
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onStateCapture);
+			latch.addLatch(svc.capturePrintState(new ArrayCollection([printGrp]),false));
+			latch.start();
+		}
+		
+		private function onStateCapture(evt:Event):void{
+			var pgBd:PrintGroup;
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onStateCapture);
+			if(!latch || !latch.complite){
+				printGrp.state=OrderState.ERR_READ_LOCK;
+				dispatchErr('Ошибка базы: ' +latch.error);
+				return;
+			}
+			var result:Array=latch.lastDataArr;
+			if(result && result.length>0){
+				pgBd=result[0] as PrintGroup;
+				if(pgBd.id!=printGrp.id) pgBd=null;
+			}
+			
+			if(!pgBd || pgBd.state!=OrderState.PRN_PREPARE){
+				//can't сapture state
+				if(pgBd){
+					printGrp.state=pgBd.state;
+				}else{
+					printGrp.state=OrderState.ERR_READ_LOCK;
+				}
+				dispatchErr('Не верный статус группы печати (сapture state '+OrderState.PRN_PREPARE.toString()+') '+printGrp.id);
+				return;
+			}
+			runRotate();
+		}
+
+
+		private function runRotate():void{	
 			lab.stateCaption='Поворот на 180';
 			//check src folder
 			//look up prt folder in print & wrk folders

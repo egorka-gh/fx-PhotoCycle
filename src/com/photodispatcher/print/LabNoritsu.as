@@ -1,10 +1,10 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.event.PrintEvent;
-	import com.photodispatcher.model.mysql.entities.Lab;
-	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 
@@ -52,11 +52,26 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
-		override protected function canPrint(printGroup:PrintGroup):Boolean{
+		override public function canPrint(printGroup:PrintGroup):Boolean{
+			var result:Boolean=super.canPrintInternal(printGroup);
+			if(!result && nhfLab) result=nhfLab.canPrint(printGroup);
+			return result;
+		}
+		
+		/*
+		override protected function canPrintInternal(printGroup:PrintGroup):Boolean{
 			//check itself only (nhf not checked), use in post only
 			var result:LabPrintCode=super.printChannel(printGroup);
 			return result?true:false;
 		}
+		*/
+		
+		override public function hasInPostQueue(pgId:String):Boolean{
+			var result:Boolean=super.hasInPostQueue(pgId);
+			if(!result && nhfLab) result=nhfLab.hasInPostQueue(pgId);
+			return result;
+		}
+		
 		
 		override public function checkPrintGroupInLab(pg:PrintGroup):Boolean {
 			
@@ -77,7 +92,7 @@ package com.photodispatcher.print{
 				}
 			}
 			
-			if (canPrint(pg)){
+			if (canPrintInternal(pg)){
 				var pt:PrintTask= new PrintTask(pg,this,revers);
 				printTasks.push(pt);
 				//start post sequence

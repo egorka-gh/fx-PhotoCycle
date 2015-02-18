@@ -52,8 +52,10 @@ package com.photodispatcher.print{
 		private var webQueue:Object=new Object;
 		//map by source->web service
 		private var webServices:Object=new Object;
-		//PrintGroups in load 
-		private var loadQueue:Array=[];
+		////PrintGroups 4 load 
+		//private var loadQueue:Array=[];
+		//PrintGroups 4 lock 
+		private var lockQueue:Array=[];
 		//PrintGroups in post 
 		private var postQueue:Array=[];
 		private var labNamesMap:Object;
@@ -219,8 +221,10 @@ package com.photodispatcher.print{
 				}
 			}
 
-			//add from load queue
-			inProcess=inProcess.concat(loadQueue);
+			////add from load queue
+			//inProcess=inProcess.concat(loadQueue);
+			//add from lock queue
+			inProcess=inProcess.concat(lockQueue);
 			//add from post queue
 			inProcess=inProcess.concat(postQueue);
 			
@@ -279,6 +283,7 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
+		/*
 		private function getPrintApplicant():PrintGroup{
 			if(!queue || queue.length==0) return null;
 			var result:PrintGroup;
@@ -290,11 +295,39 @@ package com.photodispatcher.print{
 			}
 			return result;
 		}
+		*/
 		
-		public function post(printGrps:Vector.<Object>,lab:LabGeneric):void{
-			var pg:PrintGroup;
+		/*
+		*ручная постановка в печать
+		*
+		*/
+		public function postManual(printGrps:Vector.<Object>,lab:LabGeneric):void{
 			if(!lab || !printGrps || printGrps.length==0) return;
+
+			var pg:PrintGroup;
+			var idx:int;
+
+			//check can print
+			var postList:Array=[];
+			for each(pg in printGrps){
+				if(pg.state<=OrderState.PRN_QUEUE){
+					if(lab.canPrint(pg)){
+						pg.destinationLab=lab;
+						pg.state=OrderState.PRN_QUEUE;
+						postList.push(pg);
+					}
+				}
+			}
+			if(postList.length!=printGrps.length){
+				dispatchManagerErr('Часть заказов не может быть распечатана в ' +lab.name);
+			}
+			
 			lab.addEventListener(PrintEvent.POST_COMPLETE_EVENT,onPostComplete);
+			//check web state
+			pushToWebQueue(postList);
+			
+			/*
+			return;
 			
 			//check state & fill vs files
 			var ids:ArrayCollection= new ArrayCollection();
@@ -303,7 +336,7 @@ package com.photodispatcher.print{
 					pg.destinationLab=lab;
 					pg.state=OrderState.PRN_QUEUE;
 					//put to load
-					var idx:int=loadQueue.indexOf(pg);
+					idx=loadQueue.indexOf(pg);
 					if(idx!=-1){
 						loadQueue[idx]=pg;
 					}else{
@@ -316,12 +349,223 @@ package com.photodispatcher.print{
 			if(ids.length>0){
 				var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onPGLoad);
+				latch.addEventListener(Event.COMPLETE,onPGLoadOld);
 				latch.addLatch(svc.loadPrintPost(ids));
 				latch.start();
 			}
+			*/
 		}
+
+		/*
+		push to webQueue (check print group state)
+		*/
+		private function pushToWebQueue(printGrps:Array):void{
+			if(!printGrps || printGrps.length==0) return;
+			var pg:PrintGroup;
+			var srcOrders:Object;
+			var order:Order
+			var toLoad:Array=[];
+			for each(pg in printGrps){
+				if(pg.is_reprint){
+					//skip if reprint
+					pg.state=OrderState.PRN_WEB_OK;
+					//add to loadQueue
+					toLoad.push(pg);
+				}else{
+					srcOrders=webQueue[pg.source_id.toString()];
+					if(!srcOrders){
+						srcOrders=new Object();
+						webQueue[pg.source_id.toString()]=srcOrders;
+					}
+					order= srcOrders[pg.order_id] as Order;
+					if(!order){
+						order=new Order();
+						order.id=pg.order_id;
+						order.source=pg.source_id;
+						order.ftp_folder=pg.order_folder;
+						order.printGroups=new ArrayCollection();
+						order.state=OrderState.PRN_QUEUE;
+						srcOrders[pg.order_id]=order;
+					}
+					if(order.printGroups.length==0 || order.printGroups.getItemIndex(pg)==-1) order.printGroups.addItem(pg);
+				}
+			}
+			//start check web state
+			//scan sources
+			var src_id:String;
+			for(src_id in webQueue){
+				//var svc:ProfotoWeb=webServices[src_id] as ProfotoWeb;
+				var svc:BaseWeb=webServices[src_id] as BaseWeb;
+				if(!svc){
+					//svc= new ProfotoWeb(Context.getSource(int(src_id)));
+					svc= WebServiceBuilder.build(Context.getSource(int(src_id)));
+					svc.addEventListener(Event.COMPLETE,serviceCompliteHandler);
+					webServices[src_id]=svc;
+				}
+				if(!svc.isRunning) serviceCheckNext(svc);
+			}
+			//checkWebComplite();
+			
+			//lock/load reprint pg
+			capturePrintGroups(toLoad);
+		}
+		
+		private function serviceCheckNext(service:BaseWeb):void{
+			if(service.isRunning) return;
+			
+			var oMap:Object;
+			var src_id:String=service.source.id.toString();
+			oMap=webQueue[src_id];
+			if (!oMap){
+				//complited return
+				return;
+			}
+			var order:Order;
+			for each(var o:Object in oMap){
+				order=o as Order;
+				if(order && order.state==OrderState.PRN_QUEUE) break;
+			}
+			if (order && order.state==OrderState.PRN_QUEUE){
+				order.state=OrderState.PRN_WEB_CHECK;
+				for each (var pg:Object in order.printGroups){
+					pg.state=OrderState.PRN_WEB_CHECK;
+				}
+				service.getOrder(order);
+			}
+		}
+		
+		private function serviceCompliteHandler(e:Event):void{
+			var svc:BaseWeb=e.target as BaseWeb;
+			var prnGrp:PrintGroup;
+			var toLoad:Array=[];
+			if(svc){
+				//svc.removeEventListener(Event.COMPLETE,serviceCompliteHandler);
+				var oMap:Object=webQueue[svc.source.id.toString()];
+				var order:Order=oMap[svc.lastOrderId] as Order;
+				//check web service err
+				if(svc.hasError){
+					dispatchManagerErr('Ошибка web сервиса: '+svc.errMesage);
+					for each (prnGrp in order.printGroups){
+						prnGrp.state=OrderState.ERR_WEB;
+						StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка проверки на сайте: '+svc.errMesage);
+					}
+				}else{
+					if(svc.isValidLastOrder()){
+						//update extra info 4  FOTOKNIGA type
+						if(svc.source.type==SourceType.SRC_FOTOKNIGA && svc.getLastOrder()){
+							var ei:OrderExtraInfo=svc.getLastOrder().extraInfo;
+							if(ei){
+								ei.persistState=AbstractEntity.PERSIST_CHANGED;
+								var osvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+								var latch:DbLatch= new DbLatch(true);
+								latch.addLatch(osvc.persistExtraInfo(ei));
+								latch.start();
+							}
+						}
+						//set state 
+						for each (prnGrp in order.printGroups){
+							//prnGrp= pg as PrintGroup;
+							if(prnGrp){
+								if(prnGrp.state==OrderState.PRN_WEB_CHECK){
+									prnGrp.state=OrderState.PRN_WEB_OK;
+									//add to loadQueue
+									toLoad.push(prnGrp);
+								}else{
+									StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
+								}
+							}
+						}
+						//lock/load pg
+						capturePrintGroups(toLoad);
+					}else{
+						dispatchManagerErr('Заказ #'+svc.lastOrderId+' отменен на сайте. Обновите данные. Размещение заказа на печать отменено.');
+						//mark as canceled
+						for each (prnGrp in order.printGroups){
+							prnGrp.state=OrderState.CANCELED;
+							prnGrp.destinationLab=null;
+						}
+					}
+				}
+				delete oMap[svc.lastOrderId];
+				//compact webQueue
+				var key:String;
+				for(key in oMap){
+					if(key) break;
+				}
+				if(!key){
+					delete webQueue[svc.source.id.toString()];
+				}
+				//check next
+				serviceCheckNext(svc);
+			}
+			//check if any source in process
+			//checkWebComplite();
+		}
+
+		private function capturePrintGroups(printGroups:Array):void{
+			if(!printGroups || printGroups.length==0) return;
+			var prnGrp:PrintGroup;
+			//set state
+			for each (prnGrp in printGroups) prnGrp.state=OrderState.PRN_QUEUE;
+			//call service
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onPGLoad);
+			latch.addLatch(svc.capturePrintState(new ArrayCollection(printGroups.concat()),true));
+			latch.start();
+			//push to lockQueue 
+			if(!lockQueue) lockQueue=[];
+			lockQueue=lockQueue.concat(printGroups);
+		}
+
 		private function onPGLoad(evt:Event):void{
+			var pgBd:PrintGroup;
+			var pg:PrintGroup;
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onPGLoad);
+			if(!latch || !latch.complite){
+				//reset all ??
+				for each(pg in lockQueue) pg.state=OrderState.PRN_WAITE;
+				lockQueue=[];
+			}
+			var result:Array=latch.lastDataArr;
+			var left:Array=[];
+			var idx:int;
+			var hasErr:Boolean;
+			for each(pg in lockQueue){
+				idx= ArrayUtil.searchItemIdx('id',pg.id,result);
+				if(idx==-1){
+					left.push(pg);
+				}else{
+					pgBd=result[idx] as PrintGroup;
+					//autoPost will complite post ??
+					/**/
+					if(pgBd){
+						if((pgBd.state!=OrderState.PRN_QUEUE) || !pgBd.files || pgBd.files.length==0){
+							//wrong state or empty files
+							pg.state=pgBd.state; 
+							hasErr=true;
+						}else{
+							//files loaded & state ok
+							pg.files=pgBd.files;
+							if(pg.destinationLab){
+								//add to postQueue
+								postQueue.push(pg);
+								//post to lab
+								var revers:Boolean=Context.getAttribute('reversPrint');
+								pg.destinationLab.post(pg,revers);
+							}
+						}
+					}
+					/**/
+				}
+			}
+			lockQueue=left;
+			if(hasErr) dispatchManagerErr('Часть заказов не размещена из-за не сответствия статуса заказа (bd).');
+		}
+
+		/*
+		private function onPGLoadOld(evt:Event):void{
 			var pgBd:PrintGroup;
 			var pg:PrintGroup;
 			var latch:DbLatch= evt.target as DbLatch;
@@ -399,8 +643,9 @@ package com.photodispatcher.print{
 				}
 				if(!svc.isRunning) serviceCheckNext(svc);
 			}
-			checkWebComplite();
+			//checkWebComplite();
 		}
+		*/
 		
 		private function checkWebComplite():Boolean{
 			//check if any source in process
@@ -425,99 +670,6 @@ package com.photodispatcher.print{
 			return result;
 		}
 		
-		private function serviceCheckNext(service:BaseWeb):void{
-			if(service.isRunning) return;
-			
-			var oMap:Object;
-			var src_id:String=service.source.id.toString();
-			oMap=webQueue[src_id];
-			if (!oMap){
-				//complited return
-				return;
-			}
-			var order:Order;
-			for each(var o:Object in oMap){
-				order=o as Order;
-				if(order && order.state==OrderState.PRN_QUEUE) break;
-			}
-			if (order && order.state==OrderState.PRN_QUEUE){
-				order.state=OrderState.PRN_WEB_CHECK;
-				for each (var pg:Object in order.printGroups){
-					pg.state=OrderState.PRN_WEB_CHECK;
-				}
-				service.getOrder(order);
-			}
-		}
-		
-		private function serviceCompliteHandler(e:Event):void{
-			var svc:BaseWeb=e.target as BaseWeb;
-			var pg:Object;
-			var prnGrp:PrintGroup;
-			if(svc){
-				//svc.removeEventListener(Event.COMPLETE,serviceCompliteHandler);
-				var oMap:Object=webQueue[svc.source.id.toString()];
-				var order:Order=oMap[svc.lastOrderId] as Order;
-				//check web service err
-				if(svc.hasError){
-					dispatchManagerErr('Ошибка web сервиса: '+svc.errMesage);
-					for each (pg in order.printGroups){
-						pg.state=OrderState.ERR_WEB;
-						StateLog.logByPGroup(OrderState.ERR_WEB,pg.id,'Ошибка проверки на сайте: '+svc.errMesage);
-					}
-				}else{
-					//TODO order can be in state PRN_POST, so check both remote state  
-					if(svc.isValidLastOrder()){
-						//update extra info 4  FOTOKNIGA type
-						if(svc.source.type==SourceType.SRC_FOTOKNIGA && svc.getLastOrder()){
-							var ei:OrderExtraInfo=svc.getLastOrder().extraInfo;
-							if(ei){
-								ei.persistState=AbstractEntity.PERSIST_CHANGED;
-								var osvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-								var latch:DbLatch= new DbLatch(true);
-								latch.addLatch(osvc.persistExtraInfo(ei));
-								latch.start();
-							}
-						}
-						//set state 
-						for each (pg in order.printGroups){
-							prnGrp= pg as PrintGroup;
-							if(prnGrp){
-								if(prnGrp.state==OrderState.PRN_WEB_CHECK){
-									prnGrp.state=OrderState.PRN_WEB_OK;
-									//add to postQueue
-									postQueue.push(prnGrp);
-									//post to lab
-									var revers:Boolean=Context.getAttribute('reversPrint');
-									prnGrp.destinationLab.post(prnGrp,revers);
-								}else{
-									StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
-								}
-							}
-						}
-					}else{
-						dispatchManagerErr('Заказ #'+svc.lastOrderId+' отменен на сайте. Обновите данные. Размещение заказа на печать отменено.');
-						//mark as canceled
-						for each (pg in order.printGroups){
-							pg.state=OrderState.CANCELED;
-							pg.destinationLab=null;
-						}
-					}
-				}
-				delete oMap[svc.lastOrderId];
-				//compact webQueue
-				var key:String;
-				for(key in oMap){
-					if(key) break;
-				}
-				if(!key){
-					delete webQueue[svc.source.id.toString()];
-				}
-				//check next
-				serviceCheckNext(svc);
-			}
-			//check if any source in process
-			checkWebComplite();
-		}
 
 		private function onPostComplete(e:PrintEvent):void{
 			//remove from postQueue
@@ -526,29 +678,25 @@ package com.photodispatcher.print{
 			if(idx!=-1){
 				postQueue.splice(idx,1);
 			}
+			/*
 			if(!e.hasErr){
 				//save
-				/*
-				var dao:PrintGroupDAO=new PrintGroupDAO();
-				dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
-				dao.writePrintState(e.printGroup);
-				*/
-				
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onPostWrite);
 				latch.addLatch(svc.printPost(e.printGroup.id, e.printGroup.destination));
 				latch.start();
 			}
-		}
-		private function onPostWrite(evt:Event):void{ //onWrite(e:AsyncSQLEvent):void{
-			/*
-			var oDAO:PrintGroupDAO=e.target as PrintGroupDAO;
-			if(oDAO) oDAO.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onWrite);
-			if(e.result!=AsyncSQLEvent.RESULT_COMLETED){
-				dispatchManagerErr('Блокировка записи при сохранении статуса группы печати');
-			}
 			*/
+			if(!e.hasErr){
+				if(postQueue.length==0){
+					//complited refresh lab
+					refreshLabs();
+				}
+			}
+		}
+		
+		private function onPostWrite(evt:Event):void{ 
 			var latch:DbLatch=evt.target as DbLatch;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onPostWrite);

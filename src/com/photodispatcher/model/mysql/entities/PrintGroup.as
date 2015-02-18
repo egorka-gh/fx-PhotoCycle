@@ -133,11 +133,24 @@ package com.photodispatcher.model.mysql.entities {
 		public var bookTemplate:BookPgTemplate;
 		public var butt:int=0;
 		public var is_horizontal:Boolean;
+		
+		private var _destinationLab:LabGeneric;
 		/**
 		 * runtime
 		 * post to lab (used in PrintManager) 
 		 */
-		public var destinationLab:LabGeneric;
+		public function get destinationLab():LabGeneric{
+			return _destinationLab;
+		}
+		public function set destinationLab(value:LabGeneric):void{
+			_destinationLab = value;
+			if(_destinationLab){
+				destination=_destinationLab.id;
+			}else{
+				destination=0;
+			}
+		}
+
 		/**
 		 * runtime
 		 * used in PrintManager to rotate before print 
@@ -775,6 +788,12 @@ package com.photodispatcher.model.mysql.entities {
 			tStr=arr[2];
 			if (tStr.length>2) return '';
 			return result+StrUtil.lPad(tStr,2);
+		}
+		
+		public function get bookSynonym():BookSynonym {
+			
+			return BookSynonym.translatePath(this.alias);
+			
 		}
 		
 		public static function idFromDigitId(digitId:String):String{

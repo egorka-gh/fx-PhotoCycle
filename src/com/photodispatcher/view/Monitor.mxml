@@ -22,6 +22,7 @@
 			import com.photodispatcher.model.mysql.entities.LabStopLog;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.StateLog;
 			import com.photodispatcher.model.mysql.services.LabService;
@@ -658,10 +659,46 @@
 			
 		</s:HGroup>
 		
-		<s:Button includeIn="printPulse" label="{printPulseManager.autoPrinting? 'Выключить' : 'Включить'}" 
-				  color="{printPulseManager.autoPrinting? 0xff0000 : 0}" 
-				  click="{printPulseManager.autoPrinting = !printPulseManager.autoPrinting}"
-				  />
+		
+		
+		<s:HGroup includeIn="printPulse" width="100%" height="100%">
+			
+			<s:VGroup width="30%">
+				
+				<s:Button label="{printPulseManager.autoPrinting? 'Выключить' : 'Включить'}" 
+						  color="{printPulseManager.autoPrinting? 0xff0000 : 0}" 
+						  click="{printPulseManager.autoPrinting = !printPulseManager.autoPrinting}"
+						  />
+				
+				<s:HGroup verticalAlign="baseline">
+					<s:TextInput id="printGroupListLimitInput" text="{printPulseManager.printGroupListLimit}" restrict="0-9" />
+					<s:Button label="Сохранить" click="{printPulseManager.printGroupListLimit = int(printGroupListLimitInput.text)}" />
+				</s:HGroup>
+				
+				<s:TextArea text="{printPulseManager.debugStr}" editable="false" width="100%" height="100%" />
+				
+			</s:VGroup>
+			
+			<s:DataGrid selectionMode="singleRow"
+						width="70%" height="100%"
+						dataProvider="{printPulseManager.printQueueList}" locale="ru_RU">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn dataField="id" headerText="Id" />
+						<s:GridColumn dataField="lab_name" headerText="Лаба" />
+						<s:GridColumn dataField="state" headerText="Статус" />
+						<s:GridColumn dataField="state_date" headerText="Дата статуса">
+							<s:formatter>
+								<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
+							</s:formatter>
+						</s:GridColumn>
+						<s:GridColumn dataField="width" headerText="Ширина" />
+						<s:GridColumn dataField="height" headerText="Длина" />
+					</s:ArrayList>
+				</s:columns>
+			</s:DataGrid>
+			
+		</s:HGroup>
 		
 	</s:Group>
 	

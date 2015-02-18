@@ -1,5 +1,6 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
@@ -7,6 +8,8 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
+	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.Event;
@@ -17,6 +20,11 @@ package com.photodispatcher.print{
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
+	import flash.utils.flash_proxy;
+	
+	import mx.collections.ArrayCollection;
+	
+	import org.granite.tide.Tide;
 	
 	import spark.formatters.DateTimeFormatter;
 	
@@ -80,7 +88,7 @@ package com.photodispatcher.print{
 			printContext[KEY_GROUP_ID]=printGrp.humanId;
 			printContext[KEY_JOB_ID]=printGrp.numericId;
 			//printContext[KEY_IMG_COUNT]=printGrp.files.length;
-			printContext[KEY_IMG_COUNT]=printGrp.printFiles.length;
+			if(printGrp.printFiles) printContext[KEY_IMG_COUNT]=printGrp.printFiles.length;
 			var dtFmt:DateTimeFormatter=new DateTimeFormatter();
 			//4 noritsu
 			dtFmt.dateTimePattern='yyyy:MM:dd:HH:mm:ss';//2012:07:13:15:02:51
@@ -110,6 +118,43 @@ package com.photodispatcher.print{
 				dispatchErr('Не верные параметры запуска.');
 				return;
 			}
+			if(!printGrp.files || printGrp.files.length==0){
+				//load files
+				var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+				var latch:DbLatch= new DbLatch(true);
+				latch.addEventListener(Event.COMPLETE,onFilesLoad);
+				latch.addLatch(svc.fillCaptured(printGrp.id));
+				latch.start();
+
+			}else{
+				runPrepare();
+			}
+		}
+		
+		private function onFilesLoad(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onFilesLoad);
+			if(!latch || !latch.complite){
+				printGrp.state=OrderState.ERR_READ_LOCK;
+				dispatchErr('Ошибка базы: ' +latch.error);
+				return;
+			}
+			var pgBd:PrintGroup=latch.lastDMLItem as PrintGroup;
+			if(!pgBd || pgBd.state!=OrderState.PRN_QUEUE){
+				dispatchErr('Не верный статус группы печати (fill Captured) '+printGrp.id);
+				return;
+			}
+			
+			printGrp.files = pgBd.files;
+			printGrp.source_id = pgBd.source_id;
+			printGrp.order_folder = pgBd.order_folder;
+			
+			printContext[KEY_IMG_COUNT]=printGrp.printFiles.length;
+			runPrepare();
+		}
+
+		
+		private function runPrepare():void{
 			printGrp.printRotated=false;
 			if(printGrp.book_type!=0 
 				&& (lab.src_type==SourceType.LAB_NORITSU || lab.src_type==SourceType.LAB_NORITSU_NHF) 
@@ -118,10 +163,10 @@ package com.photodispatcher.print{
 				rotate.addEventListener(Event.COMPLETE, onRotate);
 				rotate.run();
 			}else{
-				postInternal();
+				capturePost();
 			}
 		}
-
+		
 		private function onRotate(evt:Event):void{
 			var rotate:RotateTask=evt.target as RotateTask;
 			if(rotate){
@@ -129,11 +174,50 @@ package com.photodispatcher.print{
 				if(rotate.hasErr){
 					dispatchErr(rotate.errMsg);
 				}else{
-					postInternal();
+					capturePost();
 				}
 			}
 		}
 		
+		private function capturePost():void{
+			//capture post state
+			printGrp.state=OrderState.PRN_POST;
+			//call service
+			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onStateCapture);
+			latch.addLatch(svc.capturePrintState(new ArrayCollection([printGrp]),false));
+			latch.start();
+		}
+		
+		private function onStateCapture(evt:Event):void{
+			var pgBd:PrintGroup;
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onStateCapture);
+			if(!latch || !latch.complite){
+				printGrp.state=OrderState.ERR_READ_LOCK;
+				dispatchErr('Ошибка базы: ' +latch.error);
+				return;
+			}
+			var result:Array=latch.lastDataArr;
+			if(result && result.length>0){
+				pgBd=result[0] as PrintGroup;
+				if(pgBd.id!=printGrp.id) pgBd=null;
+			}
+			
+			if(!pgBd || pgBd.state!=OrderState.PRN_POST){
+				//can't сapture state
+				if(pgBd){
+					printGrp.state=pgBd.state;
+				}else{
+					printGrp.state=OrderState.ERR_READ_LOCK;
+				}
+				dispatchErr('Не верный статус группы печати (сapture state '+OrderState.PRN_POST.toString()+') '+printGrp.id);
+				return;
+			}
+			postInternal();
+		}
+
 		private function postInternal():void{
 			printContext[KEY_CHANNEL]=lab.printChannelCode(printGrp);
 			lab.stateCaption='Копирование';
@@ -312,7 +396,7 @@ package com.photodispatcher.print{
 						srcFolder.deleteDirectory(true); 
 					}catch(e:Error){}
 				}
-				dispatchEvent(new Event(Event.COMPLETE));
+				saveCompleted();
 				return;
 			}
 			var pf:PrintGroupFile=printGrp.printFiles[currCopyIdx] as PrintGroupFile;
@@ -387,6 +471,27 @@ package com.photodispatcher.print{
 			//printScript=printScript+script;
 
 		}
+		
+		private function saveCompleted():void{
+			//save
+			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onPostWrite);
+			latch.addLatch(svc.printPost(printGrp.id, printGrp.destination));
+			latch.start();
+
+		}
+		private function onPostWrite(evt:Event):void{ 
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onPostWrite);
+			if(!latch || !latch.complite){
+				printGrp.state=OrderState.ERR_READ_LOCK;
+				dispatchErr('Ошибка базы: ' +latch.error);
+				return;
+			}
+			dispatchEvent(new Event(Event.COMPLETE));
+		}
+
 		
 		private function copyComplete(e:Event):void{
 			stopListen();

@@ -252,7 +252,7 @@
 				if(!dgPGroups.selectedItem || !lstLabs.selectedItem) return;
 				lbManagerError.text='';
 				var l:LabGeneric=lstLabs.selectedItem as LabGeneric;
-				printManager.post(dgPGroups.selectedItems,l);
+				printManager.postManual(dgPGroups.selectedItems,l);
 			}
 			
 			private function filterPGList(item:Object):Boolean {
