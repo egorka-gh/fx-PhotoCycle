@@ -8,16 +8,24 @@
 
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayList;
+			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 			
 			import org.granite.tide.Tide;
-	
+			
+			import spark.events.PopUpEvent;
+			
 			public var isActive:Boolean;
 			
 			[Bindable]
@@ -93,8 +101,78 @@
 				if(!item) return;
 				var pop:MailPackagePopUp= new MailPackagePopUp();
 				//if(currentState=='inQueue')
-				pop.loadFromWeb(item.source, item.id);
+				showMPbyId(item.source, item.id);
 			}
+
+			private function showMPbyId(source:int, groupId:int):void{
+				if(!source || !groupId) return;
+				var pop:MailPackagePopUp= new MailPackagePopUp();
+				//if(currentState=='inQueue')
+				pop.loadFromWeb(source, groupId);
+			}
+
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
+				return _barcodeReader;
+			}
+			public function set barcodeReader(value:ComReader):void{
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+				}
+				_barcodeReader = value;
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+				}
+			}
+
+			private var newScanId:String;
+			
+			private function onBarCode(event:BarCodeEvent):void{
+				if(!isActive) return;
+				var barcode:String=event.barcode;
+				if(newScanId) return; //previouse scan incomplite
+				newScanId= barcode;
+				if(!newScanId){
+					Alert.show('Не верный ШК: "'+barcode+'".');
+					return;
+				}
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch=svc.findeById(newScanId,true);
+				latch.addEventListener(Event.COMPLETE,onOrderFinde);
+				latch.start();
+			}
+			private function onOrderFinde(e:Event):void{
+				var ordId:String=PrintGroup.orderIdFromBookBarcode(newScanId);
+				if(!ordId) ordId=newScanId;
+				newScanId='';
+				var latch:DbLatch=e.target as DbLatch;
+				var ordersList:ArrayCollection;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderFinde);
+					if(latch.complite){
+						ordersList=latch.lastDataAC;
+					}
+				}
+				if(!ordersList) return;
+
+				if(ordersList.length==1){
+					var ord:Order=ordersList.getItemAt(0) as Order;
+					if(ord) showMPbyId(ord.source, ord.groupId);
+				}else{
+					var pop:OrderSearchPopup= new OrderSearchPopup();
+					pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
+					pop.findeMode=true;
+					pop.finde(ordId);
+				}
+			}
+			private function onOrderAdd(event:PopUpEvent):void{
+				var pop:OrderSearchPopup=event.target as OrderSearchPopup;
+				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
+				if(event.commit && pop && pop.lastOrder){
+					showMPbyId(pop.lastOrder.source, pop.lastOrder.groupId);
+				}
+			}
+
 			
 		]]>
 	</fx:Script>

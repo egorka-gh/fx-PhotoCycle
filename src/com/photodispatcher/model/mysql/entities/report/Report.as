@@ -11,5 +11,6 @@ package com.photodispatcher.model.mysql.entities.report {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.report.Report")]
     public class Report extends ReportBase {
 		public var isRunning:Boolean=false;
+		public var printer:String;
     }
 }

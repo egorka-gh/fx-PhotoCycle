@@ -34,10 +34,13 @@ package com.photodispatcher.model.mysql.services {
 					id='%'+id+'%';
 				}else{
 					if(id.length<6) return null;
+					/*
 					//parse barcode
 					var src:int=int(id.substr(0,2));
 					id=id.substr(2);
 					id=src.toString()+'_'+id.substr(0, id.length-3); //remove book
+					*/
+					id=PrintGroup.orderIdFromBookBarcode(id);
 				}
 				latch.addLatch(loadOrder(id));
 			}

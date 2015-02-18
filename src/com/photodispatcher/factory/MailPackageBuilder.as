@@ -75,6 +75,7 @@ package com.photodispatcher.factory{
 					}
 					props.push(prop);
 					//barcode?
+					/*
 					if(prop.property=='sl_delivery_code'){
 						bar= new MailPackageBarcode();
 						bar.source=source;
@@ -83,11 +84,12 @@ package com.photodispatcher.factory{
 						bar.bar_type=MailPackageBarcode.TYPE_SITE;
 						barcodes.push(bar);
 					}
+					*/
 				}
 			}
 			
 			//fill barcodes
-				if(raw.hasOwnProperty('barcodes') && raw.hasOwnProperty('barcodes') is Array){
+				if(raw.hasOwnProperty('barcodes')){
 					for each(var barObj:Object in raw.barcodes){
 						if(barObj.hasOwnProperty('barcode') && barObj.barcode){
 							bar= new MailPackageBarcode();

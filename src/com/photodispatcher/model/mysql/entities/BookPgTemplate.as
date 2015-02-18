@@ -9,6 +9,7 @@ package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
+	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditorFullList;
 	import com.photodispatcher.view.itemRenderer.OffsetGridItemEditor;
 	
 	import mx.collections.ArrayList;
@@ -44,6 +45,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('bar_offset'); col.headerText='Подпись книги смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
 			col= new GridColumn('fontv_size'); col.headerText='Вертикальная подпись шрифт'; col.width=60; result.addItem(col);
 			col= new GridColumn('fontv_offset'); col.headerText='Вертикальная подпись смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
+			col= new GridColumn('lab_type'); col.headerText='Тип лабы'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditorFullList); result.addItem(col);
 			return result;
 		}
 

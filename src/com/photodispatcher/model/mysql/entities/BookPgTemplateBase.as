@@ -44,6 +44,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_tech_stair_bot:Boolean;
         private var _is_tech_stair_top:Boolean;
         private var _is_tech_top:Boolean;
+        private var _lab_type:int;
+        private var _lab_type_name:String;
         private var _notching:int;
         private var _page_hoffset:int;
         private var _page_len:int;
@@ -246,6 +248,20 @@ package com.photodispatcher.model.mysql.entities {
             return _is_tech_top;
         }
 
+        public function set lab_type(value:int):void {
+            _lab_type = value;
+        }
+        public function get lab_type():int {
+            return _lab_type;
+        }
+
+        public function set lab_type_name(value:String):void {
+            _lab_type_name = value;
+        }
+        public function get lab_type_name():String {
+            return _lab_type_name;
+        }
+
         public function set notching(value:int):void {
             _notching = value;
         }
@@ -407,6 +423,8 @@ package com.photodispatcher.model.mysql.entities {
             _is_tech_stair_bot = input.readObject() as Boolean;
             _is_tech_stair_top = input.readObject() as Boolean;
             _is_tech_top = input.readObject() as Boolean;
+            _lab_type = input.readObject() as int;
+            _lab_type_name = input.readObject() as String;
             _notching = input.readObject() as int;
             _page_hoffset = input.readObject() as int;
             _page_len = input.readObject() as int;
@@ -456,6 +474,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_is_tech_stair_bot is IPropertyHolder) ? IPropertyHolder(_is_tech_stair_bot).object : _is_tech_stair_bot);
             output.writeObject((_is_tech_stair_top is IPropertyHolder) ? IPropertyHolder(_is_tech_stair_top).object : _is_tech_stair_top);
             output.writeObject((_is_tech_top is IPropertyHolder) ? IPropertyHolder(_is_tech_top).object : _is_tech_top);
+            output.writeObject((_lab_type is IPropertyHolder) ? IPropertyHolder(_lab_type).object : _lab_type);
+            output.writeObject((_lab_type_name is IPropertyHolder) ? IPropertyHolder(_lab_type_name).object : _lab_type_name);
             output.writeObject((_notching is IPropertyHolder) ? IPropertyHolder(_notching).object : _notching);
             output.writeObject((_page_hoffset is IPropertyHolder) ? IPropertyHolder(_page_hoffset).object : _page_hoffset);
             output.writeObject((_page_len is IPropertyHolder) ? IPropertyHolder(_page_len).object : _page_len);

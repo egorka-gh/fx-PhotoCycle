@@ -29,7 +29,6 @@
 
 			[Bindable]
 			public var techPoint:TechPoint;
-			
 			public var isActive:Boolean;
 
 			private function init():void{

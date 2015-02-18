@@ -77,7 +77,9 @@ package com.photodispatcher.printer{
 			}
 			if(result.url){
 				if(reportPrinter && reportPrinter.enabled){
-					reportPrinter.print(result.url, Context.getAttribute('printer'));
+					var prn:String=curReport.printer;
+					if(!prn) prn=Context.getAttribute('printer');
+					reportPrinter.print(result.url, prn);
 				}else{
 					reportViewer.open(result.url,curReport);
 				}
@@ -119,7 +121,8 @@ package com.photodispatcher.printer{
 			if(!idCaption || !barcode) return;
 			
 			var report:Report=new Report();
-			
+			report.printer=	Context.getAttribute('termPrinter');
+
 			report.id='mpBarcodeFrm';
 			report.parameters=[];
 			var param:Parameter;

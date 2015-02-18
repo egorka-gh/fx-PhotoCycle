@@ -281,7 +281,7 @@ package com.photodispatcher.print{
 		
 		public function checkAliasPrintCompatiable(alias:BookSynonym):Boolean {
 			
-			return alias? alias.lab_type > 0 && alias.lab_type == this.src_type: false;
+			return false; //alias? alias.lab_type > 0 && alias.lab_type == this.src_type: false;
 			
 		}
 		

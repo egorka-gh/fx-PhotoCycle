@@ -204,13 +204,7 @@
 			[Bindable]
 			private var barcodeReader:ComReader;
 			
-			protected function button1_clickHandler(event:MouseEvent):void{
-				//var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
-				//var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
-				if(!techPointObj){ // || !startTT ||!endTT){
-					Alert.show('Не настроена тех точка ОТК');
-					return;
-				}
+			private function startBarReader():void{
 				if(comReader.num){
 					serialProxy.start([comReader]);
 					if(serialProxy.isStarted){
@@ -230,6 +224,16 @@
 						}
 					}
 				}
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				//var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
+				//var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
+				if(!techPointObj){ // || !startTT ||!endTT){
+					Alert.show('Не настроена тех точка ОТК');
+					return;
+				}
+				startBarReader();
 				/*
 				techMonitor.techPoint=techPointObj;
 				techMonitor.startTechType=startTT;
@@ -373,8 +377,8 @@
 			}
 			
 			protected function button5_clickHandler(event:MouseEvent):void{
+				startBarReader();
 				currentState='mail';
-				
 			}
 			
 			protected function ddMTechPoint_changeHandler(event:IndexChangeEvent):void{
@@ -552,16 +556,16 @@
 		</s:HGroup>
 		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
 			<s:Label text="Принтер этикеток" width="{lbOOpath.width+10}"/>
-			<s:TextInput id="tiTermPrinter" text="@{termPrinter}" width="210" textAlign="left" change="tiTermPrinter_changeHandler(event)"/>
+			<s:TextInput id="tiTermPrinter" text="@{termPrinter}" width="210" textAlign="left" change="tiTermPrinter_changeHandler(event)" />
 		</s:HGroup>
 			
 
 		
 	</s:VGroup>
 	
-	<view:TechOTKMonitor id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" isActive="{currentState=='techMonitor'}"
+	<view:TechOTKMonitor id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" isActive="{currentState=='monitor'}"
 						 top="20" left="20" right="20" bottom="50"/>
-	<view:TechMailPackageView id="mpView" includeIn="mail"
+	<view:TechMailPackageView id="mpView" includeIn="mail" isActive="{currentState=='mail'}" barcodeReader="{barcodeReader}" 
 							  top="20" left="20" right="20" bottom="50"/>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
 		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
