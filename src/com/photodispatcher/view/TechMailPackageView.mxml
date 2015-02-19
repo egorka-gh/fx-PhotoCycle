@@ -59,6 +59,10 @@
 						gridColumns=MailPackage.inQueueColumns();
 						loadInQueue();
 						break;
+					case 'inQueueByClient':
+						gridColumns=MailPackage.inQueueColumns();
+						loadInQueueByClient();
+						break;
 					case 'packageList':
 						break;
 					case 'forSendList':
@@ -66,6 +70,14 @@
 				}
 			}
 
+			private function loadInQueueByClient():void{
+				if(!byClientMP) return;
+				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onload);
+				latch.addLatch(svc.loadByClient(byClientMP.source, byClientMP.client_id));
+				latch.start();
+			}
 			private function loadInQueue():void{
 				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
@@ -108,7 +120,7 @@
 				if(!source || !groupId) return;
 				var pop:MailPackagePopUp= new MailPackagePopUp();
 				//if(currentState=='inQueue')
-				pop.loadFromWeb(source, groupId);
+				pop.loadFromWeb(source, groupId, true);
 			}
 
 			private var _barcodeReader:ComReader;
@@ -173,6 +185,15 @@
 				}
 			}
 
+			[Bindable]
+			private var byClientMP:MailPackage;
+			protected function btShowByClient_clickHandler(event:MouseEvent):void{
+				if(!dgPackages) return;
+				byClientMP=dgPackages.selectedItem as MailPackage;
+				if(!byClientMP) return;
+				currentState='inQueueByClient';
+				refresh();
+			}
 			
 		]]>
 	</fx:Script>
@@ -183,6 +204,7 @@
 	
 	<s:states>
 		<s:State name="inQueue"/>
+		<s:State name="inQueueByClient"/>
 		<s:State name="packageList"/>
 		<s:State name="forSendList"/>
 		<s:State name="packageView"/>
@@ -196,10 +218,20 @@
 		</mx:ArrayCollection>
 	</s:TabBar>
 	
-	<s:VGroup top="20" left="10" right="10" bottom="10">
-		<s:HGroup width="100%" horizontalAlign="right">
+	<s:VGroup top="20" left="10" right="10" bottom="10" gap="5">
+		<s:HGroup width="100%" horizontalAlign="right" gap="10" verticalAlign="baseline">
+			<s:Button id="btShowByClient" label="Группы клиента" includeIn="inQueue" click="btShowByClient_clickHandler(event)"/>
+			<s:Button id="btCloseByClient" label="Ожидают упаковки" includeIn="inQueueByClient" click="{detectState()}"/>
 			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
 					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<s:HGroup width="100%" includeIn="inQueueByClient" gap="5" verticalAlign="baseline">
+			<s:Label text="Источник:"/>
+			<s:Label text="{byClientMP.source_name}" fontWeight="bold"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Клиент:"/>
+			<s:Label text="{byClientMP.client_id}" fontWeight="bold"/>
 		</s:HGroup>
 		<s:DataGrid id="dgPackages" selectionMode="singleRow"
 					fontSize="14" width="100%" height="100%"

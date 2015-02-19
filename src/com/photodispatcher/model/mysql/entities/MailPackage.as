@@ -6,9 +6,12 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import flash.globalization.DateTimeStyle;
+	
 	import mx.collections.ArrayList;
 	
 	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackage")]
@@ -43,6 +46,9 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('client_id'); col.headerText='Клиент'; result.addItem(col); 
 			col= new GridColumn('state_name'); col.headerText='Макс статус'; result.addItem(col); 
 			col= new GridColumn('min_ord_state_name'); col.headerText='Мин статус'; result.addItem(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('orders_num'); col.headerText='Кол заказов'; result.addItem(col); 
 			
 			/*
 			col= new GridColumn('id'); result.addItem(col);

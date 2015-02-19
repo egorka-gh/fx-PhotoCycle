@@ -2,7 +2,7 @@
 <s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
 						   xmlns:s="library://ns.adobe.com/flex/spark" 
 						   xmlns:mx="library://ns.adobe.com/flex/mx" 
-						   width="800" height="600">
+						   width="800" height="600" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
 	
 	<fx:Script>
 		<![CDATA[
@@ -17,10 +17,12 @@
 			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.printer.Printer;
 			import com.photodispatcher.service.web.BaseWeb;
+			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
 			import mx.managers.PopUpManager;
 			
 			import org.granite.tide.Tide;
@@ -31,10 +33,17 @@
 			[Bindable]
 			public var mailPackage:MailPackage;
 			
-			private var source:Source;
+			[Bindable]
+			private var showClienGroups:Boolean;
 			
-			public function loadFromWeb(sourceId:int, id:int):void{
+			private var source:Source;
+
+			[Bindable]
+			public var cliPackages:ArrayCollection;
+
+			public function loadFromWeb(sourceId:int, id:int, showClienGroups:Boolean=false):void{
 				mailPackage=null;
+				this.showClienGroups=showClienGroups;
 				stateMsg='Загрузка с сайта';
 				source=Context.getSource(sourceId);
 				if(!source){
@@ -77,6 +86,12 @@
 				latch.addEventListener(Event.COMPLETE,onload);
 				latch.addLatch(svc.loadChildOrders(mailPackage.source, mailPackage.id));
 				latch.start();
+				if(showClienGroups){
+					var latchGroups:DbLatch=new DbLatch();
+					latchGroups.addEventListener(Event.COMPLETE,onGroupsload);
+					latchGroups.addLatch(svc.loadByClient(mailPackage.source, mailPackage.client_id));
+					latchGroups.start();
+				}
 			}
 			private function onload(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
@@ -84,6 +99,15 @@
 					latch.removeEventListener(Event.COMPLETE,onload);
 					if(latch.complite){
 						mailPackage.orders=latch.lastDataAC;
+					}
+				}
+			}
+			private function onGroupsload(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onGroupsload);
+					if(latch.complite){
+						cliPackages=latch.lastDataAC;
 					}
 				}
 			}
@@ -109,6 +133,19 @@
 				Printer.instance.printMPBarcode(mailPackage.id_name, bar.barcode);
 			}
 			
+			protected function dgPackages_creationCompleteHandler(event:FlexEvent):void{
+				var gridMenu:GridContexMenu;
+				gridMenu= new GridContexMenu(dgPackages); 
+				gridMenu.addItem('Открыть',openCallBack);
+			}
+			private function openCallBack(grid:DataGrid,param:int):void{
+				var onItem:MailPackage=grid.selectedItem as MailPackage;
+				if(onItem){
+					var pop:MailPackagePopUp= new MailPackagePopUp();
+					pop.loadFromWeb(onItem.source, onItem.id);
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -127,28 +164,42 @@
 
 	<s:VGroup gap="5" top="10" left="10" right="10" bottom="10">
 		<s:Label text="{stateMsg}" width="100%"/>
-		
-		<s:Form id="frmOrder" backgroundAlpha="0" >
-			<s:layout>
-				<s:FormLayout gap="-12"/>
-			</s:layout>
-			
-			<s:FormItem label="ID">
-				<s:TextInput id="tiID" text="{mailPackage.id_name} ({mailPackage.id})" width="200"/>
-			</s:FormItem> 
-			<s:FormItem label="Источник">
-				<s:TextInput  text="{mailPackage.source_name}" width="200"/>
-			</s:FormItem> 
-			<s:FormItem label="Доставка">
-				<s:TextInput  text="{mailPackage.delivery_name}" width="200"/>
-			</s:FormItem> 
-			<s:FormItem label="Срок исполнения">
-				<s:TextInput  text="{dtFormater.format(mailPackage.execution_date)}" width="200"/>
-			</s:FormItem> 
-			<s:FormItem label="Кол заказов">
-				<s:TextInput  text="{mailPackage.orders_num.toString()}" width="200"/>
-			</s:FormItem> 
-		</s:Form>
+		<s:HGroup width="100%">
+			<s:Form id="frmOrder" backgroundAlpha="0" >
+				<s:layout>
+					<s:FormLayout gap="-12"/>
+				</s:layout>
+				
+				<s:FormItem label="ID">
+					<s:TextInput id="tiID" text="{mailPackage.id_name} ({mailPackage.id})" width="200"/>
+				</s:FormItem> 
+				<s:FormItem label="Источник">
+					<s:TextInput  text="{mailPackage.source_name}" width="200"/>
+				</s:FormItem> 
+				<s:FormItem label="Доставка">
+					<s:TextInput  text="{mailPackage.delivery_name}" width="200"/>
+				</s:FormItem> 
+				<s:FormItem label="Срок исполнения">
+					<s:TextInput  text="{dtFormater.format(mailPackage.execution_date)}" width="200"/>
+				</s:FormItem> 
+				<s:FormItem label="Кол заказов">
+					<s:TextInput  text="{mailPackage.orders_num.toString()}" width="200"/>
+				</s:FormItem> 
+			</s:Form>
+			<s:VGroup width="100%" height="100%" gap="5" visible="{showClienGroups}">
+				<s:Label text="Все группы клиента"/>
+				<s:DataGrid id="dgPackages" selectionMode="singleRow"
+							 width="100%" height="100%"
+							creationComplete="dgPackages_creationCompleteHandler(event)"
+							dataProvider="{cliPackages}" locale="ru_RU" columns="{MailPackage.inQueueColumns()}">
+					<s:rowBackground>
+						<fx:Component>
+							<itemRenderer:TechMailPDataGridRowBackground/>
+						</fx:Component>
+					</s:rowBackground>
+				</s:DataGrid>
+			</s:VGroup>
+		</s:HGroup>
 
 		<s:HGroup width="100%" height="100%" gap="10">
 			<s:VGroup width="50%" height="100%" gap="5">
