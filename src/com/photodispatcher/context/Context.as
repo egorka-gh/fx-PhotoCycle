@@ -1,7 +1,5 @@
 package com.photodispatcher.context{
 	import com.photodispatcher.model.AppConfig;
-	import com.photodispatcher.model.dao.AppConfigDAO;
-	import com.photodispatcher.model.dao.AttrTypeDAO;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.AttrJsonMap;
 	import com.photodispatcher.model.mysql.entities.AttrType;
@@ -338,6 +336,7 @@ package com.photodispatcher.context{
 			return latch;
 		}
 
+		/*
 		public static function fillFromConfig():void{
 			var appConfDAO:AppConfigDAO=new AppConfigDAO();
 			var appConf:AppConfig=appConfDAO.getItem();
@@ -366,6 +365,7 @@ package com.photodispatcher.context{
 
 			}
 		}
+		*/
 		
 		public static function setAttribute(name:String, value:*):void{
 			instance[name] = value;	

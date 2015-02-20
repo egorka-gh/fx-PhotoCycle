@@ -10,8 +10,6 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.AsyncSQLEvent;
-			import com.photodispatcher.model.dao.AttrTypeDAO;
-			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.AbstractEntity;
 			import com.photodispatcher.model.mysql.entities.DmlResult;
@@ -304,36 +302,6 @@
 						currentLab=latch.lastDMLItem as Lab;
 					}
 				}
-			}
-			
-			
-			private function onSaveComplite(e:AsyncSQLEvent):void{
-				var dao:BaseDAO=e.target as BaseDAO;
-				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSaveComplite);
-				if(e.result==AsyncSQLEvent.RESULT_COMLETED) detectState();
-			}
-
-			private function saveNext():void{
-				if(!itemsToSave || itemsToSave.length==0){
-					//completed
-					detectState();
-					return;
-				}
-				var o:Object=itemsToSave.shift();
-				var dao:BaseDAO=o.dao as BaseDAO;
-				if(dao){
-					dao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
-					dao.save(o.item);
-				}
-			}
-			private function onSave(e:AsyncSQLEvent):void{
-				var dao:BaseDAO=e.target as BaseDAO;
-				if(dao) dao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onSave);
-				if(e.result==AsyncSQLEvent.RESULT_COMLETED) saveNext();
-			}
-			
-			private function applyFilter():void{
-				if(currentList) currentList.refresh();
 			}
 			
 		]]>

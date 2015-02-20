@@ -108,9 +108,19 @@
 					latch.removeEventListener(Event.COMPLETE,onGroupsload);
 					if(latch.complite){
 						cliPackages=latch.lastDataAC;
+						cliPackages.filterFunction=filterCliPackages;
+						cliPackages.refresh();
 					}
 				}
 			}
+			
+			private function filterCliPackages(item:Object):Boolean {
+				var pg:MailPackage=item as MailPackage;
+				if(!pg) return false;
+				if(!mailPackage || mailPackage.id==pg.id) return false;
+				return true;
+			}
+
 
 			protected function btAddBarcode_clickHandler(event:MouseEvent):void{
 				if(!mailPackage) return;

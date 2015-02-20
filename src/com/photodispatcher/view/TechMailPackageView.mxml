@@ -3,7 +3,8 @@
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
 		 xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
-		 creationComplete="{init()}" 
+		 creationComplete="{init()}"
+		 keyDown="onKey(event)"
 		 >
 
 	<fx:Script>
@@ -35,6 +36,7 @@
 			
 			private function init():void{
 				refresh();
+				if(focusManager) focusManager.setFocus(focusHolder);
 			}
 			
 			private function detectState():void{
@@ -50,6 +52,7 @@
 						break;
 				}
 				refresh();
+				if(focusManager) focusManager.setFocus(focusHolder);
 			}
 			
 			private function refresh():void{
@@ -138,7 +141,6 @@
 			}
 
 			private var newScanId:String;
-			
 			private function onBarCode(event:BarCodeEvent):void{
 				if(!isActive) return;
 				var barcode:String=event.barcode;
@@ -184,6 +186,17 @@
 					showMPbyId(pop.lastOrder.source, pop.lastOrder.groupId);
 				}
 			}
+			
+			private function onKey(e:KeyboardEvent):void{
+				if(e.ctrlKey && e.keyCode==70){
+					//order lookup
+					var pop:OrderSearchPopup= new OrderSearchPopup();
+					pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
+					pop.findeMode=true;
+					pop.open(null);
+				}
+			}
+
 
 			[Bindable]
 			private var byClientMP:MailPackage;
@@ -193,6 +206,11 @@
 				if(!byClientMP) return;
 				currentState='inQueueByClient';
 				refresh();
+			}
+			
+			protected function btDebug_clickHandler(event:MouseEvent):void{
+				var evt:BarCodeEvent = new BarCodeEvent('','R58630'); 
+				onBarCode(evt);
 			}
 			
 		]]>
@@ -217,9 +235,10 @@
 			<fx:String>К отправке</fx:String> 
 		</mx:ArrayCollection>
 	</s:TabBar>
-	
+	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
 	<s:VGroup top="20" left="10" right="10" bottom="10" gap="5">
 		<s:HGroup width="100%" horizontalAlign="right" gap="10" verticalAlign="baseline">
+			<s:Button id="btDebug" label="tst" click="btDebug_clickHandler(event)"/>
 			<s:Button id="btShowByClient" label="Группы клиента" includeIn="inQueue" click="btShowByClient_clickHandler(event)"/>
 			<s:Button id="btCloseByClient" label="Ожидают упаковки" includeIn="inQueueByClient" click="{detectState()}"/>
 			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"

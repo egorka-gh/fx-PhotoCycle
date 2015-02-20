@@ -831,6 +831,7 @@ package com.photodispatcher.model.mysql.entities {
 			if(!code || code.length<8) return '';
 			if(code.indexOf('_')!=-1) return code; //old barcode (x_xx_x)
 			if(code.indexOf(':')!=-1) return ''; //old barcode (x_xx_x)
+			if ((code.charAt(0) >= 'A' && code.charAt(0) <= 'Z') || (code.charAt(0) >= 'a' && code.charAt(0) <= 'z')) return ''; //old barcode (RXXXXXX)
 			//src id
 			var src:int= parseInt(code.substr(0,2));
 			if(isNaN(src)) return '';

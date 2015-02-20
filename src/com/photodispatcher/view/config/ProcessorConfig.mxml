@@ -10,8 +10,6 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.AppConfig;
-			import com.photodispatcher.model.dao.AppConfigDAO;
-			import com.photodispatcher.model.dao.BaseDAO;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.StrUtil;
 			
