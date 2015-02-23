@@ -25,6 +25,12 @@ package com.photodispatcher.print{
 		public static const STATE_ON_WARN:int=4;
 		public static const STATE_MANUAL:int=10;
 		
+		//papers
+		public static const PAPER_DEFAULT_MATT:int=11;
+		public static const PAPER_THERMO:int=36;
+		public static const PAPER_CANVAS:int=37;
+		
+		
 		public static const LABELS_STATE:Object = 
 			{
 				"-1": "STATE_ERROR",

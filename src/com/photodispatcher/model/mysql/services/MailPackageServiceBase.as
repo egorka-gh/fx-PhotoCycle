@@ -11,6 +11,7 @@ package com.photodispatcher.model.mysql.services {
     import com.photodispatcher.model.mysql.entities.SelectResult;
     import com.photodispatcher.model.mysql.entities.SqlResult;
     import flash.utils.flash_proxy;
+    import mx.collections.ListCollectionView;
     import mx.rpc.AsyncToken;
     import org.granite.tide.BaseContext;
     import org.granite.tide.Component;
@@ -58,6 +59,28 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function loadDeliveryTypeDictionar4Edit(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadDeliveryTypeDictionar4Edit", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadDeliveryTypeDictionar4Edit", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadDeliveryTypeDictionar4Edit", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadDeliveryTypeDictionary(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadDeliveryTypeDictionary", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadDeliveryTypeDictionary", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadDeliveryTypeDictionary") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadReady4Mail(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadReady4Mail", resultHandler, faultHandler) as AsyncToken;
@@ -76,6 +99,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("persist", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("persist", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function persistsDeliveryTypeBatch(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("persistsDeliveryTypeBatch", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("persistsDeliveryTypeBatch", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("persistsDeliveryTypeBatch", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

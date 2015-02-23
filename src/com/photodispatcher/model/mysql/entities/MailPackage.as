@@ -34,6 +34,8 @@ package com.photodispatcher.model.mysql.entities {
 			return super.state;
 		}
 		
+		public var native_delivery_id:int;
+
 		
 		
 		public static function inQueueColumns():ArrayList{

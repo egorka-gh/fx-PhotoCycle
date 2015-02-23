@@ -1,6 +1,7 @@
 package com.photodispatcher.factory{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.entities.AttrJsonMap;
+	import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
 	import com.photodispatcher.model.mysql.entities.MailPackage;
 	import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
 	import com.photodispatcher.model.mysql.entities.MailPackageProperty;
@@ -49,11 +50,15 @@ package com.photodispatcher.factory{
 					}
 				}
 			}
+			
 			if(raw.hasOwnProperty('orders')){
 				var orders_num:int=0;
 				for(var s:String in raw.orders) orders_num++;
 				result.orders_num= orders_num;
 			}
+			
+			if(result.native_delivery_id) result.delivery_id=DeliveryTypeDictionary.translateDeliveryType(result.source, result.native_delivery_id);
+
 			
 			//build prorerties
 			var props:Array=[];

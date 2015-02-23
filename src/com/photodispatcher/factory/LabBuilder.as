@@ -6,6 +6,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.print.LabNoritsu;
 	import com.photodispatcher.print.LabNoritsuNHF;
 	import com.photodispatcher.print.LabPlotter;
+	import com.photodispatcher.print.LabThermo;
 	import com.photodispatcher.print.LabVirtual;
 	import com.photodispatcher.print.LabXerox;
 	
@@ -33,6 +34,9 @@ package com.photodispatcher.factory{
 					break;
 				case SourceType.LAB_VIRTUAL:
 					return new LabVirtual(lab);
+					break;
+				case SourceType.LAB_THERMO:
+					return new LabThermo(lab);
 					break;
 				default:
 					return null;

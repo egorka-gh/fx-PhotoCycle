@@ -5,6 +5,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.ContentFilter;
+	import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabResize;
@@ -91,7 +92,8 @@ package com.photodispatcher.context{
 				XReportService,
 				TechService,
 				ConfigService,
-				StaffActivityService//+
+				StaffActivityService,
+				MailPackageService//+
 			]);
 			
 			//fill from config
@@ -110,6 +112,7 @@ package com.photodispatcher.context{
 			latch.join(SourceProperty.initMap());
 			latch.join(SubordersTemplate.initMap());
 			latch.join(LayersetSynonym.initMap());
+			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
 
 			//latch.start();//start at caller?
 			return latch;
@@ -293,6 +296,7 @@ package com.photodispatcher.context{
 			//latch.join(BookSynonym.initSynonymMap());
 			latch.join(FieldValue.initSynonymMap());
 			latch.join(AttrJsonMap.initJsonMap());
+			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
 			
 			//latch.start();//start at caller?
 			return latch;
