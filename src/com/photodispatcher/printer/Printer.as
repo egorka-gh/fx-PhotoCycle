@@ -1,5 +1,7 @@
 package com.photodispatcher.printer{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
+	import com.photodispatcher.model.mysql.entities.MailPackage;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.report.Parameter;
 	import com.photodispatcher.model.mysql.entities.report.Report;
@@ -117,6 +119,15 @@ package com.photodispatcher.printer{
 			print(report);
 		}
 
+		public function printDeliveryForm(packege:MailPackage, form:DeliveryTypePrintForm, barcode:String=''):void{
+			if(!packege || !form) return;
+			switch(form.report){
+				case 'mpBarcodeFrm':
+					printMPBarcode(packege.id_name, barcode);
+					break;
+			}
+		}
+		
 		public function printMPBarcode(idCaption:String, barcode:String):void{
 			if(!idCaption || !barcode) return;
 			

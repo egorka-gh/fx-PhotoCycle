@@ -126,6 +126,8 @@
 						break;
 					case SourceType.LAB_NORITSU_NHF:
 						//include w/h
+						newCode.frame=0;
+						newCode.correction=0;
 						break;
 					default:
 						//full key (SourceType.LAB_NORITSU or any)

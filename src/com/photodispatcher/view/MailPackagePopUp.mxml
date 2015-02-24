@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
 						   xmlns:s="library://ns.adobe.com/flex/spark" 
-						   xmlns:mx="library://ns.adobe.com/flex/mx" 
-						   width="800" height="600" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
+						   xmlns:mx="library://ns.adobe.com/flex/mx"
+						   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+						   width="800" height="600">
 	
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.factory.WebServiceBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
 			import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
 			import com.photodispatcher.model.mysql.entities.MailPackageProperty;
@@ -40,6 +42,9 @@
 
 			[Bindable]
 			public var cliPackages:ArrayCollection;
+
+			[Bindable]
+			public var printForms:ArrayCollection;
 
 			public function loadFromWeb(sourceId:int, id:int, showClienGroups:Boolean=false):void{
 				mailPackage=null;
@@ -80,6 +85,13 @@
 					return;
 				}
 				mailPackage=pw.getLastMailPackage();
+				if(!mailPackage){
+					stateMsg='Ошибка загрузки с сайта';
+					return;
+					
+				}
+				
+				printForms=DeliveryTypePrintForm.getForms(mailPackage.delivery_id);
 
 				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
@@ -156,6 +168,19 @@
 				}
 			}
 			
+			protected function list1_clickHandler(event:MouseEvent):void{
+				if(event.target is Button && event.target.id=='btPrint'){
+					var form:DeliveryTypePrintForm= lstPrint.selectedItem as DeliveryTypePrintForm;
+					if(!form || !mailPackage) return;
+					var bar:MailPackageBarcode;
+					if(dgBarCode) bar=dgBarCode.selectedItem as MailPackageBarcode;
+					if(!bar && mailPackage.barcodes && mailPackage.barcodes.length>0) bar=mailPackage.barcodes.getItemAt(0) as MailPackageBarcode;
+					var code:String;
+					if(bar) code=bar.barcode;
+					Printer.instance.printDeliveryForm(mailPackage,form,code);
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -222,14 +247,21 @@
 				<s:DataGrid id="dgProps" selectionMode="singleRow" width="100%" height="100%" 
 							dataProvider="{mailPackage.orders}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
 				<s:Spacer height="5"/>
-				<s:Label text="Штрих коды"/>
 				<s:HGroup width="100%" height="100%" gap="10">
-					<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%"  editable="true"
-								dataProvider="{mailPackage.barcodes}" locale="ru_RU" columns="{MailPackageBarcode.gridColumns()}"/>
-					<s:Button id="btAddBarcode" label="Добавить" click="btAddBarcode_clickHandler(event)"/>
-					<s:Button id="btPrintBarcode" label="Печать" click="btPrintBarcode_clickHandler(event)"/>
+					<s:VGroup width="100%" height="100%" gap="5">
+						<s:Label text="Штрих коды"/>
+						<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%"  editable="true"
+									dataProvider="{mailPackage.barcodes}" locale="ru_RU" columns="{MailPackageBarcode.gridColumns()}"/>
+						<s:Button id="btAddBarcode" label="Добавить" click="btAddBarcode_clickHandler(event)"/>
+					</s:VGroup>
+					<!--<s:Button id="btPrintBarcode" label="Печать" click="btPrintBarcode_clickHandler(event)"/>-->
+					<s:VGroup height="100%" gap="5">
+						<s:Label text="Печать"/>
+						<s:List id="lstPrint" dataProvider="{printForms}" labelField="form_name" height="100%"
+								itemRenderer="com.photodispatcher.view.itemRenderer.PrintFormButtonRenderer"
+								click="list1_clickHandler(event)"/>
+					</s:VGroup>
 				</s:HGroup>
-				<s:Spacer height="5"/>
 			</s:VGroup>
 		</s:HGroup>
 

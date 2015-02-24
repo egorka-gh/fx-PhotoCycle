@@ -6,11 +6,13 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.ContentFilter;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
+	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintFormField;
 	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
 	import com.photodispatcher.model.mysql.entities.Source;
@@ -297,6 +299,8 @@ package com.photodispatcher.context{
 			latch.join(FieldValue.initSynonymMap());
 			latch.join(AttrJsonMap.initJsonMap());
 			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
+			latch.join(PrintFormField.initFieldItemsMap());
+			latch.join(DeliveryTypePrintForm.initFormsMap());
 			
 			//latch.start();//start at caller?
 			return latch;

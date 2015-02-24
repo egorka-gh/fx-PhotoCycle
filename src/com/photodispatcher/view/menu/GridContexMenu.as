@@ -1,4 +1,5 @@
 package com.photodispatcher.view.menu{
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
@@ -8,6 +9,7 @@ package com.photodispatcher.view.menu{
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.printer.Printer;
 	import com.photodispatcher.view.OrderInfoPopup;
+	import com.photodispatcher.view.PasswPopup;
 	
 	import flash.events.Event;
 	import flash.events.MouseEvent;
@@ -23,6 +25,7 @@ package com.photodispatcher.view.menu{
 	import spark.components.DataGrid;
 	import spark.components.gridClasses.GridSelectionMode;
 	import spark.events.GridSelectionEvent;
+	import spark.events.PopUpEvent;
 	
 	public class GridContexMenu extends FlexNativeMenu{
 		public static const SEPARATOR:int=0;
@@ -173,6 +176,24 @@ package com.photodispatcher.view.menu{
 		}
 
 		public function printTickets():void{
+			var ticketPass:String=Context.getAttribute('ticketPass');
+			if(!ticketPass){
+				_printTickets();
+			}else{
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onTicketPassPass);
+				passPop.show(ticketPass);
+			}
+		}
+		protected function onTicketPassPass(event:PopUpEvent):void{
+			var passPop:PasswPopup=event.target as PasswPopup;
+			if(passPop) passPop.removeEventListener(PopUpEvent.CLOSE, onTicketPassPass);
+			if(event.commit){
+				_printTickets();
+			}
+		}
+
+		private function _printTickets():void{
 			var pg:PrintGroup;
 			for each(var o:Object in grid.selectedItems){
 				pg=o as PrintGroup;

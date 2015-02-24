@@ -27,7 +27,6 @@ package com.photodispatcher.print{
 			//if has correction or frame
 			if(printGroup.correction!=0 || printGroup.frame!=0) return null;
 			//check paper
-			//TODO hardcoded
 			if (!PrintTask.NORITSU_NHF_PAPE[printGroup.paper.toString()]) return null;
 			
 			var cm:Object = rolls? channelMapByOnRolls(rolls) : chanelMap;

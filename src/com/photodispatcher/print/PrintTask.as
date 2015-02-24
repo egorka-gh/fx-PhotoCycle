@@ -227,6 +227,7 @@ package com.photodispatcher.print{
 			}catch(e:Error){}
 			if(!dstFolder || !dstFolder.exists || !dstFolder.isDirectory){ 
 				printGrp.state=OrderState.ERR_PRINT_LAB_FOLDER_NOT_FOUND;
+				dstFolder=null;
 				dispatchErr('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');
 				return;
 			}
@@ -522,6 +523,9 @@ package com.photodispatcher.print{
 			hasErr=true;
 			errMsg=msg;
 			//StateLogDAO.logState(printGrp.state, printGrp.order_id,printGrp.id,'Ошибка размещения на печать: '+msg); 
+			try{
+				if(dstFolder && dstFolder.exists) dstFolder.deleteDirectory(true);
+			}catch(error:Error){}
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		

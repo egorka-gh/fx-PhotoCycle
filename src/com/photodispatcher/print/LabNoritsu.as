@@ -83,6 +83,11 @@ package com.photodispatcher.print{
 			if(!pg) return;
 			
 			//try to post books to nhf first
+			if(nhfLab && nhfLab.canPrint(pg)){
+				nhfLab.post(pg,revers);
+				return;
+			}
+			/*
 			if(pg.book_type==BookSynonym.BOOK_TYPE_BOOK || 
 				pg.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
 				pg.book_type==BookSynonym.BOOK_TYPE_LEATHER){
@@ -91,6 +96,7 @@ package com.photodispatcher.print{
 					return;
 				}
 			}
+			*/
 			
 			if (canPrintInternal(pg)){
 				var pt:PrintTask= new PrintTask(pg,this,revers);
@@ -100,12 +106,16 @@ package com.photodispatcher.print{
 				postNext();
 				return;
 			}
+			/*
 			if(nhfLab){
 				nhfLab.post(pg,revers);
 			}else{
 				pg.state=OrderState.ERR_PRINT_POST;
 				dispatchErr(pg,'Группа печати '+pg.id+' не может быть распечатана в '+name+'.');
 			}
+			*/
+			pg.state=OrderState.ERR_PRINT_POST;
+			dispatchErr(pg,'Группа печати '+pg.id+' не может быть распечатана в '+name+'.');
 		}
 		
 	}

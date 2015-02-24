@@ -6,10 +6,89 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.services.XReportService;
+	
+	import flash.events.Event;
+	
+	import flashx.textLayout.elements.BreakElement;
+	
+	import org.granite.tide.Tide;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrintFormField")]
     public class PrintFormField extends PrintFormFieldBase {
+
+		private static var fieldItemsMap:Object;
+		
+		public static function initFieldItemsMap():DbLatch{
+			var service:XReportService=Tide.getInstance().getContext().byType(XReportService,true) as XReportService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE, onLoad);
+			latch.addLatch(service.getPrintFormFieldItems());
+			latch.start();
+			return latch;
+		}
+		private static function onLoad(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoad);
+				if(latch.complite){
+					var a:Array=latch.lastDataArr;
+					if(!a) return;
+					var newMap:Object=new Object();
+					var items:Array;
+					var it:PrintFormFieldItem;
+					for each(it in a){
+						if(it){
+							//add to synonym map
+							items=newMap[it.form_field] as Array;
+							if(!items){
+								items=[];
+								newMap[it.form_field]=items;
+							}
+							items.push(it);
+						}
+					}
+					fieldItemsMap=newMap;
+				}
+			}
+		}
+
+		public static function buildField(fieldId:int, params:Array):String{
+			var result:String='';
+			if(!fieldItemsMap){
+				throw new Error('Ошибка инициализации PrintFormField.fieldItemsMap',OrderState.ERR_APP_INIT);
+				return result;
+			}
+			if(fieldId==0 || !params || params.length==0) return result;
+			var items:Array=fieldItemsMap[fieldId] as Array;
+			if(!items) return result;
+			var item:PrintFormFieldItem;
+			var delemiter:String='';
+			for each(item in items){
+				if(item){
+					if(delemiter) result+=delemiter;
+					if(item.is_field){
+						result+=buildField(item.child_field,params);
+					}else{
+						var param:MailPackageProperty;
+						if(item.property_name){
+							for each(param in params){
+								if(param && param.property_name && param.property_name==item.property_name){
+									result+=param.value;
+									break;
+								}
+							}
+						}
+					}
+					delemiter=item.delemiter;	
+				}
+			}
+
+			return result;
+		}
+
 
         public function PrintFormField() {
             super();

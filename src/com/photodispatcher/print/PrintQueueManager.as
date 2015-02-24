@@ -19,6 +19,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
+	import com.photodispatcher.printer.Printer;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -559,6 +560,8 @@ package com.photodispatcher.print{
 				postQueue.splice(idx,1);
 			}
 			if(!e.hasErr){
+				//print ticket
+				Printer.instance.printOrderTicket(e.printGroup);
 				if(postQueue.length==0){
 					//complited refresh lab
 					refreshLabs();

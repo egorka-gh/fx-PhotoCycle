@@ -400,6 +400,31 @@
 				if(imPath) pingIM();
 			}
 			
+			protected function btSetTPass_clickHandler(event:MouseEvent):void{
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onTPass);
+				passPop.show('',true);
+			}
+			protected function onTPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(!passPop) return;
+				passPop.removeEventListener(PopUpEvent.CLOSE, onTPass);
+				if(event.commit){
+					var newPass:String=passPop.pass;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.ticketPass = newPass;
+					so.flush();  
+					Context.setAttribute('ticketPass', newPass);
+				}
+			}
+			
+			protected function btOffTPass_clickHandler(event:MouseEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.ticketPass = '';
+				so.flush();  
+				Context.setAttribute('ticketPass', '');
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -514,6 +539,13 @@
 				<s:HGroup gap="10">
 					<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
 					<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+				</s:HGroup>
+			</s:FormItem> 
+
+			<s:FormItem label="Пароль тикета">
+				<s:HGroup gap="10">
+					<s:Button id="btSetTPass" label="Назначить пароль" click="btSetTPass_clickHandler(event)"/>
+					<s:Button id="btOffTPass" label="Снять защиту" click="btOffTPass_clickHandler(event)"/>
 				</s:HGroup>
 			</s:FormItem> 
 
