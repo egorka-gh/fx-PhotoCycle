@@ -6,10 +6,62 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.services.XReportService;
+	
+	import flash.events.Event;
+	
+	import org.granite.tide.Tide;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrintForm")]
     public class PrintForm extends PrintFormBase {
+
+		private static var paramsMap:Object;
+		
+		public static function initParametersMap():DbLatch{
+			var service:XReportService=Tide.getInstance().getContext().byType(XReportService,true) as XReportService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE, onLoad);
+			latch.addLatch(service.getPrintFormParameters());
+			latch.start();
+			return latch;
+		}
+		private static function onLoad(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoad);
+				if(latch.complite){
+					var a:Array=latch.lastDataArr;
+					if(!a) return;
+					var newMap:Object=new Object();
+					var items:Array;
+					var it:PrintFormParametr;
+					for each(it in a){
+						if(it){
+							//add to synonym map
+							items=newMap[it.form] as Array;
+							if(!items){
+								items=[];
+								newMap[it.form]=items;
+							}
+							items.push(it);
+						}
+					}
+					paramsMap=newMap;
+				}
+			}
+		}
+
+		public static function getFormParameters(form:int):Array{
+			if(!paramsMap){
+				throw new Error('Ошибка инициализации PrintForm.initParametersMap',OrderState.ERR_APP_INIT);
+				return null;
+			}
+			if(form==0) return [];
+			var result:Array=paramsMap[form];
+			return result?result:[]; 
+		}
 
         public function PrintForm() {
             super();

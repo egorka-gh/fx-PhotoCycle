@@ -19,6 +19,13 @@ package com.photodispatcher.model.mysql.entities {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrintFormField")]
     public class PrintFormField extends PrintFormFieldBase {
 
+		public static const FIELD_FIO:int=1;
+		public static const FIELD_PASS_NUM:int=2;
+		public static const FIELD_PASS_INFO:int=3;
+		public static const FIELD_CITY:int=4;
+		public static const FIELD_PHONE:int=5;
+
+		
 		private static var fieldItemsMap:Object;
 		
 		public static function initFieldItemsMap():DbLatch{
@@ -73,9 +80,9 @@ package com.photodispatcher.model.mysql.entities {
 						result+=buildField(item.child_field,params);
 					}else{
 						var param:MailPackageProperty;
-						if(item.property_name){
+						if(item.property){
 							for each(param in params){
-								if(param && param.property_name && param.property_name==item.property_name){
+								if(param && param.property && param.property==item.property){
 									result+=param.value;
 									break;
 								}

@@ -24,7 +24,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _form_field:int;
         private var _id:int;
         private var _is_field:Boolean;
-        private var _property_name:String;
+        private var _property:String;
         private var _sequence:int;
 
         public function set attr_type(value:int):void {
@@ -69,11 +69,11 @@ package com.photodispatcher.model.mysql.entities {
             return _is_field;
         }
 
-        public function set property_name(value:String):void {
-            _property_name = value;
+        public function set property(value:String):void {
+            _property = value;
         }
-        public function get property_name():String {
-            return _property_name;
+        public function get property():String {
+            return _property;
         }
 
         public function set sequence(value:int):void {
@@ -91,7 +91,7 @@ package com.photodispatcher.model.mysql.entities {
             _form_field = input.readObject() as int;
             _id = input.readObject() as int;
             _is_field = input.readObject() as Boolean;
-            _property_name = input.readObject() as String;
+            _property = input.readObject() as String;
             _sequence = input.readObject() as int;
         }
 
@@ -103,7 +103,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_form_field is IPropertyHolder) ? IPropertyHolder(_form_field).object : _form_field);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_is_field is IPropertyHolder) ? IPropertyHolder(_is_field).object : _is_field);
-            output.writeObject((_property_name is IPropertyHolder) ? IPropertyHolder(_property_name).object : _property_name);
+            output.writeObject((_property is IPropertyHolder) ? IPropertyHolder(_property).object : _property);
             output.writeObject((_sequence is IPropertyHolder) ? IPropertyHolder(_sequence).object : _sequence);
         }
     }

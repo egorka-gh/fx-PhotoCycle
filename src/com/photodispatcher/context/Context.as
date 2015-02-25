@@ -12,6 +12,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintForm;
 	import com.photodispatcher.model.mysql.entities.PrintFormField;
 	import com.photodispatcher.model.mysql.entities.Roll;
 	import com.photodispatcher.model.mysql.entities.SelectResult;
@@ -301,6 +302,7 @@ package com.photodispatcher.context{
 			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
 			latch.join(PrintFormField.initFieldItemsMap());
 			latch.join(DeliveryTypePrintForm.initFormsMap());
+			latch.join(PrintForm.initParametersMap());
 			
 			//latch.start();//start at caller?
 			return latch;

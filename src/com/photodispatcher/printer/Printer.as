@@ -2,6 +2,9 @@ package com.photodispatcher.printer{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.MailPackage;
+	import com.photodispatcher.model.mysql.entities.PrintForm;
+	import com.photodispatcher.model.mysql.entities.PrintFormField;
+	import com.photodispatcher.model.mysql.entities.PrintFormParametr;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.report.Parameter;
 	import com.photodispatcher.model.mysql.entities.report.Report;
@@ -125,6 +128,15 @@ package com.photodispatcher.printer{
 				case 'mpBarcodeFrm':
 					printMPBarcode(packege.id_name, barcode);
 					break;
+				/*
+				case 'frmATzaiava':
+					printATzaiava(packege);
+					break;
+				*/
+				default:
+					var report:Report=prepareFormReport(packege,form);
+					if(report) print(report);
+					break;
 			}
 		}
 		
@@ -141,6 +153,50 @@ package com.photodispatcher.printer{
 			param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode); report.parameters.push(param);
 			param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode; report.parameters.push(param);
 			print(report);
+		}
+/*
+		private function printATzaiava(packege:MailPackage):void{
+			if(!packege || !packege.properties) return;
+			var props:Array=packege.properties.toArray();
+			if(!props || props.length==0) return;
+			
+			var report:Report=new Report();
+			report.id='frmATzaiava';
+			report.parameters=[];
+			var param:Parameter;
+			param=new Parameter(); param.id='pcity'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_CITY,props); report.parameters.push(param);
+			param=new Parameter(); param.id='pfio'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_FIO,props); report.parameters.push(param);
+			param=new Parameter(); param.id='ppass_num'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_PASS_NUM,props); report.parameters.push(param);
+			param=new Parameter(); param.id='ppass_info'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_PASS_INFO,props); report.parameters.push(param);
+			param=new Parameter(); param.id='pphone'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_PHONE,props);; report.parameters.push(param);
+			print(report);
+		}
+		*/
+		
+		private function prepareFormReport(packege:MailPackage, form:DeliveryTypePrintForm):Report{
+			if(!packege || !packege.properties || !form) return null;
+			
+			var props:Array=packege.properties.toArray();
+			if(!props || props.length==0) return null;
+			var params:Array=PrintForm.getFormParameters(form.form);
+			if(!params) return null;
+			
+			var report:Report=new Report();
+			report.id=form.report;
+			report.parameters=[];
+			var frmParam:PrintFormParametr;
+			var param:Parameter;
+			
+			for each(frmParam in params){
+				if(frmParam && frmParam.parametr){
+					param=new Parameter(); 
+					param.id=frmParam.parametr; 
+					param.valString=PrintFormField.buildField(frmParam.form_field,props); 
+					report.parameters.push(param);
+				}
+			}
+			
+			return report;
 		}
 
 	}
