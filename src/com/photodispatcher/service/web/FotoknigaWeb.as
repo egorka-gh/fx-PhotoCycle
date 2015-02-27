@@ -32,6 +32,8 @@ package com.photodispatcher.service.web{
 
 		public static const COMMAND_LIST_ORDERS:String='orders';
 		public static const PARAM_STATUS:String='args[status]';
+		//cmd=orders&args[statuses][]=20&args[statuses][]=25&args[statuses][]=30
+		public static const PARAM_STATUSES:String='args[statuses][]';
 		/*
 		20 => 'Ожидает принятия',
 		25 => 'Ожидает оплату',
@@ -56,7 +58,7 @@ package com.photodispatcher.service.web{
 		
 		private var preloadStates:Array=[];
 		private var is_preload:Boolean;
-		private var fetchState:int=-1;
+		private var nextState:int=-1;
 		private var auth:FBookAuthService;
 		
 		
@@ -79,7 +81,7 @@ package com.photodispatcher.service.web{
 				var token:AsyncToken;
 				token=auth.siteLogin(source.fbookService.user,source.fbookService.pass);
 				token.addResponder(new AsyncResponder(login_ResultHandler,login_FaultHandler));
-				trace('FBook start login');
+				trace('FotoknigaWeb start login');
 			}else{
 				login_ResultHandler(null,null);
 			}
@@ -88,12 +90,13 @@ package com.photodispatcher.service.web{
 			var r:Object;
 			if(event) r=JsonUtil.decode(event.result as String);
 			if(event==null || r.result){
-				trace('FBook login complite or not configured');
+				trace('FotoknigaWeb login complite or not configured');
 				var post:Object;
 				switch (cmd){
 					case CMD_SYNC:
 						orderes=[];
 						is_preload=true;
+						nextState=-1;
 						preloadStates=PARAM_STATUS_PRELOAD_VALUES.concat();
 						startListen();
 						getData();
@@ -107,7 +110,7 @@ package com.photodispatcher.service.web{
 						post[PARAM_COMMAND]=COMMAND_GET_ORDER_INFO;
 						post[PARAM_ORDER_ID]=cleanId(lastOrder.src_id);
 						if(source.fbookSid) post.sid=source.fbookSid;
-						trace('FBook web check project '+lastOrder.src_id);
+						trace('FotoknigaWeb web check project '+lastOrder.src_id);
 						client.getData( new InvokerUrl(baseUrl+URL_API),post);
 						break;
 					case CMD_GET_PACKAGE:
@@ -118,7 +121,7 @@ package com.photodispatcher.service.web{
 						post[PARAM_COMMAND]=COMMAND_GET_PACKAGE_INFO;
 						post[PARAM_PACKAGE_ID]=lastPackageId;
 						if(source.fbookSid) post.sid=source.fbookSid;
-						trace('FBook web load mail package '+lastPackageId.toString());
+						trace('FotoknigaWeb web load mail package '+lastPackageId.toString());
 						client.getData( new InvokerUrl(baseUrl+URL_API),post);
 				}
 			} else {
@@ -151,9 +154,22 @@ package com.photodispatcher.service.web{
 				listFtp();
 				return;
 			}
+			is_preload=nextState==-1;
+			post= new Object();
+			post[PARAM_KEY]=API_KEY;
+			post[PARAM_COMMAND]=COMMAND_LIST_ORDERS;
+			if(is_preload){
+				//preload states
+				post[PARAM_STATUSES]=PARAM_STATUS_PRELOAD_VALUES;
+				nextState=PARAM_STATUS_ORDERED_VALUE;
+			}else{
+				//main state
+				post[PARAM_STATUS]=PARAM_STATUS_ORDERED_VALUE;
+			}
+			/*
 			is_preload=preloadStates.length>0;
 			if(is_preload){
-				fetchState=preloadStates.pop();
+				fetchState=preloadStates.shift();
 			}else{
 				fetchState=PARAM_STATUS_ORDERED_VALUE;
 			}
@@ -162,6 +178,8 @@ package com.photodispatcher.service.web{
 			post[PARAM_KEY]=API_KEY;
 			post[PARAM_COMMAND]=COMMAND_LIST_ORDERS;
 			post[PARAM_STATUS]=fetchState;
+			*/
+			
 			if(source.fbookSid) post.sid=source.fbookSid;
 			client.getData( new InvokerUrl(baseUrl+URL_API),post);
 		}

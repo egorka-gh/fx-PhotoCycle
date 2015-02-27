@@ -171,7 +171,7 @@ package com.photodispatcher.service.web{
 			}
 			is_preload=preloadStates.length>0;
 			if(is_preload){
-				fetchState=preloadStates.pop();
+				fetchState=preloadStates.shift();
 			}else{
 				fetchState=PARAM_ORDER_STATUS_VALUE;
 			}

@@ -25,6 +25,14 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FIELD_CITY:int=4;
 		public static const FIELD_PHONE:int=5;
 
+		public static const FIELD_CLIENT_ID:int=6;
+		public static const FIELD_DELIVERY_NAME:int=7;
+		public static const FIELD_EXECUTION_DATE:int=8;
+		public static const FIELD_ID:int=9;
+		public static const FIELD_ID_NAME:int=10;
+		public static const FIELD_SOURCE_NAME:int=11;
+		public static const FIELD_SOURCE_CODE:int=12;
+		public static const FIELD_ORDERS_NUM:int=13;
 		
 		private static var fieldItemsMap:Object;
 		

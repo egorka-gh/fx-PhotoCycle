@@ -73,19 +73,12 @@
 
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
-				//BaseDAO.MAX_WAITE=15000;
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
-				bdPopup.chekConnect();//SQLMode.UPDATE,false);
+				bdPopup.chekConnect();
 			}
 			private function bdPopClose(e:PopUpEvent):void{
 				var connected:Boolean=e.commit;
-				/*
-				if(connected){
-				//create local connection
-				connected=LocalDAO.connect();
-				}
-				*/
 				if(connected){
 					//connected
 					init();

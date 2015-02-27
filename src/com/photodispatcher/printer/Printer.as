@@ -18,10 +18,13 @@ package com.photodispatcher.printer{
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
+	import flash.globalization.DateTimeStyle;
 	
 	import org.granite.tide.Tide;
 	import org.granite.tide.events.TideFaultEvent;
 	import org.granite.tide.events.TideResultEvent;
+	
+	import spark.formatters.DateTimeFormatter;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	[Event(name="complete", type="flash.events.Event")]
@@ -189,10 +192,66 @@ package com.photodispatcher.printer{
 			
 			for each(frmParam in params){
 				if(frmParam && frmParam.parametr){
-					param=new Parameter(); 
-					param.id=frmParam.parametr; 
-					param.valString=PrintFormField.buildField(frmParam.form_field,props); 
-					report.parameters.push(param);
+					if(frmParam.simplex){
+						//packege field
+						switch(frmParam.form_field){
+							case PrintFormField.FIELD_CLIENT_ID:
+								param=new Parameter(); 
+								param.id=frmParam.parametr; 
+								param.valString=packege.client_id.toString(); 
+								report.parameters.push(param);
+								break;
+							case PrintFormField.FIELD_DELIVERY_NAME:
+								param=new Parameter(); 
+								param.id=frmParam.parametr; 
+								param.valString=packege.delivery_name; 
+								report.parameters.push(param);
+								break;
+							case PrintFormField.FIELD_EXECUTION_DATE:
+								param=new Parameter(); 
+								param.id=frmParam.parametr;
+								var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+								param.valString=fmt.format(packege.execution_date); 
+								report.parameters.push(param);
+								break;
+							case PrintFormField.FIELD_ID:
+								param=new Parameter(); 
+								param.id=frmParam.parametr; 
+								param.valString=packege.id.toString(); 
+								report.parameters.push(param);
+								break;
+							case PrintFormField.FIELD_ID_NAME:
+								param=new Parameter(); 
+								param.id=frmParam.parametr; 
+								param.valString=packege.id_name; 
+								report.parameters.push(param);
+								break;
+							case PrintFormField.FIELD_ORDERS_NUM:
+								param=new Parameter(); 
+								param.id=frmParam.parametr; 
+								param.valString=packege.orders_num.toString(); 
+								report.parameters.push(param);
+								break;
+							case PrintFormField.FIELD_SOURCE_CODE:
+								param=new Parameter(); 
+								param.id=frmParam.parametr; 
+								param.valString=packege.source_code; 
+								report.parameters.push(param);
+								break;
+							case PrintFormField.FIELD_SOURCE_NAME:
+								param=new Parameter(); 
+								param.id=frmParam.parametr; 
+								param.valString=packege.source_name; 
+								report.parameters.push(param);
+								break;
+						}
+					}else{
+						//property
+						param=new Parameter(); 
+						param.id=frmParam.parametr; 
+						param.valString=PrintFormField.buildField(frmParam.form_field,props); 
+						report.parameters.push(param);
+					}
 				}
 			}
 			

@@ -146,7 +146,8 @@ package com.photodispatcher.shell{
 			var args:Vector.<String>=new Vector.<String>();
 			if(printer){
 				args.push(PRINT_OPTION_NAMED_PRINTER);
-				args.push('"'+printer+'"');
+				//args.push('"'+printer+'"');
+				args.push(printer);
 			}else{
 				args.push(PRINT_OPTION_DEFAULT_PRINTER);
 			}
