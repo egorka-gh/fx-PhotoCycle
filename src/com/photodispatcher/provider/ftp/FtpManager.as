@@ -179,6 +179,10 @@ package com.photodispatcher.provider.ftp{
 			var source:Source=ArrayUtil.searchItem('id',e.order.source,sources) as Source;
 			var dstFolder:String=source.getWrkFolder();
 			var order:Order=e.order;
+			if(order.forward_state>0){
+				saveOrder(order);
+				return;
+			}
 			try{
 				CaptionSetter.restoreFileCaption(order,dstFolder);
 			}catch(err:Error){
@@ -210,8 +214,16 @@ package com.photodispatcher.provider.ftp{
 		}
 
 		private function saveOrder(order:Order):void{
-			//TODO set order state
-			if(order.state<OrderState.CANCELED) order.state=order.is_preload?OrderState.PRN_WAITE_ORDER_STATE:OrderState.PRN_WAITE;
+			
+			if(order.state<OrderState.CANCELED){
+				if(order.is_preload){
+					order.state=OrderState.PRN_WAITE_ORDER_STATE;
+				}else if(order.forward_state>0){
+					order.state=order.forward_state;
+				}else{
+					order.state=OrderState.PRN_WAITE;
+				}
+			}
 			order.state_date=new Date();
 			if(order.hasSuborders){
 				for each(var so:SubOrder in order.suborders) if(so.state<OrderState.CANCELED) so.state=order.state;
@@ -239,13 +251,13 @@ package com.photodispatcher.provider.ftp{
 						order= writeOrders[idx] as Order;
 						writeOrders.splice(idx,1);
 					}
-					if(!order || order.state!=OrderState.PRN_WAITE) return;
 					//clean
 					if(order.hasSuborders){
 						for each(var so:SubOrder in order.suborders) so.destroyChilds();
 					}
 
 					//set extra state
+					if(!order || order.state!=OrderState.PRN_WAITE) return;
 					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 					latch=new DbLatch();
 					//latch.addEventListener(Event.COMPLETE,onCompleteOrder);

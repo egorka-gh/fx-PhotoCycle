@@ -26,6 +26,17 @@ package com.photodispatcher.model.mysql.services {
         }
     
         
+        public function join(arg0:int, arg1:int, arg2:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("join", arg0, arg1, arg2, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("join", arg0, arg1, arg2, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("join", arg0, arg1, arg2) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function load(arg0:int, arg1:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("load", arg0, arg1, resultHandler, faultHandler) as AsyncToken;

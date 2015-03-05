@@ -25,6 +25,28 @@ package com.photodispatcher.model.mysql.services {
         }
     
         
+        public function loadAliasForward(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadAliasForward", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadAliasForward", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadAliasForward") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadConfig(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadConfig", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadConfig", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadConfig") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadStaff(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadStaff", resultHandler, faultHandler) as AsyncToken;
@@ -32,6 +54,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadStaff", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadStaff") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function persistAliasForward(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("persistAliasForward", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("persistAliasForward", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("persistAliasForward", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

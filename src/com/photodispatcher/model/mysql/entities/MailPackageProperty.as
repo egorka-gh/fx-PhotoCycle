@@ -14,6 +14,11 @@ package com.photodispatcher.model.mysql.entities {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackageProperty")]
     public class MailPackageProperty extends MailPackagePropertyBase {
 
+		public static const PROP_AT_DELIVERY_TYPE:String='at_delivery_type';
+
+		public static const VAL_AT_DELIVERY_TYPE_STOK:String='1';
+		public static const VAL_AT_DELIVERY_TYPE_COURIER:String='2';
+
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
 			

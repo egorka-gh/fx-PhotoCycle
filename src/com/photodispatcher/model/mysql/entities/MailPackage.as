@@ -36,6 +36,16 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public var native_delivery_id:int;
 
+		public function getProperty(key:String):String{
+			if(!key || !properties || properties.length==0) return '';
+			var p:MailPackageProperty;
+			for each(p in properties){
+				if(p && p.property==key){
+					return p.value;
+				}
+			}
+			return '';
+		}
 		
 		
 		public static function inQueueColumns():ArrayList{

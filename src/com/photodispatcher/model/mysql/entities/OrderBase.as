@@ -24,6 +24,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _extraInfo:OrderExtraInfo;
         private var _extraState:ListCollectionView;
         private var _extraStateProlong:ListCollectionView;
+        private var _forward_state:int;
         private var _fotos_num:int;
         private var _ftp_folder:String;
         private var _groupId:int;
@@ -31,6 +32,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_preload:Boolean;
         private var _local_folder:String;
         private var _printGroups:ListCollectionView;
+        private var _production:int;
+        private var _production_name:String;
         private var _source:int;
         private var _source_code:String;
         private var _source_name:String;
@@ -77,6 +80,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get extraStateProlong():ListCollectionView {
             return _extraStateProlong;
+        }
+
+        public function set forward_state(value:int):void {
+            _forward_state = value;
+        }
+        public function get forward_state():int {
+            return _forward_state;
         }
 
         public function set fotos_num(value:int):void {
@@ -126,6 +136,20 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get printGroups():ListCollectionView {
             return _printGroups;
+        }
+
+        public function set production(value:int):void {
+            _production = value;
+        }
+        public function get production():int {
+            return _production;
+        }
+
+        public function set production_name(value:String):void {
+            _production_name = value;
+        }
+        public function get production_name():String {
+            return _production_name;
         }
 
         public function set source(value:int):void {
@@ -219,6 +243,7 @@ package com.photodispatcher.model.mysql.entities {
             _extraInfo = input.readObject() as OrderExtraInfo;
             _extraState = input.readObject() as ListCollectionView;
             _extraStateProlong = input.readObject() as ListCollectionView;
+            _forward_state = input.readObject() as int;
             _fotos_num = input.readObject() as int;
             _ftp_folder = input.readObject() as String;
             _groupId = input.readObject() as int;
@@ -226,6 +251,8 @@ package com.photodispatcher.model.mysql.entities {
             _is_preload = input.readObject() as Boolean;
             _local_folder = input.readObject() as String;
             _printGroups = input.readObject() as ListCollectionView;
+            _production = input.readObject() as int;
+            _production_name = input.readObject() as String;
             _source = input.readObject() as int;
             _source_code = input.readObject() as String;
             _source_name = input.readObject() as String;
@@ -247,6 +274,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);
             output.writeObject((_extraState is IPropertyHolder) ? IPropertyHolder(_extraState).object : _extraState);
             output.writeObject((_extraStateProlong is IPropertyHolder) ? IPropertyHolder(_extraStateProlong).object : _extraStateProlong);
+            output.writeObject((_forward_state is IPropertyHolder) ? IPropertyHolder(_forward_state).object : _forward_state);
             output.writeObject((_fotos_num is IPropertyHolder) ? IPropertyHolder(_fotos_num).object : _fotos_num);
             output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
             output.writeObject((_groupId is IPropertyHolder) ? IPropertyHolder(_groupId).object : _groupId);
@@ -254,6 +282,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_is_preload is IPropertyHolder) ? IPropertyHolder(_is_preload).object : _is_preload);
             output.writeObject((_local_folder is IPropertyHolder) ? IPropertyHolder(_local_folder).object : _local_folder);
             output.writeObject((_printGroups is IPropertyHolder) ? IPropertyHolder(_printGroups).object : _printGroups);
+            output.writeObject((_production is IPropertyHolder) ? IPropertyHolder(_production).object : _production);
+            output.writeObject((_production_name is IPropertyHolder) ? IPropertyHolder(_production_name).object : _production_name);
             output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
             output.writeObject((_source_code is IPropertyHolder) ? IPropertyHolder(_source_code).object : _source_code);
             output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);

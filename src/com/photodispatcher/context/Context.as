@@ -1,6 +1,7 @@
 package com.photodispatcher.context{
 	import com.photodispatcher.model.AppConfig;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.AliasForward;
 	import com.photodispatcher.model.mysql.entities.AttrJsonMap;
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
@@ -116,6 +117,7 @@ package com.photodispatcher.context{
 			latch.join(SubordersTemplate.initMap());
 			latch.join(LayersetSynonym.initMap());
 			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
+			latch.join(AliasForward.initMap());
 
 			//latch.start();//start at caller?
 			return latch;
@@ -549,6 +551,7 @@ package com.photodispatcher.context{
 			latchAttributeLists.addLatch(dict.getStaffActivityGroupValueList(onFieldList),'sa_group');
 			
 			//order state 
+			latchAttributeLists.addLatch(dict.getStateValueList(onFieldList),'state');
 
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){

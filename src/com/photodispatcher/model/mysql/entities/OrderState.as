@@ -32,6 +32,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_LOAD_REMOTE:int=-317;//04.04.2013
 		public static const ERR_GET_PROJECT:int=-318;//22.05.2013
 		public static const ERR_APP_INIT:int=-319;//
+		public static const ERR_PRODUCTION_NOT_SET:int=-320;//
 		
 		//flow state
 		//public static const FTP_RELOAD:int=95;

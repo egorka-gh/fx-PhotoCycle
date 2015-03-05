@@ -5,6 +5,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.LoadProgressEvent;
 	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.factory.SuborderBuilder;
+	import com.photodispatcher.model.mysql.entities.AliasForward;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
@@ -491,8 +492,23 @@ package com.photodispatcher.provider.ftp{
 			}
 			*/
 			//check 4 empty fileStructure
+			var frwState:int=0;
 			if(!order.isFileStructureOk){
 				trace('FTPDownloadManager empty ftp folder '+orderId);
+				//check FOTOKNIGA forward state
+				if(source.type==SourceType.SRC_FOTOKNIGA && cnn.folders){
+					for each(var folderName:String in cnn.folders){
+						frwState=AliasForward.forvardState(folderName);
+						if(frwState>0){
+							order.forward_state=frwState;
+							order.resetErrCounter();
+							order.state=OrderState.FTP_LOAD;
+							checkDownload();
+							loadProgress();
+							return;
+						}
+					}
+				}
 				order.state=OrderState.ERR_FTP;
 				if(order.exceedErrLimit){
 					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов.');
@@ -515,7 +531,6 @@ package com.photodispatcher.provider.ftp{
 					}
 				}
 				loadProgress();
-				//reuseConnection(cnn);
 				//reconnect ftp
 				connectionManager.reconnect(cnn);
 				return;

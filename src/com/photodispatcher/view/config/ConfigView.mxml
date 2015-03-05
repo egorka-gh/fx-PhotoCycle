@@ -128,6 +128,9 @@
 					case 9:
 						currentState='staff';
 						break;
+					case 10:
+						currentState='alias';
+						break;
 				}
 			}
 			private function onNewCurrentList(event:Event):void{
@@ -325,6 +328,7 @@
 		<s:State name="tech_point" stateGroups="listEdit"/>
 		<s:State name="tech_layers"/>
 		<s:State name="staff"/>
+		<s:State name="alias"/>
 	</s:states>
 
 	<s:VGroup gap="10" width="100%" height="100%" paddingBottom="20">
@@ -340,6 +344,7 @@
 				<fx:String>Технологические точки</fx:String> 
 				<fx:String>Листоподборка</fx:String> 
 				<fx:String>Сотрудники</fx:String> 
+				<fx:String>Алиасы</fx:String> 
 			</mx:ArrayCollection>
 		</s:TabBar>
 		<config:CommonConfig  includeIn="common" width="100%" height="100%"/>
@@ -364,6 +369,7 @@
 		</s:HGroup>
 		<config:TechLayerConfig includeIn="tech_layers" width="100%" height="100%"/>
 		<config:StaffConfig includeIn="staff" width="100%" height="100%"/>
+		<config:AliasConfig includeIn="alias" width="100%" height="100%"/>
 		<config:ContentFilterConfig includeIn="contentFilters" width="100%" height="100%"/>
 	</s:VGroup>
 </s:Group>

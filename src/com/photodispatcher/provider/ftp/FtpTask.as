@@ -174,6 +174,7 @@ package com.photodispatcher.provider.ftp{
 			destroy();
 		}
 		
+		public var folders:Array=[];/*of FTPFile*/
 		private var foldersToScan:Array=[];/*of FTPFile*/
 		private var ftpFiles:Array=[];/*of FTPFile*/
 		private var currFolder:FTPFile;
@@ -186,6 +187,7 @@ package com.photodispatcher.provider.ftp{
 				dispatchErr('FtpTask. Disconnected');
 				return;
 			}
+			folders=[];
 			foldersToScan=[];
 			ftpFiles=[];
 			ftpClient.addEventListener(FTPEvent.LISTING, handleListing);
@@ -206,10 +208,11 @@ package com.photodispatcher.provider.ftp{
 			var fl:FTPFile;
 			if(lst){
 				for each(var o:* in lst){
-					fl=(o as FTPFile);
+					fl=o as FTPFile;
 					if(fl && fl.name!='..'){//skip parent dir
 						if(fl._isDir){
 							foldersToScan.push(fl);
+							folders.push(fl.name);
 						}else{
 							ftpFiles.push(fl);
 						}
