@@ -51,6 +51,17 @@ package com.photodispatcher.service.web{
 
 		public static const COMMAND_GET_PACKAGE_INFO:String='group';
 		public static const PARAM_PACKAGE_ID:String='args[number]';
+		
+		//cmd=union_groups&args[ids][]=12&args[ids][]=13
+		public static const COMMAND_JOIN_PACKAGES:String='union_groups';
+		public static const PARAM_PACKAGE_IDS:String='args[ids][]';
+		
+		//cmd=group_new_status&args[id]=1111&args[status]=30
+		//cmd=group_new_status&args[id]=1111&args[status]=30&args[ignore_balance]=true
+		public static const COMMAND_SET_PACKAGE_STATE:String='group_new_status';
+		public static const PARAM_UPDATE_PACKAGE_ID:String='args[id]';
+		public static const PARAM_PACKAGE_STATUS:String='args[status]';
+		public static const PARAM_PACKAGE_FORCE_STATUS:String='args[ignore_balance]';
 
 		public function FotoknigaWeb(source:Source){
 			super(source);
@@ -99,7 +110,8 @@ package com.photodispatcher.service.web{
 						nextState=-1;
 						preloadStates=PARAM_STATUS_PRELOAD_VALUES.concat();
 						startListen();
-						getData();
+						//getData();
+						startSync();
 						break;
 					case CMD_CHECK_STATE:
 						orderes=[];
@@ -123,6 +135,29 @@ package com.photodispatcher.service.web{
 						if(source.fbookSid) post.sid=source.fbookSid;
 						trace('FotoknigaWeb web load mail package '+lastPackageId.toString());
 						client.getData( new InvokerUrl(baseUrl+URL_API),post);
+						break;
+					case CMD_JOIN_PACKAGE:
+						startListen();
+						post= new Object();
+						post[PARAM_KEY]=API_KEY;
+						post[PARAM_COMMAND]=COMMAND_JOIN_PACKAGES;
+						post[PARAM_PACKAGE_IDS]=joinIds;
+						if(source.fbookSid) post.sid=source.fbookSid;
+						trace('FotoknigaWeb web join packages ' + joinIds.join(', '));
+						client.getData( new InvokerUrl(baseUrl+URL_API),post);
+						break;
+					case CMD_SET_PACKAGE_STATE:
+						startListen();
+						post= new Object();
+						post[PARAM_KEY]=API_KEY;
+						post[PARAM_COMMAND]=COMMAND_SET_PACKAGE_STATE;
+						post[PARAM_UPDATE_PACKAGE_ID]=packageId;
+						post[PARAM_PACKAGE_STATUS]=packageState;
+						if(forceState) post[PARAM_PACKAGE_FORCE_STATUS]=true;
+						if(source.fbookSid) post.sid=source.fbookSid;
+						trace('FotoknigaWeb web set package '+packageId.toString()+' state '+packageState.toString()+(forceState?' force':''));
+						client.getData( new InvokerUrl(baseUrl+URL_API),post);
+						break;
 				}
 			} else {
 				abort('Ошибка подключения к '+source.fbookService.url);
@@ -145,7 +180,20 @@ package com.photodispatcher.service.web{
 			login();
 		}
 
-		protected function getData():void{
+		private function startSync():void{
+			var post:Object;
+			post= new Object();
+			post[PARAM_KEY]=API_KEY;
+			post[PARAM_COMMAND]=COMMAND_LIST_ORDERS;
+			var states:Array=PARAM_STATUS_PRELOAD_VALUES.concat();
+			states.push(PARAM_STATUS_ORDERED_VALUE);
+			post[PARAM_STATUSES]=states;
+			if(source.fbookSid) post.sid=source.fbookSid;
+			client.getData( new InvokerUrl(baseUrl+URL_API),post);
+		}
+
+
+		private function getDataUnused():void{
 			var post:Object;
 			if(!is_preload){
 				//complited
@@ -260,6 +308,16 @@ package com.photodispatcher.service.web{
 			//do nothing
 		}
 		
+		private function getErr(raw:Object):String{
+			var result:String;
+			if (raw && raw.error){
+				result=raw.error[0];
+				if(!result && raw.error is String) result=raw.error;
+			}
+			if(!result) result='FotoknigaWeb Ошибка структуры данных';
+			return result;
+		}
+		
 		override protected function handleData(e:WebEvent):void{
 			var result:Object;
 			result=parseRaw(e.data);
@@ -267,13 +325,12 @@ package com.photodispatcher.service.web{
 				if(!result){
 					abort('FotoknigaWeb Ошибка web: '+e.data);
 				}else{
-					abort(result.error?result.error:'FotoknigaWeb Ошибка структуры данных');
+					abort(getErr(result));
 				}
 				return;
 			}
 			switch (cmd){
 				case CMD_SYNC:
-					result=parseRaw(e.data);
 					if(!(result.result is Array)){
 						abort('FotoknigaWeb Ошибка структуры данных');
 						return;
@@ -281,13 +338,18 @@ package com.photodispatcher.service.web{
 					//set preload mark
 					var a:Array=result.result;
 					var it:Object;
-					for each(it in a) it.is_preload=is_preload?1:0;
+					//for each(it in a) it.is_preload=is_preload?1:0;
+					for each(it in a){
+						it.is_preload=1;
+						if(it.status==PARAM_STATUS_ORDERED_VALUE) it.is_preload=0;
+					}
 					//add to result
 					orderes=orderes.concat(a);
-					getData();
+					//getData();
+					listFtp();
+					return;
 					break;
 				case CMD_CHECK_STATE:
-					result=parseRaw(e.data);
 					if(!result.result.hasOwnProperty('status')){
 						abort('FotoknigaWeb Ошибка структуры данных');
 						return;
@@ -316,6 +378,7 @@ package com.photodispatcher.service.web{
 						}
 					}
 					endGetOrder();
+					return;
 					break;
 				case CMD_GET_PACKAGE:
 					//parse package
@@ -324,13 +387,28 @@ package com.photodispatcher.service.web{
 						abort('FotoknigaWeb Ошибка загрузки MailPackage id: '+lastPackageId.toString());
 						return;
 					}
-					_hasError=false;
-					_errMesage='';
-					stopListen();
 					trace('FotoknigaWeb MailPackage loaded id: '+lastPackageId.toString());
-					dispatchEvent(new Event(Event.COMPLETE));
+					break;
+				case CMD_JOIN_PACKAGE:
+					if(result.hasOwnProperty('return') && result['return'].hasOwnProperty('id')) joinResultId=result['return']['id'];
+					if(joinResultId==0){
+						abort('Ошибка сайта при обединении групп');
+						return;
+					}
+					trace('FotoknigaWeb MailPackages join complited');
+					break;
+				case CMD_SET_PACKAGE_STATE:
+					if(result.result!='OK'){
+						abort('Ошибка сайта при смене статуса группы '+packageId.toString());
+						return;
+					}
+					trace('FotoknigaWeb MailPackage state changed');
 					break;
 			}
+			_hasError=false;
+			_errMesage='';
+			stopListen();
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
 		override protected function endGetOrder():void{
@@ -353,8 +431,35 @@ package com.photodispatcher.service.web{
 			_hasError=false;
 			_errMesage='';
 			login();
-			
 		}
+		
+		override public function joinMailPackages(ids:Array):void{
+			if(!source || !ids || ids.length==0){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			cmd=CMD_JOIN_PACKAGE;
+			joinIds=ids;
+			joinResultId=0;
+			_hasError=false;
+			_errMesage='';
+			login();
+		}
+		
+		override public function setMailPackageState(id:int, state:int, force:Boolean):void{
+			if(!source){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			cmd=CMD_SET_PACKAGE_STATE;
+			packageId=id;
+			packageState=state;
+			forceState=force;
+			_hasError=false;
+			_errMesage='';
+			login();
+		}
+		
 		
 	}
 }

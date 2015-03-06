@@ -485,12 +485,6 @@ package com.photodispatcher.provider.ftp{
 					order.suborders= new ArrayCollection(newso);
 				}
 			}
-			/*
-			if(source.type==SourceType.SRC_FOTOKNIGA){
-				//build so from src_id (mainId-subId)
-				SuborderBuilder.build(source,order);
-			}
-			*/
 			//check 4 empty fileStructure
 			var frwState:int=0;
 			if(!order.isFileStructureOk){
@@ -504,7 +498,7 @@ package com.photodispatcher.provider.ftp{
 							order.resetErrCounter();
 							order.state=OrderState.FTP_LOAD;
 							checkDownload();
-							loadProgress();
+							reuseConnection(cnn);
 							return;
 						}
 					}

@@ -6,9 +6,12 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.view.itemRenderer.BooleanGridRenderer;
+	
 	import flash.globalization.DateTimeStyle;
 	
 	import mx.collections.ArrayList;
+	import mx.core.ClassFactory;
 	
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
@@ -35,6 +38,8 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		public var native_delivery_id:int;
+
+		public var isSelected:Boolean;
 
 		public function getProperty(key:String):String{
 			if(!key || !properties || properties.length==0) return '';
@@ -71,6 +76,21 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('ftp_folder'); col.headerText='Ftp Папка'; result.addItem(col);
 			col= new GridColumn('fotos_num'); col.headerText='Кол фото'; result.addItem(col);
 			*/
+			return result;
+		}
+
+		public static function clientPackagesColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			col= new GridColumn('isSelected'); col.headerText=' ';  col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.width=70; result.addItem(col); 
+			col= new GridColumn('id'); col.headerText='Группа'; col.editable=false; result.addItem(col); 
+			col= new GridColumn('state_name'); col.headerText='Макс статус'; col.editable=false; result.addItem(col); 
+			col= new GridColumn('min_ord_state_name'); col.headerText='Мин статус'; col.editable=false; result.addItem(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.editable=false; result.addItem(col);
+			col= new GridColumn('orders_num'); col.headerText='Кол заказов'; col.editable=false; result.addItem(col); 
+			
 			return result;
 		}
 

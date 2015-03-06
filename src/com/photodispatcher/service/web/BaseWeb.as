@@ -26,6 +26,8 @@ package com.photodispatcher.service.web{
 		protected static const CMD_CHECK_STATE:int=2;
 		protected static const CMD_SET_STATE:int=3;
 		protected static const CMD_GET_PACKAGE:int=4;
+		protected static const CMD_JOIN_PACKAGE:int=5;
+		protected static const CMD_SET_PACKAGE_STATE:int=6;
 
 		public var isRunning:Boolean=false;
 
@@ -58,6 +60,9 @@ package com.photodispatcher.service.web{
 			return lastPackage;
 		}
 		
+		public function getJoinResultId():int{
+			return joinResultId;
+		}
 		
 		protected var client:WebClient;
 		protected var baseUrl:String;
@@ -79,6 +84,18 @@ package com.photodispatcher.service.web{
 			throw new Error("You need to override getOrder() in your concrete class");
 		}
 		public function getMailPackage(packageId:int):void{
+			throw new Error("You need to override getOrder() in your concrete class");
+		}
+		protected var joinIds:Array;
+		protected var joinResultId:int;
+		public function joinMailPackages(ids:Array):void{
+			throw new Error("You need to override getOrder() in your concrete class");
+		}
+
+		protected var packageId:int;
+		protected var packageState:int;
+		protected var forceState:Boolean;
+		public function setMailPackageState(id:int, state:int, force:Boolean):void{
 			throw new Error("You need to override getOrder() in your concrete class");
 		}
 		

@@ -25,6 +25,7 @@
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
 			import mx.managers.PopUpManager;
 			
 			import org.granite.tide.Tide;
@@ -46,6 +47,18 @@
 			[Bindable]
 			public var printForms:ArrayCollection;
 
+			private var _webService:BaseWeb;
+			private function get webService():BaseWeb{
+				if(!_webService) _webService= WebServiceBuilder.build(source);
+				return _webService;
+			}
+			
+			private var _bdService:MailPackageService;
+			private function get bdService():MailPackageService{
+				if(!_bdService) _bdService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				return _bdService;
+			}
+			
 			public function loadFromWeb(sourceId:int, id:int, showClienGroups:Boolean=false):void{
 				mailPackage=null;
 				this.showClienGroups=showClienGroups;
@@ -56,18 +69,19 @@
 					Alert.show(stateMsg);
 					return;
 				}
-				var w:BaseWeb= WebServiceBuilder.build(source);
-				w.addEventListener(Event.COMPLETE,webHandler);
+				webService.addEventListener(Event.COMPLETE,webHandler);
 				try{
-					w.getMailPackage(id);
+					webService.getMailPackage(id);
 				}catch(error:Error){
 					Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
 					return;
 				}
+				CursorManager.setBusyCursor();
 				show();
 			}
 			
 			private function show():void{
+				if(this.isOpen) return;
 				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
 				this.width=FlexGlobals.topLevelApplication.width-50;
 				this.height=FlexGlobals.topLevelApplication.height-100;
@@ -77,6 +91,7 @@
 			
 			private function webHandler(e:Event):void{
 				var pw:BaseWeb=e.target as BaseWeb;
+				CursorManager.removeBusyCursor();
 				pw.removeEventListener(Event.COMPLETE,webHandler);
 				//TODO load orders
 				if(pw.hasError){
@@ -93,15 +108,15 @@
 				
 				printForms=DeliveryTypePrintForm.getForms(mailPackage.delivery_id);
 
-				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				//var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onload);
-				latch.addLatch(svc.loadChildOrders(mailPackage.source, mailPackage.id));
+				latch.addLatch(bdService.loadChildOrders(mailPackage.source, mailPackage.id));
 				latch.start();
 				if(showClienGroups){
 					var latchGroups:DbLatch=new DbLatch();
 					latchGroups.addEventListener(Event.COMPLETE,onGroupsload);
-					latchGroups.addLatch(svc.loadByClient(mailPackage.source, mailPackage.client_id));
+					latchGroups.addLatch(bdService.loadByClient(mailPackage.source, mailPackage.client_id));
 					latchGroups.start();
 				}
 			}
@@ -181,6 +196,53 @@
 				}
 			}
 			
+			private var joinIds:Array;
+			protected function btJoin_clickHandler(event:MouseEvent):void{
+				joinIds=[];
+				var it:MailPackage;
+				if(!cliPackages || cliPackages.length==0) return;
+				for each(it in cliPackages){
+					if(it && it.isSelected) joinIds.push(it.id);
+				}
+				if(joinIds.length==0) return;
+				joinIds.push(mailPackage.id);
+				webService.addEventListener(Event.COMPLETE,joinHandler);
+				try{
+					webService.joinMailPackages(joinIds);
+				}catch(error:Error){
+					Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+					return;
+				}
+			}
+			
+			private function joinHandler(e:Event):void{
+				webService.removeEventListener(Event.COMPLETE,joinHandler);
+				//TODO load orders
+				if(webService.hasError){
+					joinIds=[];
+					trace('web err: '+webService.errMesage);
+					Alert.show(webService.errMesage);
+					return;
+				}
+				var newId:int=webService.getJoinResultId();
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onJoin);
+				//SqlResult join(int source, int targetId, List<Integer> joinIds);
+				latch.addLatch(bdService.join(source.id,newId,new ArrayCollection(joinIds)),newId.toString());
+				latch.start();
+			}
+			private function onJoin(event:Event):void{
+				joinIds=[];
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onJoin);
+					if(latch.complite){
+						var newId:int= int(latch.lastTag);
+						if(newId) loadFromWeb(source.id, newId,true);
+					}
+				}
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -224,15 +286,16 @@
 			<s:VGroup width="100%" height="100%" gap="5" visible="{showClienGroups}">
 				<s:Label text="Все группы клиента"/>
 				<s:DataGrid id="dgPackages" selectionMode="singleRow"
-							 width="100%" height="100%"
+							 width="100%" height="100%" editable="true"
 							creationComplete="dgPackages_creationCompleteHandler(event)"
-							dataProvider="{cliPackages}" locale="ru_RU" columns="{MailPackage.inQueueColumns()}">
+							dataProvider="{cliPackages}" locale="ru_RU" columns="{MailPackage.clientPackagesColumns()}">
 					<s:rowBackground>
 						<fx:Component>
 							<itemRenderer:TechMailPDataGridRowBackground/>
 						</fx:Component>
 					</s:rowBackground>
 				</s:DataGrid>
+				<s:Button id="btJoin" label="Объединить" toolTip="Объединить отмеченные с текущей группой" click="btJoin_clickHandler(event)"/>
 			</s:VGroup>
 		</s:HGroup>
 
