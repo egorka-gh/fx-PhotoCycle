@@ -10,7 +10,6 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
-			import com.photodispatcher.model.AppConfig;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Lab;
 			import com.photodispatcher.model.mysql.entities.OrderState;

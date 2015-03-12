@@ -9,7 +9,6 @@
 			import com.jxl.chatserver.vo.ClientVO;
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
-			import com.photodispatcher.model.AppConfig;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.StrUtil;
 			

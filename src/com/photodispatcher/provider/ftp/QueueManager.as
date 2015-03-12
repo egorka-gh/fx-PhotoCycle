@@ -8,6 +8,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	import com.photodispatcher.service.web.BaseWeb;
@@ -30,6 +31,7 @@ package com.photodispatcher.provider.ftp{
 	[Event(name="loadFault", type="com.photodispatcher.event.ImageProviderEvent")]
 	public class QueueManager extends EventDispatcher{
 		public static const RESTART_TIMEOUT:int=10000;
+		public static const PRODUCTION_ERR_RESET_DELAY:int=1000*60*3;
 		public static const WEB_ERRORS_LIMIT:int=3;
 		
 		public static const TYPE_LOCAL:int=0;
@@ -121,6 +123,11 @@ package com.photodispatcher.provider.ftp{
 			//check
 			if(!source){
 				flowError('Ошибка инициализации');
+				return;
+			}
+			//check config production
+			if(source.type==SourceType.SRC_FOTOKNIGA && Context.getProduction()==0){
+				flowError('Не назначено производство');
 				return;
 			}
 			//detect lockal folder
@@ -320,6 +327,9 @@ package com.photodispatcher.provider.ftp{
 							o.setErrLimit();
 							//del old from queue
 							toKill.push(order);
+						}else if(source.type==SourceType.SRC_FOTOKNIGA && Context.getProduction()!=Context.PRODUCTION_ANY && order.state==OrderState.CANCELED_PRODUCTION){
+							//del from queue, recheck production
+							toKill.push(order);
 						}else{
 							//replace
 							toReplace.push(order);
@@ -409,6 +419,10 @@ package com.photodispatcher.provider.ftp{
 			for each (ord in queue){
 				if(ord && !ord.exceedErrLimit){
 					if((forceReset || remoteMode) && ord.state<0 && ord.state!=OrderState.ERR_WRITE_LOCK) resetOrderState(ord);
+					if(ord.state==OrderState.ERR_PRODUCTION_NOT_SET){
+						var dt:Date= new Date();
+						if((dt.time-ord.state_date.time)>PRODUCTION_ERR_RESET_DELAY)  resetOrderState(ord);
+					}
 					if(ord.state>0){
 						//if(ord.state==OrderState.FTP_WEB_CHECK) ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
 						//if(ord.state==OrderState.FTP_WEB_OK && ord.id!=listOrderId) ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
@@ -419,7 +433,7 @@ package com.photodispatcher.provider.ftp{
 								newOrder=ord;
 							}
 						}
-					}else if(ord.state!=OrderState.ERR_WRITE_LOCK){
+					}else if(ord.state!=OrderState.ERR_WRITE_LOCK && ord.state!=OrderState.ERR_PRODUCTION_NOT_SET){
 						//reset error
 						//ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
 						resetOrderState(ord);
@@ -429,6 +443,8 @@ package com.photodispatcher.provider.ftp{
 			return newOrder;
 		}
 		
+		private var webService:BaseWeb;
+		
 		private function checkQueue():void{
 			if(webApplicant || !isStarted || forceStop) return;
 			var newOrder:Order=fetch();
@@ -437,9 +453,10 @@ package com.photodispatcher.provider.ftp{
 				//check state on site
 				webApplicant=newOrder;
 				webApplicant.state=OrderState.FTP_WEB_CHECK;
-				var w:BaseWeb= WebServiceBuilder.build(source);
-				w.addEventListener(Event.COMPLETE,getOrderHandle);
-				w.getOrder(newOrder);
+				if(!webService) webService=WebServiceBuilder.build(source);
+				//var w:BaseWeb= WebServiceBuilder.build(source);
+				webService.addEventListener(Event.COMPLETE,getOrderHandle);
+				webService.getOrder(newOrder);
 			}
 		}
 
@@ -472,6 +489,26 @@ package com.photodispatcher.provider.ftp{
 			}
 			webErrCounter=0;
 			if(pw.isValidLastOrder(true)){
+				//check production
+				if(source.type==SourceType.SRC_FOTOKNIGA && Context.getProduction()!=Context.PRODUCTION_ANY){
+					startOrder.production=pw.getLastOrder().production;
+					if(startOrder.production==Context.PRODUCTION_NOT_SET){
+						trace('QueueManager.getOrderHandle; order production not set '+startOrder.id);
+						startOrder.state=OrderState.ERR_PRODUCTION_NOT_SET;
+						checkQueue();
+						return;
+					}
+					if(startOrder.production!=Context.getProduction()){
+						trace('QueueManager.getOrderHandle; wrong order production; cancel order '+startOrder.id);
+						startOrder.state=OrderState.CANCELED_PRODUCTION;
+						//TODO save && remove from queue ??
+						/*
+						removeOrder(startOrder);
+						*/
+						checkQueue();
+						return;
+					}
+				}
 				//open cnn & get files list
 				trace('QueueManager.getOrderHandle; web check Ok; push to download manager '+startOrder.ftp_folder);
 				startOrder.state=OrderState.FTP_WEB_OK;

@@ -1,6 +1,6 @@
 package com.photodispatcher.model{
 	[Bindable]
-	public class AppConfig extends DBRecord{
+	public class AppConfigKill extends DBRecord{
 		//database props
 		public var id:String;
 		public var wrk_path:String;

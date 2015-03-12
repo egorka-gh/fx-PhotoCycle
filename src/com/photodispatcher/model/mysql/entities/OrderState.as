@@ -80,6 +80,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const TECH_OTK:int=450;
 		public static const CANCELED_SYNC:int=505;
 		public static const CANCELED:int=510;
+		public static const CANCELED_PRODUCTION:int=515;
 		public static const SKIPPED:int=520;
 		
 		private static var stateMap:Object;

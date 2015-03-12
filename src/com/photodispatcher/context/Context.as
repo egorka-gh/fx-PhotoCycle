@@ -1,7 +1,7 @@
 package com.photodispatcher.context{
-	import com.photodispatcher.model.AppConfig;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.AliasForward;
+	import com.photodispatcher.model.mysql.entities.AppConfig;
 	import com.photodispatcher.model.mysql.entities.AttrJsonMap;
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
@@ -53,7 +53,13 @@ package com.photodispatcher.context{
 
 	public dynamic class Context{
 
+		public static const PRODUCTION_ANY:int=-1;
+		public static const PRODUCTION_NOT_SET:int=0;
+
+
 		private static var instance:Context;
+
+		public static var config:AppConfig;
 
 		// Static initializer
 		{
@@ -104,6 +110,7 @@ package com.photodispatcher.context{
 			//Context.fillFromConfig();
 
 			//init static maps
+			latch.join(Context.loadConfig());
 			latch.join(Context.initSourceLists());
 			latch.join(Context.initAttributeLists());
 			latch.join(LabResize.initSizeMap());
@@ -431,7 +438,37 @@ package com.photodispatcher.context{
 				}
 			}
 		}
+		public static function loadConfig():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			//latch.debugName='initSourceLists';
+			var svc:ConfigService=Tide.getInstance().getContext().byType(ConfigService,true) as ConfigService;
+			latch.addEventListener(Event.COMPLETE,onConfigLoad);
+			latch.addLatch(svc.loadConfig());
+			latch.start();
+			return latch;
+		}
+		private static function onConfigLoad(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onConfigLoad);
+				if(latch.complite){
+					config=latch.lastDataItem as AppConfig;
+				}
+			}
+		}
 		
+		public static function getProduction():int{
+			if(!config) return -1;
+			return config.production;
+		}
+		public static function getProductionName():String{
+			var p:int=PRODUCTION_ANY;
+			if(config) p=config.production;
+			if(p==PRODUCTION_ANY) return 'Все заказы (отключено)';
+			if(p==PRODUCTION_NOT_SET) return 'Не назначено';
+			return config.production_name;
+		}
+
 		private static var serverRootUrl:String;
 		public static function getServerRootUrl():String{
 			if(!serverRootUrl){

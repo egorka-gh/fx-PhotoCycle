@@ -24,8 +24,10 @@ package com.photodispatcher.model.mysql.entities {
         private var _form_field:int;
         private var _id:int;
         private var _is_field:Boolean;
+        private var _prefix:String;
         private var _property:String;
         private var _sequence:int;
+        private var _sufix:String;
 
         public function set attr_type(value:int):void {
             _attr_type = value;
@@ -69,6 +71,13 @@ package com.photodispatcher.model.mysql.entities {
             return _is_field;
         }
 
+        public function set prefix(value:String):void {
+            _prefix = value;
+        }
+        public function get prefix():String {
+            return _prefix;
+        }
+
         public function set property(value:String):void {
             _property = value;
         }
@@ -83,6 +92,13 @@ package com.photodispatcher.model.mysql.entities {
             return _sequence;
         }
 
+        public function set sufix(value:String):void {
+            _sufix = value;
+        }
+        public function get sufix():String {
+            return _sufix;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _attr_type = input.readObject() as int;
@@ -91,8 +107,10 @@ package com.photodispatcher.model.mysql.entities {
             _form_field = input.readObject() as int;
             _id = input.readObject() as int;
             _is_field = input.readObject() as Boolean;
+            _prefix = input.readObject() as String;
             _property = input.readObject() as String;
             _sequence = input.readObject() as int;
+            _sufix = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -103,8 +121,10 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_form_field is IPropertyHolder) ? IPropertyHolder(_form_field).object : _form_field);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_is_field is IPropertyHolder) ? IPropertyHolder(_is_field).object : _is_field);
+            output.writeObject((_prefix is IPropertyHolder) ? IPropertyHolder(_prefix).object : _prefix);
             output.writeObject((_property is IPropertyHolder) ? IPropertyHolder(_property).object : _property);
             output.writeObject((_sequence is IPropertyHolder) ? IPropertyHolder(_sequence).object : _sequence);
+            output.writeObject((_sufix is IPropertyHolder) ? IPropertyHolder(_sufix).object : _sufix);
         }
     }
 }

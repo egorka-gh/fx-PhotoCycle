@@ -80,24 +80,30 @@ package com.photodispatcher.model.mysql.entities {
 			var items:Array=fieldItemsMap[fieldId] as Array;
 			if(!items) return result;
 			var item:PrintFormFieldItem;
-			var delemiter:String='';
+			//var delemiter:String='';
+			var itemValue:String='';
 			for each(item in items){
 				if(item){
-					if(delemiter) result+=delemiter;
+					itemValue='';
 					if(item.is_field){
-						result+=buildField(item.child_field,params);
+						itemValue=buildField(item.child_field,params);
 					}else{
 						var param:MailPackageProperty;
 						if(item.property){
 							for each(param in params){
 								if(param && param.property && param.property==item.property){
-									result+=param.value;
+									itemValue=param.value;
 									break;
 								}
 							}
 						}
 					}
-					delemiter=item.delemiter;	
+					if(itemValue){
+						if(item.delemiter && result) result+=item.delemiter;
+						if(item.prefix) result+=item.prefix;
+						result+=itemValue;
+						if(item.sufix) result+=item.sufix;
+					}
 				}
 			}
 

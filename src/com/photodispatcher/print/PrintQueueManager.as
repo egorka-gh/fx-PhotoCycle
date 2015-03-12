@@ -403,6 +403,8 @@ package com.photodispatcher.print{
 			var svc:BaseWeb=e.target as BaseWeb;
 			var prnGrp:PrintGroup;
 			var toLoad:Array=[];
+			var hasProductionErr:Boolean=false;
+			var latch:DbLatch;
 			if(svc){
 				var oMap:Object=webQueue[svc.source.id.toString()];
 				var order:Order=oMap[svc.lastOrderId] as Order;
@@ -417,35 +419,67 @@ package com.photodispatcher.print{
 					if(svc.isValidLastOrder()){
 						//update extra info 4  FOTOKNIGA type
 						if(svc.source.type==SourceType.SRC_FOTOKNIGA && svc.getLastOrder()){
+							//check production
+							if(Context.getProduction()!=Context.PRODUCTION_ANY){
+								if(svc.getLastOrder().production==Context.PRODUCTION_NOT_SET){
+									trace('PrintQueueManager.serviceCompliteHandler; order production not set '+svc.lastOrderId);
+									hasProductionErr=true;
+									dispatchManagerErr('Заказ #'+svc.lastOrderId+' не назначено производство. Размещение на печать отменено.');
+									//mark vs error
+									for each (prnGrp in order.printGroups){
+										prnGrp.state=OrderState.ERR_PRODUCTION_NOT_SET;
+										prnGrp.destinationLab=null;
+										StateLog.logByPGroup(OrderState.ERR_PRODUCTION_NOT_SET,prnGrp.id,'Не назначено производство. Размещение на печать отменено.');
+									}
+								}else if(svc.getLastOrder().production!=Context.getProduction()){
+									trace('PrintQueueManager.serviceCompliteHandler; wrong order production; cancel order '+svc.lastOrderId);
+									hasProductionErr=true;
+									dispatchManagerErr('Заказ #'+svc.lastOrderId+' неверное производство. Размещение на печать отменено.');
+									//mark log canceled
+									for each (prnGrp in order.printGroups){
+										prnGrp.state=OrderState.CANCELED_PRODUCTION;
+										prnGrp.destinationLab=null;
+										StateLog.logByPGroup(OrderState.CANCELED_PRODUCTION, prnGrp.id,'Неверное производство ('+svc.getLastOrder().production.toString()+'). Размещение на печать отменено.');
+									}
+									//cancel order
+									var bdSvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+									latch= new DbLatch();
+									latch.addLatch(bdSvc.cancelOrders([svc.lastOrderId], OrderState.CANCELED_PRODUCTION));
+									latch.start();
+								}
+							}
+
 							var ei:OrderExtraInfo=svc.getLastOrder().extraInfo;
-							if(ei){
+							if(ei && !hasProductionErr){
 								ei.persistState=AbstractEntity.PERSIST_CHANGED;
 								var osvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-								var latch:DbLatch= new DbLatch(true);
+								latch= new DbLatch(true);
 								latch.addLatch(osvc.persistExtraInfo(ei));
 								latch.start();
 							}
 						}
-						//set state 
-						for each (prnGrp in order.printGroups){
-							//prnGrp= pg as PrintGroup;
-							if(prnGrp){
-								if(prnGrp.state==OrderState.PRN_WEB_CHECK){
-									prnGrp.state=OrderState.PRN_WEB_OK;
-									//add to loadQueue
-									toLoad.push(prnGrp);
-								}else{
-									StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
+						if(!hasProductionErr){
+							//set state 
+							for each (prnGrp in order.printGroups){
+								//prnGrp= pg as PrintGroup;
+								if(prnGrp){
+									if(prnGrp.state==OrderState.PRN_WEB_CHECK){
+										prnGrp.state=OrderState.PRN_WEB_OK;
+										//add to loadQueue
+										toLoad.push(prnGrp);
+									}else{
+										StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
+									}
 								}
 							}
+							//lock/load pg
+							capturePrintGroups(toLoad);
 						}
-						//lock/load pg
-						capturePrintGroups(toLoad);
 					}else{
 						dispatchManagerErr('Заказ #'+svc.lastOrderId+' отменен на сайте. Обновите данные. Размещение заказа на печать отменено.');
 						//mark as canceled
 						for each (prnGrp in order.printGroups){
-							prnGrp.state=OrderState.CANCELED;
+							prnGrp.state=OrderState.CANCELED_SYNC;
 							prnGrp.destinationLab=null;
 						}
 					}

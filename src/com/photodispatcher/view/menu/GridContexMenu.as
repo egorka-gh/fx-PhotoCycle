@@ -7,6 +7,7 @@ package com.photodispatcher.view.menu{
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.printer.Printer;
 	import com.photodispatcher.view.OrderInfoPopup;
 	import com.photodispatcher.view.PasswPopup;
@@ -34,6 +35,7 @@ package com.photodispatcher.view.menu{
 		public static const SHOW_ORDER:int=3;
 		public static const RESET_ERRLIMIT:int=4;
 		public static const PRINT_TICKET:int=5;
+		public static const CANCEL_PRINT_STATE:int=6;
 		
 		private var grid:DataGrid;
 		[Bindable]
@@ -57,7 +59,7 @@ package com.photodispatcher.view.menu{
 							menuItems.addItem(item);
 							break;
 						case CANCEL_ORDER:
-							item={label:'Отменить',enabled:false,callBack:null,newState:0, action:CANCEL_ORDER};
+							item={label:'Отменить заказ',enabled:false,callBack:null,newState:0, action:CANCEL_ORDER};
 							menuItems.addItem(item);
 							break;
 						case FORVARD_FTP:
@@ -74,6 +76,10 @@ package com.photodispatcher.view.menu{
 							break;
 						case PRINT_TICKET:
 							item={label:'Печать квитка',enabled:false,callBack:null,newState:0, action:PRINT_TICKET};
+							menuItems.addItem(item);
+							break;
+						case CANCEL_PRINT_STATE:
+							item={label:'Сброс статуса печати',enabled:false,callBack:null,newState:0, action:CANCEL_PRINT_STATE};
 							menuItems.addItem(item);
 							break;
 					}
@@ -129,6 +135,9 @@ package com.photodispatcher.view.menu{
 					break;
 				case PRINT_TICKET:
 					printTickets();
+					break;
+				case CANCEL_PRINT_STATE:
+					cancelPrintState();
 					break;
 				
 				default:
@@ -203,6 +212,23 @@ package com.photodispatcher.view.menu{
 			}
 		}
 
+		public function cancelPrintState():void{
+			var pg:PrintGroup;
+			var ids:Array=[];
+			for each(var o:Object in grid.selectedItems){
+				pg=o as PrintGroup;
+				if(pg && pg.id && pg.state>OrderState.PRN_WAITE && pg.state<OrderState.PRN_PRINT){
+					ids.push(pg.id);
+				}
+			}
+			if(ids.length==0) return;
+			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			var latch:DbLatch= new DbLatch();
+			//latch.addEventListener(Event.COMPLETE,onCancelPost);
+			latch.addLatch(svc.printCancel(ids));
+			latch.start();
+		}
+
 		public function resetOrdersErrLimit():void{
 			var order:Order; 
 			for each(var o:Object in grid.selectedItems){
@@ -253,7 +279,7 @@ package com.photodispatcher.view.menu{
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onOrdersCancel);
-				latch.addLatch(svc.cancelOrders(orderIds));
+				latch.addLatch(svc.cancelOrders(orderIds, OrderState.CANCELED));
 				latch.start();
 			}
 		}

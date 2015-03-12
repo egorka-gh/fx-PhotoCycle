@@ -367,6 +367,7 @@ package com.photodispatcher.service.web{
 								to.extraInfo.parseMessages();
 								lastOrder.extraInfo=to.extraInfo;
 							}
+							lastOrder.production=to.production;
 							if(to.fotos_num>0) lastOrder.fotos_num=to.fotos_num;
 							if(to.hasSuborders){
 								lastOrder.resetSuborders();
@@ -390,9 +391,10 @@ package com.photodispatcher.service.web{
 					trace('FotoknigaWeb MailPackage loaded id: '+lastPackageId.toString());
 					break;
 				case CMD_JOIN_PACKAGE:
-					if(result.hasOwnProperty('return') && result['return'].hasOwnProperty('id')) joinResultId=result['return']['id'];
+					//if(result.hasOwnProperty('return') && result['return'].hasOwnProperty('id')) joinResultId=result['return']['id'];
+					if(result.result && result.result.hasOwnProperty('id')) joinResultId=result.result.id;
 					if(joinResultId==0){
-						abort('Ошибка сайта при обединении групп');
+						abort('Ошибка сайта при обединении групп, не определенн id группы результата');
 						return;
 					}
 					trace('FotoknigaWeb MailPackages join complited');

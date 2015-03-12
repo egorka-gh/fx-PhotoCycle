@@ -40,10 +40,10 @@
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 			
+			import org.granite.tide.Tide;
+			
 			import spark.events.GridSelectionEvent;
 			import spark.events.PopUpEvent;
-			
-			import org.granite.tide.Tide;
 			
 			public static const REFRESH_INTERVAL:int=10;//min
 			public static const FORCE_START_INTERVAL:int=10;//min
@@ -91,8 +91,12 @@
 			[Bindable]
 			public var printPulseManager:PrintPulseManager;
 			
+			[Bindable]
+			private var productionName:String='Не назначено';
+			
 			public function init():void{
 				sources=new ArrayCollection(Context.getSources());
+				productionName=Context.getProductionName();
 				
 				buildFilterLists();
 				
@@ -183,6 +187,7 @@
 			}
 			
 			public function start():void{
+				productionName=Context.getProductionName();
 				if(isRuning) return;
 				isRuning=true;
 				resync();
@@ -481,7 +486,7 @@
 				</s:Scroller>
 			</s:VGroup>
 			<s:VGroup gap="10" width="510" height="100%">
-				<s:Label text="FTP"/>
+				<s:Label text="FTP     Производство: {productionName}"/>
 				<s:HGroup gap="10">
 					<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить FTP загрузку" 
 							  click="{ftpStart()}"/>
