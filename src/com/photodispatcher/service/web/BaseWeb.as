@@ -54,6 +54,15 @@ package com.photodispatcher.service.web{
 			return _errMesage;
 		}
 		
+		protected var errCodes:Array;
+		public function hasErrCode(code:int):Boolean{
+			if(!errCodes || errCodes.length==0) return false;
+			for each(var err:int in errCodes){
+				if (err==code) return true;
+			}
+			return false;
+		}
+		
 		protected var lastPackageId:int;
 		protected var lastPackage:MailPackage;
 		public function getLastMailPackage():MailPackage{

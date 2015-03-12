@@ -16,14 +16,17 @@
 			import com.photodispatcher.model.mysql.entities.MailPackageProperty;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.printer.Printer;
 			import com.photodispatcher.service.web.BaseWeb;
+			import com.photodispatcher.service.web.FotoknigaWeb;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
 			import mx.managers.CursorManager;
 			import mx.managers.PopUpManager;
@@ -39,6 +42,7 @@
 			[Bindable]
 			private var showClienGroups:Boolean;
 			
+			[Bindable]
 			private var source:Source;
 
 			[Bindable]
@@ -243,6 +247,56 @@
 				}
 			}
 
+			protected function btSetSiteState_clickHandler(event:MouseEvent):void{
+				if(!mailPackage || !mailPackage.id) return;
+				webService.addEventListener(Event.COMPLETE,setStateHandler);
+				try{
+					webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_MADE ,false);
+				}catch(error:Error){
+					Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+				}
+			}
+			private function setStateHandler(e:Event):void{
+				webService.removeEventListener(Event.COMPLETE,setStateHandler);
+				if(webService.hasError){
+					trace('web err: '+webService.errMesage);
+					if(webService.hasErrCode(FotoknigaWeb.ERR_CODE_BALANCE)){
+						Alert.buttonWidth=150;
+						Alert.yesLabel='Игнорировать баланс'; 
+						Alert.cancelLabel='Отмена';
+						Alert.show(webService.errMesage,'',Alert.YES|Alert.CANCEL, this, alertClickHandler);
+						
+						Alert.buttonWidth=75;
+						Alert.yesLabel='Да';
+						Alert.noLabel='Нет';
+					}else{
+						Alert.show(webService.errMesage);
+					}
+				}else{
+					Alert.show('Статус изменен');
+				}
+			}
+			
+			private function alertClickHandler(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES) {
+					webService.addEventListener(Event.COMPLETE,setForceStateHandler);
+					try{
+						webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_MADE , true);
+					}catch(error:Error){
+						Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+					}
+				}
+			}
+			private function setForceStateHandler(e:Event):void{
+				webService.removeEventListener(Event.COMPLETE,setStateHandler);
+				if(webService.hasError){
+					trace('web err: '+webService.errMesage);
+					Alert.show(webService.errMesage);
+				}else{
+					Alert.show('Статус изменен');
+				}
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -330,6 +384,9 @@
 
 		<s:Spacer height="5"/>
 		<s:HGroup width="100%" horizontalAlign="right">
+			<s:Button id="btSetSiteState" label="Упакован" toolTip="Сменить статус на сайте" 
+					  enabled="{source.type==SourceType.SRC_FOTOKNIGA}" click="btSetSiteState_clickHandler(event)"/>
+			<s:Spacer width="20"/>
 			<s:Button id="btClose" label="Закрыть" click="{close()}"/>
 		</s:HGroup>
 	</s:VGroup>

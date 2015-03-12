@@ -21,6 +21,23 @@ package com.photodispatcher.service.web{
 	import pl.maliboo.ftp.FTPFile;
 
 	public class FotoknigaWeb extends BaseWeb{
+		public static const ERR_CODE_BALANCE:int=24;
+
+		public static const ORDER_STATE_NONE:int=0;
+		public static const ORDER_STATE_CREATED:int=10;
+		public static const ORDER_STATE_READY:int=15;
+		public static const ORDER_STATE_CHECKOUT:int=17;
+		public static const ORDER_STATE_CHECK:int=20;
+		public static const ORDER_STATE_PAYMENT:int=25;
+		public static const ORDER_STATE_PAYMENT_CHECK:int=27;
+		public static const ORDER_STATE_PAYMENT_ACCEPTED:int=30;
+		public static const ORDER_STATE_MADE:int=40;
+		public static const ORDER_STATE_DELIVERY:int=42;
+		public static const ORDER_STATE_RECEIVING:int=45;
+		public static const ORDER_STATE_SHIPPED:int=50;
+		public static const ORDER_STATE_RECEIVED:int=60;
+		public static const ORDER_STATE_ARCHIVED:int=100;
+
 		public static const URL_API:String='api.php';
 		public static const API_KEY:String='sp0oULbDnJfk7AjBNtVG';
 
@@ -40,8 +57,8 @@ package com.photodispatcher.service.web{
 		27 => 'Ожидает проверки оплаты',
 		30 => 'Принят в работу'
 		*/
-		public static const PARAM_STATUS_ORDERED_VALUE:int=30;
-		public static const PARAM_STATUS_PRELOAD_VALUES:Array=[20,25,27];
+		public static const PARAM_STATUS_ORDERED_VALUE:int=ORDER_STATE_PAYMENT_ACCEPTED;
+		public static const PARAM_STATUS_PRELOAD_VALUES:Array=[ORDER_STATE_CHECK,ORDER_STATE_PAYMENT,ORDER_STATE_PAYMENT_CHECK];
 
 		public static const COMMAND_GET_ORDER_STATE:String='status';
 		public static const PARAM_ORDER_ID:String='args[number]';
@@ -309,10 +326,28 @@ package com.photodispatcher.service.web{
 		}
 		
 		private function getErr(raw:Object):String{
-			var result:String;
+			errCodes=[];
+			var result:String='';
+			var key:*;
+			var obj:Object;
 			if (raw && raw.error){
-				result=raw.error[0];
-				if(!result && raw.error is String) result=raw.error;
+				if(raw.error is String){
+					result=raw.error;
+				}else{
+					for (key in raw.error){
+						if(raw.error[key] is String){
+							if(result) result+= '\n';
+							result+=raw.error[key];
+						}else{
+							obj=raw.error[key];
+							if(obj.hasOwnProperty('value')) errCodes.push(int(obj.value));
+							if(obj.hasOwnProperty('title')){
+								if(result) result+= '\n';
+								result+=obj.title as String;
+							}
+						}
+					}
+				}
 			}
 			if(!result) result='FotoknigaWeb Ошибка структуры данных';
 			return result;
@@ -459,6 +494,7 @@ package com.photodispatcher.service.web{
 			forceState=force;
 			_hasError=false;
 			_errMesage='';
+			errCodes=[];
 			login();
 		}
 		
