@@ -58,6 +58,8 @@ package com.photodispatcher.factory{
 			}
 			
 			if(result.native_delivery_id) result.delivery_id=DeliveryTypeDictionary.translateDeliveryType(result.source, result.native_delivery_id);
+			
+			result.parseMessages();
 
 			
 			//build prorerties

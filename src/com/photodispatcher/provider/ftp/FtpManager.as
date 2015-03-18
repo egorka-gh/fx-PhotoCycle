@@ -224,6 +224,7 @@ package com.photodispatcher.provider.ftp{
 					order.state=OrderState.PRN_WAITE;
 				}
 			}
+			trace('Save order '+order.id+' State:'+order.state.toString()+'('+order.forward_state.toString()+')');
 			order.state_date=new Date();
 			if(order.hasSuborders){
 				for each(var so:SubOrder in order.suborders) if(so.state<OrderState.CANCELED) so.state=order.state;

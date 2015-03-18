@@ -27,6 +27,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:int;
         private var _id_name:String;
         private var _mail_service:int;
+        private var _messages:ListCollectionView;
         private var _min_ord_state:int;
         private var _min_ord_state_name:String;
         private var _orders:ListCollectionView;
@@ -95,6 +96,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get mail_service():int {
             return _mail_service;
+        }
+
+        public function set messages(value:ListCollectionView):void {
+            _messages = value;
+        }
+        public function get messages():ListCollectionView {
+            return _messages;
         }
 
         public function set min_ord_state(value:int):void {
@@ -198,6 +206,7 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as int;
             _id_name = input.readObject() as String;
             _mail_service = input.readObject() as int;
+            _messages = input.readObject() as ListCollectionView;
             _min_ord_state = input.readObject() as int;
             _min_ord_state_name = input.readObject() as String;
             _orders = input.readObject() as ListCollectionView;
@@ -223,6 +232,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_id_name is IPropertyHolder) ? IPropertyHolder(_id_name).object : _id_name);
             output.writeObject((_mail_service is IPropertyHolder) ? IPropertyHolder(_mail_service).object : _mail_service);
+            output.writeObject((_messages is IPropertyHolder) ? IPropertyHolder(_messages).object : _messages);
             output.writeObject((_min_ord_state is IPropertyHolder) ? IPropertyHolder(_min_ord_state).object : _min_ord_state);
             output.writeObject((_min_ord_state_name is IPropertyHolder) ? IPropertyHolder(_min_ord_state_name).object : _min_ord_state_name);
             output.writeObject((_orders is IPropertyHolder) ? IPropertyHolder(_orders).object : _orders);

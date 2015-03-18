@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:config="com.photodispatcher.view.config.*"
+		 creationComplete="{init()}" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Rack;
+			import com.photodispatcher.model.mysql.entities.RackSpace;
+			import com.photodispatcher.model.mysql.entities.RackTechPoint;
+			import com.photodispatcher.model.mysql.services.ConfigService;
+			
+			import mx.collections.ArrayCollection;
+			
+			import org.granite.tide.Tide;
+			
+			[Bindable]
+			private var racksAC:ArrayCollection;
+			[Bindable]
+			private var spacesAC:ArrayCollection;
+			[Bindable]
+			private var tpointAC:ArrayCollection;
+
+			private var cfgService:ConfigService;
+
+			[Bindable]
+			private var currRack:Object;
+
+			private function init():void{
+				
+				cfgService=Tide.getInstance().getContext().byType(ConfigService,true) as ConfigService;
+				
+				var initLatch:DbLatch= new DbLatch();
+				
+				initLatch.join(loadRacks());
+				initLatch.join(loadSpaces());
+				initLatch.join(loadTpoints());
+				
+				initLatch.addEventListener(Event.COMPLETE, onInitComplite);
+				initLatch.start();
+				
+			}
+			private function onInitComplite(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInitComplite);
+					/*
+					if(latch.complite){
+						
+					}
+					*/
+				}
+			}
+
+			private function loadRacks():DbLatch{
+				var latch:DbLatch= new DbLatch();
+				currRack=null;
+				latch.addEventListener(Event.COMPLETE, onRacksLoad);
+				latch.addLatch(cfgService.loadRacks());
+				latch.start();
+				return latch;
+			}
+			private function onRacksLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onRacksLoad);
+					if(latch.complite){
+						racksAC=latch.lastDataAC;
+					}else{
+						racksAC=null;
+					}
+				}
+				refreshFilters();
+			}
+
+			private function refreshFilters():void{
+				if(spacesAC) spacesAC.refresh();
+				if(tpointAC) tpointAC.refresh();
+			}
+
+			private function loadSpaces():DbLatch{
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onSpacesLoad);
+				latch.addLatch(cfgService.loadRackSpace());
+				latch.start();
+				return latch;
+			}
+			private function onSpacesLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSpacesLoad);
+					if(latch.complite){
+						spacesAC=latch.lastDataAC;
+						spacesAC.filterFunction=spacesFilter;
+						spacesAC.refresh();
+					}else{
+						spacesAC=null;
+					}
+				}
+			}
+
+			private function loadTpoints():DbLatch{
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onTPointLoad);
+				latch.addLatch(cfgService.loadRackTPoint(new ArrayCollection([OrderState.TECH_OTK, OrderState.PACKAGE_START]) ));
+				latch.start();
+				return latch;
+			}
+			private function onTPointLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPointLoad);
+					if(latch.complite){
+						tpointAC=latch.lastDataAC;
+						tpointAC.filterFunction=tpointFilter;
+						tpointAC.refresh();
+					}else{
+						tpointAC=null;
+					}
+				}
+			}
+			
+			
+			private function tpointFilter(item:Object):Boolean{
+				var it:RackTechPoint=item as RackTechPoint;
+				var r:Rack=currRack as Rack;
+				if(!it || !r) return false;
+				return it.rack==r.id;
+			}
+			private function spacesFilter(item:Object):Boolean{
+				var it:RackSpace=item as RackSpace;
+				var r:Rack=currRack as Rack;
+				if(!it || !r) return false;
+				return it.rack==r.id;
+			}
+
+			protected function btAddRack_clickHandler(event:MouseEvent):void{
+				var it:Rack=new Rack();
+				it.name='Новый стеллаж';
+				racksAC.addItem(it);
+				currRack=it;
+				refreshFilters();
+			}
+			
+			protected function btSaveRack_clickHandler(event:MouseEvent):void{
+				var items:ArrayCollection= new ArrayCollection();
+				var it:Rack;
+				for each(it in racksAC){
+					if (it.changed || !it.loaded) items.addItem(it);
+				}
+				if(items.length==0){
+					loadRacks();
+					loadTpoints();
+					return;
+				}
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onRackSave);
+				latch.addLatch(cfgService.persistRacks(items));
+				latch.start();
+			}
+			private function onRackSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onRackSave);
+					loadRacks();
+					loadTpoints();
+				}
+			}
+			
+			protected function btAddSpace_clickHandler(event:MouseEvent):void{
+				var r:Rack=currRack as Rack;
+				if(!r || r.id==0) return;
+				var it:RackSpace=new RackSpace();
+				it.rack=r.id;
+				it.name='Новое место';
+				spacesAC.addItem(it);
+				if(spaceGrid) spaceGrid.currentItem=it;
+			}
+			
+			protected function btSaveSpace_clickHandler(event:MouseEvent):void{
+				var items:ArrayCollection= new ArrayCollection();
+				var it:RackSpace;
+				for each(it in spacesAC){
+					if (it.changed || !it.loaded) items.addItem(it);
+				}
+				if(items.length==0){
+					loadSpaces();
+					return;
+				}
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onSpacesSave);
+				latch.addLatch(cfgService.persistRackSpace(items));
+				latch.start();
+			}
+			private function onSpacesSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSpacesSave);
+					loadSpaces();
+				}
+			}
+			
+			protected function btSaveTpoint_clickHandler(event:MouseEvent):void{
+				var items:ArrayCollection= new ArrayCollection();
+				var it:RackTechPoint;
+				for each(it in tpointAC){
+					if (it.changed ) items.addItem(it);
+				}
+				if(items.length==0){
+					loadTpoints();
+					return;
+				}
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onTpointSave);
+				//latch.addLatch(cfgService.persistRackTPoint(tpointAC));
+				latch.addLatch(cfgService.persistRackTPoint(items));
+				latch.start();
+			}
+			private function onTpointSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTpointSave);
+					loadTpoints();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" height="100%" gap="5" paddingLeft="10">
+		<s:VGroup width="200" height="100%" gap="5">
+			<s:Label text="Стеллажи"/>
+			<config:ItemsGrid id="rackGrid" editable="true" 
+							  currentData="{racksAC}"
+							  currentColumns="{Rack.gridColumns()}"
+							  currentItem="@{currRack}"
+							  selectionChange="{refreshFilters()}"
+							  width="100%"
+							  height="100%"/>
+			<s:HGroup width="100%" gap="5" horizontalAlign="right">
+				<s:Button id="btAddRack" label="Добавить" click="btAddRack_clickHandler(event)"/>
+				<s:Button id="btSaveRack" label="Сохранить" click="btSaveRack_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+
+		<s:Spacer width="15"/>
+		<s:VGroup width="250" height="100%" gap="5" enabled="{currRack &amp;&amp; currRack.id}">
+			<s:Label text="Места стеллажа"/>
+			<config:ItemsGrid id="spaceGrid" editable="true" 
+							  currentData="{spacesAC}"
+							  currentColumns="{RackSpace.gridColumns()}"
+							  width="100%"
+							  height="100%"/>
+			<s:HGroup width="100%" gap="5" horizontalAlign="right">
+				<s:Button id="btAddSpace" label="Добавить" click="btAddSpace_clickHandler(event)"/>
+				<s:Button id="btSaveSpace" label="Сохранить" click="btSaveSpace_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+
+		<s:Spacer width="15"/>
+		<s:VGroup width="250" height="100%" gap="5" enabled="{currRack &amp;&amp; currRack.id}">
+			<s:Label text="Технологические точки работающие со стеллажом"/>
+			<config:ItemsGrid id="tpointGrid" editable="true" 
+							  currentData="{tpointAC}"
+							  currentColumns="{RackTechPoint.gridColumnsEdit()}"
+							  width="100%"
+							  height="100%"/>
+			<s:HGroup width="100%" gap="5" horizontalAlign="right">
+				<s:Button id="btSaveTpoint" label="Сохранить" click="btSaveTpoint_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+
+	</s:HGroup>
+</s:Group>

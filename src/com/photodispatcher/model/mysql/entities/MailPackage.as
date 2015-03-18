@@ -10,6 +10,7 @@ package com.photodispatcher.model.mysql.entities {
 	
 	import flash.globalization.DateTimeStyle;
 	
+	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
 	import mx.core.ClassFactory;
 	
@@ -19,6 +20,8 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackage")]
     public class MailPackage extends MailPackageBase {
+
+		public var rawMessages:String;
 
         public function MailPackage() {
             super();
@@ -92,6 +95,34 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('orders_num'); col.headerText='Кол заказов'; col.editable=false; result.addItem(col); 
 			
 			return result;
+		}
+
+		public function parseMessages():void{
+			if(id==0 || source==0 ) return;
+			messages= new ArrayCollection();
+			_parseMessages(rawMessages);
+		}
+		
+		private function _parseMessages(raw:String):void{
+			if(!raw) return;
+			var str:String=raw.replace(String.fromCharCode(13),'');
+			var arr:Array=str.split(String.fromCharCode(10));
+			var subArr:Array;
+			var subStr:String;
+			var it:MailPackageMessage;
+			for each(subStr in arr){
+				subArr=subStr.split('|');
+				if(subArr && subArr.length>2 && subArr[0]){
+					it= new MailPackageMessage();
+					it.source= source;
+					it.id=id;
+					it.log_key=subArr[0];
+					it.log_user=subArr[1];
+					it.message=subArr[2];
+					it.persistState=AbstractEntity.PERSIST_NEW;
+					messages.addItem(it);
+				}
+			}
 		}
 
     }

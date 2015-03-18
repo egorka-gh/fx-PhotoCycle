@@ -18,7 +18,8 @@
 			}
 
 			override public function save():Boolean{
-				data[column.dataField]=checkBox.selected; 
+				data[column.dataField]=checkBox.selected;
+				if(data.hasOwnProperty('changed')) data['changed']=true;
 				return true;
 			}
 
