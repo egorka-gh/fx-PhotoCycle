@@ -225,7 +225,7 @@ package com.photodispatcher.print{
 			try{
 				dstFolder= new File(lab.hot);
 			}catch(e:Error){}
-			if(!dstFolder || !dstFolder.exists || !dstFolder.isDirectory){ 
+			if(lab.src_type!=SourceType.LAB_XEROX && (!dstFolder || !dstFolder.exists || !dstFolder.isDirectory)){ 
 				printGrp.state=OrderState.ERR_PRINT_LAB_FOLDER_NOT_FOUND;
 				dstFolder=null;
 				dispatchErr('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');

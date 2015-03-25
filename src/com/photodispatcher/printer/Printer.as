@@ -1,7 +1,9 @@
 package com.photodispatcher.printer{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.mysql.entities.DeliveryType;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.MailPackage;
+	import com.photodispatcher.model.mysql.entities.MailPackageProperty;
 	import com.photodispatcher.model.mysql.entities.PrintForm;
 	import com.photodispatcher.model.mysql.entities.PrintFormField;
 	import com.photodispatcher.model.mysql.entities.PrintFormParametr;
@@ -190,6 +192,12 @@ package com.photodispatcher.printer{
 			var frmParam:PrintFormParametr;
 			var param:Parameter;
 			
+			var deliverySubType:String;
+			
+			if(packege.delivery_id==DeliveryType.TYPE_AT){
+				deliverySubType=packege.getProperty(MailPackageProperty.PROP_AT_DELIVERY_TYPE);
+			}
+			
 			for each(frmParam in params){
 				if(frmParam && frmParam.parametr){
 					if(frmParam.simplex){
@@ -244,12 +252,28 @@ package com.photodispatcher.printer{
 								param.valString=packege.source_name; 
 								report.parameters.push(param);
 								break;
+							case PrintFormField.FIELD_AT_TO_DOOR:
+								param=new Parameter(); 
+								param.id=frmParam.parametr; 
+								param.valString=''; 
+								if(packege.delivery_id==DeliveryType.TYPE_AT && deliverySubType==MailPackageProperty.VAL_AT_DELIVERY_TYPE_COURIER){
+									param.valString='До двери';
+								}
+								report.parameters.push(param);
+								break;
 						}
 					}else{
 						//property
 						param=new Parameter(); 
-						param.id=frmParam.parametr; 
-						param.valString=PrintFormField.buildField(frmParam.form_field,props); 
+						param.id=frmParam.parametr;
+						
+						if(frmParam.form_field==PrintFormField.FIELD_FULL_ADR && 
+							packege.delivery_id==DeliveryType.TYPE_AT && deliverySubType!=MailPackageProperty.VAL_AT_DELIVERY_TYPE_COURIER){
+							param.valString='';
+							
+						}else{
+							param.valString=PrintFormField.buildField(frmParam.form_field,props);
+						}
 						report.parameters.push(param);
 					}
 				}

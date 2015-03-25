@@ -10,6 +10,7 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.DeliveryType")]
     public class DeliveryType extends DeliveryTypeBase {
+		public static const TYPE_AT:int=5;
 
         public function DeliveryType() {
             super();

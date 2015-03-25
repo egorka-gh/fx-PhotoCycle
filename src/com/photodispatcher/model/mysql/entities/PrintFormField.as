@@ -33,6 +33,8 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FIELD_SOURCE_NAME:int=11;
 		public static const FIELD_SOURCE_CODE:int=12;
 		public static const FIELD_ORDERS_NUM:int=13;
+		public static const FIELD_AT_TO_DOOR:int=17;
+		public static const FIELD_FULL_ADR:int=18;
 		
 		private static var fieldItemsMap:Object;
 		

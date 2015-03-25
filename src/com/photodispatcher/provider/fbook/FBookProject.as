@@ -210,6 +210,12 @@ package com.photodispatcher.provider.fbook{
 			}
 		}
 
+		public function get programmAlias():String{
+			if(!project) return '';
+			if(type==Book.PROJECT_TYPE) return (project as Book).template.calcAlias;
+			return '';
+		}
+
 		public function get printAlias():String{
 			if(!project) return '';
 			switch(type){

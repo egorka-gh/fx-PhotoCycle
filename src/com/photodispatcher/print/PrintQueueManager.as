@@ -291,15 +291,16 @@ package com.photodispatcher.print{
 			if(!lab || !printGrps || printGrps.length==0) return;
 			
 			//check lab hot folder
-			var hot:File;
-			try{
-				hot= new File(lab.hot);
-			}catch(e:Error){}
-			if(!hot || !hot.exists || !hot.isDirectory){ 
-				dispatchManagerErr('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');
-				return;
+			if(lab.src_type!=SourceType.LAB_XEROX){
+				var hot:File;
+				try{
+					hot= new File(lab.hot);
+				}catch(e:Error){}
+				if(!hot || !hot.exists || !hot.isDirectory){ 
+					dispatchManagerErr('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');
+					return;
+				}
 			}
-
 
 			var pg:PrintGroup;
 			var idx:int;

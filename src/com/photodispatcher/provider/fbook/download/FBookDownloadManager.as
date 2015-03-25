@@ -448,7 +448,13 @@ package com.photodispatcher.provider.fbook.download{
 				}else{
 				*/
 					currentSubOrder.extraInfo= new OrderExtraInfo();
-					currentSubOrder.extraInfo.calcTitle='Онлайн редактор'+(project.typeCaption?(' '+project.typeCaption):'');
+					var calcTitle:String='Онлайн редактор';
+					if(project.typeCaption) calcTitle=calcTitle +' '+project.typeCaption;
+					if(project.programmAlias){
+						calcTitle=calcTitle +' '+project.programmAlias;
+						currentSubOrder.extraInfo.calc_type=project.programmAlias;
+					}
+					currentSubOrder.extraInfo.calcTitle=calcTitle;
 					currentSubOrder.extraInfo.dateIn=project.project.createDate;
 					currentSubOrder.extraInfo.endpaper=project.endpaperName;
 					currentSubOrder.extraInfo.interlayer=project.interlayerName;
