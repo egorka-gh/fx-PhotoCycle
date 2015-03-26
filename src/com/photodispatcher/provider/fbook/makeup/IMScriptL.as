@@ -1,5 +1,6 @@
 package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.flex.transformer.TransformData;
+	import com.akmeful.fotakrama.canvas.CanvasUtil;
 	import com.akmeful.fotakrama.canvas.content.CanvasBackgroundImage;
 	import com.akmeful.fotakrama.canvas.content.CanvasFillImage;
 	import com.akmeful.fotakrama.canvas.content.CanvasFrameImage;
@@ -128,64 +129,7 @@ package com.photodispatcher.provider.fbook.makeup{
 
 		private function buildLayer(page:PageData, layer:IMLayer):void{
 			for each (var contentElement:* in layer.elements){
-				elementNumber++;
-				//process page element
-				switch(contentElement.type){
-					case BookCoverFrameImage.TYPE:
-						//cover frame (sliced cover)
-						//process as BookFrameImage 
-					case CanvasFrameImage.TYPE: 
-						//frame
-						var fd:FrameData=new FrameData(contentElement);
-						drawFrame(page, layer, fd);
-						break;
-					case CanvasFrameMaskedImage.TYPE:
-						var fmd:FrameMaskedData = new FrameMaskedData(contentElement);
-						drawFrameMasked(page, layer, fmd);
-						break;
-					case BookCoverPrintImage.TYPE:
-						//page slice element
-						var cpi:BookCoverPrintImage= new BookCoverPrintImage();
-						cpi.importRaw(contentElement);
-						createSlice(page,cpi);
-						break;
-					case CanvasImage.TYPE: 
-						//clipart image
-						var ci:CanvasImage=new CanvasImage();
-						ci.importRaw(contentElement);
-						ci.fromRight=Boolean(contentElement.r);
-						if (!isNotLoaded(ci.imageId,page)) drawClipartImage(page, layer, ci);
-						break;
-					case CanvasBackgroundImage.TYPE:
-						//background image
-						var bi:CanvasBackgroundImage=new CanvasBackgroundImage();
-						bi.importRaw(contentElement);
-						if (!isNotLoaded(bi.imageId,page)) drawBackgroundImage(page, layer, bi, artSubDir);
-						break;
-					case CanvasPhotoBackgroundImage.TYPE:
-						//user photo as background image
-						var bp:CanvasPhotoBackgroundImage=new CanvasPhotoBackgroundImage();
-						bp.importRaw(contentElement);
-						if (!isNotLoaded(bp.imageId,page)) drawBackgroundImage(page, layer, bp, userSubDir);
-						break;
-					case CanvasFillImage.TYPE:
-						//background fill image
-						var bf:CanvasFillImage=new CanvasFillImage();
-						bf.importRaw(contentElement);
-						if (!isNotLoaded(bf.imageId,page)) tileBackground(page, layer, bf);
-						break;
-					case CanvasText.TYPE:
-						drawText(page, layer, contentElement);
-						break;
-					case IMLayer.TYPE:
-						//draw layer
-						drawLayer(page, layer, contentElement as IMLayer);
-						break;
-					default:
-						//TODO unsupported IBookContentElement type
-						//return false;
-						trace('IMScript.build unsupported element type:'+contentElement.type);
-				}
+				buildElement(page, layer, contentElement);
 			}
 			//finalize
 			// "-virtual-pixel" "Transparent"
@@ -198,6 +142,68 @@ package com.photodispatcher.provider.fbook.makeup{
 				//apply mask
 				applyLayerMask(page,layer);
 				layer.finalMontageCommand.add(layer.fileName);
+			}
+		}
+		
+		private function buildElement(page:PageData, layer:IMLayer, contentElement:*, matrix:Matrix=null):void{
+			if(!matrix) matrix=new Matrix();//zero transform matrix
+			elementNumber++;
+			//process page element
+			switch(contentElement.type){
+				case BookCoverFrameImage.TYPE:
+					//cover frame (sliced cover)
+					//process as BookFrameImage 
+				case CanvasFrameImage.TYPE: 
+					//frame
+					var fd:FrameData=new FrameData(contentElement);
+					drawFrame(page, layer, fd);
+					break;
+				case CanvasFrameMaskedImage.TYPE:
+					var fmd:FrameMaskedData = new FrameMaskedData(contentElement);
+					drawFrameMasked(page, layer, fmd);
+					break;
+				case BookCoverPrintImage.TYPE:
+					//page slice element
+					var cpi:BookCoverPrintImage= new BookCoverPrintImage();
+					cpi.importRaw(contentElement);
+					createSlice(page,cpi);
+					break;
+				case CanvasImage.TYPE: 
+					//clipart image
+					var ci:CanvasImage=new CanvasImage();
+					ci.importRaw(contentElement);
+					ci.fromRight=Boolean(contentElement.r);
+					if (!isNotLoaded(ci.imageId,page)) drawClipartImage(page, layer, ci, matrix);
+					break;
+				case CanvasBackgroundImage.TYPE:
+					//background image
+					var bi:CanvasBackgroundImage=new CanvasBackgroundImage();
+					bi.importRaw(contentElement);
+					if (!isNotLoaded(bi.imageId,page)) drawBackgroundImage(page, layer, bi, artSubDir);
+					break;
+				case CanvasPhotoBackgroundImage.TYPE:
+					//user photo as background image
+					var bp:CanvasPhotoBackgroundImage=new CanvasPhotoBackgroundImage();
+					bp.importRaw(contentElement);
+					if (!isNotLoaded(bp.imageId,page)) drawBackgroundImage(page, layer, bp, userSubDir);
+					break;
+				case CanvasFillImage.TYPE:
+					//background fill image
+					var bf:CanvasFillImage=new CanvasFillImage();
+					bf.importRaw(contentElement);
+					if (!isNotLoaded(bf.imageId,page)) tileBackground(page, layer, bf, matrix);
+					break;
+				case CanvasText.TYPE:
+					drawText(page, layer, contentElement, matrix);
+					break;
+				case IMLayer.TYPE:
+					//draw layer
+					drawLayer(page, layer, contentElement as IMLayer);
+					break;
+				default:
+					//TODO unsupported IBookContentElement type
+					//return false;
+					trace('IMScript.build unsupported element type:'+contentElement.type);
 			}
 		}
 		
@@ -582,6 +588,15 @@ package com.photodispatcher.provider.fbook.makeup{
 			
 			if(notOnCanvas(pd, new Point(frameSize.x,frameSize.y), fmd.matrix)) return;
 			
+			var contentElement:*;
+			//draw under sublayer
+			//var subMatrix:Matrix=CanvasUtil.transformElementMatrixToOwnerParent
+			if(info.underLayer && info.underLayer.length>0){
+				for each (contentElement in info.underLayer){
+					buildElement(pd, layer, contentElement, fmd.matrix.clone());
+				}
+			}
+			//draw masked image
 			var filePrefix:String = pd.pageName+'_'+elementNumber.toString();
 			var maskFile:String;
 			frameSize.x=Math.round(frameSize.x*GeomUtil.getScaleX(fmd.matrix));
@@ -590,7 +605,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			if(hasMask){
 				maskFile = filePrefix + '_mask.jpg';
 				var maskMatrix:Matrix = fmd.maskMatrix.clone();
-				maskMatrix.scale(GeomUtil.getScaleX(fmd.matrix),GeomUtil.getScaleY(fmd.matrix));
+				maskMatrix.scale(GeomUtil.getScaleX(fmd.matrix),GeomUtil.getScaleY(fmd.matrix)); 
 				// сначала формируем маску
 				var fileName:String = artSubDir + info.imgName;
 				gc = new IMCommand(IMCommand.IM_CMD_CONVERT);
@@ -610,6 +625,12 @@ package com.photodispatcher.provider.fbook.makeup{
 			rotateMatrix.tx=fm.tx;
 			rotateMatrix.ty=fm.ty;
 			layer.finalMontageCommand.append(cmdDrawImage(fileOut,pd.addPageOffset(rotateMatrix))); //,pd.getPageOffset(fmd.fromRight)));
+			//draw over sublayer
+			if(info.overLayer && info.overLayer.length>0){
+				for each (contentElement in info.overLayer){
+					buildElement(pd, layer, contentElement, fmd.matrix.clone());
+				}
+			}
 		}
 		
 		private function drawUserImage(pd:PageData, layer:IMLayer, fd:FrameDataCommon, maskFile:String = null):void{
@@ -780,8 +801,9 @@ package com.photodispatcher.provider.fbook.makeup{
 			layer.msls.push(new IMMsl(group));
 		}
 		
-		private function drawClipartImage(pd:PageData, layer:IMLayer, element:CanvasImage):void{
+		private function drawClipartImage(pd:PageData, layer:IMLayer, element:CanvasImage, matrix:Matrix):void{
 			var m:Matrix=element.transformData.matrix.clone();
+			m.concat(matrix);
 			if(notOnCanvas(pd, new Point(element.width,element.height),m)) return;
 			var fileName:String=artSubDir+StrUtil.contentIdToFileName(element.imageId);
 			layer.finalMontageCommand.append(cmdDrawImage(fileName,pd.addPageOffset(m))); //,pd.getPageOffset(element.fromRight)));
@@ -798,7 +820,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			layer.finalMontageCommand.append(result);	
 		}
 		
-		private function tileBackground(pd:PageData, layer:IMLayer, bf:CanvasFillImage):void{
+		private function tileBackground(pd:PageData, layer:IMLayer, bf:CanvasFillImage, matrix:Matrix):void{
 			var tile:String=bf.imageId;
 			if (!tile){return;}
 			tile='tile:'+artSubDir+StrUtil.contentIdToFileName(tile);
@@ -816,6 +838,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				layer.commands.push(gc);
 				//draw on page
 				var m:Matrix=bf.transformData.matrix.clone();
+				m.concat(matrix);
 				layer.finalMontageCommand.append(cmdDrawImage(fileName,pd.addPageOffset(m))); //,pd.getPageOffset()));
 				
 			}else{
@@ -827,7 +850,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 		}
 		
-		private function drawText(pd:PageData, layer:IMLayer, contentElement:Object):void{
+		private function drawText(pd:PageData, layer:IMLayer, contentElement:Object, matrix:Matrix):void{
 			//script ID
 			if (!contentElement.hasOwnProperty('index') || 
 				!contentElement.transform || 
@@ -866,7 +889,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				m.tx-=bts.fontSize;
 				m.ty-=bts.fontSize;
 			}
-			
+			m.concat(matrix);
 			layer.finalMontageCommand.append(cmdDrawImage(fileName,pd.addPageOffset(m))); //,pd.getPageOffset(fromRight)));
 		}
 		

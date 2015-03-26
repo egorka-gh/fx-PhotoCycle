@@ -25,6 +25,17 @@ package com.photodispatcher.model.mysql.services {
         }
     
         
+        public function extraStateFix(arg0:String, arg1:int, arg2:Date, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("extraStateFix", arg0, arg1, arg2, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("extraStateFix", arg0, arg1, arg2, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("extraStateFix", arg0, arg1, arg2) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function extraStateProlong(arg0:String, arg1:String, arg2:int, arg3:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("extraStateProlong", arg0, arg1, arg2, arg3, resultHandler, faultHandler) as AsyncToken;

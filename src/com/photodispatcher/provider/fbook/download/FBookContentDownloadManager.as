@@ -12,6 +12,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.akmeful.fotakrama.data.ProjectBookPage;
 	import com.akmeful.fotakrama.library.LibraryPath;
 	import com.akmeful.fotakrama.library.data.ClipartType;
+	import com.akmeful.fotakrama.library.data.frame.FrameMaskInfo;
 	import com.akmeful.fotakrama.project.ProjectNS;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverFrameImage;
 	import com.photodispatcher.event.ImageProviderEvent;
@@ -20,6 +21,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
 	import com.photodispatcher.provider.fbook.model.FrameData;
+	import com.photodispatcher.provider.fbook.model.FrameMaskedData;
 	import com.photodispatcher.util.JsonUtil;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -108,122 +110,8 @@ package com.photodispatcher.provider.fbook.download{
 					subOrder.log='Create date:'+df.format(proj.project.createDate);
 					
 					for each (var bp:ProjectBookPage in proj.bookPages){
-						//TODO element as Class?
 						for each (var contentElement:Object in bp.content){
-							if(contentElement.hasOwnProperty('type')){
-								var name:String;
-								var req:URLRequest;
-								switch(contentElement.type){
-									case ClipartType.BG:
-									case ClipartType.FILL:
-									case ClipartType.IMG:
-										//TODO refactor to addLoadingItem + implement cache
-										name=contentElement.id;
-										req=createRequest(proj, name,clipartPath(name),pageNum);
-										if(req){
-											//save to art subdir
-											name=FBookProject.artSubDir+getItemName(name);
-											loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id});
-											//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
-										}
-										break;
-									case CanvasPhotoBackgroundImage.TYPE: //BookPhotoBackgroundImage.TYPE:
-										name=contentElement.id;
-										req=createRequest(proj, name,userImagePath(),pageNum);
-										if(req){
-											//save to user subdir
-											name=FBookProject.userSubDir+getItemName(name);
-											loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_PHOTO_BG, content_id:contentElement.id});
-										}
-										break;
-									case BookCoverFrameImage.TYPE:
-										//cover frame (sliced cover)
-										//process as BookFrameImage 
-									case CanvasFrameImage.TYPE: 
-										//TODO id==0 no frame images?
-										if(contentElement.id && contentElement.id!='0'){
-											name=contentElement.id;
-											for each(var el:String in FrameData.FRAME_ELEMENTS){
-												req=createRequest(proj, name,framePath(),pageNum,el);
-												if(req){
-													//save to art subdir
-													var sub_name:String= FBookProject.artSubDir+getItemName(name)+FrameData.getFileNameSufix(el);
-													//var fileSufix:String=FrameData.getFileNameSufix(el);
-													loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id});
-													//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
-												}
-											}
-										}
-										//load frame photo
-										if(contentElement.iId){
-											name=contentElement.iId;
-											req=createRequest(proj, name,userImagePath(),pageNum);
-											if(req){
-												//save to user subdir
-												name=FBookProject.userSubDir+getItemName(name);
-												loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
-												//loader.add(req,{id: name, type:BulkLoader.TYPE_TEXT, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
-											}
-										}
-										break;
-									case CanvasFrameMaskedImage.TYPE:
-										if(contentElement.iId){
-											name=contentElement.iId;
-											//req=createRequest(name,MediaPath.userImagePath(),pageNum);
-											req=createRequest(proj, name,userImagePath(),pageNum);
-											if(req){
-												//save to user subdir
-												name=FBookProject.userSubDir+getItemName(name);
-												loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:contentElement.iId});
-											}
-											if(contentElement.size){
-												var maskElement:Object = JsonUtil.decode(contentElement.size);
-												name=maskElement.id;
-												req=createRequest(proj, name,clipartPath(name),pageNum);
-												//req=createClipartRequest(name,pageNum);
-												if(req){
-													//save to art subdir
-													name=FBookProject.artSubDir+getItemName(name);
-													loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:maskElement.id});
-												}
-											}
-										}
-										break;
-									case CanvasText.TYPE: //BookText.TYPE:
-										//fonts to load list 
-										if (contentElement.hasOwnProperty('index') 
-											&& contentElement.transform && contentElement.text 
-											&& contentElement.w>0 && contentElement.h){
-											//check text is not default, user made some changes or txt is calendar date
-											if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
-												var ts:CanvasTextStyle;
-												if(contentElement.hasOwnProperty('style')){
-													ts = new CanvasTextStyle(contentElement.style);
-												} else {
-													ts = CanvasTextStyle.defaultTextStyle();
-												}
-												if(ts.fontFamily){
-													if(!FontDownloadManager.instance.hasFont(ts.fontFamily, ts.isBold, ts.isItalic)){
-														fontMap[ts.fontFamily]=ts;
-														//book.log='Page# '+pageNum+'. Request font : '+ts.fontFamily;
-														//trace('Page# '+pageNum+'. Request font : '+ts.fontFamily);
-														req=createFontRequest(ts.fontFamily, pageNum);
-														if(req){
-															//save to user subdir
-															//name=MakeupConfig.userSubDir+ts.fontFamily+'.swf';
-															name=ts.fontFamily;
-															loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CanvasText.TYPE, content_id: name});
-														}
-														
-													}
-												}
-											}
-										}
-										break;
-									default:
-										trace('unrecognized contentElement: '+contentElement.type);
-								}
-							}
+							prepareElement(proj, pageNum, contentElement)
 						}
 						pageNum++;
 					}
@@ -234,14 +122,160 @@ package com.photodispatcher.provider.fbook.download{
 			_totalLoaded=0;
 		}
 		
+		private function prepareElement(proj:FBookProject, pageNum:int, contentElement:Object):void{
+			if(contentElement.hasOwnProperty('type')){
+				var name:String;
+				var req:URLRequest;
+				switch(contentElement.type){
+					case ClipartType.BG:
+					case ClipartType.FILL:
+					case ClipartType.IMG:
+						name=contentElement.id;
+						req=createRequest(proj, name,clipartPath(name),pageNum);
+						if(req){
+							//save to art subdir
+							name=FBookProject.artSubDir+getItemName(name);
+							loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id});
+							//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
+						}
+						break;
+					case CanvasPhotoBackgroundImage.TYPE: //BookPhotoBackgroundImage.TYPE:
+						name=contentElement.id;
+						req=createRequest(proj, name,userImagePath(),pageNum);
+						if(req){
+							//save to user subdir
+							name=FBookProject.userSubDir+getItemName(name);
+							loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_PHOTO_BG, content_id:contentElement.id});
+						}
+						break;
+					case BookCoverFrameImage.TYPE:
+						//cover frame (sliced cover)
+						//process as BookFrameImage 
+					case CanvasFrameImage.TYPE: 
+						if(contentElement.id && contentElement.id!='0'){
+							name=contentElement.id;
+							for each(var el:String in FrameData.FRAME_ELEMENTS){
+								req=createRequest(proj, name,framePath(),pageNum,el);
+								if(req){
+									//save to art subdir
+									var sub_name:String= FBookProject.artSubDir+getItemName(name)+FrameData.getFileNameSufix(el);
+									loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id});
+									//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
+								}
+							}
+						}
+						//load frame photo
+						if(contentElement.iId){
+							name=contentElement.iId;
+							req=createRequest(proj, name,userImagePath(),pageNum);
+							if(req){
+								//save to user subdir
+								name=FBookProject.userSubDir+getItemName(name);
+								loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+								//loader.add(req,{id: name, type:BulkLoader.TYPE_TEXT, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+							}
+						}
+						break;
+					case CanvasFrameMaskedImage.TYPE:
+						var fmd:FrameMaskedData = new FrameMaskedData(contentElement);
+						if(fmd){
+							//add user image
+							if(fmd.imageId){
+								name=fmd.imageId;
+								req=createRequest(proj, name,userImagePath(),pageNum);
+								if(req){
+									//save to user subdir
+									name=FBookProject.userSubDir+getItemName(name);
+									loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:fmd.imageId});
+								}
+							}
+							//add mask image
+							var info:FrameMaskInfo = fmd.size as FrameMaskInfo;
+							if(info){
+								if(info.imgName){
+									name=info.imgName;
+									req=createRequest(proj, name,clipartPath(name),pageNum);
+									if(req){
+										//save to art subdir
+										name=FBookProject.artSubDir+getItemName(name);
+										loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:info.imgName});
+									}
+								}
+								var element:Object;
+								//under sublayer elements
+								if(info.underLayer && info.underLayer.length>0){
+									for each (element in info.underLayer){
+										prepareElement(proj, pageNum, element);
+									}
+								}
+								//over sublayer elements
+								if(info.overLayer && info.overLayer.length>0){
+									for each (element in info.overLayer){
+										prepareElement(proj, pageNum, element);
+									}
+								}
+							}
+						}
+						/*
+						if(contentElement.iId){
+							name=contentElement.iId;
+							req=createRequest(proj, name,userImagePath(),pageNum);
+							if(req){
+								//save to user subdir
+								name=FBookProject.userSubDir+getItemName(name);
+								loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:contentElement.iId});
+							}
+							if(contentElement.size){
+								var maskElement:Object = JsonUtil.decode(contentElement.size);
+								name=maskElement.id;
+								req=createRequest(proj, name,clipartPath(name),pageNum);
+								if(req){
+									//save to art subdir
+									name=FBookProject.artSubDir+getItemName(name);
+									loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:maskElement.id});
+								}
+							}
+						}
+						*/
+						break;
+					case CanvasText.TYPE: //BookText.TYPE:
+						//fonts to load list 
+						if (contentElement.hasOwnProperty('index') 
+							&& contentElement.transform && contentElement.text 
+							&& contentElement.w>0 && contentElement.h){
+							//check text is not default, user made some changes or txt is calendar date
+							if (!contentElement.hasOwnProperty('print') || contentElement.print!=0 || contentElement.hasOwnProperty('aid')){
+								var ts:CanvasTextStyle;
+								if(contentElement.hasOwnProperty('style')){
+									ts = new CanvasTextStyle(contentElement.style);
+								} else {
+									ts = CanvasTextStyle.defaultTextStyle();
+								}
+								if(ts.fontFamily){
+									if(!FontDownloadManager.instance.hasFont(ts.fontFamily, ts.isBold, ts.isItalic)){
+										fontMap[ts.fontFamily]=ts;
+										//book.log='Page# '+pageNum+'. Request font : '+ts.fontFamily;
+										//trace('Page# '+pageNum+'. Request font : '+ts.fontFamily);
+										req=createFontRequest(ts.fontFamily, pageNum);
+										if(req){
+											//save to user subdir
+											name=ts.fontFamily;
+											loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CanvasText.TYPE, content_id: name});
+										}
+										
+									}
+								}
+							}
+						}
+						break;
+					default:
+						trace('unrecognized contentElement: '+contentElement.type);
+				}
+			}
+		}
+		
 		private function getItemName(id:String):String{
 			if(id){
-				/*
-				var arr:Array=id.split('::');
-				if(arr.length > 1){ // && arr[0]==ProjectNS.SUP){
-					return arr[1];
-				}
-				*/
 				id=StrUtil.contentIdToFileName(id);
 			}
 			return id;
@@ -253,12 +287,6 @@ package com.photodispatcher.provider.fbook.download{
 				return null;
 			}
 			var itemId:String=name;
-			/*
-			var arr:Array=itemId.split('::');
-			if(arr.length > 1 && arr[0]==ProjectNS.SUP){
-				itemId=arr[1];
-			}
-			*/
 			var ns:Array = LibraryPath.extractNamespace(itemId);
 			var secure:String;
 			if(ns[0]){
@@ -266,7 +294,6 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			itemId=ns[1];
 			
-			//itemId=name.split('.')[0];
 			itemId=itemId.split('.')[0];
 			var param:URLVariables=new URLVariables;
 			param.id=itemId;
@@ -283,7 +310,6 @@ package com.photodispatcher.provider.fbook.download{
 			result.method = URLRequestMethod.POST;
 			result.data = param;
 			subOrder.log='Page# '+pageNum+'. Request url: '+url+'; POST id:'+itemId+';  corner:'+corner+';  secure:'+secure;
-			//trace('Page# '+pageNum+'. Request url: '+url+'; POST id:'+itemId+';  corner:'+corner+';  secure:'+secure);
 			return result;
 		}
 
@@ -296,7 +322,6 @@ package com.photodispatcher.provider.fbook.download{
 			result=new URLRequest();
 			result.url = url;
 			subOrder.log='Page# '+pageNum+'. Request font url: '+url;
-			//trace('Page# '+pageNum+'. Request font url: '+url);
 			return result;
 		}
 

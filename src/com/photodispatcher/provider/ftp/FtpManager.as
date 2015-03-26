@@ -263,7 +263,8 @@ package com.photodispatcher.provider.ftp{
 					latch=new DbLatch();
 					//latch.addEventListener(Event.COMPLETE,onCompleteOrder);
 					//set PRN_WAITE extra state 
-					latch.addLatch(svc.extraStateSet(id, '',OrderState.PRN_WAITE, new Date()));
+					//latch.addLatch(svc.extraStateSet(id, '',OrderState.PRN_WAITE, new Date()));
+					latch.addLatch(svc.extraStateFix(id, OrderState.PRN_WAITE, new Date()));
 					latch.start();
 				}
 			}
