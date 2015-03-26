@@ -145,7 +145,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 		}
 		
-		private function buildElement(page:PageData, layer:IMLayer, contentElement:*, matrix:Matrix=null):void{
+		private function buildElement(page:PageData, layer:IMLayer, contentElement:*, matrix:Matrix=null, scale:Number=1):void{
 			if(!matrix) matrix=new Matrix();//zero transform matrix
 			elementNumber++;
 			//process page element
@@ -173,7 +173,7 @@ package com.photodispatcher.provider.fbook.makeup{
 					var ci:CanvasImage=new CanvasImage();
 					ci.importRaw(contentElement);
 					ci.fromRight=Boolean(contentElement.r);
-					if (!isNotLoaded(ci.imageId,page)) drawClipartImage(page, layer, ci, matrix);
+					if (!isNotLoaded(ci.imageId,page)) drawClipartImage(page, layer, ci, matrix, scale);
 					break;
 				case CanvasBackgroundImage.TYPE:
 					//background image
@@ -191,10 +191,10 @@ package com.photodispatcher.provider.fbook.makeup{
 					//background fill image
 					var bf:CanvasFillImage=new CanvasFillImage();
 					bf.importRaw(contentElement);
-					if (!isNotLoaded(bf.imageId,page)) tileBackground(page, layer, bf, matrix);
+					if (!isNotLoaded(bf.imageId,page)) tileBackground(page, layer, bf, matrix, scale);
 					break;
 				case CanvasText.TYPE:
-					drawText(page, layer, contentElement, matrix);
+					drawText(page, layer, contentElement, matrix, scale);
 					break;
 				case IMLayer.TYPE:
 					//draw layer
@@ -589,11 +589,14 @@ package com.photodispatcher.provider.fbook.makeup{
 			if(notOnCanvas(pd, new Point(frameSize.x,frameSize.y), fmd.matrix)) return;
 			
 			var contentElement:*;
+			
+			//matrix 4 sublayers
+			var subMatrix:Matrix=fmd.matrix.clone();
+			var scale:Number=fmd.width/info.minWidth;
 			//draw under sublayer
-			//var subMatrix:Matrix=CanvasUtil.transformElementMatrixToOwnerParent
 			if(info.underLayer && info.underLayer.length>0){
 				for each (contentElement in info.underLayer){
-					buildElement(pd, layer, contentElement, fmd.matrix.clone());
+					buildElement(pd, layer, contentElement, subMatrix, scale);
 				}
 			}
 			//draw masked image
@@ -628,7 +631,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			//draw over sublayer
 			if(info.overLayer && info.overLayer.length>0){
 				for each (contentElement in info.overLayer){
-					buildElement(pd, layer, contentElement, fmd.matrix.clone());
+					buildElement(pd, layer, contentElement, subMatrix, scale);
 				}
 			}
 		}
@@ -801,8 +804,9 @@ package com.photodispatcher.provider.fbook.makeup{
 			layer.msls.push(new IMMsl(group));
 		}
 		
-		private function drawClipartImage(pd:PageData, layer:IMLayer, element:CanvasImage, matrix:Matrix):void{
+		private function drawClipartImage(pd:PageData, layer:IMLayer, element:CanvasImage, matrix:Matrix, scale:Number):void{
 			var m:Matrix=element.transformData.matrix.clone();
+			m.scale(scale,scale);
 			m.concat(matrix);
 			if(notOnCanvas(pd, new Point(element.width,element.height),m)) return;
 			var fileName:String=artSubDir+StrUtil.contentIdToFileName(element.imageId);
@@ -820,7 +824,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			layer.finalMontageCommand.append(result);	
 		}
 		
-		private function tileBackground(pd:PageData, layer:IMLayer, bf:CanvasFillImage, matrix:Matrix):void{
+		private function tileBackground(pd:PageData, layer:IMLayer, bf:CanvasFillImage, matrix:Matrix, scale:Number):void{
 			var tile:String=bf.imageId;
 			if (!tile){return;}
 			tile='tile:'+artSubDir+StrUtil.contentIdToFileName(tile);
@@ -838,6 +842,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				layer.commands.push(gc);
 				//draw on page
 				var m:Matrix=bf.transformData.matrix.clone();
+				m.scale(scale, scale);
 				m.concat(matrix);
 				layer.finalMontageCommand.append(cmdDrawImage(fileName,pd.addPageOffset(m))); //,pd.getPageOffset()));
 				
@@ -850,7 +855,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 		}
 		
-		private function drawText(pd:PageData, layer:IMLayer, contentElement:Object, matrix:Matrix):void{
+		private function drawText(pd:PageData, layer:IMLayer, contentElement:Object, matrix:Matrix, scale:Number):void{
 			//script ID
 			if (!contentElement.hasOwnProperty('index') || 
 				!contentElement.transform || 
@@ -889,6 +894,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				m.tx-=bts.fontSize;
 				m.ty-=bts.fontSize;
 			}
+			m.scale(scale,scale);
 			m.concat(matrix);
 			layer.finalMontageCommand.append(cmdDrawImage(fileName,pd.addPageOffset(m))); //,pd.getPageOffset(fromRight)));
 		}
