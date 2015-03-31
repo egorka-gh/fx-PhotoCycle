@@ -13,6 +13,7 @@
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.model.mysql.services.OrderService;
@@ -39,15 +40,24 @@
 				if(focusManager) focusManager.setFocus(focusHolder);
 			}
 			
+			private var _bdService:MailPackageService;
+			private function get bdService():MailPackageService{
+				if(!_bdService) _bdService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				return _bdService;
+			}
+			
 			private function detectState():void{
 				switch(tbView.selectedIndex){
 					case 0:
 						currentState='inQueue';
 						break;
 					case 1:
-						currentState='packageList';
+						currentState='packagingList';
 						break;
 					case 2:
+						currentState='packedList';
+						break;
+					case 3:
 						currentState='forSendList';
 						break;
 				}
@@ -66,26 +76,38 @@
 						gridColumns=MailPackage.inQueueColumns();
 						loadInQueueByClient();
 						break;
-					case 'packageList':
+					case 'packagingList':
+						gridColumns=MailPackage.columns();
+						loadbyState(OrderState.PACKAGE_START);
+						break;
+					case 'packedList':
+						gridColumns=MailPackage.columns();
+						loadbyState(OrderState.PACKAGE_PACKED);
 						break;
 					case 'forSendList':
+						gridColumns=MailPackage.columns();
+						loadbyState(OrderState.PACKAGE_SENDING);
 						break;
 				}
 			}
 
-			private function loadInQueueByClient():void{
-				if(!byClientMP) return;
-				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+			private function loadbyState(state:int):void{
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onload);
-				latch.addLatch(svc.loadByClient(byClientMP.source, byClientMP.client_id));
+				latch.addLatch(bdService.loadByState(state));
+				latch.start();
+			}
+			private function loadInQueueByClient():void{
+				if(!byClientMP) return;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onload);
+				latch.addLatch(bdService.loadByClient(byClientMP.source, byClientMP.client_id));
 				latch.start();
 			}
 			private function loadInQueue():void{
-				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onload);
-				latch.addLatch(svc.loadReady4Mail());
+				latch.addLatch(bdService.loadReady4Mail());
 				latch.start();
 			}
 			private function onload(event:Event):void{
@@ -97,8 +119,6 @@
 					}
 				}
 			}
-			
-			
 			
 			protected function dgPackages_creationCompleteHandler(event:FlexEvent):void{
 				var gridMenu:GridContexMenu;
@@ -208,11 +228,6 @@
 				refresh();
 			}
 			
-			protected function btDebug_clickHandler(event:MouseEvent):void{
-				var evt:BarCodeEvent = new BarCodeEvent('','R58630'); 
-				onBarCode(evt);
-			}
-			
 		]]>
 	</fx:Script>
 	
@@ -223,7 +238,8 @@
 	<s:states>
 		<s:State name="inQueue"/>
 		<s:State name="inQueueByClient"/>
-		<s:State name="packageList"/>
+		<s:State name="packagingList"/>
+		<s:State name="packedList"/>
 		<s:State name="forSendList"/>
 		<s:State name="packageView"/>
 	</s:states>
@@ -231,14 +247,14 @@
 	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
 		<mx:ArrayCollection>
 			<fx:String>Ожидают упаковки</fx:String> 
-			<fx:String>На упаковке</fx:String> 
+			<fx:String>Упаковка</fx:String> 
+			<fx:String>Упакован</fx:String> 
 			<fx:String>К отправке</fx:String> 
 		</mx:ArrayCollection>
 	</s:TabBar>
 	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
 	<s:VGroup top="20" left="10" right="10" bottom="10" gap="5">
 		<s:HGroup width="100%" horizontalAlign="right" gap="10" verticalAlign="baseline">
-			<s:Button id="btDebug" label="tst" click="btDebug_clickHandler(event)"/>
 			<s:Button id="btShowByClient" label="Группы клиента" includeIn="inQueue" click="btShowByClient_clickHandler(event)"/>
 			<s:Button id="btCloseByClient" label="Ожидают упаковки" includeIn="inQueueByClient" click="{detectState()}"/>
 			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"

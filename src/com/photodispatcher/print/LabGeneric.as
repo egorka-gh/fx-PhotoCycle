@@ -155,7 +155,6 @@ package com.photodispatcher.print{
 					dispatchErr(pt.printGrp, pt.errMsg);
 				}else{
 					dispatchEvent(new PrintEvent(PrintEvent.POST_COMPLETE_EVENT,pt.printGrp));
-					//StateLogDAO.logState(pt.printGrp.state, pt.printGrp.order_id, pt.printGrp.id,this.name?this.name:('id:'+this.id));
 				}
 			}
 			postNext();

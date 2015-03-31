@@ -82,6 +82,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PACKAGE_PACKED:int=457;
 		public static const PACKAGE_SENDING:int=460;
 		public static const PACKAGE_SEND:int=465;
+		public static const PACKAGE_SEND_SITE:int=466;
 		public static const CANCELED_SYNC:int=505;
 		public static const CANCELED:int=510;
 		public static const CANCEL_PACKAGE_JOIN:int=511;

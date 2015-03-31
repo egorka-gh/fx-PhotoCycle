@@ -475,13 +475,17 @@ package com.photodispatcher.print{
 		
 		private function saveCompleted():void{
 			//save
+			writeQueue.push(this);
+			writeNext();
+			/*
 			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onPostWrite);
 			latch.addLatch(svc.printPost(printGrp.id, printGrp.destination));
 			latch.start();
-
+			*/
 		}
+		/*
 		private function onPostWrite(evt:Event):void{ 
 			var latch:DbLatch=evt.target as DbLatch;
 			if(latch) latch.removeEventListener(Event.COMPLETE,onPostWrite);
@@ -491,6 +495,44 @@ package com.photodispatcher.print{
 				return;
 			}
 			dispatchEvent(new Event(Event.COMPLETE));
+		}
+		*/
+		
+		private static var writeQueue:Array=[];
+		private static var isWriting:Boolean=false;
+		
+		private static function writeNext():void{
+			if(isWriting) return;
+			if(writeQueue.length==0) return;
+			var pt:PrintTask=writeQueue[0] as PrintTask;
+			var pg:PrintGroup;
+			if(pt) pg=pt.printGrp;
+			if(!pt || !pg){
+				writeQueue.shift();
+				writeNext();
+				return;
+			}
+			isWriting=true;
+			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onPostWrite);
+			latch.addLatch(svc.printPost(pg.id, pg.destination));
+			latch.start();
+		}
+		private static function onPostWrite(evt:Event):void{ 
+			var latch:DbLatch=evt.target as DbLatch;
+			isWriting=false;
+			var pt:PrintTask=writeQueue.shift() as PrintTask;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onPostWrite);
+			if(pt){
+				if(!latch || !latch.complite){
+					pt.printGrp.state=OrderState.ERR_WRITE_LOCK;
+					pt.dispatchErr('Ошибка базы: ' +latch.error);
+					return;
+				}
+				pt.dispatchEvent(new Event(Event.COMPLETE));
+			}
+			writeNext();
 		}
 
 		

@@ -16,6 +16,7 @@
 			import com.photodispatcher.model.mysql.entities.MailPackageMessage;
 			import com.photodispatcher.model.mysql.entities.MailPackageProperty;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
@@ -31,6 +32,7 @@
 			import mx.events.FlexEvent;
 			import mx.managers.CursorManager;
 			import mx.managers.PopUpManager;
+			import mx.utils.object_proxy;
 			
 			import org.granite.tide.Tide;
 			
@@ -51,6 +53,11 @@
 
 			[Bindable]
 			public var printForms:ArrayCollection;
+			
+			[Bindable]
+			private var nextState:int;
+			[Bindable]
+			private var nextStateName:String;
 
 			private var _webService:BaseWeb;
 			private function get webService():BaseWeb{
@@ -113,10 +120,16 @@
 				
 				printForms=DeliveryTypePrintForm.getForms(mailPackage.delivery_id);
 
-				//var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
-				var latch:DbLatch=new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onload);
+				mailPackage.state_date=null;
+				var latchMp:DbLatch=new DbLatch();
+				latchMp.addEventListener(Event.COMPLETE,onloadMP);
+				latchMp.addLatch(bdService.load(mailPackage.source, mailPackage.id));
+				latchMp.start();
+				
+				var latch:DbLatch=new DbLatch(); 
+				latch.addEventListener(Event.COMPLETE,onloadChildOrders);
 				latch.addLatch(bdService.loadChildOrders(mailPackage.source, mailPackage.id));
+				latch.join(latchMp);
 				latch.start();
 				if(showClienGroups){
 					var latchGroups:DbLatch=new DbLatch();
@@ -125,14 +138,42 @@
 					latchGroups.start();
 				}
 			}
-			private function onload(event:Event):void{
+			private function onloadMP(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onload);
+					latch.removeEventListener(Event.COMPLETE,onloadMP);
 					if(latch.complite){
-						mailPackage.orders=latch.lastDataAC;
+						var mp:MailPackage=latch.lastDataItem as MailPackage;
+						if(mp){
+							//set bd state
+							mailPackage.state=mp.state;
+							mailPackage.state_name=mp.state_name;
+							mailPackage.state_date=mp.state_date;
+						}
 					}
 				}
+			}
+			private function onloadChildOrders(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadChildOrders);
+					if(latch.complite){
+						mailPackage.orders=latch.lastDataAC;
+						if(mailPackage.state_date==null && mailPackage.orders){
+							mailPackage.state= OrderState.TECH_OTK;
+							mailPackage.state_name= OrderState.getStateName(OrderState.TECH_OTK);
+							//set state by orders
+							for each(var o:Order in mailPackage.orders){
+								if(mailPackage.state>o.state){
+									mailPackage.state=o.state;
+									mailPackage.state_name= OrderState.getStateName(mailPackage.state);
+									mailPackage.state_date=o.state_date;
+								}
+							}
+						}
+					}
+				}
+				detectNextState();
 			}
 			private function onGroupsload(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
@@ -153,6 +194,55 @@
 				return true;
 			}
 
+			private function detectNextState():void{
+				if(!mailPackage) return;
+				if(mailPackage.state<=OrderState.TECH_OTK){
+					nextState=OrderState.PACKAGE_START;
+				}else if(mailPackage.state==OrderState.PACKAGE_START){
+					nextState=OrderState.PACKAGE_PACKED;
+				}else if(mailPackage.state==OrderState.PACKAGE_PACKED){
+					nextState=OrderState.PACKAGE_SENDING;
+				}else if(mailPackage.state==OrderState.PACKAGE_SENDING){
+					nextState=OrderState.PACKAGE_SEND;
+				}
+				nextStateName=OrderState.getStateName(nextState);
+			}
+
+			private function setNextState():void{
+				if(!mailPackage) return;
+				if(nextState==OrderState.PACKAGE_START){
+					if(mailPackage.state<OrderState.TECH_OTK){
+						Alert.show('Минимальный статус заказов "'+mailPackage.state_name+'". Продолжить?','',Alert.YES|Alert.NO, this, onAlert450);
+					}else{
+						saveNextState();
+					}
+				}else if(nextState==OrderState.PACKAGE_SENDING){
+					setSiteState();
+				}else{
+					saveNextState();
+				}
+			}
+			
+			private function onAlert450(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES) saveNextState();
+			}
+
+			private function saveNextState():void{
+				mailPackage.state=nextState;
+				var latch:DbLatch=new DbLatch(); 
+				latch.addEventListener(Event.COMPLETE,onsaveNextState);
+				latch.addLatch(bdService.startState(mailPackage));
+				latch.start();
+			}
+			private function onsaveNextState(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onsaveNextState);
+					if(latch.complite){
+						//close();
+					}
+				}
+			}
 
 			protected function btAddBarcode_clickHandler(event:MouseEvent):void{
 				if(!mailPackage) return;
@@ -202,6 +292,7 @@
 			}
 			
 			private var joinIds:Array;
+			private var joinState:int;
 			protected function btJoin_clickHandler(event:MouseEvent):void{
 				joinIds=[];
 				var it:MailPackage;
@@ -211,15 +302,45 @@
 				}
 				if(joinIds.length==0) return;
 				joinIds.push(mailPackage.id);
+				checkJoin();
+			}
+
+			private function checkJoin():void{
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,oncheckJoin);
+				latch.addLatch(bdService.getStateByPackages(source.id,new ArrayCollection(joinIds)));
+				latch.start();
+			}
+			private function oncheckJoin(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,oncheckJoin);
+					if(latch.complite){
+						var state:int=latch.resultCode;
+						if(state> OrderState.PACKAGE_START){
+							joinIds=[];
+							Alert.show('Не допускается объединение групп в статусе "Упакован" и выше.');
+						}else{
+							joinState=state;
+							joinPackages();
+						}
+					}else{
+						joinIds=[];
+					}
+				}
+			}
+
+			private function joinPackages():void{
 				webService.addEventListener(Event.COMPLETE,joinHandler);
 				try{
 					webService.joinMailPackages(joinIds);
 				}catch(error:Error){
+					joinIds=[];
 					Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
 					return;
 				}
 			}
-			
+
 			private function joinHandler(e:Event):void{
 				webService.removeEventListener(Event.COMPLETE,joinHandler);
 				//TODO load orders
@@ -243,18 +364,35 @@
 					latch.removeEventListener(Event.COMPLETE,onJoin);
 					if(latch.complite){
 						var newId:int= int(latch.lastTag);
-						if(newId) loadFromWeb(source.id, newId,true);
+						if(newId){
+							if(joinState>0){
+								latch=new DbLatch();
+								var mp:MailPackage= new MailPackage();
+								mp.source=mailPackage.source;
+								mp.id=newId;
+								mp.state=OrderState.PACKAGE_START;
+								latch.addLatch(bdService.startState(mp));
+								latch.start();
+							}
+							loadFromWeb(source.id, newId,true);
+						}
 					}
 				}
 			}
 
-			protected function btSetSiteState_clickHandler(event:MouseEvent):void{
+			//protected function btSetSiteState_clickHandler(event:MouseEvent):void{
+			private function setSiteState():void{
 				if(!mailPackage || !mailPackage.id) return;
-				webService.addEventListener(Event.COMPLETE,setStateHandler);
-				try{
-					webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_MADE ,false);
-				}catch(error:Error){
-					Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+				if(source.type==SourceType.SRC_FOTOKNIGA){
+					//update site state
+					webService.addEventListener(Event.COMPLETE,setStateHandler);
+					try{
+						webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_MADE ,false);
+					}catch(error:Error){
+						Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+					}
+				}else{
+					saveNextState();
 				}
 			}
 			private function setStateHandler(e:Event):void{
@@ -274,7 +412,8 @@
 						Alert.show(webService.errMesage);
 					}
 				}else{
-					Alert.show('Статус изменен');
+					Alert.show('Статус на сайте изменен');
+					saveNextState();
 				}
 			}
 			
@@ -294,7 +433,8 @@
 					trace('web err: '+webService.errMesage);
 					Alert.show(webService.errMesage);
 				}else{
-					Alert.show('Статус изменен');
+					Alert.show('Статус на сайте изменен');
+					saveNextState();
 				}
 			}
 
@@ -332,19 +472,27 @@
 				</s:layout>
 				
 				<s:FormItem label="ID">
-					<s:TextInput id="tiID" text="{mailPackage.id_name} ({mailPackage.id})" width="200"/>
+					<s:TextInput id="tiID" text="{mailPackage.id_name} ({mailPackage.id})" width="200" editable="false"/>
+				</s:FormItem> 
+				<s:FormItem label="Статус">
+					<s:TextInput  text="{mailPackage.state_name}" width="200" editable="false"/>
+					<s:Label text="Дата:{dtFormater.format(mailPackage.state_date)}" width="200"/>
+					<s:HGroup width="200" horizontalAlign="right" gap="5" verticalAlign="baseline">
+						<s:Label text="Назначить статус"/>
+						<s:Button id="btState" label="{nextStateName}" click="{setNextState()}"/>
+					</s:HGroup>
 				</s:FormItem> 
 				<s:FormItem label="Источник">
-					<s:TextInput  text="{mailPackage.source_name}" width="200"/>
+					<s:TextInput  text="{mailPackage.source_name}" width="200" editable="false"/>
 				</s:FormItem> 
 				<s:FormItem label="Доставка">
-					<s:TextInput  text="{mailPackage.delivery_name}" width="200"/>
+					<s:TextInput  text="{mailPackage.delivery_name}" width="200" editable="false"/>
 				</s:FormItem> 
 				<s:FormItem label="Срок исполнения">
-					<s:TextInput  text="{dtFormater.format(mailPackage.execution_date)}" width="200"/>
+					<s:TextInput  text="{dtFormater.format(mailPackage.execution_date)}" width="200" editable="false"/>
 				</s:FormItem> 
 				<s:FormItem label="Кол заказов">
-					<s:TextInput  text="{mailPackage.orders_num.toString()}" width="200"/>
+					<s:TextInput  text="{mailPackage.orders_num.toString()}" width="200" editable="false"/>
 				</s:FormItem> 
 				<s:FormItem label="Примечания">
 					<s:List dataProvider="{mailPackage.messages}" width="300">
@@ -377,7 +525,9 @@
 						</fx:Component>
 					</s:rowBackground>
 				</s:DataGrid>
-				<s:Button id="btJoin" label="Объединить" toolTip="Объединить отмеченные с текущей группой" click="btJoin_clickHandler(event)"/>
+				<s:Button id="btJoin" label="Объединить" toolTip="Объединить отмеченные с текущей группой"
+						  enabled="{mailPackage.state &lt; OrderState.PACKAGE_PACKED}"
+						  click="btJoin_clickHandler(event)"/>
 			</s:VGroup>
 		</s:HGroup>
 
@@ -412,9 +562,9 @@
 
 		<s:Spacer height="5"/>
 		<s:HGroup width="100%" horizontalAlign="right">
-			<s:Button id="btSetSiteState" label="Упакован" toolTip="Сменить статус на сайте" 
+			<!--<s:Button id="btSetSiteState" label="Упакован" toolTip="Сменить статус на сайте" 
 					  enabled="{source.type==SourceType.SRC_FOTOKNIGA}" click="btSetSiteState_clickHandler(event)"/>
-			<s:Spacer width="20"/>
+			<s:Spacer width="20"/>-->
 			<s:Button id="btClose" label="Закрыть" click="{close()}"/>
 		</s:HGroup>
 	</s:VGroup>

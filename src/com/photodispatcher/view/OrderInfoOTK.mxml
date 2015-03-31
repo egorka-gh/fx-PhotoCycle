@@ -14,10 +14,12 @@
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.TechService;
@@ -222,10 +224,43 @@
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onCompliteSet);
-					if(latch.complite) closeView();
+					if(latch.complite){
+						//closeView();
+						if(order.groupId !=0){
+							//check package
+							latch= new DbLatch();
+							var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+							latch.addEventListener(Event.COMPLETE,onPackageState);
+							latch.addLatch(svc.getStateByOrders(order.source, order.groupId));
+							latch.start();
+						}
+					}
 				}
 			}
+			
+			private function onPackageState(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onPackageState);
+					if(latch.complite){
+						if(latch.resultCode>=OrderState.TECH_OTK){
+							Alert.show('Все заказы группы '+ order.groupId.toString()+' прошли ОТК. Открыть группу?','',Alert.YES|Alert.NO, this, onAlertOpenPackage);
+						}else{
+							closeView();
+						}
+					}
+				}
+			}
+			private function onAlertOpenPackage(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES){
+					var pop:MailPackagePopUp= new MailPackagePopUp();
+					pop.loadFromWeb(order.source, order.groupId, true);
 
+				}
+				closeView();
+			}
+
+			
 			protected function lstBookList_changeHandler(event:IndexChangeEvent):void{
 				currBook=lstBookList.selectedIndex+1;
 			}
