@@ -22,6 +22,7 @@
 			
 			import mx.collections.ArrayList;
 			import mx.controls.Alert;
+			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
 			
 			import org.granite.tide.Tide;
@@ -52,13 +53,7 @@
 						currentState='inQueue';
 						break;
 					case 1:
-						currentState='packagingList';
-						break;
-					case 2:
 						currentState='packedList';
-						break;
-					case 3:
-						currentState='forSendList';
 						break;
 				}
 				refresh();
@@ -67,6 +62,7 @@
 			
 			private function refresh():void{
 				packagesAC=null;
+				gridMenuRemove();
 				switch(currentState){
 					case 'inQueue':
 						gridColumns=MailPackage.inQueueColumns();
@@ -76,17 +72,10 @@
 						gridColumns=MailPackage.inQueueColumns();
 						loadInQueueByClient();
 						break;
-					case 'packagingList':
-						gridColumns=MailPackage.columns();
-						loadbyState(OrderState.PACKAGE_START);
-						break;
 					case 'packedList':
 						gridColumns=MailPackage.columns();
 						loadbyState(OrderState.PACKAGE_PACKED);
-						break;
-					case 'forSendList':
-						gridColumns=MailPackage.columns();
-						loadbyState(OrderState.PACKAGE_SENDING);
+						gridMenuAddPacked();
 						break;
 				}
 			}
@@ -120,8 +109,8 @@
 				}
 			}
 			
+			private var gridMenu:GridContexMenu;
 			protected function dgPackages_creationCompleteHandler(event:FlexEvent):void{
-				var gridMenu:GridContexMenu;
 				gridMenu= new GridContexMenu(dgPackages); 
 				gridMenu.addItem('Открыть',openCallBack);
 			}
@@ -132,18 +121,70 @@
 				}
 			}
 			
+			private function gridMenuRemove(preserve:int=0):void{
+				if(!gridMenu) return;
+				gridMenu.removeByParameter(preserve);
+			}
+			
+			private function gridMenuAddPacked():void{
+				if(!gridMenu) return;
+				gridMenu.addItem('Отправлен',sendCallBack,OrderState.PACKAGE_PACKED);
+			}
+			private function sendCallBack(grid:DataGrid,param:int):void{
+				//var onItem:MailPackage=grid.selectedItem as MailPackage;
+				Alert.show('Сменить статус на "Отправлен"?','',Alert.YES|Alert.NO, this, onAlertSetSend);
+			}
+			private var sendItems:Array=[];
+			private function onAlertSetSend(evt:CloseEvent):void {
+				//sendItems=[];
+				if (evt.detail == Alert.YES && dgPackages.selectedItems && dgPackages.selectedItems.length>0){
+					for each (var item:* in dgPackages.selectedItems) sendItems.push(item);
+				}
+				setSendNext();
+			}
+			private function setSendNext():void{
+				if(sendItems.length==0){
+					refresh();
+					return;
+				}
+				var item:MailPackage=sendItems.shift() as MailPackage;
+				if(!item) setSendNext();
+				item.state= OrderState.PACKAGE_SEND;
+				var latch:DbLatch=new DbLatch(); 
+				latch.addEventListener(Event.COMPLETE,onsetSendNext);
+				latch.addLatch(bdService.startState(item));
+				latch.start();
+			}
+			private function onsetSendNext(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onsetSendNext);
+					if(latch.complite){
+						//close();
+						setSendNext();
+					}
+				}
+			}
+
 			private function showMP(item:MailPackage):void{
 				if(!item) return;
-				var pop:MailPackagePopUp= new MailPackagePopUp();
+				//var pop:MailPackagePopUp= new MailPackagePopUp();
 				//if(currentState=='inQueue')
 				showMPbyId(item.source, item.id);
 			}
 
-			private function showMPbyId(source:int, groupId:int):void{
+			private function showMPbyId(source:int, groupId:int, showClienGroups:Boolean=true):void{
 				if(!source || !groupId) return;
 				var pop:MailPackagePopUp= new MailPackagePopUp();
 				//if(currentState=='inQueue')
-				pop.loadFromWeb(source, groupId, true);
+				pop.addEventListener(PopUpEvent.CLOSE, onMPpopClose);
+				pop.loadFromWeb(source, groupId, showClienGroups);
+			}
+			
+			private function onMPpopClose(evt:PopUpEvent):void{
+				var pop:MailPackagePopUp=evt.target as MailPackagePopUp;
+				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onMPpopClose);
+				refresh();
 			}
 
 			private var _barcodeReader:ComReader;
@@ -228,6 +269,7 @@
 				refresh();
 			}
 			
+
 		]]>
 	</fx:Script>
 	
@@ -238,18 +280,14 @@
 	<s:states>
 		<s:State name="inQueue"/>
 		<s:State name="inQueueByClient"/>
-		<s:State name="packagingList"/>
 		<s:State name="packedList"/>
-		<s:State name="forSendList"/>
 		<s:State name="packageView"/>
 	</s:states>
 
 	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
 		<mx:ArrayCollection>
 			<fx:String>Ожидают упаковки</fx:String> 
-			<fx:String>Упаковка</fx:String> 
 			<fx:String>Упакован</fx:String> 
-			<fx:String>К отправке</fx:String> 
 		</mx:ArrayCollection>
 	</s:TabBar>
 	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
@@ -268,7 +306,7 @@
 			<s:Label text="Клиент:"/>
 			<s:Label text="{byClientMP.client_id}" fontWeight="bold"/>
 		</s:HGroup>
-		<s:DataGrid id="dgPackages" selectionMode="singleRow"
+		<s:DataGrid id="dgPackages" selectionMode="multipleRows"
 					fontSize="14" width="100%" height="100%"
 					creationComplete="dgPackages_creationCompleteHandler(event)"
 					dataProvider="{packagesAC}" locale="ru_RU" columns="{gridColumns}">

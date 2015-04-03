@@ -153,6 +153,9 @@ package com.photodispatcher.service{
 										//s='Синхронизирован в '+df.format(new Date());
 										s='Ok. Элементов: '+target.syncState.items.toString()+', в '+df.format(new Date());
 										target.syncState.setState(ProcessState.STATE_OK_WAITE,s);
+										target.sync=result.sync;
+										target.sync_date=result.sync_date;
+										target.sync_state=result.sync_state;
 									}else{
 										s='Ошибка синхронизации в '+df.format(new Date());
 										target.syncState.setState(ProcessState.STATE_ERROR,s);

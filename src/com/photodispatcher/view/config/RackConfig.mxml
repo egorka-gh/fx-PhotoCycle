@@ -107,7 +107,7 @@
 			private function loadTpoints():DbLatch{
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE, onTPointLoad);
-				latch.addLatch(cfgService.loadRackTPoint(new ArrayCollection([OrderState.TECH_OTK, OrderState.PACKAGE_START]) ));
+				latch.addLatch(cfgService.loadRackTPoint(new ArrayCollection([OrderState.TECH_OTK])));//, OrderState.PACKAGE_PACKED]) ));
 				latch.start();
 				return latch;
 			}

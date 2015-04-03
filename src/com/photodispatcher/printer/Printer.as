@@ -4,6 +4,7 @@ package com.photodispatcher.printer{
 	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.MailPackage;
 	import com.photodispatcher.model.mysql.entities.MailPackageProperty;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintForm;
 	import com.photodispatcher.model.mysql.entities.PrintFormField;
 	import com.photodispatcher.model.mysql.entities.PrintFormParametr;
@@ -21,6 +22,8 @@ package com.photodispatcher.printer{
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.globalization.DateTimeStyle;
+	
+	import mx.controls.Alert;
 	
 	import org.granite.tide.Tide;
 	import org.granite.tide.events.TideFaultEvent;
@@ -131,7 +134,12 @@ package com.photodispatcher.printer{
 			if(!packege || !form) return;
 			switch(form.report){
 				case 'mpBarcodeFrm':
-					printMPBarcode(packege.id_name, barcode);
+					if(packege.state<OrderState.PACKAGE_PACKED){
+						var s:String=OrderState.getStateName(OrderState.PACKAGE_PACKED);
+						Alert.show('Печать ШК разрешена в статусе не ниже '+s);
+					}else{
+						printMPBarcode(packege.id_name, barcode);
+					}
 					break;
 				/*
 				case 'frmATzaiava':

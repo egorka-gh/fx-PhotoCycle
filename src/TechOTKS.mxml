@@ -15,6 +15,7 @@
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.TechPointService;
@@ -109,7 +110,7 @@
 				
 				latch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onMTPLoad);
-				latch.addLatch(svc.loadAll(SourceType.TECH_PACKING));
+				latch.addLatch(svc.loadAll(OrderState.PACKAGE_PACKED));
 				latch.start();
 				initLatch.join(latch);
 				

@@ -69,6 +69,28 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function extraStateSetOTK(arg0:String, arg1:String, arg2:Date, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("extraStateSetOTK", arg0, arg1, arg2, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("extraStateSetOTK", arg0, arg1, arg2, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("extraStateSetOTK", arg0, arg1, arg2) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function extraStateSetOTKbyPG(arg0:String, arg1:Date, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("extraStateSetOTKbyPG", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("extraStateSetOTKbyPG", arg0, arg1, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("extraStateSetOTKbyPG", arg0, arg1) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function extraStateStart(arg0:String, arg1:String, arg2:int, arg3:Date, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("extraStateStart", arg0, arg1, arg2, arg3, resultHandler, faultHandler) as AsyncToken;
@@ -98,6 +120,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("extraStateStartOTK", arg0, arg1, arg2, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("extraStateStartOTK", arg0, arg1, arg2) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function getStateByPGroups(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getStateByPGroups", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getStateByPGroups", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getStateByPGroups", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

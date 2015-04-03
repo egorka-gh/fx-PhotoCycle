@@ -49,7 +49,7 @@
 				}
 			}
 			
-			private var lastScanId:String;
+			private var lastScanId:String; //last pg id
 			private var lastSubOrder:SubOrder;
 			private var lastBook:int;
 			private var newScanId:String;
@@ -129,7 +129,7 @@
 			private function addOrder(order:SubOrder):void{
 				if(!order) return;
 				if(order.prt_qty==0){
-					Alert.show('Не определено количество книг в заказе '+lastSubOrder.humanId);
+					Alert.show('Не определено количество книг в заказе '+order.humanId);
 					lastSubOrder=null;
 					return;
 				}
@@ -161,7 +161,7 @@
 
 			private function showOrder(checkClose:Boolean=false):void{
 				if(!lastSubOrder) return;
-				if(vInfo) vInfo.show(lastSubOrder,lastBook,checkClose);
+				if(vInfo) vInfo.show(lastSubOrder, lastScanId, lastBook,checkClose);
 				currentState='book';
 			}
 			
@@ -196,6 +196,7 @@
 			protected function dgMonitor_creationCompleteHandler(event:FlexEvent):void{
 				ordersGridMenu= new GridContexMenu(dgMonitor); 
 				ordersGridMenu.addItem('Открыть',openCallBack);
+				
 			}
 			private function openCallBack(grid:DataGrid,param:int):void{
 				var onItem:SubOrder=grid.selectedItem as SubOrder;
@@ -215,7 +216,7 @@
 			}
 			
 			protected function vInfo_creationCompleteHandler(event:FlexEvent):void{
-				if(lastSubOrder) vInfo.show(lastSubOrder,lastBook);
+				if(lastSubOrder) vInfo.show(lastSubOrder, lastScanId, lastBook);
 			}
 			
 		]]>

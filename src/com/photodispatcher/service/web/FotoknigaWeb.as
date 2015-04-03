@@ -12,6 +12,10 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.util.JsonUtil;
 	
 	import flash.events.Event;
+	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
+	import flash.globalization.DateTimeStyle;
 	
 	import mx.rpc.AsyncResponder;
 	import mx.rpc.AsyncToken;
@@ -19,6 +23,8 @@ package com.photodispatcher.service.web{
 	import mx.rpc.events.ResultEvent;
 	
 	import pl.maliboo.ftp.FTPFile;
+	
+	import spark.formatters.DateTimeFormatter;
 
 	public class FotoknigaWeb extends BaseWeb{
 		public static const ERR_CODE_BALANCE:int=24;
@@ -353,6 +359,29 @@ package com.photodispatcher.service.web{
 			return result;
 		}
 		
+		private function logSyncData(raw:Object):void{
+			if(!raw) return;
+			var syncData:String=raw as String;
+			if(!syncData) return;
+
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); 
+			fmt.dateTimePattern='yy-MM-dd HH:mm:ss'; 
+			syncData='--------------------------------------------------------------'+'\n'
+					+fmt.format(new Date())+' sync:'+source.sync.toString()+'\n'
+					+syncData+'\n';
+			var folderName:String=source.getWrkFolder();
+			var file:File=new File(folderName);
+			if(!file.exists || !file.isDirectory) return;
+			file=file.resolvePath('syncLog.txt');
+			try{
+				var fs:FileStream = new FileStream();
+				fs.open(file, FileMode.APPEND);
+				fs.writeUTFBytes(syncData);
+				fs.close();
+			} catch(err:Error){
+			}
+		}
+		
 		override protected function handleData(e:WebEvent):void{
 			var result:Object;
 			result=parseRaw(e.data);
@@ -366,6 +395,7 @@ package com.photodispatcher.service.web{
 			}
 			switch (cmd){
 				case CMD_SYNC:
+					logSyncData(e.data);
 					if(!(result.result is Array)){
 						abort('FotoknigaWeb Ошибка структуры данных');
 						return;

@@ -84,6 +84,7 @@ package com.photodispatcher.model.mysql.entities {
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
 			col= new GridColumn('orders_num'); col.headerText='Кол заказов'; result.addItem(col); 
+			col= new GridColumn('delivery_name'); col.headerText='Тип доставки'; result.addItem(col); 
 			return result;
 		}
 

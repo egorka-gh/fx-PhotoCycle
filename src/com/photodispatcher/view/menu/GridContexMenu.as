@@ -157,6 +157,16 @@ package com.photodispatcher.view.menu{
 				menuItems.addItemAt(item,0);
 			}
 		}
+		
+		public function removeByParameter(preserveParam:int):void{
+			var newItems:Array=[];
+			var item:Object;
+			for each (item in menuItems){
+				if(!item.hasOwnProperty('param') || item.param==0 || item.param==preserveParam) newItems.push(item);
+			}
+			menuItems.source=newItems;
+			menuItems.refresh();
+		}
 
 		public function showOrder():void{
 			var orderId:String;

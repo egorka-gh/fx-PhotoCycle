@@ -53,18 +53,30 @@
 			[Bindable]
 			private var bookComplited:int;
 			
+			private var showOrder:SubOrder;
+			private var pgId:String;
 			
-			public function show(showOrder:SubOrder, book:int, checkClose:Boolean=false):void{
+			public function show(showOrder:SubOrder, pgId:String, book:int, checkClose:Boolean=false):void{
+				this.showOrder=showOrder;
 				checkAfterRefresh=false;
 				if(order && order.id==showOrder.order_id && order.otkSubid==showOrder.sub_id){
-					if(checkClose && book!=0 && currBook==book){
-						//complite book
-						btComplite_clickHandler(null);
-						return;
+					if(checkClose){
+						if(book!=0 && currBook==book){
+							//complite book
+							btComplite_clickHandler(null);
+							return;
+						}
+						if(showOrder.proj_type==0 && this.pgId==pgId){
+							//complite photo printgroup
+							setCompletePhoto();
+							return;
+						}
 					}
+					this.pgId=pgId;
 					currBook=book;
-					refreshBooks();
+					if(showOrder.proj_type!=0) refreshBooks();
 				}else{
+					this.pgId=pgId;
 					currBook=book;
 					refresh(showOrder);
 				}
@@ -99,9 +111,28 @@
 				}
 				var pg:PrintGroup;
 				for each(pg in order.printGroups){
-					if (!pg.is_reprint && pg.book_type!=0){
-						if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) pgCover=pg;
-						if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) pgBlok=pg;
+					if(showOrder.proj_type!=0){
+						if (!pg.is_reprint && pg.book_type!=0){
+							if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) pgCover=pg;
+							if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) pgBlok=pg;
+						}
+					}else{
+						if(pgId){
+							if(pg.id==pgId){
+								pgBlok=pg;
+								break;
+							}
+						}else if(pg.state<OrderState.TECH_OTK){
+							if(!pgBlok){
+								pgId=pg.id;
+								pgBlok=pg;
+							}else{
+								//more then 1 photo groups
+								pgId=null;
+								pgBlok=null;
+								break;
+							}
+						}
 					}
 				}
 				order.printGroups=new ArrayCollection;
@@ -112,8 +143,16 @@
 				}else if(pgBlok){
 					bookTotal=pgBlok.book_num;
 				}
-				refreshBooks();
-				currentState='info';
+				if(showOrder.proj_type!=0) refreshBooks();
+				detectState();
+			}
+			
+			private function detectState():void{
+				if(!showOrder || showOrder.proj_type!=0){
+					currentState='book';
+				}else{
+					currentState='photo';
+				}
 			}
 			
 			private function refreshBooks():void{
@@ -217,9 +256,20 @@
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onCompliteSet);
-				latch.addLatch(svc.extraStateSet(order.id,order.otkSubid,techPoint.tech_type, new Date()));
+				//latch.addLatch(svc.extraStateSet(order.id,order.otkSubid,techPoint.tech_type, new Date()));
+				latch.addLatch(svc.extraStateSetOTK(order.id, order.otkSubid, new Date()));
 				latch.start();
 			}
+
+			private function setCompletePhoto():void{
+				if(!pgId) return;
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onCompliteSet);
+				latch.addLatch(svc.extraStateSetOTKbyPG(pgId, new Date()));
+				latch.start();
+			}
+
 			private function onCompliteSet(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
@@ -233,11 +283,12 @@
 							latch.addEventListener(Event.COMPLETE,onPackageState);
 							latch.addLatch(svc.getStateByOrders(order.source, order.groupId));
 							latch.start();
+						}else{
+							closeView();
 						}
 					}
 				}
 			}
-			
 			private function onPackageState(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
@@ -287,6 +338,10 @@
 				}
 			}
 			
+			protected function btComplitePhoto_clickHandler(event:MouseEvent):void{
+				setCompletePhoto();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -296,7 +351,8 @@
 	
 	
 	<s:states>
-		<s:State name="info"/>
+		<s:State name="book" stateGroups="info"/>
+		<s:State name="photo" stateGroups="info"/>
 		<s:State name="preview"/>
 	</s:states>
 
@@ -324,34 +380,47 @@
 						<s:TextInput id="tiSource" text="{order.source_name}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Тип">
-						<s:TextInput text="{pgCover.book_type_name}" editable="false" width="100%"/>
+						<s:TextInput text="{pgBlok.book_type_name}" editable="false" width="100%" includeIn="book"/>
+						<s:TextInput text="Фото" editable="false" width="100%" includeIn="photo"/>
 						<s:TextInput text="{order.extraInfo.calc_type}" editable="false" width="100%"/>
 					</s:FormItem> 
-					<s:FormItem label="Обложка">
+					<s:FormItem label="Обложка" includeIn="book">
 						<s:TextInput text="{order.extraInfo.cover}" editable="false" width="100%"/>
 					</s:FormItem> 
-					<s:FormItem label="Формат">
+					<s:FormItem label="Формат" includeIn="book">
 						<s:TextInput text="{order.extraInfo.format}" editable="false" width="100%"/>
 					</s:FormItem> 
 					<s:FormItem label="Алиас">
-						<s:TextInput text="{pgCover.path}" editable="false" width="100%"/>
+						<s:TextInput text="{pgBlok.path}" editable="false" width="100%"/>
 					</s:FormItem> 
-					<s:FormItem label="Форзац">
+
+					<s:FormItem label="Форзац" includeIn="book">
 						<s:TextInput text="{order.extraInfo.endpaper}" editable="false" width="100%"/>
 					</s:FormItem> 
-					<s:FormItem label="Прослойка">
+					<s:FormItem label="Прослойка" includeIn="book">
 						<s:TextInput text="{order.extraInfo.interlayer}" editable="false" width="100%"/>
 					</s:FormItem> 
-					<s:FormItem label="Углы">
+					<s:FormItem label="Углы" includeIn="book">
 						<s:TextInput text="{order.extraInfo.corner_type}" editable="false" width="100%"/>
 					</s:FormItem> 
-					<s:FormItem label="Каптал">
+					<s:FormItem label="Каптал" includeIn="book">
 						<s:TextInput text="{order.extraInfo.kaptal}" editable="false" width="100%"/>
+					</s:FormItem>
+					
+					<s:FormItem label="Бумага" includeIn="photo">
+						<s:TextInput text="{pgBlok.paper_name}" editable="false" width="100%"/>
 					</s:FormItem> 
+					<s:FormItem label="Размер" includeIn="photo">
+						<s:TextInput text="{pgBlok.height} x {pgBlok.width}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Количество" includeIn="photo">
+						<s:TextInput text="{pgBlok.prints}" editable="false" width="100%"/>
+					</s:FormItem> 
+
 				</s:Form>
 			</s:Group>
 		</s:Scroller>
-		<s:Scroller width="350" height="100%">
+		<s:Scroller width="350" height="100%" includeIn="book">
 			<s:Group width="100%">
 				<s:Form width="100%" backgroundAlpha="0" fontSize="14">
 					<s:layout>
@@ -381,7 +450,7 @@
 				</s:Form>
 			</s:Group>
 		</s:Scroller>
-		<s:VGroup gap="5" height="100%">
+		<s:VGroup gap="5" height="100%" includeIn="book">
 			<s:Spacer height="10"/>
 			<s:HGroup gap="5" verticalAlign="baseline" fontSize="14">
 				<s:Label text="Книг" fontWeight="bold" width="{lbBC.width}" />
@@ -399,8 +468,9 @@
 		<s:Spacer width="10"/>
 		<s:Spacer width="100%"/>
 		<s:VGroup gap="10" height="100%" fontSize="14">
-			<s:Button id="btPreview" label="Просмотр" enabled="{currBook!=0}" click="btPreview_clickHandler(event)" />
-			<s:Button id="btComplite" label="Проверена" enabled="{currBook!=0}" click="btComplite_clickHandler(event)"/>
+			<s:Button id="btPreview" label="Просмотр" enabled="{currBook!=0}" click="btPreview_clickHandler(event)" includeIn="book"/>
+			<s:Button id="btComplite" label="Проверена" enabled="{currBook!=0}" click="btComplite_clickHandler(event)" includeIn="book"/>
+			<s:Button id="btComplitePhoto" label="Проверено" click="btComplitePhoto_clickHandler(event)" includeIn="photo"/>
 			<s:Spacer height="100%"/>
 			<s:Button id="btClose" label="Закрыть" click="btClose_clickHandler(event)"/>
 		</s:VGroup>
@@ -408,5 +478,5 @@
 	<view:OrderPreviewOTK id="vPreview" top="10" left="10" right="10" bottom="10" includeIn="preview"
 							 techPoint="{techPoint}"
 							 creationComplete="vPreview_creationCompleteHandler(event)"
-							 close="{currentState='info'}"/>
+							 close="{currentState='book'}"/>
 </s:Group>
