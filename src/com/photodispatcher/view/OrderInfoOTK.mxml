@@ -33,6 +33,7 @@
 			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
 			
 			[Bindable]
 			public var techPoint:TechPoint;
@@ -297,6 +298,7 @@
 						if(latch.resultCode>=OrderState.TECH_OTK){
 							Alert.show('Все заказы группы '+ order.groupId.toString()+' прошли ОТК. Открыть группу?','',Alert.YES|Alert.NO, this, onAlertOpenPackage);
 						}else{
+							choiseSpace();
 							closeView();
 						}
 					}
@@ -305,12 +307,42 @@
 			private function onAlertOpenPackage(evt:CloseEvent):void {
 				if (evt.detail == Alert.YES){
 					var pop:MailPackagePopUp= new MailPackagePopUp();
+					pop.addEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
 					pop.loadFromWeb(order.source, order.groupId, true);
 
+				}else{
+					choiseSpace();
 				}
 				closeView();
 			}
 
+			private function onMailPackagePopUpClose(event:PopUpEvent):void{
+				var pop:MailPackagePopUp=event.target as MailPackagePopUp;
+				pop.removeEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
+
+				//recheck real package state (need to call choiseSpace?)
+				var latch:DbLatch = new DbLatch();
+				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				latch.addEventListener(Event.COMPLETE,onPackageRealState);
+				latch.addLatch(svc.getStateByPackages(order.source, new ArrayCollection([order.groupId])));
+				latch.start();
+			}
+			private function onPackageRealState(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onPackageRealState);
+					if(latch.complite && latch.resultCode< OrderState.PACKAGE_PACKED){
+						choiseSpace();
+					}
+				}
+			}
+
+			
+			private function choiseSpace():void{
+				if(!order) return;
+				var pop:RackSpaceChoisePopUp= new RackSpaceChoisePopUp();
+				pop.show(order.id, techPoint.id);
+			}
 			
 			protected function lstBookList_changeHandler(event:IndexChangeEvent):void{
 				currBook=lstBookList.selectedIndex+1;

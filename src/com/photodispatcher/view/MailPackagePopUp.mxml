@@ -17,8 +17,10 @@
 			import com.photodispatcher.model.mysql.entities.MailPackageProperty;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.RackSpace;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.printer.Printer;
 			import com.photodispatcher.service.web.BaseWeb;
@@ -35,6 +37,8 @@
 			import mx.utils.object_proxy;
 			
 			import org.granite.tide.Tide;
+			
+			import spark.events.PopUpEvent;
 			
 			[Bindable]
 			private var stateMsg:String;
@@ -53,11 +57,16 @@
 
 			[Bindable]
 			public var printForms:ArrayCollection;
-			
+
+			[Bindable]
+			public var spacesAC:ArrayCollection;
+
 			[Bindable]
 			private var nextState:int;
 			[Bindable]
 			private var nextStateName:String;
+
+			public var techPointOTK:TechPoint;
 
 			private var _webService:BaseWeb;
 			private function get webService():BaseWeb{
@@ -71,9 +80,10 @@
 				return _bdService;
 			}
 			
-			public function loadFromWeb(sourceId:int, id:int, showClienGroups:Boolean=false):void{
+			public function loadFromWeb(sourceId:int, id:int, showClienGroups:Boolean=false, techPointOTK:TechPoint=null):void{
 				mailPackage=null;
 				this.showClienGroups=showClienGroups;
+				this.techPointOTK=techPointOTK;
 				stateMsg='Загрузка с сайта';
 				source=Context.getSource(sourceId);
 				if(!source){
@@ -137,6 +147,8 @@
 					latchGroups.addLatch(bdService.loadByClient(mailPackage.source, mailPackage.client_id));
 					latchGroups.start();
 				}
+
+				loadSpaces();
 			}
 			private function onloadMP(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
@@ -188,7 +200,24 @@
 					}
 				}
 			}
-			
+
+			private function loadSpaces():void{
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onloadSpaces);
+				latch.addLatch(bdService.loadRackSpaces(mailPackage));
+				latch.start();
+				
+			}
+			private function onloadSpaces(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadSpaces);
+					if(latch.complite){
+						spacesAC=latch.lastDataAC;
+					}
+				}
+			}
+
 			private function filterCliPackages(item:Object):Boolean {
 				var pg:MailPackage=item as MailPackage;
 				if(!pg) return false;
@@ -472,6 +501,62 @@
 				return res;
 			}
 
+			private function spacesLabelFunc(item:Object):String{
+				var res:String='';
+				var s:RackSpace=item as RackSpace; 
+				if(s){
+					res=s.rack_name+' - '+s.name
+				}
+				return res;
+			}
+
+			protected function dgProps_creationCompleteHandler(event:FlexEvent):void{
+				var gridMenu:GridContexMenu;
+				gridMenu= new GridContexMenu(dgProps); 
+				gridMenu.addItem('Назначить полку',setSpaceCallBack);
+				gridMenu.addItem('Сменить полку',resetSpaceCallBack);
+			}
+			private function setSpaceCallBack(grid:DataGrid,param:int):void{
+				var onItem:Order=grid.selectedItem as Order;
+				if(onItem){
+					var pop:RackSpaceChoisePopUp= new RackSpaceChoisePopUp();
+					pop.addEventListener(PopUpEvent.CLOSE,onsetSpaceCallBack);
+					pop.show(onItem.id, (techPointOTK?techPointOTK.id:0));
+				}
+			}
+			private function onsetSpaceCallBack(event:PopUpEvent):void{
+				var pop:RackSpaceChoisePopUp=event.target as RackSpaceChoisePopUp;
+				pop.removeEventListener(PopUpEvent.CLOSE,onsetSpaceCallBack);
+				if(event.commit){
+					loadSpaces();
+				}
+			}
+
+			private function resetSpaceCallBack(grid:DataGrid,param:int):void{
+				Alert.show('Для заказа будет сброшена текущая полка. Продолжить?','',Alert.YES|Alert.NO, this, onAlertresetSpace);
+			}
+			
+			private function onAlertresetSpace(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES){
+					var onItem:Order=dgProps.selectedItem as Order;
+					if(onItem){
+						var latch:DbLatch= new DbLatch();
+						latch.addEventListener(Event.COMPLETE,onresetSpaceCallBack);
+						latch.addLatch(bdService.resetRackSpace(onItem.id));
+						latch.start();
+					}
+				}
+			}
+			private function onresetSpaceCallBack(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onresetSpaceCallBack);
+					if(latch.complite){
+						setSpaceCallBack(dgProps,0);
+					}
+				}
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -538,6 +623,12 @@
 				</s:FormItem> 
 
 			</s:Form>
+			<s:VGroup width="150" height="100%" gap="5">
+				<s:Label width="100%" text="Полки"/>
+				<s:List id="lstSpaces" width="100%" height="100%"
+						dataProvider="{spacesAC}" labelFunction="spacesLabelFunc"/> 
+			</s:VGroup>
+			<s:Spacer width="7"/>
 			<s:VGroup width="100%" height="100%" gap="5" visible="{showClienGroups}">
 				<s:Label text="Все группы клиента"/>
 				<s:DataGrid id="dgPackages" selectionMode="singleRow"
@@ -559,19 +650,21 @@
 		<s:HGroup width="100%" height="100%" gap="10">
 			<s:VGroup width="50%" height="100%" gap="5">
 				<s:Label text="Атрибуты"/>
-				<s:DataGrid id="dgAtrs" selectionMode="singleRow" width="100%" height="100%" 
-							dataProvider="{mailPackage.properties}" locale="ru_RU" columns="{MailPackageProperty.gridColumns()}"/>
+				<s:DataGrid id="dgAtrs" selectionMode="singleRow" width="100%" height="100%" locale="ru_RU" 
+							editable="true"
+							dataProvider="{mailPackage.properties}" columns="{MailPackageProperty.gridColumns()}"/>
 			</s:VGroup>
 			<s:VGroup width="50%" height="100%" gap="5">
 				<s:Label text="Заказы"/>
-				<s:DataGrid id="dgProps" selectionMode="singleRow" width="100%" height="100%" 
-							dataProvider="{mailPackage.orders}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
+				<s:DataGrid id="dgProps" selectionMode="singleRow" width="100%" height="100%" locale="ru_RU"
+							creationComplete="dgProps_creationCompleteHandler(event)"
+							dataProvider="{mailPackage.orders}" columns="{Order.shortGridColumns()}"/>
 				<s:Spacer height="5"/>
 				<s:HGroup width="100%" height="100%" gap="10">
 					<s:VGroup width="100%" height="100%" gap="5">
 						<s:Label text="Штрих коды"/>
-						<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%"  editable="true"
-									dataProvider="{mailPackage.barcodes}" locale="ru_RU" columns="{MailPackageBarcode.gridColumns()}"/>
+						<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%"  editable="true" locale="ru_RU"
+									dataProvider="{mailPackage.barcodes}" columns="{MailPackageBarcode.gridColumns()}"/>
 						<s:Button id="btAddBarcode" label="Добавить" click="btAddBarcode_clickHandler(event)"/>
 					</s:VGroup>
 					<!--<s:Button id="btPrintBarcode" label="Печать" click="btPrintBarcode_clickHandler(event)"/>-->

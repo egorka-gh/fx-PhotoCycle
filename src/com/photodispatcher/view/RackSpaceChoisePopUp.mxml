@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx"
+						   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+						   width="300" height="400" 
+						  >
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.RackSpace;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
+			
+			private var orderId:String;
+			private var techPoint:int;
+			
+			[Bindable]
+			private var spacesAC:ArrayCollection;
+			
+			public function show(orderId:String, techPoint:int=0):void{
+				this.orderId=orderId;
+				this.techPoint=techPoint;
+				loadSpaces();
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				PopUpManager.centerPopUp(this);
+			}
+			
+			private var _bdService:MailPackageService;
+			private function get bdService():MailPackageService{
+				if(!_bdService) _bdService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				return _bdService;
+			}
+			
+			private function loadSpaces():void{
+				spacesAC=null;
+				if(!orderId) return;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onloadSpaces);
+				latch.addLatch(bdService.getRackSpaces(orderId, techPoint));
+				latch.start();
+			}
+			private function onloadSpaces(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadSpaces);
+					if(latch.complite){
+						spacesAC=latch.lastDataAC;
+					}
+				}
+			}
+
+			protected function btSet_clickHandler(event:MouseEvent):void{
+				if(!orderId || !dgSpaces.selectedItem) return;
+				var item:RackSpace=dgSpaces.selectedItem as RackSpace;
+				if(!item) return;
+				
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onsetSpace);
+				latch.addLatch(bdService.setRackSpace(orderId, item.id));
+				latch.start();
+			}
+			private function onsetSpace(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onsetSpace);
+					if(latch.complite){
+						close(true);
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect  radiusX="6" radiusY="6" top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup left="10" right="10" top="10" bottom="10" gap="5">
+		<s:Label text="Выбор полки стеллажа" width="100%" textAlign="center"/>
+		<s:DataGrid id="dgSpaces" width="100%" height="100%"
+					selectionMode="singleRow" editable="false" locale="ru_RU"
+					dataProvider="{spacesAC}" columns="{RackSpace.gridColumnsChoisePopup()}">
+			<s:rowBackground>
+				<fx:Component>
+					<itemRenderer:RackSpacesDataGridRowBackground/>
+				</fx:Component>
+			</s:rowBackground>
+		</s:DataGrid>
+		<s:HGroup width="100%" gap="10" horizontalAlign="right">
+			<s:Button id="btSet" label="Назначить" enabled="{dgSpaces.selectedItem}" click="btSet_clickHandler(event)"/>
+			<s:Button id="btCancel" label="Отмена" click="{close()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

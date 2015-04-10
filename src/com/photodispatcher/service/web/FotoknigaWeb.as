@@ -395,7 +395,7 @@ package com.photodispatcher.service.web{
 			}
 			switch (cmd){
 				case CMD_SYNC:
-					logSyncData(e.data);
+					//logSyncData(e.data);
 					if(!(result.result is Array)){
 						abort('FotoknigaWeb Ошибка структуры данных');
 						return;

@@ -92,10 +92,10 @@ package com.photodispatcher.model.mysql.entities {
 			var result:ArrayList= new ArrayList();
 			
 			var col:GridColumn;
-			col= new GridColumn('isSelected'); col.headerText=' ';  col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.width=70; result.addItem(col); 
-			col= new GridColumn('id'); col.headerText='Группа'; col.editable=false; result.addItem(col); 
-			col= new GridColumn('state_name'); col.headerText='Макс статус'; col.editable=false; result.addItem(col); 
-			col= new GridColumn('min_ord_state_name'); col.headerText='Мин статус'; col.editable=false; result.addItem(col); 
+			col= new GridColumn('isSelected'); col.headerText=' ';  col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.width=40; result.addItem(col); 
+			col= new GridColumn('id'); col.headerText='Группа'; col.editable=false; col.width=70; result.addItem(col); 
+			col= new GridColumn('state_name'); col.headerText='Макс статус'; col.editable=false; col.width=100; result.addItem(col); 
+			col= new GridColumn('min_ord_state_name'); col.headerText='Мин статус'; col.editable=false; col.width=100; result.addItem(col); 
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.editable=false; result.addItem(col);
 			col= new GridColumn('orders_num'); col.headerText='Кол заказов'; col.editable=false; result.addItem(col); 

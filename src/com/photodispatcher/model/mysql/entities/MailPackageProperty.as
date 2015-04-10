@@ -23,7 +23,7 @@ package com.photodispatcher.model.mysql.entities {
 			var result:ArrayList= new ArrayList();
 			
 			var col:GridColumn;
-			col= new GridColumn('property_name'); col.headerText='Наименование'; result.addItem(col);
+			col= new GridColumn('property_name'); col.headerText='Наименование'; col.editable=false; result.addItem(col);
 			col= new GridColumn('value'); col.headerText='Значение'; result.addItem(col);
 			return result;
 		}

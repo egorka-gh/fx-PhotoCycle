@@ -23,6 +23,15 @@ package com.photodispatcher.model.mysql.entities {
 			return new ArrayList(result);
 		}
 
+		public static function gridColumnsChoisePopup():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			col= new GridColumn('rack_name'); col.headerText='Стеллаж'; result.push(col);
+			col= new GridColumn('name'); col.headerText='Полка'; result.push(col);
+			col= new GridColumn('weight'); col.headerText='Вес(кг)'; result.push(col);
+			return new ArrayList(result);
+		}
+
         public function RackSpace() {
             super();
         }

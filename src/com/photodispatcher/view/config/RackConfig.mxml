@@ -178,6 +178,7 @@
 				var it:RackSpace=new RackSpace();
 				it.rack=r.id;
 				it.name='Новое место';
+				it.weight=0;
 				spacesAC.addItem(it);
 				if(spaceGrid) spaceGrid.currentItem=it;
 			}

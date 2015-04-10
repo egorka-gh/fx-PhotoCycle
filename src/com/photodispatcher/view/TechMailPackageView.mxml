@@ -15,6 +15,7 @@
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.service.barcode.ComReader;
@@ -35,6 +36,10 @@
 			private var packagesAC:ArrayCollection;
 			[Bindable]
 			private var gridColumns:ArrayList;
+			
+			[Bindable]
+			public var techPointOTK:TechPoint;
+
 			
 			private function init():void{
 				refresh();
@@ -178,7 +183,7 @@
 				var pop:MailPackagePopUp= new MailPackagePopUp();
 				//if(currentState=='inQueue')
 				pop.addEventListener(PopUpEvent.CLOSE, onMPpopClose);
-				pop.loadFromWeb(source, groupId, showClienGroups);
+				pop.loadFromWeb(source, groupId, showClienGroups, techPointOTK);
 			}
 			
 			private function onMPpopClose(evt:PopUpEvent):void{

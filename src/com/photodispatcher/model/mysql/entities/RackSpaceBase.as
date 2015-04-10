@@ -21,13 +21,12 @@ package com.photodispatcher.model.mysql.entities {
         private var _height:int;
         private var _id:int;
         private var _name:String;
-        private var _package_id:int;
-        private var _package_source:int;
         private var _rack:int;
         private var _rack_name:String;
         private var _rack_type_name:String;
-        private var _source_name:String;
-        private var _weight:int;
+        private var _rating:Number;
+        private var _unused_weight:Number;
+        private var _weight:Number;
         private var _width:int;
 
         public function set height(value:int):void {
@@ -51,20 +50,6 @@ package com.photodispatcher.model.mysql.entities {
             return _name;
         }
 
-        public function set package_id(value:int):void {
-            _package_id = value;
-        }
-        public function get package_id():int {
-            return _package_id;
-        }
-
-        public function set package_source(value:int):void {
-            _package_source = value;
-        }
-        public function get package_source():int {
-            return _package_source;
-        }
-
         public function set rack(value:int):void {
             _rack = value;
         }
@@ -86,17 +71,24 @@ package com.photodispatcher.model.mysql.entities {
             return _rack_type_name;
         }
 
-        public function set source_name(value:String):void {
-            _source_name = value;
+        public function set rating(value:Number):void {
+            _rating = value;
         }
-        public function get source_name():String {
-            return _source_name;
+        public function get rating():Number {
+            return _rating;
         }
 
-        public function set weight(value:int):void {
+        public function set unused_weight(value:Number):void {
+            _unused_weight = value;
+        }
+        public function get unused_weight():Number {
+            return _unused_weight;
+        }
+
+        public function set weight(value:Number):void {
             _weight = value;
         }
-        public function get weight():int {
+        public function get weight():Number {
             return _weight;
         }
 
@@ -112,13 +104,12 @@ package com.photodispatcher.model.mysql.entities {
             _height = input.readObject() as int;
             _id = input.readObject() as int;
             _name = input.readObject() as String;
-            _package_id = input.readObject() as int;
-            _package_source = input.readObject() as int;
             _rack = input.readObject() as int;
             _rack_name = input.readObject() as String;
             _rack_type_name = input.readObject() as String;
-            _source_name = input.readObject() as String;
-            _weight = input.readObject() as int;
+            _rating = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
+            _unused_weight = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
+            _weight = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _width = input.readObject() as int;
         }
 
@@ -127,12 +118,11 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_height is IPropertyHolder) ? IPropertyHolder(_height).object : _height);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_package_id is IPropertyHolder) ? IPropertyHolder(_package_id).object : _package_id);
-            output.writeObject((_package_source is IPropertyHolder) ? IPropertyHolder(_package_source).object : _package_source);
             output.writeObject((_rack is IPropertyHolder) ? IPropertyHolder(_rack).object : _rack);
             output.writeObject((_rack_name is IPropertyHolder) ? IPropertyHolder(_rack_name).object : _rack_name);
             output.writeObject((_rack_type_name is IPropertyHolder) ? IPropertyHolder(_rack_type_name).object : _rack_type_name);
-            output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
+            output.writeObject((_rating is IPropertyHolder) ? IPropertyHolder(_rating).object : _rating);
+            output.writeObject((_unused_weight is IPropertyHolder) ? IPropertyHolder(_unused_weight).object : _unused_weight);
             output.writeObject((_weight is IPropertyHolder) ? IPropertyHolder(_weight).object : _weight);
             output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
         }
