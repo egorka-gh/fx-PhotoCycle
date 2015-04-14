@@ -77,15 +77,25 @@ package com.photodispatcher.print{
 		private var printBodyTemp01:String;
 		private var printBodyTemp02:String;
 		
+		private var hasBackPrint:Boolean;
 
 		public function PrintTask(printGroup:PrintGroup, lab:LabGeneric, revers:Boolean){
 			super(null);
 			this.printGrp=printGroup;
 			this.lab=lab;
 			this.revers=revers;
+			hasBackPrint=true;
+			
+			//check hasBackPrint
+			if(printGrp.alias){
+				var bs:BookSynonym=BookSynonym.translateAlias(printGrp.alias);
+				if(!bs) bs=BookSynonym.translatePath(printGrp.alias,SourceType.SRC_FOTOKNIGA);
+				if(bs) hasBackPrint=bs.has_backprint;
+			}
+			
 			printContext= new Object();
 			printContext[KEY_ORDER_ID]=printGrp.order_id;
-			printContext[KEY_GROUP_ID]=printGrp.humanId;
+			printContext[KEY_GROUP_ID]=hasBackPrint?printGrp.humanId:'';
 			printContext[KEY_JOB_ID]=printGrp.numericId;
 			//printContext[KEY_IMG_COUNT]=printGrp.files.length;
 			if(printGrp.printFiles) printContext[KEY_IMG_COUNT]=printGrp.printFiles.length;
@@ -440,7 +450,7 @@ package com.photodispatcher.print{
 			}else{
 				caption=pf.file_name;
 			}
-			printContext[KEY_IMG_BACKPRINT_LINE2]=caption;
+			printContext[KEY_IMG_BACKPRINT_LINE2]=hasBackPrint?caption:'';
 			
 			if(lab.src_type==SourceType.LAB_NORITSU_NHF){
 				var img_fmt:String=NORITSU_NHF_IMG_FORMAT[StrUtil.getFileExtension(pf.file_name)];

@@ -21,6 +21,7 @@ package com.photodispatcher.model.mysql.entities {
 
         private var _book_type:int;
         private var _book_type_name:String;
+        private var _has_backprint:Boolean;
         private var _id:int;
         private var _is_allow:Boolean;
         private var _is_horizontal:Boolean;
@@ -43,6 +44,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get book_type_name():String {
             return _book_type_name;
+        }
+
+        public function set has_backprint(value:Boolean):void {
+            _has_backprint = value;
+        }
+        public function get has_backprint():Boolean {
+            return _has_backprint;
         }
 
         public function set id(value:int):void {
@@ -112,6 +120,7 @@ package com.photodispatcher.model.mysql.entities {
             super.readExternal(input);
             _book_type = input.readObject() as int;
             _book_type_name = input.readObject() as String;
+            _has_backprint = input.readObject() as Boolean;
             _id = input.readObject() as int;
             _is_allow = input.readObject() as Boolean;
             _is_horizontal = input.readObject() as Boolean;
@@ -127,6 +136,7 @@ package com.photodispatcher.model.mysql.entities {
             super.writeExternal(output);
             output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
             output.writeObject((_book_type_name is IPropertyHolder) ? IPropertyHolder(_book_type_name).object : _book_type_name);
+            output.writeObject((_has_backprint is IPropertyHolder) ? IPropertyHolder(_has_backprint).object : _has_backprint);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_is_allow is IPropertyHolder) ? IPropertyHolder(_is_allow).object : _is_allow);
             output.writeObject((_is_horizontal is IPropertyHolder) ? IPropertyHolder(_is_horizontal).object : _is_horizontal);

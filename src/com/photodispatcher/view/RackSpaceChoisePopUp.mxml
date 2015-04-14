@@ -22,6 +22,8 @@
 			
 			[Bindable]
 			private var spacesAC:ArrayCollection;
+			[Bindable]
+			private var weight:RackSpace;
 			
 			public function show(orderId:String, techPoint:int=0):void{
 				this.orderId=orderId;
@@ -44,6 +46,11 @@
 				latch.addEventListener(Event.COMPLETE,onloadSpaces);
 				latch.addLatch(bdService.getRackSpaces(orderId, techPoint));
 				latch.start();
+
+				latch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onloadWeight);
+				latch.addLatch(bdService.getOrderSpace(orderId));
+				latch.start();
 			}
 			private function onloadSpaces(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
@@ -51,6 +58,15 @@
 					latch.removeEventListener(Event.COMPLETE,onloadSpaces);
 					if(latch.complite){
 						spacesAC=latch.lastDataAC;
+					}
+				}
+			}
+			private function onloadWeight(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadWeight);
+					if(latch.complite){
+						weight=latch.lastDataItem as RackSpace;
 					}
 				}
 			}
@@ -88,6 +104,8 @@
 	</s:Rect>
 	<s:VGroup left="10" right="10" top="10" bottom="10" gap="5">
 		<s:Label text="Выбор полки стеллажа" width="100%" textAlign="center"/>
+		<s:Label text="Вес заказа: {weight.weight.toFixed(1)} группы: {weight.unused_weight.toFixed(1)}" width="100%" textAlign="center"/>
+
 		<s:DataGrid id="dgSpaces" width="100%" height="100%"
 					selectionMode="singleRow" editable="false" locale="ru_RU"
 					dataProvider="{spacesAC}" columns="{RackSpace.gridColumnsChoisePopup()}">

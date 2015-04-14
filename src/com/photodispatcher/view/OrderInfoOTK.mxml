@@ -16,6 +16,7 @@
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.RackSpace;
 			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
@@ -53,6 +54,8 @@
 			private var bookTotal:int;
 			[Bindable]
 			private var bookComplited:int;
+			[Bindable]
+			private var space:RackSpace;
 			
 			private var showOrder:SubOrder;
 			private var pgId:String;
@@ -87,6 +90,8 @@
 				pgCover=null;
 				pgBlok=null;
 				order=null;
+				space=null;
+				
 				bookListAC=new ArrayCollection();
 				bookTotal=0;
 				bookComplited=0;
@@ -96,7 +101,24 @@
 				latch.addEventListener(Event.COMPLETE,onOrderLoad);
 				latch.addLatch(svc.loadOrder4Otk(subOrder.order_id, subOrder.sub_id));
 				latch.start();
+				
+				//get space & weight
+				latch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onSpaceGet);
+				var svcMp:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				latch.addLatch(svcMp.getOrderSpace(subOrder.order_id));
+				latch.start();
 			}
+
+			private function onSpaceGet(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSpaceGet);
+					space=latch.lastDataItem as RackSpace;
+				}
+			}
+
+			
 			private function onOrderLoad(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
@@ -374,6 +396,10 @@
 				setCompletePhoto();
 			}
 			
+			protected function btSpace_clickHandler(event:MouseEvent):void{
+				choiseSpace();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -449,6 +475,11 @@
 						<s:TextInput text="{pgBlok.prints}" editable="false" width="100%"/>
 					</s:FormItem> 
 
+					<s:FormItem label="Полка">
+						<s:TextInput text="{space.rack_name?space.rack_name:''} - {space.name?space.name:''}" editable="false" width="100%"/>
+						<s:TextInput text="Вес. Заказа: {space.weight.toFixed(1)} Группы: {space.unused_weight.toFixed(1)}" editable="false" width="100%"/>
+					</s:FormItem> 
+
 				</s:Form>
 			</s:Group>
 		</s:Scroller>
@@ -504,6 +535,7 @@
 			<s:Button id="btComplite" label="Проверена" enabled="{currBook!=0}" click="btComplite_clickHandler(event)" includeIn="book"/>
 			<s:Button id="btComplitePhoto" label="Проверено" click="btComplitePhoto_clickHandler(event)" includeIn="photo"/>
 			<s:Spacer height="100%"/>
+			<s:Button id="btSpace" label="Полка" click="btSpace_clickHandler(event)"/>
 			<s:Button id="btClose" label="Закрыть" click="btClose_clickHandler(event)"/>
 		</s:VGroup>
 	</s:HGroup>

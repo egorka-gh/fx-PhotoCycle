@@ -547,6 +547,7 @@ package com.photodispatcher.print{
 						}else{
 							//files loaded & state ok
 							pg.files=pgBd.files;
+							pg.alias=pgBd.alias;
 							if(pg.destinationLab){
 								//add to postQueue
 								postQueue.push(pg);
