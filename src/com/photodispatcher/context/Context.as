@@ -589,6 +589,8 @@ package com.photodispatcher.context{
 			
 			//order state 
 			latchAttributeLists.addLatch(dict.getStateValueList(onFieldList),'state');
+			//racks 
+			latchAttributeLists.addLatch(dict.getRackValueList(onFieldList),'rack');
 
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){

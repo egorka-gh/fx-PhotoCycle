@@ -26,6 +26,7 @@
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.PasswPopup;
+			import com.photodispatcher.view.RackInventoryPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
 			import mx.collections.ArrayCollection;
@@ -433,6 +434,11 @@
 				Context.setAttribute('termPrinter',termPrinter);
 			}
 			
+			protected function btInventoryRacks_clickHandler(event:MouseEvent):void{
+				var pop:RackInventoryPopUp= new RackInventoryPopUp();
+				pop.show();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -571,6 +577,8 @@
 		</s:Group>-->
 		<s:Label text="{lastBarcode}" height="100%" verticalAlign="bottom"/>
 		<s:Spacer width="100%"/>
+		<s:Button id="btInventoryRacks" label="Стеллажи" includeIn="monitor,mail" click="btInventoryRacks_clickHandler(event)"/>
+		<s:Spacer width="20"/>
 		<s:Button label="Конфигурация" includeIn="monitor,mail" click="button2_clickHandler(event)"/>
 		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
 		<s:Button label="ОТК" includeIn="config, mail" click="button1_clickHandler(event)"/>

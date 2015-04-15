@@ -18,10 +18,21 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _group_id:int;
         private var _order_id:String;
+        private var _rack:int;
         private var _rack_name:String;
+        private var _source:int;
+        private var _source_name:String;
         private var _space:int;
         private var _space_name:String;
+
+        public function set group_id(value:int):void {
+            _group_id = value;
+        }
+        public function get group_id():int {
+            return _group_id;
+        }
 
         public function set order_id(value:String):void {
             _order_id = value;
@@ -30,11 +41,32 @@ package com.photodispatcher.model.mysql.entities {
             return _order_id;
         }
 
+        public function set rack(value:int):void {
+            _rack = value;
+        }
+        public function get rack():int {
+            return _rack;
+        }
+
         public function set rack_name(value:String):void {
             _rack_name = value;
         }
         public function get rack_name():String {
             return _rack_name;
+        }
+
+        public function set source(value:int):void {
+            _source = value;
+        }
+        public function get source():int {
+            return _source;
+        }
+
+        public function set source_name(value:String):void {
+            _source_name = value;
+        }
+        public function get source_name():String {
+            return _source_name;
         }
 
         public function set space(value:int):void {
@@ -53,16 +85,24 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _group_id = input.readObject() as int;
             _order_id = input.readObject() as String;
+            _rack = input.readObject() as int;
             _rack_name = input.readObject() as String;
+            _source = input.readObject() as int;
+            _source_name = input.readObject() as String;
             _space = input.readObject() as int;
             _space_name = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_group_id is IPropertyHolder) ? IPropertyHolder(_group_id).object : _group_id);
             output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
+            output.writeObject((_rack is IPropertyHolder) ? IPropertyHolder(_rack).object : _rack);
             output.writeObject((_rack_name is IPropertyHolder) ? IPropertyHolder(_rack_name).object : _rack_name);
+            output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
+            output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
             output.writeObject((_space is IPropertyHolder) ? IPropertyHolder(_space).object : _space);
             output.writeObject((_space_name is IPropertyHolder) ? IPropertyHolder(_space_name).object : _space_name);
         }

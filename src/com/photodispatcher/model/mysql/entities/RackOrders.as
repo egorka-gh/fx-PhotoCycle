@@ -6,10 +6,24 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.RackOrders")]
     public class RackOrders extends RackOrdersBase {
+
+		public static function gridColumnsInventory():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			col= new GridColumn('order_id'); col.headerText='Заказ'; result.push(col);
+			col= new GridColumn('source_name'); col.headerText='Источник'; result.push(col);
+			col= new GridColumn('group_id'); col.headerText='Группа'; col.width=70; result.push(col);
+			col= new GridColumn('rack_name'); col.headerText='Стеллаж'; col.width=70; result.push(col);
+			col= new GridColumn('space_name'); col.headerText='Полка'; col.width=70; result.push(col);
+			return new ArrayList(result);
+		}
 
         public function RackOrders() {
             super();

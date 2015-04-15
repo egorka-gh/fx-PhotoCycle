@@ -26,6 +26,17 @@ package com.photodispatcher.model.mysql.services {
         }
     
         
+        public function clearSpace(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("clearSpace", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("clearSpace", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("clearSpace", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function getOrderSpace(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("getOrderSpace", arg0, resultHandler, faultHandler) as AsyncToken;
@@ -66,6 +77,28 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("getStateByPackages", arg0, arg1, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("getStateByPackages", arg0, arg1) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function inventoryRackOrders(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("inventoryRackOrders", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("inventoryRackOrders", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("inventoryRackOrders", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function inventorySpaces(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("inventorySpaces", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("inventorySpaces", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("inventorySpaces", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
@@ -143,6 +176,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadDeliveryTypeDictionary", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadDeliveryTypeDictionary") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadOrderSpacesHistory(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadOrderSpacesHistory", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadOrderSpacesHistory", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadOrderSpacesHistory", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

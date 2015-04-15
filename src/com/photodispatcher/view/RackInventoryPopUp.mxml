@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx"
+						   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+						   width="800" minHeight="300" 
+						  >
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.RackOrders;
+			import com.photodispatcher.model.mysql.entities.RackSpace;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.PopUpEvent;
+			
+			
+			[Bindable]
+			private var spacesAC:ArrayCollection;
+			[Bindable]
+			private var ordersAC:ArrayCollection;
+			[Bindable]
+			private var racksAC:ArrayCollection;
+			
+			public function show():void{
+				racksAC=Context.getAttribute('rackList');
+				loadData();
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				this.height=FlexGlobals.topLevelApplication.height-200;
+				PopUpManager.centerPopUp(this);
+			}
+			
+			private var _bdService:MailPackageService;
+			private function get bdService():MailPackageService{
+				if(!_bdService) _bdService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				return _bdService;
+			}
+			
+			private function loadData():void{
+				spacesAC=null;
+				ordersAC=null;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onloadSpaces);
+				latch.addLatch(bdService.inventorySpaces(0));
+				latch.start();
+				
+				latch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onloadOrders);
+				latch.addLatch(bdService.inventoryRackOrders(0));
+				latch.start();
+
+			}
+			private function onloadSpaces(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadSpaces);
+					if(latch.complite){
+						spacesAC=latch.lastDataAC;
+						spacesAC.filterFunction=filterSpaces;
+						spacesAC.refresh();
+					}
+				}
+			}
+			private function onloadOrders(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadOrders);
+					if(latch.complite){
+						ordersAC=latch.lastDataAC;
+						ordersAC.filterFunction=filterOrders;
+						ordersAC.refresh();
+					}
+				}
+			}
+			
+			private function filterSpaces(item:Object):Boolean{
+				var it:RackSpace=item as RackSpace;
+				if(!it) return false;
+				var rack:int;
+				if(fltRack && fltRack.selectedIndex>0) rack=fltRack.selectedItem.value;
+				if(!rack && !spaceMap) return true;
+				
+				if(rack){
+					if(it.rack==rack && (!spaceMap || spaceMap[it.id])) return true;
+				}else{
+					if(spaceMap && spaceMap[it.id]) return true;
+				}
+				return false;
+			}
+
+			private function filterOrders(item:Object):Boolean{
+				var it:RackOrders=item as RackOrders;
+				if(!it) return false;
+				var rack:int;
+				var order:String;
+				var grp:int;
+				var space:int;
+				if(fltRack && fltRack.selectedIndex>0) rack=fltRack.selectedItem.value;
+				if(fltOrder && fltOrder.text) order=fltOrder.text;
+				if(fltPackage && fltPackage.text) grp=int(fltPackage.text);
+				if(dgSpaces && dgSpaces.selectedIndex>-1) space=(dgSpaces.selectedItem as RackSpace).id;
+				if(!rack && !order && !grp && !space) return true;
+
+				var result:Boolean=!rack || it.rack==rack;
+				if(result) result= result && (!grp || it.group_id==grp); 
+				if(result) result= result && (!order || it.order_id.indexOf(order)>-1); 
+				if(result) result= result && (!space || it.space==space); 
+
+				return result;
+			}
+			
+			private var spaceMap:Object;
+			
+			private function applyFilters(ordersOnly:Boolean=false):void{
+				var order:String;
+				var grp:int;
+
+				if(!ordersOnly){
+					spaceMap=null;
+					if(fltOrder && fltOrder.text) order=fltOrder.text;
+					if(fltPackage && fltPackage.text) grp=int(fltPackage.text);
+					//fill rack map
+					if(ordersAC && (order || grp)){
+						spaceMap= new Object;
+						var item:RackOrders;
+						for each(item in ordersAC.source){
+							if(grp && item.group_id==grp && (!order || item.order_id.indexOf(order)>-1)) {
+								spaceMap[item.space]=true;
+							}else if(order && item.order_id.indexOf(order)>-1){
+								spaceMap[item.space]=true;
+							}
+						}
+					}
+					spacesAC.refresh();
+				}
+				ordersAC.refresh();
+			}
+
+			protected function dgOrders_creationCompleteHandler(event:FlexEvent):void{
+				var gridMenu:GridContexMenu;
+				gridMenu= new GridContexMenu(dgOrders); 
+				gridMenu.addItem('Сменить полку',resetSpaceCallBack);
+			}
+			private function resetSpaceCallBack(grid:DataGrid,param:int):void{
+				Alert.show('Для заказа будет сброшена текущая полка. Продолжить?','',Alert.YES|Alert.NO, this, onAlertresetSpace);
+			}
+			
+			private function onAlertresetSpace(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES){
+					var onItem:RackOrders=dgOrders.selectedItem as RackOrders;
+					if(onItem){
+						var latch:DbLatch= new DbLatch();
+						latch.addEventListener(Event.COMPLETE,onresetSpaceCallBack);
+						latch.addLatch(bdService.resetRackSpace(onItem.order_id));
+						latch.start();
+					}
+				}
+			}
+			private function onresetSpaceCallBack(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onresetSpaceCallBack);
+					if(latch.complite){
+						setSpaceCallBack(dgOrders,0);
+					}
+				}
+			}
+			private function setSpaceCallBack(grid:DataGrid,param:int):void{
+				var onItem:RackOrders=grid.selectedItem as RackOrders;
+				if(onItem){
+					var pop:RackSpaceChoisePopUp= new RackSpaceChoisePopUp();
+					pop.addEventListener(PopUpEvent.CLOSE,onsetSpaceCallBack);
+					pop.show(onItem.order_id, 0);
+				}
+			}
+			private function onsetSpaceCallBack(event:PopUpEvent):void{
+				var pop:RackSpaceChoisePopUp=event.target as RackSpaceChoisePopUp;
+				pop.removeEventListener(PopUpEvent.CLOSE,onsetSpaceCallBack);
+				loadData();
+			}
+
+			
+			protected function dgSpaces_creationCompleteHandler(event:FlexEvent):void{
+				var gridMenu:GridContexMenu;
+				gridMenu= new GridContexMenu(dgSpaces); 
+				gridMenu.addItem('Освободить полку',clearSpaceCallBack);
+			}
+			private function clearSpaceCallBack(grid:DataGrid,param:int):void{
+				Alert.show('Будут удалены все заказы назначенные полке. Продолжить?','',Alert.YES|Alert.NO, this, onAlertClearSpace);
+			}
+			private function onAlertClearSpace(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES){
+					var onItem:RackSpace=dgSpaces.selectedItem as RackSpace;
+					if(onItem){
+						var latch:DbLatch= new DbLatch();
+						latch.addEventListener(Event.COMPLETE,onClearSpace);
+						latch.addLatch(bdService.clearSpace(onItem.id));
+						latch.start();
+					}
+				}
+			}
+			private function onClearSpace(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onClearSpace);
+				}
+				loadData();
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:Rect  radiusX="6" radiusY="6" top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup left="10" right="10" top="10" bottom="10" gap="5">
+		<s:HGroup id="gFilters" width="100%" gap="5" verticalAlign="baseline">
+			<s:Label text="Стеллаж"/>
+			<s:DropDownList id="fltRack" dataProvider="{racksAC}"  change="{dgSpaces.selectedIndex=-1; applyFilters();}"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Заказ"/>
+			<s:TextInput id="fltOrder" change="{applyFilters()}"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Группа"/>
+			<s:TextInput id="fltPackage" change="{applyFilters()}"/>
+		</s:HGroup>
+		<s:HGroup width="100%" height="100%" gap="10">
+			<s:VGroup width="300" height="100%" gap="3">
+				<s:Label text="Полки" width="100%" fontWeight="bold"/>
+				<s:DataGrid id="dgSpaces" width="100%" height="100%"
+							selectionMode="singleRow" editable="false" locale="ru_RU"
+							dataProvider="{spacesAC}" columns="{RackSpace.gridColumnsInventory()}"
+							creationComplete="dgSpaces_creationCompleteHandler(event)"
+							selectionChange="{applyFilters(true)}">
+				</s:DataGrid>
+			</s:VGroup>
+			<s:VGroup width="100%" height="100%" gap="3">
+				<s:Label text="Заказы" width="100%" fontWeight="bold"/>
+				<s:DataGrid id="dgOrders" width="100%" height="100%"
+							selectionMode="singleRow" editable="false" locale="ru_RU"
+							creationComplete="dgOrders_creationCompleteHandler(event)"
+							dataProvider="{ordersAC}" columns="{RackOrders.gridColumnsInventory()}">
+				</s:DataGrid>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup width="100%" gap="10" horizontalAlign="right">
+			<s:Button id="btCancel" label="Закрыть" click="{close()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

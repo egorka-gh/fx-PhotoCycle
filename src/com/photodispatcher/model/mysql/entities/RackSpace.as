@@ -6,6 +6,8 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.util.GridUtil;
+	
 	import mx.collections.ArrayList;
 	
 	import spark.components.gridClasses.GridColumn;
@@ -29,6 +31,16 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('rack_name'); col.headerText='Стеллаж'; result.push(col);
 			col= new GridColumn('name'); col.headerText='Полка'; result.push(col);
 			col= new GridColumn('weight'); col.headerText='Вес(кг)'; result.push(col);
+			return new ArrayList(result);
+		}
+
+		public static function gridColumnsInventory():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			col= new GridColumn('rack_name'); col.headerText='Стеллаж'; col.width=70; result.push(col);
+			col= new GridColumn('name'); col.headerText='Полка'; col.width=70; result.push(col);
+			col= new GridColumn('weight'); col.headerText='Вес(кг)'; col.width=70; result.push(col);
+			col= new GridColumn('empty'); col.headerText='Cвободна'; col.width=70; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			return new ArrayList(result);
 		}
 

@@ -9,6 +9,7 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
+    import mx.collections.ListCollectionView;
     import org.granite.tide.IPropertyHolder;
 
     [Bindable]
@@ -18,9 +19,11 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _empty:Boolean;
         private var _height:int;
         private var _id:int;
         private var _name:String;
+        private var _orders:ListCollectionView;
         private var _rack:int;
         private var _rack_name:String;
         private var _rack_type_name:String;
@@ -28,6 +31,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _unused_weight:Number;
         private var _weight:Number;
         private var _width:int;
+
+        public function set empty(value:Boolean):void {
+            _empty = value;
+        }
+        public function get empty():Boolean {
+            return _empty;
+        }
 
         public function set height(value:int):void {
             _height = value;
@@ -48,6 +58,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get name():String {
             return _name;
+        }
+
+        public function set orders(value:ListCollectionView):void {
+            _orders = value;
+        }
+        public function get orders():ListCollectionView {
+            return _orders;
         }
 
         public function set rack(value:int):void {
@@ -101,9 +118,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _empty = input.readObject() as Boolean;
             _height = input.readObject() as int;
             _id = input.readObject() as int;
             _name = input.readObject() as String;
+            _orders = input.readObject() as ListCollectionView;
             _rack = input.readObject() as int;
             _rack_name = input.readObject() as String;
             _rack_type_name = input.readObject() as String;
@@ -115,9 +134,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_empty is IPropertyHolder) ? IPropertyHolder(_empty).object : _empty);
             output.writeObject((_height is IPropertyHolder) ? IPropertyHolder(_height).object : _height);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
+            output.writeObject((_orders is IPropertyHolder) ? IPropertyHolder(_orders).object : _orders);
             output.writeObject((_rack is IPropertyHolder) ? IPropertyHolder(_rack).object : _rack);
             output.writeObject((_rack_name is IPropertyHolder) ? IPropertyHolder(_rack_name).object : _rack_name);
             output.writeObject((_rack_type_name is IPropertyHolder) ? IPropertyHolder(_rack_type_name).object : _rack_type_name);
