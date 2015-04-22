@@ -43,6 +43,7 @@ package com.photodispatcher.model.mysql.entities {
 			lab.is_managed=this.is_managed;
 			lab.src_type_name=this.src_type_name;
 			lab.devices=this.devices;
+			lab.profiles=this.profiles;
 			lab.isSelected=this.isSelected;
 		}
 

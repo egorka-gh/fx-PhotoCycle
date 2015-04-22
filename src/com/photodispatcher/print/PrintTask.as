@@ -165,20 +165,25 @@ package com.photodispatcher.print{
 
 		
 		private function runPrepare():void{
-			printGrp.printRotated=false;
+			printGrp.printPrepare=false;
+			var prepare:PreparePrint= new PreparePrint(printGrp,lab);
+			prepare.addEventListener(Event.COMPLETE, onRotate);
+			prepare.run();
+			/*
 			if(printGrp.book_type!=0 
 				&& (lab.src_type==SourceType.LAB_NORITSU || lab.src_type==SourceType.LAB_NORITSU_NHF) 
 				&& Context.getAttribute('printRotated')){
-				var rotate:RotateTask= new RotateTask(printGrp,lab);
+				var rotate:PreparePrint= new PreparePrint(printGrp,lab);
 				rotate.addEventListener(Event.COMPLETE, onRotate);
 				rotate.run();
 			}else{
 				capturePost();
 			}
+			*/
 		}
 		
 		private function onRotate(evt:Event):void{
-			var rotate:RotateTask=evt.target as RotateTask;
+			var rotate:PreparePrint=evt.target as PreparePrint;
 			if(rotate){
 				rotate.removeEventListener(Event.COMPLETE, onRotate);
 				if(rotate.hasErr){
@@ -250,7 +255,7 @@ package com.photodispatcher.print{
 			if(src){
 				//check print folder
 				srcFName=src.getPrtFolder()+File.separator+printGrp.order_folder+File.separator+printGrp.path;
-				if(printGrp.printRotated) srcFName=srcFName+File.separator+RotateTask.ROTATE_FOLDER;
+				if(printGrp.printPrepare) srcFName=srcFName+File.separator+PreparePrint.ROTATE_FOLDER;
 				try{ 
 					srcFolder=new File(srcFName);
 				}catch(e:Error){}
@@ -402,7 +407,7 @@ package com.photodispatcher.print{
 				//set state
 				printGrp.state=OrderState.PRN_PRINT;
 				//clean rotate
-				if(printGrp.printRotated){
+				if(printGrp.printPrepare){
 					try{
 						srcFolder.deleteDirectory(true); 
 					}catch(e:Error){}

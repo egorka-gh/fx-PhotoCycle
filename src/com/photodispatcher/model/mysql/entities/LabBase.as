@@ -27,6 +27,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_active:Boolean;
         private var _is_managed:Boolean;
         private var _name:String;
+        private var _profiles:ListCollectionView;
         private var _queue_limit:int;
         private var _soft_speed:int;
         private var _src_type:int;
@@ -81,6 +82,13 @@ package com.photodispatcher.model.mysql.entities {
             return _name;
         }
 
+        public function set profiles(value:ListCollectionView):void {
+            _profiles = value;
+        }
+        public function get profiles():ListCollectionView {
+            return _profiles;
+        }
+
         public function set queue_limit(value:int):void {
             _queue_limit = value;
         }
@@ -119,6 +127,7 @@ package com.photodispatcher.model.mysql.entities {
             _is_active = input.readObject() as Boolean;
             _is_managed = input.readObject() as Boolean;
             _name = input.readObject() as String;
+            _profiles = input.readObject() as ListCollectionView;
             _queue_limit = input.readObject() as int;
             _soft_speed = input.readObject() as int;
             _src_type = input.readObject() as int;
@@ -135,6 +144,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_is_active is IPropertyHolder) ? IPropertyHolder(_is_active).object : _is_active);
             output.writeObject((_is_managed is IPropertyHolder) ? IPropertyHolder(_is_managed).object : _is_managed);
             output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
+            output.writeObject((_profiles is IPropertyHolder) ? IPropertyHolder(_profiles).object : _profiles);
             output.writeObject((_queue_limit is IPropertyHolder) ? IPropertyHolder(_queue_limit).object : _queue_limit);
             output.writeObject((_soft_speed is IPropertyHolder) ? IPropertyHolder(_soft_speed).object : _soft_speed);
             output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);

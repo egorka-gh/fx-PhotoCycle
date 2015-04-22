@@ -5,6 +5,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
+	import com.photodispatcher.model.mysql.entities.LabProfile;
 	import com.photodispatcher.model.mysql.entities.LabRoll;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
@@ -190,6 +191,13 @@ package com.photodispatcher.print{
 				}
 			}
 			return result;
+		}
+		
+		public function profileFile(paper:int):String{
+			if(!profiles || profiles.length==0) return null;
+			var profile:LabProfile= ArrayUtil.searchItem('paper',paper, profiles.toArray()) as LabProfile;
+			if(!profile) return null;
+			return profile.path();
 		}
 
 		public function canPrint(printGroup:PrintGroup):Boolean{

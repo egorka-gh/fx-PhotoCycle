@@ -155,7 +155,7 @@ package com.photodispatcher.model.mysql.entities {
 		 * runtime
 		 * used in PrintManager to rotate before print 
 		 */
-		public var printRotated:Boolean;
+		public var printPrepare:Boolean;
 
 		
 		public function PrintGroup(){

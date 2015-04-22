@@ -6,6 +6,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
@@ -23,7 +24,7 @@ package com.photodispatcher.print{
 	import org.granite.tide.Tide;
 	
 	[Event(name="complete", type="flash.events.Event")]
-	public class RotateTask extends EventDispatcher{
+	public class PreparePrint extends EventDispatcher{
 		public static const ROTATE_FOLDER:String='rotate';
 
 		public var hasErr:Boolean=false;
@@ -35,8 +36,10 @@ package com.photodispatcher.print{
 		private var srcFolder:File;
 		private var commands:Array=[];
 		private var maxThreads:int=0;
+		private var rotate:Boolean;
+		private var profilePath:String;
 		
-		public function RotateTask(printGroup:PrintGroup, lab:LabGeneric){
+		public function PreparePrint(printGroup:PrintGroup, lab:LabGeneric){
 			super(null);
 			this.printGrp=printGroup;
 			this.lab=lab;
@@ -48,7 +51,23 @@ package com.photodispatcher.print{
 				dispatchErr('Не верные параметры запуска.');
 				return;
 			}
-
+			
+			//check if neeed prepare
+			rotate=printGrp.book_type!=0 &&
+				(lab.src_type==SourceType.LAB_NORITSU || lab.src_type==SourceType.LAB_NORITSU_NHF) &&
+				Context.getAttribute('printRotated');
+			profilePath=lab.profileFile(printGrp.paper);
+			//check if prifile file exists
+			if(profilePath){
+				var file:File= new File(profilePath);
+				if(!file.exists || file.isDirectory) profilePath=null;
+			}
+			if(!rotate && !profilePath){
+				//nothig to prepare
+				dispatchEvent(new Event(Event.COMPLETE));
+				return;
+			}
+			
 			//capture rotate state
 			printGrp.state=OrderState.PRN_PREPARE;
 			//call service
@@ -89,7 +108,7 @@ package com.photodispatcher.print{
 
 
 		private function runRotate():void{	
-			lab.stateCaption='Поворот на 180';
+			lab.stateCaption='Допечатная подготовка';
 			//check src folder
 			//look up prt folder in print & wrk folders
 			var src:Source=Context.getSource(printGrp.source_id);
@@ -172,14 +191,19 @@ package com.photodispatcher.print{
 				if(item){
 					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
 					command.folder=srcFolder.nativePath;
-					//convert 001-02.jpg "-rotate" "180" -quality 100 001-02_r180.jpg
 					command.add(item.file_name);
-					command.add('-rotate');
-					command.add('180');
-					/*
-					command.add('-density'); command.add('300x300');
-					command.add('-quality'); command.add('100');
-					*/
+					if(rotate){
+						//convert 001-02.jpg "-rotate" "180" -quality 100 001-02_r180.jpg
+						command.add('-rotate');
+						command.add('180');
+					}
+					if(profilePath){
+						//convert "001-24 (1).jpg" -intent relative -black-point-compensation -profile "../Noritsu3411_ChrystalArchive-Semimate.icm" "..\cnv\001-24 (1).jpg"
+						command.add('-intent'); command.add('relative');
+						command.add('-black-point-compensation');
+						command.add('-profile'); command.add(profilePath);
+					}
+					
 					IMCommandUtil.setOutputParams(command);
 					command.add(ROTATE_FOLDER+File.separator+item.file_name);
 					commands.push(command);
@@ -191,7 +215,7 @@ package com.photodispatcher.print{
 			maxThreads=Context.getAttribute('imThreads');
 			if (maxThreads<=0){
 				//dispatchErr(OrderState.ERR_PRINT_POST,'IM не настроен или количество потоков 0.');
-				//skip rotate
+				//skip prepare
 				dispatchEvent(new Event(Event.COMPLETE));
 				return;
 			}
@@ -224,7 +248,7 @@ package com.photodispatcher.print{
 				//complited
 				trace('RotateTask. Complited, printgroup '+printGrp.id);
 				//TODO set rotate mark
-				printGrp.printRotated=true;
+				printGrp.printPrepare=true;
 				dispatchEvent(new Event(Event.COMPLETE));
 				return;
 			}

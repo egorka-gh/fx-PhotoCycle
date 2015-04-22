@@ -9,6 +9,7 @@
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.LabDevice;
+			import com.photodispatcher.model.mysql.entities.LabProfile;
 			import com.photodispatcher.model.mysql.entities.LabRoll;
 			import com.photodispatcher.model.mysql.entities.LabTimetable;
 			import com.photodispatcher.model.mysql.services.RollService;
@@ -25,6 +26,8 @@
 			private var rollList:ArrayCollection;
 			[Bindable]
 			private var ttList:ArrayCollection;
+			
+			private var tt:LabProfile;
 			
 			private var _currentItem:LabDevice;
 			[Bindable]
@@ -129,7 +132,24 @@
 			<s:Label text="От 203"/>
 			<s:TextInput id="tiSpeed2" text="{currentItem.speed2}" restrict="0-9" change="tiSpeed2_changeHandler(event)" width="50"/>
 		</s:HGroup>	
-		<s:HGroup width="100%" height="100%" gap="10">
+		<s:TabBar id="tbQueue" dataProvider="{vsDevParams}"/>
+		<mx:ViewStack id="vsDevParams" width="100%" height="100%" borderStyle="none" backgroundAlpha="0">
+			<s:NavigatorContent label="Расписание" backgroundAlpha="0" width="100%" height="100%">
+				<config:ItemsGrid id="gridTimeTable" editable="true" currentData="{ttList}"  requestedRowCount="7" currentColumns="{LabTimetable.gridColumns()}" />
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Магазины" backgroundAlpha="0" width="100%" height="100%">
+				<s:VGroup height="100%" width="100%" gap="5">
+					<s:HGroup gap="5" verticalAlign="baseline">
+						<s:Label text="Бумага"/>
+						<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyRollsFilter()}" width="150"/>
+					</s:HGroup>
+					<s:Button id="btAutoFill" label="Заполнить из каналов печати" click="btAutoFill_clickHandler(event)"/>
+					<config:ItemsGrid id="gridRolls" editable="true" currentData="{rollList}" currentColumns="{LabRoll.gridColumnsEdit()}" height="100%" width="400"/>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+		
+<!--		<s:HGroup width="100%" height="100%" gap="10">
 			<s:VGroup height="100%" gap="5">
 				<s:Label text="Расписание" height="21" verticalAlign="middle"/>
 				<config:ItemsGrid id="gridTimeTable" editable="true" currentData="{ttList}" requestedRowCount="7" currentColumns="{LabTimetable.gridColumns()}" />
@@ -145,7 +165,7 @@
 				<s:Button id="btAutoFill" label="Заполнить из каналов печати" click="btAutoFill_clickHandler(event)"/>
 				<config:ItemsGrid id="gridRolls" editable="true" currentData="{rollList}" currentColumns="{LabRoll.gridColumnsEdit()}" requestedRowCount="8" width="400"/>
 			</s:VGroup>
-		</s:HGroup>
+		</s:HGroup>-->
 	</s:VGroup>
 			 
 </s:Group>

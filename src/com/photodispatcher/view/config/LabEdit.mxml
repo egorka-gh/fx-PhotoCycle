@@ -10,6 +10,7 @@
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Lab;
 			import com.photodispatcher.model.mysql.entities.LabDevice;
+			import com.photodispatcher.model.mysql.entities.LabProfile;
 			import com.photodispatcher.model.mysql.entities.SelectResult;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.SourceType;
@@ -39,7 +40,9 @@
 					if(!typeList) typeList= Context.getAttribute('lab_typeValueList');
 					typeListIdx=ArrayUtil.searchItemIdx('value',_currentItem.src_type,typeList.source);
 					if(!_currentItem.devices) _currentItem.devices= new ArrayCollection();
+					profilesAC=_currentItem.profiles as ArrayCollection;
 				}
+				profilesFolder=LabProfile.getFolder();
 			}
 			[Bindable]
 			private var typeList:ArrayCollection;
@@ -47,6 +50,10 @@
 			private var typeListIdx:int;
 			[Bindable]
 			private var isNoritsu:Boolean=false;
+			[Bindable]
+			private var profilesAC:ArrayCollection;
+			[Bindable]
+			private var profilesFolder:String;
 
 			protected function ddType_changeHandler(event:IndexChangeEvent):void{
 				if(currentItem && ddType.selectedItem){
@@ -103,37 +110,44 @@
 		]]>
 	</fx:Script>
 	<s:HGroup width="100%" height="100%" gap="10">
-		<s:Form height="100%">
-			<s:layout>
-				<s:FormLayout gap="-12"/>
-			</s:layout>
-			
-			<s:FormItem label="Тип" required="true" enabled="{!currentItem.loaded}" >
-				<s:DropDownList id="ddType" dataProvider="{typeList}" selectedIndex="{typeListIdx}" change="ddType_changeHandler(event)" width="200"/>
-			</s:FormItem>
-			<s:FormItem label="Наименование">
-				<s:TextInput id="tiName" text="@{currentItem.name}" change="{currentItem.changed=true}" width="200"/>
-			</s:FormItem> 
-			<s:FormItem label="Hot folder">
-				<s:TextInput id="tiHot" text="@{currentItem.hot}" change="{currentItem.changed=true}" width="200"/>
-			</s:FormItem>
-			<s:FormItem label="Hot folder NHF" enabled="{isNoritsu}">
-				<s:TextInput id="tiHotNsf" text="@{currentItem.hot_nfs}" change="{currentItem.changed=true}" width="200"/>
-			</s:FormItem> 
-			<s:FormItem label="Автопечать">
-				<s:CheckBox selected="@{currentItem.is_managed}" change="{currentItem.changed=true}"/>
-			</s:FormItem> 
-			<s:FormItem label="Очередь печати (мин)" >
-				<s:NumericStepper value="@{currentItem.queue_limit}" minimum="0" maximum="240" stepSize="10"
-								  enabled="{currentItem.is_managed}" change="{currentItem.changed=true}"/>
-			</s:FormItem>
-			<s:FormItem label="Скорость обработки (файлов/мин)" toolTip="Количество файлов, которое обрабатывается софтом за 1 мин при постановке на печать">
-				<s:TextInput id="softSpeedInput" text="{currentItem.soft_speed}" restrict="0-9" change="{currentItem.soft_speed = parseInt(softSpeedInput.text); currentItem.changed=true}" />
-			</s:FormItem>
-			<s:FormItem label="Активна">
-				<s:CheckBox id="chbOnline" selected="@{currentItem.is_active}" change="{currentItem.changed=true}"/>
-			</s:FormItem> 
-		</s:Form>
+		<s:VGroup height="100%" gap="0">
+			<s:Form>
+				<s:layout>
+					<s:FormLayout gap="-12"/>
+				</s:layout>
+				
+				<s:FormItem label="Тип" required="true" enabled="{!currentItem.loaded}" >
+					<s:DropDownList id="ddType" dataProvider="{typeList}" selectedIndex="{typeListIdx}" change="ddType_changeHandler(event)" width="200"/>
+				</s:FormItem>
+				<s:FormItem label="Наименование">
+					<s:TextInput id="tiName" text="@{currentItem.name}" change="{currentItem.changed=true}" width="200"/>
+				</s:FormItem> 
+				<s:FormItem label="Hot folder">
+					<s:TextInput id="tiHot" text="@{currentItem.hot}" change="{currentItem.changed=true}" width="200"/>
+				</s:FormItem>
+				<s:FormItem label="Hot folder NHF" enabled="{isNoritsu}">
+					<s:TextInput id="tiHotNsf" text="@{currentItem.hot_nfs}" change="{currentItem.changed=true}" width="200"/>
+				</s:FormItem> 
+				<s:FormItem label="Автопечать">
+					<s:CheckBox selected="@{currentItem.is_managed}" change="{currentItem.changed=true}"/>
+				</s:FormItem> 
+				<s:FormItem label="Очередь печати (мин)" >
+					<s:NumericStepper value="@{currentItem.queue_limit}" minimum="0" maximum="240" stepSize="10"
+									  enabled="{currentItem.is_managed}" change="{currentItem.changed=true}"/>
+				</s:FormItem>
+				<s:FormItem label="Скорость обработки (файлов/мин)" toolTip="Количество файлов, которое обрабатывается софтом за 1 мин при постановке на печать">
+					<s:TextInput id="softSpeedInput" text="{currentItem.soft_speed}" restrict="0-9" change="{currentItem.soft_speed = parseInt(softSpeedInput.text); currentItem.changed=true}" />
+				</s:FormItem>
+				<s:FormItem label="Активна">
+					<s:CheckBox id="chbOnline" selected="@{currentItem.is_active}" change="{currentItem.changed=true}"/>
+				</s:FormItem> 
+			</s:Form>
+			<s:VGroup height="100%" width="400" paddingLeft="30" gap="5">
+				<s:Label text="Профили" fontWeight="bold"/>
+				<s:Label text="Папка: {profilesFolder}" width="100%" maxDisplayedLines="2"/>
+				<config:ItemsGrid id="grProfiles" editable="true" currentData="{profilesAC}" currentColumns="{LabProfile.gridColumnsEdit()}" height="100%" width="100%"/>
+			</s:VGroup>
+		</s:VGroup>
 		<s:VGroup height="100%" gap="5" enabled="{currentItem.loaded}">
 			<s:Label text="Устройства"/>
 			<s:List id="lstDevices" dataProvider="{currentItem.devices}" labelField="name"/>
