@@ -8,6 +8,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.factory.PrintGroupBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
@@ -223,12 +224,16 @@
 			public function set currReprintPg(value:Object):void{
 				_currReprintPg = (value as PrintGroup);
 				if(_currReprintPg){
+					/*
 					if(_currReprintPg.is_pdf){
 						chkPreview.selected=false;
 						chkPreview.enabled=false;
 					}else{
 						chkPreview.enabled=true;
+						reprintFileList=_currReprintPg.files as ArrayCollection;
 					}
+					*/
+					chkPreview.enabled=true;
 					reprintFileList=_currReprintPg.files as ArrayCollection;
 					chkPreview_changeHandler(null);
 				}else{
@@ -236,6 +241,18 @@
 				}
 			}
 
+			/*
+			private function fillPdfReprintItems():void{
+				if(!_currReprintPg.is_pdf) return;
+				if(!_currReprintPg.bookTemplate)  return;
+				
+				if(_currReprintPg.bookTemplate.is_sheet_ready){
+					//no pages
+					reprintFileList=_currReprintPg.files as ArrayCollection;
+					return;
+				}
+			}
+			*/
 			
 			protected function btReprintMode_clickHandler(event:MouseEvent):void{
 				var srcArr:Array=pgList.source;
@@ -252,24 +269,40 @@
 				var pgf:PrintGroupFile;
 
 				var orderPath:String='';
+				var orderWrkPath:String='';
 				if(order){
 					var src:Source=Context.getSource(order.source);
 					if(src){
 						orderPath=src.getPrtFolder()+File.separator+order.ftp_folder;
+						orderWrkPath=src.getWrkFolder()+File.separator+order.ftp_folder;
 					}
 				}
 				
 				var pgPath:String='';
+				var builder:PrintGroupBuilder= new PrintGroupBuilder();
 				for each (pg in srcArr){
 					if(pg && !pg.is_reprint && pg.files && pg.files.length>0){
 						newPg=pg.clone();
 						newPg.id=pg.id;
 						pgArr.push(newPg);
-						if(orderPath) pgPath=orderPath+File.separator+newPg.path;
-						for each(pgf in pg.files){
-							newPgf=pgf.clone();
-							if(pgPath) newPgf.fullPath=pgPath+File.separator+pgf.file_name;
-							newPg.addFile(newPgf);
+						if(newPg.is_pdf){
+							//recreate files
+							if(!builder.recreateFromFilesystem(order,newPg)) break;
+							pgPath=orderWrkPath+File.separator+newPg.path;
+							//extend path
+							for each(pgf in newPg.files){
+								if(pgf) pgf.fullPath=pgPath+File.separator+pgf.file_name;
+							}
+						}else{
+							pgPath=orderPath+File.separator+newPg.path;
+							//clone files
+							for each(pgf in pg.files){
+								if(pgf){
+									newPgf=pgf.clone();
+									if(pgPath) newPgf.fullPath=pgPath+File.separator+pgf.file_name;
+									newPg.addFile(newPgf);
+								}
+							}
 						}
 					}
 				}
@@ -284,11 +317,14 @@
 			
 			protected function chkPreview_changeHandler(event:Event):void{
 				var pgf:PrintGroupFile;
+				var a:Array=[];
 				for each (pgf in reprintFileList){
 					if(pgf){
 						pgf.showPreview= chkPreview.selected && pgf.fullPath;
+						a.push(pgf);
 					}
 				}
+				reprintFileList=new ArrayCollection(a);
 			}
 			
 			private var pop:StaffActivityPopup;

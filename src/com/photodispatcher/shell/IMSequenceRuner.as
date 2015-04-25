@@ -18,9 +18,12 @@ package com.photodispatcher.shell{
 
 		public var state:int=IMCommand.STATE_WAITE;
 
-		public function IMSequenceRuner(sequence:Array=null){
+		public var ignoreWarning:Boolean;
+
+		public function IMSequenceRuner(sequence:Array=null, ignoreWarning:Boolean=false){
 			super(null);
 			this.sequence=sequence;
+			this.ignoreWarning=ignoreWarning;
 		}
 		
 		public function start(sequence:Array=null, threads:int=1):void{
@@ -73,7 +76,7 @@ package com.photodispatcher.shell{
 		}
 		private function runCmd(command:IMCommand):void{
 			if(!command) return;
-			var im:IMRuner=new IMRuner(Context.getAttribute('imPath'),command.folder);
+			var im:IMRuner=new IMRuner(Context.getAttribute('imPath'),command.folder, ignoreWarning);
 			im.addEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
 			im.start(command);
 		}

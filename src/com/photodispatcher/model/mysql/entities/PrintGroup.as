@@ -95,6 +95,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
 			col= new GridColumn('lab_name'); col.headerText='Лаборатория'; col.width=70; result.push(col);
 			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('alias'); col.headerText='Алиас'; col.width=70; result.push(col);
 			col= new GridColumn('path'); col.headerText='Папка'; result.push(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
 			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
@@ -268,6 +269,7 @@ package com.photodispatcher.model.mysql.entities {
 			res.cutting_name=cutting_name;
 			
 			res.path=path;
+			res.alias=alias;
 			
 			res.book_type=book_type;
 			res.book_type_name=book_type_name;

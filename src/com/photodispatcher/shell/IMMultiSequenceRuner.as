@@ -14,9 +14,12 @@ package com.photodispatcher.shell{
 		private var threads:int;
 		private var totalCommands:int;
 		private var hasErr:Boolean=false;
+		
+		public var ignoreWarning:Boolean;
 
-		public function IMMultiSequenceRuner(){
+		public function IMMultiSequenceRuner(ignoreWarning:Boolean=false){
 			super(null);
+			this.ignoreWarning=ignoreWarning;
 		}
 		
 		public function start(sequences:Array, threads:int=1):void{
@@ -42,7 +45,7 @@ package com.photodispatcher.shell{
 			for each(seq in sequences){
 				if(seq && seq.length>0){
 					totalCommands+=seq.length;
-					runer= new IMSequenceRuner(seq);
+					runer= new IMSequenceRuner(seq,ignoreWarning);
 					sequence.push(runer);
 				}
 			}

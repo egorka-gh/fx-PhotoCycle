@@ -7,11 +7,13 @@ package com.photodispatcher.provider.fbook.model{
 	import com.akmeful.fotokniga.book.data.BookPage;
 	import com.akmeful.fotokniga.book.layout.BookLayout;
 	import com.akmeful.magnet.data.MagnetProject;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.makeup.IMLayer;
 	import com.photodispatcher.provider.fbook.makeup.IMMsl;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.util.StrUtil;
+	import com.photodispatcher.util.UnitUtil;
 	
 	import flash.filesystem.File;
 	import flash.geom.Matrix;
@@ -218,8 +220,16 @@ package com.photodispatcher.provider.fbook.model{
 		public function outFileName(sliceNum:int=0):String{
 			if(sliceNum<=0){
 				//simple out file name
-				//return OUT_FILE_PREFIX+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_EXT;
-				return StrUtil.lPad(book.bookNumber.toString(),3)+'-'+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_EXT;
+				var str:String=StrUtil.lPad(book.bookNumber.toString(),3)+'-'+StrUtil.lPad(sheetNum.toString(),2);
+				if(sheetNum==0){
+					//cover add height & butt
+					//000-00_309_5.jpg
+					var coverPixels:Point=book.getPixelSise(BookSynonym.BOOK_PART_COVER);
+					var ht:int=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
+					var bt:int=UnitUtil.pixels2mm300(book.buttWidth());
+					str=str+'_'+ht.toString()+'_'+bt.toString();
+				}
+				return str+OUT_FILE_EXT;
 			}else{
 				//slice
 				//return OUT_FILE_PREFIX+StrUtil.lPad(sheetNum.toString(),2)+OUT_FILE_SLICE_SUFIX+sliceNum.toString()+OUT_FILE_EXT;

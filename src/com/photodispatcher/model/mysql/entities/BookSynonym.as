@@ -186,13 +186,13 @@ package com.photodispatcher.model.mysql.entities {
 
 		
 		
-		public function createPrintGroup(path:String, bookPart:int, butt:int=0):PrintGroup{
+		public function createPrintGroup(path:String, bookPart:int, butt:int=0, printGroup:PrintGroup=null):PrintGroup{
 			var pg:PrintGroup;
 			var it:BookPgTemplate;
 			if(!templates) return null;
 			for each(it in templates){
 				if(it && it.book_part==bookPart){
-					pg=it.createPrintGroup(path,book_type,butt);
+					pg=it.createPrintGroup(path,book_type,butt,printGroup);
 				}
 			}
 			if(pg) pg.is_horizontal=is_horizontal;

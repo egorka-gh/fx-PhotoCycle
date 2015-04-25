@@ -109,7 +109,7 @@
 
 				var doublePage:Boolean=(block.is_pdf && block.bookTemplate && !block.bookTemplate.is_sheet_ready);
 				//prevent empty pages
-				block.is_duplex=false;
+				//block.is_duplex=false;
 				var item:BookPreviewSheet;
 				var blockPages:Array=block.bookFiles;
 				var coverPages:Array;

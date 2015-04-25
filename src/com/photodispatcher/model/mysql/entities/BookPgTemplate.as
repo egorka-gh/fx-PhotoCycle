@@ -49,8 +49,9 @@ package com.photodispatcher.model.mysql.entities {
 			return result;
 		}
 
-		public function createPrintGroup(path:String, bookType:int, butt:int=0):PrintGroup{
-			var pg:PrintGroup=new PrintGroup();
+		public function createPrintGroup(path:String, bookType:int, butt:int=0, printGroup:PrintGroup=null):PrintGroup{
+			var pg:PrintGroup=printGroup;
+			if(!pg) pg=new PrintGroup();
 			pg.path=path;
 			pg.book_type=bookType;
 			pg.book_part=book_part;

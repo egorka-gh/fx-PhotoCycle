@@ -14,7 +14,6 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.photodispatcher.provider.preprocess.BookMakeupGroup;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMMultiSequenceRuner;
-	import com.photodispatcher.shell.IMRuner;
 	import com.photodispatcher.shell.IMSequenceRuner;
 	
 	import flash.events.Event;
@@ -246,7 +245,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				fs.close();
 			} catch(err:Error){}
 
-			var runner:IMMultiSequenceRuner= new IMMultiSequenceRuner();
+			var runner:IMMultiSequenceRuner= new IMMultiSequenceRuner(true);
 			runner.addEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
 			runner.addEventListener(IMRunerEvent.IM_COMPLETED, onPagesComplite);
 			runner.start(sequences,maxThreads);

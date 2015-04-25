@@ -358,7 +358,7 @@ package com.photodispatcher.factory{
 				if(dst.is_duplex && !preview){
 					if(dst.book_type==BookSynonym.BOOK_TYPE_BOOK) dst.sheet_num++; //blank page
 					//duplex so
-					dst.sheet_num=dst.sheet_num/2;
+					dst.sheet_num=dst.sheet_num/2; //????
 				}
 			}
 			
@@ -605,16 +605,16 @@ package com.photodispatcher.factory{
 
 			//build file list
 			var fName:String=src.getWrkFolder()+File.separator+order.ftp_folder+File.separator+pg.path;
-			var fl:File=new File(fName);
-			if(!fl.exists || !fl.isDirectory){
+			var file:File=new File(fName);
+			if(!file.exists || !file.isDirectory){
 				Alert.show('Папка заказа не найдена');
 				return false;
 			}
-			var rootDir:File=fl;
+			var rootDir:File=file;
 			var a:Array=rootDir.getDirectoryListing();
 			var fNames:Array=[];
-			for each(fl in a){
-				if(!fl.isDirectory) fNames.push(fl.name);
+			for each(file in a){
+				if(!file.isDirectory) fNames.push(file.name);
 			}
 			//parse files & book params
 			var ppg:PrintGroup=parseBookFiles(fNames);
@@ -661,5 +661,90 @@ package com.photodispatcher.factory{
 			}
 			return true;
 		}
+		
+		/*
+		 * for books only 
+		*/
+		public function recreateFromFilesystem(order:Order, pg:PrintGroup):Boolean{
+			if(!Order || !pg) return false;
+			if(pg.book_type==0) return false; 
+			
+			var src:Source=Context.getSource(order.source);
+			if(!src) return false;
+			//check wrk folder
+			if(!Context.getAttribute('workFolder')) return false;
+			//get order path
+			var orderPath:String=src.getWrkFolder()+File.separator+order.ftp_folder;
+			var orderFolder:File=new File(orderPath);
+			if(!orderFolder.exists || !orderFolder.isDirectory) return false;
+			
+			var pgFolder:File;
+			pgFolder=orderFolder.resolvePath(pg.path);
+			if(!pgFolder.exists || !orderFolder.isDirectory)  return false;
+			
+			var a:Array=pgFolder.getDirectoryListing();
+			var fNames:Array=[];
+			var file:File;
+			for each(file in a){
+				if(!file.isDirectory) fNames.push(file.name);
+			}
+			//parse files & book params
+			var ppg:PrintGroup=parseBookFiles(fNames);
+			if(!ppg) return false;
+			
+			//try get synonym
+			var bookSynonym:BookSynonym;
+			try{
+				//try to finde print alias (fbook type first)
+				bookSynonym=BookSynonym.translateAlias(pg.alias);
+				//maybe common alias look in pro synonyms 
+				if(!bookSynonym) bookSynonym=BookSynonym.translatePath(pg.path,src.type); 
+			} catch(error:Error){
+				trace('recreatePDFReprint err: '+error.message);
+				return false;
+			}
+			if(!bookSynonym) return false;
+			
+			pg.files=null;
+			if(pg.book_part==BookSynonym.BOOK_PART_COVER){
+				//covers group
+				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_COVER, ppg.butt, pg)){
+					//cover group
+					if(ppg.height){
+						pg.height=ppg.height;
+						pg.height=pg.height+2*pg.bookTemplate.height_add;
+					}
+					fillCovers(ppg,pg);
+				}
+			}else if(pg.book_part==BookSynonym.BOOK_PART_INSERT){
+				//insert group
+				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_INSERT,0,pg)){
+					fillInsert(ppg,pg);
+				}
+			}else if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
+				//sheets group
+				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_BLOCK,0,pg)){
+					fillSheets(ppg, pg, false);
+				}
+			}
+			if(pg.files){
+				pg.book_num=ppg.book_num;
+				a=pg.bookFiles;
+				//remove empty
+				var a2:Array=[];
+				var pgf:PrintGroupFile;
+				for each(pgf in a){
+					if(pgf) a2.push(pgf);
+				}
+				pg.files= new ArrayCollection(a2);
+				pg.resetBookFiles();
+				pg.file_num=pg.files.length;
+			}else{
+				return false;
+			}
+			return true;
+		}
+
+		
 	}
 }

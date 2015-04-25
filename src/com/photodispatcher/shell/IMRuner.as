@@ -66,6 +66,9 @@ package  com.photodispatcher.shell{
 		private function get hasError():Boolean{
 			return _hasError;
 		}
+		
+		public var hasWarning:Boolean;
+		public var ignoreWarning:Boolean;
 
 		private function set hasError(value:Boolean):void{
 			_hasError = value;
@@ -86,10 +89,11 @@ package  com.photodispatcher.shell{
 
 		public var targetObject:Object;
 		
-		public function IMRuner(imPath:String, workFolder:String){
+		public function IMRuner(imPath:String, workFolder:String, ignoreWarning:Boolean=false){
 			super(null);
 			this.workFolder=workFolder;
 			this.imPath=imPath;
+			this.ignoreWarning=ignoreWarning;
 		}
 		
 		public function start(command:IMCommand, register:Boolean=true):void{
@@ -170,22 +174,13 @@ package  com.photodispatcher.shell{
 		}
 		
 		private function procErr(e:Event):void{
-			//proc.removeEventListener(NativeProcessExitEvent.EXIT,complite);
-			//proc.removeEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, procRespond);
-			//proc.removeEventListener(ProgressEvent.STANDARD_ERROR_DATA, procErr);
 			errorResponse+=proc.standardError.readUTFBytes(proc.standardError.bytesAvailable);
-			//proc=null;
-			hasError=true;
-			//dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,command,true,errorResponse));
+			//hasError=true;
 		}
 		private function procRespond(e:Event):void{
-			//proc.removeEventListener(NativeProcessExitEvent.EXIT,complite);
-			//proc.removeEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, procRespond);
-			//proc.removeEventListener(ProgressEvent.STANDARD_ERROR_DATA, procErr);
+			// /JPEGWarningHandler/
 			errorResponse+=proc.standardOutput.readUTFBytes(proc.standardOutput.bytesAvailable);
-			//proc=null;
-			hasError=true;
-			//dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,command,true,errorResponse));
+			//hasError=true;
 		}
 		private function complite(e:Event):void{
 			IMRuner.unregisterInstance(this);
@@ -196,6 +191,13 @@ package  com.photodispatcher.shell{
 			command.profileEnd=getTimer();
 			//Duration in s
 			command.profileDuration=(command.profileEnd-command.profileStart)/1000;
+			if(errorResponse){
+				if(ignoreWarning && errorResponse.indexOf('JPEGWarningHandler')!=-1){
+					hasWarning=true;
+				}else{
+					hasError=true;
+				}
+			}
 			if(!hasError) command.state=IMCommand.STATE_COMPLITE;
 			dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,command,hasError,errorResponse));
 		}

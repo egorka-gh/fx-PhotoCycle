@@ -20,6 +20,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.akmeful.util.GeomUtil;
 	import com.akmeful.util.RectangleTransformation;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.download.DownloadErrorItem;
 	import com.photodispatcher.provider.fbook.download.FBookContentDownloadManager;
