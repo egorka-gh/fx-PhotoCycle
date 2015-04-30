@@ -18,6 +18,14 @@ package com.photodispatcher.provider.preprocess{
 			leftPage=p;
 		}
 		
+		private var _reprint:Boolean;
+		public function get reprint():Boolean{
+			return _reprint || (leftPage && leftPage.reprint) || (rightPage && rightPage.reprint);
+		}
+		public function set reprint(val:Boolean):void{
+			_reprint=val;
+		}
+		
 		public function getCommand(pageSize:Point,sheetSize:Point, printGroup:PrintGroup):IMCommand{
 			var command:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			var width:String=sheetSize.x.toString();

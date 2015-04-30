@@ -43,13 +43,16 @@ package com.photodispatcher.provider.preprocess{
 		//private var currFileIdx:int=-1;
 		private var hasErr:Boolean=false;
 		private var logStates:Boolean;
+		private var reprintMode:Boolean=false;
 
-		public function PreprocessTask(order:Order, orderFolder:String, prtFolder:String, logStates:Boolean=true){
+
+		public function PreprocessTask(order:Order, orderFolder:String, prtFolder:String, logStates:Boolean=true, reprintMode:Boolean=false){
 			super(null);
 			this.order=order;
 			this.orderFolder=orderFolder;
 			this.prtFolder=prtFolder;
 			this.logStates=logStates;
+			this.reprintMode=reprintMode;
 		}
 		
 		public function run():void{
@@ -59,23 +62,36 @@ package com.photodispatcher.provider.preprocess{
 				return;
 			}
 			order.state=OrderState.PREPROCESS_RESIZE;
-			maxThreads=Context.getAttribute('imThreads');
+			maxThreads=reprintMode?1:Context.getAttribute('imThreads');
 			if((!order.printGroups || order.printGroups.length==0) && (!order.suborders || order.suborders.length==0)){
 				//nothig to process
 				dispatchEvent(new OrderPreprocessEvent(order));
 				return;
 			}
 			trace('PreprocessTask. start order: '+order.id);
-			//check create print subfolder
-			for each(pg in order.printGroups){
-				if (pg && pg.state<OrderState.CANCELED && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,true)){
-					return;
+			if(reprintMode){
+				//check create print subfolder
+				for each(pg in order.printGroups){
+					if (pg && pg.is_pdf && pg.state<OrderState.CANCELED && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,false)){
+						return;
+					}
 				}
+				//process pdfs only
+				startPdfmakeup();
+			}else{
+				//check create print subfolder
+				for each(pg in order.printGroups){
+					if (pg && pg.state<OrderState.CANCELED && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,true)){
+						return;
+					}
+				}
+				//full process sequence
+				var resizeTask:ResizeTask= new ResizeTask(order,orderFolder, prtFolder,logStates);
+				resizeTask.addEventListener(Event.COMPLETE, onResizeComplite);
+				resizeTask.addEventListener(ProgressEvent.PROGRESS, onResizeProgress);
+				resizeTask.run();
 			}
-			var resizeTask:ResizeTask= new ResizeTask(order,orderFolder, prtFolder,logStates);
-			resizeTask.addEventListener(Event.COMPLETE, onResizeComplite);
-			resizeTask.addEventListener(ProgressEvent.PROGRESS, onResizeProgress);
-			resizeTask.run();
+			
 		}
 		
 		private function reportProgress(caption:String='',ready:Number=0, total:Number=0):void{
@@ -103,11 +119,9 @@ package com.photodispatcher.provider.preprocess{
 		private var sequenceNum:int;
 		
 		private function startPdfmakeup():void{
-			//TODO refactor 2 IMSequenceRuner
 			var pg:PrintGroup;
 			var mg:BookMakeupGroup;
 			hasErr=false;
-			//var path:String=orderFolder+File.separator+order.ftp_folder;
 			for each(pg in order.printGroups){
 				mg=null;
 				if(pg && pg.book_type!=0 && pg.state<OrderState.CANCELED){
@@ -118,24 +132,27 @@ package com.photodispatcher.provider.preprocess{
 						}else{
 							mg=new PDFsimpleMakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
 						}
-					}else{
+						mg.reprintMode=reprintMode;
+					}else if(!reprintMode){
 						mg=new BookMakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
 					}
-					try{
-						mg.createCommands();
-					}catch(err:Error) {
-						dispatchErr(OrderState.ERR_PREPROCESS,err.message);
-						return;
-					}
-					if(mg.state==BookMakeupGroup.STATE_ERR){
-						//complite vs error
-						dispatchErr(mg.err,mg.err_msg);
-						return;
-					}
-					if(mg.hasCommands){
-						//check/create print sub dir
-						if (!checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT)) return;
-						pdfItems.push(mg);
+					if(mg){
+						try{
+							mg.createCommands();
+						}catch(err:Error) {
+							dispatchErr(OrderState.ERR_PREPROCESS,err.message);
+							return;
+						}
+						if(mg.state==BookMakeupGroup.STATE_ERR){
+							//complite vs error
+							dispatchErr(mg.err,mg.err_msg);
+							return;
+						}
+						if(mg.hasCommands){
+							//check/create print sub dir
+							if (!checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT)) return;
+							pdfItems.push(mg);
+						}
 					}
 				}
 			}
@@ -226,7 +243,7 @@ package com.photodispatcher.provider.preprocess{
 			trace('PreprocessTask. Command complite: '+im.currentCommand);
 			if(e.hasError){
 				trace('PreprocessTask. Book makeup error, order '+order.id+', error: '+e.error);
-				IMRuner.stopAll();
+				//IMRuner.stopAll();
 				dispatchErr(OrderState.ERR_PREPROCESS,e.error);
 				return;
 			}
@@ -281,9 +298,7 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		private function postProcess():void{
-			//StateLogDAO.logState(order.state,order.id,'','Копирование в print (postProcess)'); 
-
-			var postProcessTask:PostProcessTask=new PostProcessTask(order,orderFolder, prtFolder);
+			var postProcessTask:PostProcessTask=new PostProcessTask(order,orderFolder, prtFolder, reprintMode);
 			postProcessTask.addEventListener(Event.COMPLETE,onPostProcess);
 			postProcessTask.addEventListener(ProgressEvent.PROGRESS, onResizeProgress);
 			postProcessTask.run();

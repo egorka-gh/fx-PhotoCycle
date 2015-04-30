@@ -38,7 +38,7 @@ package com.photodispatcher.provider.preprocess{
 			var command2:IMCommand;
 			var outName:String;
 			var pageLimit:int=Context.getAttribute('pdfPageLimit');
-			if(!pageLimit) pageLimit=100;
+			if(!pageLimit) pageLimit=30;
 			var pdfPageNum:int=0;
 			var pdfName:String;
 
@@ -105,25 +105,29 @@ package com.photodispatcher.provider.preprocess{
 					err_msg='Не верный состав книги. Не определен файл №'+(i+1).toString();
 					return;
 				}
-				command=createCommand(it,folder);
-				//save
-				outName= TEMP_FOLDER+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
-				command.add(outName);
-				commands.push(command);
-				//add 2 final(pdf) cmd
-				command2.add(outName);
-				pdfPageNum++;
+				if(!reprintMode || it.reprint){
+					command=createCommand(it,folder);
+					//save
+					outName= TEMP_FOLDER+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
+					command.add(outName);
+					commands.push(command);
+					//add 2 final(pdf) cmd
+					command2.add(outName);
+					pdfPageNum++;
+				}
 			}
 			//finalyze pdf cmd
-			pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
-			IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
-			command2.add(outPath(pdfName));
-			finalCommands.push(command2);
-			//add to printGroup.files
-			newFile= new PrintGroupFile();
-			newFile.file_name=pdfName;
-			newFile.prt_qty=1;
-			printGroup.addFile(newFile);
+			if(!reprintMode || pdfPageNum>0){
+				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
+				IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
+				command2.add(outPath(pdfName));
+				finalCommands.push(command2);
+				//add to printGroup.files
+				newFile= new PrintGroupFile();
+				newFile.file_name=pdfName;
+				newFile.prt_qty=1;
+				printGroup.addFile(newFile);
+			}
 			
 			//expand format by tech
 			if(printGroup.bookTemplate.tech_bar &&

@@ -220,7 +220,6 @@ package com.photodispatcher.provider.preprocess{
 		}
 		private function destroyBuilder(builder:OrderBuilderBase):void{
 			if(!builder) return;
-			//TODO Implement
 			builder.removeEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);
 			builder.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
 			builder.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);

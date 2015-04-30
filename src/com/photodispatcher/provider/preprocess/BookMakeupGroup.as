@@ -17,7 +17,6 @@ package com.photodispatcher.provider.preprocess{
 		public static const TEXT_LEFT_OFFSET_PIX:int=500;
 		public static const TEXT_TOP_OFFSET_PIX:int=0;
 		public static const TEXT_OFFSET:String='+'+TEXT_LEFT_OFFSET_PIX.toString()+'+'+TEXT_TOP_OFFSET_PIX.toString();
-		//public static const TEXT_UNDERCOLOR:String='#ffffff80';
 		public static const TEXT_UNDERCOLOR:String='white';
 		
 		public static const STATE_WAITE:int=0;
@@ -30,14 +29,14 @@ package com.photodispatcher.provider.preprocess{
 		public var folder:String;
 		public var prtFolder:String;
 		
-		//public var template:PdfTemplate;
-		//public var command:IMCommand;
 		public var commands:Array;
 		public var finalCommands:Array;
 		public var err:int;
 		public var err_msg:String;
 
 		public var state:int=STATE_WAITE;
+		
+		public var reprintMode:Boolean=false;
 		
 		protected var jpgQuality:String='100';
 		
@@ -235,10 +234,6 @@ package com.photodispatcher.provider.preprocess{
 			}
 			
 			//complete
-			/*
-			command.add('-density'); command.add('300x300');
-			command.add('-quality'); command.add('100');
-			*/
 			IMCommandUtil.setOutputParams(command);
 			return command;
 		}

@@ -24,12 +24,14 @@ package com.photodispatcher.provider.preprocess{
 		
 		private var postCopyFiles:Array; 
 		private var killFolders:Array; 
-
-		public function PostProcessTask(order:Order, rootFolder:String, prtFolder:String){
+		private var reprintMode:Boolean=false;
+		
+		public function PostProcessTask(order:Order, rootFolder:String, prtFolder:String, reprintMode:Boolean=false){
 			super(null);
 			this.order=order;
 			this.rootFolder=rootFolder;
 			this.prtFolder=prtFolder;
+			this.reprintMode=reprintMode;
 		}
 		
 		public function run():void{
@@ -50,8 +52,7 @@ package com.photodispatcher.provider.preprocess{
 
 			for each(printGroup in order.printGroups){
 				if(printGroup && printGroup.state<OrderState.CANCELED){
-					if(printGroup.book_type==0 || !printGroup.is_pdf){
-						//TODO kill wrk dirs
+					if((printGroup.book_type==0 || !printGroup.is_pdf) && !reprintMode){
 						if(printGroup.files && printGroup.files.length>0){
 							for each (pgf in printGroup.files){
 								if(pgf){
@@ -130,8 +131,6 @@ package com.photodispatcher.provider.preprocess{
 			var pi:PostProcessItem;
 			reportProgress('Коприрование в print');
 			if(postCopyFiles.length==0){
-				//completed
-				//dispatchEvent(new Event(Event.COMPLETE));
 				currPostProcessItem=null;
 				deleteNext();
 				return;
