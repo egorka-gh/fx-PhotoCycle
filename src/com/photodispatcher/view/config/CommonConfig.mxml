@@ -8,9 +8,13 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
+			import com.photodispatcher.model.mysql.entities.AppConfig;
 			import com.photodispatcher.model.mysql.entities.ContentFilter;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
+			import com.photodispatcher.service.CleanService;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.shell.OORuner;
+			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.CleanDatabasePopup;
 			import com.photodispatcher.view.PasswPopup;
@@ -72,6 +76,10 @@
 			private var ooPath:String;
 			[Bindable]
 			private var printer:String;
+			[Bindable]
+			private var config:AppConfig;
+			[Bindable]
+			private var stateAc:ArrayCollection;
 
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
@@ -81,6 +89,7 @@
 				imPath=Context.getAttribute('imPath');
 				workFolder=Context.getAttribute('workFolder');
 				prtPath=Context.getAttribute('prtPath');
+				config=Context.config;
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
@@ -108,6 +117,13 @@
 				printer=so.data.printer;
 				var oo:OORuner= new OORuner();
 				ooPathValid=oo.check(ooPath);
+				
+				stateAc= Context.getAttribute('stateList');
+				if(config && stateAc){
+					var fv:FieldValue=ArrayUtil.searchItem('value',config.clean_fs_state,stateAc.source) as FieldValue;
+					if(ddCleanFsState) ddCleanFsState.selectedItem=fv;
+				}
+				cleaner= new CleanService();
 			}
 			
 			private function pingIM():void{
@@ -129,16 +145,16 @@
 			protected function btWrkFolder_clickHandler(event:MouseEvent):void{
 				//browse
 				var sPath:String='';
-				var fl:File = File.userDirectory;
-				fl.addEventListener(Event.SELECT,wrkFolderSet);
-				fl.browseForDirectory('Выбирите рабочую папку');
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,wrkFolderSet);
+				file.browseForDirectory('Выбирите рабочую папку');
 			}
 			protected function wrkFolderSet(event:Event):void{
-				var fl:File = event.target as File;
-				if(fl){
-					fl.removeEventListener(Event.SELECT,wrkFolderSet);
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,wrkFolderSet);
 					//conf.wrk_path=fl.nativePath;
-					workFolder=fl.nativePath;
+					workFolder=file.nativePath;
 					//save last selection
 					var so:SharedObject = SharedObject.getLocal('appProps','/');
 					so.data.workFolder = workFolder;
@@ -149,16 +165,16 @@
 			
 			protected function btPrtFolder_clickHandler(event:MouseEvent):void{
 				//browse
-				var fl:File = File.userDirectory;
-				fl.addEventListener(Event.SELECT,prtFolderSet);
-				fl.browseForDirectory('Выбирите папку для подготовленных заказов');
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,prtFolderSet);
+				file.browseForDirectory('Выбирите папку для подготовленных заказов');
 			}
 			protected function prtFolderSet(event:Event):void{
-				var fl:File = event.target as File;
-				if(fl){
-					fl.removeEventListener(Event.SELECT,prtFolderSet);
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,prtFolderSet);
 					//conf.wrk_path=fl.nativePath;
-					prtPath=fl.nativePath;;
+					prtPath=file.nativePath;;
 					//save last selection
 					var so:SharedObject = SharedObject.getLocal('appProps','/');
 					so.data.prtPath = prtPath;
@@ -170,20 +186,20 @@
 			
 			protected function btIMFolder_clickHandler(event:MouseEvent):void{
 				//browse
-				var fl:File = File.userDirectory;
-				fl.addEventListener(Event.SELECT,imFolderSet);
-				fl.browseForDirectory('Выбирите папку ImageMagick');
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,imFolderSet);
+				file.browseForDirectory('Выбирите папку ImageMagick');
 			}
 			protected function imFolderSet(event:Event):void{
 				imPathValid=false;
-				var fl:File = event.target as File;
-				if(fl){
-					fl.removeEventListener(Event.SELECT,imFolderSet);
-					imPath=fl.nativePath;
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,imFolderSet);
+					imPath=file.nativePath;
 
 					//save last selection
 					var so:SharedObject = SharedObject.getLocal('appProps','/');
-					so.data.imPath = fl.nativePath;
+					so.data.imPath = file.nativePath;
 					so.flush();  
 					Context.setAttribute("imPath", imPath);
 
@@ -337,16 +353,16 @@
 			
 			protected function btOOFolder_clickHandler(event:MouseEvent):void{
 				//browse
-				var fl:File = File.userDirectory;
-				fl.addEventListener(Event.SELECT,onOOFolderSet);
-				fl.browseForDirectory('Выбирите папку ImageMagick');
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,onOOFolderSet);
+				file.browseForDirectory('Выбирите папку ImageMagick');
 			}
 			protected function onOOFolderSet(event:Event):void{
 				ooPathValid=false;
-				var fl:File = event.target as File;
-				if(fl){
-					fl.removeEventListener(Event.SELECT,onOOFolderSet);
-					ooPath=fl.nativePath;
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,onOOFolderSet);
+					ooPath=file.nativePath;
 					var oo:OORuner= new OORuner();
 					if(oo.check(ooPath)){
 						ooPathValid=true;
@@ -425,6 +441,20 @@
 				Context.setAttribute('ticketPass', '');
 			}
 			
+			protected function ddCleanFsState_changeHandler(event:IndexChangeEvent):void{
+				var fv:FieldValue=ddCleanFsState.selectedItem as FieldValue;
+				if(fv){
+					config.clean_fs_state=fv.value;
+				}
+			}
+			
+			[Bindable]
+			private var cleaner:CleanService;
+			protected function btCleanFS_clickHandler(event:MouseEvent):void{
+				if(CleanService.busy) return;
+				cleaner.cleanFileSystem();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -452,14 +482,32 @@
 					<s:Button id="btPrtFolder" label="..." click="btPrtFolder_clickHandler(event)"/>
 				</mx:HBox>
 			</s:FormItem> 
+			
+			<s:FormItem label="Очистка папок">
+				<s:CheckBox id="tgCleanFS" selected="@{config.clean_fs}"/>
+				<s:HGroup gap="5" enabled="{config.clean_fs}" verticalAlign="baseline">
+					<s:Label text="Статус"/>
+					<s:DropDownList id="ddCleanFsState" dataProvider="{stateAc}" change="ddCleanFsState_changeHandler(event)"/>
+					
+					<s:Spacer width="5"/>
+					<s:Label text="Дней >"/>
+					<s:NumericStepper value="@{config.clean_fs_days}" minimum="0" maximum="360"/>
+				</s:HGroup>
+				<s:HGroup gap="10" enabled="{config.clean_fs}" verticalAlign="bottom">
+					<s:Button id="btSaveConfig" label="Сохранить" click="{Context.saveConfig()}"/>
+					<s:Button id="btCleanFS" label="Выполнить" enabled="{!CleanService.busy}" click="btCleanFS_clickHandler(event)"/>
+					<mx:ProgressBar label="{cleaner.state} (%1)" labelPlacement="top" fontWeight="normal"
+									mode="event" source="{cleaner}" width="200"/>
+				</s:HGroup>
+			</s:FormItem>
 
 			<!--<s:FormItem label="Фильтр загрузки">
 				<s:ComboBox id="cbCFilter" selectedItem="{currCFilter}" dataProvider="{contentFiltersAC}" labelField="name" change="cbCFilter_changeHandler(event)"/>
 			</s:FormItem>--> 
 
-			<s:FormItem label="IP компьютера">
+			<!--<s:FormItem label="IP компьютера">
 				<s:TextInput id="tiServerIP" text="@{serverIP}" editable="true"  width="300" change="tiServerIP_changeHandler(event)"/>
-			</s:FormItem> 
+			</s:FormItem> -->
 
 			<s:FormItem label="Интервал синхронизации (мин)">
 				<s:TextInput id="tiSyncInterval" text="{syncInterval}"
@@ -468,7 +516,7 @@
 							 width="50"/>
 			</s:FormItem> 
 
-			<s:FormItem label="Принудительный старт закачки после">
+			<!--<s:FormItem label="Принудительный старт закачки после">
 				<s:HGroup gap="3" verticalAlign="baseline">
 					<s:NumericStepper id="nsForceStarHour" value="@{forceStarHour}" 
 									  minimum="0" maximum="23" valueFormatFunction="{leadingZero}" width="40" change="{setForceStart()}"/>
@@ -476,7 +524,7 @@
 					<s:NumericStepper id="nsForceStarMinute"  value="@{forceStarMinute}"
 									  minimum="0" maximum="59" valueFormatFunction="{leadingZero}" width="40" change="{setForceStart()}"/>
 				</s:HGroup>
-			</s:FormItem> 
+			</s:FormItem> -->
 
 			<s:FormItem label="Папка ImageMagick">
 				<s:VGroup gap="3">

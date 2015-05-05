@@ -136,37 +136,37 @@ package com.photodispatcher.provider.ftp{
 				flowError('Не задана рабочая папка');
 				return;
 			}
-			var fl:File=new File(dstFolder);
-			if(!fl.exists || !fl.isDirectory){
+			var file:File=new File(dstFolder);
+			if(!file.exists || !file.isDirectory){
 				flowError('Не задана рабочая папка');
 				return;
 			}
 			//check create source folder
-			fl=fl.resolvePath(StrUtil.toFileName(source.name));
+			file=file.resolvePath(StrUtil.toFileName(source.name));
 			try{
-				if(!fl.exists) fl.createDirectory();
+				if(!file.exists) file.createDirectory();
 			}catch(e:Error){
-				flowError('Ошибка доступа. Папка: '+fl.nativePath);
+				flowError('Ошибка доступа. Папка: '+file.nativePath);
 				return;
 			}
-			localFolder=fl.nativePath;
+			localFolder=file.nativePath;
 			
 			//prt folder
 			dstFolder=Context.getAttribute('prtPath');
 			if(!dstFolder){
 				Context.setAttribute('prtPath',Context.getAttribute('workFolder'));
 			}else{
-				fl=new File(dstFolder);
-				if(!fl.exists || !fl.isDirectory){
+				file=new File(dstFolder);
+				if(!file.exists || !file.isDirectory){
 					flowError('Не задана папка подготовленных заказов');
 					return;
 				}
 				//check create source folder
-				fl=fl.resolvePath(StrUtil.toFileName(source.name));
+				file=file.resolvePath(StrUtil.toFileName(source.name));
 				try{
-					if(!fl.exists) fl.createDirectory();
+					if(!file.exists) file.createDirectory();
 				}catch(e:Error){
-					flowError('Ошибка доступа. Папка: '+fl.nativePath);
+					flowError('Ошибка доступа. Папка: '+file.nativePath);
 					return;
 				}
 			}

@@ -92,6 +92,7 @@ package com.photodispatcher.model.mysql.services {
 			return latch;
 		}
 
+		
     }
     
 }

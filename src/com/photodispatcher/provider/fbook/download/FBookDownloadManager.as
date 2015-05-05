@@ -87,8 +87,8 @@ package com.photodispatcher.provider.fbook.download{
 				flowError('Не задана рабочая папка');
 				return false;
 			}
-			var fl:File=new File(localFolder);
-			if(!fl.exists || !fl.isDirectory){
+			var file:File=new File(localFolder);
+			if(!file.exists || !file.isDirectory){
 				flowError('Не верная рабочая папка');
 				return false;
 			}

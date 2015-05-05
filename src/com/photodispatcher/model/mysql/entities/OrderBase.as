@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _clean_fs:Boolean;
         private var _clientId:int;
         private var _data_ts:String;
         private var _extraInfo:OrderExtraInfo;
@@ -46,6 +47,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _suborders:ListCollectionView;
         private var _sync:int;
         private var _techLog:ListCollectionView;
+
+        public function set clean_fs(value:Boolean):void {
+            _clean_fs = value;
+        }
+        public function get clean_fs():Boolean {
+            return _clean_fs;
+        }
 
         public function set clientId(value:int):void {
             _clientId = value;
@@ -238,6 +246,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _clean_fs = input.readObject() as Boolean;
             _clientId = input.readObject() as int;
             _data_ts = input.readObject() as String;
             _extraInfo = input.readObject() as OrderExtraInfo;
@@ -269,6 +278,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_clean_fs is IPropertyHolder) ? IPropertyHolder(_clean_fs).object : _clean_fs);
             output.writeObject((_clientId is IPropertyHolder) ? IPropertyHolder(_clientId).object : _clientId);
             output.writeObject((_data_ts is IPropertyHolder) ? IPropertyHolder(_data_ts).object : _data_ts);
             output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);

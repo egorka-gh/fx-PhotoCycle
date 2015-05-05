@@ -20,7 +20,7 @@ package com.photodispatcher.provider.preprocess{
 		//public static const TEXT_UNDERCOLOR:String='#ffffff80';
 		public static const TEXT_UNDERCOLOR:String='white';
 
-		public static const TEMP_FOLDER:String='wrk';
+		public static const TEMP_FOLDER:String='pdf_wrk';
 		protected static const FILENAME_SHEET:String=TEMP_FOLDER+'/sheet';
 		protected static const FILENAME_COVER:String=TEMP_FOLDER+'/cover';
 		protected static const FILENAME_COVER_BACK:String=TEMP_FOLDER+'/cover_back';
@@ -30,56 +30,6 @@ package com.photodispatcher.provider.preprocess{
 		public function PDFmakeupGroup(printGroup:PrintGroup, order_id:String, folder:String, prtFolder:String){
 			super(printGroup, order_id, folder, prtFolder);
 		}
-
-		/*
-		public function createReprintItems():Array{
-			var result:Array=[];
-
-			var files:Array=printGroup.bookFiles;
-			var i:int;
-			var it:PrintGroupFile;
-			var sh:PdfSheet;
-			
-			if (!files) return result;
-			
-			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER){
-				//create covers pdf
-				if(printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL){
-					for (i=0; i<(files.length/3); i++){
-						//cover
-						it=files[i*3] as PrintGroupFile;
-						result.push(it);
-						//create back (1st sheet)
-						sh=new PdfSheet();
-						sh.leftPage=files[1+i*3];
-						sh.rightPage=files[2+i*3];
-						result.push(sh);
-					}
-				}else if(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK){
-					var backName:String;
-					for (i=0; i<files.length; i++){
-						it=files[i] as PrintGroupFile;
-						result.push(it);
-					}
-				}
-			}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
-				//create sheets pdf
-				//check if pageNum is even
-				if((files.length % 2)!=0){
-					return result;
-				}
-				var len:int=files.length/2;
-				for (i=0; i<len;i++){
-					sh=new PdfSheet();
-					sh.leftPage=files[i*2];
-					sh.rightPage=files[i*2+1];
-					result.push(sh);
-				}
-			}
-			
-			return result;
-		}
-		*/
 		
 		override public function createCommands():void{
 			if(Context.getAttribute("pdfJpgQuality")) jpgQuality=Context.getAttribute("pdfJpgQuality");
@@ -112,6 +62,7 @@ package com.photodispatcher.provider.preprocess{
 			var pdfPageNum:int=0;
 			var pdfName:String;
 			var newFile:PrintGroupFile;
+			var prints:int=0;
 			
 			files=printGroup.bookFiles;
 			if(!files || files.length==0){
@@ -213,6 +164,7 @@ package com.photodispatcher.provider.preprocess{
 							command2.add(outName);
 							//2 pages added
 							pdfPageNum=pdfPageNum+2;
+							prints+=2;
 						}
 					}
 					//finalyze pdf cmd
@@ -264,6 +216,7 @@ package com.photodispatcher.provider.preprocess{
 							//add 2 final cmd
 							command2.add(outName);
 							pdfPageNum++;
+							prints++;
 						}
 					}
 					//finalyze pdf cmd
@@ -278,6 +231,7 @@ package com.photodispatcher.provider.preprocess{
 						newFile.prt_qty=1;
 						printGroup.addFile(newFile);
 					}
+					if(reprintMode) printGroup.prints=prints;
 				}
 				//expand format by tech
 				if(printGroup.bookTemplate.tech_bar &&
@@ -342,6 +296,7 @@ package com.photodispatcher.provider.preprocess{
 						command2.add(outName);
 						//page added
 						pdfPageNum++;
+						prints++;
 					}
 				}
 				
@@ -365,6 +320,8 @@ package com.photodispatcher.provider.preprocess{
 					newFile.prt_qty=1;
 					printGroup.addFile(newFile);
 				}
+				
+				if(reprintMode) printGroup.prints=prints;
 			}
 		}
 

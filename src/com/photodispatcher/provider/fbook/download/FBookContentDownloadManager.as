@@ -44,12 +44,19 @@ package com.photodispatcher.provider.fbook.download{
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="flowError", type="com.photodispatcher.event.ImageProviderEvent")]
 	public class FBookContentDownloadManager extends EventDispatcher{
-		//public static const USER_MEDIA_PATH:String = 'book/photo/download/';
+		/*
 		public static const USER_MEDIA_PATH:String = 'projectImage/download';
 		public static const CLIPART_PATH:String = 'admin/clipart/download/';
 		public static const USER_CLIPART_PATH:String = 'project/user/clipart/download/';
 		public static const CLIPART_FRAME_PATH:String = 'admin/frames/download/';
+		*/
+		public static const URL_KEY:String='?key=sp0oULbDnJfk7AjBNtVG';
 
+		public static const USER_MEDIA_PATH:String = 'projectImage/downloadWithKey/'+URL_KEY;
+		public static const CLIPART_PATH:String = 'clipart/downloadWithKey/'+URL_KEY;
+		public static const USER_CLIPART_PATH:String = 'userArt/userArt/downloadWithKey/'+URL_KEY;
+		public static const CLIPART_FRAME_PATH:String = 'frame/downloadWithKey/'+URL_KEY;
+		
 		public static const CONTENT_CLIPART_IMG:String = ClipartType.IMG;
 		public static const CONTENT_CLIPART_BG:String = ClipartType.BG;
 		public static const CONTENT_CLIPART_FILL:String =  ClipartType.FILL;
@@ -296,6 +303,7 @@ package com.photodispatcher.provider.fbook.download{
 			
 			itemId=itemId.split('.')[0];
 			var param:URLVariables=new URLVariables;
+			//param.key=API_KEY;
 			param.id=itemId;
 			if(secure){
 				param.secure=secure;

@@ -19,6 +19,7 @@
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.service.CleanService;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.view.ModalPopUp;
@@ -223,7 +224,8 @@
 				printPulseManager.init();
 				
 				currentState='monitor';
-				if(vMonitor) vMonitor.init(); 
+				if(vMonitor) vMonitor.init();
+				runCleaner();
 			}
 			private function onImPing(e:IMRunerEvent):void{
 				var im:IMRuner=e.target as IMRuner;
@@ -241,6 +243,21 @@
 					latchIM.releaseError('ImageMagick не доступен: '+e.error);
 					
 				}
+			}
+			
+			[Bindable]
+			private var cleaner:CleanService;
+			private function runCleaner():void{
+				if(CleanService.busy) return;
+				cleaner=new CleanService();
+				currentState='monitorAndCleaner';
+				cleaner.addEventListener(Event.COMPLETE, cleanComplite);
+				cleaner.cleanFileSystem();
+			}
+			private function cleanComplite(e:Event):void{
+				cleaner.removeEventListener(Event.COMPLETE, cleanComplite);
+				cleaner=null;
+				currentState='monitor';
 			}
 			
 			[Bindable]
@@ -298,15 +315,17 @@
 	<s:states>
 		<s:State name="disconnected"/>
 		<s:State name="config" enterState="state1_enterStateHandler(event)"/>
-		<s:State name="monitor"/>
+		<s:State name="monitor" stateGroups="monitorGrp"/>
+		<s:State name="monitorAndCleaner" stateGroups="monitorGrp"/>
 	</s:states>
 	<s:VGroup gap="10" top="5" left="5" right="5" bottom="35">
 		<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"/>
 		<config:ConfigView includeIn="config" enabled="{cfgEnabled}" width="100%" height="100%"/>
-		<view:Monitor id="vMonitor" includeIn="monitor"
+		<view:Monitor id="vMonitor" includeIn="monitorGrp"
 					  width="100%" height="100%"
 					  printPulseManager="{printPulseManager}"
 					  />
+
 	</s:VGroup>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10"  verticalAlign="middle">
 		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>-->
@@ -314,6 +333,10 @@
 		<!--<s:Group width="5">
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000" toolTip="{BaseDAO.lastErrMsg}"/>
 		</s:Group>-->
+		<s:Spacer width="20"/>
+		<mx:ProgressBar width="400" includeIn="monitorAndCleaner"
+						label="{cleaner.state} (%1)" labelPlacement="left" fontWeight="normal"
+						mode="event" source="{cleaner}" />		
 		<s:Spacer width="100%"/>
 		<s:Button label="Настройки" includeIn="monitor" click="button1_clickHandler(event)"/>
 		<s:Button label="Монитор" includeIn="config" click="button2_clickHandler(event)"/>

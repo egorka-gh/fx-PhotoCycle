@@ -105,6 +105,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function load4CleanFS(arg0:int, arg1:int, arg2:int, arg3:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("load4CleanFS", arg0, arg1, arg2, arg3, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("load4CleanFS", arg0, arg1, arg2, arg3, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("load4CleanFS", arg0, arg1, arg2, arg3) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadByState(arg0:int, arg1:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadByState", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
@@ -233,6 +244,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadSubOrdersOtk", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadSubOrdersOtk") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function markCleanFS(arg0:Array, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("markCleanFS", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("markCleanFS", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("markCleanFS", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

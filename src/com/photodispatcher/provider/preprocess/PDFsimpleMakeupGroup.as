@@ -12,7 +12,7 @@ package com.photodispatcher.provider.preprocess{
 	
 	public class PDFsimpleMakeupGroup extends BookMakeupGroup{
 		
-		public static const TEMP_FOLDER:String='wrk';
+		public static const TEMP_FOLDER:String='pdf_wrk';
 
 		public function PDFsimpleMakeupGroup(printGroup:PrintGroup, order_id:String, folder:String, prtFolder:String){
 			super(printGroup, order_id, folder, prtFolder);
@@ -41,6 +41,7 @@ package com.photodispatcher.provider.preprocess{
 			if(!pageLimit) pageLimit=30;
 			var pdfPageNum:int=0;
 			var pdfName:String;
+			var prints:int=0;
 
 			
 			files=printGroup.bookFiles;
@@ -114,6 +115,7 @@ package com.photodispatcher.provider.preprocess{
 					//add 2 final(pdf) cmd
 					command2.add(outName);
 					pdfPageNum++;
+					prints++;
 				}
 			}
 			//finalyze pdf cmd
@@ -136,6 +138,7 @@ package com.photodispatcher.provider.preprocess{
 					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
 				if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
 			}
+			if(reprintMode) printGroup.prints=prints;
 		}
 
 	}

@@ -456,7 +456,24 @@ package com.photodispatcher.context{
 				}
 			}
 		}
-		
+
+		public static function saveConfig():void{
+			if(!config) return;
+			var latch:DbLatch=new DbLatch();
+			//latch.debugName='initSourceLists';
+			var svc:ConfigService=Tide.getInstance().getContext().byType(ConfigService,true) as ConfigService;
+			latch.addEventListener(Event.COMPLETE,onConfigSave);
+			latch.addLatch(svc.saveConfig(config));
+			latch.start();
+			//return latch;
+		}
+		private static function onConfigSave(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onConfigLoad);
+			}
+		}
+
 		public static function getProduction():int{
 			if(!config) return -1;
 			return config.production;
@@ -469,6 +486,7 @@ package com.photodispatcher.context{
 			return config.production_name;
 		}
 
+		
 		private static var serverRootUrl:String;
 		public static function getServerRootUrl():String{
 			if(!serverRootUrl){
@@ -600,186 +618,9 @@ package com.photodispatcher.context{
 					{value:false,label:'Нет'}];
 				Context.setAttribute('booleanList', a);
 			}
-			/*
-			if(!Context.getAttribute('synonym_typeValueList')){
-				a=new ArrayCollection();
-				a.source=[{value:0,label:'Профики'},
-						  {value:1,label:'Розница'}];
-				Context.setAttribute('synonym_typeValueList', a);
-				a=new ArrayCollection(a.source);
-				a.addItemAt({value:null,label:'-'},0);
-				Context.setAttribute('synonym_typeList', a);
-			}
-			*/
 			latchAttributeLists.start();
 		}
 
-		/*
-		public static function initAttributeListsOld():void{
-			var at:AttrType;
-			var field:String;
-			//var atDao:AttrTypeDAO=new AttrTypeDAO();
-			var dDao:DictionaryDAO=new DictionaryDAO();
-			var a:ArrayCollection;
-			for each (var o:Object in AttrType.getPrintAttrs()){
-				at=o as AttrType;
-				if(at){
-					field=at.field;
-					if(!Context.getAttribute(field+'List')){
-						a=dDao.getFieldValueList(at.id);
-						Context.setAttribute(field+'List', a);
-					}
-					if(!Context.getAttribute(field+'ValueList')){
-						a=dDao.getFieldValueList(at.id,false);
-						Context.setAttribute(field+'ValueList', a);
-					}
-				}
-			}
-			if(!Context.getAttribute('book_typeList')){
-				a=dDao.getBookTypeValueList();
-				Context.setAttribute('book_typeList', a);
-				a=dDao.getBookTypeValueList(false);
-				Context.setAttribute('book_typeValueList', a);
-			}
-			if(!Context.getAttribute('book_partList')){
-				a=dDao.getBookPartValueList();
-				Context.setAttribute('book_partList', a);
-				a=dDao.getBookPartValueList(false);
-				Context.setAttribute('book_partValueList', a);
-			}
-			if(!Context.getAttribute('src_typeList')){
-				a=dDao.getSrcTypeValueList();
-				Context.setAttribute('src_typeList', a);
-			}
-			if(!Context.getAttribute('lab_typeList')){
-				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_LAB);
-				Context.setAttribute('lab_typeList', a);
-			}
-			//tech_typeList !!!!
-			if(!Context.getAttribute('tech_typeList')){
-				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT);
-				Context.setAttribute('tech_typeList', a);
-				a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT,false);
-				Context.setAttribute('tech_typeValueList', a);
-			}
 
-			//tech_points
-			if(!Context.getAttribute('tech_pointList')){
-				a=dDao.getTechPointValueList();
-				Context.setAttribute('tech_pointList', a);
-			}
-
-			//tech layers
-			if(!Context.getAttribute('layerValueList')){
-				a=dDao.getTechLayerValueList();
-				//Context.setAttribute('layerList', a);
-				//Context.setAttribute('layerList', a);
-				Context.setAttribute('layerValueList', a);
-			}
-
-			//tech seq layers
-			if(!Context.getAttribute('seqlayerList')){
-				a=dDao.getTechLayerValueList(false);
-				Context.setAttribute('seqlayerList', a);
-				Context.setAttribute('seqlayerValueList', a);
-			}
-
-			//tech layer group
-			if(!Context.getAttribute('layer_groupList')){
-				a=dDao.getLayerGroupValueList();
-				Context.setAttribute('layer_groupList', a);
-				Context.setAttribute('layer_groupValueList', a);
-			}
-
-			//lab rolls
-			if(!Context.getAttribute('rollList')){
-				a=dDao.getRollValueList();
-				Context.setAttribute('rollList', a);
-				a=dDao.getRollValueList(false);
-				Context.setAttribute('rollValueList', a);
-			}
-
-			if(!Context.getAttribute('booleanList')){
-				a=new ArrayCollection();
-				a.source=[{value:0,label:'-'},
-						  {value:true,label:'Да'},
-						  {value:false,label:'Нет'}];
-				Context.setAttribute('booleanList', a);
-			}
-		}
-
-		if(!Context.getAttribute('book_typeList')){
-			a=dDao.getBookTypeValueList();
-			Context.setAttribute('book_typeList', a);
-			a=dDao.getBookTypeValueList(false);
-			Context.setAttribute('book_typeValueList', a);
-		}
-		if(!Context.getAttribute('book_partList')){
-			a=dDao.getBookPartValueList();
-			Context.setAttribute('book_partList', a);
-			a=dDao.getBookPartValueList(false);
-			Context.setAttribute('book_partValueList', a);
-		}
-		if(!Context.getAttribute('src_typeList')){
-			a=dDao.getSrcTypeValueList();
-			Context.setAttribute('src_typeList', a);
-		}
-		if(!Context.getAttribute('lab_typeList')){
-			a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_LAB);
-			Context.setAttribute('lab_typeList', a);
-		}
-		//tech_typeList !!!!
-		if(!Context.getAttribute('tech_typeList')){
-			a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT);
-			Context.setAttribute('tech_typeList', a);
-			a=dDao.getSrcTypeValueList(Source.LOCATION_TYPE_TECH_POINT,false);
-			Context.setAttribute('tech_typeValueList', a);
-		}
-		
-		//tech_points
-		if(!Context.getAttribute('tech_pointList')){
-			a=dDao.getTechPointValueList();
-			Context.setAttribute('tech_pointList', a);
-		}
-		
-		//tech layers
-		if(!Context.getAttribute('layerValueList')){
-			a=dDao.getTechLayerValueList();
-			//Context.setAttribute('layerList', a);
-			//Context.setAttribute('layerList', a);
-			Context.setAttribute('layerValueList', a);
-		}
-		
-		//tech seq layers
-		if(!Context.getAttribute('seqlayerList')){
-			a=dDao.getTechLayerValueList(false);
-			Context.setAttribute('seqlayerList', a);
-			Context.setAttribute('seqlayerValueList', a);
-		}
-		
-		//tech layer group
-		if(!Context.getAttribute('layer_groupList')){
-			a=dDao.getLayerGroupValueList();
-			Context.setAttribute('layer_groupList', a);
-			Context.setAttribute('layer_groupValueList', a);
-		}
-		
-		//lab rolls
-		if(!Context.getAttribute('rollList')){
-			a=dDao.getRollValueList();
-			Context.setAttribute('rollList', a);
-			a=dDao.getRollValueList(false);
-			Context.setAttribute('rollValueList', a);
-		}
-		
-		if(!Context.getAttribute('booleanList')){
-			a=new ArrayCollection();
-			a.source=[{value:0,label:'-'},
-				{value:true,label:'Да'},
-				{value:false,label:'Нет'}];
-			Context.setAttribute('booleanList', a);
-		}
-	}
-		*/
 	}
 }
