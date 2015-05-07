@@ -352,16 +352,16 @@
 			protected function btWrkFolder_clickHandler(event:MouseEvent):void{
 				//browse
 				var sPath:String='';
-				var fl:File = File.userDirectory;
-				fl.addEventListener(Event.SELECT,wrkFolderSet);
-				fl.browseForDirectory('Выбирите рабочую папку');
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,wrkFolderSet);
+				file.browseForDirectory('Выбирите рабочую папку');
 			}
 			protected function wrkFolderSet(event:Event):void{
-				var fl:File = event.target as File;
-				if(fl){
-					fl.removeEventListener(Event.SELECT,wrkFolderSet);
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,wrkFolderSet);
 					//conf.wrk_path=fl.nativePath;
-					workFolder=fl.nativePath;
+					workFolder=file.nativePath;
 					//save last selection
 					var so:SharedObject = SharedObject.getLocal('appProps','/');
 					so.data.workFolder = workFolder;
@@ -387,16 +387,16 @@
 			
 			protected function btOOFolder_clickHandler(event:MouseEvent):void{
 				//browse
-				var fl:File = File.userDirectory;
-				fl.addEventListener(Event.SELECT,onOOFolderSet);
-				fl.browseForDirectory('Выбирите папку ImageMagick');
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,onOOFolderSet);
+				file.browseForDirectory('Выбирите папку ImageMagick');
 			}
 			protected function onOOFolderSet(event:Event):void{
 				ooPathValid=false;
-				var fl:File = event.target as File;
-				if(fl){
-					fl.removeEventListener(Event.SELECT,onOOFolderSet);
-					ooPath=fl.nativePath;
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,onOOFolderSet);
+					ooPath=file.nativePath;
 					var oo:OORuner= new OORuner();
 					if(oo.check(ooPath)){
 						ooPathValid=true;

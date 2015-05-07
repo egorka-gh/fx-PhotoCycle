@@ -225,9 +225,11 @@ package com.photodispatcher.provider.fbook.model{
 					//cover add height & butt
 					//000-00_309_5.jpg
 					var coverPixels:Point=book.getPixelSise(BookSynonym.BOOK_PART_COVER);
-					var ht:int=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
-					var bt:int=UnitUtil.pixels2mm300(book.buttWidth());
-					str=str+'_'+ht.toString()+'_'+bt.toString();
+					if(coverPixels){
+						var ht:int=UnitUtil.pixels2mm300(Math.max(coverPixels.x,coverPixels.y));
+						var bt:int=UnitUtil.pixels2mm300(book.buttWidth());
+						str=str+'_'+ht.toString()+'_'+bt.toString();
+					}
 				}
 				return str+OUT_FILE_EXT;
 			}else{

@@ -10,13 +10,18 @@ package com.photodispatcher.service{
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.events.ProgressEvent;
+	import flash.events.TimerEvent;
 	import flash.filesystem.File;
+	import flash.utils.Timer;
 	
 	import mx.collections.ArrayCollection;
 	
 	import org.granite.tide.Tide;
 	
+	import spark.formatters.DateTimeFormatter;
+	
 	[Event(name="complete", type="flash.events.Event")]
+	[Event(name="schedule", type="flash.events.Event")]
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	public class CleanService extends EventDispatcher{
 		
@@ -40,6 +45,38 @@ package com.photodispatcher.service{
 			super(null);
 		}
 		
+		private var lastRun:Date;
+		private var timer:Timer;
+		
+		public function schedule():void{
+			config=Context.config;
+			if(!config || !config.clean_fs || config.clean_fs_state<=0 || config.clean_fs_days<=0)  return;
+			if(!timer){
+				timer=new Timer(10*60000,0);
+				timer.addEventListener(TimerEvent.TIMER, onTimer);
+			}
+			if(!timer.running) timer.start();
+		}
+		private function onTimer(evt:TimerEvent):void{
+			trace('CleanService attempt start schedule');
+			var currDate:Date=new Date();
+			//runs today?
+			if(lastRun && lastRun.date==currDate.date) return;
+			//check hour
+			if(currDate.hours<config.clean_fs_hour) return;
+			if (busy) return;
+			//run
+			lastRun=currDate;
+			dispatchEvent(new Event('schedule'));  
+			trace('CleanService clean started');
+			cleanFileSystem();
+		}
+		
+		public function stopSchedule():void{
+			if(!timer) return;
+			timer.reset();
+		}
+		
 		public function cleanFileSystem():void{
 			complited=0;
 			hasErr=false;
@@ -47,7 +84,7 @@ package com.photodispatcher.service{
 			state='';
 			//check config
 			config=Context.config;
-			if(!config.clean_fs || config.clean_fs_state<=0 || config.clean_fs_days<=0){
+			if(!config || !config.clean_fs || config.clean_fs_state<=0 || config.clean_fs_days<=0){
 				complite();
 				return;
 			}
@@ -70,7 +107,14 @@ package com.photodispatcher.service{
 		
 		private function complite():void{
 			busy=false;
-			if(!hasErr) state='Завершено, удалено '+complited.toString();
+			if(!hasErr){
+				state='Удалено папок '+complited.toString();
+				if(lastRun){
+					var fmt:DateTimeFormatter= new DateTimeFormatter();
+					fmt.dateTimePattern='dd.MM.yy HH:mm';
+					state=state+' (' +fmt.format(lastRun)+')';
+				}
+			}
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
@@ -89,6 +133,7 @@ package com.photodispatcher.service{
 			if(sources.length==0){
 				//complite
 				busy=false;
+				lastRun= new Date();
 				complite();
 				return;
 			}

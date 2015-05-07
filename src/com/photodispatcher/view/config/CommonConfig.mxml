@@ -492,6 +492,12 @@
 					<s:Spacer width="5"/>
 					<s:Label text="Дней >"/>
 					<s:NumericStepper value="@{config.clean_fs_days}" minimum="0" maximum="360"/>
+
+					<s:Spacer width="5"/>
+					<s:Label text="Старт в"/>
+					<s:NumericStepper value="@{config.clean_fs_hour}" minimum="0" maximum="23" width="40"/>
+					<s:Label text="часов"/>
+				
 				</s:HGroup>
 				<s:HGroup gap="10" enabled="{config.clean_fs}" verticalAlign="bottom">
 					<s:Button id="btSaveConfig" label="Сохранить" click="{Context.saveConfig()}"/>

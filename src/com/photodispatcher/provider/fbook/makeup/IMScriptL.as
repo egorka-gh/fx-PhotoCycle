@@ -17,6 +17,7 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.akmeful.fotocalendar.data.FotocalendarProject;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverFrameImage;
 	import com.akmeful.fotokniga.book.contentClasses.BookCoverPrintImage;
+	import com.akmeful.fotokniga.book.data.Book;
 	import com.akmeful.magnet.data.MagnetProject;
 	import com.akmeful.util.GeomUtil;
 	import com.akmeful.util.RectangleTransformation;
@@ -82,9 +83,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			//create pages & parse groups (layers)
 			var pageNum:int=0;
 			var sheetNum:int=0;
-			if(_book.type==FBookProject.PROJECT_TYPE_BCARD
-				|| _book.type==FotocalendarProject.PROJECT_TYPE
-				|| _book.type==MagnetProject.PROJECT_TYPE){
+			if(_book.type!=Book.PROJECT_TYPE){
 				//pages starts from 1 (0- 4 book cover only)
 				sheetNum=1;
 			}
