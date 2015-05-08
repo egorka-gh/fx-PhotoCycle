@@ -172,11 +172,13 @@
 				Context.setAttribute("forceStarHour", hh);
 				Context.setAttribute("forceStarMinute", mi);
 				//get pdf pages limit
-				var pdfJpgQuality:int=so.data.pdfJpgQuality;
-				if(!pdfJpgQuality) pdfJpgQuality=100;
 				var pdfPageLimit:int=so.data.pdfPageLimit;
 				if(!pdfPageLimit) pdfPageLimit=100;
+				/*
+				var pdfJpgQuality:int=so.data.pdfJpgQuality;
+				if(!pdfJpgQuality) pdfJpgQuality=100;
 				Context.setAttribute("pdfJpgQuality", pdfJpgQuality.toString());
+				*/
 				Context.setAttribute("pdfPageLimit", pdfPageLimit);
 				Context.setAttribute('reversPrint', so.data.reversPrint);
 
@@ -336,8 +338,8 @@
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000" toolTip="{BaseDAO.lastErrMsg}"/>
 		</s:Group>-->
 		<s:Spacer width="5"/>
-		<s:Label text="{cleaner.state}" width="200" maxDisplayedLines="1"/>
-		<mx:ProgressBar width="250" includeIn="monitorAndCleaner"
+		<s:Label text="{cleaner.state}" width="250" maxDisplayedLines="1"/>
+		<mx:ProgressBar width="200" includeIn="monitorAndCleaner"
 						label="" labelPlacement="right" labelWidth="0" horizontalGap="0"
 						mode="event" source="{cleaner}" />		
 		<s:Spacer width="100%"/>

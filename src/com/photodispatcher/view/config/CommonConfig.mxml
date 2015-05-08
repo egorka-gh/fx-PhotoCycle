@@ -57,8 +57,8 @@
 			private var bdServer:String;
 			[Bindable]
 			private var pdfPageLimit:int=100;
-			[Bindable]
-			private var pdfJpgQuality:int=100;
+			//[Bindable]
+			//private var pdfJpgQuality:int=100;
 			[Bindable]
 			private var reversPrint:Boolean=false;
 			[Bindable]
@@ -104,8 +104,8 @@
 				forceStarMinute=so.data.forceStarMinute;
 				if(so.data.pdfPageLimit) pdfPageLimit=so.data.pdfPageLimit;
 				if(!pdfPageLimit) pdfPageLimit=100;
-				if(so.data.pdfJpgQuality) pdfJpgQuality=so.data.pdfJpgQuality;
-				if(!pdfJpgQuality) pdfJpgQuality=100;
+				//if(so.data.pdfJpgQuality) pdfJpgQuality=so.data.pdfJpgQuality;
+				//if(!pdfJpgQuality) pdfJpgQuality=100;
 				reversPrint=so.data.reversPrint;
 				//contentFiltersAC=new ArrayCollection(ContentFilter.filters);
 				//currCFilter=Context.getAttribute('contentFilter') as ContentFilter;
@@ -393,6 +393,7 @@
 				so.flush();  
 			}
 			
+			/*
 			protected function nsJpgQuality_changeHandler(event:Event):void{
 				var newVal:int=nsJpgQuality.value;
 				if(!newVal) return;
@@ -402,6 +403,7 @@
 				so.flush();  
 				Context.setAttribute("pdfJpgQuality", pdfJpgQuality.toString());
 			}
+			*/
 			
 			protected function tiIMFolder_enterHandler(event:FlexEvent):void{
 				imPathValid=false;
@@ -494,16 +496,20 @@
 					<s:NumericStepper value="@{config.clean_fs_days}" minimum="0" maximum="360"/>
 
 					<s:Spacer width="5"/>
+					<s:Label text="Норитсу дней >"/>
+					<s:NumericStepper value="@{config.clean_nr_days}" minimum="0" maximum="360"/>
+
+					<s:Spacer width="5"/>
 					<s:Label text="Старт в"/>
 					<s:NumericStepper value="@{config.clean_fs_hour}" minimum="0" maximum="23" width="40"/>
 					<s:Label text="часов"/>
 				
 				</s:HGroup>
 				<s:HGroup gap="10" enabled="{config.clean_fs}" verticalAlign="bottom">
-					<s:Button id="btSaveConfig" label="Сохранить" click="{Context.saveConfig()}"/>
 					<s:Button id="btCleanFS" label="Выполнить" enabled="{!CleanService.busy}" click="btCleanFS_clickHandler(event)"/>
-					<mx:ProgressBar label="{cleaner.state} (%1)" labelPlacement="top" fontWeight="normal"
+					<mx:ProgressBar label="" labelPlacement="right" labelWidth="0" horizontalGap="0" 
 									mode="event" source="{cleaner}" width="200"/>
+					<s:Label text="{cleaner.state}" width="250"/>
 				</s:HGroup>
 			</s:FormItem>
 
@@ -550,8 +556,10 @@
 			</s:FormItem> 
 
 			<s:FormItem label="Сжатие jpg в PDF файле">
-				<s:NumericStepper id="nsJpgQuality" value="@{pdfJpgQuality}" 
-								  minimum="70" maximum="100" snapInterval="1" width="50" change="nsJpgQuality_changeHandler(event)"/>
+				<!--<s:NumericStepper id="nsJpgQuality" value="@{pdfJpgQuality}" 
+								  minimum="70" maximum="100" snapInterval="1" width="50" change="nsJpgQuality_changeHandler(event)"/>-->
+				<s:NumericStepper id="nsJpgQuality" value="@{config.pdf_quality}" 
+								  minimum="70" maximum="100" snapInterval="1" width="50"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Кол-во страниц в PDF файле">
@@ -566,14 +574,6 @@
 			<s:FormItem label="Переворачивать при печати на Noritsu">
 				<s:CheckBox id="tg_rotatePrint" selected="{printRotated}" change="tg_rotatePrint_changeHandler(event)"/>
 			</s:FormItem> 
-
-			<!--<s:FormItem label="Удаление заказов">
-				<s:Button id="btBdClean" label="Выполнить" click="btBdClean_clickHandler(event)"/>
-			</s:FormItem> -->
-
-			<!--<s:FormItem label="Сжать базу данных">
-				<s:Button id="btBdOptimize" label="Выполнить" click="btBdOptimize_clickHandler(event)"/>
-			</s:FormItem> -->
 
 			<s:FormItem label="Параметры печати">
 				<s:HGroup width="100%" gap="5" verticalAlign="baseline">
@@ -605,8 +605,8 @@
 
 		</s:Form>
 		<!--<s:DropDownList skinClass="com.photodispatcher.view.skins.ButtonDropDownListSkin" width="50"/>-->
-		<!--<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
-			<s:Button id="btSave" label="Сохранить" click="{confDAO.save(conf)}"/>
-		</s:HGroup>-->
+		<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
+			<s:Button id="btSaveConfig" label="Сохранить" click="{Context.saveConfig()}"/>
+		</s:HGroup>
 	</s:VGroup>
 </s:Group>

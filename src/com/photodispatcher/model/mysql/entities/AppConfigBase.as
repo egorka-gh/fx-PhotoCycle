@@ -23,7 +23,9 @@ package com.photodispatcher.model.mysql.entities {
         private var _clean_fs_hour:int;
         private var _clean_fs_limit:int;
         private var _clean_fs_state:int;
+        private var _clean_nr_days:int;
         private var _id:int;
+        private var _pdf_quality:int;
         private var _production:int;
         private var _production_name:String;
 
@@ -62,11 +64,25 @@ package com.photodispatcher.model.mysql.entities {
             return _clean_fs_state;
         }
 
+        public function set clean_nr_days(value:int):void {
+            _clean_nr_days = value;
+        }
+        public function get clean_nr_days():int {
+            return _clean_nr_days;
+        }
+
         public function set id(value:int):void {
             _id = value;
         }
         public function get id():int {
             return _id;
+        }
+
+        public function set pdf_quality(value:int):void {
+            _pdf_quality = value;
+        }
+        public function get pdf_quality():int {
+            return _pdf_quality;
         }
 
         public function set production(value:int):void {
@@ -90,7 +106,9 @@ package com.photodispatcher.model.mysql.entities {
             _clean_fs_hour = input.readObject() as int;
             _clean_fs_limit = input.readObject() as int;
             _clean_fs_state = input.readObject() as int;
+            _clean_nr_days = input.readObject() as int;
             _id = input.readObject() as int;
+            _pdf_quality = input.readObject() as int;
             _production = input.readObject() as int;
             _production_name = input.readObject() as String;
         }
@@ -102,7 +120,9 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_clean_fs_hour is IPropertyHolder) ? IPropertyHolder(_clean_fs_hour).object : _clean_fs_hour);
             output.writeObject((_clean_fs_limit is IPropertyHolder) ? IPropertyHolder(_clean_fs_limit).object : _clean_fs_limit);
             output.writeObject((_clean_fs_state is IPropertyHolder) ? IPropertyHolder(_clean_fs_state).object : _clean_fs_state);
+            output.writeObject((_clean_nr_days is IPropertyHolder) ? IPropertyHolder(_clean_nr_days).object : _clean_nr_days);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
+            output.writeObject((_pdf_quality is IPropertyHolder) ? IPropertyHolder(_pdf_quality).object : _pdf_quality);
             output.writeObject((_production is IPropertyHolder) ? IPropertyHolder(_production).object : _production);
             output.writeObject((_production_name is IPropertyHolder) ? IPropertyHolder(_production_name).object : _production_name);
         }

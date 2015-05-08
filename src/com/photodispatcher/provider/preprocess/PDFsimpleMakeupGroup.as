@@ -19,7 +19,9 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		override public function createCommands():void{
-			if(Context.getAttribute("pdfJpgQuality")) jpgQuality=Context.getAttribute("pdfJpgQuality");
+			//if(Context.getAttribute("pdfJpgQuality")) jpgQuality=Context.getAttribute("pdfJpgQuality");
+			if(Context.config && Context.config.pdf_quality>60) jpgQuality=Context.config.pdf_quality.toString();
+
 			commands=[];
 			finalCommands=[];
 			
