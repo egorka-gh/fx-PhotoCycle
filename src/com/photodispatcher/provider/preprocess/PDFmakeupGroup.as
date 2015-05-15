@@ -25,6 +25,9 @@ package com.photodispatcher.provider.preprocess{
 		protected static const FILENAME_COVER:String=TEMP_FOLDER+'/cover';
 		protected static const FILENAME_COVER_BACK:String=TEMP_FOLDER+'/cover_back';
 		protected static const FONT_COVER_BACK:int=6;
+		protected static const TEMP_FILE_TYPE:String='.jpg';//bug - broken jpg - use png or some else
+		//protected static const TEMP_FILE_TYPE:String='.png';
+		
 		//protected static const PDF_PAGE_LIMIT:int=100;
 
 		public function PDFmakeupGroup(printGroup:PrintGroup, order_id:String, folder:String, prtFolder:String){
@@ -144,7 +147,7 @@ package com.photodispatcher.provider.preprocess{
 							//crop & annotate cover
 							command=createCoverCommand(it,folder);
 							//save
-							outName=FILENAME_COVER+(i+1).toString()+'.png';
+							outName=FILENAME_COVER+(i+1).toString()+TEMP_FILE_TYPE;
 							command.add(outName);
 							commands.push(command);
 							//add 2 final cmd
@@ -159,7 +162,7 @@ package com.photodispatcher.provider.preprocess{
 							IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
 							//save file
 							IMCommandUtil.setOutputParams(command);
-							outName=FILENAME_COVER_BACK+(i+1).toString()+'.png';
+							outName=FILENAME_COVER_BACK+(i+1).toString()+TEMP_FILE_TYPE;
 							command.add(outName);
 							commands.push(command);
 							//add 2 pdf cmd
@@ -212,7 +215,7 @@ package com.photodispatcher.provider.preprocess{
 						if(!reprintMode || it.reprint){
 							command=createCoverCommand(it,folder);
 							//save
-							outName=FILENAME_COVER+(i+1).toString()+'.png';
+							outName=FILENAME_COVER+(i+1).toString()+TEMP_FILE_TYPE;
 							command.add(outName);
 							commands.push(command);
 							//add 2 final cmd
@@ -291,7 +294,7 @@ package com.photodispatcher.provider.preprocess{
 						command.folder=folder;
 						//save file
 						IMCommandUtil.setOutputParams(command);
-						outName=FILENAME_SHEET+(i+1).toString()+'.png';
+						outName=FILENAME_SHEET+(i+1).toString()+TEMP_FILE_TYPE;
 						command.add(outName);
 						commands.push(command);
 						//add 2 pdf cmd
