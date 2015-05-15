@@ -1,4 +1,5 @@
 package com.photodispatcher.util{
+	import com.adobe.images.JPGEncoder;
 	import com.google.zxing.oned.Code128Writer;
 	import com.photodispatcher.shell.IMCommand;
 	
@@ -13,7 +14,7 @@ package com.photodispatcher.util{
 	import mx.graphics.codec.PNGEncoder;
 
 	public class IMCommandUtil{
-		private static const SHADOWED_TEXT_FORE_COLOR:String='#eeeeee';
+		private static const SHADOWED_TEXT_FORE_COLOR:String='gray93';
 		private static const CODE128_QUIET_ZONE:int=60;
 		
 		public static function annotateImage(command:IMCommand,font_size:int,undercolor:String, text:String, offset:String, double:Boolean=false):void{
@@ -36,10 +37,16 @@ package com.photodispatcher.util{
 				command.add('+repage');
 				command.add('-bordercolor'); command.add(undercolor);
 				command.add('-border'); command.add('10x3');
-				command.add('-repage'); command.add(offset);
-				if(double) command.add('-write'); command.add('mpr:label');
+				//command.add('-repage'); command.add(offset);
+				if(double){
+					command.add('-write'); command.add('mpr:label');
+				}
 				command.add(')');
-				command.add('-flatten');
+				//command.add('-flatten');
+				command.add('-gravity'); command.add('NorthWest');
+				command.add('-geometry'); command.add(offset);
+				command.add('-composite');
+				
 				if(double){
 					command.add('-gravity'); command.add('southwest');
 					command.add('mpr:label');
@@ -204,6 +211,78 @@ package com.photodispatcher.util{
 				command.add('-splice'); command.add('0x'+amount.toString());
 			}
 		}
+		
+		public static function createBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, rotate:int=0, 
+										   step:Number=3, color:int=0, quietZone:int=CODE128_QUIET_ZONE):void{
+			if(!command || !barcode || !wrkDir || height<=0) return;
+			var undercolor:String='white';
+			
+			var file:File=new File(wrkDir);
+			if(!file.exists) return;
+			var fileName:String=StrUtil.toFileName('brc_'+barcode)+'.png';
+			file=file.resolvePath(fileName);
+			
+			//create barcode image
+			if(!file.exists){
+				var drawStep:int= Math.ceil(step);
+				var c128Writer:Code128Writer= new Code128Writer();
+				var bmp:Bitmap=c128Writer.draw(barcode,height,drawStep,color,quietZone);
+				if (!bmp) return;
+				var data:BitmapData=bmp.bitmapData;
+				if(drawStep>2 && step<drawStep){
+					//scale
+					var matrix:Matrix = new Matrix();
+					matrix.scale(step/drawStep, 1);
+					var w:int=Math.ceil(data.width*step/drawStep);
+					data= new BitmapData(w, height);
+					data.draw(bmp.bitmapData, matrix); 
+				}
+				var encoder:PNGEncoder= new PNGEncoder();
+				var imgByteArr:ByteArray = encoder.encode(data);
+				
+				var fs:FileStream = new FileStream();
+				try{
+					fs.open(file, FileMode.WRITE);
+					fs.writeBytes(imgByteArr);
+					fs.close();
+				}catch(e:Error){
+					return;
+				}
+			}
+			
+			//fill command
+			command.add(fileName);
+			if(text && height>8){
+				//use label
+				command.add('-background'); command.add('none');
+				command.add('('); 
+				command.add('-pointsize'); command.add((height).toString());
+				command.add('-fill'); command.add(SHADOWED_TEXT_FORE_COLOR);
+				command.add('-undercolor'); command.add('none');
+				command.add('-stroke'); command.add('gray');
+				command.add('-strokewidth'); command.add('1');
+				command.add('label:'+text);
+				command.add('-trim');
+				command.add(')'); 
+				command.add('-gravity'); command.add('center');
+				command.add('-append');
+			}
+			if(rotate!=0){
+				//rotate
+				//command.add('-rotate'); command.add(rotate.toString());
+				command.add('-matte');
+				command.add('-virtual-pixel'); command.add('transparent');
+				command.add('+distort'); command.add('ScaleRotateTranslate'); command.add(rotate.toString());
+				command.add('+repage');
+			}
+		}
+
+		public static function composite(command:IMCommand, offset:String='+0+0', gravity:String='southwest'):void{
+			if(!command) return;
+			command.add('-gravity'); command.add(gravity);
+			command.add('-geometry'); command.add(offset);
+			command.add('-composite');
+		}
 
 		public static function drawBarcode(wrkDir:String, command:IMCommand, height:int, barcode:String, text:String, 
 										   offset:String, rotate:int=0, gravity:String='southwest',
@@ -211,29 +290,31 @@ package com.photodispatcher.util{
 			if(!command || !barcode || !wrkDir || height<=0) return;
 			var undercolor:String='white';
 			if(!offset) offset='+0+0';
-
+			command.add('(');
+			createBarcode(wrkDir, command, height, barcode, text, rotate, step, color, quietZone);
+			command.add(')');
+			composite(command, offset, gravity);
+			/*
 			var file:File=new File(wrkDir);
 			if(!file.exists) return;
 			var fileName:String=StrUtil.toFileName('brc_'+barcode)+'.png';
 			file=file.resolvePath(fileName);
-			var drawStep:int= Math.ceil(step);
 
 			//create barcode image
 			if(!file.exists){
+				var drawStep:int= Math.ceil(step);
 				var c128Writer:Code128Writer= new Code128Writer();
 				var bmp:Bitmap=c128Writer.draw(barcode,height,drawStep,color,quietZone);
 				if (!bmp) return;
 				var data:BitmapData=bmp.bitmapData;
-				/*
 				if(drawStep>2 && step<drawStep){
 					//scale
 					var matrix:Matrix = new Matrix();
 					matrix.scale(step/drawStep, 1);
-					var w:int=Math.round(data.width*step/drawStep);
+					var w:int=Math.ceil(data.width*step/drawStep);
 					data= new BitmapData(w, height);
 					data.draw(bmp.bitmapData, matrix); 
 				}
-				*/
 				var encoder:PNGEncoder= new PNGEncoder();
 				var imgByteArr:ByteArray = encoder.encode(data);
 				
@@ -255,32 +336,70 @@ package com.photodispatcher.util{
 			//convert img.jpg ( barcode.png -rotate -90 ) -gravity east -geometry "+100+100" -composite labeled.jpg
 			command.add('(');
 			command.add(fileName);
-			if(drawStep>2 && step<drawStep){
-				//scale by width
-				//-resize 25%x100%
-				var geometry:String=Math.ceil(step*100/drawStep).toString()+'%x100%';
-				command.add('-resize'); command.add(geometry);
-			}
+			
+			//if(drawStep>2 && step<drawStep){
+			//	//scale by width
+			//	//-resize 25%x100%
+			//	//var geometry:String=Math.ceil(step*100/drawStep).toString()+'%x100%';
+			//	//command.add('-resize'); command.add(geometry);
+			//	var geometry:String=Math.ceil(step*data.width/drawStep).toString()+'x'+data.height.toString();
+			//	command.add('-scale'); command.add(geometry);
+			//}
+			
 			if(text && height>8){
-				command.add('-gravity'); command.add('south');
+				//use label
 				command.add('-background'); command.add('none');
-				command.add('-splice'); command.add('0x'+height.toString());
-				command.add('-undercolor'); command.add('none');
-				command.add('-stroke'); command.add('none');
-				command.add('-strokewidth'); command.add('0');
-				command.add('-pointsize'); command.add((height-2).toString());
-				command.add('-fill'); command.add('black');
-				command.add('-annotate'); command.add('0'); command.add(text);
+				command.add('('); 
+				command.add('-pointsize'); command.add((height).toString());
 				command.add('-fill'); command.add(SHADOWED_TEXT_FORE_COLOR);
-				command.add('-annotate'); command.add('+2+2'); command.add(text);
+				command.add('-undercolor'); command.add('none');
+				command.add('-stroke'); command.add('gray');
+				command.add('-strokewidth'); command.add('1');
+				command.add('label:'+text);
+				command.add('-trim');
+				command.add(')'); 
+				command.add('-gravity'); command.add('center');
+				command.add('-append');
+				//command.add('-transparent'); command.add('dimgray');
+
+				//command.add('-background'); command.add('gray');
+				//command.add('-splice'); command.add('0x'+height.toString());
+				//command.add('-undercolor'); command.add('gray');
+				//command.add('-stroke'); command.add('none');
+				//command.add('-strokewidth'); command.add('0');
+				//command.add('-pointsize'); command.add((height-2).toString());
+				//command.add('-fill'); command.add('black');
+				//command.add('-annotate'); command.add('0'); command.add(text);
+				//command.add('-fill'); command.add(SHADOWED_TEXT_FORE_COLOR);
+				//command.add('-annotate'); command.add('+2+2'); command.add(text);
+				//command.add('-flatten');
+				//command.add('-transparent'); command.add('gray');
 			}
 			if(rotate!=0){
-				command.add('-rotate'); command.add(rotate.toString());
+				//rotate
+				//command.add('-rotate'); command.add(rotate.toString());
+				command.add('-matte');
+				command.add('-virtual-pixel'); command.add('transparent');
+				command.add('+distort'); command.add('ScaleRotateTranslate'); command.add(rotate.toString());
+				command.add('+repage');
 			}
 			command.add(')');
 			command.add('-gravity'); command.add(gravity);
 			command.add('-geometry'); command.add(offset);
 			command.add('-composite');
+			*/
 		}
+
+		public static function addLabeledMPR(mprCommand:IMCommand, destCommand:IMCommand, label:String):void{
+			mprCommand.add('-write'); mprCommand.add('mpr:'+label);
+			mprCommand.add('+delete');
+			
+			destCommand.prepend(mprCommand);
+		}
+
+		public static function readLabeledMPR(command:IMCommand, label:String):void{
+			command.add('mpr:'+label);
+		}
+
 	}
 }

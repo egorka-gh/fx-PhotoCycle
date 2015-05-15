@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   xmlns:view="com.photodispatcher.view.*" 
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   showStatusBar="false"
+					   creationComplete="{initApp()}" 
+					   closing="windowedapplication1_closingHandler(event)" xmlns:config="com.photodispatcher.view.config.*" 
+					   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.akmeful.fotakrama.project.INamespaced;
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.LayersetGroup;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.TechPickerService;
+			import com.photodispatcher.model.mysql.services.TechPointService;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.service.barcode.ValveController;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.ModalPopUp;
+			import com.photodispatcher.view.config.DatabasePopup;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			
+			[Bindable]
+			private var techPionts:ArrayCollection;
+			[Bindable]
+			private var techGroupsAC:ArrayCollection;
+			
+			[Bindable]
+			private var comReaders:ArrayCollection= new ArrayCollection;
+			
+			[Bindable]
+			private var comController:ComInfo; 
+			
+			[Bindable]
+			private var turnInterval:int;
+			
+			[Bindable]
+			public var engineOnStartOn:Boolean=false;
+			[Bindable]
+			public var vacuumOnStartOn:Boolean=false;
+			[Bindable]
+			public var engineOnErrOff:Boolean=false;
+			[Bindable]
+			public var vacuumOnErrOff:Boolean=false;
+			[Bindable]
+			public var stopOnComplite:Boolean=true;
+			[Bindable]
+			public var pauseOnComplite:Boolean=false;
+			[Bindable]
+			public var layerOnComplite:int=0;
+			[Bindable]
+			public var layerOnCompliteIdx:int=-1;
+			[Bindable]
+			public var layersAC:ArrayCollection;
+			/*
+			[Bindable]
+			public var engineOnCompliteOff:Boolean=false;
+			[Bindable]
+			public var vacuumOnCompliteOff:Boolean=false;
+			[Bindable]
+			public var askOnComplite:Boolean=false;
+			[Bindable]
+			public var layerOnComplite:Boolean=false;
+			[Bindable]
+			public var layerOnCompliteTray:int=1;
+			*/
+			
+			[Bindable]
+			private var techPointObj:TechPoint;
+			[Bindable]
+			private var currTechGroup:LayersetGroup;
+			
+			protected var _reversOrder:Boolean
+			[Bindable]
+			public function get reversOrder():Boolean{
+				return _reversOrder;
+			}
+			public function set reversOrder(value:Boolean):void{
+				_reversOrder = value;
+				Context.setAttribute("reversOrder", value);
+			}
+			
+			
+			private var _techPoint:int;
+			[Bindable]
+			protected function get techPointID():int{
+				return _techPoint;
+			}
+			protected function set techPointID(value:int):void{
+				_techPoint = value;
+				if(_techPoint){
+					Context.setAttribute("techPoint", _techPoint);
+					setTechPointObj(_techPoint);
+				}
+			}
+			
+			private function setTechPointObj(id:int):void{
+				if(!techPionts) return;
+				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
+				Context.setAttribute("tech.object", techPointObj);
+			}
+			private function setCurrTechGroup(id:int):void{
+				if(techGroupsAC) currTechGroup=ArrayUtil.searchItem('id',id,techGroupsAC.source) as LayersetGroup;
+				Context.setAttribute("techGroup.id", currTechGroup?currTechGroup.id:0);
+			}
+			
+			private var bdPopup:DatabasePopup;
+			private function initApp():void{
+				/*
+				bdPopup= new DatabasePopup();
+				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
+				bdPopup.chekConnect();
+				*/
+				readLocalConfig();
+				currentState='config';
+
+			}
+			
+			private function bdPopClose(e:PopUpEvent):void{
+				var connected:Boolean=e.commit;
+				if(connected){
+					//connected
+					init();
+				}else{
+					//no connection
+					currentState='disconnected';
+					bdPopup.open(null);
+				}
+			}
+			
+			private var startPopup:ModalPopUp;
+			private function init():void{
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+				
+				var initLatch:DbLatch=Context.initPhotoPicker();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+				
+				var latch:DbLatch= new DbLatch();
+				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				latch.addEventListener(Event.COMPLETE,onTPLoad);
+				latch.addLatch(svc.loadAll(SourceType.TECH_PICKING));
+				latch.start();
+				initLatch.join(latch);
+				
+				latch= new DbLatch();
+				var svc2:TechPickerService=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
+				latch.addEventListener(Event.COMPLETE,onLGLoad);
+				latch.addLatch(svc2.loadLayersetGroups());
+				latch.start();
+				initLatch.join(latch);
+				
+				initLatch.start();
+			}
+			private function onTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPLoad);
+					if(latch.complite){
+						techPionts=latch.lastDataAC;
+					}
+				}
+			}
+			private function onLGLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLGLoad);
+					if(latch.complite){
+						techGroupsAC=latch.lastDataAC;
+					}
+				}
+			}
+			private function onInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						return;
+					}
+				}
+				
+				layersAC=Context.getAttribute('layerValueList') as ArrayCollection;
+				if(!layersAC) layersAC= new ArrayCollection();
+				
+				readLocalConfig();
+				
+				startPopup.close();
+				startPopup=null;
+				
+				currentState='config';
+			}
+			
+			private function readLocalConfig():void{
+				comReaders= new ArrayCollection();
+				var coms:Array=ComInfo.load();
+				var ci:ComInfo;
+				for each (ci in coms){
+					if (ci.type==ComInfo.COM_TYPE_CONTROLLER) comController=ci;
+					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReaders.addItem(ci); //comBarcodeReader=ci;
+				}
+				if(!comController){
+					comController= new ComInfo(); comController.type=ComInfo.COM_TYPE_CONTROLLER; comController.suffix=ValveController.MSG_SUFIX;
+				}
+				var techGroupId:int;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					techPointID=so.data.techPoint;
+					techGroupId=so.data.techGroupId;
+					setCurrTechGroup(techGroupId);
+					reversOrder=so.data.reversOrder; 
+					turnInterval=so.data.turnInterval;
+					if(turnInterval<=0) turnInterval=1000;
+					engineOnStartOn=so.data.engineOnStartOn;
+					vacuumOnStartOn=so.data.vacuumOnStartOn;
+					engineOnErrOff=so.data.engineOnErrOff;
+					vacuumOnErrOff=so.data.vacuumOnErrOff;
+					if(so.data.hasOwnProperty('stopOnComplite')) stopOnComplite=so.data.stopOnComplite;
+					pauseOnComplite=so.data.pauseOnComplite;
+					layerOnComplite=so.data.layerOnComplite;
+					if(!layerOnComplite) layerOnComplite=0;
+					layerOnCompliteIdx=ArrayUtil.searchItemIdx('value',layerOnComplite,layersAC.source);
+				}
+			}
+			
+			private function start():void{
+				if(!techPointObj || !comController.num || comReaders.length==0 || !currTechGroup){
+					Alert.show('Приложение не настроено');
+					currentState='config';
+					return;
+				}
+				var arr:Array=comReaders.source.concat(comController); 
+				serialProxy.start(arr);
+				if(!serialProxy.isStarted){
+					return;
+				}
+				
+				currentState='monitor';
+				if(techPickerView) techPickerView.start();
+			}
+			
+			private function stop():void{
+				if(techPickerView) techPickerView.stop();
+				if(serialProxy) serialProxy.stop();
+				currentState='config';
+			}
+			
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				//TODO flush data
+				if(serialProxy) serialProxy.stop();
+				if(techPickerView) techPickerView.stop();
+			}
+			
+			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
+				var tp:TechPoint= ddTechPoint.selectedItem as TechPoint;
+				if (!tp) return;
+				techPointID=tp.id;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.techPoint = techPointID;
+				so.flush();  
+			}
+			
+			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
+				var barcodeReader:ComReader= event.target as ComReader;
+				if(barcodeReader) barcodeReader.stop();
+				//serialProxy.stop();
+				var bar:String=event.barcode;
+				bar = bar.replace(String.fromCharCode(13),'[LF]');
+				bar = bar.replace(String.fromCharCode(10),'[CR]');
+				if(barcodeReader) bar=barcodeReader.comCaption+': '+bar;
+				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
+				currentState='config';
+			}
+			
+			protected function btSaveComs_clickHandler(event:MouseEvent):void{
+				var arr:Array=comReaders.source.concat(comController);
+				ComInfo.save(arr);
+			}
+			
+			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
+				Alert.show('Ошибка SerialProxy \n '+event.error,'Ошибка');
+				//currentState='config';
+			}
+			
+			
+			protected function btAddCom_clickHandler(event:MouseEvent):void{
+				var cp:ComInfo= new ComInfo();
+				cp.type=ComInfo.COM_TYPE_BARREADER;
+				comReaders.addItem(cp);
+				comList.selectedItem=cp;
+			}
+			
+			protected function btDelCom_clickHandler(event:MouseEvent):void{
+				if(comList && comList.selectedIndex!=-1){
+					comReaders.removeItemAt(comList.selectedIndex);
+					comList.selectedIndex=-1
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="disconnected"/>
+		<s:State name="config"/>
+		<s:State name="monitor"/>
+		<s:State name="templates"/>
+	</s:states>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
+			  top="5" right="5"/>
+	<!--<s:Button id="btRecreateBD" includeIn="config" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"
+	top="35" right="5"/>-->
+	
+	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
+		<s:HGroup gap="5" verticalAlign="baseline" enabled="false">
+			<s:Label text="Технологическая точка:"/>
+			<s:DropDownList id="ddTechPoint" dataProvider="{techPionts}" selectedItem="{techPointObj}" 
+							labelField="name" change="ddTechPoint_changeHandler(event)"
+							width="200"/>
+		</s:HGroup>
+		
+		<s:Spacer height="5"/>
+		<s:HGroup gap="0" width="100%">
+			<s:VGroup gap="0">
+				<s:Label text="Принтер" fontWeight="bold"/>
+				<itemRenderer:ComInfoRenderer  data="{comController}" lockType="true" lockSuffix="true"/>
+			</s:VGroup>
+			<s:VGroup gap="0">
+				<s:Label text="Сканеры ШК" fontWeight="bold"/>
+				<!--<itemRenderer:ComInfoRenderer data="{comBarcodeReader}" lockType="true"/>-->
+				<s:HGroup gap="0">
+					<s:VGroup gap="5" height="92%">
+						<s:List id="comList" dataProvider="{comReaders}"  height="100%"/>
+						<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
+						<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
+					</s:VGroup> 
+					<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
+				</s:HGroup>
+			</s:VGroup>
+			<s:VGroup gap="0" height="92%" verticalAlign="bottom">
+				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+	
+	
+	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
+		<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
+							 serialProxy="{serialProxy}"
+							 reversOrder="{reversOrder}" turnInterval="{turnInterval}"
+							 engineOnStartOn="{engineOnStartOn}"
+							 vacuumOnStartOn="{vacuumOnStartOn}"
+							 engineOnErrOff="{engineOnErrOff}"
+							 vacuumOnErrOff="{vacuumOnErrOff}"
+							 stopOnComplite="{stopOnComplite}"
+							 pauseOnComplite="{pauseOnComplite}"
+							 layerOnComplite="{layerOnComplite}"
+							 width="100%" height="100%"/>
+	</s:VGroup>
+	
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+		<s:Spacer width="100%"/>
+		<s:Button label="Настройки" includeIn="monitor" click="{stop()}"/>
+		<s:Button label="Старт" includeIn="config" click="{start()}"/>
+		<s:Button label="Закрыть" click="{stop(); FlexGlobals.topLevelApplication.exit();}"/>
+	</s:HGroup>
+	
+</s:WindowedApplication>

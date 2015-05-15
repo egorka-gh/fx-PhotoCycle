@@ -208,23 +208,34 @@ package com.photodispatcher.provider.preprocess{
 				barcode=printGroup.techBarcodeByFile(file);
 				//var txt:String=printGroup.techBarcodeText(file);
 				if(barcode){
+					//create bar and write to mpr
+					var barCommand:IMCommand=new IMCommand();
+					IMCommandUtil.createBarcode(folder,barCommand,barSize,barcode,'',-90, printGroup.bookTemplate.tech_bar_step,barColor);
+					IMCommandUtil.addLabeledMPR(barCommand,command,'techBar');
+
 					var barOffset:String=printGroup.bookTemplate.tech_bar_offset;
 					if(!barOffset) barOffset='+0+0';
 					var gravity:String='east';
 					if(printGroup.bookTemplate.is_tech_center){
-						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,barColor);
+						//IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,barColor);
+						IMCommandUtil.readLabeledMPR(command,'techBar');
+						IMCommandUtil.composite(command,barOffset,gravity);
 					}
 					if(printGroup.bookTemplate.is_tech_top){
 						barOffset=printGroup.bookTemplate.tech_bar_toffset;
 						if(!barOffset) barOffset='+0+0';
 						gravity='NorthEast';
-						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,barColor);
+						//IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,barColor);
+						IMCommandUtil.readLabeledMPR(command,'techBar');
+						IMCommandUtil.composite(command,barOffset,gravity);
 					}
 					if(printGroup.bookTemplate.is_tech_bot){
 						barOffset=printGroup.bookTemplate.tech_bar_boffset;
 						if(!barOffset) barOffset='+0+0';
 						gravity='SouthEast';
-						IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,barColor);
+						//IMCommandUtil.drawBarcode(folder,command,barSize,barcode,'',barOffset,-90,gravity,printGroup.bookTemplate.tech_bar_step,barColor);
+						IMCommandUtil.readLabeledMPR(command,'techBar');
+						IMCommandUtil.composite(command,barOffset,gravity);
 					}
 				}
 			}

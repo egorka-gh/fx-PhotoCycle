@@ -111,7 +111,7 @@ package com.photodispatcher.provider.preprocess{
 				if(!reprintMode || it.reprint){
 					command=createCommand(it,folder);
 					//save
-					outName= TEMP_FOLDER+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
+					outName= TEMP_FOLDER+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.png';
 					command.add(outName);
 					commands.push(command);
 					//add 2 final(pdf) cmd
