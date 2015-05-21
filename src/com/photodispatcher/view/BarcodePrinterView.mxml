@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.EBS6kController;
+			import com.photodispatcher.service.barcode.SerialProxy;
+			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.util.StrUtil;
+			
+			import flash.globalization.DateTimeStyle;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+		
+			public static const LOG_LEN_LIMIT:int=2000;
+			//public static const BAR_LEN_LIMIT:int=2000;
+			
+			[Bindable]
+			public var isRunning:Boolean;
+
+			public var techPoint:TechPoint;
+
+			private var _printer:EBS6kController;
+			[Bindable]
+			public function get printer():EBS6kController{
+				return _printer;
+			}
+			public function set printer(value:EBS6kController):void{
+				if(_printer){
+					_printer.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_printer.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onPrinterDisconnect);
+				}
+				_printer = value;
+				if(_printer){
+					_printer.logger=this;
+					_printer.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_printer.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onPrinterDisconnect);
+				}
+			}
+
+			private var _barcodeReaders:Array;
+			protected function get barcodeReaders():Array{
+				return _barcodeReaders;
+			}
+			protected function set barcodeReaders(value:Array):void{
+				var barReader:ComReader;
+				if(_barcodeReaders){
+					for each(barReader in _barcodeReaders){
+						barReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+						barReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+						barReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+					}
+				}
+				_barcodeReaders = value;
+				if(_barcodeReaders){
+					for each(barReader in _barcodeReaders){
+						barReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+						barReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+						barReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+					}
+				}
+			}
+
+			
+			private var _serialProxy:SerialProxy;
+			public function get serialProxy():SerialProxy{
+				return _serialProxy;
+			}
+			public function set serialProxy(value:SerialProxy):void{
+				if(_serialProxy){
+					_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
+					_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
+					_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0);
+				}
+				_serialProxy = value;
+				if(_serialProxy){
+					_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
+					_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
+					_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0,false,10);
+					if(_serialProxy.isStarted) _serialProxy.connectAll();
+				}
+			}
+			private function onSerialProxyStart(evt:SerialProxyEvent):void{
+				log('SerialProxy: started, connect to com proxies...');
+				serialProxy.connectAll();
+			}
+			
+			private function onProxyConnect0(evt:SerialProxyEvent):void{
+				log('SerialProxy: connected, start devices');
+				startDevices();
+			}
+			private function onProxyErr(evt:SerialProxyEvent):void{
+				log('SerialProxy error: '+evt.error);
+				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,evt.error));
+			}
+			
+			private function startDevices():void{
+				//create devs
+				var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_EBS6kCONTROLLER);
+				if(!printer) printer= new EBS6kController();
+				printer.start(proxy);
+				
+				//var barReader:ComReader;
+				var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
+				if(!readers || readers.length==0) return;
+				var i:int;
+				if(!barcodeReaders){
+					//init bar readers
+					var newBarcodeReaders:Array=[];
+					for (i=0; i<readers.length; i++) newBarcodeReaders.push(new ComReader(500));
+					barcodeReaders=newBarcodeReaders;
+				}
+				if(readers.length!=barcodeReaders.length){
+					barcodeReaders=null;
+					return;
+				}
+				//start readers
+				for (i=0; i<readers.length; i++) (barcodeReaders[i] as ComReader).start(readers[i]);
+			}
+
+			[Bindable]
+			private var logText:String = '';
+			
+			private var dtFmt:DateTimeFormatter;
+			
+			public function log(mesage:String):void{
+				if(!dtFmt){
+					dtFmt=new DateTimeFormatter();
+					dtFmt.timeStyle=DateTimeStyle.LONG;
+					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
+				}
+				logText=logText+dtFmt.format(new Date())+' '+ mesage+'\n';
+			}
+			public function clear():void{
+				logText='';
+			}
+
+			
+			private function onError(event:BarCodeEvent):void{
+				var comReader:ComReader= event.target as ComReader;
+				var msg:String='';
+				if (comReader) msg=comReader.comCaption+' ';
+				msg=msg+'Ошибка: '+event.error;
+				log(msg);
+			}
+			private function onBarDisconnect(event:BarCodeEvent):void{
+				log('Отключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			private function onPrinterDisconnect(event:BarCodeEvent):void{
+				log('Принтер отключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+
+			private var currBarcode:String;
+			
+			private function onBarCode(event:BarCodeEvent):void{
+				if(!isRunning) return;
+				var barcode:String=event.barcode;
+				var comReader:ComReader= event.target as ComReader;
+				var msg:String='';
+				if (comReader) msg=comReader.comCaption+' ';
+				msg=msg+' Считан ШК: '+barcode;
+				log(msg);
+				
+				if(barcode==currBarcode && barcodeReaders.length>1) return; //doublescan  more then 1 barreader
+				currBarcode=barcode;
+				
+				if(barcode && printer) printer.sendMessage(barcode);
+				
+			}
+			
+			public function start():void{
+				if(!serialProxy) return;
+				clear();
+				log('Start');
+				if(!serialProxy.isStarted){
+					log('SerialProxy not started...');
+					return;
+				}
+				//connect
+				serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+				serialProxy.connectAll();
+			}
+
+			private function onProxyConnect(evt:SerialProxyEvent):void{
+				log('SerialProxy: connected to com proxies (start)');
+				serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+				log('Запуск');
+				startInternal();
+			}
+			protected function startInternal():void{
+				
+				if(!techPoint){
+					log('---------- Не задана технологическая точка ----------');
+				}
+				if(!barcodeReaders || barcodeReaders.length==0){
+					log('---------- Не настроены сканеры ШК ----------');
+				}
+				if(!printer){
+					log('---------- Не настроен принтер ----------');
+					return;
+				}
+				isRunning=true;
+				log('Готов к работе');
+
+			}
+
+			public function stop():void{
+				currBarcode='';
+				isRunning=false;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				var barcode:String=tiManualBar.text;
+				if(!barcode) return;
+				log('Ручной ШК '+barcode);
+
+				if(printer) printer.sendMessage(barcode);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" height="100%">
+			<s:Label text="Консоль"/>
+			<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false"/>
+		</s:HGroup>
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+			<s:Label text="ШК"/>
+			<s:TextInput id="tiManualBar" restrict="0123456789"/>
+			<s:Button label="Напечатать" click="button1_clickHandler(event)"/>
+			
+			<s:Spacer width="100%"/>
+			<s:Button label="Очистить" click="{clear()}"/>
+		</s:HGroup> 
+	</s:VGroup>
+	
+</s:Group>

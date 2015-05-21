@@ -43,8 +43,6 @@
 			
 			[Bindable]
 			private var techPionts:ArrayCollection;
-			[Bindable]
-			private var techGroupsAC:ArrayCollection;
 			
 			[Bindable]
 			private var comReaders:ArrayCollection= new ArrayCollection;
@@ -53,54 +51,7 @@
 			private var comController:ComInfo; 
 			
 			[Bindable]
-			private var turnInterval:int;
-			
-			[Bindable]
-			public var engineOnStartOn:Boolean=false;
-			[Bindable]
-			public var vacuumOnStartOn:Boolean=false;
-			[Bindable]
-			public var engineOnErrOff:Boolean=false;
-			[Bindable]
-			public var vacuumOnErrOff:Boolean=false;
-			[Bindable]
-			public var stopOnComplite:Boolean=true;
-			[Bindable]
-			public var pauseOnComplite:Boolean=false;
-			[Bindable]
-			public var layerOnComplite:int=0;
-			[Bindable]
-			public var layerOnCompliteIdx:int=-1;
-			[Bindable]
-			public var layersAC:ArrayCollection;
-			/*
-			[Bindable]
-			public var engineOnCompliteOff:Boolean=false;
-			[Bindable]
-			public var vacuumOnCompliteOff:Boolean=false;
-			[Bindable]
-			public var askOnComplite:Boolean=false;
-			[Bindable]
-			public var layerOnComplite:Boolean=false;
-			[Bindable]
-			public var layerOnCompliteTray:int=1;
-			*/
-			
-			[Bindable]
 			private var techPointObj:TechPoint;
-			[Bindable]
-			private var currTechGroup:LayersetGroup;
-			
-			protected var _reversOrder:Boolean
-			[Bindable]
-			public function get reversOrder():Boolean{
-				return _reversOrder;
-			}
-			public function set reversOrder(value:Boolean):void{
-				_reversOrder = value;
-				Context.setAttribute("reversOrder", value);
-			}
-			
 			
 			private var _techPoint:int;
 			[Bindable]
@@ -119,10 +70,6 @@
 				if(!techPionts) return;
 				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
 				Context.setAttribute("tech.object", techPointObj);
-			}
-			private function setCurrTechGroup(id:int):void{
-				if(techGroupsAC) currTechGroup=ArrayUtil.searchItem('id',id,techGroupsAC.source) as LayersetGroup;
-				Context.setAttribute("techGroup.id", currTechGroup?currTechGroup.id:0);
 			}
 			
 			private var bdPopup:DatabasePopup;
@@ -166,13 +113,6 @@
 				latch.start();
 				initLatch.join(latch);
 				
-				latch= new DbLatch();
-				var svc2:TechPickerService=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
-				latch.addEventListener(Event.COMPLETE,onLGLoad);
-				latch.addLatch(svc2.loadLayersetGroups());
-				latch.start();
-				initLatch.join(latch);
-				
 				initLatch.start();
 			}
 			private function onTPLoad(event:Event):void{
@@ -181,15 +121,6 @@
 					latch.removeEventListener(Event.COMPLETE,onTPLoad);
 					if(latch.complite){
 						techPionts=latch.lastDataAC;
-					}
-				}
-			}
-			private function onLGLoad(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onLGLoad);
-					if(latch.complite){
-						techGroupsAC=latch.lastDataAC;
 					}
 				}
 			}
@@ -202,9 +133,6 @@
 						return;
 					}
 				}
-				
-				layersAC=Context.getAttribute('layerValueList') as ArrayCollection;
-				if(!layersAC) layersAC= new ArrayCollection();
 				
 				readLocalConfig();
 				
@@ -219,35 +147,23 @@
 				var coms:Array=ComInfo.load();
 				var ci:ComInfo;
 				for each (ci in coms){
-					if (ci.type==ComInfo.COM_TYPE_CONTROLLER) comController=ci;
+					if (ci.type==ComInfo.COM_TYPE_EBS6kCONTROLLER) comController=ci;
 					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReaders.addItem(ci); //comBarcodeReader=ci;
 				}
 				if(!comController){
-					comController= new ComInfo(); comController.type=ComInfo.COM_TYPE_CONTROLLER; comController.suffix=ValveController.MSG_SUFIX;
+					comController= new ComInfo(); comController.type=ComInfo.COM_TYPE_EBS6kCONTROLLER; 
 				}
 				var techGroupId:int;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					techPointID=so.data.techPoint;
 					techGroupId=so.data.techGroupId;
-					setCurrTechGroup(techGroupId);
-					reversOrder=so.data.reversOrder; 
-					turnInterval=so.data.turnInterval;
-					if(turnInterval<=0) turnInterval=1000;
-					engineOnStartOn=so.data.engineOnStartOn;
-					vacuumOnStartOn=so.data.vacuumOnStartOn;
-					engineOnErrOff=so.data.engineOnErrOff;
-					vacuumOnErrOff=so.data.vacuumOnErrOff;
-					if(so.data.hasOwnProperty('stopOnComplite')) stopOnComplite=so.data.stopOnComplite;
-					pauseOnComplite=so.data.pauseOnComplite;
-					layerOnComplite=so.data.layerOnComplite;
-					if(!layerOnComplite) layerOnComplite=0;
-					layerOnCompliteIdx=ArrayUtil.searchItemIdx('value',layerOnComplite,layersAC.source);
 				}
 			}
 			
 			private function start():void{
-				if(!techPointObj || !comController.num || comReaders.length==0 || !currTechGroup){
+				//if(!techPointObj || !comController.num || comReaders.length==0 ){
+				if(!comController.num || comReaders.length==0 ){
 					Alert.show('Приложение не настроено');
 					currentState='config';
 					return;
@@ -259,11 +175,11 @@
 				}
 				
 				currentState='monitor';
-				if(techPickerView) techPickerView.start();
+				if(barcodePrinterView) barcodePrinterView.start();
 			}
 			
 			private function stop():void{
-				if(techPickerView) techPickerView.stop();
+				if(barcodePrinterView) barcodePrinterView.stop();
 				if(serialProxy) serialProxy.stop();
 				currentState='config';
 			}
@@ -271,7 +187,7 @@
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				//TODO flush data
 				if(serialProxy) serialProxy.stop();
-				if(techPickerView) techPickerView.stop();
+				if(barcodePrinterView) barcodePrinterView.stop();
 			}
 			
 			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
@@ -342,8 +258,6 @@
 	
 	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
 			  top="5" right="5"/>
-	<!--<s:Button id="btRecreateBD" includeIn="config" label="Пересоздать локальную базу" click="btRecreateBD_clickHandler(event)"
-	top="35" right="5"/>-->
 	
 	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
 		<s:HGroup gap="5" verticalAlign="baseline" enabled="false">
@@ -379,7 +293,7 @@
 	
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
+		<!--<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
 							 serialProxy="{serialProxy}"
 							 reversOrder="{reversOrder}" turnInterval="{turnInterval}"
 							 engineOnStartOn="{engineOnStartOn}"
@@ -389,7 +303,10 @@
 							 stopOnComplite="{stopOnComplite}"
 							 pauseOnComplite="{pauseOnComplite}"
 							 layerOnComplite="{layerOnComplite}"
-							 width="100%" height="100%"/>
+							 width="100%" height="100%"/>-->
+		<view:BarcodePrinterView id="barcodePrinterView" 
+								 techPoint="{techPointObj}" serialProxy="{serialProxy}"
+								 width="100%" height="100%"/>
 	</s:VGroup>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">

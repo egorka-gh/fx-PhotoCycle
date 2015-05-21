@@ -88,7 +88,7 @@ package com.photodispatcher.service.barcode{
 		}
 		
 		public function get comCaption():String{
-			return _comPort.comCaption;
+			return _comPort?_comPort.comCaption:'COM?';
 		}
 
 		

@@ -59,7 +59,7 @@ package com.photodispatcher.service.barcode{
 		}
 
 		protected function log(msg:String):void{
-			if(logger) logger.log(msg.replace(String.fromCharCode(MSG_SUFIX), "'hex:"+sufix.toString(16)+"'"));
+			if(logger) logger.log(this.comCaption+' '+ msg.replace(String.fromCharCode(MSG_SUFIX), "'hex:"+sufix.toString(16)+"'"));
 		}
 		
 		private function onAclTimer(evt:TimerEvent):void{

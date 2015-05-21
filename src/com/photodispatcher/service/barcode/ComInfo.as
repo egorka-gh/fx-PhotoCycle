@@ -7,7 +7,8 @@ package com.photodispatcher.service.barcode{
 		public static const COM_TYPE_BARREADER:int=1;
 		public static const COM_TYPE_VALVE:int=2;
 		public static const COM_TYPE_CONTROLLER:int=3;
-		public static const COM_TYPE_CAPTIONS:Array=['Отключен','Сканер ШК','Клапан','Контроллер']; 
+		public static const COM_TYPE_EBS6kCONTROLLER:int=4;
+		public static const COM_TYPE_CAPTIONS:Array=['Отключен','Сканер ШК','Клапан','Контроллер','Принтер EBS6k']; 
 		
 		public static const COM_NUMS:Array=['1','2','3','4','5','6','7','8','9']; 
 		public static const COM_BAUDS:Array=['2400','4800','7200','9600','14400','19200','38400','57600','115200','128000']; 

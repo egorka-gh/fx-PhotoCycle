@@ -175,6 +175,7 @@ package com.photodispatcher.tech.picker{
 		[Bindable]
 		public var currPgId:String='';
 		private var currBarcode:String;
+		private var currReprints:Array;
 		[Bindable]
 		public var currBookTot:int;
 		[Bindable]
@@ -1171,6 +1172,7 @@ package com.photodispatcher.tech.picker{
 			if(!register){
 				//new order
 				currPgId=pgId;
+				currReprints=[];
 				currBookTot=int(barcode.substr(3,3));
 				currSheetTot=int(barcode.substr(8,2));
 				/*
@@ -1189,7 +1191,7 @@ package com.photodispatcher.tech.picker{
 				//reset detectFirstBook
 				if(detectFirstBook) detectFirstBook=false;
 			}else{
-				if(pgId!=currPgId){
+				if(!checkPrintgroup(pgId)){
 					if(register.inexactBookSequence){
 						//defect complited
 						register.finalise();
@@ -1215,6 +1217,14 @@ package com.photodispatcher.tech.picker{
 			//pause('Отключен сканер ШК '+event.barcode); busy bug
 		}
 
+		private function checkPrintgroup(pgId:String):Boolean{
+			var res:Boolean=pgId==currPgId;
+			if(!res && currReprints){
+				res=currReprints.indexOf(pgId)!=-1;
+			}
+			return res;
+		}
+		
 		private function onRegisterErr(event:ErrorEvent):void{
 			pause(event.text);
 		}
@@ -1230,15 +1240,34 @@ package com.photodispatcher.tech.picker{
 		
 		private function checkOrderParams():void{
 			if(!currPgId) return;
-			/*
-			var dao:OrderDAO= new OrderDAO();
-			var o:Order=dao.getExtraInfoByPG(currPgId,true);
-			*/
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch();
 			latch.addLatch(svc.loadExtraIfoByPG(currPgId));
 			latch.addEventListener(Event.COMPLETE,onOrderFinde);
+			//load reprints
+			var latchR:DbLatch= new DbLatch();
+			latchR.addEventListener(Event.COMPLETE,onReprintsLoad);
+			latchR.addLatch(svc.loadReprintsByPG(currPgId));
+			latchR.start();
+			latch.join(latchR);
 			latch.start();
+		}
+		private function onReprintsLoad(e:Event):void{
+			currReprints=[];
+			var latch:DbLatch=e.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onReprintsLoad);
+				if(latch.complite){
+					var list:Array=latch.lastDataArr;
+					if(list){
+						for each (var pg:PrintGroup in list){
+							if(pg){
+								currReprints.push(pg.id);
+							}
+						}
+					}
+				}
+			}
 		}
 		private function onOrderFinde(e:Event):void{
 			var latch:DbLatch=e.target as DbLatch;

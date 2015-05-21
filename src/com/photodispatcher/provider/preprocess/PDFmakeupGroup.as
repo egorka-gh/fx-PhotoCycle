@@ -25,7 +25,7 @@ package com.photodispatcher.provider.preprocess{
 		protected static const FILENAME_COVER:String=TEMP_FOLDER+'/cover';
 		protected static const FILENAME_COVER_BACK:String=TEMP_FOLDER+'/cover_back';
 		protected static const FONT_COVER_BACK:int=6;
-		protected static const TEMP_FILE_TYPE:String='.jpg';//bug - broken jpg - use png or some else
+		protected static const TEMP_FILE_TYPE:String='.jpg';//IM bug - broken jpg - use png or some else
 		//protected static const TEMP_FILE_TYPE:String='.png';
 		
 		//protected static const PDF_PAGE_LIMIT:int=100;
