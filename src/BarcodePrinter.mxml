@@ -5,9 +5,10 @@
 					   xmlns:barcode="com.photodispatcher.service.barcode.*"
 					   xmlns:view="com.photodispatcher.view.*" 
 					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   xmlns:config="com.photodispatcher.view.config.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="windowedapplication1_closingHandler(event)" xmlns:config="com.photodispatcher.view.config.*" 
+					   closing="windowedapplication1_closingHandler(event)"  
 					   >
 	
 	<fx:Script>
@@ -25,6 +26,7 @@
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveController;
 			import com.photodispatcher.util.ArrayUtil;
@@ -45,10 +47,11 @@
 			private var techPionts:ArrayCollection;
 			
 			[Bindable]
-			private var comReaders:ArrayCollection= new ArrayCollection;
+			private var comReaderInfo:ComInfo;
+			//private var comReaders:ArrayCollection= new ArrayCollection;
 			
 			[Bindable]
-			private var comController:ComInfo; 
+			private var comControllerInfo:ComInfo; 
 			
 			[Bindable]
 			private var techPointObj:TechPoint;
@@ -74,13 +77,13 @@
 			
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
-				/*
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
 				bdPopup.chekConnect();
-				*/
+				/*
 				readLocalConfig();
 				currentState='config';
+				*/
 
 			}
 			
@@ -106,12 +109,14 @@
 				var initLatch:DbLatch=Context.initPhotoPicker();
 				initLatch.addEventListener(Event.COMPLETE, onInit);
 				
+				/*
 				var latch:DbLatch= new DbLatch();
 				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
 				latch.addEventListener(Event.COMPLETE,onTPLoad);
 				latch.addLatch(svc.loadAll(SourceType.TECH_PICKING));
 				latch.start();
 				initLatch.join(latch);
+				*/
 				
 				initLatch.start();
 			}
@@ -133,25 +138,27 @@
 						return;
 					}
 				}
-				
-				readLocalConfig();
-				
 				startPopup.close();
 				startPopup=null;
 				
 				currentState='config';
+				readLocalConfig();
 			}
 			
 			private function readLocalConfig():void{
-				comReaders= new ArrayCollection();
 				var coms:Array=ComInfo.load();
 				var ci:ComInfo;
 				for each (ci in coms){
-					if (ci.type==ComInfo.COM_TYPE_EBS6kCONTROLLER) comController=ci;
-					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReaders.addItem(ci); //comBarcodeReader=ci;
+					if (ci.type==ComInfo.COM_TYPE_EBS6kCONTROLLER) comControllerInfo=ci;
+					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReaderInfo=ci;
 				}
-				if(!comController){
-					comController= new ComInfo(); comController.type=ComInfo.COM_TYPE_EBS6kCONTROLLER; 
+				if(!comControllerInfo){
+					comControllerInfo= new ComInfo(); comControllerInfo.type=ComInfo.COM_TYPE_EBS6kCONTROLLER; 
+				}
+				if(!comReaderInfo){
+					comReaderInfo = new ComInfo();
+					comReaderInfo.type=ComInfo.COM_TYPE_BARREADER;
+
 				}
 				var techGroupId:int;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
@@ -159,19 +166,55 @@
 					techPointID=so.data.techPoint;
 					techGroupId=so.data.techGroupId;
 				}
+				if(comControllerInfo.num  && comReaderInfo.num) start();
 			}
 			
+			[Bindable]
+			private var barcodeReader:ComReader;
+			[Bindable]
+			private var printer:EBS6kController; 
+
 			private function start():void{
 				//if(!techPointObj || !comController.num || comReaders.length==0 ){
-				if(!comController.num || comReaders.length==0 ){
-					Alert.show('Приложение не настроено');
+				if(!comControllerInfo.num ){
+					Alert.show('Не настроен принтер');
 					currentState='config';
 					return;
 				}
-				var arr:Array=comReaders.source.concat(comController); 
-				serialProxy.start(arr);
+				//var arr:Array=comReaders.source.concat(comController); 
+				serialProxy.start([comControllerInfo,comReaderInfo]);
 				if(!serialProxy.isStarted){
 					return;
+				}
+				
+				//start coms
+				var pr:Socket2Com;
+				pr=serialProxy.getProxy(ComInfo.COM_TYPE_EBS6kCONTROLLER);
+				if(!pr){
+					Alert.show('Не настроен принтер');
+					currentState='config';
+					serialProxy.stop();
+					return;
+				}
+				if(printer){
+					printer.stop();
+					printer=null;
+				}
+				if(pr){
+					printer= new EBS6kController();
+					printer.comPort=pr;
+					//printer.start();
+				}
+				
+				pr=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
+				if(barcodeReader){
+					barcodeReader.stop();
+					barcodeReader=null;
+				}
+				if(pr){
+					barcodeReader= new ComReader();
+					barcodeReader.comPort=pr;
+					//barcodeReader.start();
 				}
 				
 				currentState='monitor';
@@ -212,7 +255,7 @@
 			}
 			
 			protected function btSaveComs_clickHandler(event:MouseEvent):void{
-				var arr:Array=comReaders.source.concat(comController);
+				var arr:Array=[comControllerInfo, comReaderInfo];
 				ComInfo.save(arr);
 			}
 			
@@ -221,7 +264,7 @@
 				//currentState='config';
 			}
 			
-			
+			/*
 			protected function btAddCom_clickHandler(event:MouseEvent):void{
 				var cp:ComInfo= new ComInfo();
 				cp.type=ComInfo.COM_TYPE_BARREADER;
@@ -235,6 +278,7 @@
 					comList.selectedIndex=-1
 				}
 			}
+			*/
 			
 		]]>
 	</fx:Script>
@@ -271,19 +315,19 @@
 		<s:HGroup gap="0" width="100%">
 			<s:VGroup gap="0">
 				<s:Label text="Принтер" fontWeight="bold"/>
-				<itemRenderer:ComInfoRenderer  data="{comController}" lockType="true" lockSuffix="true"/>
+				<itemRenderer:ComInfoRenderer  data="{comControllerInfo}" lockType="true" lockSuffix="true"/>
 			</s:VGroup>
 			<s:VGroup gap="0">
-				<s:Label text="Сканеры ШК" fontWeight="bold"/>
-				<!--<itemRenderer:ComInfoRenderer data="{comBarcodeReader}" lockType="true"/>-->
-				<s:HGroup gap="0">
+				<s:Label text="Сканер ШК" fontWeight="bold"/>
+				<itemRenderer:ComInfoRenderer data="{comReaderInfo}" lockType="true"/>
+				<!--<s:HGroup gap="0">
 					<s:VGroup gap="5" height="92%">
 						<s:List id="comList" dataProvider="{comReaders}"  height="100%"/>
 						<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
 						<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
 					</s:VGroup> 
 					<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
-				</s:HGroup>
+				</s:HGroup>-->
 			</s:VGroup>
 			<s:VGroup gap="0" height="92%" verticalAlign="bottom">
 				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
@@ -293,19 +337,8 @@
 	
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<!--<view:TechPickerView id="techPickerView" techPoint="{techPointObj}" 
-							 serialProxy="{serialProxy}"
-							 reversOrder="{reversOrder}" turnInterval="{turnInterval}"
-							 engineOnStartOn="{engineOnStartOn}"
-							 vacuumOnStartOn="{vacuumOnStartOn}"
-							 engineOnErrOff="{engineOnErrOff}"
-							 vacuumOnErrOff="{vacuumOnErrOff}"
-							 stopOnComplite="{stopOnComplite}"
-							 pauseOnComplite="{pauseOnComplite}"
-							 layerOnComplite="{layerOnComplite}"
-							 width="100%" height="100%"/>-->
 		<view:BarcodePrinterView id="barcodePrinterView" 
-								 techPoint="{techPointObj}" serialProxy="{serialProxy}"
+								 techPoint="{techPointObj}" barcodeReader="{barcodeReader}" printer="{printer}"
 								 width="100%" height="100%"/>
 	</s:VGroup>
 	

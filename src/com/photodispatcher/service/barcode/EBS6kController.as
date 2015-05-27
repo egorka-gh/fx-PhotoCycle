@@ -43,6 +43,22 @@ package com.photodispatcher.service.barcode{
 			send(msg);
 		}
 
+		public function sendMessages(messages:Array):void{
+			if(!messages) return;
+			var msg:String='';
+			for each(var str:String in messages){
+				if(str){
+					if(msg) msg+=String.fromCharCode(MSG_ACK);
+					msg+=str;
+				}else{
+					//err
+					msg='';
+					break;
+				}
+			}
+			sendMessage(msg);
+		}
+
 		override protected function onComData(event:SerialProxyEvent):void{
 			//awaits ACK only
 			//no ACK control, no error if no respoce from printer, just log responce
@@ -59,7 +75,10 @@ package com.photodispatcher.service.barcode{
 		}
 
 		protected function log(msg:String):void{
-			if(logger) logger.log(this.comCaption+' '+ msg.replace(String.fromCharCode(MSG_SUFIX), "'hex:"+sufix.toString(16)+"'"));
+			if(!logger) return;
+			var str:String=msg.replace(String.fromCharCode(MSG_SUFIX), "("+MSG_SUFIX.toString(16)+")");
+			str=str.replace(String.fromCharCode(MSG_ACK), "("+MSG_ACK.toString(16)+")");
+			logger.log(this.comCaption+' '+ str);
 		}
 		
 		private function onAclTimer(evt:TimerEvent):void{

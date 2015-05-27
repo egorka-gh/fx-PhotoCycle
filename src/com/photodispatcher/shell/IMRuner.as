@@ -18,6 +18,11 @@ package  com.photodispatcher.shell{
 	
 	[Event(name="imCompleted",     type="com.photodispatcher.event.IMRunerEvent")]
 	public class IMRuner extends EventDispatcher{
+		
+		public static const IM_JPG_WARNING:String='JPEGWarningHandler';
+
+		public static const IM_JPG_CORRUPT:String='Corrupt JPEG data';
+		
 		[Bindable]
 		public static var isRunning:Boolean=false;
 		
@@ -192,8 +197,12 @@ package  com.photodispatcher.shell{
 			//Duration in s
 			command.profileDuration=(command.profileEnd-command.profileStart)/1000;
 			if(errorResponse){
-				if(ignoreWarning && errorResponse.indexOf('JPEGWarningHandler')!=-1){
-					hasWarning=true;
+				if(ignoreWarning && errorResponse.indexOf(IM_JPG_WARNING)!=-1){
+					if(errorResponse.indexOf(IM_JPG_CORRUPT)!=-1){
+						hasError=true;
+					}else{
+						hasWarning=true;
+					}
 				}else{
 					hasError=true;
 				}

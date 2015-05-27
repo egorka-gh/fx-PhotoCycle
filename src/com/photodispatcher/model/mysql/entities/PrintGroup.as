@@ -797,7 +797,33 @@ package com.photodispatcher.model.mysql.entities {
 			return BookSynonym.translatePath(this.alias);
 			
 		}
-		
+
+		public static function tech2BookBarcode(techBarcode:String):String{
+			if(!techBarcode || techBarcode.length<14) return '';
+			var bookNum:int=parseInt(techBarcode.substr(0,3));
+			if(isNaN(bookNum)) return '';
+			var dgId:String=techBarcode.substr(10);
+			return dgId+StrUtil.lPad(bookNum.toString(),3);
+		}
+		public static function tech2BookBarcodeCaption(techBarcode:String):String{
+			if(!techBarcode || techBarcode.length<14) return '';
+			var bookNum:int=parseInt(techBarcode.substr(0,3));
+			if(isNaN(bookNum)) return '';
+			
+			var dgId:String=techBarcode.substr(10);
+			//parce digit id
+			if(!dgId || dgId.length<5) return '';
+			
+			var srcId:int= parseInt(dgId.substr(0,2));
+			if(isNaN(srcId)) return '';
+			var srcCode:String=Context.getSourceCodeById(srcId);
+			if(!srcCode) srcCode=srcId.toString()+'_';
+
+			var id:String=dgId.substr(2,dgId.length-4);
+			
+			return srcCode+id+':'+bookNum.toString();
+		}
+
 		public static function idFromDigitId(digitId:String):String{
 			if(!digitId || digitId.length<5) return '';
 			if(digitId.indexOf('_')!=-1) return digitId; //old barcode (x_xx_x)

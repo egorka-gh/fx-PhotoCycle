@@ -77,6 +77,7 @@ package com.photodispatcher.service.barcode
 		}
 		
 		public function start(newComInfos:Array):void{
+			var proxy:Socket2Com;
 			//stop();
 			if(_isStarted) return;
 			if(newComInfos) comInfos=newComInfos;
@@ -85,6 +86,15 @@ package com.photodispatcher.service.barcode
 				return;
 			}
 			if(remoteIp){
+				//create proxies
+				for each (ci in comInfos){
+					if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
+						if(!ci.proxy){
+							proxy= new Socket2Com(ci,remoteIp);
+							ci.proxy=proxy;
+						}
+					}
+				}
 				_isStarted=true;
 				return;
 			}
@@ -177,6 +187,17 @@ package com.photodispatcher.service.barcode
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: '+e.message));
 				return;
 			}
+			
+			//create proxies
+			for each (ci in comInfos){
+				if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
+					if(!ci.proxy){
+						proxy= new Socket2Com(ci,remoteIp);
+						ci.proxy=proxy;
+					}
+				}
+			}
+
 			_isStarted=true;
 			dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_START));
 		}

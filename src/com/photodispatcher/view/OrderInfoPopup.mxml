@@ -287,10 +287,9 @@
 					if(pg && !pg.is_reprint && pg.files && pg.files.length>0){
 						newPg=pg.clone();
 						newPg.id=pg.id;
-						pgArr.push(newPg);
 						if(newPg.is_pdf){
 							//recreate files
-							if(!builder.recreateFromFilesystem(order,newPg)) break;
+							if(!builder.recreateFromFilesystem(order,newPg)) continue;
 							pgPath=orderWrkPath+File.separator+newPg.path;
 							//extend path
 							for each(pgf in newPg.files){
@@ -307,6 +306,7 @@
 								}
 							}
 						}
+						pgArr.push(newPg);
 					}
 				}
 				reprintPGList.source=pgArr;

@@ -413,6 +413,11 @@ package com.photodispatcher.context{
 			if(!sourcesMap) return null;
 			return (sourcesMap[id] as Source);
 		}
+		public static function getSourceCodeById(id:int):String{
+			var src:Source=getSource(id);
+			if(!src) return '';
+			return src.code;
+		}
 		public static function getSourceIdByCode(code:String):int{
 			if(!code) return 0;
 			var arr:Array=getSources();

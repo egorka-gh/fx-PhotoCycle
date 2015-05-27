@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
-		 xmlns:mx="library://ns.adobe.com/flex/mx">
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 >
 	
 	<fx:Script>
 		<![CDATA[
@@ -15,6 +17,7 @@
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.tech.TechRegisterBase;
 			import com.photodispatcher.tech.TechRegisterCommon;
@@ -33,6 +36,8 @@
 			public static const LOG_LEN_LIMIT:int=2000;
 			//public static const BAR_LEN_LIMIT:int=2000;
 			
+			public var extendedPrint:Boolean;
+			
 			public var techPoint:TechPoint;
 			private var _barcodeReader:ComReader;
 			public function get barcodeReader():ComReader{
@@ -42,11 +47,15 @@
 				if(_barcodeReader){
 					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
 				}
 				_barcodeReader = value;
 				if(_barcodeReader){
 					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
 				}
 			}
 
@@ -65,6 +74,26 @@
 				if(_flap){
 					_flap.addEventListener(BarCodeEvent.BARCODE_READED,onFlapMsg);
 					_flap.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+			}
+
+			private var _printer:EBS6kController;
+			[Bindable]
+			public function get printer():EBS6kController{
+				return _printer;
+			}
+			public function set printer(value:EBS6kController):void{
+				if(_printer){
+					_printer.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_printer.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onPrinterDisconnect);
+					_printer.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onPrinterConnect);
+				}
+				_printer = value;
+				if(_printer){
+					//_printer.logger=this;
+					_printer.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_printer.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onPrinterDisconnect);
+					_printer.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onPrinterConnect);
 				}
 			}
 
@@ -97,6 +126,25 @@
 			private function onFlapMsg(event:BarCodeEvent):void{
 				logToScreen('Защелка: '+event.barcode,true);
 			}
+			
+			private function onPrinterDisconnect(event:BarCodeEvent):void{
+				log('!Принтер отключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			private function onPrinterConnect(event:BarCodeEvent):void{
+				log('Принтер подключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+
+			private function onBarDisconnect(event:BarCodeEvent):void{
+				log('Отключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			private function onReaderConnect(event:BarCodeEvent):void{
+				log('Сканер ШК подключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+
 			
 			private function createRegister(printGroup:String,books:int,sheets:int):void{
 				var result:TechRegisterBase;
@@ -158,6 +206,7 @@
 			
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
+				print(barcode);
 				//parce barcode
 				var pgId:String;
 				barText=barcode+'\n';
@@ -193,7 +242,36 @@
 				}
 				regList.addItemAt({log_date:new Date(), page: StrUtil.sheetName(bookNum,pageNum)},0);
 			}
+			
+			private function print(barcode:String):void{
+				if(!printer || !barcode) return;
+				var printBar:String=PrintGroup.tech2BookBarcode(barcode);
+				if(!extendedPrint){
+					if(printBar){
+						log('Печать ШК '+printBar);
+						if(printer) printer.sendMessage(printBar);
+					}else{
+						log('!! Не верный ШК. Ошибка преобразования ШК.');
+					}
+					return;
+				}
+				var printCaption:String=PrintGroup.tech2BookBarcodeCaption(barcode);
+				if(printBar && printCaption){
+					log('Печать ШК '+printBar+' '+printCaption);
+					if(printer) printer.sendMessages([printBar, printCaption]);
+				}else{
+					log('!! Не верный ШК. Ошибка преобразования ШК.');
+				}
+			}
 
+
+			public function log(mesage:String):void{
+				logToScreen(mesage);
+			}
+			public function clear():void{
+				cleanLog();
+			}
+			
 			private function logToScreen(msg:String, isError:Boolean=false):void{
 				var color:String=isError?"'#990000'":"'#006600'";
 				var bold:String=isError?"fontWeight='bold'":'';
@@ -232,6 +310,9 @@
 				}
 				regList=new ArrayCollection();
 				createGridColumns();
+				if(barcodeReader) barcodeReader.start();
+				if(printer) printer.start();
+				if(flap) flap.start();
 			}
 
 			public function createGridColumns():void{
@@ -252,6 +333,9 @@
 					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
 				}
 				currRegister=null;
+				if(barcodeReader) barcodeReader.stop();
+				if(printer) printer.stop();
+				if(flap) flap.stop();
 			}
 			
 			private function cleanLog():void{

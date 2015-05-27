@@ -11,6 +11,7 @@
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
@@ -43,15 +44,38 @@
 				if(_printer){
 					_printer.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
 					_printer.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onPrinterDisconnect);
+					_printer.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onPrinterConnect);
 				}
 				_printer = value;
 				if(_printer){
 					_printer.logger=this;
 					_printer.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
 					_printer.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onPrinterDisconnect);
+					_printer.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onPrinterConnect);
 				}
 			}
 
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
+				return _barcodeReader;
+			}
+			public function set barcodeReader(value:ComReader):void{
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+				_barcodeReader = value;
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+			}
+
+			/*
 			private var _barcodeReaders:Array;
 			protected function get barcodeReaders():Array{
 				return _barcodeReaders;
@@ -74,8 +98,9 @@
 					}
 				}
 			}
+			*/
 
-			
+			/*
 			private var _serialProxy:SerialProxy;
 			public function get serialProxy():SerialProxy{
 				return _serialProxy;
@@ -131,6 +156,7 @@
 				//start readers
 				for (i=0; i<readers.length; i++) (barcodeReaders[i] as ComReader).start(readers[i]);
 			}
+			*/
 
 			[Bindable]
 			private var logText:String = '';
@@ -162,14 +188,22 @@
 				//pause('Отключен сканер ШК '+event.barcode); busy bug
 			}
 			private function onPrinterDisconnect(event:BarCodeEvent):void{
-				log('Принтер отключен '+event.barcode);
+				log('!Принтер отключен '+event.barcode);
 				//pause('Отключен сканер ШК '+event.barcode); busy bug
 			}
-
+			private function onPrinterConnect(event:BarCodeEvent):void{
+				log('Принтер подключен '+event.barcode);
+				log('Готов к работе');
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			private function onReaderConnect(event:BarCodeEvent):void{
+				log('Сканер ШК подключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			
 			private var currBarcode:String;
 			
 			private function onBarCode(event:BarCodeEvent):void{
-				if(!isRunning) return;
 				var barcode:String=event.barcode;
 				var comReader:ComReader= event.target as ComReader;
 				var msg:String='';
@@ -177,17 +211,40 @@
 				msg=msg+' Считан ШК: '+barcode;
 				log(msg);
 				
-				if(barcode==currBarcode && barcodeReaders.length>1) return; //doublescan  more then 1 barreader
+				if(!isRunning){
+					log('!Not started. Ignore.')
+					return;
+				}
+				print(barcode);
+			}
+
+			private function print(barcode:String):void{
+				if(!barcode) return;
+				if(!isRunning){
+					log('!Not started. Ignore.')
+					return;
+				}
 				currBarcode=barcode;
-				
-				if(barcode && printer) printer.sendMessage(barcode);
+				var printBar:String=PrintGroup.tech2BookBarcode(barcode);
+				var printCaption:String=PrintGroup.tech2BookBarcodeCaption(barcode);
+				if(printBar && printCaption){
+					log('Печать ШК '+printBar+' '+printCaption);
+					//if(printer) printer.sendMessage(printBar);
+					if(printer) printer.sendMessages([printBar, printCaption]);
+				}else{
+					log('!! Не верный ШК. Ошибка преобразования ШК.');
+				}
 				
 			}
-			
+
 			public function start():void{
-				if(!serialProxy) return;
+				//if(!serialProxy) return;
 				clear();
 				log('Start');
+				startInternal();
+				if(printer) printer.start();
+				if(barcodeReader) barcodeReader.start();
+				/*
 				if(!serialProxy.isStarted){
 					log('SerialProxy not started...');
 					return;
@@ -195,32 +252,46 @@
 				//connect
 				serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
 				serialProxy.connectAll();
+				*/
 			}
 
+			/*
 			private function onProxyConnect(evt:SerialProxyEvent):void{
 				log('SerialProxy: connected to com proxies (start)');
 				serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
 				log('Запуск');
 				startInternal();
 			}
+			*/
+			
 			protected function startInternal():void{
 				
 				if(!techPoint){
 					log('---------- Не задана технологическая точка ----------');
 				}
-				if(!barcodeReaders || barcodeReaders.length==0){
-					log('---------- Не настроены сканеры ШК ----------');
+				if(!barcodeReader ){
+					log('Не настроен сканер ШК');
+				}
+				if(barcodeReader && !barcodeReader.connected ){
+					log('Сканер ШК не подключен '+barcodeReader.comCaption);
 				}
 				if(!printer){
-					log('---------- Не настроен принтер ----------');
+					log('Не настроен принтер');
 					return;
 				}
+				if(!printer.connected){
+					log('Принтер не подключен '+printer.comCaption);
+				}else{
+					log('Готов к работе');
+					
+				}
 				isRunning=true;
-				log('Готов к работе');
 
 			}
 
 			public function stop():void{
+				if(barcodeReader) barcodeReader.stop();
+				if(printer) printer.stop();
 				currBarcode='';
 				isRunning=false;
 			}

@@ -698,7 +698,7 @@ package com.photodispatcher.factory{
 				//try to finde print alias (fbook type first)
 				bookSynonym=BookSynonym.translateAlias(pg.alias);
 				//maybe common alias look in pro synonyms 
-				if(!bookSynonym) bookSynonym=BookSynonym.translatePath(pg.path,src.type); 
+				if(!bookSynonym) bookSynonym=BookSynonym.translatePath(pg.alias,src.type); 
 			} catch(error:Error){
 				trace('recreatePDFReprint err: '+error.message);
 				return false;

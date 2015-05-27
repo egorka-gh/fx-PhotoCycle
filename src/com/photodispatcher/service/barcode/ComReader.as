@@ -30,6 +30,8 @@ package com.photodispatcher.service.barcode{
 		protected var lastBarcode:String;
 		protected var lastBarcodeTime:int=getTimer();
 		protected var cleanMsg:Boolean=true;
+
+		public var cleanNonDigit:Boolean=false;
 		
 		public function get lastCode():String{
 			return lastBarcode;
@@ -140,6 +142,11 @@ package com.photodispatcher.service.barcode{
 						barcode = barcode.replace(String.fromCharCode(13),'');
 						barcode = barcode.replace(String.fromCharCode(10),'');
 						barcode = barcode.replace(String.fromCharCode(02),'');
+						//barcode = barcode.replace(' ','');
+						barcode = barcode.replace(/\s+/g, '');
+					}
+					if(cleanNonDigit){
+						barcode = barcode.replace(/\D+/g, '');
 					}
 					buffer=buffer.substr(idx+1);
 					var skip:Boolean=false;

@@ -285,5 +285,15 @@ package com.photodispatcher.model.mysql.entities {
 			if(extraInfo) return extraInfo.endpaper;
 			return null;
 		}
-    }
+
+		public function get humanId():String{
+			var arr:Array=id.split('_');
+			if(source_code && arr && arr.length>1){
+				return source_code+arr[1];
+			}else{
+				return id;
+			}
+		}
+
+	}
 }

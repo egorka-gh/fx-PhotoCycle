@@ -8,15 +8,17 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
-			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.TechService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.util.ArrayUtil;
 			
 			import org.granite.tide.Tide;
 			
@@ -26,22 +28,47 @@
 			public static const LOG_LEN_LIMIT:int=2000;
 			
 			public var techPoint:TechPoint;
-			private var _barcodeReader:ComReader;
-			public function get barcodeReader():ComReader{
-				return _barcodeReader;
-			}
-			public function set barcodeReader(value:ComReader):void{
-				if(_barcodeReader){
-					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
-					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
-				}
-				_barcodeReader = value;
-				if(_barcodeReader){
-					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
-					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
-				}
-			}
 			
+			private var _barcodeReaderCover:ComReader;
+			public function get barcodeReaderCover():ComReader{
+				return _barcodeReaderCover;
+			}
+			public function set barcodeReaderCover(value:ComReader):void{
+				if(_barcodeReaderCover){
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCodeCover);
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onConnected);
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onDisconnected);
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+				_barcodeReaderCover = value;
+				if(_barcodeReaderCover){
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_READED,onBarCodeCover);
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onConnected);
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onDisconnected);
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+			}
+
+			private var _barcodeReaderBlock:ComReader;
+			public function get barcodeReaderBlock():ComReader{
+				return _barcodeReaderBlock;
+			}
+			public function set barcodeReaderBlock(value:ComReader):void{
+				if(_barcodeReaderBlock){
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCodeBlock);
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onConnected);
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onDisconnected);
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+				_barcodeReaderBlock = value;
+				if(_barcodeReaderBlock){
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_READED,onBarCodeBlock);
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onConnected);
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onDisconnected);
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+			}
+
 			private var _flap:ValveCom;
 			[Bindable]
 			public function get flap():ValveCom{
@@ -86,130 +113,210 @@
 				
 			}
 			
+			private function onDisconnected(event:BarCodeEvent):void{
+				logToScreen('Ошибка: отключен '+event.barcode,true);
+				
+			}
+
+			private function onConnected(event:BarCodeEvent):void{
+				logToScreen('Подключен '+event.barcode);
+				
+			}
+			
 			private function onFlapMsg(event:BarCodeEvent):void{
 				logToScreen('Защелка: '+event.barcode,true);
 			}
 			
-			/*
-			private function createRegister(printGroup:String,books:int,sheets:int):void{
-				var result:TechRegisterBase;
-				if(!techPoint){
-					if(currRegister){
-						currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterMsg);
-						currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
-					}
-					currRegister=null;
+			private var currentOrder:Order;
+			private var currentSubId:String;
+			private var currentPgId:String;
+			private var currentBook:int;
+			
+			private function onBarCodeBlock(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				barText='b:'+barcode+'\n';
+				var newScanId:String=PrintGroup.idFromBookBarcode(barcode);
+				var newOrderId:String=PrintGroup.orderIdFromBookBarcode(barcode);
+				var newBook:int=PrintGroup.bookFromBookBarcode(barcode);
+				
+				if(!newScanId || !newOrderId){
+					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
 					return;
 				}
-				switch(techPoint.tech_type){
-					case SourceType.TECH_PRINT:
-						result= new TechRegisterPrint(printGroup,books,sheets);
-						var latch:DbLatch= new DbLatch();
-						var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
-						//latch.addEventListener(Event.COMPLETE,onTPLoad);
-						latch.addLatch(svc.printGroupMarkInPrint(printGroup));
-						latch.start();
-						break;
-					case SourceType.TECH_FOLDING:
-						result= new TechRegisterFolding(printGroup,books,sheets);
-						break;
-					default:
-						result= new TechRegisterCommon(printGroup,books,sheets);
-						break;
+				if(newBook<=0){
+					logToScreen('---------- Не верный номер книги: '+newBook.toString()+' ----------',true);
+					return;
 				}
-				if(result){
-					result.techPoint=techPoint;
-					result.flap=flap;
-					result.revers=Boolean(Context.getAttribute("reversOrder"));
+
+				
+				if(newScanId==currentPgId && currentBook==newBook){
+					//doublescan?
+					return;
 				}
-				//stop listen old one
-				if(currRegister){
-					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterMsg);
-					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
+				//check sequence
+				if(currentPgId){
+					logToScreen('Ошибка последовательности операций.',true);
+					logToScreen('Не установлена обложка для блока '+currentBookCaption,true);
 				}
-				currRegister=result;
-				if(currRegister){
-					//listen
-					currRegister.addEventListener(ErrorEvent.ERROR,onRegisterMsg);
-					currRegister.addEventListener(Event.COMPLETE,onRegisterComplite);
+				currentPgId=newScanId;
+				currentBook=newBook;
+				logToScreen('Установлен блок '+currentPgId+' книга '+currentBook.toString());
+				
+				if(!currentOrder || currentOrder.id!=newOrderId){
+					//load order
+					currentOrder=null;
+					var latch:DbLatch=new DbLatch(true);
+					var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+					latch.addEventListener(Event.COMPLETE,onOrderLoad);
+					latch.addLatch(svc.loadOrderVsChilds(newOrderId));
+					latch.start();
+				}else{
+					setOrder();
+				}
+			}
+			private function onOrderLoad(event:Event):void{
+				var latch:DbLatch=event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
+					if(!latch.complite){
+						logToScreen('Ошибка базы данных '+latch.error,true);
+						reset();
+					}else{
+						currentOrder=latch.lastDataItem as Order;
+						setOrder();
+					}
+				}else{
+					logToScreen('Ошибка выполнения (null latch)',true);
+					reset();
 				}
 			}
 			
-			private function onRegisterMsg(event:ErrorEvent):void{
-				logToScreen(event.text,event.errorID>0);
+			private function setOrder():void{
+				if(!currentPgId || !currentOrder || !currentOrder.printGroups){
+					logToScreen('Ошибка. Нет данных заказа',true);
+					reset();
+					return;
+				}
+				//look for pg
+				var pg:PrintGroup=ArrayUtil.searchItem('id',currentPgId,currentOrder.printGroups.toArray()) as PrintGroup;
+				if(!pg){
+					logToScreen('Ошибка. Нет данных группы печати '+currentPgId,true);
+					reset();
+					return;
+				}
+				currentSubId=pg.sub_id;
+				logToScreen('Ожидаю обложку '+currentBookCaption);
 			}
 			
-			private function onRegisterComplite(event:Event):void{
+			private function get currentBookCaption():String{
+				var result:String='';
+				if(currentOrder) result= currentOrder.humanId;
+				if(currentSubId) result= result+'-'+currentSubId;
+				if(currentBook) result= result+':'+currentBook.toString();
+				return result;
 			}
-			
-			private var currRegister:TechRegisterBase;
-			*/
-			
-			private function onBarCode(event:BarCodeEvent):void{
+
+			private function onBarCodeCover(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
 				//parce barcode
 				var pgId:String;
-				barText=barcode+'\n';
+				barText='c:'+barcode+'\n';
 				
 				var newScanId:String=PrintGroup.idFromBookBarcode(barcode);
-				if(!newScanId){
-					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
-					if(flap) flap.setOff();
-					return;
-				}
+				var newOrderId:String=PrintGroup.orderIdFromBookBarcode(barcode);
 				var newBook:int=PrintGroup.bookFromBookBarcode(barcode);
-				
-				logToScreen('Группа печати "'+newScanId+'" книга '+newBook.toString(),false);
 
-				/*
-				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
-				if(!pgId){
-					//TODO rise err
+				if(!newScanId || !newOrderId){
 					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
-					if(flap) flap.setOff();
+					return;
+				}
+				if(newBook<=0){
+					logToScreen('---------- Не верный номер книги: '+newBook.toString()+' ----------',true);
 					return;
 				}
 				
-				var bookNum:int=int(barcode.substr(0,3));
-				var pageNum:int=int(barcode.substr(6,2));
-				
-				if(currRegister && currRegister.printGroupId==pgId){
-					currRegister.register(bookNum,pageNum);
-					if (currRegister.isComplete) logToScreen('Группа печати "'+currRegister.printGroupId+'" завершена',false);
-				}else{
-					if(currRegister && !currRegister.finalise()) return;
-					//create new
-					var bookTot:int=int(barcode.substr(3,3));
-					var pageTot:int=int(barcode.substr(8,2));
-					createRegister(pgId,bookTot,pageTot);
-					if(!currRegister){
-						logToScreen('---------- Не поддерживаемый режим регистрации ШК ----------',true);
-						return;
-					}
-					//start new
-					barText='';
-					barText=barcode+'\n';
-					currRegister.register(bookNum,pageNum);
+				//TODO check doble scan
+
+				logToScreen('Установлена обложка '+newScanId+' книга '+newBook.toString());
+				if(techPoint){
+					//log to data base
+					var tl:TechLog= new TechLog();
+					tl.log_date=new Date();
+					tl.setSheet(newBook,0);
+					tl.print_group=newScanId;
+					tl.src_id= techPoint.id;
+					var latch:DbLatch=new DbLatch();
+					var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+					//latch.addEventListener(Event.COMPLETE,onLog);
+					latch.addLatch(svc.logByPg(tl));
+					latch.start();
 				}
-				*/
-				//log to data base
-				var tl:TechLog= new TechLog();
-				tl.log_date=new Date();
-				tl.setSheet(newBook,0);
-				tl.print_group=newScanId;
-				tl.src_id= techPoint.id;
+
+				//check sequence
+				if(!currentPgId || !currentOrder){
+					logToScreen('Ошибка последовательности операций.',true);
+					logToScreen('Не установлен блок для обложки',true);
+					return;
+				}
+
+				//check cover
+				if(currentOrder.id!=newOrderId){
+					logToScreen('Неверный заказ обложки '+ newOrderId+', заказ блока '+currentOrder.id,true);
+					log2bd(currentPgId,'Неверный заказ обложки '+newOrderId);
+					return;
+				}
+				//look for pg
+				var pg:PrintGroup=ArrayUtil.searchItem('id',newScanId,currentOrder.printGroups.toArray()) as PrintGroup;
+				if(!pg || pg.sub_id!=currentSubId){
+					logToScreen('Неверный подзаказ обложки '+(pg?pg.sub_id:'null')+', подзаказ блока '+currentSubId,true);
+					if(!pg){
+						log2bd(currentPgId,'Ненайдена группа обложки '+newScanId);
+					}else{
+						log2bd(currentPgId,'Неверный подзаказ обложки '+pg.sub_id +'('+currentSubId+')');
+					}
+					return;
+				}
+				if(currentBook!=newBook){
+					logToScreen('Неверная книга обложки '+newBook.toString() +', книга блока '+currentBook.toString(),true);
+					log2bd(currentPgId,'Неверная книга обложки '+newBook.toString() +'('+currentBook.toString()+')');
+					return;
+				}
+				
+				//complited
+				currentPgId='';
+				
+				logToScreen('Книга заказа '+currentBookCaption+' - OK',false);
+
+			}
+			
+			private function log2bd(pgId:String, msg:String):void{
+				if(!techPoint || !pgId || !msg) return;
 				var latch:DbLatch=new DbLatch();
-				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				//latch.addEventListener(Event.COMPLETE,onLog);
-				latch.addLatch(svc.logByPg(tl));
+				latch.addLatch(svc.logStateByPGroup(pgId, techPoint.tech_type, msg));
 				latch.start();
+				
 			}
 			
 			private function logToScreen(msg:String, isError:Boolean=false):void{
 				var color:String=isError?"'#990000'":"'#006600'";
 				var bold:String=isError?"fontWeight='bold'":'';
+				var txtSize:String=isError?"fontSize='16'":'';
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				fmt.dateTimePattern='HH:mm:ss';
+
+				logText= "<span>" + fmt.format(new Date()) + " </span>"+"<span color="+color+" "+bold+" "+txtSize+">" + msg + "</span> <br />"+logText;
+
+				//cut
+				if(logText.length> LOG_LEN_LIMIT){
+					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
+					if(idx!=-1){
+						logText=logText.substr(0,idx+6);
+					}
+				}
+
+				/*
 				logText += "<span>" + fmt.format(new Date()) + " </span>";
 				logText += "<span color="+color+" "+bold+">" + msg + "</span> <br />";
 				//cut
@@ -219,34 +326,41 @@
 						logText=logText.substr(idx+6);
 					}
 				}
+				*/
+				
 				try{
 					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
 				}catch(error:Error){
 					trace('TextFlow err, txt: '+logText);
 					trace(error.message);
 				}
-				logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
+				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
 			}
 			
 			public function start():void{
 				cleanLog();
+				reset();
 				barText='';
 				if(!techPoint){
 					//TODO rise err or log in screen
 					logToScreen('---------- Не задана технологическая точка ----------',true);
 				}
+				if(barcodeReaderBlock) barcodeReaderBlock.start();
+				if(barcodeReaderCover) barcodeReaderCover.start();
 			}
 			
 			public function stop():void{
+				if(barcodeReaderBlock) barcodeReaderBlock.stop();
+				if(barcodeReaderCover) barcodeReaderCover.stop();
 				cleanLog();
-				/*
-				if(currRegister){
-					currRegister.finalise();
-					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterMsg);
-					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
-				}
-				currRegister=null;
-				*/
+				reset();
+			}
+			
+			public function reset():void{
+				currentOrder=null;
+				currentSubId='';
+				currentPgId='';
+				currentBook=0;
 			}
 			
 			private function cleanLog():void{
@@ -273,9 +387,10 @@
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%">
 			<s:Button label="Очистить" click="{cleanLog()}"/>
-			<s:Spacer width="100%"/>
-			<s:Button id="btFlapOn" label="Зщелка Вкл" click="btFlapOn_clickHandler(event)" enabled="{flap!=null}"/>
-			<s:Button id="btFlapOff" label="Зщелка Выкл" click="btFlapOff_clickHandler(event)" enabled="{flap!=null}"/>
+			<s:Spacer width="5"/>
+			<s:Button label="Сброс" click="{reset()}"/>
+			<!--<s:Button id="btFlapOn" label="Зщелка Вкл" click="btFlapOn_clickHandler(event)" enabled="{flap!=null}"/>
+			<s:Button id="btFlapOff" label="Зщелка Выкл" click="btFlapOff_clickHandler(event)" enabled="{flap!=null}"/>-->
 		</s:HGroup> 
 	</s:VGroup>
 	

@@ -22,6 +22,7 @@
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.util.ArrayUtil;
@@ -47,11 +48,13 @@
 			private var barcodeReader:ComReader;
 			[Bindable]
 			private var flap:ValveCom; 
-			
+			[Bindable]
+			private var printer:EBS6kController; 
+
 			[Bindable]
 			private var techPointObj:TechPoint;
 			
-			protected var _reversOrder:Boolean
+			protected var _reversOrder:Boolean;
 			[Bindable]
 			public function get reversOrder():Boolean{
 				return _reversOrder;
@@ -61,7 +64,17 @@
 				Context.setAttribute("reversOrder", value);
 			}
 			
-			
+
+			protected var _extendedPrint:Boolean;
+			[Bindable]
+			public function get extendedPrint():Boolean{
+				return _extendedPrint;
+			}
+			public function set extendedPrint(value:Boolean):void{
+				_extendedPrint = value;
+				Context.setAttribute("extendedPrint", value);
+			}
+
 			private var _techPoint:int;
 			[Bindable]
 			protected function get techPointID():int{
@@ -146,7 +159,8 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					techPointID=so.data.techPoint;
-					reversOrder=so.data.reversOrder; 
+					reversOrder=so.data.reversOrder;
+					extendedPrint=so.data.extendedPrint;
 				}
 				
 				if(techPointObj && coms.length>0){
@@ -162,45 +176,62 @@
 					currentState='config';
 					return;
 				}
-				currentState='monitor';
-				if(techMonitor) techMonitor.start();
 				serialProxy.start(coms.source);
-				if(serialProxy.isStarted){
-					//start barcode reader
-					if(barcodeReader){
-						barcodeReader.stop();
-						barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
-						barcodeReader=null;
-					}
-					var pr:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
-					if(pr){
-						barcodeReader= new ComReader();
-						barcodeReader.comPort=pr;
-						barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
-						barcodeReader.start();
-					}
-					pr=serialProxy.getProxy(ComInfo.COM_TYPE_VALVE);
-					if(pr){
-						flap= new ValveCom();
-						flap.comPort=pr;
-						flap.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
-						flap.start();
-					}
+				if(!serialProxy.isStarted){
+					currentState='config';
+					return;
 				}
+
+				currentState='monitor';
+				//create barcode reader
+				if(barcodeReader){
+					barcodeReader.stop();
+					barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					barcodeReader=null;
+				}
+				var pr:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
+				if(pr){
+					barcodeReader= new ComReader();
+					barcodeReader.comPort=pr;
+					barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					//barcodeReader.start();
+				}
+				
+				//create printer
+				pr=serialProxy.getProxy(ComInfo.COM_TYPE_EBS6kCONTROLLER);
+				if(printer){
+					printer.stop();
+					printer=null;
+				}
+				if(pr){
+					printer= new EBS6kController();
+					printer.comPort=pr;
+					//printer.start();
+				}
+				
+				//create flap
+				pr=serialProxy.getProxy(ComInfo.COM_TYPE_VALVE);
+				if(pr){
+					flap= new ValveCom();
+					flap.comPort=pr;
+					flap.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					//flap.start();
+				}
+				if(techMonitor) techMonitor.start();
 			}
 			
 			private function stop():void{
-				if(flap) flap.stop();
 				if(techMonitor) techMonitor.stop();
-				if(barcodeReader) barcodeReader.stop();
-				serialProxy.stop();
+				//if(barcodeReader) barcodeReader.stop();
+				//if(flap) flap.stop();
+				if(serialProxy) serialProxy.stop();
 				currentState='config';
 			}
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				//TODO flush data
-				if(flap) flap.stop();
-				if(barcodeReader) barcodeReader.stop();
+				//if(flap) flap.stop();
+				//if(barcodeReader) barcodeReader.stop();
 				if(serialProxy) serialProxy.stop();
 				if(techMonitor) techMonitor.stop();
 			}
@@ -246,6 +277,14 @@
 				so.data.reversOrder = reversOrder;
 				so.flush();  
 			}
+			
+			protected function chbBarCaption_changeHandler(event:Event):void{
+				extendedPrint=chbBarCaption.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.extendedPrint = extendedPrint;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -280,6 +319,11 @@
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
 		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Печатать подпись ШК:"/>
+			<s:CheckBox id="chbBarCaption" selected="{extendedPrint}"  change="chbBarCaption_changeHandler(event)"/>
+		</s:HGroup>
 		
 		<s:VGroup gap="5">
 			<s:HGroup gap="10">
@@ -296,7 +340,8 @@
 	</s:VGroup>
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" barcodeReader="{barcodeReader}" flap="{flap}"
+		<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" 
+							  barcodeReader="{barcodeReader}" flap="{flap}" printer="{printer}" extendedPrint="{extendedPrint}"
 							  width="100%" height="100%"/>
 	</s:VGroup>
 	

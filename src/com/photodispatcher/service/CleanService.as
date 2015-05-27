@@ -213,9 +213,10 @@ package com.photodispatcher.service{
 			var order:Order;
 			var folder:File;
 			var orderAdded:Boolean;
+			var markIds:Array=[];
 			for each (order in orders){
+				orderAdded=false;
 				if(order && order.ftp_folder){
-					orderAdded=false;
 					if(wrkFolder){
 						folder=wrkFolder.resolvePath(order.ftp_folder);
 						if(folder.exists && folder.isDirectory){
@@ -230,10 +231,18 @@ package com.photodispatcher.service{
 								folders2kill.push(new CleanFileHolder(folder));
 							}else{
 								folders2kill.push(new CleanFileHolder(folder,order.id));
+								orderAdded=true;
 							}
 						}
 					}
 				}
+				if(!orderAdded && order && order.id) markIds.push(order.id);
+			}
+			if(markIds.length>0){
+				latch=new DbLatch(true);
+				//latch.addEventListener(Event.COMPLETE, onOrdersSaved);
+				latch.addLatch(orderService.markCleanFS(markIds));
+				latch.start();
 			}
 			prepareNextSource();
 		}
@@ -344,6 +353,7 @@ package com.photodispatcher.service{
 			}
 			currFolder=folders2kill.pop() as CleanFileHolder;
 			if(!currFolder || !currFolder.file || !currFolder.file.exists || !currFolder.file.isDirectory){
+				if(currFolder && currFolder.orderId) orderIds.push(currFolder.orderId);
 				killNextFolder();
 			}
 			
