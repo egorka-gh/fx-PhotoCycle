@@ -29,12 +29,6 @@
 			import spark.events.PopUpEvent;
 			import spark.events.TextOperationEvent;
 			
-			/*
-			[Bindable]
-			private var conf:AppConfig;
-			private var confDAO:AppConfigDAO;
-			*/
-			
 			[Bindable]
 			private var workFolder:String;
 			[Bindable]
@@ -83,8 +77,6 @@
 
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
-				//confDAO=new AppConfigDAO();
-				//conf=confDAO.getItem();
 				
 				imPath=Context.getAttribute('imPath');
 				workFolder=Context.getAttribute('workFolder');

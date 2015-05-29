@@ -29,6 +29,10 @@
 			
 			public var techPoint:TechPoint;
 			
+			public var alertSize:uint=40;
+			public var alertTime:uint=7;
+
+			
 			private var _barcodeReaderCover:ComReader;
 			public function get barcodeReaderCover():ComReader{
 				return _barcodeReaderCover;
@@ -157,6 +161,7 @@
 				if(currentPgId){
 					logToScreen('Ошибка последовательности операций.',true);
 					logToScreen('Не установлена обложка для блока '+currentBookCaption,true);
+					showAlert('Не установлена обложка для блока '+currentBookCaption);
 				}
 				currentPgId=newScanId;
 				currentBook=newBook;
@@ -256,6 +261,7 @@
 				if(!currentPgId || !currentOrder){
 					logToScreen('Ошибка последовательности операций.',true);
 					logToScreen('Не установлен блок для обложки',true);
+					showAlert('Не установлен блок для обложки');
 					return;
 				}
 
@@ -263,12 +269,14 @@
 				if(currentOrder.id!=newOrderId){
 					logToScreen('Неверный заказ обложки '+ newOrderId+', заказ блока '+currentOrder.id,true);
 					log2bd(currentPgId,'Неверный заказ обложки '+newOrderId);
+					showAlert('Неверный заказ обложки '+ newOrderId+', заказ блока '+currentOrder.id);
 					return;
 				}
 				//look for pg
 				var pg:PrintGroup=ArrayUtil.searchItem('id',newScanId,currentOrder.printGroups.toArray()) as PrintGroup;
 				if(!pg || pg.sub_id!=currentSubId){
 					logToScreen('Неверный подзаказ обложки '+(pg?pg.sub_id:'null')+', подзаказ блока '+currentSubId,true);
+					showAlert('Неверный подзаказ обложки '+(pg?pg.sub_id:'null')+', подзаказ блока '+currentSubId);
 					if(!pg){
 						log2bd(currentPgId,'Ненайдена группа обложки '+newScanId);
 					}else{
@@ -278,6 +286,7 @@
 				}
 				if(currentBook!=newBook){
 					logToScreen('Неверная книга обложки '+newBook.toString() +', книга блока '+currentBook.toString(),true);
+					showAlert('Неверная книга обложки '+newBook.toString() +', книга блока '+currentBook.toString());
 					log2bd(currentPgId,'Неверная книга обложки '+newBook.toString() +'('+currentBook.toString()+')');
 					return;
 				}
@@ -298,11 +307,16 @@
 				latch.start();
 				
 			}
+
+			private function showAlert(msg:String):void{
+				var ap:AlertrPopup=new AlertrPopup();
+				ap.show(msg, alertTime, alertSize);
+			}
 			
 			private function logToScreen(msg:String, isError:Boolean=false):void{
 				var color:String=isError?"'#990000'":"'#006600'";
 				var bold:String=isError?"fontWeight='bold'":'';
-				var txtSize:String=isError?"fontSize='16'":'';
+				var txtSize:String=isError?"fontSize='14'":'';
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				fmt.dateTimePattern='HH:mm:ss';
 

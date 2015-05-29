@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   minWidth="100" minHeight="100">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.core.UIComponent;
+			import mx.managers.PopUpManager;
+			
+			private static var sound:Sound;
+			
+			public static function set alertSound(filepath:String):void{
+				if(!filepath) return;
+				var file:File= new File(filepath);
+				if(!file.exists) return;
+				/*
+				if(sound){
+					try{
+						sound.close();
+					}catch(error:Error){}
+				}
+				*/
+				sound= new Sound(new URLRequest(file.url));
+			}
+			
+			[Bindable]
+			public var alert:String;
+
+			[Bindable]
+			public var labelFontSize:Number=40;
+			[Bindable]
+			public var labelColor:uint=0x990000;
+
+			public function show(mesage:String, time:uint=7, size:uint=40):void{
+				alert=mesage;
+				if(size) labelFontSize=size;
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer));
+				this.width=FlexGlobals.topLevelApplication.width-50;
+				this.height=FlexGlobals.topLevelApplication.height-60;
+				PopUpManager.centerPopUp(this);
+				
+				if(time){
+					timer= new Timer(time*1000,1);
+					timer.addEventListener(TimerEvent.TIMER, onTimer);
+					timer.start();
+				}
+				if(sound){
+					try{
+						sound.play();
+					}catch(error:Error){}
+				}
+			}
+			
+			private var timer:Timer;
+			private function onTimer(e:Event):void{
+				hide();
+			}
+			
+			private function hide():void{
+				if(timer){
+					timer.reset();
+					timer.removeEventListener(TimerEvent.TIMER, onTimer);
+				}
+				close();
+			}
+		]]>
+	</fx:Script>
+	
+	<s:Rect radiusX="3" top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="#cccccc"/>
+		</s:stroke>
+	</s:Rect>
+	<s:Image source="assets/error.png" left="5" top="5" width="32" height="32"/>
+	<s:TextArea id="alertLabel" text="{alert}"
+				color="{labelColor}" fontSize="{labelFontSize}" fontWeight="bold"
+				top="40" left="10" right="10" bottom="10"
+				click="{hide()}"
+				borderVisible="false" textAlign="center" verticalAlign="middle" editable="false"/>
+</s:SkinnablePopUpContainer>

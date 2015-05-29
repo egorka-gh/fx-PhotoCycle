@@ -20,6 +20,7 @@ package com.photodispatcher.service.barcode{
 		public static const ACKNOWLEDGE_TIMEOUT:int	=200;
 
 		public static const MSG_ACK:int=0x06;
+		public static const MSG_DELEMITER:int=0x09;
 
 		public var logger:ISimpleLogger;
 		private var aclTimer:Timer;
@@ -48,7 +49,7 @@ package com.photodispatcher.service.barcode{
 			var msg:String='';
 			for each(var str:String in messages){
 				if(str){
-					if(msg) msg+=String.fromCharCode(MSG_ACK);
+					if(msg) msg+=String.fromCharCode(MSG_DELEMITER);
 					msg+=str;
 				}else{
 					//err
@@ -76,8 +77,9 @@ package com.photodispatcher.service.barcode{
 
 		protected function log(msg:String):void{
 			if(!logger) return;
-			var str:String=msg.replace(String.fromCharCode(MSG_SUFIX), "("+MSG_SUFIX.toString(16)+")");
-			str=str.replace(String.fromCharCode(MSG_ACK), "("+MSG_ACK.toString(16)+")");
+			var str:String=msg.replace(String.fromCharCode(MSG_SUFIX), "(h"+MSG_SUFIX.toString(16)+")");
+			str=str.replace(String.fromCharCode(MSG_ACK), "(h"+MSG_ACK.toString(16)+")");
+			str=str.replace(String.fromCharCode(MSG_DELEMITER), "(h"+MSG_DELEMITER.toString(16)+")");
 			logger.log(this.comCaption+' '+ str);
 		}
 		
