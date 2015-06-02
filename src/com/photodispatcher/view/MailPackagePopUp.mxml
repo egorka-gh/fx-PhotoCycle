@@ -132,7 +132,8 @@
 				}
 				
 				printForms=DeliveryTypePrintForm.getForms(mailPackage.delivery_id);
-				propertiesAC=mailPackage.properties as ArrayCollection;
+				propertiesAC=null;
+				if(mailPackage.properties) propertiesAC= new ArrayCollection(mailPackage.properties.toArray());
 				if(propertiesAC){
 					propertiesAC.filterFunction=filterProps;
 					propertiesAC.refresh();
