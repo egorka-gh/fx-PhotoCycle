@@ -618,9 +618,9 @@ package com.photodispatcher.provider.ftp{
 				}
 				*/
 				if(file.exists && !file.isDirectory) file.deleteFile();
-				if(!order.ftpResumeLoad){
+				if(!order.resume_load){
 					if(file.exists && file.isDirectory) file.deleteDirectory(true);
-					order.ftpResumeLoad=true;
+					order.resume_load=true;
 				}
 				
 				file.createDirectory();

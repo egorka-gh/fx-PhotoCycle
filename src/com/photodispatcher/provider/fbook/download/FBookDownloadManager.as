@@ -228,29 +228,7 @@ package com.photodispatcher.provider.fbook.download{
 			}
 			removeFromQueue(order);
 		}
-		/*
-		private function login_ResultHandler(event:ResultEvent, token:AsyncToken):void {
-			var r:Object = JsonUtil.decode(event.result as String);
-			if(r.result){
-				//start service
-				_isStarted=true;
-				trace('FBook login complite sid='+r.sid);
-				//store sid
-				if(r.sid) source.fbookSid=r.sid;
-				//dispatchEvent(new Event('isStartedChange'));
-				checkQueue();
-			} else {
-				_isStarted=false;
-				flowError('Ошибка подключения к '+source.fbookService.url);
-			}
-			//token=null;
-		}
-		private function login_FaultHandler(event:FaultEvent, token:AsyncToken):void {
-			_isStarted = false;
-			flowError('Ошибка подключения к '+source.fbookService.url+': '+event.fault.faultString);
-			//token=null;
-		}
-		*/
+
 		public function download(order:Order):void{
 			var so:SubOrder;
 			if(order){
@@ -315,6 +293,19 @@ package com.photodispatcher.provider.fbook.download{
 			if(newOrder){
 				trace('FBookDownloadManager start dload order '+newOrder.id);
 				currentOrder=newOrder;
+
+				//clear file system
+				var file:File=new File(localFolder);
+				file=file.resolvePath(currentOrder.ftp_folder);
+				try{
+					if(file.exists && !file.isDirectory) file.deleteFile();
+					if(!currentOrder.resume_load){
+						if(file.exists && file.isDirectory) file.deleteDirectory(true);
+						currentOrder.resume_load=true;
+					}
+					file.createDirectory();
+				}catch(error:Error){}
+
 				currentOrder.state=OrderState.FTP_LOAD;
 				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,'','Загрузка подзаказов');
 				nextSubOrder();
@@ -406,8 +397,10 @@ package com.photodispatcher.provider.fbook.download{
 				//chek create suborder folder
 				var workFolder:File;
 				var file:File=new File(localFolder);
+				
 				file=file.resolvePath(currentOrder.ftp_folder+File.separator+currentSubOrder.ftp_folder);
 				try{
+					/*/
 					if(file.exists){
 						if(file.isDirectory){
 							file.deleteDirectory(true);
@@ -415,6 +408,7 @@ package com.photodispatcher.provider.fbook.download{
 							file.deleteFile();
 						}
 					}
+					*/
 					file.createDirectory();
 					//create wrk subfolder
 					file=file.resolvePath(FBookProject.SUBDIR_WRK);

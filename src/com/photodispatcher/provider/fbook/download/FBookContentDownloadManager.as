@@ -129,6 +129,12 @@ package com.photodispatcher.provider.fbook.download{
 			_totalLoaded=0;
 		}
 		
+		private function isElementLoaded(path:String):Boolean{
+			if(!workFolder) return false;
+			var file:File=workFolder.resolvePath(path);
+			return file.exists; 
+		}
+		
 		private function prepareElement(proj:FBookProject, pageNum:int, contentElement:Object):void{
 			if(contentElement.hasOwnProperty('type')){
 				var name:String;
@@ -142,8 +148,12 @@ package com.photodispatcher.provider.fbook.download{
 						if(req){
 							//save to art subdir
 							name=FBookProject.artSubDir+getItemName(name);
-							loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id});
-							//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
+							if(isElementLoaded(name)){
+								subOrder.log='File allready downloaded: '+name+ '. Skip download';
+							}else{
+								loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id});
+								//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
+							}
 						}
 						break;
 					case CanvasPhotoBackgroundImage.TYPE: //BookPhotoBackgroundImage.TYPE:
@@ -152,7 +162,11 @@ package com.photodispatcher.provider.fbook.download{
 						if(req){
 							//save to user subdir
 							name=FBookProject.userSubDir+getItemName(name);
-							loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_PHOTO_BG, content_id:contentElement.id});
+							if(isElementLoaded(name)){
+								subOrder.log='File allready downloaded: '+name+ '. Skip download';
+							}else{
+								loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_PHOTO_BG, content_id:contentElement.id});
+							}
 						}
 						break;
 					case BookCoverFrameImage.TYPE:
@@ -166,8 +180,12 @@ package com.photodispatcher.provider.fbook.download{
 								if(req){
 									//save to art subdir
 									var sub_name:String= FBookProject.artSubDir+getItemName(name)+FrameData.getFileNameSufix(el);
-									loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id});
-									//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
+									if(isElementLoaded(sub_name)){
+										subOrder.log='File allready downloaded: '+name+ '. Skip download';
+									}else{
+										loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id});
+										//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
+									}
 								}
 							}
 						}
@@ -178,8 +196,12 @@ package com.photodispatcher.provider.fbook.download{
 							if(req){
 								//save to user subdir
 								name=FBookProject.userSubDir+getItemName(name);
-								loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
-								//loader.add(req,{id: name, type:BulkLoader.TYPE_TEXT, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+								if(isElementLoaded(name)){
+									subOrder.log='File allready downloaded: '+name+ '. Skip download';
+								}else{
+									loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+									//loader.add(req,{id: name, type:BulkLoader.TYPE_TEXT, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+								}
 							}
 						}
 						break;
@@ -193,7 +215,11 @@ package com.photodispatcher.provider.fbook.download{
 								if(req){
 									//save to user subdir
 									name=FBookProject.userSubDir+getItemName(name);
-									loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:fmd.imageId});
+									if(isElementLoaded(name)){
+										subOrder.log='File allready downloaded: '+name+ '. Skip download';
+									}else{
+										loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:fmd.imageId});
+									}
 								}
 							}
 							//add mask image
@@ -205,7 +231,11 @@ package com.photodispatcher.provider.fbook.download{
 									if(req){
 										//save to art subdir
 										name=FBookProject.artSubDir+getItemName(name);
-										loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:info.imgName});
+										if(isElementLoaded(name)){
+											subOrder.log='File allready downloaded: '+name+ '. Skip download';
+										}else{
+											loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:info.imgName});
+										}
 									}
 								}
 								var element:Object;
@@ -223,27 +253,6 @@ package com.photodispatcher.provider.fbook.download{
 								}
 							}
 						}
-						/*
-						if(contentElement.iId){
-							name=contentElement.iId;
-							req=createRequest(proj, name,userImagePath(),pageNum);
-							if(req){
-								//save to user subdir
-								name=FBookProject.userSubDir+getItemName(name);
-								loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:contentElement.iId});
-							}
-							if(contentElement.size){
-								var maskElement:Object = JsonUtil.decode(contentElement.size);
-								name=maskElement.id;
-								req=createRequest(proj, name,clipartPath(name),pageNum);
-								if(req){
-									//save to art subdir
-									name=FBookProject.artSubDir+getItemName(name);
-									loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:maskElement.id});
-								}
-							}
-						}
-						*/
 						break;
 					case CanvasText.TYPE: //BookText.TYPE:
 						//fonts to load list 

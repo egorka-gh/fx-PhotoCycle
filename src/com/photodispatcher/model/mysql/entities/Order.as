@@ -71,10 +71,6 @@ package com.photodispatcher.model.mysql.entities {
 		 * runtime 
 		 */
 		public var ftpForwarded:Boolean=false;
-		/**
-		 * runtime 
-		 */
-		public var ftpResumeLoad:Boolean=false;
 		
 		/**
 		 * runtime
