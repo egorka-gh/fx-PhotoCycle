@@ -10,6 +10,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.factory.WebServiceBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.DeliveryType;
 			import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
 			import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
@@ -45,6 +46,8 @@
 			
 			[Bindable]
 			public var mailPackage:MailPackage;
+			[Bindable]
+			public var propertiesAC:ArrayCollection;
 			
 			[Bindable]
 			private var showClienGroups:Boolean;
@@ -129,6 +132,11 @@
 				}
 				
 				printForms=DeliveryTypePrintForm.getForms(mailPackage.delivery_id);
+				propertiesAC=mailPackage.properties as ArrayCollection;
+				if(propertiesAC){
+					propertiesAC.filterFunction=filterProps;
+					propertiesAC.refresh();
+				}
 
 				mailPackage.state_date=null;
 				var latchMp:DbLatch=new DbLatch();
@@ -200,6 +208,14 @@
 					}
 				}
 			}
+			
+			private function filterProps(item:Object):Boolean{
+				if(!mailPackage) return false;
+				var it:MailPackageProperty= item as MailPackageProperty;
+				if(!it) return false;
+				return !DeliveryType.isInfoHidden(mailPackage.delivery_id,it.property);
+			}
+
 
 			private function loadSpaces():void{
 				var latch:DbLatch=new DbLatch();
@@ -652,7 +668,7 @@
 				<s:Label text="Атрибуты"/>
 				<s:DataGrid id="dgAtrs" selectionMode="singleRow" width="100%" height="100%" locale="ru_RU" 
 							editable="true"
-							dataProvider="{mailPackage.properties}" columns="{MailPackageProperty.gridColumns()}"/>
+							dataProvider="{propertiesAC}" columns="{MailPackageProperty.gridColumns()}"/>
 			</s:VGroup>
 			<s:VGroup width="50%" height="100%" gap="5">
 				<s:Label text="Заказы"/>

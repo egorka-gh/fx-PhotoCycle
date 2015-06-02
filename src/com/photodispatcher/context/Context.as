@@ -6,6 +6,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.AttrType;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.ContentFilter;
+	import com.photodispatcher.model.mysql.entities.DeliveryType;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
@@ -125,6 +126,7 @@ package com.photodispatcher.context{
 			latch.join(LayersetSynonym.initMap());
 			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
 			latch.join(AliasForward.initMap());
+			latch.join(DeliveryType.initHideClienMap());
 
 			//latch.start();//start at caller?
 			return latch;
@@ -313,8 +315,19 @@ package com.photodispatcher.context{
 			latch.join(DeliveryTypePrintForm.initFormsMap());
 			latch.join(PrintForm.initParametersMap());
 			
+			latch.addEventListener(Event.COMPLETE,oninitTechOTK);
+
 			//latch.start();//start at caller?
 			return latch;
+		}
+		private static function oninitTechOTK(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,oninitTechOTK);
+				if(latch.complite){
+					DeliveryType.initHideClienMap();
+				}
+			}
 		}
 
 		public static function initTechSpy():DbLatch{

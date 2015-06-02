@@ -6,11 +6,89 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.services.MailPackageService;
+	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
+	import com.photodispatcher.view.itemRenderer.BooleanGridRenderer;
+	
+	import flash.events.Event;
+	
+	import mx.collections.ArrayList;
+	import mx.core.ClassFactory;
+	
+	import org.granite.tide.Tide;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.DeliveryType")]
     public class DeliveryType extends DeliveryTypeBase {
 		public static const TYPE_AT:int=5;
+		public static const CLIENTINFO_ITEMS:Array=[56,57,58,59,60,61,62,63,64,65,66,67,68,69,72];
+		
+		private static var hideClientMap:Object;
+		private static var clientInfoKeys:Array;
+
+		public static function initHideClienMap():DbLatch{
+			clientInfoKeys=[];
+			//fill keys
+			var mpProps:Array= AttrJsonMap.getMailPackagePropJson();
+			for each(var ajm:AttrJsonMap in mpProps){
+				if(ajm &&  CLIENTINFO_ITEMS.indexOf(ajm.attr_type)!=-1){
+					clientInfoKeys.push(ajm.field);
+				}
+			}
+			
+			var service:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE, onLoad);
+			latch.addLatch(service.loadDeliveryType());
+			latch.start();
+			return latch;
+		}
+		private static function onLoad(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoad);
+				if(latch.complite){
+					var a:Array=latch.lastDataArr;
+					if(!a) return;
+					var newMap:Object=new Object();
+					var dt:DeliveryType;
+					for each(dt in a){
+						if(dt){
+							newMap[dt.id]=dt.hideClient;
+						}
+					}
+					hideClientMap=newMap;
+				}
+			}
+		}
+
+		public static function isClientHidden(deliveryType:int):Boolean{
+			if(!hideClientMap){
+				throw new Error('Ошибка инициализации DeliveryType.initHideClienMap',OrderState.ERR_APP_INIT);
+				return;
+			}
+			return hideClientMap[deliveryType];
+		}
+
+		public static function isInfoHidden(deliveryType:int, property:String):Boolean{
+			if(isClientHidden(deliveryType)){
+				return clientInfoKeys.indexOf(property) !=-1;
+			}
+			return false;
+		}
+
+		public static function gridColumnsEdit():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('name'); col.headerText='Наименование'; col.editable=false; col.width=200; result.push(col);
+			col= new GridColumn('hideClient'); col.headerText='Скрыть клиента';  col.itemRenderer=new ClassFactory(BooleanGridRenderer); col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=150; result.push(col);
+			return new ArrayList(result);
+		}
+
 
         public function DeliveryType() {
             super();

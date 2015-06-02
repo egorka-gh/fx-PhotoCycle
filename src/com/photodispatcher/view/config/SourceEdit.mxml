@@ -106,7 +106,7 @@
 				if(items.length==0) return;
 				var latch:DbLatch= new DbLatch();
 				var service:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
-				latch.addLatch(service.persistsDeliveryTypeBatch(items));
+				latch.addLatch(service.persistsDeliveryTypeDictionaryBatch(items));
 				latch.start();
 			}
 			

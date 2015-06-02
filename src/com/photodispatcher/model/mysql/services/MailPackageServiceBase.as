@@ -158,6 +158,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function loadDeliveryType(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadDeliveryType", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadDeliveryType", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadDeliveryType") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadDeliveryTypeDictionar4Edit(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadDeliveryTypeDictionar4Edit", arg0, resultHandler, faultHandler) as AsyncToken;
@@ -231,6 +242,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("persistsDeliveryTypeBatch", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("persistsDeliveryTypeBatch", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function persistsDeliveryTypeDictionaryBatch(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("persistsDeliveryTypeDictionaryBatch", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("persistsDeliveryTypeDictionaryBatch", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("persistsDeliveryTypeDictionaryBatch", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

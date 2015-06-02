@@ -18,8 +18,16 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _hideClient:Boolean;
         private var _id:int;
         private var _name:String;
+
+        public function set hideClient(value:Boolean):void {
+            _hideClient = value;
+        }
+        public function get hideClient():Boolean {
+            return _hideClient;
+        }
 
         public function set id(value:int):void {
             _id = value;
@@ -37,12 +45,14 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _hideClient = input.readObject() as Boolean;
             _id = input.readObject() as int;
             _name = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_hideClient is IPropertyHolder) ? IPropertyHolder(_hideClient).object : _hideClient);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
         }

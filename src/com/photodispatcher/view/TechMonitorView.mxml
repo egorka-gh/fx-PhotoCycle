@@ -33,8 +33,9 @@
 			import spark.formatters.DateTimeFormatter;
 			import spark.utils.TextFlowUtil;
 		
-			public static const LOG_LEN_LIMIT:int=2000;
-			//public static const BAR_LEN_LIMIT:int=2000;
+			public static const LOG_LEN_LIMIT:int=4000;
+			public static const BAR_LEN_LIMIT:int=2000;
+			public static const REGLISTLIMIT:int=100;
 			
 			public var extendedPrint:Boolean;
 			
@@ -113,6 +114,7 @@
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				fmt.dateTimePattern='HH:mm:ss';
 				var txt:String=fmt.format(new Date())+': '+ value+_barText; 
+				if(txt.length>BAR_LEN_LIMIT) txt=txt.substr(0,BAR_LEN_LIMIT);
 				_barText=txt;
 			}
 
@@ -241,6 +243,11 @@
 					currRegister.register(bookNum,pageNum);
 				}
 				regList.addItemAt({log_date:new Date(), page: StrUtil.sheetName(bookNum,pageNum)},0);
+				if(regList.length> REGLISTLIMIT){
+					regList.source.length=REGLISTLIMIT;
+					regList.refresh();
+						
+				}
 			}
 			
 			private function print(barcode:String):void{
@@ -278,15 +285,15 @@
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				fmt.dateTimePattern='HH:mm:ss';
 				logText ="<span>"+fmt.format(new Date())+" </span>"+"<span color="+color+" "+bold+">"+msg+"</span> <br />"+logText ;
-				/*
+
 				//cut
 				if(logText.length> LOG_LEN_LIMIT){
-					var idx:int=logText.indexOf('<br />',logText.length-LOG_LEN_LIMIT);
+					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
 					if(idx!=-1){
-						logText=logText.substr(idx+6);
+						logText=logText.substr(0,idx+6);
 					}
 				}
-				*/
+
 				try{
 					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
 				}catch(error:Error){
@@ -341,6 +348,7 @@
 			private function cleanLog():void{
 				logText='';
 				logTextArea.text='';
+				barText='';
 				regList= new ArrayCollection();
 			}
 			
@@ -369,7 +377,7 @@
 			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
 			<s:DataGrid width="160" height="100%" fontSize="10"
 						dataProvider="{regList}" locale="ru_RU" columns="{regListColumnth}"/>
-			<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="150" height="100%" editable="false"/>
+			<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="160" height="100%" editable="false"/>
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%">
 			<s:Button label="Очистить" click="{cleanLog()}"/>

@@ -25,7 +25,8 @@
 			import spark.formatters.DateTimeFormatter;
 			import spark.utils.TextFlowUtil;
 			
-			public static const LOG_LEN_LIMIT:int=2000;
+			public static const LOG_LEN_LIMIT:int=4000;
+			public static const BAR_LEN_LIMIT:int=2000;
 			
 			public var techPoint:TechPoint;
 			
@@ -106,8 +107,10 @@
 				}
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				fmt.dateTimePattern='HH:mm:ss';
-				_barText += fmt.format(new Date())+': '+ value;
-				if(_barText.length>LOG_LEN_LIMIT) _barText=_barText.substr(_barText.length-LOG_LEN_LIMIT);
+				
+				var txt:String=fmt.format(new Date())+': '+ value+_barText; 
+				if(txt.length>BAR_LEN_LIMIT) txt=txt.substr(0,BAR_LEN_LIMIT);
+				_barText=txt;
 			}
 			
 			
@@ -330,25 +333,12 @@
 					}
 				}
 
-				/*
-				logText += "<span>" + fmt.format(new Date()) + " </span>";
-				logText += "<span color="+color+" "+bold+">" + msg + "</span> <br />";
-				//cut
-				if(logText.length> LOG_LEN_LIMIT){
-					var idx:int=logText.indexOf('<br />',logText.length-LOG_LEN_LIMIT);
-					if(idx!=-1){
-						logText=logText.substr(idx+6);
-					}
-				}
-				*/
-				
 				try{
 					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
 				}catch(error:Error){
 					trace('TextFlow err, txt: '+logText);
 					trace(error.message);
 				}
-				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
 			}
 			
 			public function start():void{

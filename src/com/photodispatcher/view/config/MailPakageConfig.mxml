@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:config="com.photodispatcher.view.config.*"
+		 creationComplete="{init()}" 
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.DeliveryType;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
+			
+			import mx.collections.ArrayCollection;
+			
+			import org.granite.tide.Tide;
+			
+			[Bindable]
+			private var deliveryTypeAC:ArrayCollection;
+
+			private function init():void{
+				
+				var mpSrvc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				
+				var initLatch:DbLatch= new DbLatch();
+				initLatch.addEventListener(Event.COMPLETE, onInitComplite);
+				initLatch.join(loadDeliveryType());
+				initLatch.start();
+				
+			}
+			private function onInitComplite(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInitComplite);
+					/*
+					if(latch.complite){
+						
+					}
+					*/
+				}
+			}
+
+			private function loadDeliveryType():DbLatch{
+				var mpSrvc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onDeliveryTypeLoad);
+				latch.addLatch(mpSrvc.loadDeliveryType());
+				latch.start();
+				return latch;
+			}
+			private function onDeliveryTypeLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onDeliveryTypeLoad);
+					if(latch.complite){
+						deliveryTypeAC=latch.lastDataAC;
+					}else{
+						deliveryTypeAC=null;
+					}
+				}
+			}
+			
+			private function detectState():void{
+				switch(tbView.selectedIndex){
+					case 0:
+						currentState='raks';
+						break;
+					case 1:
+						currentState='delivery';
+						break;
+				}
+			}
+
+			protected function btSaveDeliveryTp_clickHandler(event:MouseEvent):void{
+				var items:ArrayCollection= new ArrayCollection();
+				var it:DeliveryType;
+				for each(it in deliveryTypeAC){
+					if (it.changed ) items.addItem(it);
+				}
+				if(items.length==0){
+					loadDeliveryType();
+					return;
+				}
+
+				var mpSrvc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onDTSave);
+				latch.addLatch(mpSrvc.persistsDeliveryTypeBatch(items));
+				latch.start();
+			}
+			private function onDTSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onDTSave);
+					loadDeliveryType();
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="raks"/>
+		<s:State name="delivery"/>
+	</s:states>
+	
+	<s:VGroup width="100%" height="100%" gap="5">
+		<s:TabBar id="tbView" height="20" change="{detectState()}">
+			<mx:ArrayCollection>
+				<fx:String>Стеллажи</fx:String> 
+				<fx:String>Типы доставки</fx:String> 
+			</mx:ArrayCollection>
+		</s:TabBar>
+		<config:RackConfig width="100%" height="100%" includeIn="raks"/>
+
+		<s:VGroup height="100%" gap="5" includeIn="delivery">
+			<s:Label text="Типы доставки"/>
+			<config:ItemsGrid id="gdDeliveryTp" editable="true" 
+							  currentData="{deliveryTypeAC}"
+							  currentColumns="{DeliveryType.gridColumnsEdit()}"
+							  height="100%"/>
+			<s:HGroup width="100%" gap="5" horizontalAlign="right">
+				<s:Button id="btSaveDeliveryTp" label="Сохранить" click="btSaveDeliveryTp_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+	</s:VGroup>
+</s:Group>
