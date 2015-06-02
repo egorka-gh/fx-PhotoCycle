@@ -46,13 +46,23 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FTP_LOAD:int=110;
 		public static const FTP_DEPLOY:int=111;//04.04.2013
 		public static const FTP_REMOTE:int=112;//04.04.2013
-		public static const FTP_COMPLETE:int=113;//04.04.2013
-		public static const PREPROCESS_WAITE:int=114;
-		public static const PREPROCESS_RESIZE:int=115;
-		public static const PREPROCESS_PDF:int=120;
-		public static const PREPROCESS_DEPLOY:int=124;
-		public static const PREPROCESS_REMOTE:int=125;
-		public static const PREPROCESS_COMPLETE:int=140;
+		
+		public static const FTP_INCOMPLITE:int=120;
+		public static const FTP_COMPLETE:int=130;
+		
+		public static const COLOR_CORRECTION:int=140;
+		
+		public static const PREPROCESS_WAITE:int=150;
+		//public static const PREPROCESS_DEPLOY:int=124;
+		//public static const PREPROCESS_REMOTE:int=125;
+		public static const PREPROCESS_FORVARD:int=151;
+		public static const PREPROCESS_WEB_CHECK:int=155;
+		public static const PREPROCESS_WEB_OK:int=156;
+		public static const PREPROCESS_RESIZE:int=160;
+		public static const PREPROCESS_PDF:int=165;
+		public static const PREPROCESS_INCOMPLETE:int=170;
+		public static const PREPROCESS_COMPLETE:int=180;
+		
 		public static const PRN_WAITE_ORDER_STATE:int=199;
 		public static const PRN_WAITE:int=200;
 		public static const PRN_QUEUE:int=203;
@@ -67,7 +77,9 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PRN_REPRINT:int=251;
 		public static const PRN_INPRINT:int=255;
 		public static const PRN_COMPLETE:int=300;
+		
 		public static const CANCELED_OLD:int=310;
+		
 		public static const TECH_BFOLDING:int=318;
 		public static const TECH_FOLDING:int=320;
 		public static const TECH_LAMINATION:int=330;

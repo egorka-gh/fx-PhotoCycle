@@ -76,8 +76,8 @@ package com.photodispatcher.provider.ftp{
 				flowError('Не задана рабочая папка');
 				return false;
 			}
-			var fl:File=new File(localFolder);
-			if(!fl.exists || !fl.isDirectory){
+			var file:File=new File(localFolder);
+			if(!file.exists || !file.isDirectory){
 				flowError('Не верная рабочая папка');
 				return false;
 			}
@@ -590,11 +590,12 @@ package com.photodispatcher.provider.ftp{
 				}
 			}
 			*/
+			
 			//check/create order local folder
-			var fl:File=new File(localFolder);
+			var file:File=new File(localFolder);
 			
 			//TODO check disk space
-			var avail:Number=fl.spaceAvailable;
+			var avail:Number=file.spaceAvailable;
 			var need:Number=0;
 			for each(ff in order.ftpQueue){
 				if(ff){
@@ -605,8 +606,9 @@ package com.photodispatcher.provider.ftp{
 				Alert('Не достаточно места для загрузки заказа. '+localFolder);
 			}
 			
-			fl=fl.resolvePath(order.ftp_folder);
+			file=file.resolvePath(order.ftp_folder);
 			try{
+				/*
 				if(fl.exists){
 					if(fl.isDirectory){
 						fl.deleteDirectory(true);
@@ -614,9 +616,16 @@ package com.photodispatcher.provider.ftp{
 						fl.deleteFile();
 					}
 				}
-				fl.createDirectory();
+				*/
+				if(file.exists && !file.isDirectory) file.deleteFile();
+				if(!order.ftpResumeLoad){
+					if(file.exists && file.isDirectory) file.deleteDirectory(true);
+					order.ftpResumeLoad=true;
+				}
+				
+				file.createDirectory();
 			}catch(err:Error){
-				if(!remoteMode) StateLog.log(OrderState.ERR_FILE_SYSTEM,order.id,'','Папка: '+fl.nativePath+': '+err.message); 
+				if(!remoteMode) StateLog.log(OrderState.ERR_FILE_SYSTEM,order.id,'','Папка: '+file.nativePath+': '+err.message); 
 				order.state=OrderState.ERR_FILE_SYSTEM;
 				if(order.exceedErrLimit){
 					//remove from download
@@ -630,7 +639,7 @@ package com.photodispatcher.provider.ftp{
 			}
 			
 			//can download
-			order.local_folder=fl.parent.nativePath;
+			order.local_folder=file.parent.nativePath;
 			order.printGroups=new ArrayCollection(pgArr);
 			//order.suborders=new ArrayCollection(soArr);
 			order.state=OrderState.FTP_LOAD;
