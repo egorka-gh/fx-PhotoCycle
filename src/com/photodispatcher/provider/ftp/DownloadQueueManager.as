@@ -29,7 +29,7 @@ package com.photodispatcher.provider.ftp{
 	[Event(name="orderLoaded", type="com.photodispatcher.event.ImageProviderEvent")]
 	[Event(name="flowError", type="com.photodispatcher.event.ImageProviderEvent")]
 	[Event(name="loadFault", type="com.photodispatcher.event.ImageProviderEvent")]
-	public class QueueManager extends EventDispatcher{
+	public class DownloadQueueManager extends EventDispatcher{
 		public static const RESTART_TIMEOUT:int=10000;
 		public static const PRODUCTION_ERR_RESET_DELAY:int=1000*60*3;
 		public static const WEB_ERRORS_LIMIT:int=3;
@@ -67,7 +67,7 @@ package com.photodispatcher.provider.ftp{
 		}
 
 
-		public function QueueManager(source:Source=null,remoteMode:Boolean=false){
+		public function DownloadQueueManager(source:Source=null,remoteMode:Boolean=false){
 			super(null);
 			_source=source;
 			if(this.source) sourceCaption=this.source.name;

@@ -30,7 +30,7 @@
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.print.PrintPulseManager;
 			import com.photodispatcher.print.PrintQueueManager;
-			import com.photodispatcher.provider.ftp.FtpManager;
+			import com.photodispatcher.provider.ftp.DownloadManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
 			import com.photodispatcher.service.SyncService;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -58,7 +58,7 @@
 
 			private var syncService:SyncService;
 			[Bindable]
-			private var ftpManager:FtpManager;
+			private var ftpManager:DownloadManager;
 
 			[Bindable]
 			private var sourcesFList:ArrayCollection= new ArrayCollection();
@@ -108,7 +108,7 @@
 					preprocessManager.init();
 				}
 
-				if(!ftpManager) ftpManager=new FtpManager();
+				if(!ftpManager) ftpManager=new DownloadManager();
 				ftpManager.sources=sources.source;
 				ftpManager.preprocessManager=preprocessManager;
 

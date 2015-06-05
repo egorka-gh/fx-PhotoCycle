@@ -1,4 +1,5 @@
 package com.photodispatcher.factory{
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.entities.AttrJsonMap;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
@@ -9,6 +10,8 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.util.JsonUtil;
 	import com.photodispatcher.util.StrUtil;
+	
+	import flash.filesystem.File;
 	
 	public class OrderBuilder{
 
@@ -182,5 +185,24 @@ package com.photodispatcher.factory{
 			return int(sId);
 		}
 
-	}		
+	}
+	
+	public function restoreFromFilesystem(order:Order):int{
+		if(!Order) return OrderState.ERR_APP_INIT;
+		var src:Source=Context.getSource(order.source);
+		if(!src) return OrderState.ERR_APP_INIT;
+
+		//check wrk folder
+		if(!Context.getAttribute('workFolder')) return OrderState.ERR_APP_INIT;
+		//get order path
+		var orderPath:String=src.getWrkFolder()+File.separator+order.ftp_folder;
+		var orderFolder:File=new File(orderPath);
+		if(!orderFolder.exists || !orderFolder.isDirectory){
+			order.state=OrderState.ERR_GET_PROJECT;
+			return order.state;
+		}
+		
+		//get first level folders
+
+	}
 }

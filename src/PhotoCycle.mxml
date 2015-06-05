@@ -17,6 +17,7 @@
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.mysql.AsyncLatch;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.HelloResponce;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.service.CleanService;
@@ -94,6 +95,7 @@
 			private function onPingServer(event:TideResultEvent):void {
 				startPopup.close();
 				startPopup=null;
+				Context.setAppId(event.result.result as HelloResponce);
 				fillContext();
 			}
 			private function onPingServerFault(event:TideFaultEvent):void {

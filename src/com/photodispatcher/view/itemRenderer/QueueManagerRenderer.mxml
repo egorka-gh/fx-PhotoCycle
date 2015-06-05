@@ -6,10 +6,10 @@
 				width="100%" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.provider.ftp.QueueManager;
+			import com.photodispatcher.provider.ftp.DownloadQueueManager;
 
 			[Bindable]
-			private var service:QueueManager;
+			private var service:DownloadQueueManager;
 			
 			override public function get data():Object{
 				return super.data;
@@ -17,7 +17,7 @@
 			
 			override public function set data(value:Object):void{
 				super.data = value;
-				service= value as QueueManager;
+				service= value as DownloadQueueManager;
 				/* if(!service){
 					enabled=false;
 				}else{
@@ -63,7 +63,7 @@
 					  width="28" height="28"/>
 			
 			<s:Label text="Заказов в очереди: {service.queueLenth}" />
-			<s:Label text="{(service &amp;&amp; service.type==QueueManager.TYPE_REMOTE)?'Загрузчиков:':'Ftp подключений:'} {service.connectionsActive}/{service.connectionsLimit}({service.connectionsFree},{service.connectionsPending})"/>
+			<s:Label text="{(service &amp;&amp; service.type==DownloadQueueManager.TYPE_REMOTE)?'Загрузчиков:':'Ftp подключений:'} {service.connectionsActive}/{service.connectionsLimit}({service.connectionsFree},{service.connectionsPending})"/>
 		</s:HGroup>
 		<s:Label text="{service.downloadCaption}" maxDisplayedLines="2" width="100%"/>
 		<mx:ProgressBar mode="event" source="{service}" width="100%"

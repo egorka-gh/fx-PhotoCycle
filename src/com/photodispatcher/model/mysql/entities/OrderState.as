@@ -32,14 +32,16 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_LOAD_REMOTE:int=-317;//04.04.2013
 		public static const ERR_GET_PROJECT:int=-318;//22.05.2013
 		public static const ERR_APP_INIT:int=-319;//
-		public static const ERR_PRODUCTION_NOT_SET:int=-320;//
+		public static const ERR_PRODUCTION_NOT_SET:int=-320;
+		public static const ERR_LOCK_FAULT:int=-320;
 		
 		//flow state
 		//public static const FTP_RELOAD:int=95;
 		public static const WAITE_FTP:int=100;
 		public static const FTP_FORWARD:int=101;
-		public static const FTP_WEB_CHECK:int=105;
-		public static const FTP_WEB_OK:int=106;
+		public static const FTP_WEB_CHECK:int=103;
+		public static const FTP_WEB_OK:int=104;
+		public static const FTP_CAPTURED:int=105;
 		public static const FTP_WAITE_SUBORDER:int=107; //22.05.13
 		public static const FTP_GET_PROJECT:int=108; //22.05.13
 		public static const FTP_LIST:int=109;
@@ -58,6 +60,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PREPROCESS_FORVARD:int=151;
 		public static const PREPROCESS_WEB_CHECK:int=155;
 		public static const PREPROCESS_WEB_OK:int=156;
+		public static const PREPROCESS_CAPTURED:int=157;
 		public static const PREPROCESS_RESIZE:int=160;
 		public static const PREPROCESS_PDF:int=165;
 		public static const PREPROCESS_INCOMPLETE:int=170;

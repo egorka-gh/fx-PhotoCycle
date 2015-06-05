@@ -21,7 +21,7 @@ package com.photodispatcher.provider.ftp{
 	import mx.rpc.events.FaultEvent;
 	import mx.rpc.events.ResultEvent;
 	
-	public class QueueManagerFBManual extends QueueManager{
+	public class QueueManagerFBManual extends DownloadQueueManager{
 		
 		public function QueueManagerFBManual(source:Source=null, remoteMode:Boolean=false){
 			super(source, remoteMode);

@@ -28,7 +28,7 @@ package com.photodispatcher.provider.ftp{
 	
 	import org.granite.tide.Tide;
 	
-	public class FtpManager extends EventDispatcher{
+	public class DownloadManager extends EventDispatcher{
 
 		private var _preprocessManager:PreprocessManager;
 		
@@ -57,7 +57,7 @@ package com.photodispatcher.provider.ftp{
 			//cleanup / remove listeners for old
 			_sources = value;
 			//var f:FtpService;
-			var f:QueueManager
+			var f:DownloadQueueManager
 			if(services && services.length>0){
 				for each (f in services){
 					if(f){
@@ -76,7 +76,7 @@ package com.photodispatcher.provider.ftp{
 						if(s.type==SourceType.SRC_FBOOK_MANUAL){
 							f= new QueueManagerFBManual(s);
 						}else if(s.ftpService){
-							f= new QueueManager(s);
+							f= new DownloadQueueManager(s);
 						}
 						if(f){
 							f.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onOrderLoaded);
@@ -101,7 +101,7 @@ package com.photodispatcher.provider.ftp{
 		
 		private var services:Array;
 		
-		public function FtpManager(){
+		public function DownloadManager(){
 			super(null);
 			/*
 			writeOrdersList=new ArrayCollection();
@@ -147,7 +147,7 @@ package com.photodispatcher.provider.ftp{
 			}
 			preprocessManager.resync(orders);
 			
-			var f:QueueManager;
+			var f:DownloadQueueManager;
 			if(services){
 				//resync services
 				for each(f in services){
@@ -160,7 +160,7 @@ package com.photodispatcher.provider.ftp{
 		public function start(resetErrors:Boolean=false):void{
 			if(!services || services.length==0) return;
 			//var f:FtpService;
-			var f:QueueManager;
+			var f:DownloadQueueManager;
 			for each(f in services){
 				if(f) f.start(resetErrors);
 			}
@@ -168,7 +168,7 @@ package com.photodispatcher.provider.ftp{
 
 		public function stop():void{
 			if(!services || services.length==0) return;
-			var f:QueueManager;
+			var f:DownloadQueueManager;
 			for each(f in services){
 				if(f) f.stop();
 			}

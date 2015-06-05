@@ -12,7 +12,7 @@ package com.photodispatcher.provider.ftp.remote{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.provider.ftp.QueueManager;
+	import com.photodispatcher.provider.ftp.DownloadQueueManager;
 	import com.photodispatcher.provider.ftp.QueueManagerFBManual;
 	
 	import flash.events.EventDispatcher;
@@ -23,7 +23,7 @@ package com.photodispatcher.provider.ftp.remote{
 		
 		private var _chatService:ChatService;
 		[Bindable]
-		public var loader:QueueManager;
+		public var loader:DownloadQueueManager;
 		private var currentOrder:Order;
 		private var isRunning:Boolean;
 		
@@ -101,7 +101,7 @@ package com.photodispatcher.provider.ftp.remote{
 			if(source.type==SourceType.SRC_FBOOK_MANUAL){
 				loader=new QueueManagerFBManual(source,true);
 			}else{
-				loader=new QueueManager(source,true);
+				loader=new DownloadQueueManager(source,true);
 			}
 
 			//listen

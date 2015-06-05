@@ -10,6 +10,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.HelloResponce;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabResize;
 	import com.photodispatcher.model.mysql.entities.LayersetSynonym;
@@ -61,6 +62,7 @@ package com.photodispatcher.context{
 		private static var instance:Context;
 
 		public static var config:AppConfig;
+
 
 		// Static initializer
 		{
@@ -398,6 +400,15 @@ package com.photodispatcher.context{
 			}
 		}
 		*/
+
+		public static var appID:String;
+		
+		public static function setAppId(resp:HelloResponce):void{
+			if(!resp) return;
+			appID=resp.hostIP;
+			setAttribute('hostIP',resp.hostIP);
+			setAttribute('hostName',resp.hostName);
+		}
 		
 		public static function setAttribute(name:String, value:*):void{
 			instance[name] = value;	

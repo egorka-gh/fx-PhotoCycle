@@ -11,6 +11,8 @@ package com.photodispatcher.model.mysql.services {
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
 	import mx.collections.ArrayCollection;
+	
+	import org.granite.tide.Tide;
 
     [RemoteClass(alias="com.photodispatcher.model.mysql.services.OrderService")]
     public class OrderService extends OrderServiceBase {
@@ -92,7 +94,33 @@ package com.photodispatcher.model.mysql.services {
 			return latch;
 		}
 
+		public static function getLock(key:String):DbLatch{
+			if(!key) return null;
+			var service:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addLatch(service.getLock(key, Context.appID));
+			return latch;
+		}
+
+		public static function releaseLock(key:String):DbLatch{
+			if(!key) return null;
+			var service:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addLatch(service.releaseLock(key));
+			return latch;
+		}
+
+
+		public static function getPreprocessLock(orderid:String):DbLatch{
+			if(!orderid) return null;
+			return getLock('preprocess:'+orderid);
+		}
 		
+		public static function releasePreprocessLock(orderid:String):DbLatch{
+			if(!orderid) return null;
+			return releaseLock('preprocess:'+orderid);
+		}
+
     }
     
 }
