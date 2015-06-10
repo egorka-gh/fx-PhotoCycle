@@ -7,14 +7,22 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.mysql.entities.OrderTemp;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
+	import com.photodispatcher.provider.fbook.FBookProject;
+	import com.photodispatcher.provider.preprocess.CaptionSetter;
 	import com.photodispatcher.util.JsonUtil;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
+	import flash.utils.Dictionary;
+	
+	import mx.collections.ArrayCollection;
 	
 	public class OrderBuilder{
-
+		
 		public static function build(source:Source, raw:Array, forSync:Boolean=false, comboId:String=''):Array{
 			if(!source || !raw || raw.length==0) return [];
 			
@@ -70,7 +78,7 @@ package com.photodispatcher.factory{
 										}
 										if(src_id) order.id=source.id.toString()+'_'+src_id.toString();
 									}
-
+									
 								}
 							}
 						}
@@ -104,7 +112,7 @@ package com.photodispatcher.factory{
 							//einfo.coverMaterial=StrUtil.siteCode2Char(einfo.coverMaterial);
 							order.extraInfo=einfo;
 						}
-
+						
 						//parse suborders
 						var subOrder:SubOrder;
 						if (source.type==SourceType.SRC_FBOOK && jo.hasOwnProperty('items') && jo.items is Array){
@@ -130,10 +138,10 @@ package com.photodispatcher.factory{
 									}
 									/*
 									if(subOrder.native_type==1){
-										//foto print, reset root ftp folder
-										order.ftp_folder=subOrder.ftp_folder;
+									//foto print, reset root ftp folder
+									order.ftp_folder=subOrder.ftp_folder;
 									}else{
-										order.addSuborder(subOrder);
+									order.addSuborder(subOrder);
 									}
 									*/
 									subOrder.projectIds.push(subOrder.sub_id);
@@ -165,7 +173,7 @@ package com.photodispatcher.factory{
 								}
 							}
 						}
-
+						
 					}
 					if(!forSync || order.id) result.push(order); //skip if id empty
 				}
@@ -184,25 +192,189 @@ package com.photodispatcher.factory{
 			}
 			return int(sId);
 		}
-
-	}
-	
-	public function restoreFromFilesystem(order:Order):int{
-		if(!Order) return OrderState.ERR_APP_INIT;
-		var src:Source=Context.getSource(order.source);
-		if(!src) return OrderState.ERR_APP_INIT;
-
-		//check wrk folder
-		if(!Context.getAttribute('workFolder')) return OrderState.ERR_APP_INIT;
-		//get order path
-		var orderPath:String=src.getWrkFolder()+File.separator+order.ftp_folder;
-		var orderFolder:File=new File(orderPath);
-		if(!orderFolder.exists || !orderFolder.isDirectory){
-			order.state=OrderState.ERR_GET_PROJECT;
+		
+		public static function saveToFilesystem(order:Order):int{
+			if(!order) return OrderState.ERR_APP_INIT;
+			if(!order.hasSuborders) return order.state;
+			
+			var src:Source=Context.getSource(order.source);
+			if(!src) return OrderState.ERR_APP_INIT;
+			
+			//check wrk folder
+			if(!Context.getAttribute('workFolder')) return OrderState.ERR_APP_INIT;
+			//get order path
+			var orderPath:String=src.getWrkFolder()+File.separator+order.ftp_folder;
+			var orderFolder:File=new File(orderPath);
+			if(!orderFolder.exists || !orderFolder.isDirectory){
+				order.state=OrderState.ERR_FILE_SYSTEM;
+				return order.state;
+			}
+			
+			//save so projects
+			var so:SubOrder;
+			var soFolders:Object= new Object;
+			var folder:File;
+			var raws:Array;
+			var file:File;
+			if(order.hasSuborders){
+				for each(so in order.suborders){
+					if(so && so.ftp_folder && so.projects && so.projects.length>0){
+						folder=orderFolder.resolvePath(so.ftp_folder);
+						if(!folder.exists || !folder.isDirectory){
+							order.state=OrderState.ERR_FILE_SYSTEM;
+							return order.state;
+						}
+						//get raws
+						raws=[];
+						for each (var prj:FBookProject in so.projects){
+							if(prj && prj.rawProject){
+								raws.push(prj.rawProject);
+							}
+						}
+						if(raws.length>0){
+							//write array of raw projekts
+							file=folder.resolvePath(so.sub_id+'.prj');
+							try{
+								if(file.exists && file.isDirectory){
+									file.deleteDirectory(true);
+								}
+								var stream:FileStream;
+								stream=new FileStream();
+								stream.open(file,FileMode.WRITE);
+								stream.writeObject(raws);
+								stream.close();
+							}catch(error:Error){
+								order.state=OrderState.ERR_FILE_SYSTEM;
+								return order.state;
+							}
+							
+						}
+					}
+				}
+			}
 			return order.state;
 		}
 		
-		//get first level folders
-
+		public static function restoreFromFilesystem(order:Order):int{
+			//TODO reset to load if file system error?
+			if(!order) return OrderState.ERR_APP_INIT;
+			var src:Source=Context.getSource(order.source);
+			if(!src) return OrderState.ERR_APP_INIT;
+			
+			//check wrk folder
+			if(!Context.getAttribute('workFolder')) return OrderState.ERR_APP_INIT;
+			//get order path
+			var orderPath:String=src.getWrkFolder()+File.separator+order.ftp_folder;
+			var orderFolder:File=new File(orderPath);
+			if(!orderFolder.exists || !orderFolder.isDirectory){
+				order.state=OrderState.ERR_GET_PROJECT;
+				return order.state;
+			}
+			
+			//get first level listing
+			var arr:Array=orderFolder.getDirectoryListing();
+			if(!arr || arr.length==0){
+				order.state=OrderState.ERR_GET_PROJECT;
+				return order.state;
+			}
+			//build so folders map and reload so
+			var so:SubOrder;
+			var soFolders:Object= new Object;
+			var folder:File;
+			var listing:Array;
+			var files:Array;
+			var raws:Array;
+			var file:File;
+			if(order.hasSuborders){
+				for each(so in order.suborders){
+					if(so && so.ftp_folder){
+						//load projects
+						folder=orderFolder.resolvePath(so.ftp_folder);
+						if(!folder.exists || !folder.isDirectory){
+							order.state=OrderState.ERR_GET_PROJECT;
+							return order.state;
+						}
+						//read array of raw projekts
+						file=folder.resolvePath(so.sub_id+'.prj');
+						if(!file.exists || file.isDirectory){
+							order.state=OrderState.ERR_GET_PROJECT;
+							return order.state;
+						}
+						var stream:FileStream;
+						stream=new FileStream();
+						try{
+							stream.open(file,FileMode.READ);
+							raws=stream.readObject() as Array;
+							stream.close();
+						}catch(error:Error){
+							order.state=OrderState.ERR_GET_PROJECT;
+							return order.state;
+						}
+						if(!raws || raws.length==0){
+							order.state=OrderState.ERR_GET_PROJECT;
+							return order.state;
+						}
+						
+						so.projects=[];
+						for each (var raw:Object in raws){
+							so.projects.push(new FBookProject(raw));	
+						}
+						
+						soFolders[so.ftp_folder]=true;
+					}
+				}
+			}
+			
+			//fill order file structure
+			var foldersMap:Dictionary= new Dictionary();
+			for each(folder in arr){
+				if(folder && folder.isDirectory){
+					if(!soFolders[folder.name]){
+						files=[];
+						listing=folder.getDirectoryListing();
+						if(listing && listing.length>0){
+							for each(file in listing){
+								if (file && !file.isDirectory) files.push(file.name);
+							}
+						}
+						if(files.length>0){
+							foldersMap[folder.name]=files;
+						}
+					}
+				}
+			}
+			
+			//create order printgruops
+			//build order print groups 
+			var pgBuilder:PrintGroupBuilder= new PrintGroupBuilder();
+			var pgArr:Array;
+			try{
+				pgArr= pgBuilder.build(src,foldersMap,order.id);
+			}catch (e:Error){
+				trace('OrderBuilder error while build print groups '+order.id);
+				order.state=OrderState.ERR_READ_LOCK;
+				//StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе групп печати.'); 
+				return order.state;
+			}
+			if(pgArr) order.printGroups= new ArrayCollection(pgArr);
+			
+			//build suborders prs
+			try{
+				pgBuilder.buildFromSuborders(order);
+			}catch (e:Error){
+				trace('OrderBuilder error while build print groups'+order.id+', error: '+e.message);
+				order.state=OrderState.ERR_READ_LOCK;
+				return order.state;
+			}
+			
+			
+			//restore photos original names
+			try{
+				CaptionSetter.restoreFileCaption(order,src.getWrkFolder());
+			}catch(err:Error){
+			}
+			
+			return order.state;
+		}
 	}
 }

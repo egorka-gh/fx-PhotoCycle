@@ -2,6 +2,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.OrderBuildEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
+	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
@@ -9,7 +10,9 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -96,10 +99,9 @@ package com.photodispatcher.provider.preprocess{
 		public function addFromDB():void{
 			var latch:DbLatch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onloadFromDB);
-			latch.addLatch(orderService.loadByState(OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED);
+			latch.addLatch(orderService.loadByState(OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED));
 			latch.start();
 		}
-		
 		private function onloadFromDB(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch) latch.removeEventListener(Event.COMPLETE,onloadFromDB);
@@ -112,9 +114,13 @@ package com.photodispatcher.provider.preprocess{
 				if(order){
 					if(!currOrder || order.id!=currOrder.id){
 						if(order.state!=OrderState.PREPROCESS_WAITE) order.state=OrderState.PREPROCESS_WAITE;
-						newItems.push(order);
+						var oldOrder:Order=ArrayUtil.searchItem('id',order.id,queue.source) as Order;
+						if(oldOrder){
+							newItems.push(oldOrder);
+						}else{
+							newItems.push(order);
+						}
 					}
-					
 				}
 			}
 			queue = new ArrayCollection(newItems);
@@ -139,8 +145,8 @@ package com.photodispatcher.provider.preprocess{
 					if(o.state==OrderState.PREPROCESS_WAITE){
 						order=o;
 						break;
-					}else if(!faultOrder){
-						faultOrder=order;
+					}else if(!faultOrder && o.state<0 && o.state!=OrderState.ERR_PREPROCESS){
+						faultOrder=o;
 					}
 				}
 			}
@@ -152,10 +158,6 @@ package com.photodispatcher.provider.preprocess{
 			
 			//TODO add manager start /stop ?
 			getLock();
-			//TODO restore order from filesystem
-			//TODO remove currOrder from queue after complite
-			
-			//builder.build(order);
 		}
 
 		private function getLock():void{
@@ -179,7 +181,8 @@ package com.photodispatcher.provider.preprocess{
 
 		private function releaseLock():void{
 			if(!currOrder) return;
-			OrderService.releasePreprocessLock(currOrder.id);
+			//TODO can release another's lock
+			//OrderService.releasePreprocessLock(currOrder.id);
 		}
 
 		
@@ -282,9 +285,40 @@ package com.photodispatcher.provider.preprocess{
 			currOrder.suborders=dbOrder.suborders;
 			//forvard
 			//restore from filesystem
+			if(OrderBuilder.restoreFromFilesystem(currOrder)<0){
+				releaseLock();
+				currOrder= null;
+				startNext();
+				return;
+			}
+
+			//forvard
+			//capturestate
+			currOrder.state=OrderState.PREPROCESS_CAPTURED;
+			latch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,oncaptureState);
+			latch.addLatch(orderService.captureState(currOrder));
+		}
+		private function oncaptureState(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,oncaptureState);
+				if (latch.complite && latch.resultCode==OrderState.PREPROCESS_CAPTURED){
+					//forvard
+					//build
+					builder.build(currOrder);
+					//TODO remove currOrder from queue after complite
+				}else{
+					trace('PreprocessManager.captureState: db error '+latch.lastError);
+					lastError='Заказ: '+currOrder.id+' блокирован другим процессом '+latch.lastError;
+					releaseLock();
+					currOrder.state= OrderState.ERR_LOCK_FAULT;
+					currOrder=null;
+					startNext();
+				}
+			}
 		}
 
-		
 		private function releaseOrder():void{
 			if(!currOrder) return;
 			var idx:int=queue.getItemIndex(currOrder);
@@ -293,62 +327,17 @@ package com.photodispatcher.provider.preprocess{
 			currOrder=null;
 		}
 
-
-/********************************************************/		
-		
-		public function resync(orders:Array):void{
-			if(!orders) return;
-			
-			var a:Array=[];
-			var wOrder:Order;
-			var idx:int;
-
-			//resync resize orders
-			if(queue.length>0) a=a.concat(queue);
-			if(a.length>0){
-				for each(wOrder in a){
-					if(wOrder){
-						idx=ArrayUtil.searchItemIdx('id',wOrder.id,orders);
-						if(idx!=-1){
-							//replace in sync array
-							orders[idx]=wOrder;
-						}else{
-							//add to sync array
-							orders.unshift(wOrder);
-						}
-					}
-				}
-			}
-			
-			//restart resizeErrOrders
-			if(errOrders.length>0){
-				for each(wOrder in errOrders){
-					if(wOrder){
-						idx=ArrayUtil.searchItemIdx('id',wOrder.id,orders);
-						if(idx!=-1){
-							//reset ??
-							//replace in sync array
-							orders[idx]=wOrder;
-						}
-					}
-				}
-				errOrders=[];
-			}
-			dispatchEvent(new Event('queueLenthChange'));
-			//wake up
-			startNext();
+		public function start():void{
+			//TODO implement
 		}
-		
+		public function stop():void{
+			//TODO implement
+		}
+
 		public function destroy():void{
 			//TODO implement
 		}
 		
-		private function resetOrder(order:Order):void{
-			if(order && order.state!=OrderState.PREPROCESS_WAITE){
-				order.state=OrderState.PREPROCESS_WAITE;
-			}
-		}
-
 		private function listenBuilder(builder:OrderBuilderBase):void{
 			if(!builder) return;
 			builder.addEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);
@@ -366,40 +355,64 @@ package com.photodispatcher.provider.preprocess{
 			progressCaption=e.caption;
 			dispatchEvent(e.clone());
 		}
-
 		private function onBuilderError(evt:OrderBuildEvent):void{
-			//builder internal error
-			resetOrder(evt.order);
-			var builder:OrderBuilderBase=evt.target as OrderBuilderBase;
-			var msg:String='';
-			if(builder){
-				if(builder.type==OrderBuilderBase.TYPE_LOCAL){
-					msg='Local builder: ';
-				}else if(builder is OrderBuilderRemote){
-					msg=(builder as OrderBuilderRemote).client.username+': ';
-				}
-			}
-			lastError=msg+evt.err_msg;
-			//TODO do something vs builder
+			//builder error
+			lastError=evt.err_msg;
+			currOrder.state=OrderState.ERR_PREPROCESS;
+			saveOrder(currOrder);
+			currOrder=null;
 			startNext();
 		}
 		private function onOrderPreprocessed(evt:OrderBuildEvent):void{
 			//order complited
 			//remove from queue
-			var idx:int=-1;
-			if(evt.order) idx=queue.indexOf(evt.order);
-			if(idx!=-1) queue.splice(idx,1);
 			if(evt.err<0){
 				//completed vs error
-				if(evt.order){
-					//evt.order.resetPreprocess();
-					errOrders.push(evt.order);
-				}
+				currOrder.state=OrderState.ERR_PREPROCESS;
 			}else{
-				dispatchEvent(evt.clone());
+				if(currOrder.is_preload){
+					currOrder.state=OrderState.PRN_WAITE_ORDER_STATE;
+				}else{
+					currOrder.state=OrderState.PRN_WAITE;
+				}
 			}
-			dispatchEvent(new Event('queueLenthChange'));
+			//clean
+			if(currOrder.hasSuborders){
+				for each(var so:SubOrder in currOrder.suborders) so.destroyChilds();
+			}
+			saveOrder(currOrder);
+			releaseOrder();
 			startNext();
+		}
+		
+		private function saveOrder(order:Order):void{
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onsaveOrder);
+			if(order.state<0){
+				//save error state
+				latch.addLatch(orderService.setState(order));
+			}else{
+				//persist
+				latch.addLatch(orderService.fillUpOrder(order), order.id);
+			}
+			latch.start();
+		}
+		private function onsaveOrder(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onsaveOrder);
+				var id:String= latch.lastTag;
+				if (latch.complite && id){
+					//set extra state
+					//if(!order || order.state!=OrderState.PRN_WAITE) return;
+					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+					latch=new DbLatch();
+					//latch.addEventListener(Event.COMPLETE,onCompleteOrder);
+					//set PRN_WAITE extra state 
+					latch.addLatch(svc.extraStateFix(id, OrderState.PRN_WAITE, new Date()));
+					latch.start();
+				}
+			}
 		}
 
 	}

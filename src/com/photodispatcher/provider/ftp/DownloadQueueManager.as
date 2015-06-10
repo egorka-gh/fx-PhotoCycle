@@ -3,6 +3,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.ConnectionsProgressEvent;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.LoadProgressEvent;
+	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
@@ -583,11 +584,33 @@ package com.photodispatcher.provider.ftp{
 				}
 			}else{
 				//complited
+				//save to filesystem
+				var state:int=OrderBuilder.saveToFilesystem(order);
+				if(state<0){
+					//some error
+					order.state=state;
+					if(!remoteMode) StateLog.log(state,order.id,'','Ошибка сохранеия в рабочую папку (OrderBuilder.saveToFilesystem)');
+					resetOrder(order);
+					queue.push(order);
+					return;
+				}
 				dispatchEvent(event.clone());
 			}
 		}
 
 		private function onFBDownloadManagerLoad(event:ImageProviderEvent):void{
+			//complited
+			var order:Order=event.order;
+			//save to filesystem
+			var state:int=OrderBuilder.saveToFilesystem(order);
+			if(state<0){
+				//some error
+				order.state=state;
+				if(!remoteMode) StateLog.log(state,order.id,'','Ошибка сохранеия в рабочую папку (OrderBuilder.saveToFilesystem)');
+				resetOrder(order);
+				queue.push(order);
+				return;
+			}
 			dispatchEvent(event.clone());
 		}
 

@@ -4,6 +4,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.OrderBuildEvent;
 	import com.photodispatcher.event.OrderLoadedEvent;
+	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
@@ -14,8 +15,6 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
-	import com.photodispatcher.provider.preprocess.CaptionSetter;
-	import com.photodispatcher.provider.preprocess.PreprocessManager;
 	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -30,7 +29,7 @@ package com.photodispatcher.provider.ftp{
 	
 	public class DownloadManager extends EventDispatcher{
 
-		private var _preprocessManager:PreprocessManager;
+		//private var _preprocessManager:PreprocessManager;
 		
 		/*
 		[Bindable]
@@ -110,6 +109,7 @@ package com.photodispatcher.provider.ftp{
 		}
 		
 		
+		/*
 		public function set preprocessManager(manager:PreprocessManager):void{
 			if(_preprocessManager){
 				_preprocessManager.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
@@ -122,6 +122,7 @@ package com.photodispatcher.provider.ftp{
 		public function get preprocessManager():PreprocessManager{
 			return _preprocessManager;	
 		}
+		*/
 		
 		public function resync(orders:Array):void{
 			if(!orders) return;
@@ -145,7 +146,7 @@ package com.photodispatcher.provider.ftp{
 					}
 				}
 			}
-			preprocessManager.resync(orders);
+			//preprocessManager.resync(orders);
 			
 			var f:DownloadQueueManager;
 			if(services){
@@ -179,6 +180,8 @@ package com.photodispatcher.provider.ftp{
 			var source:Source=ArrayUtil.searchItem('id',e.order.source,sources) as Source;
 			var dstFolder:String=source.getWrkFolder();
 			var order:Order=e.order;
+			saveOrder(order);
+			/*
 			if(order.forward_state>0){
 				saveOrder(order);
 				return;
@@ -189,8 +192,10 @@ package com.photodispatcher.provider.ftp{
 			}
 			//resize
 			preprocessOrder(order);
+			*/
 		}
 
+		/*
 		private function preprocessOrder(order:Order):void{
 			//chek if order skipped
 			var minState:int=OrderState.SKIPPED;
@@ -212,32 +217,31 @@ package com.photodispatcher.provider.ftp{
 		private function onOrderPreprocessed(evt:OrderBuildEvent):void{
 			saveOrder(evt.order);
 		}
+		*/
 
 		private function saveOrder(order:Order):void{
 			
 			if(order.state<OrderState.CANCELED){
-				if(order.is_preload){
-					order.state=OrderState.PRN_WAITE_ORDER_STATE;
-				}else if(order.forward_state>0){
+				if(order.forward_state>0){
 					order.state=order.forward_state;
 				}else{
-					order.state=OrderState.PRN_WAITE;
+					order.state=OrderState.PREPROCESS_WAITE;
 				}
 			}
 			trace('Save order '+order.id+' State:'+order.state.toString()+'('+order.forward_state.toString()+')');
+			
 			order.state_date=new Date();
 			if(order.hasSuborders){
 				for each(var so:SubOrder in order.suborders) if(so.state<OrderState.CANCELED) so.state=order.state;
 			}
-			if(order.printGroups){
-				for each(var pg:PrintGroup in order.printGroups) if(pg.state<OrderState.CANCELED) pg.state=order.state;
-			}
+			
 			writeOrders.push(order);
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch();
-			latch.debugName='Заказ "'+order.id+'" (fillUpOrder)';
+			latch.debugName='Заказ "'+order.id+'" (saveVsSuborders)';
 			latch.addEventListener(Event.COMPLETE,onOrderSave);
-			latch.addLatch(svc.fillUpOrder(order),order.id);
+			//latch.addLatch(svc.fillUpOrder(order),order.id);
+			latch.addLatch(svc.saveVsSuborders(order),order.id);
 			latch.start();
 		}
 		private function onOrderSave(evt:Event):void{
@@ -252,6 +256,7 @@ package com.photodispatcher.provider.ftp{
 						order= writeOrders[idx] as Order;
 						writeOrders.splice(idx,1);
 					}
+					/*
 					//clean
 					if(order.hasSuborders){
 						for each(var so:SubOrder in order.suborders) so.destroyChilds();
@@ -266,6 +271,7 @@ package com.photodispatcher.provider.ftp{
 					//latch.addLatch(svc.extraStateSet(id, '',OrderState.PRN_WAITE, new Date()));
 					latch.addLatch(svc.extraStateFix(id, OrderState.PRN_WAITE, new Date()));
 					latch.start();
+					*/
 				}
 			}
 		}

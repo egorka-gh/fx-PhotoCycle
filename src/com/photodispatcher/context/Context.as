@@ -128,7 +128,8 @@ package com.photodispatcher.context{
 			latch.join(LayersetSynonym.initMap());
 			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
 			latch.join(AliasForward.initMap());
-			latch.join(DeliveryType.initHideClienMap());
+
+			latch.addEventListener(Event.COMPLETE,oninitTechOTK);
 
 			//latch.start();//start at caller?
 			return latch;
