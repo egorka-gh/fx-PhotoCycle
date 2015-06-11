@@ -20,15 +20,19 @@ package com.photodispatcher.provider.preprocess{
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.events.ProgressEvent;
+	import flash.events.TimerEvent;
 	import flash.sampler.NewObjectSample;
 	import flash.utils.Dictionary;
+	import flash.utils.Timer;
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
+	import mx.events.FlexEvent;
 	
 	import org.granite.tide.Tide;
 
 	[Event(name="orderPreprocessed", type="com.photodispatcher.event.OrderBuildEvent")]
+	[Event(name="dataChange", type="mx.events.FlexEvent")]
 	public class PreprocessManager extends EventDispatcher{
 
 		/*
@@ -84,10 +88,6 @@ package com.photodispatcher.provider.preprocess{
 			super();
 			queue= new ArrayCollection();
 			//addEventListener('queueLenthChange',refreshOrderList);
-		}
-		
-		public function init():void{
-			if(builder) destroyBuilder(builder);
 			builder= new OrderBuilderLocal();
 			listenBuilder(builder);
 		}
@@ -96,7 +96,13 @@ package com.photodispatcher.provider.preprocess{
 			return Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 		}
 		
-		public function addFromDB():void{
+		public function reLoad():void{
+			stopTimer();
+			//reset errors
+			for each(var o:Order in queue){
+				if(o && o.state<0) o.state=OrderState.PREPROCESS_WAITE;
+			}
+
 			var latch:DbLatch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onloadFromDB);
 			latch.addLatch(orderService.loadByState(OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED));
@@ -105,6 +111,10 @@ package com.photodispatcher.provider.preprocess{
 		private function onloadFromDB(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch) latch.removeEventListener(Event.COMPLETE,onloadFromDB);
+			if(autoLoad){
+				startTimer();
+				dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
+			}
 			if(!latch || !latch.complite) return;
 			var toAdd:Array=latch.lastDataArr;
 			if(!toAdd || toAdd.length==0) return;
@@ -131,6 +141,11 @@ package com.photodispatcher.provider.preprocess{
 		private var currOrder:Order;
 
 		private function startNext():void{
+			progressCaption='';
+			if(!isStarted){
+				currOrder=null;
+				return;
+			}
 			if(currOrder) return;
 			if(builder.isBusy) return;
 			if(queue.length==0) return;
@@ -138,19 +153,23 @@ package com.photodispatcher.provider.preprocess{
 			//get order
 			var o:Order;
 			var order:Order;
-			var faultOrder:Order;
+			//var faultOrder:Order;
 			
 			for each(o in queue){
 				if(o){
-					if(o.state==OrderState.PREPROCESS_WAITE){
+					if(o.state==OrderState.PREPROCESS_FORVARD){
 						order=o;
 						break;
-					}else if(!faultOrder && o.state<0 && o.state!=OrderState.ERR_PREPROCESS){
+					}else if(o.state==OrderState.PREPROCESS_WAITE){
+						if(!order) order=o;
+						/*
+					}else if(!faultOrder && o.state<0 && o.state!=OrderState.ERR_PREPROCESS && o.state!=OrderState.ERR_LOCK_FAULT){
 						faultOrder=o;
+						*/
 					}
 				}
 			}
-			if(!order) order=faultOrder;
+			//if(!order) order=faultOrder;
 			if(!order) return;
 			
 			currOrder=order;
@@ -161,14 +180,17 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		private function getLock():void{
+			if(!isStarted) currOrder=null;
 			if(!currOrder) return;
+			progressCaption='Захват на обработку '+currOrder.id;
 			var latch:DbLatch=OrderService.getPreprocessLock(currOrder.id);
 			latch.addEventListener(Event.COMPLETE,ongetLock);
 			latch.start();
 		}
 		private function ongetLock(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
-			if(latch) latch.removeEventListener(Event.COMPLETE,ongetLock);
+			latch.removeEventListener(Event.COMPLETE,ongetLock);
+			if(!currOrder) return;
 			if(latch.resultCode>0){
 				checkWebState();
 			}else{
@@ -182,19 +204,20 @@ package com.photodispatcher.provider.preprocess{
 		private function releaseLock():void{
 			if(!currOrder) return;
 			//TODO can release another's lock
-			//OrderService.releasePreprocessLock(currOrder.id);
+			OrderService.releasePreprocessLock(currOrder.id);
 		}
 
 		
 		private function checkWebState():void{
 			if(!currOrder) return;
+			progressCaption='Проверка Web '+currOrder.id;
 			trace('PreprocessManager.checkQueue web request '+currOrder.ftp_folder);
 			//check state on site
-			currOrder.state=OrderState.PREPROCESS_WEB_CHECK;
 			var source:Source= Context.getSource(currOrder.source);
 			if(!source) return;
 			var webService:BaseWeb=WebServiceBuilder.build(source);
 			if(!webService) return;
+			currOrder.state=OrderState.PREPROCESS_WEB_CHECK;
 			webService.addEventListener(Event.COMPLETE,getOrderHandle);
 			webService.getOrder(currOrder);
 		}
@@ -210,7 +233,7 @@ package com.photodispatcher.provider.preprocess{
 				lastError='Заказ '+currOrder.id+'. Ошибка проверки на сайте: '+pw.errMesage;
 				currOrder.state=OrderState.ERR_WEB;
 				StateLog.log(OrderState.ERR_WEB,currOrder.id,'','Ошибка проверки на сайте: '+pw.errMesage);
-				releaseLock();
+				//releaseLock();
 				currOrder= null;
 				//to prevent cycle web check when network error or offline
 				if(webErrCounter<WEB_ERRORS_LIMIT) startNext();
@@ -224,14 +247,14 @@ package com.photodispatcher.provider.preprocess{
 					if(currOrder.production==Context.PRODUCTION_NOT_SET){
 						trace('PreprocessManager.getOrderHandle; order production not set '+currOrder.id);
 						currOrder.state=OrderState.ERR_PRODUCTION_NOT_SET;
-						releaseLock();
+						//releaseLock();
 						currOrder= null;
 						return;
 					}
 					if(currOrder.production!=Context.getProduction()){
 						trace('PreprocessManager.getOrderHandle; wrong order production; cancel order '+currOrder.id);
 						currOrder.state=OrderState.CANCELED_PRODUCTION;
-						releaseLock();
+						//releaseLock();
 						currOrder= null;
 						return;
 					}
@@ -257,6 +280,7 @@ package com.photodispatcher.provider.preprocess{
 		
 		private function fillFromDb():void{
 			if(!currOrder) return;
+			progressCaption='Загрузка из БД '+currOrder.id;
 			var latch:DbLatch=new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onfillFromDb);
 			latch.addLatch(orderService.loadOrderVsChilds(currOrder.id));
@@ -274,6 +298,7 @@ package com.photodispatcher.provider.preprocess{
 					lastError='Ошибка базы данных заказ: '+currOrder.id+'. '+latch.lastError;
 				}
 			}
+			if(!currOrder) return;
 			if(!dbOrder){
 				currOrder.state= OrderState.ERR_READ_LOCK;
 				releaseLock();
@@ -286,7 +311,7 @@ package com.photodispatcher.provider.preprocess{
 			//forvard
 			//restore from filesystem
 			if(OrderBuilder.restoreFromFilesystem(currOrder)<0){
-				releaseLock();
+				//releaseLock();
 				currOrder= null;
 				startNext();
 				return;
@@ -294,15 +319,19 @@ package com.photodispatcher.provider.preprocess{
 
 			//forvard
 			//capturestate
+			progressCaption='Блокировка на обработку '+currOrder.id;
 			currOrder.state=OrderState.PREPROCESS_CAPTURED;
 			latch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,oncaptureState);
 			latch.addLatch(orderService.captureState(currOrder));
+			latch.start();
 		}
 		private function oncaptureState(evt:Event):void{
+			releaseLock();
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,oncaptureState);
+				if(!currOrder) return;
 				if (latch.complite && latch.resultCode==OrderState.PREPROCESS_CAPTURED){
 					//forvard
 					//build
@@ -311,7 +340,6 @@ package com.photodispatcher.provider.preprocess{
 				}else{
 					trace('PreprocessManager.captureState: db error '+latch.lastError);
 					lastError='Заказ: '+currOrder.id+' блокирован другим процессом '+latch.lastError;
-					releaseLock();
 					currOrder.state= OrderState.ERR_LOCK_FAULT;
 					currOrder=null;
 					startNext();
@@ -327,11 +355,87 @@ package com.photodispatcher.provider.preprocess{
 			currOrder=null;
 		}
 
-		public function start():void{
-			//TODO implement
+		private var timer:Timer;
+
+		private var _autoLoadInterval:int=10*60*1000;
+		public function get autoLoadInterval():int{
+			return _autoLoadInterval;
 		}
-		public function stop():void{
-			//TODO implement
+		public function set autoLoadInterval(value:int):void{
+			if(value<=0){
+				autoLoad=false;
+				_autoLoadInterval=10*60*1000;
+			}else{
+				_autoLoadInterval = value;
+			}
+			if(timer) timer.delay=_autoLoadInterval;
+		}
+
+		
+		private var _autoLoad:Boolean;
+		public function set autoLoad(load:Boolean):void{
+			if(!load) stopTimer();
+			_autoLoad=load;
+			if(_autoLoad) startTimer();
+		}
+		public function get autoLoad():Boolean{
+			return _autoLoad;
+		}
+		
+		private function startTimer():void{
+			if(!timer){
+				timer= new Timer(autoLoadInterval);
+				timer.addEventListener(TimerEvent.TIMER, onTimer);
+			}
+			if(isStarted) timer.start();
+		}
+		private function stopTimer():void{
+			if(timer) timer.stop();
+		}
+		private function onTimer(evt:TimerEvent):void{
+			reLoad();
+		}
+
+		private var _isStarted:Boolean;
+		[Bindable]
+		public function get isStarted():Boolean{
+			return _isStarted;
+		}
+		public function set isStarted(value:Boolean):void{
+			if(value){ 
+				start();
+			}else{
+				stop();
+			}
+			_isStarted = value;
+		}
+
+		
+		private function start():void{
+			if(_isStarted) return;
+			_isStarted=true;
+			reLoad();
+		}
+		private function stop():void{
+			_isStarted=false;
+			stopTimer();
+			//TODO captured order will hung on quit
+			if(currOrder && currOrder.state < OrderState.PREPROCESS_CAPTURED){
+				progressCaption='';
+				currOrder.state=OrderState.PREPROCESS_WAITE;
+				currOrder=null;
+			}
+			//reset states
+			for each (var order:Order in queue){
+				if(order){
+					if(!currOrder || (currOrder.id!=order.id)){
+						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORVARD ){
+							order.state=OrderState.PREPROCESS_WAITE;
+						}
+					}
+				}
+			}
+
 		}
 
 		public function destroy():void{
@@ -358,17 +462,19 @@ package com.photodispatcher.provider.preprocess{
 		private function onBuilderError(evt:OrderBuildEvent):void{
 			//builder error
 			lastError=evt.err_msg;
-			currOrder.state=OrderState.ERR_PREPROCESS;
+			if(!currOrder) return;
+			currOrder.state=OrderState.PREPROCESS_INCOMPLETE;
 			saveOrder(currOrder);
 			currOrder=null;
 			startNext();
 		}
 		private function onOrderPreprocessed(evt:OrderBuildEvent):void{
+			if(!currOrder) return;
 			//order complited
 			//remove from queue
 			if(evt.err<0){
 				//completed vs error
-				currOrder.state=OrderState.ERR_PREPROCESS;
+				currOrder.state=OrderState.PREPROCESS_INCOMPLETE;
 			}else{
 				if(currOrder.is_preload){
 					currOrder.state=OrderState.PRN_WAITE_ORDER_STATE;
@@ -413,6 +519,7 @@ package com.photodispatcher.provider.preprocess{
 					latch.start();
 				}
 			}
+			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
 		}
 
 	}

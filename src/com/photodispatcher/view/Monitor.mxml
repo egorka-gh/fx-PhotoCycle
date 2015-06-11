@@ -7,7 +7,7 @@
 		 xmlns:services="com.jxl.chatserver.mvcs.services.*" 
 		 xmlns:remote="com.photodispatcher.view.remote.*"
 		 creationComplete="{init()}"
-		 keyDown="onKey(event)" >
+		 keyDown="onKey(event)" xmlns:preprocess="com.photodispatcher.provider.preprocess.*" >
 	
 	<fx:Declarations>
 		<services:ChatServerService id="chatServer" />
@@ -193,6 +193,7 @@
 				if(isRuning) return;
 				isRuning=true;
 				resync();
+				//preprocessManager.start();
 			}
 			private function onTimer(e:TimerEvent):void{
 				resync();
@@ -235,40 +236,9 @@
 				}
 				isRuning=false;
 				//startForceStarTimer();
+				preprocessManager.isStarted=false;
 			}
 			
-			private function detectState():void{
-				switch(tbView.selectedIndex){
-					case 0:
-						currentState='stateView';
-						break;
-					case 1:
-						currentState='ordersPending';
-						break;
-					case 2:
-						currentState='printDeploy';
-						break;
-					case 3:
-						currentState='printPrint';
-						break;
-					case 4:
-						currentState='printReady';
-						break;
-					case 5:
-						currentState='logView';
-						break;
-					
-					case 6:
-						currentState='stopLogView'; // лог простоя
-						break;
-					
-					case 7:
-						currentState='printPulse'; // автопостановка
-						break;
-					
-				}
-				focusManager.setFocus(focusHolder);
-			}
 			private function fillOrdersPendingList():void{
 				var latch:DbLatch=new DbLatch();
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
@@ -409,8 +379,7 @@
 				
 			}
 			
-			protected function onLoadLabStops(event:Event):void
-			{
+			protected function onLoadLabStops(event:Event):void{
 				
 				var latch:DbLatch= event.target as DbLatch;
 				var devMap:Object = PrintQueueManager.instance.labDeviceMap;
@@ -432,16 +401,53 @@
 				
 			}
 			
+			private function detectState():void{
+				switch(tbView.selectedIndex){
+					case 0:
+						currentState='stateView';
+						break;
+					case 1:
+						currentState='ordersPending';
+						break;
+					case 2:
+						currentState='ordersBuild';
+						break;
+					case 3:
+						currentState='printDeploy';
+						break;
+					case 4:
+						currentState='printPrint';
+						break;
+					case 5:
+						currentState='printReady';
+						break;
+					case 6:
+						currentState='logView';
+						break;
+					
+					case 7:
+						currentState='stopLogView'; // лог простоя
+						break;
+					
+					case 8:
+						currentState='printPulse'; // автопостановка
+						break;
+					
+				}
+				focusManager.setFocus(focusHolder);
+			}
+
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
-		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<preprocess:PreprocessManager id="preprocessManager" autoLoad="true"/>
 	</fx:Declarations>
 	
 	<s:states>
 		<s:State name="stateView"/>
 		<s:State name="ordersPending"/>
+		<s:State name="ordersBuild"/>
 		<s:State name="printDeploy"/>
 		<s:State name="printPrint"/>
 		<s:State name="printReady"/>
@@ -460,7 +466,8 @@
 		<mx:ArrayCollection>
 			<fx:String>Состояние</fx:String> 
 			<fx:String>Загрузка заказов</fx:String> 
-			<fx:String>Заказы ожидающие распределения</fx:String> 
+			<fx:String>Подготовка заказов</fx:String> 
+			<fx:String>Распределение на печать</fx:String> 
 			<fx:String>Печать</fx:String> 
 			<fx:String>Напечатаны</fx:String> 
 			<fx:String>Лог</fx:String>
@@ -567,6 +574,7 @@
 						dataProvider="{ordersPendingList}" locale="ru_RU" columns="{Order.gridColumns()}"/>
 			<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)"/>
 		</s:VGroup>
+		<view:MonitorBuild id="monitorBuild" top="0" left="0" right="0" bottom="0" includeIn="ordersBuild" builder="{preprocessManager}"/>
 		<view:PrintDistribute id="printDistribute" top="0" left="0" right="0" bottom="0" includeIn="printDeploy"/>
 		<view:PrintMonitor id="printMonitor" top="0" left="0" right="0" bottom="0" 
 						   includeIn="printPrint,printReady"
