@@ -358,6 +358,7 @@ package com.photodispatcher.factory{
 			}
 			if(pgArr) order.printGroups= new ArrayCollection(pgArr);
 			
+			/* created after build
 			//build suborders prs
 			try{
 				pgBuilder.buildFromSuborders(order);
@@ -366,7 +367,7 @@ package com.photodispatcher.factory{
 				order.state=OrderState.ERR_READ_LOCK;
 				return order.state;
 			}
-			
+			*/
 			
 			//restore photos original names
 			try{

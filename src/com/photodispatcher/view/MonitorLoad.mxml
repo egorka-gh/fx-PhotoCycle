@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}"
+		 minWidth="400" minHeight="300">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.provider.ftp.DownloadManager;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.PopUpEvent;
+			
+			
+			[Bindable]
+			private var productionName:String='Не назначено';
+			[Bindable]
+			private var sourcesFList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var statesFList:ArrayCollection= new ArrayCollection();
+			
+			[Bindable]
+			private var queueAC:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var errsAC:ArrayCollection= new ArrayCollection();
+
+			public function init():void{
+				productionName=Context.getProductionName();
+				buildFilterLists();
+				
+				queueAC.filterFunction=filterOrdersList;
+				
+				if(focusManager) focusManager.setFocus(focusHolder);
+			}
+
+			private var _loader:DownloadManager;
+			[Bindable]
+			public function get loader():DownloadManager{
+				return _loader;
+			}
+			public function set loader(value:DownloadManager):void{
+				if(_loader){
+					_loader.removeEventListener(FlexEvent.DATA_CHANGE, onLoaderRefresh);
+				}
+				_loader = value;
+				if(_loader){
+					_loader.addEventListener(FlexEvent.DATA_CHANGE, onLoaderRefresh);
+				}
+			}
+			
+			private function onLoaderRefresh(evt:FlexEvent):void{
+				queueAC.source=loader.queue;
+				queueAC.refresh();
+				//TODO load errs
+			}
+			
+			private function reloadBuilder():void{
+				if(loader) loader.reLoad();
+			}
+			
+			private function buildFilterLists():void{
+				var a:Array=Context.getSources();
+				if(!a) return;
+				//sources filter
+				var s:Source= new Source(); s.id=0; s.name='-';
+				a.unshift(s);
+				sourcesFList.source=a;
+				//state filter
+				a=OrderState.getStateArray(OrderState.WAITE_FTP,OrderState.FTP_COMPLETE);
+				var os:OrderState=new OrderState(); os.id=0; os.name='-';
+				a.unshift(os);
+				os=new OrderState(); os.id=-1; os.name='Ошибки';
+				a.push(os);
+				statesFList.source=a;
+
+				if(ddSourceFilter) ddSourceFilter.selectedIndex=0;
+				if(ddStateFilter) ddStateFilter.selectedIndex=0;
+			}
+
+			private function filterOrdersList(item:Object):Boolean {
+				var o:Order=item as Order;
+				if(!o) return false;
+				if(ddSourceFilter && ddSourceFilter.selectedIndex>0 && o.source!=ddSourceFilter.selectedItem.id) return false;
+				if(ddStateFilter && ddStateFilter.selectedIndex>0){
+					if(ddStateFilter.selectedItem.id==-1){
+						if(o.state>0) return false;
+					}else if(o.state!=ddStateFilter.selectedItem.id){
+						return false;
+					}
+				}
+				if(tiOrderFilter && tiOrderFilter.text && o.id.indexOf(tiOrderFilter.text)==-1) return false;
+				return true;
+			}
+
+			private function applyOrdersFilter():void{
+				queueAC.refresh();
+				if(dgOrders){
+					dgOrders.clearSelection();
+					dgOrders.dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+				}
+			}
+			
+			protected function dgOrders_creationCompleteHandler(event:FlexEvent):void{
+				var ordersGridMenu:GridContexMenu= new GridContexMenu(dgOrders,[GridContexMenu.CANCEL_ORDER,GridContexMenu.FORVARD_FTP,GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
+			}
+
+			private var addPopup:OrderAddManualPopup;
+			protected function btAddOrder_clickHandler(event:MouseEvent):void{
+				addPopup= new OrderAddManualPopup();
+				addPopup.addEventListener(PopUpEvent.CLOSE,onAddPopupClose);
+				addPopup.show();
+			}
+			private function onAddPopupClose(evt:PopUpEvent):void{
+				addPopup.removeEventListener(PopUpEvent.CLOSE,onAddPopupClose);
+				addPopup= null;
+				//refresh & start load if added
+				if(evt.commit) reloadBuilder();
+			}
+
+			
+			/*
+			protected function dgErrLimit_creationCompleteHandler(event:FlexEvent):void{
+				ordersErrLimitGridMenu= new GridContexMenu(dgErrLimit,[GridContexMenu.SHOW_ORDER,GridContexMenu.RESET_ERRLIMIT]);
+			}
+
+			[Bindable]
+			private var errsAC:ArrayCollection;
+			private function reloadErrs():void{
+				var latch:DbLatch=new DbLatch();
+				var svc:OrderService =Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				latch.addEventListener(Event.COMPLETE,onreloadErrs);
+				latch.addLatch(svc.loadByState(OrderState.PREPROCESS_INCOMPLETE, OrderState.PREPROCESS_INCOMPLETE+1));
+				latch.start();
+			}
+			private function onreloadErrs(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onreloadErrs);
+					if(latch.complite){
+						errsAC=latch.lastDataAC;
+					}
+				}
+			}
+
+			*/
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout gap="5"/>
+	</s:layout>
+
+	<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+		<s:Label text="Очередь {queueAC.length}" fontWeight="bold"/>
+		<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
+		<s:Spacer width="5"/>
+
+		<s:Label text="Фильтрация" fontWeight="bold"/>
+		<s:Spacer width="5"/>
+		<s:Label text="Источник"/>
+		<s:DropDownList id="ddSourceFilter" dataProvider="{sourcesFList}" labelField="name" change="{applyOrdersFilter()}"/>
+		<s:Spacer width="5"/>
+		<s:Label text="Статус"/>
+		<s:DropDownList id="ddStateFilter" dataProvider="{statesFList}" labelField="name" width="150" change="{applyOrdersFilter()}"/>
+		<s:Spacer width="5"/>
+		<s:Label text="ID"/>
+		<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>
+
+		<s:Spacer width="100%"/>
+		<s:Button id="btStart" icon="assets/play.png" click="{loader.isStarted=true}" enabled="{!loader.isStarted}"
+				  cornerRadius="3" width="30" height="30" baseline="4"/>
+		<s:Button id="btStop" icon="assets/stop.png" click="{loader.isStarted=false}" enabled="{loader.isStarted}"
+				  cornerRadius="3" width="30" height="30" baseline="4"/>
+		<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{reloadBuilder()}"
+				  cornerRadius="3" width="30" height="30" baseline="4"/>
+	</s:HGroup>
+	<s:DataGrid id="dgOrders" selectionMode="multipleRows"
+				width="100%" height="100%" creationComplete="dgOrders_creationCompleteHandler(event)"
+				dataProvider="{queueAC}" locale="ru_RU" columns="{Order.gridColumns()}"/>
+	<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)"/>
+	
+	<s:Spacer height="10"/>
+	<s:HGroup width="100%" verticalAlign="bottom">
+		<s:Label text="Ошибки"/>
+		<s:Spacer width="100%"/>
+		<!--<s:Button id="btRefreshErr" icon="assets/icon-refresh.gif" click="{reloadErrs()}" 
+				  cornerRadius="4" width="22" height="22" baseline="4"/>-->
+	</s:HGroup>
+	
+	<s:DataGrid id="dgErrors" width="100%" height="100%"
+				selectionMode="singleRow"  locale="ru_RU" 
+				dataProvider="{errsAC}" columns="{Order.gridColumns()}"/>
+	<s:Spacer height="10"/>
+</s:Group>

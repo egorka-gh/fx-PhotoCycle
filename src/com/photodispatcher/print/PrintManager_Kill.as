@@ -304,7 +304,7 @@ package com.photodispatcher.print{
 						Alert.show('Заказ #'+svc.lastOrderId+' отменен на сайте. Обновите данные. Размещение заказа на печать отменено.');
 						//mark as canceled
 						for each (pg in order.printGroups){
-							pg.state=OrderState.CANCELED;
+							pg.state=OrderState.CANCELED_SYNC;
 							pg.destinationLab=null;
 						}
 					}

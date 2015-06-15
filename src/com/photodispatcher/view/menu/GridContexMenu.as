@@ -263,7 +263,7 @@ package com.photodispatcher.view.menu{
 				//orders grid
 				for each(o in grid.selectedItems){
 					order=o as Order;
-					if(order && order.state!=OrderState.CANCELED){
+					if(order && order.state<OrderState.CANCELED_SYNC){
 						canceled.push(order);
 						orderIds.push(order.id);
 					}
@@ -273,7 +273,7 @@ package com.photodispatcher.view.menu{
 				orderMap= new Object;
 				for each(o in grid.selectedItems){
 					pg=o as PrintGroup;
-					if(pg && pg.state!=OrderState.CANCELED){
+					if(pg && pg.state<OrderState.CANCELED_SYNC){
 						canceled.push(pg);
 						orderMap[pg.order_id]=pg.order_id;
 					}

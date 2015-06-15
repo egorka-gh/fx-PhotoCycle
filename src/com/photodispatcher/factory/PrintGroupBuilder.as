@@ -390,7 +390,7 @@ package com.photodispatcher.factory{
 			var pgf:PrintGroupFile;
 			for each(so in order.suborders){
 				proj=so.referenceProject;
-				if(proj && so.state<OrderState.CANCELED){
+				if(proj && so.state<OrderState.CANCELED_SYNC){
 					//reset vars
 					paper=0;
 					coverPixels=proj.getPixelSise(BookSynonym.BOOK_PART_COVER);

@@ -9,11 +9,11 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 
-	public class OrderBuilderRemote extends OrderBuilderBase{
+	public class OrderBuilderRemoteKill extends OrderBuilderBase{
 		
 		public var client:ClientVO;
 		
-		public function OrderBuilderRemote(client:ClientVO){
+		public function OrderBuilderRemoteKill(client:ClientVO){
 			super();
 			type=OrderBuilderBase.TYPE_REMOTE;
 			this.client=client;

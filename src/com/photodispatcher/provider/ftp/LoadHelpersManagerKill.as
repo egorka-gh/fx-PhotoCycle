@@ -23,7 +23,7 @@ package com.photodispatcher.provider.ftp{
 	
 	import mx.controls.Alert;
 	
-	public class LoadHelpersManager extends DownloadQueueManager{
+	public class LoadHelpersManagerKill extends DownloadQueueManager{
 		
 		private var _localQueues:Array=[];
 		public function get localQueues():Array{
@@ -40,7 +40,7 @@ package com.photodispatcher.provider.ftp{
 		private var helpersMap:Dictionary;
 		private var chatServer:ChatServerService;
 		
-		public function LoadHelpersManager(){
+		public function LoadHelpersManagerKill(){
 			super(null);
 			_type=DownloadQueueManager.TYPE_REMOTE;
 			sourceCaption='Удаленная загрузка';

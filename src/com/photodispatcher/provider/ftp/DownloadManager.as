@@ -1,42 +1,34 @@
 package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.context.Context;
-	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.event.ImageProviderEvent;
-	import com.photodispatcher.event.OrderBuildEvent;
-	import com.photodispatcher.event.OrderLoadedEvent;
-	import com.photodispatcher.factory.OrderBuilder;
-	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderService;
-	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
+	import flash.events.TimerEvent;
 	import flash.filesystem.File;
+	import flash.utils.Timer;
 	
 	import mx.collections.ArrayCollection;
+	import mx.events.FlexEvent;
 	
 	import org.granite.tide.Tide;
 	
+	[Event(name="dataChange", type="mx.events.FlexEvent")]
 	public class DownloadManager extends EventDispatcher{
 
-		//private var _preprocessManager:PreprocessManager;
+		[Bindable]
+		public  var queue:Array;
 		
-		/*
-		[Bindable]
-		public var writeOrdersList:ArrayCollection;
-		[Bindable]
-		public var isWriting:Boolean=false;
-		*/
 		private var writeOrders:Array=[];
 
 		private var _servicesList:ArrayCollection=new ArrayCollection();
@@ -45,9 +37,6 @@ package com.photodispatcher.provider.ftp{
 			return _servicesList;
 		}
 		
-		[Bindable]
-		public var remoteLoadManager:LoadHelpersManager;
-		
 		private var _sources:Array;
 		public function get sources():Array{
 			return _sources;
@@ -55,13 +44,11 @@ package com.photodispatcher.provider.ftp{
 		public function set sources(value:Array):void{
 			//cleanup / remove listeners for old
 			_sources = value;
-			//var f:FtpService;
 			var f:DownloadQueueManager
 			if(services && services.length>0){
 				for each (f in services){
 					if(f){
 						if(f.isStarted) f.stop(); 
-						//f.removeEventListener(OrderLoadedEvent.ORDER_LOADED_EVENT,onOrderLoaded);
 						f.removeEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onOrderLoaded);
 					}
 				}
@@ -85,14 +72,6 @@ package com.photodispatcher.provider.ftp{
 				}
 			}
 			
-			//create remote helpers manager
-			if(!remoteLoadManager){
-				remoteLoadManager= new LoadHelpersManager();
-				remoteLoadManager.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onOrderLoaded);
-			}
-			remoteLoadManager.localQueues=services;
-			services.unshift(remoteLoadManager);
-			
 			_servicesList.source=services;
 			dispatchEvent(new Event('servicesListChange'));
 		}
@@ -102,29 +81,111 @@ package com.photodispatcher.provider.ftp{
 		
 		public function DownloadManager(){
 			super(null);
-			/*
-			writeOrdersList=new ArrayCollection();
-			writeOrdersList.source=writeOrders;
-			*/
+			queue=[];
 		}
 		
+		private var timer:Timer;
 		
-		/*
-		public function set preprocessManager(manager:PreprocessManager):void{
-			if(_preprocessManager){
-				_preprocessManager.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
+		private var _autoLoadInterval:int=10*60*1000;
+		public function get autoLoadInterval():int{
+			return _autoLoadInterval;
+		}
+		public function set autoLoadInterval(value:int):void{
+			if(value<=0){
+				autoLoad=false;
+				_autoLoadInterval=10*60*1000;
+			}else{
+				_autoLoadInterval = value;
 			}
-			_preprocessManager=manager;	
-			if(_preprocessManager){
-				_preprocessManager.addEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
+			if(timer) timer.delay=_autoLoadInterval;
+		}
+		
+		
+		private var _autoLoad:Boolean;
+		public function set autoLoad(load:Boolean):void{
+			if(!load) stopTimer();
+			_autoLoad=load;
+			if(_autoLoad) startTimer();
+		}
+		public function get autoLoad():Boolean{
+			return _autoLoad;
+		}
+		
+		private function startTimer():void{
+			if(!timer){
+				timer= new Timer(autoLoadInterval);
+				timer.addEventListener(TimerEvent.TIMER, onTimer);
+			}
+			if(isStarted) timer.start();
+		}
+		private function stopTimer():void{
+			if(timer) timer.stop();
+		}
+		private function onTimer(evt:TimerEvent):void{
+			reLoad();
+		}
+		
+		private var _isStarted:Boolean;
+		[Bindable]
+		public function get isStarted():Boolean{
+			return _isStarted;
+		}
+		public function set isStarted(value:Boolean):void{
+			if(value){ 
+				start();
+			}else{
+				stop();
+			}
+			_isStarted = value;
+		}
+		
+		private function start():void{
+			if(_isStarted) return;
+			if(!services || services.length==0) return;
+			autoLoadInterval=Context.getAttribute('syncInterval');
+			_isStarted=true;
+			var f:DownloadQueueManager;
+			for each(f in services){
+				if(f) f.start();
 			}
 		}
-		public function get preprocessManager():PreprocessManager{
-			return _preprocessManager;	
-		}
-		*/
 		
-		public function resync(orders:Array):void{
+		private function stop():void{
+			_isStarted=false;
+			stopTimer();
+			
+			if(!services || services.length==0) return;
+			var f:DownloadQueueManager;
+			for each(f in services){
+				if(f) f.stop();
+			}
+		}
+		
+		public function reLoad():void{
+			stopTimer();
+			//TODO reset errors ?
+			
+			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onloadFromDB);
+			latch.addLatch(svc.loadByState(OrderState.WAITE_FTP, OrderState.FTP_COMPLETE+1));
+			latch.start();
+		}
+
+		private function onloadFromDB(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onloadFromDB);
+			if(!latch || !latch.complite) return;
+			queue=latch.lastDataArr;
+			if(!queue) return;
+			resync(queue);
+			if(autoLoad){
+				startTimer();
+				dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
+			}
+		}
+
+		private function resync(orders:Array):void{
 			if(!orders) return;
 			//resync write orders
 			var a:Array=new Array();
@@ -146,7 +207,6 @@ package com.photodispatcher.provider.ftp{
 					}
 				}
 			}
-			//preprocessManager.resync(orders);
 			
 			var f:DownloadQueueManager;
 			if(services){
@@ -155,25 +215,6 @@ package com.photodispatcher.provider.ftp{
 					if(f) f.reSync(orders);
 				}
 			}
-			//flushWriteQueue();
-		}
-		
-		public function start(resetErrors:Boolean=false):void{
-			if(!services || services.length==0) return;
-			//var f:FtpService;
-			var f:DownloadQueueManager;
-			for each(f in services){
-				if(f) f.start(resetErrors);
-			}
-		}
-
-		public function stop():void{
-			if(!services || services.length==0) return;
-			var f:DownloadQueueManager;
-			for each(f in services){
-				if(f) f.stop();
-			}
-			//flushWriteQueue();
 		}
 		
 		private function onOrderLoaded(e:ImageProviderEvent):void{ //(e:OrderLoadedEvent):void{
@@ -181,47 +222,11 @@ package com.photodispatcher.provider.ftp{
 			var dstFolder:String=source.getWrkFolder();
 			var order:Order=e.order;
 			saveOrder(order);
-			/*
-			if(order.forward_state>0){
-				saveOrder(order);
-				return;
-			}
-			try{
-				CaptionSetter.restoreFileCaption(order,dstFolder);
-			}catch(err:Error){
-			}
-			//resize
-			preprocessOrder(order);
-			*/
 		}
-
-		/*
-		private function preprocessOrder(order:Order):void{
-			//chek if order skipped
-			var minState:int=OrderState.SKIPPED;
-			var pg:PrintGroup;
-			var so:SubOrder;
-			if(order.printGroups){
-				for each(pg in order.printGroups) minState=Math.min(minState,pg.state);
-			}
-			if(order.suborders){
-				for each(so in order.suborders) minState=Math.min(minState,so.state);
-			}
-			if(minState<OrderState.CANCELED){
-				preprocessManager.build(order);
-			}else{
-				order.state=OrderState.SKIPPED;
-				saveOrder(order);
-			}
-		}
-		private function onOrderPreprocessed(evt:OrderBuildEvent):void{
-			saveOrder(evt.order);
-		}
-		*/
 
 		private function saveOrder(order:Order):void{
 			
-			if(order.state<OrderState.CANCELED){
+			if(order.state<OrderState.CANCELED_SYNC){
 				if(order.forward_state>0){
 					order.state=order.forward_state;
 				}else{
@@ -232,7 +237,7 @@ package com.photodispatcher.provider.ftp{
 			
 			order.state_date=new Date();
 			if(order.hasSuborders){
-				for each(var so:SubOrder in order.suborders) if(so.state<OrderState.CANCELED) so.state=order.state;
+				for each(var so:SubOrder in order.suborders) if(so.state<OrderState.CANCELED_SYNC) so.state=order.state;
 			}
 			
 			writeOrders.push(order);
@@ -240,7 +245,6 @@ package com.photodispatcher.provider.ftp{
 			var latch:DbLatch= new DbLatch();
 			latch.debugName='Заказ "'+order.id+'" (saveVsSuborders)';
 			latch.addEventListener(Event.COMPLETE,onOrderSave);
-			//latch.addLatch(svc.fillUpOrder(order),order.id);
 			latch.addLatch(svc.saveVsSuborders(order),order.id);
 			latch.start();
 		}
@@ -256,22 +260,6 @@ package com.photodispatcher.provider.ftp{
 						order= writeOrders[idx] as Order;
 						writeOrders.splice(idx,1);
 					}
-					/*
-					//clean
-					if(order.hasSuborders){
-						for each(var so:SubOrder in order.suborders) so.destroyChilds();
-					}
-
-					//set extra state
-					if(!order || order.state!=OrderState.PRN_WAITE) return;
-					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
-					latch=new DbLatch();
-					//latch.addEventListener(Event.COMPLETE,onCompleteOrder);
-					//set PRN_WAITE extra state 
-					//latch.addLatch(svc.extraStateSet(id, '',OrderState.PRN_WAITE, new Date()));
-					latch.addLatch(svc.extraStateFix(id, OrderState.PRN_WAITE, new Date()));
-					latch.start();
-					*/
 				}
 			}
 		}

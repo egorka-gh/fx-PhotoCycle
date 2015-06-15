@@ -72,7 +72,7 @@ package com.photodispatcher.provider.preprocess{
 			if(reprintMode){
 				//check create print subfolder
 				for each(pg in order.printGroups){
-					if (pg && pg.is_pdf && pg.state<OrderState.CANCELED && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,false)){
+					if (pg && pg.is_pdf && pg.state<OrderState.CANCELED_SYNC && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,false)){
 						return;
 					}
 				}
@@ -81,7 +81,7 @@ package com.photodispatcher.provider.preprocess{
 			}else{
 				//check create print subfolder
 				for each(pg in order.printGroups){
-					if (pg && pg.state<OrderState.CANCELED && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,true)){
+					if (pg && pg.state<OrderState.CANCELED_SYNC && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,true)){
 						return;
 					}
 				}
@@ -124,7 +124,7 @@ package com.photodispatcher.provider.preprocess{
 			hasErr=false;
 			for each(pg in order.printGroups){
 				mg=null;
-				if(pg && pg.book_type!=0 && pg.state<OrderState.CANCELED){
+				if(pg && pg.book_type!=0 && pg.state<OrderState.CANCELED_SYNC){
 					if(order.state!=OrderState.PREPROCESS_PDF) order.state=OrderState.PREPROCESS_PDF;
 					if(pg.is_pdf){
 						if(!pg.bookTemplate.is_sheet_ready){

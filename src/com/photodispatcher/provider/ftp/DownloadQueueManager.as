@@ -526,7 +526,7 @@ package com.photodispatcher.provider.ftp{
 			}else{
 				//mark as canceled
 				trace('QueueManager.getOrderHandle; web check fault; order canceled '+startOrder.ftp_folder);
-				startOrder.state=OrderState.CANCELED;
+				startOrder.state=OrderState.CANCELED_SYNC;
 				flowError('Заказ отменен: '+startOrder.id);
 				checkQueue();
 				return;

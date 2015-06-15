@@ -20,6 +20,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
+	import com.photodispatcher.provider.fbook.makeup.TextImageBuilder;
 	import com.photodispatcher.provider.fbook.model.FrameData;
 	import com.photodispatcher.provider.fbook.model.FrameMaskedData;
 	import com.photodispatcher.util.JsonUtil;
@@ -620,8 +621,47 @@ package com.photodispatcher.provider.fbook.download{
 			}else{
 				subOrder.log='Fonts loaded.';
 			}
+			//finalizeLoad();
+			renderTexts();
+		}
+		
+		private var textBuilder:TextImageBuilder;
+		private var textBuildError:Boolean;
+		private function renderTexts():void{
+			textBuildError=false;
+			textBuilder=new TextImageBuilder(subOrder);
+			textBuilder.addEventListener(Event.COMPLETE, onTxtComplite);
+			textBuilder.addEventListener(ProgressEvent.PROGRESS, onTxtProgress);
+			textBuilder.addEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onTxtFlowError);
+			textBuilder.build(workFolder);
+		}
+		private function onTxtProgress(event:ProgressEvent):void{
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,event.bytesLoaded, event.bytesTotal));
+		}
+		
+		private function onTxtFlowError(event:ImageProviderEvent):void{
+			textBuilder.removeEventListener(Event.COMPLETE, onTxtComplite);
+			textBuilder.removeEventListener(ProgressEvent.PROGRESS, onTxtProgress);
+			textBuilder.removeEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onTxtFlowError);
+			textBuildError=true;
+			errType='TXTError';
+			errText = event.error;
+			finalizeLoad();
+			//dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FLOW_ERROR_EVENT,null,'Ошибка подготовки текстов: '+event.error));
+		}
+		
+		private function onTxtComplite(event:Event):void{
+			textBuilder.removeEventListener(Event.COMPLETE, onTxtComplite);
+			textBuilder.removeEventListener(ProgressEvent.PROGRESS, onTxtProgress);
+			textBuilder.removeEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onTxtFlowError);
+			if(textBuilder.hasError){
+				textBuildError=true;
+				errType='TXTError';
+				errText = textBuilder.errorMesage;
+			}
 			finalizeLoad();
 		}
+
 		
 		private function finalizeLoad():void{
 			var proj:FBookProject;
@@ -676,7 +716,7 @@ package com.photodispatcher.provider.fbook.download{
 		
 		private var _hasFatalError:Boolean=false;
 		public function hasFatalError():Boolean{
-			return _hasFatalError;
+			return _hasFatalError || textBuildError;
 		}
 		/*
 		public function get errorItems():Array{

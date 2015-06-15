@@ -106,10 +106,16 @@ package com.photodispatcher.model.mysql.services {
 			if(!key) return null;
 			var service:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch(true);
-			latch.addLatch(service.releaseLock(key));
+			latch.addLatch(service.releaseLock(key, Context.appID));
 			return latch;
 		}
 
+		public static function clearLocks():DbLatch{
+			var service:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addLatch(service.clearLocks());
+			return latch;
+		}
 
 		public static function getPreprocessLock(orderid:String):DbLatch{
 			if(!orderid) return null;
@@ -119,6 +125,16 @@ package com.photodispatcher.model.mysql.services {
 		public static function releasePreprocessLock(orderid:String):DbLatch{
 			if(!orderid) return null;
 			return releaseLock('preprocess:'+orderid);
+		}
+
+		public static function getLoadLock(orderid:String):DbLatch{
+			if(!orderid) return null;
+			return getLock('load:'+orderid);
+		}
+		
+		public static function releaseLoadLock(orderid:String):DbLatch{
+			if(!orderid) return null;
+			return releaseLock('load:'+orderid);
 		}
 
     }

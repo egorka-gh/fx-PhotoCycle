@@ -35,40 +35,6 @@ package com.photodispatcher.provider.preprocess{
 	[Event(name="dataChange", type="mx.events.FlexEvent")]
 	public class PreprocessManager extends EventDispatcher{
 
-		/*
-		[Bindable(event="queueLenthChange")]
-		public function get queueLenth():int{
-			return queue.length;
-		}
-
-		[Bindable(event="queueLenthChange")]
-		public function get errorOrdersLenth():int{
-			return errOrders.length;
-		}
-
-		[Bindable(event="remoteBuildersCountChange")]
-		public function get remoteBuildersCount():int{
-			var result:int=0;
-			if(buildesMap){
-				var b:OrderBuilderBase;
-				for each(b in buildesMap){
-					if(b && b.type!=OrderBuilderBase.TYPE_LOCAL) result++;
-				}
-			}
-			return result;
-		}
-
-		[Bindable]
-		public  var orderList:ArrayCollection=new ArrayCollection();
-		
-		private function refreshOrderList(e:Event):void{
-			//orderList.source=queue.concat(errOrders);
-			orderList.source=queue.concat();
-			orderList.refresh();
-			
-		}
-		*/
-
 		public static const WEB_ERRORS_LIMIT:int=3;
 
 		[Bindable]
@@ -78,16 +44,14 @@ package com.photodispatcher.provider.preprocess{
 		
 		public var builder:OrderBuilderLocal;
 
-		//private var buildesMap:Dictionary;
 		[Bindable]
 		public  var queue:ArrayCollection;
-		//private var errOrders:Array=[];
+
 		private var webErrCounter:int=0;
 		
 		public function PreprocessManager(){
 			super();
 			queue= new ArrayCollection();
-			//addEventListener('queueLenthChange',refreshOrderList);
 			builder= new OrderBuilderLocal();
 			listenBuilder(builder);
 		}
@@ -99,7 +63,7 @@ package com.photodispatcher.provider.preprocess{
 		public function reLoad():void{
 			stopTimer();
 			//reset errors
-			for each(var o:Order in queue){
+			for each(var o:Order in queue.source){
 				if(o && o.state<0) o.state=OrderState.PREPROCESS_WAITE;
 			}
 
@@ -148,14 +112,14 @@ package com.photodispatcher.provider.preprocess{
 			}
 			if(currOrder) return;
 			if(builder.isBusy) return;
-			if(queue.length==0) return;
+			if(queue.source.length==0) return;
 			
 			//get order
 			var o:Order;
 			var order:Order;
 			//var faultOrder:Order;
 			
-			for each(o in queue){
+			for each(o in queue.source){
 				if(o){
 					if(o.state==OrderState.PREPROCESS_FORVARD){
 						order=o;
@@ -269,7 +233,7 @@ package com.photodispatcher.provider.preprocess{
 			}else{
 				//mark as canceled
 				trace('PreprocessManager.getOrderHandle; web check fault; order canceled '+currOrder.ftp_folder);
-				currOrder.state=OrderState.CANCELED;
+				currOrder.state=OrderState.CANCELED_SYNC;
 				releaseLock();
 				releaseOrder();
 				currOrder= null;
@@ -349,9 +313,10 @@ package com.photodispatcher.provider.preprocess{
 
 		private function releaseOrder():void{
 			if(!currOrder) return;
-			var idx:int=queue.getItemIndex(currOrder);
+			var idx:int=ArrayUtil.searchItemIdx('id',currOrder.id, queue.source);
 			if(idx==-1) return;
-			queue.removeItemAt(idx);
+			queue.source.splice(idx,1);
+			queue.refresh();
 			currOrder=null;
 		}
 
@@ -414,6 +379,7 @@ package com.photodispatcher.provider.preprocess{
 		private function start():void{
 			if(_isStarted) return;
 			_isStarted=true;
+			autoLoadInterval=Context.getAttribute('syncInterval');
 			reLoad();
 		}
 		private function stop():void{
@@ -426,7 +392,7 @@ package com.photodispatcher.provider.preprocess{
 				currOrder=null;
 			}
 			//reset states
-			for each (var order:Order in queue){
+			for each (var order:Order in queue.source){
 				if(order){
 					if(!currOrder || (currOrder.id!=order.id)){
 						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORVARD ){
