@@ -175,14 +175,17 @@ package com.photodispatcher.provider.ftp{
 		private function onloadFromDB(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch) latch.removeEventListener(Event.COMPLETE,onloadFromDB);
-			if(!latch || !latch.complite) return;
-			queue=latch.lastDataArr;
-			if(!queue) return;
-			resync(queue);
-			if(autoLoad){
-				startTimer();
-				dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
+			if(!latch || !latch.complite){
+				if(autoLoad) startTimer();
+				return;
 			}
+			queue=latch.lastDataArr;
+			if(!queue){
+				if(autoLoad) startTimer();
+				return;
+			}
+			resync(queue);
+			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
 		}
 
 		private function resync(orders:Array):void{

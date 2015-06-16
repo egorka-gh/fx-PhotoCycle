@@ -26,7 +26,7 @@
 			}
 			
 			protected function btStart_clickHandler(event:MouseEvent):void{
-				if(service && !service.remoteMode){
+				if(service){
 					if (service.isStarted){
 						service.stop();
 					}else{
@@ -63,7 +63,7 @@
 					  width="28" height="28"/>
 			
 			<s:Label text="Заказов в очереди: {service.queueLenth}" />
-			<s:Label text="{(service &amp;&amp; service.type==DownloadQueueManager.TYPE_REMOTE)?'Загрузчиков:':'Ftp подключений:'} {service.connectionsActive}/{service.connectionsLimit}({service.connectionsFree},{service.connectionsPending})"/>
+			<s:Label text="Ftp подключений: {service.connectionsActive}/{service.connectionsLimit}({service.connectionsFree},{service.connectionsPending})"/>
 		</s:HGroup>
 		<s:Label text="{service.downloadCaption}" maxDisplayedLines="2" width="100%"/>
 		<mx:ProgressBar mode="event" source="{service}" width="100%"

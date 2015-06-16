@@ -12,10 +12,10 @@ package com.photodispatcher.provider.preprocess{
 	[Event(name="orderPreprocessed", type="com.photodispatcher.event.OrderBuildEvent")]
 	[Event(name="progress", type="com.photodispatcher.event.OrderBuildProgressEvent")]
 	public class OrderBuilderBase extends EventDispatcher{
-		public static const TYPE_LOCAL:int=0;
-		public static const TYPE_REMOTE:int=1;
+		//public static const TYPE_LOCAL:int=0;
+		//public static const TYPE_REMOTE:int=1;
 		
-		public var type:int;
+		//public var type:int;
 		public var lastOrder:Order;
 		public var lastError:int=0;
 		public var lastErrMsg:String='';

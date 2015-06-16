@@ -149,6 +149,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function loadBuildErrs(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadBuildErrs", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadBuildErrs", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadBuildErrs") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadByState(arg0:int, arg1:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadByState", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
@@ -156,6 +167,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadByState", arg0, arg1, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadByState", arg0, arg1) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadDownloadErrs(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadDownloadErrs", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadDownloadErrs", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadDownloadErrs") as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

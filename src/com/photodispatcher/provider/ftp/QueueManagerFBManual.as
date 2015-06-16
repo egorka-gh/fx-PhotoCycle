@@ -23,11 +23,11 @@ package com.photodispatcher.provider.ftp{
 	
 	public class QueueManagerFBManual extends DownloadQueueManager{
 		
-		public function QueueManagerFBManual(source:Source=null, remoteMode:Boolean=false){
-			super(source, remoteMode);
+		public function QueueManagerFBManual(source:Source=null){
+			super(source);
 		}
 		
-		override public function start(resetErrors:Boolean=false):void{
+		override public function start():void{
 			lastError='';
 			downloadCaption='';
 			speed=0;
@@ -46,64 +46,63 @@ package com.photodispatcher.provider.ftp{
 				flowError('Не задана рабочая папка');
 				return;
 			}
-			var fl:File=new File(dstFolder);
-			if(!fl.exists || !fl.isDirectory){
+			var file:File=new File(dstFolder);
+			if(!file.exists || !file.isDirectory){
 				flowError('Не задана рабочая папка');
 				return;
 			}
 			//check create source folder
-			fl=fl.resolvePath(StrUtil.toFileName(source.name));
+			file=file.resolvePath(StrUtil.toFileName(source.name));
 			try{
-				if(!fl.exists) fl.createDirectory();
+				if(!file.exists) file.createDirectory();
 			}catch(e:Error){
-				flowError('Ошибка доступа. Папка: '+fl.nativePath);
+				flowError('Ошибка доступа. Папка: '+file.nativePath);
 				return;
 			}
-			localFolder=fl.nativePath;
+			localFolder=file.nativePath;
 			
 			//prt folder
 			dstFolder=Context.getAttribute('prtPath');
 			if(!dstFolder){
 				Context.setAttribute('prtPath',Context.getAttribute('workFolder'));
 			}else{
-				fl=new File(dstFolder);
-				if(!fl.exists || !fl.isDirectory){
+				file=new File(dstFolder);
+				if(!file.exists || !file.isDirectory){
 					flowError('Не задана папка подготовленных заказов');
 					return;
 				}
 				//check create source folder
-				fl=fl.resolvePath(StrUtil.toFileName(source.name));
+				file=file.resolvePath(StrUtil.toFileName(source.name));
 				try{
-					if(!fl.exists) fl.createDirectory();
+					if(!file.exists) file.createDirectory();
 				}catch(e:Error){
-					flowError('Ошибка доступа. Папка: '+fl.nativePath);
+					flowError('Ошибка доступа. Папка: '+file.nativePath);
 					return;
 				}
 			}
 			
-			if(resetErrors){
-				//reset err limit
-				var order:Order;
-				for each(order in queue){
-					if(order){
-						order.resetErrCounter();
-						if(order.state<0 && order.state!=OrderState.ERR_WRITE_LOCK){
-							resetOrder(order);
-							resetOrderState(order);
-						}
+			//reset runtime states
+			for each(var order:Order in queue){
+				if(order){
+					if(order.state==OrderState.FTP_WEB_CHECK || order.state==OrderState.FTP_WEB_OK){
+						resetOrderState(order);
+					}
+					//reset errors
+					if(order.state<0 && order.state!=OrderState.ERR_WRITE_LOCK){
+						resetOrder(order);
+						resetOrderState(order);
 					}
 				}
 			}
+			
 			trace('QueueManager starting for '+source.fbookService.url);
-			//lastError='';
-			//startMeter();
 			_isStarted=true;
 			forceStop=false;
 			dispatchEvent(new Event('isStartedChange'));
 			
 			//start fbook download
 			if(!fbDownloadManager){
-				fbDownloadManager= new FBookDownloadManager(source,remoteMode);
+				fbDownloadManager= new FBookDownloadManager(source);
 				//listen
 				fbDownloadManager.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onFBDownloadManagerLoad);
 				fbDownloadManager.addEventListener(ImageProviderEvent.LOAD_FAULT_EVENT,onDownloadFault);
@@ -194,7 +193,8 @@ package com.photodispatcher.provider.ftp{
 			startNext();
 		}
 
-		private function onDownloadFault(event:ImageProviderEvent):void{
+		/*
+		protected function onDownloadFault(event:ImageProviderEvent):void{
 			//some fatal error
 			var order:Order=event.order;
 			if(remoteMode){
@@ -218,6 +218,7 @@ package com.photodispatcher.provider.ftp{
 			}
 			
 		}
+		*/
 		
 
 	}

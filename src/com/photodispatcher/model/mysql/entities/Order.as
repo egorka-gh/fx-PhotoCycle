@@ -127,6 +127,7 @@ package com.photodispatcher.model.mysql.entities {
 			if(value<0 &&
 				value!=OrderState.ERR_READ_LOCK && 
 				value!=OrderState.ERR_WRITE_LOCK && 
+				value!=OrderState.ERR_LOCK_FAULT && 
 				//_state!=OrderState.ERR_FILE_SYSTEM &&
 				//_state!=OrderState.ERR_FTP &&
 				value!=OrderState.ERR_WEB){

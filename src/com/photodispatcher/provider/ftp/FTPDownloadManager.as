@@ -49,13 +49,11 @@ package com.photodispatcher.provider.ftp{
 		protected var connectionManager:FTPConnectionManager;
 		protected var downloadOrders:Array=[];
 		private var listApplicant:Order;
-		private var remoteMode:Boolean;
 
-		public function FTPDownloadManager(source:Source, remoteMode:Boolean=false){
+		public function FTPDownloadManager(source:Source){
 			super(null);
 			this.source=source;
 			localFolder=source.getWrkFolder();
-			this.remoteMode=remoteMode;
 		}
 
 		public function get isStarted():Boolean{
@@ -212,7 +210,7 @@ package com.photodispatcher.provider.ftp{
 		protected function reSyncFilter(element:*, index:int, arr:Array):Boolean {
 			var o:Order=element as Order;
 			//return o!=null && o.state==syncState;
-			return o!=null && source && o.source==source.id && o.state==OrderState.WAITE_FTP;
+			return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state==OrderState.FTP_CAPTURED);
 		}
 		/**
 		 * 
@@ -287,7 +285,7 @@ package com.photodispatcher.provider.ftp{
 					if(order.state==OrderState.FTP_LIST && listApplicant && listApplicant.id==order.id) result=0;//list in process (wait till comlite)
 					if(result!=0){
 						if(order.state<0 && !order.exceedErrLimit) result=1;//cnn 4 list (reload)
-						if(order.state==OrderState.FTP_WEB_OK) result=1;//cnn 4 list
+						if(order.state==OrderState.FTP_CAPTURED) result=1;//cnn 4 list
 						if(order.state==OrderState.FTP_LIST && !listApplicant) result=1;//cnn 4 list (list canceled)
 					}
 				}
@@ -325,10 +323,10 @@ package com.photodispatcher.provider.ftp{
 			for each(order in downloadOrders){
 				if(order){
 					//reset states
-					if(order.state<0 && !order.exceedErrLimit) order.state=OrderState.FTP_WEB_OK;
-					if(order.state==OrderState.FTP_LIST && (!listApplicant || listApplicant.id!=order.id)) order.state=OrderState.FTP_WEB_OK;
+					if(order.state<0 && !order.exceedErrLimit) order.state=OrderState.FTP_CAPTURED;
+					if(order.state==OrderState.FTP_LIST && (!listApplicant || listApplicant.id!=order.id)) order.state=OrderState.FTP_CAPTURED;
 					//scan
-					if(!listApplicant && order.state==OrderState.FTP_WEB_OK) listCandidate=order;
+					if(!listApplicant && order.state==OrderState.FTP_CAPTURED) listCandidate=order;
 					if(order.state==OrderState.FTP_LOAD && order.ftpQueue){
 						for each(ftpFile in order.ftpQueue){
 							if(ftpFile){
@@ -457,7 +455,7 @@ package com.photodispatcher.provider.ftp{
 			}
 			if(listApplicant.id!=orderId){
 				//wrong list sequence, reset
-				listApplicant.state=OrderState.FTP_WEB_OK;
+				listApplicant.state=OrderState.FTP_CAPTURED;
 				listApplicant=null;
 				stopListen(cnn);
 				reuseConnection(cnn);
@@ -505,7 +503,7 @@ package com.photodispatcher.provider.ftp{
 				}
 				order.state=OrderState.ERR_FTP;
 				if(order.exceedErrLimit){
-					if(!remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов.');
+					StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов.');
 					if(!order.hasSuborders){
 						//remove from download (double err)
 						idx=downloadOrders.indexOf(order);
@@ -536,7 +534,7 @@ package com.photodispatcher.provider.ftp{
 				}catch (e:Error){
 					trace('FTPDownloadManager error while build suborders '+orderId);
 					order.state=OrderState.ERR_READ_LOCK;
-					if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе подзаказов.');
+					if(DEBUG_TRACE) StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе подзаказов.');
 					loadProgress();
 					reuseConnection(cnn);
 					return;
@@ -560,7 +558,7 @@ package com.photodispatcher.provider.ftp{
 			}catch (e:Error){
 				trace('FTPDownloadManager error while build print group'+orderId);
 				order.state=OrderState.ERR_READ_LOCK;
-				if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе групп печати.'); 
+				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_READ_LOCK,order.id,'','Блокировка чтения при парсе групп печати.'); 
 				loadProgress();
 				reuseConnection(cnn);
 				return;
@@ -625,7 +623,7 @@ package com.photodispatcher.provider.ftp{
 				
 				file.createDirectory();
 			}catch(err:Error){
-				if(!remoteMode) StateLog.log(OrderState.ERR_FILE_SYSTEM,order.id,'','Папка: '+file.nativePath+': '+err.message); 
+				StateLog.log(OrderState.ERR_FILE_SYSTEM,order.id,'','Папка: '+file.nativePath+': '+err.message); 
 				order.state=OrderState.ERR_FILE_SYSTEM;
 				if(order.exceedErrLimit){
 					//remove from download
@@ -646,7 +644,7 @@ package com.photodispatcher.provider.ftp{
 			order.resetErrCounter();
 			trace('FTPDownloadManager start download order '+order.ftp_folder+', printGroups:'+order.printGroups.length.toString()+', ftpQueue:'+order.ftpQueue.length.toString());
 			if(order.ftpQueue && order.ftpQueue.length>0){
-				if(!remoteMode) StateLog.log(OrderState.FTP_LOAD,order.id,'','Старт загрузки'); 
+				StateLog.log(OrderState.FTP_LOAD,order.id,'','Старт загрузки'); 
 				loadProgress();
 			}else{
 				trace('FTPDownloadManager empty order '+order.ftp_folder);
@@ -663,7 +661,7 @@ package com.photodispatcher.provider.ftp{
 			if(order){	
 				order.state=OrderState.ERR_FTP;
 				order.resetErrCounter();//not fatal
-				if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Ошибка FTP LIST Disconnected '+order.ftp_folder);
+				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_FTP,order.id,'','Ошибка FTP LIST Disconnected '+order.ftp_folder);
 			}
 			connectionManager.reconnect(cnn);
 		}
@@ -681,14 +679,14 @@ package com.photodispatcher.provider.ftp{
 			}
 			if(order.id!=orderId){
 				//wrong list sequence, reset
-				order.state=OrderState.FTP_WEB_OK;
+				order.state=OrderState.FTP_CAPTURED;
 				connectionManager.reconnect(cnn);
 				return;
 			}
 			
 			order.state=OrderState.ERR_FTP;
 			order.resetErrCounter();//not fatal
-			if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_FTP,order.id,'','Ошибка FTP LIST "'+order.ftp_folder+'": ' + (e.error?e.error.message:''));
+			if(DEBUG_TRACE) StateLog.log(OrderState.ERR_FTP,order.id,'','Ошибка FTP LIST "'+order.ftp_folder+'": ' + (e.error?e.error.message:''));
 			connectionManager.reconnect(cnn);
 		}
 
@@ -706,7 +704,7 @@ package com.photodispatcher.provider.ftp{
 			if(cnn){
 				if(DEBUG_TRACE) trace('FTPDownloadManager download fault '+ cnn.downloadFile.fullPath);
 				stopListen(cnn);
-				if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_FTP,cnn.orderId,'','Ошибка загрузки "'+cnn.downloadFile.name+'": '+(e.error?e.error.message:''));
+				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_FTP,cnn.orderId,'','Ошибка загрузки "'+cnn.downloadFile.name+'": '+(e.error?e.error.message:''));
 			}
 			//reuseConnection(cnn);
 			connectionManager.reconnect(cnn);
@@ -718,7 +716,7 @@ package com.photodispatcher.provider.ftp{
 			if(cnn){
 				cnn.downloadFile.loadState=FTPFile.LOAD_ERR;
 				if(DEBUG_TRACE) trace('FTPDownloadManager download Disconnected '+ cnn.downloadFile.fullPath);
-				if(DEBUG_TRACE && !remoteMode) StateLog.log(OrderState.ERR_FTP,cnn.orderId,'','Ошибка загрузки Disconnected '+cnn.downloadFile.name);
+				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_FTP,cnn.orderId,'','Ошибка загрузки Disconnected '+cnn.downloadFile.name);
 				connectionManager.reconnect(cnn);
 			}
 		}
@@ -740,7 +738,7 @@ package com.photodispatcher.provider.ftp{
 					if(idx!=-1) downloadOrders.splice(idx,1);
 					order.state=OrderState.FTP_COMPLETE;
 					order.resetErrCounter();
-					if(!remoteMode) StateLog.log(order.state,order.id,'',''); 
+					StateLog.log(order.state,order.id,'',''); 
 					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
 				}
 			}

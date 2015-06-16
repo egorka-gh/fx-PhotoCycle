@@ -19,7 +19,7 @@ package com.photodispatcher.provider.ftp.remote{
 	import flash.events.IEventDispatcher;
 	import flash.events.ProgressEvent;
 	
-	public class RemoteFtpManager extends EventDispatcher{
+	public class RemoteFtpManagerKill extends EventDispatcher{
 		
 		private var _chatService:ChatService;
 		[Bindable]
@@ -27,7 +27,7 @@ package com.photodispatcher.provider.ftp.remote{
 		private var currentOrder:Order;
 		private var isRunning:Boolean;
 		
-		public function RemoteFtpManager(){
+		public function RemoteFtpManagerKill(){
 			super();
 		}
 		
@@ -99,9 +99,9 @@ package com.photodispatcher.provider.ftp.remote{
 			isRunning=true;
 			//create loader
 			if(source.type==SourceType.SRC_FBOOK_MANUAL){
-				loader=new QueueManagerFBManual(source,true);
+				loader=new QueueManagerFBManual(source);
 			}else{
-				loader=new DownloadQueueManager(source,true);
+				loader=new DownloadQueueManager(source);
 			}
 
 			//listen

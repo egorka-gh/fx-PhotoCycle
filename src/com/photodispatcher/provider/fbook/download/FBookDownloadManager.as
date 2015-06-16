@@ -36,14 +36,9 @@ package com.photodispatcher.provider.fbook.download{
 		public static const CACHE_CLIPART:Boolean=false;
 
 		protected var source:Source;
-		//protected var ftpService:SourceService;
 		protected var _isStarted:Boolean=false;
 		protected var localFolder:String;
 		protected var forceStop:Boolean=false;
-		//protected var connectionManager:FTPConnectionManager;
-		//protected var downloadOrders:Array=[];
-		//private var listApplicant:Order;
-		private var remoteMode:Boolean;
 		
 		/*
 		*orders Queue
@@ -61,11 +56,9 @@ package com.photodispatcher.provider.fbook.download{
 			return queue.length;
 		}
 
-		public function FBookDownloadManager(source:Source,remoteMode:Boolean=false){
+		public function FBookDownloadManager(source:Source){
 			super(null);
 			this.source=source;
-			this.remoteMode=remoteMode;
-
 		}
 		
 		public function get isStarted():Boolean{
@@ -211,7 +204,7 @@ package com.photodispatcher.provider.fbook.download{
 		protected function reSyncFilter(element:*, index:int, arr:Array):Boolean {
 			var o:Order=element as Order;
 			//return o!=null && o.state==syncState;
-			return o!=null && source && o.source==source.id && o.state==OrderState.WAITE_FTP;
+			return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state==OrderState.FTP_CAPTURED);
 		}
 
 		
@@ -307,7 +300,7 @@ package com.photodispatcher.provider.fbook.download{
 				}catch(error:Error){}
 
 				currentOrder.state=OrderState.FTP_LOAD;
-				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,'','Загрузка подзаказов');
+				StateLog.log(currentOrder.state,currentOrder.id,'','Загрузка подзаказов');
 				nextSubOrder();
 			}else{
 				trace('FBookDownloadManager nothing to start recheck queue');
@@ -339,7 +332,7 @@ package com.photodispatcher.provider.fbook.download{
 				currentOrder.state=OrderState.FTP_COMPLETE;
 				currentOrder.resetErrCounter();
 				removeFromQueue(currentOrder);
-				if(!remoteMode) StateLog.log(currentOrder.state, currentOrder.id,'','Завершена загрузка подзаказов'); 
+				StateLog.log(currentOrder.state, currentOrder.id,'','Завершена загрузка подзаказов'); 
 				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,currentOrder));
 				currentOrder=null;
 				currentSubOrder=null;
@@ -361,7 +354,7 @@ package com.photodispatcher.provider.fbook.download{
 			if(!loadNextProject()){
 				currentSubOrder.state=OrderState.ERR_WEB;
 				currentOrder.state=OrderState.ERR_WEB;
-				if(!remoteMode) StateLog.log(OrderState.ERR_WEB,currentOrder.id,currentSubOrder.sub_id,'Пустой список id проектов '+currentSubOrder.sub_id);
+				StateLog.log(OrderState.ERR_WEB,currentOrder.id,currentSubOrder.sub_id,'Пустой список id проектов '+currentSubOrder.sub_id);
 				releaseWithError(currentOrder,'Пустой список id проектов '+currentSubOrder.sub_id);
 				checkQueue();
 			}
@@ -425,7 +418,7 @@ package com.photodispatcher.provider.fbook.download{
 				}catch(err:Error){
 					currentSubOrder.state=OrderState.ERR_FILE_SYSTEM;
 					currentOrder.state=OrderState.ERR_FILE_SYSTEM;
-					if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Папка: '+file.nativePath+' '+err.message); 
+					StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Папка: '+file.nativePath+' '+err.message); 
 					if(currentOrder.exceedErrLimit) releaseWithError(currentOrder,err.message);
 					currentOrder=null;
 					currentSubOrder=null;
@@ -472,7 +465,7 @@ package com.photodispatcher.provider.fbook.download{
 					}
 					if(skip){
 						currentSubOrder.state=OrderState.SKIPPED;
-						if(!remoteMode) StateLog.log(currentSubOrder.state ,currentSubOrder.order_id, currentSubOrder.sub_id,''); 
+						StateLog.log(currentSubOrder.state ,currentSubOrder.order_id, currentSubOrder.sub_id,''); 
 						nextSubOrder();
 						return;
 					}
@@ -484,7 +477,7 @@ package com.photodispatcher.provider.fbook.download{
 				source.fbookSid='';
 				currentSubOrder.state=OrderState.ERR_WEB;
 				currentOrder.state=OrderState.ERR_WEB;
-				if(!remoteMode) StateLog.log(OrderState.ERR_WEB,currentOrder.id,currentSubOrder.sub_id,'Не найден проект заказа '+currentSubOrder.sub_id+': '+projectLoader.lastErr);
+				StateLog.log(OrderState.ERR_WEB,currentOrder.id,currentSubOrder.sub_id,'Не найден проект заказа '+currentSubOrder.sub_id+': '+projectLoader.lastErr);
 				releaseWithError(currentOrder,'Не найден проект заказа '+currentSubOrder.sub_id+': '+projectLoader.lastErr);
 				checkQueue();
 			}
@@ -521,12 +514,12 @@ package com.photodispatcher.provider.fbook.download{
 				source.fbookSid='';
 				currentSubOrder.state=OrderState.ERR_FTP;
 				currentOrder.state=OrderState.ERR_FTP;
-				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Ошибка загрузки подзаказа ' +currentSubOrder.sub_id+' :'+contentLoader.errorText);
+				StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Ошибка загрузки подзаказа ' +currentSubOrder.sub_id+' :'+contentLoader.errorText);
 				releaseWithError(currentOrder,'Подзаказ ' +currentSubOrder.sub_id+': '+contentLoader.errorText);
 				checkQueue();
 			}else{
 				currentSubOrder.state=OrderState.FTP_COMPLETE;
-				if(!remoteMode) StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Загружен подзаказ ' +currentSubOrder.sub_id);
+				StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Загружен подзаказ ' +currentSubOrder.sub_id);
 				//TODO prepare text images
 				nextSubOrder();
 			}

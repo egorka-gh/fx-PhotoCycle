@@ -14,7 +14,7 @@ package com.photodispatcher.provider.preprocess.remote{
 	import flash.events.IEventDispatcher;
 	import flash.events.ProgressEvent;
 	
-	public class RemotePreprocessManager extends EventDispatcher{
+	public class RemotePreprocessManagerKill extends EventDispatcher{
 		
 		[Bindable]
 		public var lastError:String;
@@ -51,7 +51,7 @@ package com.photodispatcher.provider.preprocess.remote{
 			}
 		}
 
-		public function RemotePreprocessManager(){
+		public function RemotePreprocessManagerKill(){
 			super();
 		}
 		

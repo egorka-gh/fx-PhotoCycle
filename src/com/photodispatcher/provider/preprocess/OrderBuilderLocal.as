@@ -15,10 +15,12 @@ package com.photodispatcher.provider.preprocess{
 
 		public function OrderBuilderLocal(logStates:Boolean=true){
 			super();
-			type=OrderBuilderBase.TYPE_LOCAL;
+			//type=OrderBuilderBase.TYPE_LOCAL;
 			this.logStates=logStates;
 		}
 
+		private var preprocessTask:PreprocessTask;
+		
 		override protected function startBuild():void{
 			if((!lastOrder.printGroups || lastOrder.printGroups.length==0) && (!lastOrder.suborders || lastOrder.suborders.length==0)){	
 				if(logStates) StateLog.log(lastOrder.state,lastOrder.id,'','Пустой заказ. Не требует подготовки');
@@ -31,7 +33,7 @@ package com.photodispatcher.provider.preprocess{
 				return;
 			}
 			//var dstFolder:String=Context.getAttribute('workFolder')+File.separator+StrUtil.toFileName(source.name);
-			var preprocessTask:PreprocessTask=new PreprocessTask(lastOrder,source.getWrkFolder(),source.getPrtFolder(),logStates);
+			preprocessTask=new PreprocessTask(lastOrder,source.getWrkFolder(),source.getPrtFolder(),logStates);
 			preprocessTask.addEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
 			preprocessTask.addEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
 
@@ -39,16 +41,21 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		override public function stop():void{
-			// TODO implement
+			if(preprocessTask){
+				preprocessTask.removeEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
+				preprocessTask.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
+				preprocessTask.stop();
+			}
+			preprocessTask=null;
+			isBusy=false;
+			dispatchEvent(new OrderBuildProgressEvent());
 		}
 		
 		
 		private function onOrderResize(e:OrderPreprocessEvent):void{
-			var preprocessTask:PreprocessTask=e.target as PreprocessTask;
-			if(preprocessTask){
-				preprocessTask.removeEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
-				preprocessTask.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
-			}
+			if(!preprocessTask) return;
+			preprocessTask.removeEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
+			preprocessTask.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
 			if(e.err==0){
 				releaseComplite();
 			}else{

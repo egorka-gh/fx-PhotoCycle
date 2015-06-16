@@ -45,7 +45,7 @@
 				var latch:DbLatch=new DbLatch();
 				var svc:OrderService =Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				latch.addEventListener(Event.COMPLETE,onreloadErrs);
-				latch.addLatch(svc.loadByState(OrderState.PREPROCESS_INCOMPLETE, OrderState.PREPROCESS_INCOMPLETE+1));
+				latch.addLatch(svc.loadBuildErrs());
 				latch.start();
 			}
 			private function onreloadErrs(evt:Event):void{

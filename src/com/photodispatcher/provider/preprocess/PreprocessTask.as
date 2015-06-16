@@ -44,6 +44,8 @@ package com.photodispatcher.provider.preprocess{
 		private var hasErr:Boolean=false;
 		private var logStates:Boolean;
 		private var reprintMode:Boolean=false;
+		
+		private var forceStop:Boolean;
 
 
 		public function PreprocessTask(order:Order, orderFolder:String, prtFolder:String, logStates:Boolean=true, reprintMode:Boolean=false){
@@ -53,6 +55,11 @@ package com.photodispatcher.provider.preprocess{
 			this.prtFolder=prtFolder;
 			this.logStates=logStates;
 			this.reprintMode=reprintMode;
+		}
+
+		public function stop():void{
+			IMRuner.stopAll();
+			forceStop=true;
 		}
 		
 		public function run():void{
@@ -106,6 +113,7 @@ package com.photodispatcher.provider.preprocess{
 			var resizeTask:ResizeTask=e.target as ResizeTask;
 			resizeTask.removeEventListener(Event.COMPLETE, onResizeComplite);
 			resizeTask.removeEventListener(ProgressEvent.PROGRESS, onResizeProgress);
+			if(forceStop) return;
 			if(resizeTask.hasErr){
 				dispatchErr(order.state,resizeTask.error);
 				return;
@@ -173,6 +181,7 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		private function runCommands(sequence:Array):void{
+			if(forceStop) return;
 			if (maxThreads<=0){
 				dispatchErr(OrderState.ERR_PREPROCESS,'IM не настроен или количество потоков 0.');
 				return;
@@ -190,6 +199,8 @@ package com.photodispatcher.provider.preprocess{
 			var minState:int= IMCommand.STATE_COMPLITE;
 			var complited:int=0;
 			if(hasErr) return;
+			if(forceStop) return;
+
 			//look not statrted
 			for each (cmd in commands){
 				if(cmd){
@@ -241,6 +252,8 @@ package com.photodispatcher.provider.preprocess{
 			var im:IMRuner=e.target as IMRuner;
 			im.removeEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
 			trace('PreprocessTask. Command complite: '+im.currentCommand);
+			if(forceStop) return;
+
 			if(e.hasError){
 				trace('PreprocessTask. Book makeup error, order '+order.id+', error: '+e.error);
 				//IMRuner.stopAll();
@@ -298,6 +311,8 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		private function postProcess():void{
+			if(forceStop) return;
+
 			var postProcessTask:PostProcessTask=new PostProcessTask(order,orderFolder, prtFolder, reprintMode);
 			postProcessTask.addEventListener(Event.COMPLETE,onPostProcess);
 			postProcessTask.addEventListener(ProgressEvent.PROGRESS, onResizeProgress);
@@ -312,11 +327,13 @@ package com.photodispatcher.provider.preprocess{
 				postProcessTask.removeEventListener(Event.COMPLETE,onPostProcess);
 				postProcessTask.removeEventListener(ProgressEvent.PROGRESS, onResizeProgress);
 				if(postProcessTask.hasErr){
-					dispatchErr(OrderState.ERR_FILE_SYSTEM,'Ошибка PreprocessTask.postProcess: '+postProcessTask.errMsg);
+					if(!forceStop) dispatchErr(OrderState.ERR_FILE_SYSTEM,'Ошибка PreprocessTask.postProcess: '+postProcessTask.errMsg);
 					return;
 				}
 			}
 			trace('PreprocessTask. postProcess complited, order '+order.id);
+			if(forceStop) return;
+			
 			dispatchEvent(new OrderPreprocessEvent(order));
 			//startFBookMakeup();
 		}
@@ -332,6 +349,7 @@ package com.photodispatcher.provider.preprocess{
 		private function onFbComplite(event:Event):void{
 			fbookBuilder.removeEventListener(Event.COMPLETE,onFbComplite);
 			fbookBuilder.removeEventListener(ProgressEvent.PROGRESS,onResizeProgress);
+			if(forceStop) return;
 			reportProgress();
 			if(fbookBuilder.hasErr){
 				dispatchEvent(new OrderPreprocessEvent(order,fbookBuilder.errNum,fbookBuilder.error));

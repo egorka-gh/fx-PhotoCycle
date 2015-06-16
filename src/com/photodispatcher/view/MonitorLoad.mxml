@@ -63,7 +63,33 @@
 			private function onLoaderRefresh(evt:FlexEvent):void{
 				queueAC.source=loader.queue;
 				queueAC.refresh();
-				//TODO load errs
+				//fill runtime errs (vs err limit)
+				var errs:Array=[];
+				for each(var o:Order in  loader.queue){
+					if(o && o.exceedErrLimit) errs.push(o);
+				}
+				errsAC.source=errs;
+				
+				//load permanent errs
+				var latch:DbLatch=new DbLatch();
+				var svc:OrderService =Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				latch.addEventListener(Event.COMPLETE,onreloadErrs);
+				latch.addLatch(svc.loadDownloadErrs());
+				latch.start();
+			}
+			private function onreloadErrs(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onreloadErrs);
+					if(latch.complite){
+						var errs:Array=latch.lastDataArr;
+						if(errs && errs.length>0){
+							errs=errs.concat(errsAC.source);
+							errsAC.source=errs;
+							errsAC.refresh();
+						}
+					}
+				}
 			}
 			
 			private function reloadBuilder():void{
