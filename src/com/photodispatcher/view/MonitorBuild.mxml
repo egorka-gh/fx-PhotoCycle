@@ -10,6 +10,7 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
+			import com.photodispatcher.view.menu.MenuCommonActions;
 			
 			import mx.collections.ArrayCollection;
 			import mx.events.FlexEvent;
@@ -36,12 +37,14 @@
 			}
 			
 			private function reloadBuilder():void{
+				if(dgProcess) dgProcess.clearSelection();
 				if(builder) builder.reLoad();
 			}
 			
 			[Bindable]
 			private var errsAC:ArrayCollection;
 			private function reloadErrs():void{
+				if(dgErrors) dgErrors.clearSelection();
 				var latch:DbLatch=new DbLatch();
 				var svc:OrderService =Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				latch.addEventListener(Event.COMPLETE,onreloadErrs);
@@ -54,10 +57,17 @@
 					latch.removeEventListener(Event.COMPLETE,onreloadErrs);
 					if(latch.complite){
 						errsAC=latch.lastDataAC;
+						errsAC.refresh();
 					}
 				}
 			}
 
+			
+			protected function btForvard_clickHandler(event:MouseEvent):void{
+				var order:Order=dgProcess.selectedItem as Order;
+				if(!order || order.state!=OrderState.PREPROCESS_WAITE) return;
+				order.state=OrderState.PREPROCESS_FORVARD;			
+			}
 			
 		]]>
 	</fx:Script>
@@ -69,39 +79,62 @@
 	<s:layout>
 		<s:VerticalLayout gap="5"/>
 	</s:layout>
-
-	<s:VGroup width="100%" gap="2">
-		<s:HGroup width="100%" gap="7" verticalAlign="baseline">
-			<s:Label text="Очередь {builder.queue.length}"/>
-			<s:Label text="{builder.lastError}" color="#ff0000"/>
-			<s:Spacer width="100%"/>
-			
-			<s:Button id="btStart" icon="assets/play.png" click="{builder.isStarted=true}" enabled="{!builder.isStarted}"
-					  cornerRadius="3" width="30" height="30" baseline="4"/>
-			<s:Button id="btStop" icon="assets/stop.png" click="{builder.isStarted=false}" enabled="{builder.isStarted}"
-					  cornerRadius="3" width="30" height="30" baseline="4"/>
-			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{reloadBuilder()}"
-					  cornerRadius="3" width="30" height="30" baseline="4"/>
-		</s:HGroup>
-		<mx:ProgressBar mode="event" source="{builder}" width="100%" 
-						labelPlacement="left" fontWeight="normal" 
-						label="{builder.progressCaption} %1 из %2"/>
-	</s:VGroup>
-		
-	<s:DataGrid id="dgProcess" width="100%" height="100%"
-				selectionMode="singleRow"  locale="ru_RU" 
-				dataProvider="{builder.queue}" columns="{Order.gridColumns()}"/>
 	
-	<s:Spacer height="10"/>
-	<s:HGroup width="100%" verticalAlign="bottom">
-		<s:Label text="Ошибки"/>
-		<s:Spacer width="100%"/>
-		<s:Button id="btRefreshErr" icon="assets/icon-refresh.gif" click="{reloadErrs()}" 
-				  cornerRadius="4" width="22" height="22" baseline="4"/>
+	<s:HGroup gap="5" width="100%" height="100%">
+		<s:VGroup width="100%" gap="2" height="100%">
+			<s:HGroup width="100%" gap="7" verticalAlign="baseline">
+				<s:Label text="Очередь {builder.queue.length}"/>
+				<s:Label text="{builder.lastError}" color="#ff0000"/>
+				<s:Spacer width="100%"/>
+				
+				<s:Button id="btStart" icon="assets/play.png" click="{builder.isStarted=true}" enabled="{!builder.isStarted}"
+						  cornerRadius="3" width="30" height="30" baseline="4"/>
+				<s:Button id="btStop" icon="assets/stop.png" click="{builder.isStarted=false}" enabled="{builder.isStarted}"
+						  cornerRadius="3" width="30" height="30" baseline="4"/>
+				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{reloadBuilder()}"
+						  cornerRadius="3" width="30" height="30" baseline="4"/>
+			</s:HGroup>
+			<mx:ProgressBar mode="event" source="{builder}" width="100%" 
+							labelPlacement="left" fontWeight="normal" 
+							label="{builder.progressCaption} %1 из %2"/>
+			<s:DataGrid id="dgProcess" width="100%" height="100%"
+						selectionMode="singleRow"  locale="ru_RU" 
+						dataProvider="{builder.queue}" columns="{Order.gridColumns()}"/>
+		</s:VGroup>
+		<s:Scroller width="200" height="100%">
+			<s:VGroup gap="5" paddingTop="53" paddingLeft="3" paddingRight="3" width="180" 
+					  enabled="{dgProcess.selectedItem}">
+				<s:Button id="btForvard" label="В первую очередь" width="100%" click="btForvard_clickHandler(event)"/>
+				<s:Button label="Открыть" width="100%" click="{MenuCommonActions.showOrder(dgProcess.selectedItem)}"/>
+				<s:Button label="Перезагрузить" width="100%" click="{MenuCommonActions.cleanUpOrder(dgProcess.selectedItem)}"/>
+				<s:Button label="Отменить заказ" width="100%" click="{MenuCommonActions.cancelOrders([dgProcess.selectedItem])}"/>
+			</s:VGroup>
+		</s:Scroller>
 	</s:HGroup>
 	
-	<s:DataGrid id="dgErrors" width="100%" height="100%"
-				selectionMode="singleRow"  locale="ru_RU" 
-				dataProvider="{errsAC}" columns="{Order.gridColumns()}"/>
+	<s:Spacer height="10"/>
+	<s:HGroup gap="5" width="100%" height="100%">
+		<s:VGroup width="100%" gap="2" height="100%">
+			<s:HGroup width="100%" verticalAlign="bottom">
+				<s:Label text="Ошибки"/>
+				<s:Spacer width="100%"/>
+				<s:Button id="btRefreshErr" icon="assets/icon-refresh.gif" click="{reloadErrs()}" 
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:DataGrid id="dgErrors" width="100%" height="100%"
+						selectionMode="singleRow"  locale="ru_RU" 
+						dataProvider="{errsAC}" columns="{Order.gridColumns()}"/>
+		</s:VGroup>
+		<s:Scroller width="200" height="100%">
+			<s:VGroup gap="5" paddingTop="27" paddingLeft="3" paddingRight="3" width="180" 
+					  enabled="{dgErrors.selectedItem}">
+				<s:Button label="Открыть" width="100%" click="{MenuCommonActions.showOrder(dgErrors.selectedItem)}"/>
+				<s:Button label="Сбросить блокировку" width="100%" click="{MenuCommonActions.setOrderState(dgErrors.selectedItem,OrderState.PREPROCESS_WAITE)}"/>
+				<s:Button label="Подготовить" width="100%" click="{MenuCommonActions.setOrderState(dgErrors.selectedItem,OrderState.PREPROCESS_WAITE)}"/>
+				<s:Button label="Перезагрузить" width="100%" click="{MenuCommonActions.cleanUpOrder(dgErrors.selectedItem)}"/>
+				<s:Button label="Отменить заказ" width="100%" click="{MenuCommonActions.cancelOrders([dgErrors.selectedItem])}"/>
+			</s:VGroup>
+		</s:Scroller>
+	</s:HGroup>
 	<s:Spacer height="10"/>
 </s:Group>

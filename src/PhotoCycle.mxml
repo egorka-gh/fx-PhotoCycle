@@ -7,10 +7,11 @@
 					   xmlns:config1="com.akmeful.fotokniga.config.*"
 					   xmlns:config2="com.akmeful.fotocalendar.config.*"
 					   xmlns:cfg="com.akmeful.fotakrama.cfg.*"
-					   xmlns:download="com.photodispatcher.provider.fbook.download.*" 
+					   xmlns:download="com.photodispatcher.provider.fbook.download.*"
+					   xmlns:print="com.photodispatcher.print.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="{destroy()}" xmlns:print="com.photodispatcher.print.*">
+					   closing="{destroy()}" >
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;

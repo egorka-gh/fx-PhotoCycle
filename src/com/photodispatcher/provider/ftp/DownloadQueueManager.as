@@ -245,6 +245,7 @@ package com.photodispatcher.provider.ftp{
 			//reset stoped
 			for each(order in stopedOrders){
 				if(order){
+					releaseLock(order.id);
 					resetOrder(order);
 					resetOrderState(order);	
 					queue.unshift(order);

@@ -385,18 +385,19 @@ package com.photodispatcher.provider.preprocess{
 			stopTimer();
 			progressCaption='';
 			if(currOrder){ 
-				currOrder.state=OrderState.PREPROCESS_WAITE;
 				releaseLock();
 				if(currOrder.state < OrderState.PREPROCESS_CAPTURED){
-					currOrder=null;
+					currOrder.state=OrderState.PREPROCESS_WAITE;
 				}else{
 					builder.stop();
 					//unlock
+					currOrder.state=OrderState.PREPROCESS_WAITE;
 					var latch:DbLatch= new DbLatch(true);
 					//latch.addEventListener(Event.COMPLETE,onOrderSave);
 					latch.addLatch(orderService.setState(currOrder));
 					latch.start();
 				}
+				currOrder=null;
 			}
 			//reset states
 			for each (var order:Order in queue.source){

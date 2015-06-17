@@ -30,8 +30,6 @@ package com.photodispatcher.model.mysql
 		private var lastItem:Object;
 		private var lastData:Array;
 		
-		
-		
 		protected var latches:Array;
 		
 		public function DbLatch(silent:Boolean=false){

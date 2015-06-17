@@ -73,6 +73,7 @@ package com.photodispatcher.service{
 			lastRun=currDate;
 			dispatchEvent(new Event('schedule'));  
 			trace('CleanService clean started');
+			OrderService.clearLocks();
 			cleanFileSystem();
 		}
 		
