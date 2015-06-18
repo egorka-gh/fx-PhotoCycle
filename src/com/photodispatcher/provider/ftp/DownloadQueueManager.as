@@ -371,7 +371,7 @@ package com.photodispatcher.provider.ftp{
 			var o:Order=element as Order;
 			//return o!=null && o.state==syncState;
 			//return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state<0);
-			return o!=null && source && o.source==source.id && o.state==OrderState.WAITE_FTP;
+			return o!=null && source && o.source==source.id && o.state==OrderState.FTP_WAITE;
 			//return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state==OrderState.FTP_CAPTURED);
 		}
 		private function arrayToMap(arr:Array):Object{
@@ -419,7 +419,7 @@ package com.photodispatcher.provider.ftp{
 					if(ord.state>0){
 						//if(ord.state==OrderState.FTP_WEB_CHECK) ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
 						//if(ord.state==OrderState.FTP_WEB_OK && ord.id!=listOrderId) ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
-						if(ord.state==OrderState.WAITE_FTP || ord.state==OrderState.FTP_FORWARD){
+						if(ord.state==OrderState.FTP_WAITE || ord.state==OrderState.FTP_FORWARD){
 							if(!newOrder){
 								newOrder=ord;
 							}else if(!newOrder.ftpForwarded && ord.ftpForwarded){
@@ -470,6 +470,7 @@ package com.photodispatcher.provider.ftp{
 			}else{
 				lastError='Заказ '+webApplicant.id+' обрабатывается на другой станции';
 				trace('QueueManager.getLock fault '+webApplicant.id);
+				StateLog.log(OrderState.ERR_LOCK_FAULT, webApplicant.id,'','soft lock');
 				webApplicant.state= OrderState.ERR_LOCK_FAULT;
 				webApplicant=null;
 				checkQueue();
@@ -563,7 +564,7 @@ package com.photodispatcher.provider.ftp{
 				var latch:DbLatch= new DbLatch(true);
 				var orderService:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				latch.addEventListener(Event.COMPLETE,oncaptureState);
-				latch.addLatch(orderService.captureState(webApplicant),webApplicant.id);
+				latch.addLatch(orderService.captureState(webApplicant.id, OrderState.FTP_WAITE, OrderState.FTP_CAPTURED),webApplicant.id);
 				latch.start();
 				/*
 				//remove from queue
@@ -600,6 +601,7 @@ package com.photodispatcher.provider.ftp{
 			}else{
 				trace('QueueManager.captureState: db error '+latch.lastError);
 				lastError='Заказ: '+startOrder.id+' блокирован другим процессом '+latch.lastError;
+				StateLog.log(OrderState.ERR_LOCK_FAULT, startOrder.id,'','hard lock');
 				startOrder.state= OrderState.ERR_LOCK_FAULT;
 				checkQueue();
 			}
@@ -609,7 +611,7 @@ package com.photodispatcher.provider.ftp{
 			if(!orderId) return;
 			var o:Order= new Order();
 			o.id=orderId;
-			o.state=OrderState.WAITE_FTP;
+			o.state=OrderState.FTP_WAITE;
 			var latch:DbLatch= new DbLatch(true);
 			var orderService:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			//latch.addEventListener(Event.COMPLETE,oncaptureState);
@@ -731,7 +733,7 @@ package com.photodispatcher.provider.ftp{
 
 		protected function resetOrderState(order:Order):void{
 			if(!order) return;
-			order.state=order.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
+			order.state=order.ftpForwarded?OrderState.FTP_FORWARD:OrderState.FTP_WAITE;
 		}
 
 		protected function getOrderById(orderId:String, pop:Boolean=false):Order{

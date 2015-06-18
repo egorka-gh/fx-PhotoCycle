@@ -66,7 +66,7 @@
 				
 				order.id=order.source.toString()+'_'+order.src_id;
 				order.ftp_folder=order.src_id;
-				order.state=OrderState.WAITE_FTP;
+				order.state=OrderState.FTP_WAITE;
 				
 				//save
 				/*

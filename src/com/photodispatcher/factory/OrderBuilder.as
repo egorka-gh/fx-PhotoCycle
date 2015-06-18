@@ -42,7 +42,7 @@ package com.photodispatcher.factory{
 					if(forSync){
 						order=new OrderTemp();
 						order.source=source.id;
-						order.state=OrderState.WAITE_FTP;
+						order.state=OrderState.FTP_WAITE;
 						order.state_date=syncDate;
 					}else{
 						order=new Order();

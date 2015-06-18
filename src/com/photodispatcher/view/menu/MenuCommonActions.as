@@ -48,7 +48,7 @@ package com.photodispatcher.view.menu{
 				latch.removeEventListener(Event.COMPLETE,onOrderClean);
 				if(latch.complite){
 					var order:Order=latch.callContext as Order;
-					if(order) order.state=OrderState.WAITE_FTP;
+					if(order) order.state=OrderState.FTP_WAITE;
 				}
 			}
 		}

@@ -34,10 +34,11 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_APP_INIT:int=-319;//
 		public static const ERR_PRODUCTION_NOT_SET:int=-320;
 		public static const ERR_LOCK_FAULT:int=-321;
+		public static const ERR_WRONG_STATE:int=-322;
 		
 		//flow state
 		//public static const FTP_RELOAD:int=95;
-		public static const WAITE_FTP:int=100;
+		public static const FTP_WAITE:int=100;
 		public static const FTP_FORWARD:int=101;
 		public static const FTP_WEB_CHECK:int=103;
 		public static const FTP_WEB_OK:int=104;

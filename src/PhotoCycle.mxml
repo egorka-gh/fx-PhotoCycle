@@ -47,7 +47,10 @@
 			
 			private function destroy():void{
 				IMRuner.stopAll();
-				if(vMonitor && vMonitor.chatServer) vMonitor.chatServer.close();
+				if(vMonitor){
+					vMonitor.stop();
+					if(vMonitor.chatServer) vMonitor.chatServer.close();
+				}
 			}
 
 			private function initApp():void{
@@ -184,6 +187,7 @@
 				*/
 				Context.setAttribute("pdfPageLimit", pdfPageLimit);
 				Context.setAttribute('reversPrint', so.data.reversPrint);
+				Context.setAttribute('manualStart', so.data.manualStart);
 
 				//init app
 				startPopup= new ModalPopUp();
@@ -233,7 +237,10 @@
 				printPulseManager.init();
 				
 				currentState='monitor';
-				if(vMonitor) vMonitor.init();
+				if(vMonitor){
+					vMonitor.init();
+					vMonitor.start();
+				}
 				
 				if(!cleaner){
 					cleaner=new CleanService();

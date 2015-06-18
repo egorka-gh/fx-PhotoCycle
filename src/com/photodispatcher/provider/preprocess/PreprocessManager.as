@@ -40,6 +40,8 @@ package com.photodispatcher.provider.preprocess{
 		[Bindable]
 		public var lastError:String='';
 		[Bindable]
+		public var lastLoadTime:Date;
+		[Bindable]
 		public var progressCaption:String='';
 		
 		public var builder:OrderBuilderLocal;
@@ -76,6 +78,7 @@ package com.photodispatcher.provider.preprocess{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch) latch.removeEventListener(Event.COMPLETE,onloadFromDB);
 			if(autoLoad) startTimer();
+			lastLoadTime= new Date();
 			if(!latch || !latch.complite) return;
 			var toAdd:Array=latch.lastDataArr;
 			if(!toAdd || toAdd.length==0) return;
@@ -156,6 +159,7 @@ package com.photodispatcher.provider.preprocess{
 				checkWebState();
 			}else{
 				lastError='Заказ '+currOrder.id+' обрабатывается на другой станции';
+				StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','soft lock');
 				currOrder.state= OrderState.ERR_LOCK_FAULT;
 				currOrder=null;
 				startNext();
@@ -284,7 +288,7 @@ package com.photodispatcher.provider.preprocess{
 			currOrder.state=OrderState.PREPROCESS_CAPTURED;
 			latch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,oncaptureState);
-			latch.addLatch(orderService.captureState(currOrder));
+			latch.addLatch(orderService.captureState(currOrder.id, OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED));
 			latch.start();
 		}
 		private function oncaptureState(evt:Event):void{
@@ -301,6 +305,7 @@ package com.photodispatcher.provider.preprocess{
 				}else{
 					trace('PreprocessManager.captureState: db error '+latch.lastError);
 					lastError='Заказ: '+currOrder.id+' блокирован другим процессом '+latch.lastError;
+					StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','hard lock');
 					currOrder.state= OrderState.ERR_LOCK_FAULT;
 					currOrder=null;
 					startNext();
@@ -319,18 +324,18 @@ package com.photodispatcher.provider.preprocess{
 
 		private var timer:Timer;
 
-		private var _autoLoadInterval:int=10*60*1000;
+		private var _autoLoadInterval:int=10; //min
 		public function get autoLoadInterval():int{
 			return _autoLoadInterval;
 		}
 		public function set autoLoadInterval(value:int):void{
 			if(value<=0){
 				autoLoad=false;
-				_autoLoadInterval=10*60*1000;
+				_autoLoadInterval=10;
 			}else{
 				_autoLoadInterval = value;
 			}
-			if(timer) timer.delay=_autoLoadInterval;
+			if(timer) timer.delay=_autoLoadInterval*60*1000;
 		}
 
 		
@@ -346,7 +351,7 @@ package com.photodispatcher.provider.preprocess{
 		
 		private function startTimer():void{
 			if(!timer){
-				timer= new Timer(autoLoadInterval);
+				timer= new Timer(autoLoadInterval*60*1000);
 				timer.addEventListener(TimerEvent.TIMER, onTimer);
 			}
 			if(isStarted) timer.start();
@@ -384,8 +389,8 @@ package com.photodispatcher.provider.preprocess{
 			_isStarted=false;
 			stopTimer();
 			progressCaption='';
+			releaseLock();
 			if(currOrder){ 
-				releaseLock();
 				if(currOrder.state < OrderState.PREPROCESS_CAPTURED){
 					currOrder.state=OrderState.PREPROCESS_WAITE;
 				}else{

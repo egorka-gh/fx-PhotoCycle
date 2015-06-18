@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
-		 xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="400" minHeight="300">
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}"
+		 minWidth="400" minHeight="300">
 	
 	<fx:Script>
 		<![CDATA[
@@ -30,6 +32,10 @@
 				if(_builder){
 					_builder.addEventListener(FlexEvent.DATA_CHANGE, onBuilderRefresh);
 				}
+			}
+			
+			private function init():void{
+				reloadErrs();
 			}
 			
 			private function onBuilderRefresh(evt:FlexEvent):void{
@@ -73,7 +79,7 @@
 	</fx:Script>
 	
 	<fx:Declarations>
-		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:DateTimeFormatter id="fmtDate" dateTimePattern="HH:mm"/>
 	</fx:Declarations>
 	
 	<s:layout>
@@ -83,7 +89,7 @@
 	<s:HGroup gap="5" width="100%" height="100%">
 		<s:VGroup width="100%" gap="2" height="100%">
 			<s:HGroup width="100%" gap="7" verticalAlign="baseline">
-				<s:Label text="Очередь {builder.queue.length}"/>
+				<s:Label text="Очередь {builder.queue.length} ({fmtDate.format(builder.lastLoadTime)})"/>
 				<s:Label text="{builder.lastError}" color="#ff0000"/>
 				<s:Spacer width="100%"/>
 				
@@ -94,9 +100,12 @@
 				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{reloadBuilder()}"
 						  cornerRadius="3" width="30" height="30" baseline="4"/>
 			</s:HGroup>
-			<mx:ProgressBar mode="event" source="{builder}" width="100%" 
-							labelPlacement="left" fontWeight="normal" 
-							label="{builder.progressCaption} %1 из %2"/>
+			<s:HGroup width="100%" gap="7" verticalAlign="baseline">
+				<s:Label text="{builder.progressCaption}" width="250" maxDisplayedLines="1"/>
+				<mx:ProgressBar mode="event" source="{builder}" width="100%" 
+								labelPlacement="left" fontWeight="normal" 
+								label="%1 из %2"/>
+			</s:HGroup>
 			<s:DataGrid id="dgProcess" width="100%" height="100%"
 						selectionMode="singleRow"  locale="ru_RU" 
 						dataProvider="{builder.queue}" columns="{Order.gridColumns()}"/>
@@ -116,7 +125,7 @@
 	<s:HGroup gap="5" width="100%" height="100%">
 		<s:VGroup width="100%" gap="2" height="100%">
 			<s:HGroup width="100%" verticalAlign="bottom">
-				<s:Label text="Ошибки"/>
+				<s:Label text="Ошибки {errsAC.length}"/>
 				<s:Spacer width="100%"/>
 				<s:Button id="btRefreshErr" icon="assets/icon-refresh.gif" click="{reloadErrs()}" 
 						  cornerRadius="4" width="22" height="22" baseline="4"/>

@@ -56,6 +56,9 @@
 			[Bindable]
 			private var reversPrint:Boolean=false;
 			[Bindable]
+			private var manualStart:Boolean=false;
+			
+			[Bindable]
 			private var contentFiltersAC:ArrayCollection;
 			//[Bindable]
 			//private var currCFilter:ContentFilter;
@@ -99,6 +102,7 @@
 				//if(so.data.pdfJpgQuality) pdfJpgQuality=so.data.pdfJpgQuality;
 				//if(!pdfJpgQuality) pdfJpgQuality=100;
 				reversPrint=so.data.reversPrint;
+				manualStart=so.data.manualStart;
 				//contentFiltersAC=new ArrayCollection(ContentFilter.filters);
 				//currCFilter=Context.getAttribute('contentFilter') as ContentFilter;
 				syncInterval=so.data.syncInterval;
@@ -449,6 +453,14 @@
 				cleaner.cleanFileSystem();
 			}
 			
+			protected function tg_manualStart_changeHandler(event:Event):void{
+				manualStart=tg_manualStart.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.manualStart = manualStart;
+				so.flush();  
+				Context.setAttribute('manualStart', manualStart);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -519,6 +531,9 @@
 							 change="tiSyncInterval_changeHandler(event)"
 							 width="50"/>
 			</s:FormItem> 
+			<s:FormItem label="Ручной запуск сервисов">
+				<s:CheckBox id="tg_manualStart" selected="{manualStart}" change="tg_manualStart_changeHandler(event)"/>
+			</s:FormItem>
 
 			<!--<s:FormItem label="Принудительный старт закачки после">
 				<s:HGroup gap="3" verticalAlign="baseline">

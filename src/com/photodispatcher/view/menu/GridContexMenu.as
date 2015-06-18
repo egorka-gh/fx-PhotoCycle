@@ -190,7 +190,7 @@ package com.photodispatcher.view.menu{
 			var order:Order; 
 			for each(var o:Object in grid.selectedItems){
 				order=o as Order;
-				if(order && order.state==OrderState.WAITE_FTP){
+				if(order && order.state==OrderState.FTP_WAITE){
 					order.state=OrderState.FTP_FORWARD;
 					order.ftpForwarded=true;
 				}
@@ -248,7 +248,7 @@ package com.photodispatcher.view.menu{
 				order=o as Order;
 				if(order && order.exceedErrLimit){
 					order.resetErrCounter();
-					if(order.state<0 && order.state!=OrderState.ERR_WRITE_LOCK) order.state=OrderState.WAITE_FTP;
+					if(order.state<0 && order.state!=OrderState.ERR_WRITE_LOCK) order.state=OrderState.FTP_WAITE;
 				}
 			}
 		}

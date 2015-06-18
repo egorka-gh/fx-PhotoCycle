@@ -203,7 +203,7 @@ package com.photodispatcher.provider.fbook{
 			for each (ord in queue){
 				if(ord){
 					if(ord.state>0){
-						if(ord.state==OrderState.WAITE_FTP || ord.state==OrderState.FTP_FORWARD){
+						if(ord.state==OrderState.FTP_WAITE || ord.state==OrderState.FTP_FORWARD){
 							if(!newOrder){
 								newOrder=ord;
 							}else if(!newOrder.ftpForwarded && ord.ftpForwarded){
@@ -212,7 +212,7 @@ package com.photodispatcher.provider.fbook{
 						}
 					}else if(ord.state!=OrderState.ERR_WRITE_LOCK){
 						//reset error
-						ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
+						ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.FTP_WAITE;
 					}
 				}
 			}

@@ -15,6 +15,7 @@
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.provider.ftp.DownloadManager;
 			import com.photodispatcher.view.menu.GridContexMenu;
+			import com.photodispatcher.view.menu.MenuCommonActions;
 			
 			import mx.collections.ArrayCollection;
 			import mx.events.FlexEvent;
@@ -43,6 +44,7 @@
 				queueAC.filterFunction=filterOrdersList;
 				
 				if(focusManager) focusManager.setFocus(focusHolder);
+				onLoaderRefresh(null);
 			}
 
 			private var _loader:DownloadManager;
@@ -61,14 +63,22 @@
 			}
 			
 			private function onLoaderRefresh(evt:FlexEvent):void{
-				queueAC.source=loader.queue;
+				if(dgOrders) dgOrders.clearSelection();
+				if(loader) queueAC.source=loader.queue;
 				queueAC.refresh();
-				//fill runtime errs (vs err limit)
-				var errs:Array=[];
-				for each(var o:Order in  loader.queue){
-					if(o && o.exceedErrLimit) errs.push(o);
+				reloadErrs();
+			}
+			
+			private function reloadErrs():void{
+				if(dgErrors) dgErrors.clearSelection();
+				if(loader && loader.queue){
+					//fill runtime errs (vs err limit)
+					var errs:Array=[];
+					for each(var o:Order in  loader.queue){
+						if(o && o.exceedErrLimit) errs.push(o);
+					}
+					errsAC.source=errs;
 				}
-				errsAC.source=errs;
 				
 				//load permanent errs
 				var latch:DbLatch=new DbLatch();
@@ -104,7 +114,7 @@
 				a.unshift(s);
 				sourcesFList.source=a;
 				//state filter
-				a=OrderState.getStateArray(OrderState.WAITE_FTP,OrderState.FTP_COMPLETE);
+				a=OrderState.getStateArray(OrderState.FTP_WAITE,OrderState.FTP_COMPLETE);
 				var os:OrderState=new OrderState(); os.id=0; os.name='-';
 				a.unshift(os);
 				os=new OrderState(); os.id=-1; os.name='Ошибки';
@@ -155,37 +165,19 @@
 				if(evt.commit) reloadBuilder();
 			}
 
-			
-			/*
-			protected function dgErrLimit_creationCompleteHandler(event:FlexEvent):void{
-				ordersErrLimitGridMenu= new GridContexMenu(dgErrLimit,[GridContexMenu.SHOW_ORDER,GridContexMenu.RESET_ERRLIMIT]);
-			}
-
-			[Bindable]
-			private var errsAC:ArrayCollection;
-			private function reloadErrs():void{
-				var latch:DbLatch=new DbLatch();
-				var svc:OrderService =Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				latch.addEventListener(Event.COMPLETE,onreloadErrs);
-				latch.addLatch(svc.loadByState(OrderState.PREPROCESS_INCOMPLETE, OrderState.PREPROCESS_INCOMPLETE+1));
-				latch.start();
-			}
-			private function onreloadErrs(evt:Event):void{
-				var latch:DbLatch= evt.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onreloadErrs);
-					if(latch.complite){
-						errsAC=latch.lastDataAC;
-					}
+			protected function button1_clickHandler(event:MouseEvent):void{
+				var order:Order=dgErrors.selectedItem as Order;
+				if(order && order.exceedErrLimit){
+					order.resetErrCounter();
+					if(order.state<0 && order.state!=OrderState.ERR_WRITE_LOCK) order.state=OrderState.FTP_WAITE;
 				}
 			}
-
-			*/
+			
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
-		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:DateTimeFormatter id="fmtDate" dateTimePattern="HH:mm"/>
 	</fx:Declarations>
 	
 	<s:layout>
@@ -193,7 +185,7 @@
 	</s:layout>
 
 	<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
-		<s:Label text="Очередь {queueAC.length}" fontWeight="bold"/>
+		<s:Label text="Очередь {queueAC.length} ({fmtDate.format(loader.lastLoadTime)})" fontWeight="bold"/>
 		<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
 		<s:Spacer width="5"/>
 
@@ -222,15 +214,30 @@
 	<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)"/>
 	
 	<s:Spacer height="10"/>
-	<s:HGroup width="100%" verticalAlign="bottom">
-		<s:Label text="Ошибки"/>
-		<s:Spacer width="100%"/>
-		<!--<s:Button id="btRefreshErr" icon="assets/icon-refresh.gif" click="{reloadErrs()}" 
-				  cornerRadius="4" width="22" height="22" baseline="4"/>-->
+	<s:HGroup gap="5" width="100%" height="100%">
+		<s:VGroup width="100%" gap="2" height="100%">
+			<s:HGroup width="100%" verticalAlign="bottom">
+				<s:Label text="Ошибки {errsAC.length}"/>
+				<s:Spacer width="100%"/>
+				<s:Button id="btRefreshErr" icon="assets/icon-refresh.gif" click="{reloadErrs()}" 
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:DataGrid id="dgErrors" width="100%" height="100%"
+						selectionMode="singleRow"  locale="ru_RU" 
+						dataProvider="{errsAC}" columns="{Order.gridColumns()}"/>
+		</s:VGroup>
+		<s:Scroller width="200" height="100%">
+			<s:VGroup gap="5" paddingTop="27" paddingLeft="3" paddingRight="3" width="180" 
+					  enabled="{dgErrors.selectedItem}">
+				<s:Button label="Открыть" width="100%" click="{MenuCommonActions.showOrder(dgErrors.selectedItem)}"/>
+				<s:Button id="btResetErrLimit" label="Сбросить ошибку" width="100%" click="button1_clickHandler(event)"/>
+				<s:Button label="Сбросить блокировку" width="100%" click="{MenuCommonActions.setOrderState(dgErrors.selectedItem,OrderState.FTP_WAITE)}"/>
+				<!--<s:Button label="Перезагрузить" width="100%" click="{MenuCommonActions.cleanUpOrder(dgErrors.selectedItem)}"/>-->
+				<s:Button label="Отменить заказ" width="100%" click="{MenuCommonActions.cancelOrders([dgErrors.selectedItem])}"/>
+			</s:VGroup>
+		</s:Scroller>
 	</s:HGroup>
 	
-	<s:DataGrid id="dgErrors" width="100%" height="100%"
-				selectionMode="singleRow"  locale="ru_RU" 
-				dataProvider="{errsAC}" columns="{Order.gridColumns()}"/>
 	<s:Spacer height="10"/>
+	
 </s:Group>

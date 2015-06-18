@@ -28,7 +28,9 @@ package com.photodispatcher.provider.ftp{
 
 		[Bindable]
 		public  var queue:Array;
-		
+		[Bindable]
+		public var lastLoadTime:Date;
+
 		private var writeOrders:Array=[];
 
 		private var _servicesList:ArrayCollection=new ArrayCollection();
@@ -86,18 +88,18 @@ package com.photodispatcher.provider.ftp{
 		
 		private var timer:Timer;
 		
-		private var _autoLoadInterval:int=10*60*1000;
+		private var _autoLoadInterval:int=10; //min
 		public function get autoLoadInterval():int{
 			return _autoLoadInterval;
 		}
 		public function set autoLoadInterval(value:int):void{
 			if(value<=0){
 				autoLoad=false;
-				_autoLoadInterval=10*60*1000;
+				_autoLoadInterval=10;
 			}else{
 				_autoLoadInterval = value;
 			}
-			if(timer) timer.delay=_autoLoadInterval;
+			if(timer) timer.delay=_autoLoadInterval*60*1000;
 		}
 		
 		
@@ -113,7 +115,7 @@ package com.photodispatcher.provider.ftp{
 		
 		private function startTimer():void{
 			if(!timer){
-				timer= new Timer(autoLoadInterval);
+				timer= new Timer(autoLoadInterval*60*1000);
 				timer.addEventListener(TimerEvent.TIMER, onTimer);
 			}
 			if(isStarted) timer.start();
@@ -148,6 +150,7 @@ package com.photodispatcher.provider.ftp{
 			for each(f in services){
 				if(f) f.start();
 			}
+			reLoad();
 		}
 		
 		private function stop():void{
@@ -168,13 +171,14 @@ package com.photodispatcher.provider.ftp{
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onloadFromDB);
-			latch.addLatch(svc.loadByState(OrderState.WAITE_FTP, OrderState.FTP_COMPLETE+1));
+			latch.addLatch(svc.loadByState(OrderState.FTP_WAITE, OrderState.FTP_COMPLETE+1));
 			latch.start();
 		}
 
 		private function onloadFromDB(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch) latch.removeEventListener(Event.COMPLETE,onloadFromDB);
+			lastLoadTime=new Date();
 			if(!latch || !latch.complite){
 				if(autoLoad) startTimer();
 				return;
@@ -185,6 +189,7 @@ package com.photodispatcher.provider.ftp{
 				return;
 			}
 			resync(queue);
+			startTimer();
 			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
 		}
 

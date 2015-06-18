@@ -56,7 +56,7 @@
 			private var sources:ArrayCollection;
 
 			[Bindable]
-			public var lockLoad:Boolean=false;
+			public var lockSync:Boolean=false;
 
 			private var syncService:SyncService;
 			
@@ -86,46 +86,9 @@
 				
 				syncService= new SyncService();
 				syncService.sources=sources.source;
-
-				//ordersErrLimitList.filterFunction=filterOrdersErrLimitList;
-				
-				//TODO refactor, incorrect implementation
-				//startForceStarTimer();
-				
-				if(lockLoad && tbView){
-					tbView.selectedIndex=2;
-					detectState();
-				}
 				
 				if(focusManager) focusManager.setFocus(focusHolder);
 			}
-
-			/*
-			private function startForceStarTimer():void{
-				forceStarHour=Context.getAttribute('forceStarHour');
-				forceStarMinute=Context.getAttribute('forceStarMinute');
-				if(forceStarHour || forceStarMinute){
-					if(forceStarTimer){
-						if(forceStarTimer.running) forceStarTimer.stop();
-						forceStarTimer.removeEventListener(TimerEvent.TIMER,onForceStarTimer);
-					}
-					forceStarTimer= new Timer(FORCE_START_INTERVAL*60*1000,0);
-					forceStarTimer.addEventListener(TimerEvent.TIMER,onForceStarTimer);
-					forceStarTimer.start();
-				}
-			}
-
-			private function onForceStarTimer(e:TimerEvent):void{
-				var dt:Date=new Date();
-				if(dt.hours>=forceStarHour && dt.minutes>= forceStarMinute){
-					if(forceStarTimer.running) forceStarTimer.stop();
-					forceStarTimer.removeEventListener(TimerEvent.TIMER,onForceStarTimer);
-					forceStarTimer=null;
-					start();
-					ftpManager.start(true);
-				}
-			}
-			*/
 
 			private function onKey(e:KeyboardEvent):void{
 				if(e.ctrlKey && e.keyCode==70){
@@ -135,7 +98,7 @@
 				}
 			}
 			
-			public function start():void{
+			private function startSync():void{
 				productionName=Context.getProductionName();
 				if(isRuning) return;
 				isRuning=true;
@@ -162,17 +125,44 @@
 					timer.addEventListener(TimerEvent.TIMER,onTimer);
 				}
 				timer.start();
+				
+				if(startServices){
+					startServices=false;
+					preprocessManager.isStarted=true;
+					downloadManager.isStarted=true;
+				}
 			}
-			
-			
-			public function stop(force:Boolean=false):void{
+
+			private function stopSync():void{
 				if(timer){
 					timer.stop();
 					timer.removeEventListener(TimerEvent.TIMER,onTimer);
 					timer=null;
 				}
 				isRuning=false;
-				//startForceStarTimer();
+			}
+
+			
+			private var startServices:Boolean;
+			public function start():void{
+				if(!Context.getAttribute('manualStart')){
+					if(lockSync){
+						//helper mode, sync disabled
+						preprocessManager.isStarted=true;
+						downloadManager.isStarted=true;
+					}else{
+						//main cycle, start services after first sync
+						startSync();
+						startServices=true;
+					}
+				}else{
+					downloadManager.reLoad();
+					preprocessManager.reLoad();
+				}
+			}
+			
+			public function stop():void{
+				stopSync();
 				preprocessManager.isStarted=false;
 				downloadManager.isStarted=false;
 			}
@@ -336,12 +326,12 @@
 
 	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
 	<s:Group top="30" left="10" right="10" bottom="10">
-		<s:HGroup id="gState" includeIn="stateView" gap="10" top="0" left="0" right="0" bottom="0" enabled="{!lockLoad}">
-			<s:VGroup gap="10" height="100%">
+		<s:HGroup id="gState" includeIn="stateView" gap="10" top="0" left="0" right="0" bottom="0">
+			<s:VGroup gap="10" height="100%"  enabled="{!lockSync}">
 				<s:Label text="Web синхронизация" fontWeight="bold"/>
 				<s:HGroup gap="10">
 					<s:Button id="btStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить синхронизацию" 
-							  click="{start()}" enabled="{!isRuning}"/>
+							  click="{startSync()}" enabled="{!isRuning}"/>
 					<s:Button id="btStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить синхронизацию"
 							  click="{stop()}" enabled="{isRuning}"/>
 				</s:HGroup>
@@ -360,7 +350,7 @@
 					<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить загрузку" 
 							  enabled="{!downloadManager.isStarted}" click="{downloadManager.isStarted=true}"/>
 					<s:Button id="btFtpStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить загрузку"
-							  enabled="{downloadManager.isStarted}" click="{downloadManager.isStarted=false}"/>
+							  click="{downloadManager.isStarted=false}"/>
 				</s:HGroup>
 				<s:Scroller width="100%" height="100%">
 					<s:DataGroup width="100%" height="100%" dataProvider="{downloadManager.servicesList}" 
@@ -382,6 +372,9 @@
 					<s:Button id="btBuilderStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить подготовку"
 							  enabled="{preprocessManager.isStarted}" click="{preprocessManager.isStarted=false}"/>
 				</s:HGroup>
+				
+				<s:Spacer height="15"/>
+				<s:Label text="Печать     Очередь: " fontWeight="bold"/>
 
 			</s:VGroup>
 			
@@ -424,27 +417,6 @@
 			</s:VGroup>-->
 		</s:HGroup>
 		
-		<!--<s:VGroup id="gGrid" includeIn="ordersPending" gap="5" top="0" left="0" right="0" bottom="0">
-			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
-				<s:Label text="Фильтрация" fontWeight="bold"/>
-				<s:Spacer width="5"/>
-				<s:Label text="Источник"/>
-				<s:DropDownList id="ddSourceFilter" dataProvider="{sourcesFList}" labelField="name" change="{applyOrdersFilter()}"/>
-				<s:Spacer width="5"/>
-				<s:Label text="Статус"/>
-				<s:DropDownList id="ddStateFilter" dataProvider="{statesFList}" labelField="name" width="150" change="{applyOrdersFilter()}"/>
-				<s:Spacer width="5"/>
-				<s:Label text="ID"/>
-				<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>
-				<s:Spacer width="100%"/>
-				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{fillOrdersPendingList()}"
-						  cornerRadius="4" width="22" height="22" baseline="4"/>
-			</s:HGroup>
-			<s:DataGrid id="dgOrders" selectionMode="multipleRows"
-						width="100%" height="100%" creationComplete="dgOrders_creationCompleteHandler(event)"
-						dataProvider="{ordersPendingList}" locale="ru_RU" columns="{Order.gridColumns()}"/>
-			<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)"/>
-		</s:VGroup>-->
 		<view:MonitorLoad id="monitorLoad" top="0" left="0" right="0" bottom="0" includeIn="ordersPending" loader="{downloadManager}"/>
 		<view:MonitorBuild id="monitorBuild" top="0" left="0" right="0" bottom="0" includeIn="ordersBuild" builder="{preprocessManager}"/>
 		<view:PrintDistribute id="printDistribute" top="0" left="0" right="0" bottom="0" includeIn="printDeploy"/>

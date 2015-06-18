@@ -210,7 +210,7 @@ package com.photodispatcher.provider.ftp{
 		protected function reSyncFilter(element:*, index:int, arr:Array):Boolean {
 			var o:Order=element as Order;
 			//return o!=null && o.state==syncState;
-			return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state==OrderState.FTP_CAPTURED);
+			return o!=null && source && o.source==source.id && (o.state==OrderState.FTP_WAITE || o.state==OrderState.FTP_CAPTURED);
 		}
 		/**
 		 * 
