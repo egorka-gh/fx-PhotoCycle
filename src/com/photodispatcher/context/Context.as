@@ -40,6 +40,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.TechService;
 	import com.photodispatcher.model.mysql.services.XReportService;
 	import com.photodispatcher.util.ArrayUtil;
+	import com.photodispatcher.util.NetUtil;
 	
 	import flash.events.Event;
 	import flash.net.SharedObject;
@@ -48,6 +49,7 @@ package com.photodispatcher.context{
 	import mx.collections.ArrayCollection;
 	import mx.collections.IList;
 	import mx.rpc.AsyncToken;
+	import mx.utils.UIDUtil;
 	
 	import org.granite.meta;
 	import org.granite.tide.Tide;
@@ -371,45 +373,14 @@ package com.photodispatcher.context{
 			return latch;
 		}
 
-		/*
-		public static function fillFromConfig():void{
-			var appConfDAO:AppConfigDAO=new AppConfigDAO();
-			var appConf:AppConfig=appConfDAO.getItem();
-			if(appConf){
-				//Context.setAttribute('workFolder',appConf.wrk_path);//backward compatibility, use local SharedObject .data.workFolder
-				
-				Context.setAttribute('syncInterval',appConf.monitor_interval);
-				//content filter
-				//load content filters
-				var cfilters:Array=ContentFilter.filters;
-				//current content filter
-				var currCFilter:ContentFilter;
-				if(cfilters) currCFilter=ArrayUtil.searchItem('id',appConf.content_filter,cfilters) as ContentFilter;
-				if(!currCFilter){
-					currCFilter= new ContentFilter();
-					currCFilter.is_alias_filter=false;
-					currCFilter.is_photo_allow=true;
-					currCFilter.is_pro_allow=true;
-					currCFilter.is_retail_allow=true;
-				}
-				Context.setAttribute('contentFilter',currCFilter);
-			}else{
-				//set to defaults
-				
-				Context.setAttribute('syncInterval',10);
 
-			}
+		private static var _appID:String;
+		public static function get appID():String{
+			if(!_appID) _appID=NetUtil.getIP();
+			if(!_appID) _appID=UIDUtil.createUID();
+			return _appID;
 		}
-		*/
 
-		public static var appID:String;
-		
-		public static function setAppId(resp:HelloResponce):void{
-			if(!resp) return;
-			appID=resp.hostIP;
-			setAttribute('hostIP',resp.hostIP);
-			setAttribute('hostName',resp.hostName);
-		}
 		
 		public static function setAttribute(name:String, value:*):void{
 			instance[name] = value;	

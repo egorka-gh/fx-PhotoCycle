@@ -99,7 +99,6 @@
 			private function onPingServer(event:TideResultEvent):void {
 				startPopup.close();
 				startPopup=null;
-				Context.setAppId(event.result.result as HelloResponce);
 				fillContext();
 			}
 			private function onPingServerFault(event:TideFaultEvent):void {

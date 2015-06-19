@@ -80,8 +80,6 @@
 				//server - ok
 				_connected=true;
 				
-				Context.setAppId(event.result as HelloResponce);
-				
 				if(!isOpen){
 					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE,false,false,true));
 				}else{

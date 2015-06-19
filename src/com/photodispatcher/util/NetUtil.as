@@ -11,5 +11,24 @@ package com.photodispatcher.util{
 			if(!addresses || addresses.length==0) return null;
 			return addresses[0].address;
 		}
+		
+		/*
+		public static function getClientIPAddress (version:String):String {
+			var ni:NetworkInfo = NetworkInfo.networkInfo;
+			var interfaceVector:Vector.<NetworkInterface> = ni.findInterfaces();
+			var currentNetwork:NetworkInterface;
+			
+			for each (var networkInt:NetworkInterface in interfaceVector) {
+				if (networkInt.active) {
+					for each (var address:InterfaceAddress in networkInt.addresses) {
+						if (address.ipVersion == version) {
+							return address.address;
+						}
+					}
+				}
+			}
+			return "";
+		}
+		*/
 	}
 }

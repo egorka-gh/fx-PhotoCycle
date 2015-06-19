@@ -35,6 +35,7 @@
 			import com.photodispatcher.provider.ftp.DownloadManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
 			import com.photodispatcher.service.SyncService;
+			import com.photodispatcher.util.NetUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
