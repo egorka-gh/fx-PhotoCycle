@@ -32,8 +32,11 @@ package com.photodispatcher.provider.fbook.download{
 	[Event(name="loadFault", type="com.photodispatcher.event.ImageProviderEvent")]
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	public class FBookDownloadManager extends EventDispatcher{
-		//TODO implement cache mode ?
-		public static const CACHE_CLIPART:Boolean=false;
+
+		public static const CACHE_FOLDER:String='fbCache';
+		
+		public static var cacheClipart:Boolean=false;
+		protected var cacheFolder:File;
 
 		protected var source:Source;
 		protected var _isStarted:Boolean=false;
@@ -65,6 +68,31 @@ package com.photodispatcher.provider.fbook.download{
 			return _isStarted;
 		}
 
+		public function clearCache():Boolean{
+			if(!source) return true;
+			var path:String=source.getWrkFolder();
+			if(!path) return true;
+			
+			try{
+				var folder:File=new File(path);
+				if(!folder.exists || !folder.isDirectory) return true;
+				folder=folder.resolvePath(CACHE_FOLDER);
+				if(!folder.exists){
+					folder.createDirectory();
+				}else{
+					if(folder.isDirectory){
+						folder.deleteDirectory(true);
+					}else{
+						folder.deleteFile();
+					}
+					folder.createDirectory();
+				}
+			}catch(error:Error){
+				return false;
+			}
+			return true;
+		}
+
 		public function start():Boolean{
 			//TODO reset state
 			forceStop=false;
@@ -85,34 +113,25 @@ package com.photodispatcher.provider.fbook.download{
 				flowError('Не верная рабочая папка');
 				return false;
 			}
+			
+			//check cache folder
+			if(cacheClipart){
+				cacheFolder=file.resolvePath(CACHE_FOLDER);
+				if(!cacheFolder.exists){
+					try{
+						cacheFolder.createDirectory();
+					}catch(error:Error){}
+				}
+				if(!cacheFolder.exists || !cacheFolder.isDirectory){
+					cacheFolder=null;
+				}
+			}else{
+				cacheFolder=null;
+			}
+			
 			//use main login, no auth needed
 			_isStarted=true;
 			checkQueue();
-/*
-			if(source.type == SourceType.SRC_PROFOTO){
-				//use main login, no auth needed
-				_isStarted=true;
-				checkQueue();
-			}else{
-				//check login
-				var auth:AuthService;
-				if(!AuthService.instance){ 
-					auth= new AuthService();
-					auth.method='POST';
-					auth.resultFormat='text';
-				}
-				if(!AuthService.instance.authorized){
-					//attempt to login
-					auth.baseUrl=source.fbookService.url;
-					var token:AsyncToken;
-					token=auth.siteLogin(source.fbookService.user,source.fbookService.pass);
-					token.addResponder(new AsyncResponder(login_ResultHandler,login_FaultHandler));
-				}else{
-					_isStarted=true;
-					checkQueue();
-				}
-			}
-*/
 			return true;
 		}
 		
@@ -488,6 +507,7 @@ package com.photodispatcher.provider.fbook.download{
 			if(!currentOrder || !currentSubOrder) return;
 			trace('FBookDownloadManager startContentLoader, suborder '+currentSubOrder.sub_id);
 			contentLoader = new FBookContentDownloadManager(source.fbookService,currentSubOrder);
+			contentLoader.cacheFolder=cacheFolder;
 			contentLoader.addEventListener(Event.COMPLETE,contentLoaded);
 			contentLoader.addEventListener(ProgressEvent.PROGRESS,contentLoadProgress);
 			contentLoader.start(workFolder);

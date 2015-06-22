@@ -204,6 +204,10 @@ package com.photodispatcher.provider.ftp{
 			//checkQueue();
 		}
 
+		public function clearCache():void{
+			if(fbDownloadManager) fbDownloadManager.clearCache();
+		}
+		
 		public function destroy():void{
 			if(isStarted) stop();
 			if(downloadManager){

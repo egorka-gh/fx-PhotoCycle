@@ -8,6 +8,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -164,6 +165,16 @@ package com.photodispatcher.provider.ftp{
 			}
 		}
 		
+		public function clearCache():void{
+			if(!services || services.length==0) return;
+			FBookDownloadManager.cacheClipart=false;
+			var f:DownloadQueueManager;
+			for each(f in services){
+				if(f) f.clearCache();
+			}
+			FBookDownloadManager.cacheClipart=Context.getAttribute('cacheClipart');
+		}
+
 		public function reLoad():void{
 			stopTimer();
 			//TODO reset errors ?

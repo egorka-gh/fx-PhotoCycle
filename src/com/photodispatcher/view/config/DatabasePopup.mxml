@@ -79,6 +79,7 @@
 			private function onPingServer(event:TideResultEvent):void {
 				//server - ok
 				_connected=true;
+				var resp:HelloResponce =event.result as HelloResponce;
 				
 				if(!isOpen){
 					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE,false,false,true));

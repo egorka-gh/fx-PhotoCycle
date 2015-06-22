@@ -7,6 +7,7 @@ package com.photodispatcher.service{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -74,6 +75,7 @@ package com.photodispatcher.service{
 			dispatchEvent(new Event('schedule'));  
 			trace('CleanService clean started');
 			OrderService.clearLocks();
+			clearFbCache();
 			cleanFileSystem();
 		}
 		
@@ -104,6 +106,37 @@ package com.photodispatcher.service{
 			prepareFS();
 		}
 		
+		private function clearFbCache():void{
+			//get sources
+			var sarr:Array=Context.getSources();
+			if(!sarr ||sarr.length==0)  return;
+			FBookDownloadManager.cacheClipart=false;
+			for each(var src:Source in sarr){
+				if(src){
+					var path:String=src.getWrkFolder();
+					if(path){
+						try{
+							var folder:File=new File(path);
+							if(folder.exists && folder.isDirectory){
+								folder=folder.resolvePath(FBookDownloadManager.CACHE_FOLDER);
+								if(!folder.exists){
+									folder.createDirectory();
+								}else{
+									if(folder.isDirectory){
+										folder.deleteDirectory(true);
+									}else{
+										folder.deleteFile();
+									}
+									folder.createDirectory();
+								}
+							}
+						}catch(error:Error){}
+					}
+				}
+			}
+			FBookDownloadManager.cacheClipart=Context.getAttribute('cacheClipart');
+		}
+
 		
 		private function complite():void{
 			busy=false;

@@ -130,9 +130,23 @@ package com.photodispatcher.provider.fbook.download{
 			_totalLoaded=0;
 		}
 		
-		private function isElementLoaded(path:String):Boolean{
+		private function isElementLoaded(path:String, checkCache:Boolean=false):Boolean{
 			if(!workFolder) return false;
 			var file:File=workFolder.resolvePath(path);
+			if(file.exists) return true;
+			if(!checkCache) return false;
+			var cachefile:File;
+			if(cacheFolder && cacheFolder.exists && cacheFolder.isDirectory){
+				cachefile=cacheFolder.resolvePath(path);
+				if(cachefile.exists && !cachefile.isDirectory){
+					trace('File exists in cache: '+path);
+					subOrder.log='File exists in cache: '+path;
+					try{
+						cachefile.copyTo(file,false);
+					}catch(error:Error){}
+				}
+			}
+			file=workFolder.resolvePath(path);
 			return file.exists; 
 		}
 		
@@ -149,10 +163,10 @@ package com.photodispatcher.provider.fbook.download{
 						if(req){
 							//save to art subdir
 							name=FBookProject.artSubDir+getItemName(name);
-							if(isElementLoaded(name)){
+							if(isElementLoaded(name,true)){
 								subOrder.log='File allready downloaded: '+name+ '. Skip download';
 							}else{
-								loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id});
+								loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id, cache: cacheItem(name)});
 								//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
 							}
 						}
@@ -181,10 +195,10 @@ package com.photodispatcher.provider.fbook.download{
 								if(req){
 									//save to art subdir
 									var sub_name:String= FBookProject.artSubDir+getItemName(name)+FrameData.getFileNameSufix(el);
-									if(isElementLoaded(sub_name)){
+									if(isElementLoaded(sub_name,true)){
 										subOrder.log='File allready downloaded: '+name+ '. Skip download';
 									}else{
-										loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id});
+										loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id, cache: cacheItem(name)});
 										//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
 									}
 								}
@@ -232,10 +246,10 @@ package com.photodispatcher.provider.fbook.download{
 									if(req){
 										//save to art subdir
 										name=FBookProject.artSubDir+getItemName(name);
-										if(isElementLoaded(name)){
+										if(isElementLoaded(name,true)){
 											subOrder.log='File allready downloaded: '+name+ '. Skip download';
 										}else{
-											loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:info.imgName});
+											loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:info.imgName, cache: cacheItem(name)});
 										}
 									}
 								}
@@ -296,6 +310,12 @@ package com.photodispatcher.provider.fbook.download{
 				id=StrUtil.contentIdToFileName(id);
 			}
 			return id;
+		}
+		
+		private function cacheItem(itemId:String):Boolean{
+			if(!itemId) return false;
+			//is custom art?
+			return itemId.indexOf('::')==-1;
 		}
 			
 		private function createRequest(book:FBookProject, name:String, url:String, pageNum:int, corner:String=''):URLRequest{
@@ -360,6 +380,7 @@ package com.photodispatcher.provider.fbook.download{
 			return service.url;
 		}
 
+		public var cacheFolder:File;
 		private var workFolder:File;
 		public function start(workFolder:File):void{
 			if (!service || !subOrder || !subOrder.projects || subOrder.projects.length==0 || !workFolder || service.connections<=0){
@@ -545,6 +566,19 @@ package com.photodispatcher.provider.fbook.download{
 						fs.writeBytes(ba);
 						fs.close();
 						subOrder.log='File downloaded: '+file.nativePath;
+						//write to cache
+						if(item.properties['cache']){
+							if(cacheFolder && cacheFolder.exists && cacheFolder.isDirectory){
+								try{
+									file=cacheFolder.resolvePath(item.id);
+									trace('Write to cache: '+file.nativePath+'.');
+									fs= new FileStream();
+									fs.open(file, FileMode.WRITE);
+									fs.writeBytes(ba);
+									fs.close();
+								}catch(error:Error){}
+							}
+						}
 					}
 				}else{
 					result=false;
