@@ -158,6 +158,7 @@
 					var printer:String=so.data.printer;
 					if(printer) Context.setAttribute('printer',printer);
 
+					Context.setAttribute('cacheClipart',Boolean(so.data.cacheClipart));
 				}
 				
 				Context.setAttribute('syncInterval',syncInterval);
@@ -346,6 +347,8 @@
 		<!--<s:Group width="5">
 			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000" toolTip="{BaseDAO.lastErrMsg}"/>
 		</s:Group>-->
+		<s:Spacer width="5"/>
+		<s:Label text="{Context.appID}"/>
 		<s:Spacer width="5"/>
 		<s:Label text="{cleaner.state}" width="250" maxDisplayedLines="1"/>
 		<mx:ProgressBar width="200" includeIn="monitorAndCleaner"

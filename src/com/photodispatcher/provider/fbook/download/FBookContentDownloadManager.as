@@ -134,7 +134,7 @@ package com.photodispatcher.provider.fbook.download{
 			if(!workFolder) return false;
 			var file:File=workFolder.resolvePath(path);
 			if(file.exists) return true;
-			if(!checkCache) return false;
+			if(!checkCache || !FBookDownloadManager.cacheClipart) return false;
 			var cachefile:File;
 			if(cacheFolder && cacheFolder.exists && cacheFolder.isDirectory){
 				cachefile=cacheFolder.resolvePath(path);
@@ -567,7 +567,7 @@ package com.photodispatcher.provider.fbook.download{
 						fs.close();
 						subOrder.log='File downloaded: '+file.nativePath;
 						//write to cache
-						if(item.properties['cache']){
+						if(item.properties['cache'] && FBookDownloadManager.cacheClipart){
 							if(cacheFolder && cacheFolder.exists && cacheFolder.isDirectory){
 								try{
 									file=cacheFolder.resolvePath(item.id);

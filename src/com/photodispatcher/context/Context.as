@@ -71,6 +71,7 @@ package com.photodispatcher.context{
 			instance = new Context();
 
 			//DOTO implement some config
+			_appID=NetUtil.getIP();
 			setAttribute('wrkDir','D:\\Buffer\\ftp');
 		}
 

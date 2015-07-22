@@ -47,7 +47,10 @@
 
 			private function destroy():void{
 				IMRuner.stopAll();
-				if(vMonitor && vMonitor.chatServer) vMonitor.chatServer.close();
+				if(vMonitor){
+					vMonitor.stop();
+					if(vMonitor.chatServer) vMonitor.chatServer.close();
+				}
 			}
 
 			private function initApp():void{
@@ -105,7 +108,6 @@
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if(vMonitor){
 					vMonitor.stop();
-					//vMonitor.ftpStop();
 				}
 				currentState='config';
 			}
@@ -118,7 +120,6 @@
 			protected function button3_clickHandler(event:MouseEvent):void{
 				if(vMonitor){
 					vMonitor.stop();
-					//vMonitor.ftpStop();
 				}
 				FlexGlobals.topLevelApplication.exit();
 			}
@@ -154,7 +155,8 @@
 					oo.check(ooPath);
 					var printer:String=so.data.printer;
 					if(printer) Context.setAttribute('printer',printer);
-
+					
+					Context.setAttribute('cacheClipart',Boolean(so.data.cacheClipart));
 				}
 				
 				Context.setAttribute('syncInterval',syncInterval);
@@ -178,7 +180,8 @@
 				if(!pdfPageLimit) pdfPageLimit=100;
 				Context.setAttribute("pdfPageLimit", pdfPageLimit);
 				Context.setAttribute('reversPrint', so.data.reversPrint);
-
+				//Context.setAttribute('manualStart', so.data.manualStart);
+				Context.setAttribute('manualStart', true);
 				//init app
 				startPopup= new ModalPopUp();
 				startPopup.label='Инициализация';
@@ -224,7 +227,10 @@
 				//init print manager
 				PrintQueueManager.instance.init();
 				currentState='monitor';
-				if(vMonitor) vMonitor.init(); 
+				if(vMonitor){
+					vMonitor.init();
+					vMonitor.start();
+				}
 			}
 			private function onImPing(e:IMRunerEvent):void{
 				var im:IMRuner=e.target as IMRuner;
@@ -298,9 +304,10 @@
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10"  verticalAlign="middle">
 		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>-->
 		<s:Image source="{IMRuner.isRunning?'assets/imgProcRun.png':'assets/imgProc.png'}" width="24" height="24" toolTip="Обработка в IM"/>
-		<!--<s:Group width="5">
-			<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000" toolTip="{BaseDAO.lastErrMsg}"/>
-		</s:Group>-->
+
+		<s:Spacer width="5"/>
+		<s:Label text="{Context.appID}"/>
+		
 		<s:Spacer width="100%"/>
 		<s:Button label="Настройки" includeIn="monitor" click="button1_clickHandler(event)"/>
 		<s:Button label="Монитор" includeIn="config" click="button2_clickHandler(event)"/>

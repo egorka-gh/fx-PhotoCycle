@@ -88,7 +88,7 @@ package com.photodispatcher.model.mysql.entities {
 									newMap[bs.src_type.toString()]=subMap;
 								}
 								subMap[bs.synonym]=bs;
-							}else{
+							}else if(bs.synonym_type==1){
 								//add to alias map
 								newAliasMap[bs.synonym]=bs;
 							}

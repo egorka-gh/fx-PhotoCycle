@@ -330,8 +330,25 @@
 				reprintFileList=new ArrayCollection(a);
 			}
 			
-			private var pop:StaffActivityPopup;
 			protected function btReprint_clickHandler(event:MouseEvent):void{
+				//get soft lock
+				progressCaption='Захват на обработку '+order.id;
+				var latch:DbLatch=OrderService.getPreprocessLock(order.id);
+				latch.addEventListener(Event.COMPLETE,ongetLock);
+				latch.start();
+			}
+			private function ongetLock(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				latch.removeEventListener(Event.COMPLETE,ongetLock);
+				if(latch.resultCode>0){
+					runActivityPopup();
+				}else{
+					Alert.show('Заказ '+order.id+' обрабатывается на другой станции');
+				}
+			}
+			
+			private var pop:StaffActivityPopup;
+			private function runActivityPopup():void{
 				//ask 4 activity
 				pop= new StaffActivityPopup();
 				pop.addEventListener(PopUpEvent.CLOSE, onActivityPop);
@@ -341,6 +358,8 @@
 				if(evt.commit){
 					var activity:StaffActivity=evt.data as StaffActivity;
 					createReprint(activity);
+				}else{
+					OrderService.releasePreprocessLock(order.id);
 				}
 			}
 			
@@ -372,9 +391,11 @@
 			}
 			
 			private function onBuilderError(evt:OrderBuildEvent):void{
+				OrderService.releasePreprocessLock(order.id);
 				Alert.show(evt.err_msg);
 			}
 			private function onOrderPreprocessed(evt:OrderBuildEvent):void{
+				OrderService.releasePreprocessLock(order.id);
 				if(evt.err<0){
 					//completed vs error
 					Alert.show(evt.err_msg);
@@ -382,100 +403,6 @@
 					close();
 				}
 			}
-
-			
-			/*
-			private var activityList:ArrayCollection;
-			protected function createReprint(activity:StaffActivity=null):void{
-				var pg:PrintGroup;
-				var pgf:PrintGroupFile;
-				var arrPG:Array=[];
-				var files:ListCollectionView;
-				//get reprint pg
-				for each (pg in reprintPGList){
-					if(pg){
-						for each (pgf in pg.files){
-							if(pgf && pgf.reprint){
-								arrPG.push(pg);
-								break;
-							}
-						}
-					}
-				}
-				if(arrPG.length==0) return;
-				
-				//get reprint files
-				var pgIdx:int=pgList.length;
-				var prints:int;
-				var pdfPG:Array=[];
-				var simplePG:Array=[];
-				for each (pg in arrPG){
-					if(pg){
-						//set pg props
-						pgIdx++;
-						prints=0;
-						pg.is_reprint=true;
-						pg.reprint_id=pg.id;
-						pg.id=order.id+'_'+pgIdx.toString();
-						if(pg.is_pdf){
-							pdfPG.push(pg);
-						}else{
-							pg.state=OrderState.PRN_WAITE;
-							//get files
-							files=pg.files;
-							pg.resetFiles();
-							for each (pgf in files){
-								if(pgf && pgf.reprint){
-									pgf.print_group=pg.id;
-									pg.addFile(pgf);
-									prints+=pgf.prt_qty>0?pgf.prt_qty:1;
-								}
-							}
-							pg.file_num=pg.files.length;
-							pg.prints=prints;
-							pg.book_num=1;
-							pg.sheet_num=pg.files.length;
-							simplePG.push(pg);
-						}
-					}
-				}
-				
-				//fill activity list
-				activityList= new ArrayCollection();
-				if(activity){
-					var sa:StaffActivity;
-					for each (pg in arrPG){
-						if(pg){
-							sa=activity.clone();
-							sa.order_id=pg.order_id;
-							sa.pg_id=pg.id;
-							activityList.addItem(sa);
-						}
-					}
-				}
-				
-				//save pgs
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onReprint);
-				latch.addLatch(svc.addReprintPGroups(new ArrayCollection(arrPG)));
-				latch.start();
-				btReprint.enabled=false;
-				btLookup.enabled=false;
-			}
-			private function onReprint(e:Event):void{
-				var latch:DbLatch=e.target as DbLatch;
-				if(latch) latch.removeEventListener(Event.COMPLETE,onReprint);
-				if(activityList && activityList.length>0){
-					var svc:StaffActivityService=Tide.getInstance().getContext().byType(StaffActivityService,true) as StaffActivityService;
-					latch= new DbLatch();
-					//latch.addEventListener(Event.COMPLETE,onReprint);
-					latch.addLatch(svc.logActivityBatch(activityList));
-					latch.start();
-				}
-				close();
-			}
-			*/
 
 			protected function btReprintAll_clickHandler(event:MouseEvent):void{
 				if(!reprintFileList) return;

@@ -77,7 +77,9 @@
 			private var config:AppConfig;
 			[Bindable]
 			private var stateAc:ArrayCollection;
-
+			[Bindable]
+			private var cacheClipart:Boolean;
+			
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
 				
@@ -108,6 +110,7 @@
 				syncInterval=so.data.syncInterval;
 				if(!syncInterval) syncInterval=10;
 				printRotated=Boolean(so.data.printRotated);
+				cacheClipart=Boolean(so.data.cacheClipart);
 				
 				ooPath=so.data.ooPath;
 				printer=so.data.printer;
@@ -461,6 +464,14 @@
 				Context.setAttribute('manualStart', manualStart);
 			}
 			
+			protected function tg_cacheClipart_changeHandler(event:Event):void{
+				cacheClipart=tg_cacheClipart.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.cacheClipart = cacheClipart;
+				so.flush();  
+				Context.setAttribute('cacheClipart', cacheClipart);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -560,6 +571,10 @@
 									 change="tiIMThreads_changeHandler(event)"/>
 					</s:HGroup>
 				</s:VGroup>
+			</s:FormItem> 
+
+			<s:FormItem label="Кэшировать клипарт">
+				<s:CheckBox id="tg_cacheClipart" selected="{cacheClipart}" change="tg_cacheClipart_changeHandler(event)"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Сжатие jpg в PDF файле">

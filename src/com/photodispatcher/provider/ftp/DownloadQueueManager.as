@@ -568,7 +568,7 @@ package com.photodispatcher.provider.ftp{
 				var latch:DbLatch= new DbLatch(true);
 				var orderService:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				latch.addEventListener(Event.COMPLETE,oncaptureState);
-				latch.addLatch(orderService.captureState(webApplicant.id, OrderState.FTP_WAITE, OrderState.FTP_CAPTURED),webApplicant.id);
+				latch.addLatch(orderService.captureState(webApplicant.id, OrderState.FTP_WAITE, OrderState.FTP_CAPTURED, Context.appID),webApplicant.id);
 				latch.start();
 				/*
 				//remove from queue

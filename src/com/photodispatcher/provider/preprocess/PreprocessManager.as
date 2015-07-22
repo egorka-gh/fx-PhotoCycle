@@ -288,7 +288,7 @@ package com.photodispatcher.provider.preprocess{
 			currOrder.state=OrderState.PREPROCESS_CAPTURED;
 			latch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,oncaptureState);
-			latch.addLatch(orderService.captureState(currOrder.id, OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED));
+			latch.addLatch(orderService.captureState(currOrder.id, OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED, Context.appID));
 			latch.start();
 		}
 		private function oncaptureState(evt:Event):void{
@@ -478,7 +478,9 @@ package com.photodispatcher.provider.preprocess{
 				latch.addLatch(orderService.setState(order));
 			}else{
 				//persist
-				latch.addLatch(orderService.fillUpOrder(order), order.id);
+				var tag:String;
+				if(order.state==OrderState.PRN_WAITE) tag=order.id;
+				latch.addLatch(orderService.fillUpOrder(order), tag);
 			}
 			latch.start();
 		}
