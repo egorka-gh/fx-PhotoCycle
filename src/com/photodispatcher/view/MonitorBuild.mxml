@@ -115,7 +115,7 @@
 					  enabled="{dgProcess.selectedItem}">
 				<s:Button id="btForvard" label="В первую очередь" width="100%" click="btForvard_clickHandler(event)"/>
 				<s:Button label="Открыть" width="100%" click="{MenuCommonActions.showOrder(dgProcess.selectedItem)}"/>
-				<s:Button label="Перезагрузить" width="100%" click="{MenuCommonActions.cleanUpOrder(dgProcess.selectedItem)}"/>
+				<s:Button label="Перезагрузить" width="100%" click="{MenuCommonActions.cleanUpOrder(dgProcess.selectedItem, OrderState.FTP_WAITE)}"/>
 				<s:Button label="Отменить заказ" width="100%" click="{MenuCommonActions.cancelOrders([dgProcess.selectedItem])}"/>
 			</s:VGroup>
 		</s:Scroller>
@@ -140,7 +140,7 @@
 				<s:Button label="Открыть" width="100%" click="{MenuCommonActions.showOrder(dgErrors.selectedItem)}"/>
 				<s:Button label="Сбросить блокировку" width="100%" click="{MenuCommonActions.setOrderState(dgErrors.selectedItem,OrderState.PREPROCESS_WAITE)}"/>
 				<s:Button label="Подготовить" width="100%" click="{MenuCommonActions.setOrderState(dgErrors.selectedItem,OrderState.PREPROCESS_WAITE)}"/>
-				<s:Button label="Перезагрузить" width="100%" click="{MenuCommonActions.cleanUpOrder(dgErrors.selectedItem)}"/>
+				<s:Button label="Перезагрузить" width="100%" click="{MenuCommonActions.cleanUpOrder(dgErrors.selectedItem, OrderState.FTP_WAITE)}"/>
 				<s:Button label="Отменить заказ" width="100%" click="{MenuCommonActions.cancelOrders([dgErrors.selectedItem])}"/>
 			</s:VGroup>
 		</s:Scroller>

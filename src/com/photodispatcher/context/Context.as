@@ -590,6 +590,9 @@ package com.photodispatcher.context{
 			//tech layers
 			latchAttributeLists.addLatch(dict.getTechLayerValueList(true, onFieldList),'layer');
 
+			//tech interlayer
+			latchAttributeLists.addLatch(dict.getInterlayerValueList(onFieldList),'interlayer');
+
 			//tech seq layers
 			latchAttributeLists.addLatch(dict.getTechLayerValueList(true, onFieldList),'seqlayer');
 			

@@ -78,6 +78,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function getInterlayerValueList(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getInterlayerValueList", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getInterlayerValueList", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getInterlayerValueList") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function getLayerGroupValueList(arg0:Boolean, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("getLayerGroupValueList", arg0, resultHandler, faultHandler) as AsyncToken;

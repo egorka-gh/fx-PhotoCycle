@@ -158,6 +158,10 @@ package com.photodispatcher.model.mysql.entities {
 				suborders.addItem(so);
 			}
 		}
+		public function getSuborder(subId:String):SubOrder{
+			if(!hasSuborders || !subId) return null;
+			return ArrayUtil.searchItem('sub_id',subId,suborders.toArray()) as SubOrder;
+		}
 		public function removeSuborder(so:SubOrder):void{
 			if(!suborders || suborders.length==0) return;
 			var i:int=suborders.getItemIndex(so);

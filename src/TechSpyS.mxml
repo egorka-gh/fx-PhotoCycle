@@ -103,16 +103,16 @@
 			
 			protected function btOOFolder_clickHandler(event:MouseEvent):void{
 				//browse
-				var fl:File = File.userDirectory;
-				fl.addEventListener(Event.SELECT,onOOFolderSet);
-				fl.browseForDirectory('Выбирите папку ImageMagick');
+				var f:File = File.userDirectory;
+				f.addEventListener(Event.SELECT,onOOFolderSet);
+				f.browseForDirectory('Выбирите папку ImageMagick');
 			}
 			protected function onOOFolderSet(event:Event):void{
 				ooPathValid=false;
-				var fl:File = event.target as File;
-				if(fl){
-					fl.removeEventListener(Event.SELECT,onOOFolderSet);
-					ooPath=fl.nativePath;
+				var f:File = event.target as File;
+				if(f){
+					f.removeEventListener(Event.SELECT,onOOFolderSet);
+					ooPath=f.nativePath;
 					var oo:OORuner= new OORuner();
 					if(oo.check(ooPath)){
 						ooPathValid=true;

@@ -91,10 +91,6 @@
 				latch.addLatch(svc.loadLayersets(Layerset.LAYERSET_TYPE_TEMPLATE, techGroup));
 				latch.join(techPicker.init());
 				latch.start();
-				/*	
-				var dao:LayersetDAO=new LayersetDAO();
-				acTemplates=dao.findAll();
-				*/
 			}
 			private function onStartLatch(evt:Event):void{
 				var latch:DbLatch= evt.target as DbLatch;

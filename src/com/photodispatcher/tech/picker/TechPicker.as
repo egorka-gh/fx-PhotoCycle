@@ -511,58 +511,8 @@ package com.photodispatcher.tech.picker{
 				prepared=false;
 				return;
 			}
-			/*
-			_layerset.prepareTamplate();
-			if(!_layerset.prepared){
-				callDbLate(prepareTemplate);
-				return;
-			}
-			*/
 			checkPrepared();
 		}
-		
-		/*
-		private var bdWait:int=0;
-		private var bdAttempt:int=0;
-		private var bdTimer:Timer;
-		private var bdFunction:Function;
-		
-		private function callDbLate(func:Function):void{
-			if(func==null) return;
-			bdFunction=func;
-			if (bdWait>=BD_MAX_WAITE){
-				//max wait reached
-				//pause vs err
-				pause('Блокировка при чтении базы данных');
-				log('!database locked');
-				//clean up
-				bdWait=0;
-				bdAttempt=0;
-			}
-			if(!bdTimer){
-				bdTimer=new Timer(getTimeout(),1);
-			}else{
-				bdTimer.reset();
-			}
-			bdTimer.addEventListener(TimerEvent.TIMER,onBdTimer);
-			var sleep:int=getTimeout();
-			bdWait+=sleep;
-			bdTimer.delay=sleep;
-			bdAttempt++;
-			bdTimer.start();
-		}
-		private function getTimeout():int{
-			var timeout:int=0;
-			while (timeout<BD_TIMEOUT_MIN){
-				timeout=Math.random()*(BD_TIMEOUT_MAX+BD_TIMEOUT_MIN*bdAttempt);
-			}
-			return timeout;
-		}
-		private function onBdTimer(e:Event):void{
-			bdTimer.removeEventListener(TimerEvent.TIMER,onBdTimer);
-			bdFunction();
-		}
-		*/
 
 		public function start():void{
 			if(!serialProxy) return;

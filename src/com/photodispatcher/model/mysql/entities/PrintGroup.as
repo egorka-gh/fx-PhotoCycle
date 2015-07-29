@@ -877,6 +877,6 @@ package com.photodispatcher.model.mysql.entities {
 			if(isNaN(book)) return 0;
 			return book;
 		}
-
+		
     }
 }

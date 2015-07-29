@@ -40,6 +40,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const BOOK_PART_BLOCK:int=2;
 		public static const BOOK_PART_INSERT:int=3;
 		public static const BOOK_PART_AU_INSERT:int=4;
+		public static const BOOK_PART_BLOCKCOVER:int=5;
 
 		
 		public static function gridColumns(short:Boolean=false):ArrayList{

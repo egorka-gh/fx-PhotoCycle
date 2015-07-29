@@ -9,6 +9,7 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
+    import mx.collections.ListCollectionView;
     import org.granite.tide.IPropertyHolder;
 
     [Bindable]
@@ -18,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _altPaper:ListCollectionView;
         private var _bar_offset:String;
         private var _bar_size:int;
         private var _book:int;
@@ -65,6 +67,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _tech_stair_add:int;
         private var _tech_stair_step:int;
         private var _width:int;
+
+        public function set altPaper(value:ListCollectionView):void {
+            _altPaper = value;
+        }
+        public function get altPaper():ListCollectionView {
+            return _altPaper;
+        }
 
         public function set bar_offset(value:String):void {
             _bar_offset = value;
@@ -397,6 +406,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _altPaper = input.readObject() as ListCollectionView;
             _bar_offset = input.readObject() as String;
             _bar_size = input.readObject() as int;
             _book = input.readObject() as int;
@@ -448,6 +458,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_altPaper is IPropertyHolder) ? IPropertyHolder(_altPaper).object : _altPaper);
             output.writeObject((_bar_offset is IPropertyHolder) ? IPropertyHolder(_bar_offset).object : _bar_offset);
             output.writeObject((_bar_size is IPropertyHolder) ? IPropertyHolder(_bar_size).object : _bar_size);
             output.writeObject((_book is IPropertyHolder) ? IPropertyHolder(_book).object : _book);

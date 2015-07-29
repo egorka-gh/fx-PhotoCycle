@@ -5,8 +5,12 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
@@ -461,9 +465,56 @@ package com.photodispatcher.provider.preprocess{
 					currOrder.state=OrderState.PRN_WAITE;
 				}
 			}
+			
+			//apply alt paper
+			var so:SubOrder;
+			var pg:PrintGroup;
+			var newPaper:int=-1;
+			var newInterlayer:String;
+			for each(pg in currOrder.printGroups){
+				if(pg.book_type==0 || !pg.bookTemplate) continue;
+				if(pg.book_part!= BookSynonym.BOOK_PART_BLOCK && pg.book_part!= BookSynonym.BOOK_PART_BLOCKCOVER) continue;
+				newPaper=-1;
+				newInterlayer="";
+				if(pg.bookTemplate.altPaper){
+					for each (var ap:BookPgAltPaper in pg.bookTemplate.altPaper){
+						if(pg.sheet_num>=ap.sh_from && pg.sheet_num<=ap.sh_to){
+							if(ap.paper>0 && newPaper==0) newPaper=ap.paper;
+							if(ap.interlayer_name && !newInterlayer) newInterlayer=ap.interlayer_name;
+							if(newPaper>0 && newInterlayer) break;
+						}
+					}
+				}
+				if(newPaper>0) pg.paper=newPaper;
+				if(newInterlayer){
+					var ei:OrderExtraInfo;
+					if(!pg.sub_id){
+						//get order extrainfo
+						if(!currOrder.extraInfo){
+							currOrder.extraInfo= new OrderExtraInfo();
+							currOrder.extraInfo.id=currOrder.id;
+							currOrder.extraInfo.sub_id='';
+						}
+						ei=currOrder.extraInfo;
+					}else{
+						//get suborder extraInfo
+						so=currOrder.getSuborder(pg.sub_id);
+						if(so){
+							if(!so.extraInfo){
+								so.extraInfo= new OrderExtraInfo();
+								so.extraInfo.id=currOrder.id;
+								so.extraInfo.sub_id=pg.sub_id;
+							}
+							ei=so.extraInfo;
+						}
+					}
+					if(ei) ei.interlayer=newInterlayer;
+				}
+			}
+			
 			//clean
 			if(currOrder.hasSuborders){
-				for each(var so:SubOrder in currOrder.suborders) so.destroyChilds();
+				for each(so in currOrder.suborders) so.destroyChilds();
 			}
 			saveOrder(currOrder);
 			releaseOrder();

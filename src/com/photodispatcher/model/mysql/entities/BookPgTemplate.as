@@ -152,6 +152,6 @@ package com.photodispatcher.model.mysql.entities {
 			
 			return pgt;
 		}
-
+		
     }
 }

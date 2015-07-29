@@ -31,6 +31,7 @@
 			import com.photodispatcher.provider.preprocess.ReprintBuilder;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.itemRenderer.PGFileReprintItemRenderer;
+			import com.photodispatcher.view.menu.MenuCommonActions;
 			
 			import flash.utils.flash_proxy;
 			
@@ -205,11 +206,15 @@
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if (!order) return;
+				/*
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onOrderClean);
 				latch.addLatch(svc.cleanUpOrder(order.id));
 				latch.start();
+				*/
+				var latch:DbLatch=MenuCommonActions.cleanUpOrder(order, OrderState.FTP_WAITE);
+				latch.addEventListener(Event.COMPLETE,onOrderClean);
 			}
 			private function onOrderClean(e:Event):void{
 				var latch:DbLatch=e.target as DbLatch;
@@ -432,6 +437,14 @@
 				}
 				return res;
 			}
+			
+			protected function btRebuild_clickHandler(event:MouseEvent):void{
+				if (!order) return;
+				if (order.state<OrderState.PRN_WAITE_ORDER_STATE) return;
+				var latch:DbLatch=MenuCommonActions.cleanUpOrder(order, OrderState.PREPROCESS_WAITE);
+				latch.addEventListener(Event.COMPLETE,onOrderClean);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -520,7 +533,11 @@
 						</s:FormItem> 
 					</s:Form>
 				<!--</s:Scroller>-->
-				<s:Button label="Сброс" bottom="10" right="10" click="button1_clickHandler(event)" includeIn="infoFull"/>
+				<s:HGroup gap="10" verticalAlign="baseline" horizontalAlign="right" width="100%" bottom="0" paddingBottom="10" paddingRight="10" includeIn="infoFull">
+					<s:Button id="btRebuild" label="Переподготовить" click="btRebuild_clickHandler(event)" 
+							  enabled="{order.state>OrderState.PREPROCESS_COMPLETE}"/>
+					<s:Button label="Перезагрузить" click="button1_clickHandler(event)"/>
+				</s:HGroup>
 			</s:Group>
 			
 			<s:VGroup id="gDet" gap="0" width="100%" height="100%" includeIn="info">
@@ -540,7 +557,7 @@
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:VGroup width="450" height="100%" gap="5">
 									<s:Label text="Подзаказы"/>
-									<s:DataGrid id="dgSuborders" selectionMode="singleRow" width="100%" height="100%" 
+									<s:DataGrid id="dgSuborders" selectionMode="singleRow" width="100%" height="100%" editable="true"
 												selectionChange="{currEI=dgSuborders.selectedItem.extraInfo as OrderExtraInfo}" 
 												dataProvider="{soList}" locale="ru_RU" columns="{SubOrder.gridColumns()}"/>
 								</s:VGroup>
@@ -613,7 +630,7 @@
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterPg" dataProvider="{soFilterList}" labelField="sub_id"
 										width="100" height="100%" change="{applyPgFilter()}"/>
-								<s:DataGrid id="dgPGroups" selectionMode="none" width="100%" height="100%"
+								<s:DataGrid id="dgPGroups" selectionMode="singleRow" width="100%" height="100%" editable="true"
 											dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.shortGridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
@@ -621,7 +638,7 @@
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterFiles" dataProvider="{pgList}" labelField="id"
 										width="100" height="100%"/>
-								<s:DataGrid id="dgFiles" selectionMode="none" width="100%" height="100%"
+								<s:DataGrid id="dgFiles" selectionMode="singleRow" width="100%" height="100%" editable="true"
 											dataProvider="{lstFilterFiles.selectedItem.files}" locale="ru_RU" columns="{PrintGroupFile.gridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
@@ -648,7 +665,7 @@
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterLog" dataProvider="{logFilterList}" labelField="id"
 										width="100" height="100%" change="{applyLogFilter()}"/>
-								<s:DataGrid id="dgLog" selectionMode="none" width="100%" height="100%"
+								<s:DataGrid id="dgLog" selectionMode="singleRow" width="100%" height="100%" editable="true"
 											dataProvider="{logList}" locale="ru_RU" columns="{StateLog.gridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>

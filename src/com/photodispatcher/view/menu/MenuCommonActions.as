@@ -29,16 +29,22 @@ package com.photodispatcher.view.menu{
 			}
 		}
 
-		public static function cleanUpOrder(item:Object):DbLatch{
+		public static function cleanUpOrder(item:Object, state:int):DbLatch{
 			var order:Order=item as Order;
-			if(!order) return null;
+			if(!order || state<100) return null;
 			var orderId:String=order.id;
 			if(!orderId) return null;
+
+			var o:Object=new Object;
+			o.order=order;
+			o.oldState=order.state;
+			order.state=state;
+
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch();
-			latch.callContext=order;
+			latch.callContext=o;
 			latch.addEventListener(Event.COMPLETE,onOrderClean);
-			latch.addLatch(svc.cleanUpOrder(orderId));
+			latch.addLatch(svc.cleanUpOrder(orderId, state));
 			latch.start();
 			return latch;
 		}
@@ -46,9 +52,13 @@ package com.photodispatcher.view.menu{
 			var latch:DbLatch=e.target as DbLatch;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onOrderClean);
-				if(latch.complite){
-					var order:Order=latch.callContext as Order;
-					if(order) order.state=OrderState.FTP_WAITE;
+				if(!latch.complite){
+					var o:Object=latch.callContext;
+					if(o){
+						var order:Order=o.order as Order;
+						var oldState:int=o.oldState;
+						if(order && oldState) order.state=oldState;
+					}
 				}
 			}
 		}
