@@ -426,7 +426,7 @@ package com.photodispatcher.model.mysql.entities {
 			
 			if(book_part==BookSynonym.BOOK_PART_COVER){
 				prepareCovers();
-			}else if(book_part==BookSynonym.BOOK_PART_BLOCK){
+			}else if(book_part==BookSynonym.BOOK_PART_BLOCK || book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
 				prepareSheets();
 			}else if(book_part==BookSynonym.BOOK_PART_INSERT){
 				prepareInserts();
@@ -447,7 +447,7 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		private function prepareSheets():void{
-			if(!files || book_type==0 || book_part!=BookSynonym.BOOK_PART_BLOCK) return;
+			if(!files || book_type==0) return; // || book_part!=BookSynonym.BOOK_PART_BLOCK) return;
 			var i:int;
 			var j:int;
 			var it:PrintGroupFile;
@@ -487,6 +487,14 @@ package com.photodispatcher.model.mysql.entities {
 					bookFiles.unshift(null);
 					bookFiles.push(null);
 				}
+				
+				//cover has to be last 4 BOOK_PART_BLOCKCOVER
+				if(book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
+					//reorder
+					it=bookFiles.shift() as PrintGroupFile;
+					bookFiles.push(it);
+				}
+				
 				books[i]=bookFiles;
 			}
 			

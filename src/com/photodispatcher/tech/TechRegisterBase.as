@@ -35,10 +35,10 @@ package com.photodispatcher.tech{
 		public var detectFirstBook:Boolean=false;
 		public var hasWrongSequence:Boolean=false;
 		
-		private var regArray:Array;
-		private var bookPart:int;
-		private var lastBook:int;
-		private var lastSheet:int;
+		protected var regArray:Array;
+		protected var bookPart:int;
+		protected var lastBook:int;
+		protected var lastSheet:int;
 		[Bindable]
 		public var registred:int;
 		
@@ -234,65 +234,6 @@ package com.photodispatcher.tech{
 			}
 			return sheets;
 		}
-		
-		/*************** local data base ************************/
-		/*
-		protected var complited:Array=[];
-		protected var isWriting:Boolean;
-		
-		protected function checkComplited():void{
-			var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
-			var arr:Array=lDao.finde4Transfer();
-			var pg:TechPrintGroup;
-			if(arr){
-				for each(pg in arr){
-					if(ArrayUtil.searchItemIdx('id',pg.id,complited)==-1) complited.push(pg);
-				}
-			}
-			if(!isWriting) writeNext();
-		}
-		
-		protected function writeNext():TechPrintGroup{
-			if(complited.length==0){
-				isWriting=false;
-				return null;
-			}
-			isWriting=true;
-			var pg:TechPrintGroup= complited[0] as TechPrintGroup;
-			if(!pg){
-				complited.shift();
-				return writeNext();
-			}
-			return pg;
-			// implement concret dao call
-			//var pdao:PrintGroupDAO=new PrintGroupDAO();
-			//pdao.execOnItem=pg.id;
-			//pdao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
-			//pdao.setExtraStateByTech(pg.id, pg.src_id);
-		}
-		protected function onExtraWrite(evt:AsyncSQLEvent):void{
-			var pdao:BaseDAO= evt.target as BaseDAO;
-			if(pdao) pdao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
-			//var pgId:String=evt.item as String;
-			var pg:TechPrintGroup=evt.item as TechPrintGroup;
-			if (evt.result==AsyncSQLEvent.RESULT_COMLETED){
-				if(pg){
-					var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
-					if(pg.isComplite){
-						lDao.remove(pg.id);
-					}else{
-						lDao.startLoged(pg.id);
-					}
-				}
-				complited.shift();
-				writeNext();
-			}else{
-				//database locked
-				complited=[];
-				isWriting=false;
-			}
-		}
-		*/
 
 	}
 }

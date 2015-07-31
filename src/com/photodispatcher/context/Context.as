@@ -43,6 +43,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.util.NetUtil;
 	
 	import flash.events.Event;
+	import flash.filesystem.File;
 	import flash.net.SharedObject;
 	import flash.utils.Dictionary;
 	
@@ -71,7 +72,6 @@ package com.photodispatcher.context{
 			instance = new Context();
 
 			//DOTO implement some config
-			_appID=NetUtil.getIP();
 			setAttribute('wrkDir','D:\\Buffer\\ftp');
 		}
 
@@ -377,9 +377,21 @@ package com.photodispatcher.context{
 
 		private static var _appID:String;
 		public static function get appID():String{
-			if(!_appID) _appID=NetUtil.getIP();
+			if(_appID) return _appID;
+			
+			_appID=NetUtil.getIP();
+			if(_appID){
+				_appID=_appID+':'+currentOSUser;
+				_appID=_appID.substr(0,50);
+			}
 			if(!_appID) _appID=UIDUtil.createUID();
 			return _appID;
+		}
+
+		public static function get currentOSUser():String		{
+			var userDir:String = File.userDirectory.nativePath;
+			var userName:String = userDir.substr(userDir.lastIndexOf(File.separator) + 1);
+			return userName;
 		}
 
 		

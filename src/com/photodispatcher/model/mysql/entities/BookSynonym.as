@@ -189,11 +189,13 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public function createPrintGroup(path:String, bookPart:int, butt:int=0, printGroup:PrintGroup=null):PrintGroup{
 			var pg:PrintGroup;
-			var it:BookPgTemplate;
 			if(!templates) return null;
-			for each(it in templates){
-				if(it && it.book_part==bookPart){
-					pg=it.createPrintGroup(path,book_type,butt,printGroup);
+			for each(var t:BookPgTemplate in templates){
+				if(t){
+					if(t.book_part==bookPart || (bookPart==BOOK_PART_BLOCK && t.book_part==BOOK_PART_BLOCKCOVER)){
+						pg=t.createPrintGroup(path,book_type,butt,printGroup);
+						break;
+					}
 				}
 			}
 			if(pg) pg.is_horizontal=is_horizontal;
@@ -203,7 +205,7 @@ package com.photodispatcher.model.mysql.entities {
 		public function get blockTemplate():BookPgTemplate{
 			var it:BookPgTemplate;
 			for each(it in templates){
-				if(it.book_part==BOOK_PART_BLOCK) return it;
+				if(it.book_part==BOOK_PART_BLOCK || it.book_part==BOOK_PART_BLOCKCOVER) return it;
 			}
 			return null;
 		}

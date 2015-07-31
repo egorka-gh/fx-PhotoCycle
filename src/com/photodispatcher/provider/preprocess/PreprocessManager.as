@@ -474,7 +474,7 @@ package com.photodispatcher.provider.preprocess{
 			for each(pg in currOrder.printGroups){
 				if(pg.book_type==0 || !pg.bookTemplate) continue;
 				if(pg.book_part!= BookSynonym.BOOK_PART_BLOCK && pg.book_part!= BookSynonym.BOOK_PART_BLOCKCOVER) continue;
-				newPaper=-1;
+				newPaper=0;
 				newInterlayer="";
 				if(pg.bookTemplate.altPaper){
 					for each (var ap:BookPgAltPaper in pg.bookTemplate.altPaper){

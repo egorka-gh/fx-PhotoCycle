@@ -1233,6 +1233,7 @@ package com.photodispatcher.tech.picker{
 				return;
 			}
 			currExtraInfo=ei;
+			if(currExtraInfo.book_part>0) register.setBookPart(currExtraInfo.book_part);
 			bdLatch.forward('Проверка заказа');
 			
 			currBookTypeName=getBookTypeName(currExtraInfo.book_type)

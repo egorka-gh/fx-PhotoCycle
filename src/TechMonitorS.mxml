@@ -16,6 +16,7 @@
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
 			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
@@ -60,7 +61,9 @@
 			[Bindable]
 			private var comReader:ComInfo; 
 			
-			
+			//to link class
+			private var ap:BookPgAltPaper; 
+
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
 				bdPopup= new DatabasePopup();

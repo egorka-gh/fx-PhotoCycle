@@ -143,7 +143,11 @@ package com.photodispatcher.provider.preprocess{
 			//crop
 			var sheetCrop:String=len.toString()+'x'+width.toString()+'+0+0!';
 			//var line:String;
-			command.add('-gravity'); command.add('Center');
+			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_COVER){
+				command.add('-gravity'); command.add('West');
+			}else{
+				command.add('-gravity'); command.add('Center');
+			}
 			command.add('-background'); command.add('white');
 			command.add(file.file_name);
 			command.add('-crop'); command.add(sheetCrop);
@@ -159,7 +163,7 @@ package com.photodispatcher.provider.preprocess{
 					if(buttPix){
 						IMCommandUtil.drawNotching(command,notching,len,width,buttPix);
 					}
-				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
+				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK || (printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_BLOCK)){
 					IMCommandUtil.drawNotching(command,notching,len,width,0);
 				}
 			}
@@ -179,13 +183,15 @@ package com.photodispatcher.provider.preprocess{
 			
 			//draw cover barcode
 			var barcode:String
-			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER){
+			if((printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER) ||
+				(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_COVER)){
 				//barcode=printGroup.bookBarcodeText(file);
 				barcode=printGroup.bookBarcode(file);
 				if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
 			}
 
 			//draw body caption
+			//TODO implement 4 BOOK_PART_BLOCKCOVER?
 			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK && file.page_num==printGroup.pageNumber){
 				barcode=printGroup.bookBarcodeText(file);
 				if(barcode) IMCommandUtil.annotateTransparent(command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookTemplate.bar_offset,-90);

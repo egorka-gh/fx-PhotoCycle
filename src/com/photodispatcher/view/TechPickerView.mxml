@@ -171,25 +171,25 @@
 					<s:VGroup gap="5" width="100%">
 						<s:HGroup gap="10" width="100%">
 							<s:Label text="Заказ: {techPicker.currPgId}"/>
-							<s:Label text="Тип книги: {techPicker.currBookTypeName}"/>
+							<s:Label text="Тип книги: {techPicker.currBookTypeName} {techPicker.currExtraInfo?techPicker.currExtraInfo.book_part:''}"/>
 							<s:Label text="Книга: {techPicker.currBookIdx.toString()}({techPicker.currBookTot.toString()})"/>
 							<s:Label text="Разворот: {techPicker.currSheetIdx.toString()}({techPicker.currSheetTot.toString()})"/>
 						</s:HGroup>
 						<s:HGroup gap="15" width="100%">
 							<s:VGroup gap="7" width="200">
-								<s:Label text="Тип: {techPicker.currExtraInfo.calc_type}" width="100%" maxDisplayedLines="1"/>
-								<s:Label text="Обложка: {techPicker.currExtraInfo.cover}" width="100%" maxDisplayedLines="1"/>
-								<s:Label text="Углы/Каптал: {techPicker.currExtraInfo.corner_type}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Тип: {techPicker.currExtraInfo?techPicker.currExtraInfo.calc_type:''}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Обложка: {techPicker.currExtraInfo?techPicker.currExtraInfo.cover:''}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Углы/Каптал: {techPicker.currExtraInfo?techPicker.currExtraInfo.corner_type:''}" width="100%" maxDisplayedLines="1"/>
 							</s:VGroup>
 							<s:VGroup gap="5" width="100%">
 								<s:HGroup gap="5" verticalAlign="baseline">
-									<s:Label text="Формат заказа: {techPicker.currExtraInfo.format}" width="200"/>
+									<s:Label text="Формат заказа: {techPicker.currExtraInfo?techPicker.currExtraInfo.format:''}" width="200"/>
 									<s:Spacer width="5"/>
 									<s:Label text="Загружен формат:" width="120" textAlign="right"/>
 									<s:DropDownList id="ddCurrFormat" width="150" enabled="false"/>
 								</s:HGroup>
 								<s:HGroup gap="5" verticalAlign="baseline">
-									<s:Label text="Прослойка заказа: {techPicker.currExtraInfo.interlayer}" width="200"/>
+									<s:Label text="Прослойка заказа: {techPicker.currExtraInfo?techPicker.currExtraInfo.interlayer:''}" width="200"/>
 									<s:Spacer width="5"/>
 									<s:Label text="Шаблон прослойки:" width="120" textAlign="right"/>
 									<s:DropDownList id="ddCurrInterlayer" labelField="name" width="150" 
@@ -198,7 +198,7 @@
 													changing="preventChanging(event)"/>
 								</s:HGroup>
 								<s:HGroup gap="5" verticalAlign="baseline">
-									<s:Label text="Форзац заказа: {techPicker.currExtraInfo.endpaper}" width="200"/>
+									<s:Label text="Форзац заказа: {techPicker.currExtraInfo?techPicker.currExtraInfo.endpaper:''}" width="200"/>
 									<s:Spacer width="5"/>
 									<s:Label text="Шаблон форзаца:" width="120" textAlign="right"/>
 									<s:DropDownList id="ddCurrEndpaper" width="150" labelField="name" 
