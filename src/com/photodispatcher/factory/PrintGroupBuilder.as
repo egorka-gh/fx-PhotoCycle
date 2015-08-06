@@ -338,6 +338,7 @@ package com.photodispatcher.factory{
 			for each(f in pg.files){
 				if (f && (f.page_num!=0 || dst.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) 
 					&& !(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && !dst.bookTemplate.is_sheet_ready && (f.page_num==1 || f.page_num==pg.pageNumber))){
+					f.book_part=f.page_num==0?BookSynonym.BOOK_PART_COVER:BookSynonym.BOOK_PART_BLOCK;
 					dst.addFile(f);
 				}
 			}
@@ -736,6 +737,8 @@ package com.photodispatcher.factory{
 			if(!bookSynonym) return false;
 			
 			pg.files=null;
+			//store current pg paper, case when alt papper inuse
+			var paper:int=pg.paper;
 			if(pg.book_part==BookSynonym.BOOK_PART_COVER){
 				//covers group
 				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_COVER, ppg.butt, pg)){
@@ -757,6 +760,8 @@ package com.photodispatcher.factory{
 					fillSheets(ppg, pg, false);
 				}
 			}
+			//restore paper
+			pg.paper=paper;
 			if(pg.files){
 				pg.book_num=ppg.book_num;
 				a=pg.bookFiles;

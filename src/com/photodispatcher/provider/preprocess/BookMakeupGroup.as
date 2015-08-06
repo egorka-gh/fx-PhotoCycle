@@ -140,9 +140,32 @@ package com.photodispatcher.provider.preprocess{
 				'; heigh-'+printGroup.height.toString()+
 				'; sheet_len-'+len.toString());
 
-			//crop
+			//crop size
 			var sheetCrop:String=len.toString()+'x'+width.toString()+'+0+0!';
-			//var line:String;
+			var barcode:String
+			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_COVER){
+				//draw cover barcode before crop
+				command.add(file.file_name);
+				if(printGroup.bookTemplate.bar_size>0){
+					barcode=printGroup.bookBarcode(file);
+					if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
+				}
+				//crop
+				command.add('-gravity'); command.add('West');
+				command.add('-background'); command.add('white');
+				command.add('-crop'); command.add(sheetCrop);
+				command.add('-flatten');
+			}else{
+				//regular crop
+				command.add('-gravity'); command.add('Center');
+				command.add('-background'); command.add('white');
+				command.add(file.file_name);
+				command.add('-crop'); command.add(sheetCrop);
+				command.add('-flatten');
+			}
+
+			/*
+			//crop
 			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_COVER){
 				command.add('-gravity'); command.add('West');
 			}else{
@@ -152,6 +175,7 @@ package com.photodispatcher.provider.preprocess{
 			command.add(file.file_name);
 			command.add('-crop'); command.add(sheetCrop);
 			command.add('-flatten');
+			*/
 			
 			//annotate 
 			annotateCommand(command,file);
@@ -181,10 +205,8 @@ package com.photodispatcher.provider.preprocess{
 				command.add('-draw'); command.add(draw);
 			}
 			
-			//draw cover barcode
-			var barcode:String
-			if((printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER) ||
-				(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_COVER)){
+			//draw cover barcode 
+			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER){
 				//barcode=printGroup.bookBarcodeText(file);
 				barcode=printGroup.bookBarcode(file);
 				if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);

@@ -285,6 +285,25 @@ package com.photodispatcher.context{
 			return latch;
 		}
 
+		public static function initPhotoCorrector():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initPhotoCorrector';
+			//register services
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				OrderStateService, 
+				TechPointService,
+				OrderService //+
+			]);
+
+			//init static maps
+			latch.join(Context.initSourceLists());
+			latch.join(Context.initAttributeLists());
+			latch.join(OrderState.initStateMap());
+			return latch;
+		}
+
 		public static function initTechOTK():DbLatch{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initTechOTK';
