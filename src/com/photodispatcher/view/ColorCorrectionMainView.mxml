@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:view="com.photodispatcher.view.*"
+		 xmlns:colorcorrection="com.photodispatcher.provider.colorcorrection.*"
+		 creationComplete="{init()}" 
+		 >
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderExtraState;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.PopUpEvent;
+
+			[Bindable]
+			public var techPoint:TechPoint;
+			public var isActive:Boolean;
+
+			[Bindable]
+			public var ccStep:int=0;
+			[Bindable]
+			public var ccAdvance:int=0;
+
+			private function init():void{
+				manager.init();
+				refresh();
+			}
+			
+			
+			protected function btAdd_clickHandler(event:MouseEvent):void{
+				var pop:OrderSearchPopup=new OrderSearchPopup();
+				pop.open(null);
+			}
+
+			
+			[Bindable]
+			private var orderListAC:ArrayCollection;
+			
+			private function refresh():void{
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onRefresh);
+				latch.addLatch(svc.loadByState(OrderState.COLOR_CORRECTION_WAITE, OrderState.COLOR_CORRECTION));
+				latch.start();
+			}
+			private function onRefresh(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onRefresh);
+					if(latch.complite){
+						orderListAC=latch.lastDataAC;
+					}
+				}
+			}
+
+			public function start():void{
+				manager.init();
+				refresh();
+				currentState='grid';
+			}
+			
+			public function stop():void{
+			}
+
+			private var ordersGridMenu:GridContexMenu;
+			protected function dgMonitor_creationCompleteHandler(event:FlexEvent):void{
+				ordersGridMenu= new GridContexMenu(dgMonitor); 
+				ordersGridMenu.addItem('Открыть',openCallBack);
+				
+			}
+			private function openCallBack(grid:DataGrid,param:int):void{
+				var onItem:Order=grid.selectedItem as Order;
+				if(onItem) showOrder(onItem.id);
+			}
+			protected function dgMonitor_doubleClickHandler(event:MouseEvent):void{
+				openCallBack(dgMonitor,0);
+			}
+
+			protected function orderinfootk1_closeHandler(event:Event):void{
+				refresh();
+				currentState='grid';
+			}
+			
+			private function showOrder(orderId:String):void{
+				if(!manager.initComplite){
+					Alert.show('Ошибка инициализации ColorCorrectionManager');
+					return;
+				}
+				manager.load(orderId);
+				if(ccView) ccView.start();
+				currentState='correction';
+			}
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<colorcorrection:ColorCorrectionManager id="manager" ccAdvance="{ccAdvance}" ccStep="{ccStep}"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="grid"/>
+		<s:State name="correction"/>
+	</s:states>
+	<s:VGroup gap="10" top="0" left="0" right="0" bottom="0"  includeIn="grid">
+		<s:HGroup width="100%" horizontalAlign="right">
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+
+		</s:HGroup>
+		<s:DataGrid id="dgMonitor" selectionMode="singleRow" 
+					 width="100%" height="100%"
+					creationComplete="dgMonitor_creationCompleteHandler(event)"
+					doubleClickEnabled="true" doubleClick="dgMonitor_doubleClickHandler(event)"
+					dataProvider="{orderListAC}" locale="ru_RU" columns="{Order.gridColumns()}"/>
+		<s:Button id="btAdd" label="Добавить" click="btAdd_clickHandler(event)"/>
+	</s:VGroup>
+	
+	<view:ColorCorrectionView id="ccView" width="100%" height="100%" includeIn="correction"
+							  ccAdvance="{ccAdvance}" ccStep="{ccStep}"
+							  manager="{manager}" close="{currentState='grid'}"/>
+	
+	<!--<view:OrderInfoOTK id="vInfo" top="0" left="0" right="0" bottom="0" includeIn="book"
+					   creationComplete="vInfo_creationCompleteHandler(event)"
+					   close="orderinfootk1_closeHandler(event)"  
+					   techPoint="{techPoint}"/>-->
+	
+</s:Group>

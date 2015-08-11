@@ -30,7 +30,7 @@ package com.photodispatcher.factory{
 	import mx.controls.Alert;
 	
 	public class PrintGroupBuilder{
-		private static const ALLOWED_EXTENSIONS:Object={jpg:true,jpeg:true,png:true,tif:true,tiff:true,bmp:true,gif:true};
+		public static const ALLOWED_EXTENSIONS:Object={jpg:true,jpeg:true,png:true,tif:true,tiff:true,bmp:true,gif:true};
 		
 		/**
 		 * parse PrintGroups from file structure

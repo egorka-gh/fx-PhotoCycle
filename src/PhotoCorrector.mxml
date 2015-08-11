@@ -6,8 +6,7 @@
 					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*" 
 					   xmlns:barcode="com.photodispatcher.service.barcode.*"
 					   showStatusBar="false"
-					   creationComplete="{initApp()}"  
-					   closing="windowedapplication1_closingHandler(event)">
+					   creationComplete="{initApp()}">
 	
 	<fx:Script>
 		<![CDATA[
@@ -48,7 +47,19 @@
 			[Bindable]
 			private var workFolder:String;
 			[Bindable]
-			private var imDetected:Boolean;
+			private var tmpFolder:String;
+			[Bindable]
+			private var imPath:String;
+			[Bindable]
+			private var imPathValid:Boolean=false;
+			[Bindable]
+			private var imRespond:String;
+			[Bindable]
+			private var imThreads:int=0;
+			[Bindable]
+			private var ccStep:int=5;
+			[Bindable]
+			private var ccAdvance:int=0;
 
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
@@ -109,50 +120,84 @@
 					}
 				}
 				
+				startPopup.close();
+				startPopup=null;
+
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				var imPath:String;
 				if (so.size>0){
 					techPoint=so.data.monitorTechPoint;
 					var configPass:String=so.data.configPass;;
 					if(configPass) Context.setAttribute('configPass',configPass);
 					workFolder=so.data.workFolder;
+					tmpFolder=so.data.tmpFolder;
 					imPath = so.data.imPath;
+					imThreads=so.data.imThreads;
+					ccAdvance=so.data.ccAdvance;
+					ccStep=so.data.ccStep;
 				}
+				if(imThreads==0 || imThreads<0) imThreads=1;
+				if(ccStep==0) ccStep=5;
 				Context.setAttribute("workFolder", workFolder);
+				chkSetTmpFolder(tmpFolder);
 				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
-				Context.setAttribute('imPath',imPath);
 				//detect IM
-				if (imPath){
-					//var latchIM:AsyncLatch=new AsyncLatch(true);
-					//latchIM.start();
+				pingIM();
+				cfgEnabled=true;
+				currentState='config';
+			}
+
+			private function pingIM():void{
+				if(imPathValid) Context.setAttribute('imPath','');
+				if(imPath){
 					var f:File=File.applicationStorageDirectory;
+					//var im:IMRuner= new IMRuner(imPath,Context.getAttribute('workFolder'));
 					var im:IMRuner= new IMRuner(imPath,f.nativePath);
 					im.addEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
 					im.ping(imPath);
 				}
-				
-				
 			}
-			
 			private function onImPing(e:IMRunerEvent):void{
 				var im:IMRuner=e.target as IMRuner;
 				im.removeEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
-				if(!e.hasError){
-					var so:SharedObject = SharedObject.getLocal('appProps','/');
-					var imThreads:int=so.data.imThreads;
-					if(!imThreads || imThreads<=0) imThreads=1;
-					Context.setAttribute('imThreads',imThreads);
-					imDetected=true;
-					//latchIM.release();
-				}else{
-					//latchIM.releaseError('ImageMagick не доступен: '+e.error);
-				}
-				startPopup.close();
-				startPopup=null;
-				//checkCfgPass();
-				currentState='config';
+				imPathValid=!e.hasError;
+				imRespond=e.error;
+				if(imPathValid) Context.setAttribute('imPath',imPath);
+
+				//currentState='config';
 			}
 
+			private function chkSetTmpFolder(path:String):void{
+				if(chkFolder(path)){
+					tmpFolder=path;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.tmpFolder = tmpFolder;
+					so.flush();  
+				}else{
+					tmpFolder='';
+					var f:File=File.userDirectory;
+					f=f.resolvePath('cc_temp');
+					try{
+						if(f.exists){
+							if(f.isDirectory){
+								f.deleteDirectory(true);
+							}else{
+								f.deleteFile();
+							}
+						}
+						f.createDirectory();
+						tmpFolder=f.nativePath;
+					}catch(error:Error){
+						trace(error.message);
+					}
+				}
+				Context.setAttribute("tmpFolder", tmpFolder);
+			}
+
+			private function chkFolder(path:String):Boolean{
+				if(!path) return false;
+				var f:File=new File(path);
+				return f.exists && f.isDirectory;
+			}
 			
 			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
 				techPointObj= ddTechPoint.selectedItem as TechPoint;
@@ -165,22 +210,34 @@
 			
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
+				/*
 				if(!techPointObj){ 
-					Alert.show('Не настроена тех точка ОТК');
+					Alert.show('Не настроена тех точка');
 					return;
 				}
+				*/
+				if(!imPathValid){
+					Alert.show('Не настроен IM');
+					return;
+				} 
+				if(!chkFolder(workFolder)){
+					Alert.show('Не настроена рабочая папка');
+					return;
+				}
+				if(viewCC) viewCC.start();
 				currentState='monitor';
 			}
 			
 			
 			protected function button2_clickHandler(event:MouseEvent):void{
-				if(techMonitor) techMonitor.stop();
-				cfgEnabled=false;
+				//if(techMonitor) techMonitor.stop();
 				currentState='config';
+				checkCfgPass(true);
 			}
 			
 			protected function state1_enterStateHandler(event:FlexEvent):void{
-				cfgEnabled=false;
+				//cfgEnabled=false;
+				cfgEnabled=true;
 			}
 			
 			protected function btSetPass_clickHandler(event:MouseEvent):void{
@@ -211,6 +268,9 @@
 			private var cfgEnabled:Boolean;
 			
 			protected function checkCfgPass(ask:Boolean=false):void{
+				cfgEnabled=true;
+				return;
+				
 				var configPass:String=Context.getAttribute('configPass');
 				if(!configPass){
 					cfgEnabled=true;
@@ -260,12 +320,79 @@
 				}
 			}
 			
+			protected function btTmpFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var sPath:String='';
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,tmpFolderSet);
+				file.browseForDirectory('Выбирите папку');
+			}
+			protected function tmpFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,tmpFolderSet);
+					chkSetTmpFolder(file.nativePath);
+				}
+			}
+			
+			protected function tiIMFolder_enterHandler(event:FlexEvent):void{
+				imPathValid=false;
+				imPath=tiIMFolder.text;
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imPath = imPath;
+				so.flush();  
+				Context.setAttribute("imPath", imPath);
+				if(imPath) pingIM();
+			}
+			
+			protected function btIMFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,imFolderSet);
+				file.browseForDirectory('Выбирите папку ImageMagick');
+			}
+			protected function imFolderSet(event:Event):void{
+				imPathValid=false;
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,imFolderSet);
+					imPath=file.nativePath;
+					
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.imPath = file.nativePath;
+					so.flush();  
+					Context.setAttribute("imPath", imPath);
+					
+					if(imPath) pingIM();
+				}
+			}
+			
+			/* protected function tiIMThreads_changeHandler(event:TextOperationEvent):void{
+				imThreads=int(tiIMThreads.text);
+				if(imThreads<=0 ) imThreads=1;
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imThreads = imThreads;
+				so.flush();  
+				Context.setAttribute("imThreads", imThreads);
+			} */
+			
+			protected function nsStep_changeHandler(event:Event):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.ccStep = nsStep.value;
+				so.flush();  
+			}
+			
+			protected function nsAdvance_changeHandler(event:Event):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.ccAdvance = nsAdvance.value;
+				so.flush();
+			}
+			
 		]]>
 	</fx:Script>
-	
-	<fx:Declarations>
-		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
-	</fx:Declarations>
 	
 	<s:states>
 		<s:State name="disconnected"/>
@@ -297,56 +424,61 @@
 			<s:Button id="btWrkFolder" label="..." click="btWrkFolder_clickHandler(event)"/>
 		</s:HGroup>
 		
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label id="lbLong" text="Папка временных файлов:"/>
+			<s:TextInput id="tiTmpFolder" text="{tmpFolder}" editable="false" width="400"/>
+			<s:Button id="btTmpFolder" label="..." click="btTmpFolder_clickHandler(event)"/>
+		</s:HGroup>
+
+		<s:Spacer height="10"/>
+		<s:VGroup gap="3" width="100%">
+			<s:HGroup gap="5" width="100%">
+				<s:Label text="Папка ImageMagick:" width="{lbLong.width}"/>
+				<s:TextInput id="tiIMFolder" text="{imPath}" width="400" color="{imPathValid?0:0xff0000}" enter="tiIMFolder_enterHandler(event)"/>
+				<s:Button id="btIMFolder" label="..." click="btIMFolder_clickHandler(event)"/>
+			</s:HGroup>
+			<s:Label text="{imRespond}" color="{imPathValid?0:0xff0000}" width="100%" paddingLeft="{lbLong.width}"/>
+		</s:VGroup>
+		<!--<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Кол потоков" width="{lbLong.width}"/>
+			<s:TextInput id="tiIMThreads" text="{imThreads.toString()}" restrict="0123456789" width="50" enabled="{imPathValid}"
+						 change="tiIMThreads_changeHandler(event)"/>
+		</s:HGroup>-->
+
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Шаг" width="{lbLong.width}"/>
+			<s:NumericStepper id="nsStep" minimum="1" maximum="20" snapInterval="1" width="50" value="@{ccStep}" change="nsStep_changeHandler(event)"/>
+		</s:HGroup>
+
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Упреждение" width="{lbLong.width}"/>
+			<s:NumericStepper id="nsAdvance" minimum="0" maximum="5" snapInterval="1" width="50" value="@{ccAdvance}" change="nsAdvance_changeHandler(event)"/>
+		</s:HGroup>
+
 		
-		<s:Spacer height="20"/>
+		<!--<s:Spacer height="20"/>
 		<s:HGroup gap="10" verticalAlign="baseline">
 			<s:Label text="Защита конфигурации"/>
 			<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
 			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
-		</s:HGroup>
+		</s:HGroup>-->
 		
-		<s:Spacer height="10"/>
-		<s:Label text="Параметры печати" fontWeight="bold"/>
-			<s:HGroup width="100%" gap="5" verticalAlign="baseline">
-				<s:Label id="lbOOpath" text="Путь к OpenOffice"/>
-				<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}" textAlign="left"/>
-				<s:Button id="btOOFolder" label="..." click="btOOFolder_clickHandler(event)"/>
-				<s:Button id="btOOFolderClear" label="x" click="btOOFolderClear_clickHandler(event)"/>
-			</s:HGroup>
-		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
-			<s:Label text="Принтер" width="{lbOOpath.width}"/>
-			<s:TextInput id="tiPrinter" text="@{printer}" width="210" textAlign="left" change="tiPrinter_changeHandler(event)"/>
-		</s:HGroup>
-		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
-			<s:Label text="Принтер этикеток" width="{lbOOpath.width+10}"/>
-			<s:TextInput id="tiTermPrinter" text="@{termPrinter}" width="210" textAlign="left" change="tiTermPrinter_changeHandler(event)" />
-		</s:HGroup>
-			
-
 		
 	</s:VGroup>
 	
-	<view:TechOTKMonitor id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" isActive="{currentState=='monitor'}"
-						 top="20" left="20" right="20" bottom="50"/>
-	<view:TechMailPackageView id="mpView" includeIn="mail" isActive="{currentState=='mail'}" barcodeReader="{barcodeReader}" techPointOTK="{techPointObj}"
-							  top="20" left="20" right="20" bottom="50"/>
+	<!--<view:TechOTKMonitor id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" isActive="{currentState=='monitor'}"
+						 top="20" left="20" right="20" bottom="50"/>-->
+	<view:ColorCorrectionMainView id="viewCC" includeIn="monitor"
+								  ccAdvance="{ccAdvance}" ccStep="{ccStep}"
+								  top="20" left="20" right="20" bottom="50"/>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
-		<!--<s:Image source="{BaseDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в базу данных"/>
-		<s:Group width="5">
-		<s:Label text="{BaseDAO.lastErrMsg}" color="#cc0000"/>
-		</s:Group>
-		<s:Image source="{LocalDAO.isBusy?'assets/database_green.png':'assets/database_grey.png'}" width="24" height="24" toolTip="Запись в локальную базу данных"/>
-		<s:Group width="5">
-		<s:Label text="{LocalDAO.lastErrMsg}" color="#cc0000"/>
-		</s:Group>-->
-		<s:Label text="{lastBarcode}" height="100%" verticalAlign="bottom"/>
 		<s:Spacer width="100%"/>
-		<s:Button id="btInventoryRacks" label="Стеллажи" includeIn="monitor,mail" click="btInventoryRacks_clickHandler(event)"/>
-		<s:Spacer width="20"/>
-		<s:Button label="Конфигурация" includeIn="monitor,mail" click="button2_clickHandler(event)"/>
+		<s:Button label="Конфигурация" includeIn="monitor" click="button2_clickHandler(event)"/>
 		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
-		<s:Button label="ОТК" includeIn="config, mail" click="button1_clickHandler(event)"/>
-		<s:Button label="Упаковка" includeIn="config, monitor" click="button5_clickHandler(event)"/>
+		<s:Button label="Старт" includeIn="config" click="button1_clickHandler(event)"/>
 		<s:Button label="Закрыть программу" click="button4_clickHandler(event)" />
 	</s:HGroup>
 	

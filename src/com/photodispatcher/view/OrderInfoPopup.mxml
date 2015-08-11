@@ -445,6 +445,24 @@
 				latch.addEventListener(Event.COMPLETE,onOrderClean);
 			}
 			
+			protected function btColCor_clickHandler(event:MouseEvent):void{
+				if (!order) return;
+				if (order.state<OrderState.FTP_COMPLETE) return;
+				if (order.state==OrderState.COLOR_CORRECTION ||order.state==OrderState.COLOR_CORRECTION_WAITE) return;
+				if (!order.hasSuborders){
+					Alert.show('Закз не содержит подзаказов');
+					return;
+				}
+				/*
+				if (order.state>OrderState.COLOR_CORRECTION){
+					Alert.show('Закз будет сброшен');
+				}
+				*/
+				var latch:DbLatch=MenuCommonActions.cleanUpOrder(order, OrderState.COLOR_CORRECTION_WAITE);
+				latch.addEventListener(Event.COMPLETE,onOrderClean);
+			}
+			
+			
 		]]>
 	</fx:Script>
 	
@@ -533,11 +551,17 @@
 						</s:FormItem> 
 					</s:Form>
 				<!--</s:Scroller>-->
-				<s:HGroup gap="10" verticalAlign="baseline" horizontalAlign="right" width="100%" bottom="0" paddingBottom="10" paddingRight="10" includeIn="infoFull">
-					<s:Button id="btRebuild" label="Переподготовить" click="btRebuild_clickHandler(event)" 
-							  enabled="{order.state>OrderState.PREPROCESS_COMPLETE}"/>
-					<s:Button label="Перезагрузить" click="button1_clickHandler(event)"/>
-				</s:HGroup>
+				<s:VGroup gap="10" width="100%" bottom="0" paddingBottom="10" paddingRight="10" paddingLeft="10" includeIn="infoFull">
+					<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
+						<s:Button id="btColCor" label="Цветокорекция" click="btColCor_clickHandler(event)" 
+								  enabled="{order.state>OrderState.FTP_COMPLETE}"/>
+						<s:Button id="btRebuild" label="Переподготовить" click="btRebuild_clickHandler(event)" 
+								  enabled="{order.state>OrderState.PREPROCESS_COMPLETE}"/>
+					</s:HGroup>
+					<s:HGroup gap="10" verticalAlign="baseline" width="100%"  horizontalAlign="right">
+						<s:Button label="Перезагрузить" click="button1_clickHandler(event)"/>
+					</s:HGroup>
+				</s:VGroup>
 			</s:Group>
 			
 			<s:VGroup id="gDet" gap="0" width="100%" height="100%" includeIn="info">

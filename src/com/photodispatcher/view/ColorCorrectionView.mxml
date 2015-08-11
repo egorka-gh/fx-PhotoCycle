@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Metadata>
+		[Event(name="close", type="flash.events.Event")]	
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.BusyEvent;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.provider.colorcorrection.ColorCorrectionManager;
+			
+			import mx.controls.Alert;
+			
+			[Bindable]
+			public var ccStep:int=0;
+			[Bindable]
+			public var ccAdvance:int=0;
+
+			private var _manager:ColorCorrectionManager;
+			[Bindable]
+			public function get manager():ColorCorrectionManager{
+				return _manager;
+			}
+			public function set manager(value:ColorCorrectionManager):void{
+				if(_manager){
+					_manager.removeEventListener(BusyEvent.BUSY, onManagerBusy);
+					_manager.removeEventListener(ErrorEvent.ERROR, onManagerError);
+				}
+				_manager = value;
+				if(_manager){
+					_manager.addEventListener(BusyEvent.BUSY, onManagerBusy);
+					_manager.addEventListener(ErrorEvent.ERROR, onManagerError);
+				}
+			}
+
+			public function start():void{
+				currentState='notStarted';
+			}
+			
+			private function onManagerError(evt:ErrorEvent):void{
+				Alert.show(evt.text);
+			}
+			private function onManagerBusy(evt:BusyEvent):void{
+				if(evt.busyType==2){
+					currentState='busyProgress';
+					busyCaption=evt.busyMassage;
+				}else if(evt.busyType==0){
+					busyCaption='';
+					currentState='work';
+				}
+			}
+			
+			[Bindable]
+			private var busyCaption:String;
+			
+			protected function btCloseview_clickHandler(event:MouseEvent):void{
+				dispatchEvent(new Event( Event.CLOSE));
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(manager.currSuborder){ 
+					if(manager.currSuborder.state!=OrderState.COLOR_CORRECTION_WAITE && manager.currSuborder.state!=OrderState.COLOR_CORRECTION){
+						manager.currSuborder.state=OrderState.COLOR_CORRECTION;
+					}
+					manager.start(manager.currSuborder);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:states>
+		<s:State name="notStarted"/>
+		<s:State name="busyProgress"/>
+		<s:State name="work"/>
+	</s:states>
+	
+	<s:HGroup gap="10" top="0" left="0" right="0" bottom="0">
+		<s:VGroup width="150" height="100%" gap="5">
+			<s:Label text="Заказ: {manager.order.id}" width="100%" maxDisplayedLines="1"/>
+			<s:Label text="Сайт: {manager.order.source_name} ({manager.order.source_code})" width="100%" maxDisplayedLines="1"/>
+			<s:Label text="Папка: {manager.order.ftp_folder}" width="100%" maxDisplayedLines="1"/>
+			
+			<s:Label text="Подзаказы"/>
+			<s:List dataProvider="{manager.order.suborders}" itemRenderer="com.photodispatcher.view.itemRenderer.SubOrderCCItemrenderer"
+					selectedItem="@{manager.currSuborder}"
+					borderAlpha="0"
+					contentBackgroundAlpha="0"
+					height="100%"/>
+
+			<s:Spacer height="100%"/>
+			<s:Button id="btCloseview" label="К списку заказов" click="btCloseview_clickHandler(event)" left="10" bottom="0"/>
+		</s:VGroup>
+		<s:VGroup width="100%" height="100%" gap="5">
+			<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+				<s:Label text="Подзаказ: {manager.currSuborder.sub_id} ({manager.currSuborder.humanId})"/>
+				<s:Label text="Папка: {manager.currSuborder.ftp_folder}"/>
+				<s:Label text="Статус: {manager.currSuborder.state_name}"/>
+				<s:Label text="Файлов: {manager.filesAC.length}"/>
+				<s:Spacer width="100%"/>
+				<s:Button label="Цветокоррекция" 
+						  enabled="{Boolean(manager.currSuborder) &amp;&amp; manager.currSuborder.state!=OrderState.COLOR_CORRECTION &amp;&amp; manager.currSuborder.state!=OrderState.COLOR_CORRECTION_WAITE}"
+						  click="button1_clickHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup width="100%" gap="5" verticalAlign="baseline" includeIn="busyProgress">
+				<mx:ProgressBar width="100%" mode="event" source="{manager}" labelPlacement="left"
+								label="{busyCaption} %1 из %2"/>
+				
+			</s:HGroup>
+
+			<s:List id="dcFiles" includeIn="work" width="100%" 
+					dataProvider="{manager.filesAC}"
+					selectedItem="@{manager.currImage}"
+					itemRenderer="com.photodispatcher.view.itemRenderer.CCImageRenderer">
+				<s:layout>
+					<s:TileLayout orientation="columns" horizontalGap="5" columnWidth="130" rowHeight="100" requestedRowCount="1" 
+								  useVirtualLayout="true"/>
+				</s:layout>
+			</s:List>
+									  
+			<s:HGroup width="100%" height="100%" gap="5" includeIn="work">
+				<s:Image id="imgOrg" width="100%" height="100%" scaleMode="letterbox" smooth="true" smoothingQuality="high"
+						 clearOnLoad="true"
+						 backgroundColor="{0xeeeeee}" backgroundAlpha="0.5"
+						 source="{manager.currImage?manager.currImage.orgPath:null}"
+						 horizontalAlign="center"/>
+				<s:Image id="imgCurr" width="100%" height="100%" scaleMode="letterbox" smooth="true" smoothingQuality="high"
+						 clearOnLoad="true"
+						 backgroundColor="{0xeeeeee}" backgroundAlpha="0.5"
+						 source="{manager.corrFile}"
+						 horizontalAlign="center"/>
+			</s:HGroup>
+			<s:HGroup width="100%" gap="5" includeIn="work" verticalAlign="baseline">
+				<s:Label width="50%" maxDisplayedLines="1" color="#ff0000" text="{manager.lastError}"/>
+				<s:Spacer width="100%"/>
+				
+				<s:Button label="X" color="#0000aa" fontWeight="bold" width="30" click="{manager.resetCC()}"/> 
+				<s:Label text="C"/>
+				<s:NumericStepper id="nsCyan" minimum="-100" maximum="100" stepSize="{ccStep}" snapInterval="1" width="50"
+								  value="@{manager.corrCyan}" change="{manager.applyCorrection()}"/>
+				<s:Label text="M"/>
+				<s:NumericStepper id="nsMagenta" minimum="-100" maximum="100" stepSize="{ccStep}" snapInterval="1" width="50"
+								  value="@{manager.corrMagenta}" change="{manager.applyCorrection()}"/>
+				<s:Label text="Y"/>
+				<s:NumericStepper id="nsYellow" minimum="-100" maximum="100" stepSize="{ccStep}" snapInterval="1" width="50"
+								  value="@{manager.corrYellow}" change="{manager.applyCorrection()}"/>
+				<s:Label text="D"/>
+				<s:NumericStepper id="nsBright" minimum="-100" maximum="100" stepSize="{ccStep}" snapInterval="1" width="50"
+								  value="@{manager.corrBright}" change="{manager.applyCorrection()}"/>
+				<s:Button label="√" color="#00aa00" fontWeight="bold" width="30" click="{manager.compliteImage()}"/> 
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+	
+</s:Group>

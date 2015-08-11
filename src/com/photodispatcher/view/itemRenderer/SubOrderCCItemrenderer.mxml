@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				xmlns:entities="com.photodispatcher.model.mysql.entities.*"
+				autoDrawBackground="true" >
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
+			
+			[Bindable]
+			private var so:SubOrder;
+			
+			override public function get data():Object{
+				return super.data;
+			}
+			override public function set data(value:Object):void{
+				super.data = value;
+				so=value as SubOrder;
+				if(so && !so.state_name) so.state_name= OrderState.getStateName(so.state);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="hovered"/>
+		<s:State name="selected"/>
+	</s:states>     
+
+	<!--background-->
+	<s:Rect radiusX="0" top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<!--<s:SolidColor color="#ffffff" />-->
+			<s:SolidColor color="{so.state &lt; OrderState.PREPROCESS_WAITE?0xEEEE99:0xEEEEEE}" />
+		</s:fill>
+	</s:Rect>
+	
+	<!--delemiter-->
+	<s:Line left="0" right="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#cccccc" weight="1"/>
+		</s:stroke>
+	</s:Line>
+	<!-- selected border-->
+	<s:Rect radiusX="0" top="0" left="0" right="0" bottom="0" includeIn="selected">
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+
+	<s:VGroup gap="5" top="5" left="5" right="2" bottom="2" >
+		<s:Label text="{so.sub_id}" fontWeight="bold" width="100%" maxDisplayedLines="1"/>
+		<s:Label text="{so.state_name}" width="100%" maxDisplayedLines="1"/>
+	</s:VGroup>
+	
+</s:ItemRenderer>

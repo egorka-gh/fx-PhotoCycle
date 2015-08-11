@@ -53,6 +53,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FTP_INCOMPLITE:int=120;
 		public static const FTP_COMPLETE:int=130;
 		
+		public static const COLOR_CORRECTION_WAITE:int=139;
 		public static const COLOR_CORRECTION:int=140;
 		
 		public static const PREPROCESS_WAITE:int=150;

@@ -20,6 +20,7 @@ package com.photodispatcher.model.mysql.entities {
 
         private var _alias:String;
         private var _books_done:int;
+        private var _color_corr:Boolean;
         private var _extraInfo:OrderExtraInfo;
         private var _ftp_folder:String;
         private var _order_id:String;
@@ -47,6 +48,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get books_done():int {
             return _books_done;
+        }
+
+        public function set color_corr(value:Boolean):void {
+            _color_corr = value;
+        }
+        public function get color_corr():Boolean {
+            return _color_corr;
         }
 
         public function set extraInfo(value:OrderExtraInfo):void {
@@ -151,6 +159,7 @@ package com.photodispatcher.model.mysql.entities {
             super.readExternal(input);
             _alias = input.readObject() as String;
             _books_done = input.readObject() as int;
+            _color_corr = input.readObject() as Boolean;
             _extraInfo = input.readObject() as OrderExtraInfo;
             _ftp_folder = input.readObject() as String;
             _order_id = input.readObject() as String;
@@ -171,6 +180,7 @@ package com.photodispatcher.model.mysql.entities {
             super.writeExternal(output);
             output.writeObject((_alias is IPropertyHolder) ? IPropertyHolder(_alias).object : _alias);
             output.writeObject((_books_done is IPropertyHolder) ? IPropertyHolder(_books_done).object : _books_done);
+            output.writeObject((_color_corr is IPropertyHolder) ? IPropertyHolder(_color_corr).object : _color_corr);
             output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);
             output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
             output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
