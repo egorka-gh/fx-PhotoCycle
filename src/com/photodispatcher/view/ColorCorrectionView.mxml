@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
-		 xmlns:mx="library://ns.adobe.com/flex/mx">
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="init()">
 	
 	<fx:Metadata>
 		[Event(name="close", type="flash.events.Event")]	
@@ -14,6 +15,9 @@
 			import com.photodispatcher.provider.colorcorrection.ColorCorrectionManager;
 			
 			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.events.ResizeEvent;
 			
 			[Bindable]
 			public var ccStep:int=0;
@@ -34,9 +38,62 @@
 				if(_manager){
 					_manager.addEventListener(BusyEvent.BUSY, onManagerBusy);
 					_manager.addEventListener(ErrorEvent.ERROR, onManagerError);
+					
 				}
 			}
 
+			private function init():void{
+				//listen keyboard
+				FlexGlobals.topLevelApplication.addEventListener(KeyboardEvent.KEY_UP, keyHandler);
+			}
+			private function keyHandler(event:KeyboardEvent):void {
+				if(!manager || !manager.currImage || !manager.currImage.isStarted) return;
+				//run shotcuts
+				switch(event.keyCode){
+					case 97: //1 bright up
+						nsBright.changeValueByStep(true);
+						manager.applyCorrection();
+						break;
+					case 99: //3 bright down
+						nsBright.changeValueByStep(false);
+						manager.applyCorrection();
+						break;
+					case 100: //4 cyan up
+						nsCyan.changeValueByStep(true);
+						manager.applyCorrection();
+						break;
+					case 103: //7 cyan down
+						nsCyan.changeValueByStep(false);
+						manager.applyCorrection();
+						break;
+					case 101: //5 magenta up
+						nsMagenta.changeValueByStep(true);
+						manager.applyCorrection();
+						break;
+					case 104: //8 magenta down
+						nsMagenta.changeValueByStep(false);
+						manager.applyCorrection();
+						break;
+					case 102: //6 yellow up
+						nsYellow.changeValueByStep(true);
+						manager.applyCorrection();
+						break;
+					case 105: //9 yellow down
+						nsYellow.changeValueByStep(false);
+						manager.applyCorrection();
+						break;
+					//case 96: //0 complite?
+					case 13: //complite
+						if(event.ctrlKey && manager.currImage) manager.currImage.zerroCorrection=true; 
+						manager.compliteImage();
+						manager.nextImage();
+						dcFiles.ensureIndexIsVisible(manager.filesAC.getItemIndex(manager.currImage));
+						break;
+					case 27: //reset or complite correction
+						manager.resetCC();
+						break;
+				}
+			}
 			public function start():void{
 				currentState='notStarted';
 			}
@@ -58,16 +115,11 @@
 			private var busyCaption:String;
 			
 			protected function btCloseview_clickHandler(event:MouseEvent):void{
-				dispatchEvent(new Event( Event.CLOSE));
+				dispatchEvent(new Event(Event.CLOSE));
 			}
 			
-			protected function button1_clickHandler(event:MouseEvent):void{
-				if(manager.currSuborder){ 
-					if(manager.currSuborder.state!=OrderState.COLOR_CORRECTION_WAITE && manager.currSuborder.state!=OrderState.COLOR_CORRECTION){
-						manager.currSuborder.state=OrderState.COLOR_CORRECTION;
-					}
-					manager.start(manager.currSuborder);
-				}
+			protected function lstSuborders_valueCommitHandler(event:FlexEvent):void{
+				currentState='notStarted';
 			}
 			
 		]]>
@@ -86,8 +138,9 @@
 			<s:Label text="Папка: {manager.order.ftp_folder}" width="100%" maxDisplayedLines="1"/>
 			
 			<s:Label text="Подзаказы"/>
-			<s:List dataProvider="{manager.order.suborders}" itemRenderer="com.photodispatcher.view.itemRenderer.SubOrderCCItemrenderer"
+			<s:List id="lstSuborders" dataProvider="{manager.order.suborders}" itemRenderer="com.photodispatcher.view.itemRenderer.SubOrderCCItemrenderer"
 					selectedItem="@{manager.currSuborder}"
+					valueCommit="lstSuborders_valueCommitHandler(event)"
 					borderAlpha="0"
 					contentBackgroundAlpha="0"
 					height="100%"/>
@@ -101,10 +154,15 @@
 				<s:Label text="Папка: {manager.currSuborder.ftp_folder}"/>
 				<s:Label text="Статус: {manager.currSuborder.state_name}"/>
 				<s:Label text="Файлов: {manager.filesAC.length}"/>
+				
 				<s:Spacer width="100%"/>
 				<s:Button label="Цветокоррекция" 
-						  enabled="{Boolean(manager.currSuborder) &amp;&amp; manager.currSuborder.state!=OrderState.COLOR_CORRECTION &amp;&amp; manager.currSuborder.state!=OrderState.COLOR_CORRECTION_WAITE}"
-						  click="button1_clickHandler(event)"/>
+						  enabled="false" enabled.notStarted="{Boolean(manager.currSuborder)}"
+						  click="{manager.startSuborder()}"/>
+				<s:Spacer width="5"/>
+				<s:Button label="Выполнен" 
+						  enabled="false" enabled.work="{Boolean(manager.currSuborder)}"
+						  click="{manager.endSuborderCorrection()}"/>
 			</s:HGroup>
 			<s:HGroup width="100%" gap="5" verticalAlign="baseline" includeIn="busyProgress">
 				<mx:ProgressBar width="100%" mode="event" source="{manager}" labelPlacement="left"
@@ -115,9 +173,11 @@
 			<s:List id="dcFiles" includeIn="work" width="100%" 
 					dataProvider="{manager.filesAC}"
 					selectedItem="@{manager.currImage}"
-					itemRenderer="com.photodispatcher.view.itemRenderer.CCImageRenderer">
+					itemRenderer="com.photodispatcher.view.itemRenderer.CCImageRenderer"
+					>
 				<s:layout>
-					<s:TileLayout orientation="columns" horizontalGap="5" columnWidth="130" rowHeight="100" requestedRowCount="1" 
+					<s:TileLayout orientation="columns" horizontalGap="5" columnWidth="130" rowHeight="100" requestedRowCount="1"
+								  columnAlign="justifyUsingWidth"
 								  useVirtualLayout="true"/>
 				</s:layout>
 			</s:List>
@@ -134,7 +194,7 @@
 						 source="{manager.corrFile}"
 						 horizontalAlign="center"/>
 			</s:HGroup>
-			<s:HGroup width="100%" gap="5" includeIn="work" verticalAlign="baseline">
+			<s:HGroup width="100%" gap="5" includeIn="work" verticalAlign="baseline" enabled="{manager.currImage &amp;&amp; manager.currImage.isStarted}">
 				<s:Label width="50%" maxDisplayedLines="1" color="#ff0000" text="{manager.lastError}"/>
 				<s:Spacer width="100%"/>
 				

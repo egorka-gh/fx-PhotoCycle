@@ -92,11 +92,6 @@
 				openCallBack(dgMonitor,0);
 			}
 
-			protected function orderinfootk1_closeHandler(event:Event):void{
-				refresh();
-				currentState='grid';
-			}
-			
 			private function showOrder(orderId:String):void{
 				if(!manager.initComplite){
 					Alert.show('Ошибка инициализации ColorCorrectionManager');
@@ -106,11 +101,17 @@
 				if(ccView) ccView.start();
 				currentState='correction';
 			}
+			
+			protected function manager_completeHandler(event:Event):void{
+				refresh();
+				currentState='grid';
+			}
+			
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
-		<colorcorrection:ColorCorrectionManager id="manager" ccAdvance="{ccAdvance}" ccStep="{ccStep}"/>
+		<colorcorrection:ColorCorrectionManager id="manager" ccAdvance="{ccAdvance}" ccStep="{ccStep}" complete="manager_completeHandler(event)"/>
 	</fx:Declarations>
 	
 	<s:states>
@@ -134,10 +135,5 @@
 	<view:ColorCorrectionView id="ccView" width="100%" height="100%" includeIn="correction"
 							  ccAdvance="{ccAdvance}" ccStep="{ccStep}"
 							  manager="{manager}" close="{currentState='grid'}"/>
-	
-	<!--<view:OrderInfoOTK id="vInfo" top="0" left="0" right="0" bottom="0" includeIn="book"
-					   creationComplete="vInfo_creationCompleteHandler(event)"
-					   close="orderinfootk1_closeHandler(event)"  
-					   techPoint="{techPoint}"/>-->
 	
 </s:Group>

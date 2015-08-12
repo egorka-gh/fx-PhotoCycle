@@ -15,7 +15,9 @@ package com.photodispatcher.provider.colorcorrection{
 		public var subFolder:String;
 		public var name:String;
 
+		public var isStarted:Boolean;
 		public var hasErr:Boolean;
+		public var zerroCorrection:Boolean;
 		public var done:Boolean;
 
 		public var corrCyan:int=0;
@@ -42,6 +44,10 @@ package com.photodispatcher.provider.colorcorrection{
 			ci.corrYellow=corrYellow;
 			ci.corrBright=corrBright;
 			return ci;
+		}
+		
+		public function get copyResult():Boolean{
+			return done && (zerroCorrection || corrCyan!=0 || corrMagenta!=0 || corrYellow!=0 || corrBright!=0)
 		}
 	}
 }

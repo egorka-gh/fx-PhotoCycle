@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
 				xmlns:s="library://ns.adobe.com/flex/spark" 
-				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"
 				autoDrawBackground="true">
 	
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.provider.colorcorrection.CCImage;
+			
+			import mx.events.FlexEvent;
+			import mx.graphics.BitmapFillMode;
 			[Bindable]
 			private var item:CCImage;
 			
@@ -34,7 +37,7 @@
 		</s:stroke>
 	</s:Rect>
 
-	<s:Image clearOnLoad="true" scaleMode="letterbox" smooth="false" fillMode="scale" top="3" left="3" right="3" bottom="3"
+	<s:Image id="img" clearOnLoad="true" scaleMode="letterbox" smooth="false" fillMode="scale" top="3" left="3" right="3" bottom="3"
 			  source="{item.orgPath}" backgroundColor="#eeeeee" backgroundColor.hovered="#cccccc" />
 	
 	<s:Rect radiusX="0" width="10" height="10" right="13" bottom="3">

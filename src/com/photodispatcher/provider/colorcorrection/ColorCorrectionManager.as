@@ -26,12 +26,14 @@ package com.photodispatcher.provider.colorcorrection
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
+	import mx.events.CloseEvent;
 	
 	import org.granite.tide.Tide;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	[Event(name="busy", type="com.photodispatcher.event.BusyEvent")]
+	[Event(name="complete", type="flash.events.Event")]
 	public class ColorCorrectionManager extends EventDispatcher{
 		public static const FLD_ORIGINAL:String='org';
 		public static const FLD_CORRECTION:String='wrk';
@@ -189,15 +191,17 @@ package com.photodispatcher.provider.colorcorrection
 				return;
 			}
 			clearTemp();
-			/*
+			//set state
 			for each(var so:SubOrder in order.suborders ){
+				so.state=OrderState.COLOR_CORRECTION_WAITE;
+				/*
 				if(so.color_corr){
 					currSuborder=so;
 					break;
 				}
+				*/
 			}
-			*/
-			//if(!currSuborder) currSuborder=order.suborders.getItemAt(0) as SubOrder;
+			if(!currSuborder) currSuborder=order.suborders.getItemAt(0) as SubOrder;
 		}
 		
 		private function dispatchError(msg:String):void{
@@ -205,9 +209,10 @@ package com.photodispatcher.provider.colorcorrection
 			var e:ErrorEvent= new ErrorEvent(ErrorEvent.ERROR,false,false,msg);  
 		}
 
-		public function start(suborder:SubOrder):void{
-			if(!suborder) return;
-			currSuborder=suborder;
+		public function startSuborder():void{
+			if(!currSuborder) return;
+			if(currSuborder.state!=OrderState.COLOR_CORRECTION) currSuborder.state=OrderState.COLOR_CORRECTION;
+
 			filesAC=new ArrayCollection();
 			clearTemp();
 			copySrcFiles();
@@ -294,12 +299,98 @@ package com.photodispatcher.provider.colorcorrection
 			}
 		}
 		
+		public function endSuborderCorrection():void{
+			var item:CCImage;
+			var files:Array=[];
+			for each(item in filesAC){
+				if(item.copyResult) files.push(item);
+			}
+			//copy files
+			cpyIdx=0;
+			cpyArr=files;
+			dispatchEvent(new BusyEvent('Копирование файлов',2));
+			copyNextResultFile();
+			return;
+		}
+		private function copyNextResultFile():void{
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,cpyIdx,cpyArr.length));
+			if(cpyIdx>=cpyArr.length){
+				//complited
+				cpyArr=[];
+				dispatchEvent(new BusyEvent('',0));
+				//save suborder state
+				currSuborder.state=OrderState.PREPROCESS_WAITE;
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onSuborderSave);
+				latch.addLatch(svc.setSuborderState(currSuborder));
+				latch.start();
+			}
+			var i:CCImage=cpyArr[cpyIdx] as CCImage;
+			if(i){
+				var sf:File=tmpRoot.resolvePath(FLD_DONE);
+				if(i.subFolder) sf=sf.resolvePath(i.subFolder);
+				sf=sf.resolvePath(i.name);
+				if(!sf.exists){
+					dispatchEvent(new BusyEvent('',0));
+					dispatchError('Ошибка копирования результата. Файл "'+sf.nativePath+'" не найден.');
+					return;
+				}
+				var df:File=new File(i.srcPath);
+				sf.addEventListener(Event.COMPLETE,onNextResultFile);
+				sf.addEventListener(IOErrorEvent.IO_ERROR,onNextResultFile);
+				sf.copyToAsync(df,true);
+			}
+			cpyIdx++;
+		}
+		private function onNextResultFile(e:Event):void{
+			var f:File=e.target as File;
+			f.removeEventListener(Event.COMPLETE,onNextResultFile);
+			f.removeEventListener(IOErrorEvent.IO_ERROR,onNextResultFile);
+			
+			if(e.type==Event.COMPLETE){
+				copyNextResultFile();
+			}else{
+				if(e is ErrorEvent){
+					dispatchEvent(new BusyEvent('',0));
+					dispatchError('Ошибка копирования результата: '+(e as ErrorEvent).text);
+				}
+			}
+		}
+		private function onSuborderSave(e:Event):void{
+			var latch:DbLatch=e.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onSuborderSave);
+				if(!latch.complite) return;
+			}
+			//finde next unprocessed
+			var next:SubOrder;
+			for each(var so:SubOrder in order.suborders ){
+				if(so.state<OrderState.PREPROCESS_WAITE){
+					next=so;
+					break;
+				}
+			}
+			if(next){
+				currSuborder=next;
+			}else{
+				//order complited
+				dispatchEvent(new Event(Event.COMPLETE));
+				//clenup
+				order=null;
+				currSuborder=null;
+				currImage=null;
+				filesAC=null;
+			}
+		}
+
 		private function startFile(image:CCImage):void{
 			corrFile=null;
 			runningTreads=null;
 			resetAdvanceDir();
 			if(!clearWrk()) return;
 			if(!image) return; 
+			image.isStarted=false;
 			if(!image.done) image.resetCorrection();
 			
 			corrBright=image.corrBright;
@@ -351,6 +442,51 @@ package com.photodispatcher.provider.colorcorrection
 				Alert.show(error.message);
 			}
 		}
+		
+		public function nextImage():void{
+			if(!filesAC || filesAC.length==0) return;
+			var next:CCImage;
+			var item:CCImage;
+			var idx:int=-1;
+			//look 4 next
+			if(currImage) idx=filesAC.getItemIndex(currImage);
+			while(!next && idx<filesAC.length-1){
+				idx++;
+				item=filesAC.getItemAt(idx) as CCImage;
+				if(!item.done) next=item;
+			}
+			if(!next){
+				//look any not done
+				for each(item in filesAC){
+					if(!item.done){
+						next=item;
+						break;
+					}
+				}
+			}
+			if(next){
+				currImage=next;
+			}else{
+				//complited
+				Alert.show('Все фотографии обработаны. Завершить подзаказ?','',Alert.YES | Alert.NO,null, onCompliteAlert);
+			}
+		}
+		private function onCompliteAlert(evt:CloseEvent):void {
+			if (evt.detail == Alert.YES ){
+				endSuborderCorrection();
+			}
+		}
+
+		public function isSuborderComplite():Boolean{
+			var res:Boolean=true;
+			for each(var i:CCImage in filesAC){
+				if(!i.done){
+					res=false;
+					break;
+				}
+			}
+			return res;
+		}
 
 		private function onMpcCreate(e:IMRunerEvent):void{
 			var im:IMRuner=e.target as IMRuner;
@@ -366,7 +502,7 @@ package com.photodispatcher.provider.colorcorrection
 				}else{
 					lastError='';
 				}
-				applyCorrection(false);
+				applyCorrection(true);
 			}
 		}
 		
@@ -422,10 +558,12 @@ package com.photodispatcher.provider.colorcorrection
 
 		private var runningTreads:Object;
 		
-		public function applyCorrection(resetDone:Boolean=true):void{
+		public function applyCorrection(initial:Boolean=false):void{
 			if(!currImage) return;
+			//check if started not initial image creation
+			if(!currImage.isStarted && !initial) return;
 			if(!runningTreads) runningTreads= new Object;
-			if(resetDone) currImage.done=false;
+			if(!initial) currImage.done=false;
 			corrFile=null;
 			var ci:CCImage=currImage.clone();
 			ci.corrBright=corrBright;
@@ -436,6 +574,7 @@ package com.photodispatcher.provider.colorcorrection
 			var f:File=tmpRoot.resolvePath(FLD_CORRECTION+File.separator+ci.corrFileName);
 			if(f.exists){
 				//is complited
+				currImage.isStarted=true;
 				if(!runningTreads[ci.corrFileName]) corrFile=f.nativePath;
 			}else{
 				runCorrection(ci);
@@ -532,6 +671,7 @@ package com.photodispatcher.provider.colorcorrection
 					&& ci.corrCyan==corrCyan
 					&& ci.corrMagenta==corrMagenta
 					&& ci.corrYellow==corrYellow){
+					currImage.isStarted=true;
 					corrFile=tmpRoot.resolvePath(FLD_CORRECTION+File.separator+ci.corrFileName).nativePath;
 					if(e.hasError){
 						lastError=e.error;

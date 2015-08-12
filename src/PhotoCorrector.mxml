@@ -88,7 +88,7 @@
 				startPopup.open(null);
 				
 				
-				var initLatch:DbLatch=Context.initTechOTK();
+				var initLatch:DbLatch=Context.initPhotoCorrector();
 				initLatch.addEventListener(Event.COMPLETE, onInit);
 				
 				var latch:DbLatch= new DbLatch();
