@@ -213,15 +213,16 @@
 			}
  */			
 			
-			protected function btRefreshStopLog(date:Date):void
-			{
+			protected function btRefreshStopLog(date:Date):void{
+				if(!date) return;
+				
 				var to:Date = new Date(date.time + 1000*60*60*24); // прибавим 24 часа
 				var from:Date = date;
 				
 				var svc:LabService = Tide.getInstance().getContext().byType(LabService,true) as LabService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onLoadLabStops);
-				latch.addLatch(svc.getLabStops(from,to));
+				latch.addLatch(svc.loadLabStops(from,to));
 				latch.start();
 				
 				
@@ -239,7 +240,7 @@
 					stopLogList = latch.lastDataAC;
 					
 					for each (var ls:LabStopLog in stopLogList){
-						
+						//TODO ёпте
 						ls.labDeviceName = (devMap[ls.lab_device] as LabDevice).name;
 						
 					}
@@ -476,13 +477,13 @@
 									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
 								</s:formatter>
 							</s:GridColumn>
-							<s:GridColumn dataField="lastStopLog" headerText="Простой" />
+							<s:GridColumn dataField="lastStop" headerText="Простой" />
 						</s:ArrayList>
 					</s:columns>
 				</s:DataGrid>
 			</s:VGroup>
 			
-			<s:VGroup width="50%">
+			<s:VGroup width="50%" height="100%">
 				
 				<s:HGroup verticalAlign="baseline">
 					<s:Label text="Лог простоя:"/>

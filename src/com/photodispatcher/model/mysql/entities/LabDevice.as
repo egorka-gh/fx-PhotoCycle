@@ -77,6 +77,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		/**
 		 * время печати последнего листа, берется по логу тех.точки
+		 * неа берется по labmeter
 		 */
 		public function get lastPrintDate():Date
 		{
@@ -88,11 +89,15 @@ package com.photodispatcher.model.mysql.entities {
 			_lastPrintDate = value;
 		}
 		
+
+		public var lastStop:LabMeter;
+
+		/*
 		private var _lastStopLog:LabStopLog;
 		
-		/**
+		/
 		 * лог текущего простоя
-		 */
+		 /
 		public function get lastStopLog():LabStopLog
 		{
 			return _lastStopLog;
@@ -102,6 +107,7 @@ package com.photodispatcher.model.mysql.entities {
 		{
 			_lastStopLog = value;
 		}
+		*/
 		
 		protected var _rollsOnline:ListCollectionView;
 		

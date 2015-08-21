@@ -6,6 +6,7 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.model.mysql.DbLatch;
 	
 	[Bindable]
 	[RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabStopType")]
@@ -25,6 +26,53 @@ package com.photodispatcher.model.mysql.entities {
 		 * 2, Замена рулона
 		 */
 		public static const ROLL_CHANGE:int = 2;
+		/**
+		 * 3, Постановка на печать
+		 */
+		public static const POST_WAITE:int = 3;
+		
+		
+		private static var itemsMap:Object;
+		
+		public static function initMap():DbLatch{
+			//var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			//var latch:DbLatch= new DbLatch();
+			//latch.debugName='OrderState.initStateMap';
+			//latch.addEventListener(Event.COMPLETE, onLoad);
+			//latch.addLatch(svc.loadAll());
+			//latch.start();
+			//return latch;
+			itemsMap=new Object;
+			itemsMap[OTHER]='Другое';
+			itemsMap[NO_ORDER]='Нет заказов';
+			itemsMap[ROLL_CHANGE]='Замена рулона';
+			itemsMap[POST_WAITE]='Постановка на печать';
+			
+			return null;
+		}
+		/*
+		private static function onLoad(event:Event):void{
+		var latch:DbLatch= event.target as DbLatch;
+		if(latch){
+		latch.removeEventListener(Event.COMPLETE,onLoad);
+		if(latch.complite){
+		var a:Array=latch.lastDataArr;
+		if(!a) return;
+		stateMap=new Object();
+		for each(var o:Object in a){
+		var s:OrderState= o as OrderState;
+		if(s) stateMap[s.id.toString()]=s;
+		}
+		}
+		}
+		}
+		*/
+
+		public static function getStopTypeName(stopType:int):String{
+			var res:String=itemsMap[stopType];
+			if(!res) res='Тип id: '+ stopType.toString();
+			return res;
+		}
 		
 		public function LabStopType() {
 			super();

@@ -4,6 +4,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.LabMeter;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabProfile;
 	import com.photodispatcher.model.mysql.entities.LabRoll;
@@ -314,6 +315,52 @@ package com.photodispatcher.print{
 			
 		}
 		
+		protected var _postMeter:LabMeter;
+		protected var devPrintMetersMap:Object={};
+		protected var devStopMetersMap:Object={};
+		
+		public function resetMeters():void{
+			_postMeter=null;
+			devPrintMetersMap={};
+			devStopMetersMap={};
+		}
+		
+		public function addMeter(meter:LabMeter):void{
+			if(!meter) return;
+			if (meter.meter_type==0){
+				//post printgroup, no device - lab meter
+				_postMeter=meter;
+			}else if (meter.meter_type==1){
+				//device print meter
+				devPrintMetersMap[meter.lab_device]=meter;
+			}else if (meter.meter_type==10){
+				//device stop meter
+				devStopMetersMap[meter.lab_device]=meter;
+			}
+		}
+
+		public function getPostMeter(deviceId:int):LabMeter{
+			return _postMeter;
+		}
+
+		public function getPrintMeter(deviceId:int):LabMeter{
+			return devPrintMetersMap[deviceId] as LabMeter;
+		}
+		
+		public function getDeviceMeter(deviceId:int):LabMeter{
+			var meter:LabMeter=devPrintMetersMap[deviceId] as LabMeter;
+			if(!meter) return _postMeter;
+			if(_postMeter){
+				return _postMeter.isNewer(meter)?_postMeter:meter;
+			}
+			return meter;
+		}
+		public function getDeviceStopMeter(deviceId:int):LabMeter{
+			return devStopMetersMap[deviceId] as LabMeter;
+		}
+		
+		/************************************ deprecated ************************************/
+		
 		/**
 		 * deprecated
 		 */
@@ -449,5 +496,8 @@ package com.photodispatcher.print{
 			}
 			onlineState=newState;
 		}
+		
+		
+		
 	}
 }

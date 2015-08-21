@@ -6,6 +6,8 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.model.mysql.DbLatch;
+	
 	import flash.globalization.DateTimeStyle;
 	
 	import mx.utils.StringUtil;
@@ -15,7 +17,6 @@ package com.photodispatcher.model.mysql.entities {
 	[Bindable]
 	[RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabStopLog")]
 	public class LabStopLog extends LabStopLogBase {
-		
 		
 		public function LabStopLog() {
 			super();

@@ -1,4 +1,10 @@
 package com.photodispatcher.tech{
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.services.TechService;
+	
+	import flash.events.Event;
+	
+	import org.granite.tide.Tide;
 	
 	public class TechRegisterPrint extends TechRegisterBase{
 		public function TechRegisterPrint(printGroup:String, books:int, sheets:int){
@@ -6,57 +12,22 @@ package com.photodispatcher.tech{
 			logOk=false;
 		}
 		
-		/*
-		override public function register(book:int, sheet:int):void{
-			super.register(book, sheet);
-			//log to data base
-			var tl:TechLog= new TechLog();
-			tl.log_date=new Date();
-			tl.setSheet(book,sheet);
-			tl.print_group=printGroupId;
-			tl.src_id= techPoint.id;
-			var dao:TechLogDAO=new TechLogDAO();
-			//dao.addLog(tl);
-			dao.addPrintLog(tl);
-			
-			//log to local db
-			var lDao:TechPrintGroupDAO= new TechPrintGroupDAO();
-			lDao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
-			lDao.log(tl,books,sheetsPerBook, techPoint.tech_type);
-
+		override protected function logRegistred(book:int, sheet:int):void{
+			super.logRegistred(book, sheet);
+			//update meter
+			var latch:DbLatch=new DbLatch();
+			var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+			latch.addLatch(svc.forwardMeterByTechPoint(techPoint.id, printGroupId));
+			latch.addEventListener(Event.COMPLETE, onLogComplie);
+			latch.start();
+		}
+		private function onLogComplie(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch && !latch.complite){
+				logSequeceErr('Ошибка базы данных: '+latch.error);
+			}
 		}
 		
-		private function onLocalLog(evt:AsyncSQLEvent):void{
-			var lDao:TechPrintGroupDAO=evt.target as TechPrintGroupDAO;
-			if (lDao) lDao.removeEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onLocalLog);
-			checkComplited();
-		}
-
-		override protected function writeNext():TechPrintGroup{
-			var pg:TechPrintGroup=super.writeNext();
-			if(pg){
-				var pdao:PrintGroupDAO=new PrintGroupDAO();
-				pdao.execOnItem=pg;
-				pdao.addEventListener(AsyncSQLEvent.ASYNC_SQL_EVENT, onExtraWrite);
-				if(pg.isComplite){
-					//pdao.setExtraStateByTech(pg.id, pg.tech_type);
-					pdao.setPrintStateByTech(pg.id,true);
-				}else{
-					pdao.startExtraStateByTech(pg.id, pg.tech_type);
-				}
-			}
-			return pg; 
-		}
-
-		override public function finalise():Boolean{
-			if(!isComplete){
-				//4 reprint set printgroup/order state (partial print???) 
-				var pdao:PrintGroupDAO=new PrintGroupDAO();
-				pdao.setPrintStateByTech(printGroupId,false);
-			}
-			return super.finalise();
-		}
-		*/
 		
 	}
 }

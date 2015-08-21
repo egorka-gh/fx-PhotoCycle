@@ -13,6 +13,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.HelloResponce;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabResize;
+	import com.photodispatcher.model.mysql.entities.LabStopType;
 	import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintForm;
@@ -131,6 +132,7 @@ package com.photodispatcher.context{
 			latch.join(LayersetSynonym.initMap());
 			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
 			latch.join(AliasForward.initMap());
+			latch.join(LabStopType.initMap());
 
 			latch.addEventListener(Event.COMPLETE,oninitTechOTK);
 
