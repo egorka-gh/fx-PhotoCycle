@@ -79,16 +79,15 @@ package com.photodispatcher.model.mysql.entities {
 		 * время печати последнего листа, берется по логу тех.точки
 		 * неа берется по labmeter
 		 */
-		public function get lastPrintDate():Date
-		{
+		public function get lastPrintDate():Date{
 			return _lastPrintDate;
 		}
 
-		public function set lastPrintDate(value:Date):void
-		{
+		public function set lastPrintDate(value:Date):void{
 			_lastPrintDate = value;
 		}
 		
+		public var lastPostDate:Date;
 
 		public var lastStop:LabMeter;
 

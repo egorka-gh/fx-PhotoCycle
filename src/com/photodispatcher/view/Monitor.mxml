@@ -472,6 +472,11 @@
 						<s:ArrayList>
 							<s:GridColumn dataField="name" headerText="Устройство" />
 							<s:GridColumn dataField="tech_point_name" headerText="Тех. точка" />
+							<s:GridColumn dataField="lastPostDate" headerText="Постановка на печать">
+								<s:formatter>
+									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
+								</s:formatter>
+							</s:GridColumn>
 							<s:GridColumn dataField="lastPrintDate" headerText="Последняя печать">
 								<s:formatter>
 									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />

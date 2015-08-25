@@ -92,6 +92,15 @@ package com.photodispatcher.model.mysql.entities {
 			if(!thisTime) return true;
 			return thisTime.time<=time.time;
 		}
+		/*
+		* true if this is newer or = time or time==null  
+		*/
+		public function isAfter(time:Date):Boolean{
+			if(!time) return true;
+			var thisTime:Date=getLastTime();
+			if(!thisTime) return false;
+			return thisTime.time>=time.time;
+		}
 		
 		public function getLastTime():Date{
 			return last_time?last_time:start_time;

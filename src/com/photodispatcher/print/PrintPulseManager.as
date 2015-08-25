@@ -299,51 +299,67 @@ package com.photodispatcher.print{
 			*/
 
 			var tt:LabTimetable;
-			var device:LabDevice;
+			//var device:LabDevice;
 			var stopType:int = LabStopType.OTHER;
 			var lastMeter:LabMeter;
+			var postMeter:LabMeter;
+			var l:DbLatch;
 			
 			//генерим стопы 
 			//бежим по всем девайсам и проверяем состояние 
-			for each (device in devices){
-				if(!device) continue;
+			for each (dev in devices){
+				if(!dev) continue;
 				lab = labMap[dev.lab] as LabGeneric;
 				if(!lab) continue;
-				//обновляем время последней печати, хер знает зачем
-				lastMeter=lab.getPrintMeter(device.id);
-				if(lastMeter) device.lastPrintDate=lastMeter.getLastTime();
-				//обновляем последний стоп, хер знает зачем
-				device.lastStop=lab.getDeviceStopMeter(device.id);
+				//обновляем время последней постановки в печать, для отображения
+				postMeter=lab.getPostMeter();
+				if(postMeter){
+					postMeter=postMeter.clone();
+					dev.lastPostDate=postMeter.getLastTime(); 
+				}
+				//время последней печати
+				lastMeter=lab.getPrintMeter(dev.id);
+				//обновляем время последней печати, для отображения
+				if(lastMeter) dev.lastPrintDate=lastMeter.getLastTime();
 				//если не в расписании стопы не фиксим
 				tt = dev.getCurrentTimeTableByDate(pulseCreateStopTime);
 				if(tt){
 					//проверяем интервал проверки на вхождение в расписание
 					if(pulseCreateStopTime.time > tt.time_from.time && pulseStartTime.time < tt.time_to.time){
 						//должон работать
-						lastMeter=lab.getDeviceMeter(device.id);
+						//обновляем последний стоп, для отображения
+						dev.lastStop=lab.getDeviceStopMeter(dev.id);
+						
 						if(!lastMeter){
-							lastMeter=new LabMeter(); lastMeter.lab=lab.id; lastMeter.lab_device=device.id;
+							lastMeter=new LabMeter(); lastMeter.lab=lab.id; lastMeter.lab_device=dev.id;
 						}else{
 							lastMeter=lastMeter.clone();
 						}
-						// расчитать и учесть время постановки на печать если lastMeter - post метер
-						if(lastMeter.meter_type==LabMeter.TYPE_POST && lastMeter.start_time && lastMeter.print_group){
+						// проверяем был ли пост в лабу, если был и был завершон и еще идет обработка лабой то стоп не фиксим, текущий стоп не меняем - полюбому ждем печати
+						// расчитать и учесть время постановки на печать 
+						if(postMeter && postMeter.start_time && postMeter.print_group && postMeter.state==OrderState.PRN_PRINT){
 							//post meter
 							//look 4 printgroup
 							pgQueued=ArrayUtil.searchItem('id',lastMeter.print_group,printQueue) as PrintGroup;
 							if(pgQueued){
+								//если pgQueued не найдена - группа уже как минимум печатается, пост закончен и его учитывать не надо 
 								var delta:Number= (pgQueued.prints/lab.soft_speed)*60*1000; // скорость в файл/мин, переводим в мс
-								lastMeter.start_time= new Date(lastMeter.start_time.time+delta);
+								postMeter.start_time= new Date(postMeter.start_time.time+delta);
+								if(postMeter.isAfter(pulseCreateStopTime)) continue;
 							}
 						}
 						if(lastMeter.isBefore(pulseCreateStopTime)){
 							//стоит ссука
 							//detect stop type
 							stopType=LabStopType.OTHER;
-							//post stop?
-							if(lastMeter.meter_type==LabMeter.TYPE_POST && lastMeter.start_time && lastMeter.state< OrderState.PRN_PRINT){
+							//TODO post stop?
+							//тут херня надо смотреть был ли пост после печати
+							//закончен ли пост (< OrderState.PRN_PRINT)
+							// расчитать время поста и если пост уже должен быть закончен то значит застряли на постановке
+							//TODO ввести в лабу postSpeed расчитывать по логу labMeter
+							if(postMeter && postMeter.isNewer(lastMeter) && postMeter.state < OrderState.PRN_PRINT){
 								//OrderState.PRN_PRINT - копирование завершено значит проблема не в постановке 
-								stopType=LabStopType.POST_WAITE;
+								//stopType=LabStopType.POST_WAITE;
 							}
 							//empty queue?
 							var labQueue:Array = queueMap[dev.lab] as Array;
@@ -358,7 +374,7 @@ package com.photodispatcher.print{
 							*/
 
 							//fix stop
-							var devStop:LabMeter=lab.getDeviceStopMeter(device.id);
+							var devStop:LabMeter=lab.getDeviceStopMeter(dev.id);
 							if(!devStop || devStop.state!=stopType){
 								//фиксим по времени lastMeter, если null то по времени стопа пульса, выравниваем на время начала расписания
 								if(!lastMeter.getLastTime()) lastMeter.start_time=pulseCreateStopTime;
@@ -368,13 +384,28 @@ package com.photodispatcher.print{
 								//store stop in device
 								var lm:LabMeter=lastMeter.clone();
 								lab.addMeter(lm);
-								device.lastStop=lm;
+								dev.lastStop=lm;
 								//save
 								lastMeter.toServerTime();
-								var l:DbLatch=new DbLatch();
+								l=new DbLatch();
 								l.addLatch(labService.fixStopMeter(lastMeter));
 								l.start();
 							}
+						}
+					}else{
+						//вне расписания
+						dev.lastStop=null;
+						//надо закрыть стоп если есть открытый, лаба закончила работу
+						var stopMeter:LabMeter=lab.getDeviceStopMeter(dev.id);
+						if(stopMeter){
+							//выравниваем на конец расписания
+							stopMeter.last_time=tt.time_to;
+							stopMeter=stopMeter.clone();
+							stopMeter.toServerTime();
+							//закрываем
+							l=new DbLatch();
+							l.addLatch(labService.endStopMeter(stopMeter));
+							l.start();
 						}
 					}
 				}

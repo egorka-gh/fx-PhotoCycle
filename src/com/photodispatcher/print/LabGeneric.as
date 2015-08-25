@@ -327,19 +327,19 @@ package com.photodispatcher.print{
 		
 		public function addMeter(meter:LabMeter):void{
 			if(!meter) return;
-			if (meter.meter_type==0){
+			if (meter.meter_type==LabMeter.TYPE_POST){
 				//post printgroup, no device - lab meter
 				_postMeter=meter;
-			}else if (meter.meter_type==1){
+			}else if (meter.meter_type==LabMeter.TYPE_PRINT){
 				//device print meter
 				devPrintMetersMap[meter.lab_device]=meter;
-			}else if (meter.meter_type==10){
+			}else if (meter.meter_type==LabMeter.TYPE_STOP){
 				//device stop meter
 				devStopMetersMap[meter.lab_device]=meter;
 			}
 		}
 
-		public function getPostMeter(deviceId:int):LabMeter{
+		public function getPostMeter():LabMeter{
 			return _postMeter;
 		}
 
@@ -347,6 +347,7 @@ package com.photodispatcher.print{
 			return devPrintMetersMap[deviceId] as LabMeter;
 		}
 		
+		/*
 		public function getDeviceMeter(deviceId:int):LabMeter{
 			var meter:LabMeter=devPrintMetersMap[deviceId] as LabMeter;
 			if(!meter) return _postMeter;
@@ -355,6 +356,7 @@ package com.photodispatcher.print{
 			}
 			return meter;
 		}
+		*/
 		public function getDeviceStopMeter(deviceId:int):LabMeter{
 			return devStopMetersMap[deviceId] as LabMeter;
 		}
