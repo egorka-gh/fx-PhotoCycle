@@ -73,6 +73,7 @@ package com.photodispatcher.print{
 		 */
 		public function refresh():void{
 			if(!lab) return;
+			/*
 			//read print groups in Print state
 			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 			var latch:DbLatch= new DbLatch();
@@ -80,6 +81,7 @@ package com.photodispatcher.print{
 			latch.addLatch(svc.loadInPrint(lab.id));
 			latch.start();
 			//_refresh();
+			*/
 		}
 		
 		/**

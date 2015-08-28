@@ -1,4 +1,5 @@
 package com.photodispatcher.print{
+	import com.google.zxing.common.flexdatatypes.ArrayList;
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
@@ -270,30 +271,36 @@ package com.photodispatcher.print{
 		}
 		
 		/**
-		 * возвращает массив элементов {dev: dev (LabDevice), code: code (LabPrintCode)}
+		 * возвращает массив LabDevice у которых есть подходящий рулон 
 		 */
 		public function getCompatiableDevices(pg:PrintGroup):Array {
-			
 			var result:Array = [];
 			var dev:LabDevice;
 			var code:LabPrintCode;
 			if(devices){
-				
 				for each (dev in devices){
-					
-					code = printChannel(pg, dev.rollsOnline.toArray());
-					
-					if(code){
-						result.push({dev: dev, code: code});
-					}
-					
+					//if(printChannel(pg, dev.rollsOnline.toArray())) result.push(dev);
+					if(printChannel(pg, dev.rolls.toArray())) result.push(dev);
 				}
-				
 			}
-			
 			return result;
 		}
-		
+
+		/**
+		 * возвращает массив LabDevice у которых подходящий рулон online 
+		 */
+		public function getOnLineRollDevices(pg:PrintGroup):Array {
+			var result:Array = [];
+			var dev:LabDevice;
+			var code:LabPrintCode;
+			if(devices){
+				for each (dev in devices){
+					if(dev.lastRoll &&  printChannel(pg, [dev.lastRoll])) result.push(dev);
+				}
+			}
+			return result;
+		}
+
 		public function checkAliasPrintCompatiable(pg:PrintGroup):Boolean {
 			
 			var res:Boolean;
@@ -360,6 +367,7 @@ package com.photodispatcher.print{
 		public function getDeviceStopMeter(deviceId:int):LabMeter{
 			return devStopMetersMap[deviceId] as LabMeter;
 		}
+		
 		
 		/************************************ deprecated ************************************/
 		

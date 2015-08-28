@@ -146,6 +146,7 @@ package com.photodispatcher.provider.ftp{
 			if(_isStarted) return;
 			if(!services || services.length==0) return;
 			autoLoadInterval=Context.getAttribute('syncInterval');
+			FBookDownloadManager.cacheClipart=Context.getAttribute('cacheClipart');
 			_isStarted=true;
 			var f:DownloadQueueManager;
 			for each(f in services){

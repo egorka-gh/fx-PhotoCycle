@@ -128,6 +128,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function loadLabStopType(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadLabStopType", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadLabStopType", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadLabStopType") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadLabStops(arg0:Date, arg1:Date, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadLabStops", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
@@ -135,6 +146,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadLabStops", arg0, arg1, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadLabStops", arg0, arg1) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadLastRolls(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadLastRolls", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadLastRolls", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadLastRolls") as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

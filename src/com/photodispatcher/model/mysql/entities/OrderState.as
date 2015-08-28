@@ -113,7 +113,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static function getStateName(id:int):String{
 			if(!stateMap){
-				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				throw new Error('Ошибка инициализации OrderState.initSynonymMap',OrderState.ERR_APP_INIT);
 				return;
 			}
 			var os:OrderState;
@@ -123,7 +123,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static function getStateArray(from:int=-1, to:int=-1, excludeRuntime:Boolean=false):Array{
 			if(!stateMap){
-				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				throw new Error('Ошибка инициализации OrderState.initSynonymMap',OrderState.ERR_APP_INIT);
 				return;
 			}
 			var result:Array=[];
@@ -142,7 +142,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static function getStateList():ArrayCollection{
 			if(!stateMap){
-				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				throw new Error('Ошибка инициализации OrderState.initSynonymMap',OrderState.ERR_APP_INIT);
 				return;
 			}
 			var result:ArrayCollection=new ArrayCollection();

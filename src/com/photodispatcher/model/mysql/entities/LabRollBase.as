@@ -20,6 +20,7 @@ package com.photodispatcher.model.mysql.entities {
 
         private var _is_online:Boolean;
         private var _is_used:Boolean;
+        private var _lab:int;
         private var _lab_device:int;
         private var _len:int;
         private var _len_std:int;
@@ -39,6 +40,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get is_used():Boolean {
             return _is_used;
+        }
+
+        public function set lab(value:int):void {
+            _lab = value;
+        }
+        public function get lab():int {
+            return _lab;
         }
 
         public function set lab_device(value:int):void {
@@ -87,6 +95,7 @@ package com.photodispatcher.model.mysql.entities {
             super.readExternal(input);
             _is_online = input.readObject() as Boolean;
             _is_used = input.readObject() as Boolean;
+            _lab = input.readObject() as int;
             _lab_device = input.readObject() as int;
             _len = input.readObject() as int;
             _len_std = input.readObject() as int;
@@ -99,6 +108,7 @@ package com.photodispatcher.model.mysql.entities {
             super.writeExternal(output);
             output.writeObject((_is_online is IPropertyHolder) ? IPropertyHolder(_is_online).object : _is_online);
             output.writeObject((_is_used is IPropertyHolder) ? IPropertyHolder(_is_used).object : _is_used);
+            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
             output.writeObject((_lab_device is IPropertyHolder) ? IPropertyHolder(_lab_device).object : _lab_device);
             output.writeObject((_len is IPropertyHolder) ? IPropertyHolder(_len).object : _len);
             output.writeObject((_len_std is IPropertyHolder) ? IPropertyHolder(_len_std).object : _len_std);

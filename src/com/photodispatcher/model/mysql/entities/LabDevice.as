@@ -31,9 +31,14 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		/**
-		 * хранит список PrintGroup
+		 * хранит список совместимых по рулонам PrintGroup
 		 */
-		public var printQueue:IList;
+		public var compatiableQueue:Array;
+
+		/**
+		 * хранит список PrintGroup для текущего рулона
+		 */
+		public var onLineRollQueue:Array;
 		
 		private var _currentBusyTime:int=0;//sek
 		/**
@@ -46,11 +51,11 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		public function setCurrentBusyTime(queue:Array):void{
 			_currentBusyTime=0;
-			if(!queue || !lastPG || !lastRool) return;
+			if(!queue || !lastPG || !lastRoll) return;
 			var pg:PrintGroup=ArrayUtil.searchItem('id', lastPG.id,queue) as PrintGroup;
 			if(pg){
-				var height:int=(pg.width==lastRool.width)?pg.height:pg.width;
-				_currentBusyTime=height*(pg.prints-pg.prints_done)/lastRool.speed;
+				var height:int=(pg.width==lastRoll.width)?pg.height:pg.width;
+				_currentBusyTime=height*(pg.prints-pg.prints_done)/lastRoll.speed;
 			}
 		}
 		
@@ -69,9 +74,23 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		private var _lastRoll:LabRoll;
-		public function get lastRool():LabRoll{
+		public function get lastRoll():LabRoll{
 			return _lastRoll;
 		}
+		public function set lastRoll(roll:LabRoll):void{
+			_lastRoll=roll;
+			if(roll && rolls && rolls.length>0){
+				for each (var r:LabRoll in rolls){
+					if(r.paper==roll.paper && r.width==roll.width){
+						r.is_online=true;
+						_lastRoll=r;
+					}else{
+						r.is_online=false;
+					}
+				}
+			}
+		}
+		
 		
 		private var _lastPrintDate:Date;
 		
@@ -91,49 +110,32 @@ package com.photodispatcher.model.mysql.entities {
 
 		public var lastStop:LabMeter;
 
-		/*
-		private var _lastStopLog:LabStopLog;
-		
-		/
-		 * лог текущего простоя
-		 /
-		public function get lastStopLog():LabStopLog
-		{
-			return _lastStopLog;
-		}
-
-		public function set lastStopLog(value:LabStopLog):void
-		{
-			_lastStopLog = value;
-		}
-		*/
 		
 		protected var _rollsOnline:ListCollectionView;
-		
 		public function set rollsOnline(value:ListCollectionView):void {
 			_rollsOnline = value;
 		}
-		
 		public function get rollsOnline():ListCollectionView {
 			
 			return _rollsOnline;
 		}
 		
+		/*
 		private static function filterOnlineRolls(item:LabRoll):Boolean {
-			
 			return item.is_online;
-			
 		}
+		*/
 		
 		public function LabDevice() {
-			
 			super();
 		}
 		
 		public override function readExternal(input:IDataInput):void {
-			
+			// хрень полная рулон будет онлайн только одини и только в рантайме (?)
 			super.readExternal(input);
-			
+
+			rollsOnline = new ListCollectionView(rolls);
+			/*	
 			if(rolls){
 				rollsOnline = new ListCollectionView(rolls);
 				rollsOnline.filterFunction = filterOnlineRolls;
@@ -141,7 +143,7 @@ package com.photodispatcher.model.mysql.entities {
 			} else {
 				rollsOnline = null;
 			}
-			
+			*/
 		}
 		
 		public function refresh():Boolean{

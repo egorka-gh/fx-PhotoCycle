@@ -5,6 +5,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabMeter;
+	import com.photodispatcher.model.mysql.entities.LabRoll;
 	import com.photodispatcher.model.mysql.entities.LabStopLog;
 	import com.photodispatcher.model.mysql.entities.LabStopType;
 	import com.photodispatcher.model.mysql.entities.LabTimetable;
@@ -30,6 +31,23 @@ package com.photodispatcher.print{
 	import org.granite.tide.Tide;
 	
 	public class PrintPulseManager extends EventDispatcher{
+		/* скорость печати
+		SELECT lml.lab, lml.lab_device, SUM(TIMESTAMPDIFF(SECOND, lml.start_time, lml.end_time)) ttime, SUM(lml.amt) amt, SUM(lml.amt - 1) * 60 / SUM(TIMESTAMPDIFF(SECOND, lml.start_time, lml.end_time))
+		FROM lab_meter_log lml
+		WHERE lml.state = 255
+		AND lml.amt > 1
+		AND lml.end_time IS NOT NULL
+		GROUP BY lml.lab, lml.lab_device
+		*/
+		/* скорость постановки
+		SELECT lml.lab, SUM(TIMESTAMPDIFF(SECOND, lml.start_time, lml.end_time)) ttime, SUM(pg.prints) amt, SUM(pg.prints) * 60 / SUM(TIMESTAMPDIFF(SECOND, lml.start_time, lml.end_time))
+		FROM lab_meter_log lml
+		INNER JOIN print_group pg ON lml.print_group = pg.id
+		WHERE lml.state > 203
+		AND lml.state < 250
+		AND lml.end_time IS NOT NULL
+		GROUP BY lml.lab
+		*/
 		
 		protected var _labs:IList;
 		public function get labs():IList{
@@ -51,6 +69,10 @@ package com.photodispatcher.print{
 		}
 		public function set devices(value:IList):void{
 			_devices = value;
+			deviceMap={};
+			if(_devices){
+				for each (var item:LabDevice in _devices) deviceMap[item.id] = item;
+			}
 		}
 		
 		
@@ -99,6 +121,7 @@ package com.photodispatcher.print{
 		protected var pulseStartTime:Date;
 		protected var pulseCreateStopTime:Date;
 		protected var labMap:Object;
+		protected var deviceMap:Object;
 		
 		protected var timer:Timer;
 		protected var waitForLabConfig:Boolean;
@@ -176,6 +199,7 @@ package com.photodispatcher.print{
 			
 			var latch:DbLatch=loadPrintQueue();
 			latch.join(loadLabMeter());
+			latch.join(loadOnlineRolls());
 			latch.start();
 		}
 		
@@ -204,14 +228,36 @@ package com.photodispatcher.print{
 				}
 			}
 		}
-		
+
+		protected function loadOnlineRolls():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onLoadOnlineRolls);
+			latch.addLatch(labService.loadLastRolls());
+			latch.start();
+			return latch;
+		}
+		protected function onLoadOnlineRolls(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			var localTime:Date= new Date();
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoadOnlineRolls);
+				if(!latch.complite) return;
+				for each (var r:LabRoll in latch.lastDataArr){
+					if(r){
+						var dev:LabDevice=deviceMap[r.lab_device] as LabDevice;
+						if(dev) dev.lastRoll=r;
+					}
+				}
+			}
+		}
+
 		protected function loadPrintQueue():DbLatch {
 			printQueue = null;
 			printQueueListChanged();
 			// тут нужно послать запрос на загрузку очереди ГП, определяется по набору статусов
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onLoadPrintQueue);
-			latch.addLatch(printGroupService.loadInPrint(0));
+			latch.addLatch(printGroupService.loadInPrintPost(0));
 			//latch.start();
 			return latch;
 		}
@@ -239,58 +285,75 @@ package com.photodispatcher.print{
 			/*
 			нужно инициализировать очередь для каждого девайса
 			*/
-			for each (dev in devices) dev.printQueue = new ArrayList;
+			for each (dev in devices){
+				dev.compatiableQueue = [];
+				dev.onLineRollQueue = [];
+			}
 			
 			/*
 			нужно пробежаться по совокупной очереди ГП и разделить очередь по девайсам + составить карту лаба - девайс - подходящщая ГП
 			*/
-			var compMap:Object = {}; //лаба - девайс - подходящщая ГП
 			var queueMap:Object = {}; // лаба - очередь ГП
 			var compDevices:Array;
 			var devForPg:LabDevice;
 			var devComp:Object;
 			var pgQueued:PrintGroup;
+			var incompPG:Array=[];
+			var hasNoOnlineRollPG:Array=[];
 			
 			for each (pgQueued in printQueue){
-				if(compMap[pgQueued.destination] == null) compMap[pgQueued.destination] = {};
 				if(queueMap[pgQueued.destination] == null) queueMap[pgQueued.destination] = [];
 				
 				lab=labMap[pgQueued.destination] as LabGeneric;
-				if(!lab) continue;
-				compDevices = lab.getCompatiableDevices(pgQueued);
-				pgQueued.lab_name = lab.name;
 				
+				if(!lab) continue;
+
+				pgQueued.lab_name = lab.name;
+				// Добавляем в очередь лабы
+				(queueMap[pgQueued.destination] as Array).push(pgQueued);
+
+				//попытка раскидать по девайсам с подходящими рулонами
+				//для определения типа простоя Нет подходящего заказа (4)
+				compDevices = lab.getCompatiableDevices(pgQueued);
 				if(compDevices.length > 0){
-					devForPg = compDevices[0]['dev'] as LabDevice; // определяем по умолчанию первый доступный
-					
+					devForPg = compDevices[0] as LabDevice; // определяем по умолчанию первый доступный
 					// составляем карту
 					for each (devComp in compDevices) {
-						
-						if(compMap[pgQueued.destination][devComp['dev'].id] == null){
-							compMap[pgQueued.destination][devComp['dev'].id] = [];
-						}
-						
-						(compMap[pgQueued.destination][devComp['dev'].id] as Array).push(pgQueued);
-						
-						(queueMap[pgQueued.destination] as Array).push(pgQueued);
-						
 						// определяем девайс с самой короткой очередью
-						if(devForPg != devComp['dev'] && devForPg.printQueue.length > (devComp['dev'] as LabDevice).printQueue.length){
-							devForPg = devComp['dev'] as LabDevice;
+						if(devForPg != devComp && devForPg.compatiableQueue.length > (devComp as LabDevice).compatiableQueue.length){
+							devForPg = devComp as LabDevice;
 						}
-						
 					}
-					
 					// добавляем ГП в девайс с самой короткой очередью
-					devForPg.printQueue.addItem(pgQueued);
-					
-				} else {
-					
+					devForPg.compatiableQueue.push(pgQueued);
+				}else{
 					// TODO обработать ситуацию, когда ГП послана в лабу, в которой нет подходящих девайсов
-					
+					//пока тока отображаем в дебуг
+					incompPG.push(pgQueued.id);
 				}
 				
+				//попытка раскидать по девайсам по онлайн рулону
+				var hasRoll:Boolean=false;
+				compDevices = lab.getOnLineRollDevices(pgQueued);
+				if(compDevices.length > 0){
+					hasRoll=true;
+					devForPg = compDevices[0] as LabDevice; // определяем по умолчанию первый доступный
+					// составляем карту
+					for each (devComp in compDevices) {
+						// определяем девайс с самой короткой очередью
+						if(devForPg != devComp && devForPg.compatiableQueue.length > (devComp as LabDevice).compatiableQueue.length){
+							devForPg = devComp as LabDevice;
+						}
+					}
+					// добавляем ГП в девайс с самой короткой очередью
+					devForPg.onLineRollQueue.push(pgQueued);
+				}
+				// TODO обработать ситуацию когда нет online рулона?
+				if(!hasRoll) hasNoOnlineRollPG.push(pgQueued.id);
 			}
+			
+			if(incompPG.length>0) debugStr += "Не совместимы по рулону: " + incompPG.join(", ") + "\n";
+			if(hasNoOnlineRollPG.length>0) debugStr += "Не подходит рулон: " + hasNoOnlineRollPG.join(", ") + "\n";
 			
 			/*
 			
@@ -365,6 +428,14 @@ package com.photodispatcher.print{
 							var labQueue:Array = queueMap[dev.lab] as Array;
 							if(!labQueue || labQueue.length == 0){
 								stopType=LabStopType.NO_ORDER;
+							}else if(dev.compatiableQueue.length==0){
+								//гп неподходят по рулонам
+								//TODO тут похоже косяк
+								//если несколько девайсов будет не корректным, мы наверняка не знаем на какой девайс пойдет печать
+								stopType=LabStopType.NO_COMPATIBLE_ORDER;
+							}else if(dev.onLineRollQueue.length==0){
+								//гп не подходят текущему рулону
+								stopType=LabStopType.WRONG_ONLINE_ROLL;
 							}
 							/*
 							тут можно определить тип простоя
@@ -609,8 +680,8 @@ package com.photodispatcher.print{
 					
 				}
 				
-				// проверяем очередь
-				if(devIsReady && checkDevicePrintQueueReady(dev.printQueue)){
+				// проверяем очередь refactor!!!
+				if(devIsReady && checkDevicePrintQueueReady(new ArrayList(dev.compatiableQueue))){
 					
 					readyDevices.push(dev);
 					
@@ -635,7 +706,7 @@ package com.photodispatcher.print{
 			var devPrintQueueMap:Object = {};
 			for each (dev in devList){
 				
-				devPrintQueueMap[dev.id] = new ArrayList(dev.printQueue.toArray());
+				devPrintQueueMap[dev.id] = new ArrayList(dev.compatiableQueue.toArray());
 				
 			}
 			
@@ -789,16 +860,17 @@ package com.photodispatcher.print{
 					continue;
 				}
 				compDevices = (labMap[pgQueued.destination] as LabGeneric).getCompatiableDevices(pgQueued);
+				//TODO refactor getCompatiableDevices - returns array of device
 				if(compDevices.length > 0){
 					devForPg = compDevices[0]['dev'] as LabDevice; // определяем по умолчанию первый доступный
 					for each (dev in compDevices) {
 						// определяем девайс с самой короткой очередью
-						if(devForPg != dev['dev'] && devForPg.printQueue.length > (dev['dev'] as LabDevice).printQueue.length){
+						if(devForPg != dev['dev'] && devForPg.compatiableQueue.length > (dev['dev'] as LabDevice).compatiableQueue.length){
 							devForPg = dev['dev'] as LabDevice;
 						}
 					}
 					// добавляем ГП в девайс с самой короткой очередью
-					devForPg.printQueue.addItem(pgQueued);
+					devForPg.compatiableQueue.addItem(pgQueued);
 					debugIds.push(pgQueued.id);
 				} else {
 					// TODO обработать ситуацию, когда ГП послана в лабу, в которой нет подходящих девайсов
@@ -814,7 +886,7 @@ package com.photodispatcher.print{
 			var debugIds:Array = [];
 			
 			for each (dev in devices){
-				for each (pg in dev.printQueue.toArray()) {
+				for each (pg in dev.compatiableQueue.toArray()) {
 					if(pg.state == OrderState.PRN_QUEUE){
 						// нужно добавить ГП в лабу, но перед этим проверить наличие этой ГП в соответствующей лабе
 						lab = labMap[pg.destination] as LabGeneric;

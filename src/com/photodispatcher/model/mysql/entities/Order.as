@@ -33,12 +33,12 @@ package com.photodispatcher.model.mysql.entities {
 			col.headerText='Источник'; result.addItem(col);
 			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col); 
 			col= new GridColumn('id'); result.addItem(col);
+			col= new GridColumn('groupId');  col.headerText='Группа'; result.addItem(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('src_date'); col.headerText='Размещен'; col.formatter=fmt;  result.addItem(col);
 			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
 			col= new GridColumn('ftp_folder'); col.headerText='Ftp Папка'; result.addItem(col);
-			col= new GridColumn('fotos_num'); col.headerText='Кол фото'; result.addItem(col);
 			return result;
 		}
 		
