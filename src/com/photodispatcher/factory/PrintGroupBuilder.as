@@ -598,7 +598,7 @@ package com.photodispatcher.factory{
 						pgCover.sub_id=so.sub_id;
 						pgCover.id=order.id+'_'+pgNum.toString();
 						pgCover.sheet_num=so.books_num; 
-						pgCover.prints=pgCover.book_num*pgCover.sheet_num;
+						pgCover.prints=pgCover.book_num;
 						if(!order.printGroups) order.printGroups=new ArrayCollection();
 						order.printGroups.addItem(pgCover);
 						result.push(pgCover);
@@ -657,11 +657,27 @@ package com.photodispatcher.factory{
 			} catch(error:Error){
 				trace('buildPreview err: '+error.message);
 			}
+			if(!bookSynonym){
+				//may be fbook
+				if(order.hasSuborders){
+					var so:SubOrder=order.suborders.getItemAt(0) as SubOrder;
+					if(so){
+						try{
+							bookSynonym=BookSynonym.translatePath(so.alias,src.type);
+							if(!bookSynonym) bookSynonym=BookSynonym.translateAlias(so.alias);
+						} catch(error:Error){
+							trace('buildPreview err: '+error.message);
+						}
+					}
+				}
+			}
+
 			var template:BookPgTemplate;
 			if(!bookSynonym){
+				//simple (not paged) pdf
 				template=new BookPgTemplate;
 				template.is_pdf=false;
-				template.is_sheet_ready= false;
+				template.is_sheet_ready= true;
 			}
 			for each(pg in order.printGroups){
 				if(pg.book_type!=0){
@@ -672,6 +688,7 @@ package com.photodispatcher.factory{
 						if(bookSynonym){
 							pg.bookTemplate=bookSynonym.blockTemplate;
 						}else{
+							//fbook or wrong template
 							pg.bookTemplate=template;
 						}
 						fillSheets(ppg, pg, true);

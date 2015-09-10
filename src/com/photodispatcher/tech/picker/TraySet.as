@@ -17,19 +17,19 @@ package com.photodispatcher.tech.picker{
 		//[Bindable]
 		//public var hasEndpaperTray:Boolean;
 		
-		private var curLayerTrayMap:Object;
-		private var layers:Array;
+		protected var curLayerTrayMap:Object;
+		protected var layers:Array;
 
-		private var _prepared:Boolean;
+		protected var _prepared:Boolean;
 		public function get prepared():Boolean{
 			return _prepared;
 		}
 
 		public function TraySet(){
-			_prepared=init();
+			_prepared=initIternal();
 		}
 		
-		private function init():Boolean{
+		protected function initIternal():Boolean{
 			//loadTrays
 			var so:SharedObject=SharedObject.getLocal('tech_tray','/');
 			var arr:Array;
@@ -70,7 +70,7 @@ package com.photodispatcher.tech.picker{
 			return true;
 		}
 		
-		private function ontTaysChange(evt:CollectionEvent):void{
+		protected function ontTaysChange(evt:CollectionEvent):void{
 			//save
 			var so:SharedObject=SharedObject.getLocal('tech_tray','/');
 			var arr:Array=[0,0,0,0,0,0,0,0];

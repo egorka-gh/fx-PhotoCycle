@@ -777,7 +777,8 @@ package com.photodispatcher.model.mysql.entities {
 		 * книга(всегоКниг)-страница(всегоСтраниц) IdГруппыПечати
 		 */		
 		public function techBarcodeText(file:PrintGroupFile):String{
-			var text:String=StrUtil.lPad(file.book_num.toString(),3)+'('+StrUtil.lPad(book_num.toString(),3)+')-'+StrUtil.lPad(file.page_num.toString(),2)+'('+StrUtil.lPad(pageNumber.toString(),2)+') '+id;
+			//var text:String=StrUtil.lPad(file.book_num.toString(),3)+'('+StrUtil.lPad(book_num.toString(),3)+')-'+StrUtil.lPad(file.page_num.toString(),2)+'('+StrUtil.lPad(pageNumber.toString(),2)+') '+id;
+			var text:String=StrUtil.lPad(file.book_num.toString(),3)+'('+StrUtil.lPad(book_num.toString(),3)+')-'+StrUtil.lPad(file.page_num.toString(),2)+'('+StrUtil.lPad(sheet_num.toString(),2)+') '+id;
 			return text;
 		}
 		
@@ -792,7 +793,8 @@ package com.photodispatcher.model.mysql.entities {
 			var text:String=StrUtil.lPad(file.book_num.toString(),3)+StrUtil.lPad(book_num.toString(),3)
 			+StrUtil.lPad(file.page_num.toString(),2)+StrUtil.lPad(pageNumber.toString(),2)
 			+getDigitId();*/
-			return techBarcode(file.book_num, book_num, file.page_num, pageNumber);
+			//return techBarcode(file.book_num, book_num, file.page_num, pageNumber);
+			return techBarcode(file.book_num, book_num, file.page_num, sheet_num);
 		}
 		public function techBarcode(book:int, bookTotal:int, sheet:int, sheetTotal:int):String{
 			var text:String=StrUtil.lPad(book.toString(),3)+StrUtil.lPad(bookTotal.toString(),3)

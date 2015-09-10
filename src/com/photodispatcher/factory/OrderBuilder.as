@@ -160,7 +160,7 @@ package com.photodispatcher.factory{
 								subOrder.order_id=order.id;
 								subOrder.sub_id=subId;
 								subOrder.src_type=SourceType.SRC_FBOOK;
-								if (jo.hasOwnProperty('projects') && jo.projects is Array){
+								if (jo.hasOwnProperty('projects') && jo.projects is Array && (jo.projects as Array).length>0){
 									//multy book
 									for each(subId in jo.projects) subOrder.projectIds.push(subId);
 									subOrder.prt_qty=subOrder.projectIds.length;//book_mun

@@ -215,17 +215,17 @@
 					<s:ToggleButton id="tgVacuum" label="Вакуум" change="{tgVacuum.selected?techPicker.controller.vacuumOn():techPicker.controller.vacuumOff()}"/>
 					<s:ToggleButton id="tgEngine" label="Мотор" change="{tgEngine.selected?techPicker.controller.engineOn():techPicker.controller.engineOff()}"/>
 				</s:HGroup>-->
-				<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}" verticalAlign="baseline" width="150">
+				<s:HGroup gap="5" verticalAlign="baseline" width="150">
 					<s:Label text="Вакуум"/>
 					<s:Spacer width="100%"/>
-					<s:Button label="On" width="40" click="{techPicker.controller.vacuumOn()}"/>
-					<s:Button label="Off" width="40" click="{techPicker.controller.vacuumOff()}"/>
+					<s:Button label="On" width="40" click="{techPicker.setVacuumOn()}"/>
+					<s:Button label="Off" width="40" click="{techPicker.setVacuumOff()}"/>
 				</s:HGroup>
-				<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}" verticalAlign="baseline" width="150">
+				<s:HGroup gap="5" verticalAlign="baseline" width="150">
 					<s:Label text="Мотор"/>
 					<s:Spacer width="100%"/>
-					<s:Button label="On" width="40" click="{techPicker.controller.engineOn()}"/>
-					<s:Button label="Off" width="40" click="{techPicker.controller.engineOff()}"/>
+					<s:Button label="On" width="40" click="{techPicker.setEngineOn()}"/>
+					<s:Button label="Off" width="40" click="{techPicker.setEngineOff()}"/>
 				</s:HGroup>
 				<s:HGroup gap="10">
 					<s:Button id="btStart" label="Старт" enabled="{!techPicker.isRunning || techPicker.isPaused}" click="techPicker.start()"/>

@@ -143,10 +143,12 @@ package com.photodispatcher.provider.preprocess{
 			//crop size
 			var sheetCrop:String=len.toString()+'x'+width.toString()+'+0+0!';
 			var barcode:String
-			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_COVER){
-				//draw cover barcode before crop
+			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
+				//BLOCKCOVER
+				//align to left
 				command.add(file.file_name);
-				if(printGroup.bookTemplate.bar_size>0){
+				if(printGroup.bookTemplate.bar_size>0  && file.book_part==BookSynonym.BOOK_PART_COVER){
+					//draw cover barcode before crop
 					barcode=printGroup.bookBarcode(file);
 					if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
 				}
@@ -187,8 +189,16 @@ package com.photodispatcher.provider.preprocess{
 					if(buttPix){
 						IMCommandUtil.drawNotching(command,notching,len,width,buttPix);
 					}
-				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK || (printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_BLOCK)){
+				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
+					//standart
 					IMCommandUtil.drawNotching(command,notching,len,width,0);
+				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_BLOCK){
+					//BLOCKCOVER block
+					//TODO refactor make crop by template page_width*page_len then crop to print size aligned on the left edge
+					//use template.page_len 4 notching (print is aligned on the left edge)
+					if(printGroup.bookTemplate.page_len>0){
+						IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
+					}
 				}
 			}
 			

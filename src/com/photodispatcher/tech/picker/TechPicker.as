@@ -51,9 +51,9 @@ package com.photodispatcher.tech.picker{
 		public static const COMMAND_GROUP_RESUME:int		=7;
 		public static const COMMAND_GROUP_STOP:int			=8;
 		
-		private static const BD_TIMEOUT_MIN:int=300;
-		private static const BD_TIMEOUT_MAX:int=1000;
-		private static const BD_MAX_WAITE:int=10000;
+		protected static const BD_TIMEOUT_MIN:int=300;
+		protected static const BD_TIMEOUT_MAX:int=1000;
+		protected static const BD_MAX_WAITE:int=10000;
 
  
 		[Bindable]
@@ -67,7 +67,7 @@ package com.photodispatcher.tech.picker{
 		[Bindable]
 		public var currInerlayer:Layerset;
 		
-		private var _inexactBookSequence:Boolean=false;
+		protected var _inexactBookSequence:Boolean=false;
 		[Bindable]
 		public function get inexactBookSequence():Boolean{
 			return _inexactBookSequence;
@@ -77,7 +77,7 @@ package com.photodispatcher.tech.picker{
 			if(_inexactBookSequence) detectFirstBook=false;
 		}
 
-		private var _detectFirstBook:Boolean=false;
+		protected var _detectFirstBook:Boolean=false;
 		[Bindable]
 		public function get detectFirstBook():Boolean{
 			return _detectFirstBook;
@@ -88,7 +88,7 @@ package com.photodispatcher.tech.picker{
 		}
 
 		
-		private var techGroup:int;
+		protected var techGroup:int;
 
 		[Bindable]
 		public var currEndpaper:Layerset;
@@ -105,7 +105,7 @@ package com.photodispatcher.tech.picker{
 		public var pauseOnComplite:Boolean=false;
 		public var layerOnComplite:int=0;
 		
-		private var _serialProxy:SerialProxy;
+		protected var _serialProxy:SerialProxy;
 		public function get serialProxy():SerialProxy{
 			return _serialProxy;
 		}
@@ -123,16 +123,16 @@ package com.photodispatcher.tech.picker{
 				if(_serialProxy.isStarted) _serialProxy.connectAll();
 			}
 		}
-		private function onSerialProxyStart(evt:SerialProxyEvent):void{
+		protected function onSerialProxyStart(evt:SerialProxyEvent):void{
 			log('SerialProxy: started, connect to com proxies...');
 			serialProxy.connectAll();
 		}
 
-		private function onProxyConnect0(evt:SerialProxyEvent):void{
+		protected function onProxyConnect0(evt:SerialProxyEvent):void{
 			log('SerialProxy: connected, start devices');
 			startDevices();
 		}
-		private function onProxyErr(evt:SerialProxyEvent):void{
+		protected function onProxyErr(evt:SerialProxyEvent):void{
 			log('SerialProxy error: '+evt.error);
 			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,evt.error));
 		}
@@ -152,8 +152,8 @@ package com.photodispatcher.tech.picker{
 		[Bindable]
 		public var currentSequence:Array;
 		
-		private var engineOn:Boolean;
-		private var vacuumOn:Boolean;
+		protected var engineOn:Boolean;
+		protected var vacuumOn:Boolean;
 		[Bindable]
 		public var isRunning:Boolean;
 		[Bindable]
@@ -162,20 +162,20 @@ package com.photodispatcher.tech.picker{
 		//Latches
 		[Bindable]
 		public var latches:Array;
-		private var aclLatch:PickerLatch;
-		private var layerInLatch:PickerLatch;
-		private var layerOutLatch:PickerLatch;
-		private var barLatch:PickerLatch;
-		private var registerLatch:PickerLatch;
-		private var bdLatch:PickerLatch;
+		protected var aclLatch:PickerLatch;
+		protected var layerInLatch:PickerLatch;
+		protected var layerOutLatch:PickerLatch;
+		protected var barLatch:PickerLatch;
+		protected var registerLatch:PickerLatch;
+		protected var bdLatch:PickerLatch;
 		
 		//print group params
 		[Bindable]
 		public var currExtraInfo:OrderExtraInfo
 		[Bindable]
 		public var currPgId:String='';
-		private var currBarcode:String;
-		private var currReprints:Array;
+		protected var currBarcode:String;
+		protected var currReprints:Array;
 		[Bindable]
 		public var currBookTot:int;
 		[Bindable]
@@ -185,12 +185,12 @@ package com.photodispatcher.tech.picker{
 		[Bindable]
 		public var currSheetIdx:int;
 		
-		private var currentLayer:int;
+		protected var currentLayer:int;
 		[Bindable]
 		public  var currentTray:int=-1;
-		private var waiteTraySwitch:Boolean;
+		protected var waiteTraySwitch:Boolean;
 
-		private var _logger:ISimpleLogger;
+		protected var _logger:ISimpleLogger;
 		public function get logger():ISimpleLogger{
 			return _logger;
 		}
@@ -200,7 +200,7 @@ package com.photodispatcher.tech.picker{
 		}
 
 		
-		private var _turnInterval:int=1000; //1sec
+		protected var _turnInterval:int=1000; //1sec
 		public function get turnInterval():int{
 			return _turnInterval;
 		}
@@ -214,37 +214,6 @@ package com.photodispatcher.tech.picker{
 		public function TechPicker(techGroup:int){
 			super(null);
 			this.techGroup=techGroup;
-			/*
-			//create & fill trays
-			traySet= new TraySet();
-			if (!traySet.prepared) return;
-			
-			interlayerSet= new InterlayerSet();
-			interlayerSet.init(techGroup);
-			if (!interlayerSet.prepared) return;
-			
-			endpaperSet= new EndpaperSet();
-			endpaperSet.init(techGroup);
-			if (!endpaperSet.prepared) return;
-			
-			currEndpaper=endpaperSet.emptyEndpaper;
-
-			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', ValveController.ACKNOWLEDGE_TIMEOUT*3);
-			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
-			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',turnInterval);
-			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000); //1сек
-			barLatch = new PickerLatch(PickerLatch.TYPE_BARCODE, 1,'Сканер','Ожидание штрихкода',turnInterval);
-			registerLatch = new PickerLatch(PickerLatch.TYPE_REGISTER, 1,'Книга','Контроль очередности',ValveController.ACKNOWLEDGE_TIMEOUT*2);
-			bdLatch= new PickerLatch(PickerLatch.TYPE_BD, 2,'База данных','Получение параметров заказа',2*BD_MAX_WAITE); //callDbLate wl pause after BD_MAX_WAITE
-			
-			latches=[aclLatch,layerInLatch,layerOutLatch,barLatch,registerLatch,bdLatch];
-			var l:PickerLatch;
-			for each(l in latches){
-				l.addEventListener(ErrorEvent.ERROR, onLatchTimeout);
-				l.addEventListener(Event.COMPLETE, onLatchRelease);
-			}
-			checkPrepared();
-			*/
 		}
 		
 		public function init():DbLatch{
@@ -286,7 +255,7 @@ package com.photodispatcher.tech.picker{
 			checkPrepared();
 		}
 
-		private function checkPrepared(alert:Boolean=false):Boolean{
+		protected function checkPrepared(alert:Boolean=false):Boolean{
 			prepared=barcodeReaders && barcodeReaders.length>0 && 
 				controller && controller.connected && 
 				traySet && traySet.prepared && 
@@ -337,16 +306,9 @@ package com.photodispatcher.tech.picker{
 			barcodeReaders=null;
 			controller=null;
 			register=null;
-			/*
-			if(bdTimer){
-				bdTimer.reset();
-				bdTimer.removeEventListener(TimerEvent.TIMER,onBdTimer);
-				bdTimer=null;
-			}
-			*/
 		}
 		
-		private var _layerset:Layerset;
+		protected var _layerset:Layerset;
 		[Bindable]
 		public function get layerset():Layerset{
 			return _layerset;
@@ -361,13 +323,13 @@ package com.photodispatcher.tech.picker{
 		}
 		
 		
-		private var pausedGroup:int=-1;
-		private var pausedGroupStep:int=-1;
+		protected var pausedGroup:int=-1;
+		protected var pausedGroupStep:int=-1;
 
 		[Bindable]
 		public var currentGroupStep:int;
 
-		private var _currentGroup:int;
+		protected var _currentGroup:int;
 		[Bindable]
 		public function get currentGroup():int{
 			return _currentGroup;
@@ -430,7 +392,7 @@ package com.photodispatcher.tech.picker{
 			_currentGroup = value;
 		}
 
-		private var _barcodeReaders:Array;
+		protected var _barcodeReaders:Array;
 		protected function get barcodeReaders():Array{
 			return _barcodeReaders;
 		}
@@ -456,11 +418,11 @@ package com.photodispatcher.tech.picker{
 		}
 
 		private var _controller:ValveController;
-		[Bindable]
-		public function get controller():ValveController{
+		
+		private function get controller():ValveController{
 			return _controller;
 		}
-		public function set controller(value:ValveController):void{
+		private function set controller(value:ValveController):void{
 			if(_controller){
 				_controller.removeEventListener(ErrorEvent.ERROR, onControllerErr);
 				_controller.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
@@ -475,16 +437,17 @@ package com.photodispatcher.tech.picker{
 				_controller.addEventListener(Event.COMPLETE, onControllerCommandComplite);
 				_controller.addEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 			}
-			//checkPrepared();
 		}
 		
-		private function onControllerDisconnect(event:BarCodeEvent):void{
+		
+		
+		protected function onControllerDisconnect(event:BarCodeEvent):void{
 			log('Отключен контролер '+event.barcode);
 			//pause('Отключен контролер '+event.barcode); busy bug
 		}
 
 
-		private var _register:TechRegisterPicker;
+		protected var _register:TechRegisterPicker;
 		public function get register():TechRegisterPicker{
 			return _register;
 		}
@@ -502,11 +465,7 @@ package com.photodispatcher.tech.picker{
 			}
 		}
 
-		private function prepare():Boolean{
-			return false;
-		}
-
-		private function prepareTemplate():void{
+		protected function prepareTemplate():void{
 			if(!_layerset){
 				prepared=false;
 				return;
@@ -525,14 +484,27 @@ package com.photodispatcher.tech.picker{
 			serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
 			serialProxy.connectAll();
 		}
-		
-		private function onProxyConnect(evt:SerialProxyEvent):void{
+
+		public function setEngineOn():void{
+			if(controller) controller.engineOn(); 
+		}
+		public function setEngineOff():void{
+			if(controller) controller.engineOff(); 
+		}
+		public function setVacuumOn():void{
+			if(controller) controller.vacuumOn(); 
+		}
+		public function setVacuumOff():void{
+			if(controller) controller.vacuumOff(); 
+		}
+
+		protected function onProxyConnect(evt:SerialProxyEvent):void{
 			log('SerialProxy: connected to com proxies (start)');
 			serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
 			//startDevices()
 			startInternal();
 		}
-		private function startDevices():void{
+		protected function startDevices():void{
 			//create devs
 			var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_CONTROLLER);
 			if(!controller) controller= new ValveController();
@@ -585,7 +557,7 @@ package com.photodispatcher.tech.picker{
 			nextStep();
 		}
 
-		private function resume():void{
+		protected function resume():void{
 			if(!isRunning || !isPaused) return;
 			if(pausedGroup==-1 || pausedGroupStep==-1) return;
 			log('start resume');
@@ -595,7 +567,7 @@ package com.photodispatcher.tech.picker{
 			nextStep();
 		}
 
-		private var hasPauseRequest:Boolean=false;
+		protected var hasPauseRequest:Boolean=false;
 		public function pauseRequest():void{
 			if(hasPauseRequest) return;
 			if(isServiceGroup(currentGroup)) return;
@@ -603,7 +575,7 @@ package com.photodispatcher.tech.picker{
 			hasPauseRequest=true;
 		}
 
-		private function pause(alert:String, isError:Boolean=true):void{
+		protected function pause(alert:String, isError:Boolean=true):void{
 			if(!isRunning) return;
 			if(isPaused) return;
 			if(currentGroup==COMMAND_GROUP_STOP || currentGroup==COMMAND_GROUP_PAUSE){
@@ -621,7 +593,7 @@ package com.photodispatcher.tech.picker{
 			nextStep();
 			if(isError) dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,alert));
 		}
-		private function pauseComplete():void{
+		protected function pauseComplete():void{
 			hasPauseRequest=false;
 			isPaused=true;
 			currentTray=-1;
@@ -632,7 +604,7 @@ package com.photodispatcher.tech.picker{
 			serialProxy.restart();
 		}
 		
-		private function isServiceGroup(group:int):Boolean{
+		protected function isServiceGroup(group:int):Boolean{
 			return (group==COMMAND_GROUP_START || group==COMMAND_GROUP_STOP || group==COMMAND_GROUP_PAUSE || group==COMMAND_GROUP_RESUME);
 		}
 
@@ -644,7 +616,7 @@ package com.photodispatcher.tech.picker{
 			currentGroup= COMMAND_GROUP_STOP;
 			nextStep();
 		}
-		private function stopComplite():void{
+		protected function stopComplite():void{
 			log('stoped');
 			currentTray=-1;
 			pausedGroup=-1;
@@ -664,9 +636,9 @@ package com.photodispatcher.tech.picker{
 			*/
 		}
 		
-		private var delayTimer:Timer;
+		protected var delayTimer:Timer;
 		
-		private function runDelayTimer():void{
+		protected function runDelayTimer():void{
 			log('Задержка старта (2сек)');
 			if(!delayTimer){
 				delayTimer=new Timer(START_DELAY,1);
@@ -676,11 +648,11 @@ package com.photodispatcher.tech.picker{
 			delayTimer.start();
 		}
 		
-		private function onDelayTimer(evt:TimerEvent):void{
+		protected function onDelayTimer(evt:TimerEvent):void{
 			nextStep();
 		}
 		
-		private function nextStep():void{
+		protected function nextStep():void{
 			if(!isRunning || isPaused) return;
 			if(hasPauseRequest){
 				hasPauseRequest=false;
@@ -824,7 +796,7 @@ package com.photodispatcher.tech.picker{
 					//check completed
 					if(currentGroupStep>=1){
 						//complited
-						if (currSheetIdx>=currSheetTot){ 
+						if ((currSheetIdx>=currSheetTot) || (register && register.currentBookComplited)){ 
 							//book complited
 							currentGroup= COMMAND_GROUP_BOOK_END;
 						}else{
@@ -902,7 +874,7 @@ package com.photodispatcher.tech.picker{
 			}
 		}
 
-		private function feedLayer(ls:LayerSequence):void{
+		protected function feedLayer(ls:LayerSequence):void{
 			if(!ls) return;
 			waiteTraySwitch=false;
 			if(ls.seqlayer==Layer.LAYER_EMPTY){
@@ -930,7 +902,7 @@ package com.photodispatcher.tech.picker{
 			controller.open(currentTray);
 		}
 
-		private function feedSheet():void{
+		protected function feedSheet():void{
 			waiteTraySwitch=false;
 			currentLayer=Layer.LAYER_SHEET;
 			var ct:int=traySet.getCurrentTray(currentLayer);
@@ -949,7 +921,7 @@ package com.photodispatcher.tech.picker{
 			controller.open(currentTray);
 		}
 
-		private function onLatchTimeout(event:ErrorEvent):void{
+		protected function onLatchTimeout(event:ErrorEvent):void{
 			if(!isRunning || isPaused) return;
 			var l:PickerLatch=event.target as PickerLatch;
 			if(!l) return; 
@@ -998,7 +970,7 @@ package com.photodispatcher.tech.picker{
 			}
 		}
 		
-		private function onLatchRelease(event:Event):void{
+		protected function onLatchRelease(event:Event):void{
 			if(!isRunning || isPaused) return;
 			var l:PickerLatch=event.target as PickerLatch;
 			if(!l) return; 
@@ -1041,14 +1013,14 @@ package com.photodispatcher.tech.picker{
 			checkLatches();
 		}
 
-		private function resetLatches():void{
+		protected function resetLatches():void{
 			var l:PickerLatch;
 			for each(l in latches){
 				l.reset();
 			}
 		}
 
-		private function checkLatches():void{
+		protected function checkLatches():void{
 			var complite:Boolean=true;
 			var l:PickerLatch;
 			for each(l in latches){
@@ -1064,13 +1036,14 @@ package com.photodispatcher.tech.picker{
 			}
 		}
 		
-		private function onControllerErr(event:ErrorEvent):void{
+		protected function onControllerErr(event:ErrorEvent):void{
 			pause('Ошибка контролера: '+event.text);
 		}
-		private function onControllerCommandComplite(event:Event):void{
+		protected function onControllerCommandComplite(event:Event):void{
 			aclLatch.forward();
 		}
-		private function onControllerMsg(event:ControllerMesageEvent):void{
+		protected function onControllerMsg(event:ControllerMesageEvent):void{
+			//TODO refactor 4 feeder
 			if(!isRunning || isPaused) return;
 			if(event.chanel==0){
 				if(event.state==1){
@@ -1098,7 +1071,7 @@ package com.photodispatcher.tech.picker{
 			}
 		}
 
-		private function onBarCode(event:BarCodeEvent):void{
+		protected function onBarCode(event:BarCodeEvent):void{
 			var barcode:String=event.barcode;
 			log('barcod: '+barcode);
 			if(!isRunning || isPaused) return;
@@ -1159,15 +1132,15 @@ package com.photodispatcher.tech.picker{
 			register.register(bookNum,pageNum);
 			//barLatch.forward();
 		}
-		private function onBarError(event:BarCodeEvent):void{
+		protected function onBarError(event:BarCodeEvent):void{
 			pause('Ошибка сканера ШК: '+event.error);
 		}
-		private function onBarDisconnect(event:BarCodeEvent):void{
+		protected function onBarDisconnect(event:BarCodeEvent):void{
 			log('Отключен сканер ШК '+event.barcode);
 			//pause('Отключен сканер ШК '+event.barcode); busy bug
 		}
 
-		private function checkPrintgroup(pgId:String):Boolean{
+		protected function checkPrintgroup(pgId:String):Boolean{
 			var res:Boolean=pgId==currPgId;
 			if(!res && currReprints){
 				res=currReprints.indexOf(pgId)!=-1;
@@ -1175,20 +1148,20 @@ package com.photodispatcher.tech.picker{
 			return res;
 		}
 		
-		private function onRegisterErr(event:ErrorEvent):void{
+		protected function onRegisterErr(event:ErrorEvent):void{
 			pause(event.text);
 		}
-		private function onRegisterComplite(event:Event):void{
+		protected function onRegisterComplite(event:Event):void{
 			currBookIdx=register.currentBook;
 			currSheetIdx=register.currentSheet;
 			registerLatch.forward();
 			barLatch.forward();
 		}
-		private function log(msg:String):void{
+		protected function log(msg:String):void{
 			if(logger) logger.log(msg);
 		}
 		
-		private function checkOrderParams():void{
+		protected function checkOrderParams():void{
 			if(!currPgId) return;
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch();
@@ -1202,7 +1175,7 @@ package com.photodispatcher.tech.picker{
 			latch.join(latchR);
 			latch.start();
 		}
-		private function onReprintsLoad(e:Event):void{
+		protected function onReprintsLoad(e:Event):void{
 			currReprints=[];
 			var latch:DbLatch=e.target as DbLatch;
 			if(latch){
@@ -1219,7 +1192,7 @@ package com.photodispatcher.tech.picker{
 				}
 			}
 		}
-		private function onOrderFinde(e:Event):void{
+		protected function onOrderFinde(e:Event):void{
 			var latch:DbLatch=e.target as DbLatch;
 			var ei:OrderExtraInfo;
 			if(latch){
@@ -1276,7 +1249,7 @@ package com.photodispatcher.tech.picker{
 			//TODO implement check format
 		}
 
-		private function getBookTypeName(bookType:int):String{
+		protected function getBookTypeName(bookType:int):String{
 			var result:String;
 			var ac:ArrayCollection=Context.getAttribute('book_typeList') as ArrayCollection;
 			if(ac){
