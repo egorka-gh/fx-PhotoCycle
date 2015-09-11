@@ -259,7 +259,7 @@
 				}
 				
 				currentState='monitor';
-				if(techPickerView) techPickerView.start();
+				if(techPickerView) techPickerView.start(true);
 			}
 			
 			//TODO 4 debug

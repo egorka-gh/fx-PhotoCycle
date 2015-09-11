@@ -18,6 +18,8 @@
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.service.barcode.ValveController;
 			import com.photodispatcher.tech.picker.TechPicker;
+			import com.photodispatcher.tech.picker.TechPickerFeeder;
+			import com.photodispatcher.view.itemRenderer.TraySetDataGridRowBackground;
 			
 			import flash.globalization.DateTimeStyle;
 			import flash.sampler.NewObjectSample;
@@ -64,7 +66,7 @@
 					dtFmt.timeStyle=DateTimeStyle.LONG;
 					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
 				}
-				logText=logText+dtFmt.format(new Date())+' '+ mesage+'\n';
+				logText=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
 			}
 			public function clear():void{
 				logText='';
@@ -81,9 +83,13 @@
 			[Bindable]
 			private var techPicker:TechPicker;
 			
-			public function start():void{
+			public function start(feederMode:Boolean=false):void{
 				techGroup=Context.getAttribute('techGroup.id');
-				techPicker= new TechPicker(techGroup);
+				if(feederMode){
+					techPicker= new TechPickerFeeder(techGroup);
+				}else{
+					techPicker= new TechPicker(techGroup);
+				}
 
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE, onStartLatch);
@@ -243,7 +249,10 @@
 				<s:Label text="Загрузка лотков"/>
 				<config:ItemsGrid id="traysGrid" currentData="{techPicker.traySet.tarys}" width="100%" 
 								  currentIndex="{techPicker.currentTray}" editable="{!techPicker.isRunning || techPicker.isPaused}"
-								  currentColumns="{LayerAllocation.gridColumns()}" disableSorting="true"/>
+								  lockRows="{ {parametr:'tray', values:[-1]}}"
+								  currentColumns="{LayerAllocation.gridColumns()}" disableSorting="true"
+								  rowBackground="{new ClassFactory(TraySetDataGridRowBackground)}"
+								  />
 				<!--<s:Spacer height="5"/>-->
 				<s:Label text="Блокировки"/>
 				<s:List id="lstLatches" dataProvider="{acLatches}" width="100%" changing="preventChanging(event)" 

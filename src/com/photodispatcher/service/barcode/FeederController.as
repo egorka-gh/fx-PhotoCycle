@@ -66,6 +66,20 @@ package com.photodispatcher.service.barcode{
 		public static const MAX_RESEND:int=1;
 		public static const ACKNOWLEDGE_TIMEOUT:int	=200;
 		
+		private static var chanelStateNameMap:Object;
+		public static function chanelStateName(state:int):String{
+			if(!chanelStateNameMap){
+				chanelStateNameMap=new Object;
+				chanelStateNameMap[CHANEL_STATE_SHEET_PASS]='Лист вышел';
+				chanelStateNameMap[CHANEL_STATE_SINGLE_SHEET]='Одинарный лист';
+				chanelStateNameMap[CHANEL_STATE_DOUBLE_SHEET]='Двойной лист';
+				chanelStateNameMap[CHANEL_STATE_FEEDER_EMPTY]='Пустая стопа';
+			}
+			var res:String=chanelStateNameMap[state];
+			if(!res) res='State#'+state.toString();
+			return res;
+		}
+		
 		
 		public var logger:ISimpleLogger;
 
@@ -159,7 +173,12 @@ package com.photodispatcher.service.barcode{
 			}
 			dispatchEvent(new ControllerMesageEvent(tray,chanelState));
 		}
-
+		
+		override public function set comPort(value:Socket2Com):void{
+			super.comPort = value;
+			if(value) tray=value.tray-1; //zero based
+		}
+		
 		
 		protected function log(msg:String):void{
 			if(logger) logger.log(msg.replace(String.fromCharCode(sufix), "'hex:"+sufix.toString(16)+"'"));

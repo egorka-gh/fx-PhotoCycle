@@ -2,6 +2,7 @@ package com.photodispatcher.tech.picker{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.LayerAllocation;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.service.barcode.FeederController;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.net.SharedObject;
@@ -70,6 +71,46 @@ package com.photodispatcher.tech.picker{
 			return true;
 		}
 		
+		private var _controllers:Array; 
+		public function get controllers():Array{
+			return _controllers;
+		}
+		public function set controllers(value:Array):void{
+			_controllers = value;
+			var tarr:Array=tarys.source;
+			var la:LayerAllocation;
+			var i:int;
+			if(!_controllers){
+				//enable all
+				for (i= 0; i < tarr.length; i++){
+					la=tarr[i] as LayerAllocation;
+					if(la){
+						la.tray=i;
+					}
+				}
+			}else{
+				//disable all
+				for (i= 0; i < tarr.length; i++){
+					la=tarr[i] as LayerAllocation;
+					if(la){
+						la.tray=-1;
+					}
+				}
+				//enable by devices
+				var dev:FeederController;
+				for each(dev in _controllers){
+					if(dev && dev.tray>=0){
+						la=tarr[dev.tray] as LayerAllocation;
+						if(la){
+							la.tray=dev.tray;
+							la.controller=dev;
+						}
+					}
+				}
+			}
+		}
+
+		
 		protected function ontTaysChange(evt:CollectionEvent):void{
 			//save
 			var so:SharedObject=SharedObject.getLocal('tech_tray','/');
@@ -94,14 +135,25 @@ package com.photodispatcher.tech.picker{
 
 		public function getLayerInTray(tray:int):int{
 			if(tray==-1) return 0;
-			return tarys.getItemAt(tray)['layer'];
+			var la:LayerAllocation=tarys.getItemAt(tray) as LayerAllocation;
+			if(!la || la.tray<0) return 0;
+			return la.layer;
 		}
 
 		public function getCurrentTray(layer:int):int{
 			var tray:int=curLayerTrayMap[layer.toString()];
-			if(tray==-1 || tarys.getItemAt(tray)['layer']!=layer){
+			var la:LayerAllocation;
+			if(tray!=-1) la=tarys.getItemAt(tray) as LayerAllocation;
+			if(la.tray<0 || la.layer!=layer) tray==-1;
+			if(tray==-1){
 				//finde first
-				tray=ArrayUtil.searchItemIdx('layer',layer,tarys.source);
+				//tray=ArrayUtil.searchItemIdx('layer',layer,tarys.source);
+				for each (la in tarys){
+					if(la && la.tray>=0 && la.layer==layer){
+						tray=la.tray;
+						break;
+					}
+				}
 				curLayerTrayMap[layer.toString()]=tray;
 			}
 			return tray;
@@ -109,9 +161,16 @@ package com.photodispatcher.tech.picker{
 
 		public function getNextTray(layer:int):int{
 			var tray:int=curLayerTrayMap[layer.toString()];
+			var la:LayerAllocation;
 			if(tray==-1){
 				//finde first
-				tray=ArrayUtil.searchItemIdx('layer',layer,tarys.source);
+				//tray=ArrayUtil.searchItemIdx('layer',layer,tarys.source);
+				for each (la in tarys){
+					if(la && la.tray>=0 && la.layer==layer){
+						tray=la.tray;
+						break;
+					}
+				}
 				curLayerTrayMap[layer.toString()]=tray;
 				return tray;
 			}
@@ -122,7 +181,8 @@ package com.photodispatcher.tech.picker{
 			for(i=0;i<arr.length;i++){
 				//finde next
 				if(idx>=arr.length) idx=0;
-				if(arr[idx]['layer']==layer){
+				la=arr[idx] as LayerAllocation;
+				if(la && la.tray>=0 && la.layer==layer){
 					curLayerTrayMap[layer.toString()]=idx;
 					return idx;
 				}

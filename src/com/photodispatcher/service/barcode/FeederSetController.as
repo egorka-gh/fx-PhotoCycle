@@ -35,7 +35,8 @@ package com.photodispatcher.service.barcode{
 			if(value){
 				var fc:FeederController;
 				for each(fc in value){
-					if(fc && fc.tray>0){
+					if(fc && fc.tray>=0){
+						fc.logger=logger;
 						_controllers.push(fc);
 						trayMap[fc.tray]=fc;
 						//start listen
@@ -59,14 +60,14 @@ package com.photodispatcher.service.barcode{
 		}
 
 		protected function onControllerDisconnect(event:BarCodeEvent):void{
-			dispatchEvent(event);
+			var evt:BarCodeEvent= new BarCodeEvent(event.type,event.barcode,event.error);
+			dispatchEvent(evt);
 		}
 		
 		protected function onControllerCommandComplite(event:Event):void{
 			var fc:FeederController=event.target as FeederController;
 			if(currTray==-1){
 				//waite all
-				var fc:FeederController;
 				var done:Boolean=true;
 				for each(fc in controllers){
 					if(fc.isBusy){
@@ -86,7 +87,8 @@ package com.photodispatcher.service.barcode{
 
 		protected function onControllerMsg(event:ControllerMesageEvent):void{
 			//redispatch
-			dispatchEvent(event);
+			var evt:ControllerMesageEvent= new ControllerMesageEvent(event.chanel,event.state);
+			dispatchEvent(evt);
 		}
 		
 		override public function get logger():ISimpleLogger{

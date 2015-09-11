@@ -233,7 +233,7 @@ package com.photodispatcher.tech.picker{
 			if(!latch.complite) return;
 		
 			//create & fill trays
-			traySet= new TraySet();
+			if(!traySet) traySet= new TraySet();
 			if (!traySet.prepared) return;
 			
 			currEndpaper=endpaperSet.emptyEndpaper;
@@ -417,12 +417,12 @@ package com.photodispatcher.tech.picker{
 			//checkPrepared();
 		}
 
-		private var _controller:ValveController;
+		protected var _controller:ValveController;
 		
-		private function get controller():ValveController{
+		public function get controller():ValveController{
 			return _controller;
 		}
-		private function set controller(value:ValveController):void{
+		public function set controller(value:ValveController):void{
 			if(_controller){
 				_controller.removeEventListener(ErrorEvent.ERROR, onControllerErr);
 				_controller.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
@@ -1003,12 +1003,6 @@ package com.photodispatcher.tech.picker{
 						return;
 						break;
 					}
-					/*
-				case PickerLatch.TYPE_LAYER_IN:
-					layerOutLatch.setOn();
-					return;
-					break;
-					*/
 			}
 			checkLatches();
 		}
@@ -1043,7 +1037,6 @@ package com.photodispatcher.tech.picker{
 			aclLatch.forward();
 		}
 		protected function onControllerMsg(event:ControllerMesageEvent):void{
-			//TODO refactor 4 feeder
 			if(!isRunning || isPaused) return;
 			if(event.chanel==0){
 				if(event.state==1){

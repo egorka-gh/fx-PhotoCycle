@@ -19,6 +19,7 @@ package com.photodispatcher.model{
 		[Bindable]
 		public var layer:int;
 		
+		[Bindable]
 		public var controller:FeederController;
 		
 		//db drived
