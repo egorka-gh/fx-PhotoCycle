@@ -144,7 +144,7 @@ package com.photodispatcher.tech.picker{
 			var tray:int=curLayerTrayMap[layer.toString()];
 			var la:LayerAllocation;
 			if(tray!=-1) la=tarys.getItemAt(tray) as LayerAllocation;
-			if(la.tray<0 || la.layer!=layer) tray==-1;
+			if(!la || la.tray<0 || la.layer!=layer) tray==-1;
 			if(tray==-1){
 				//finde first
 				//tray=ArrayUtil.searchItemIdx('layer',layer,tarys.source);

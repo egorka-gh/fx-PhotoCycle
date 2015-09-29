@@ -1,5 +1,6 @@
 package com.photodispatcher.tech.picker{
 	import com.photodispatcher.event.ControllerMesageEvent;
+	import com.photodispatcher.model.mysql.entities.Layer;
 	import com.photodispatcher.model.mysql.entities.LayerSequence;
 	import com.photodispatcher.service.barcode.ComInfo;
 	import com.photodispatcher.service.barcode.ComReader;
@@ -10,6 +11,8 @@ package com.photodispatcher.tech.picker{
 	
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
+	import flash.events.TimerEvent;
+	import flash.utils.Timer;
 	
 	import mx.controls.Alert;
 
@@ -18,7 +21,18 @@ package com.photodispatcher.tech.picker{
 		
 		public function TechPickerFeeder(techGroup:int){
 			super(techGroup);
+			feedDelay=100;
 		}
+		
+		override public function get feedDelay():int{
+			return super.feedDelay;
+		}
+		
+		override public function set feedDelay(value:int):void{
+			if(value<100) value=100;
+			super.feedDelay = value;
+		}
+		
 		
 		override protected function onControllerMsg(event:ControllerMesageEvent):void{
 			if(!isRunning || isPaused) return;
@@ -31,38 +45,41 @@ package com.photodispatcher.tech.picker{
 				*/
 				return;
 			}
+			//reset refeed
+			refeed=false;
 			if(event.chanel==currentTray){
 				//msg from current tray
-				if(event.state==FeederController.CHANEL_STATE_SINGLE_SHEET){
-					//layer in
-					if(layerInLatch.isOn){
-						currentTray=-1;
-						layerInLatch.forward();
-						//reset OutLatch timer
-						//if(layerOutLatch.isOn)
-
+				if(layerInLatch.isOn && (event.state==FeederController.CHANEL_STATE_SINGLE_SHEET || event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET)){
+					//layerIn msg					
+					var waiteState:int=FeederController.CHANEL_STATE_SINGLE_SHEET;
+					//var wrongState:int=FeederController.CHANEL_STATE_DOUBLE_SHEET;
+					if(currentLayer==Layer.LAYER_SHEET){
+						waiteState=FeederController.CHANEL_STATE_DOUBLE_SHEET;
+						//wrongState=FeederController.CHANEL_STATE_SINGLE_SHEET;
+					}
+					
+					if((event.state==waiteState) || (doubleSheetOff && currentLayer==Layer.LAYER_SHEET && event.state==FeederController.CHANEL_STATE_SINGLE_SHEET)){
 						//start OutLatch
 						layerOutLatch.setOn();
-					}else{
-						pause('Не ожидаемое срабатывание '+'Лоток '+(event.chanel+1).toString()+': '+FeederController.chanelStateName(event.state));
-						return;
-					}
-				}else if(event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET){
-					if(layerInLatch.isOn){
+						//layer in
+						//currentTray=-1;
+						layerInLatch.forward();
+					}else{ //if(event.state==wrongState){
+						//wrong state
 						pause('Лоток '+(event.chanel+1).toString()+': '+FeederController.chanelStateName(event.state));
-					}else{
-						pause('Не ожидаемое срабатывание '+'Лоток '+(event.chanel+1).toString()+': '+FeederController.chanelStateName(event.state));
 					}
-					return;
-				}else if(event.state==FeederController.CHANEL_STATE_SHEET_PASS){
-					if(layerOutLatch.isOn){
-						//layer out
-						if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
+				}else if(layerOutLatch.isOn && event.state==FeederController.CHANEL_STATE_SHEET_PASS){
+					//layer out
+					currentTray=-1;
+					if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
+					if(feedDelay<100){
 						layerOutLatch.forward();
 					}else{
-						pause('Не ожидаемое срабатывание '+'Лоток '+(event.chanel+1).toString()+': '+FeederController.chanelStateName(event.state));
-						return;
+						startFeedDelay();
 					}
+				}else{
+					//unexpected msg
+					pause('Не ожидаемое срабатывание '+'Лоток '+(event.chanel+1).toString()+': '+FeederController.chanelStateName(event.state));
 				}
 			}else{
 				//msg from wrong tray
@@ -72,6 +89,8 @@ package com.photodispatcher.tech.picker{
 		
 		override protected function nextStep():void{
 			//controller.close(currentTray);
+			//reset refeed
+			refeed=false;
 
 			if(!isRunning || isPaused) return;
 			if(hasPauseRequest){
@@ -308,9 +327,14 @@ package com.photodispatcher.tech.picker{
 					}
 				}
 			}
-			var newController:FeederSetController= new FeederSetController();
-			newController.controllers=controllers;
-			controller=newController;
+			if(!controller){
+				var newController:FeederSetController= new FeederSetController();
+				newController.controllers=controllers;
+				controller=newController;
+			}else{
+				(controller as FeederSetController).controllers=controllers;
+			}
+
 			controller.start();
 			
 			//reinit trayset
@@ -336,14 +360,18 @@ package com.photodispatcher.tech.picker{
 		}
 		
 		override protected function feedLayer(ls:LayerSequence):void{
+			refeed=true;
 			super.feedLayer(ls);
 			//start out latch ??? 			layerOutLatch.setOn();
 		}
 		
 		override protected function feedSheet():void{
+			refeed=true;
 			super.feedSheet();
 			//start out latch ??? 			layerOutLatch.setOn();
 		}
+		
+		protected var refeed:Boolean=false;
 		
 		override protected function onLatchTimeout(event:ErrorEvent):void{
 			//controller.close(currentTray);
@@ -353,6 +381,7 @@ package com.photodispatcher.tech.picker{
 			if(!l) return; 
 			switch(l.type){
 				case PickerLatch.TYPE_ACL:
+					refeed=false;
 					if(isServiceGroup(currentGroup)){
 						//skip
 						//log('ACL Timeout - skipped (service group)');
@@ -383,6 +412,16 @@ package com.photodispatcher.tech.picker{
 					break;
 				case PickerLatch.TYPE_LAYER_IN:
 					//layer not in
+					//try refeed
+					if(refeed){
+						log('Лоток '+(currentTray+1).toString()+' повторная подача листа.');
+						refeed=false;
+						layerInLatch.setOn(); //restart in latch
+						if(currentGroup==COMMAND_GROUP_BOOK_SHEET) barLatch.setOn(); //restart bar latch
+						aclLatch.setOn();
+						controller.open(currentTray);
+						return;
+					}
 					//try next tray 
 					currentTray=-1;
 					var ct:int=traySet.getNextTray(currentLayer); 
@@ -401,6 +440,9 @@ package com.photodispatcher.tech.picker{
 						pause('Заполните лотки для слоя '+traySet.getLayerName(currentLayer));
 						return;
 					}
+					//open next tray
+					log('Cлой '+traySet.getLayerName(currentLayer)+' переключение на лоток '+(currentTray+1).toString());
+					refeed=true;
 					currentTray=ct;
 					layerInLatch.setOn();
 					if(currentGroup==COMMAND_GROUP_BOOK_SHEET) barLatch.setOn(); //restart bar latch
@@ -419,5 +461,20 @@ package com.photodispatcher.tech.picker{
 			checkLatches();
 		}
 		
+		private var feedTimer:Timer;
+		
+		protected function startFeedDelay():void{
+			if(feedDelay<100) return;
+			
+			if(!feedTimer){
+				feedTimer= new Timer(feedDelay,1);
+				feedTimer.addEventListener(TimerEvent.TIMER, onFeedDelayTimer);
+			}
+			feedTimer.start();
+			log('Задержка подачи листа');
+		}
+		private function onFeedDelayTimer(evt:TimerEvent):void{
+			layerOutLatch.forward();
+		}
 	}
 }

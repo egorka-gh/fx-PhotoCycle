@@ -193,10 +193,10 @@ package com.photodispatcher.service.barcode{
 				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,'Нет потверждения предидущей команды ('+lastCommand+'/'+cmd+')',ERROR_BUSY));
 				return;
 			}
+			log('> '+cmd);
 			var msg:String=cmd+String.fromCharCode(sufix);
 			_isBusy=true;
 			resendCount=0;
-			log('> '+msg);
 			lastCommand=msg;
 			if(!aclTimer){
 				aclTimer= new Timer(ACKNOWLEDGE_TIMEOUT,1);

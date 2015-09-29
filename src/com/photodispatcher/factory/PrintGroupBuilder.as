@@ -780,7 +780,7 @@ package com.photodispatcher.factory{
 			//restore paper
 			pg.paper=paper;
 			if(pg.files){
-				pg.book_num=ppg.book_num;
+				//pg.book_num=Math.max(ppg.book_num,pg.book_num);
 				a=pg.bookFiles;
 				//remove empty
 				var a2:Array=[];

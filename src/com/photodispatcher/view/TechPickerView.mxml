@@ -35,6 +35,7 @@
 			public var techPoint:TechPoint;
 			public var reversOrder:Boolean;
 			public var turnInterval:int;
+			public var feedDelay:int;
 			public var engineOnStartOn:Boolean=false;
 			public var vacuumOnStartOn:Boolean=false;
 			public var engineOnErrOff:Boolean=false;
@@ -43,6 +44,8 @@
 			public var stopOnComplite:Boolean=false;
 			public var pauseOnComplite:Boolean=false;
 			public var layerOnComplite:int=0;
+			
+			public  var doubleSheetOff:Boolean=false;
 
 			[Bindable]
 			private var acTemplates:ArrayCollection;
@@ -117,9 +120,11 @@
 				techPicker.stopOnComplite=stopOnComplite;
 				techPicker.pauseOnComplite=pauseOnComplite;
 				techPicker.layerOnComplite=layerOnComplite;
+				techPicker.doubleSheetOff=doubleSheetOff;
 				techPicker.reversOrder=reversOrder;
 				techPicker.techPoint=techPoint;
 				techPicker.turnInterval=turnInterval;
+				techPicker.feedDelay=feedDelay;
 				techPicker.logger=this;
 				techPicker.addEventListener(ErrorEvent.ERROR, onPickerErr);
 			}

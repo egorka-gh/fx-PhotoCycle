@@ -148,7 +148,8 @@ package com.photodispatcher.tech.picker{
 
 		public var techPoint:TechPoint;
 		public var reversOrder:Boolean;
-		
+		public  var doubleSheetOff:Boolean=false;
+
 		[Bindable]
 		public var currentSequence:Array;
 		
@@ -211,6 +212,18 @@ package com.photodispatcher.tech.picker{
 			if(barLatch) barLatch.setTimeout(_turnInterval);
 		}
  
+		private var _feedDelay:int;
+		public function get feedDelay():int{
+			return _feedDelay;
+		}
+
+		public function set feedDelay(value:int):void{
+			if(value<0) value=0;
+			_feedDelay = value;
+			if(layerOutLatch) layerOutLatch.setTimeout(1000+_feedDelay); 
+		}
+		
+		
 		public function TechPicker(techGroup:int){
 			super(null);
 			this.techGroup=techGroup;
@@ -241,7 +254,7 @@ package com.photodispatcher.tech.picker{
 			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', ValveController.ACKNOWLEDGE_TIMEOUT*3);
 			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
 			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',turnInterval);
-			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000); //1сек
+			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000+feedDelay); //1сек
 			barLatch = new PickerLatch(PickerLatch.TYPE_BARCODE, 1,'Сканер','Ожидание штрихкода',turnInterval);
 			registerLatch = new PickerLatch(PickerLatch.TYPE_REGISTER, 1,'Книга','Контроль очередности',ValveController.ACKNOWLEDGE_TIMEOUT*2);
 			bdLatch= new PickerLatch(PickerLatch.TYPE_BD, 2,'База данных','Получение параметров заказа',2*BD_MAX_WAITE); //callDbLate wl pause after BD_MAX_WAITE
@@ -428,6 +441,7 @@ package com.photodispatcher.tech.picker{
 				_controller.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
 				_controller.removeEventListener(Event.COMPLETE, onControllerCommandComplite);
 				_controller.removeEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
+				_controller.stop();
 			}
 			_controller = value;
 			if(_controller){
