@@ -32,6 +32,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=60; result.addItem(col);
 			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
 			col= new GridColumn('is_sheet_ready'); col.headerText='Готовый разворот'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
+			col= new GridColumn('revers'); col.headerText='Обратный порядок'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
 			col= new GridColumn('sheet_width'); col.headerText='Ширина разворота pix'; result.addItem(col);
 			col= new GridColumn('sheet_len'); col.headerText='Длина разворота pix'; result.addItem(col);
 			col= new GridColumn('page_width'); col.headerText='Ширина страницы pix'; result.addItem(col);

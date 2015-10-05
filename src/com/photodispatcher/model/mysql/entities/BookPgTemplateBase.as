@@ -54,6 +54,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _page_width:int;
         private var _paper:int;
         private var _paper_name:String;
+        private var _revers:Boolean;
         private var _sheet_len:int;
         private var _sheet_width:int;
         private var _stroke:int;
@@ -313,6 +314,13 @@ package com.photodispatcher.model.mysql.entities {
             return _paper_name;
         }
 
+        public function set revers(value:Boolean):void {
+            _revers = value;
+        }
+        public function get revers():Boolean {
+            return _revers;
+        }
+
         public function set sheet_len(value:int):void {
             _sheet_len = value;
         }
@@ -441,6 +449,7 @@ package com.photodispatcher.model.mysql.entities {
             _page_width = input.readObject() as int;
             _paper = input.readObject() as int;
             _paper_name = input.readObject() as String;
+            _revers = input.readObject() as Boolean;
             _sheet_len = input.readObject() as int;
             _sheet_width = input.readObject() as int;
             _stroke = input.readObject() as int;
@@ -493,6 +502,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_page_width is IPropertyHolder) ? IPropertyHolder(_page_width).object : _page_width);
             output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
             output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
+            output.writeObject((_revers is IPropertyHolder) ? IPropertyHolder(_revers).object : _revers);
             output.writeObject((_sheet_len is IPropertyHolder) ? IPropertyHolder(_sheet_len).object : _sheet_len);
             output.writeObject((_sheet_width is IPropertyHolder) ? IPropertyHolder(_sheet_width).object : _sheet_width);
             output.writeObject((_stroke is IPropertyHolder) ? IPropertyHolder(_stroke).object : _stroke);
