@@ -20,9 +20,15 @@
 
 		]]>
 	</fx:Script>
+
+	<fx:Declarations>
+		<s:NumberFormatter id="fmt" fractionalDigits="1"/>
+	</fx:Declarations>
+	
 	<s:HGroup gap="5" verticalAlign="middle" paddingTop="5" paddingLeft="5">
 		<itemRenderer:LabStateIndicator state="{int(roll.is_online)}"/>
 		<s:Label text="{roll.width.toString()}-{roll.paper_name}" width="105" maxDisplayedLines="1"/>
-		<itemRenderer:SecondToMinuteRenderer seconds="{roll.printQueueTime}" caption="" width="100%"/>
+		<!--<itemRenderer:SecondToMinuteRenderer seconds="{roll.printQueueTime}" caption="" width="100%"/>-->
+		<s:Label text="{fmt.format(roll.printQueueLen/1000)}м"/>
 	</s:HGroup>
 </s:ItemRenderer>

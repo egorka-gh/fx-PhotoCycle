@@ -11,6 +11,7 @@ package com.photodispatcher.model.mysql.services {
     import com.photodispatcher.model.mysql.entities.Lab;
     import com.photodispatcher.model.mysql.entities.LabDevice;
     import com.photodispatcher.model.mysql.entities.LabMeter;
+    import com.photodispatcher.model.mysql.entities.LabRoll;
     import com.photodispatcher.model.mysql.entities.SelectResult;
     import com.photodispatcher.model.mysql.entities.SqlResult;
     import flash.utils.flash_proxy;
@@ -172,6 +173,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function loadOnlineRolls(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadOnlineRolls", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadOnlineRolls", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadOnlineRolls") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadPrintCode(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadPrintCode", arg0, resultHandler, faultHandler) as AsyncToken;
@@ -179,6 +191,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadPrintCode", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadPrintCode", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadQueueByDevice(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadQueueByDevice", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadQueueByDevice", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadQueueByDevice", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
@@ -201,6 +224,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("persistPrintCodes", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("persistPrintCodes", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function setRollOnline(arg0:LabRoll, arg1:Boolean, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("setRollOnline", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("setRollOnline", arg0, arg1, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("setRollOnline", arg0, arg1) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }

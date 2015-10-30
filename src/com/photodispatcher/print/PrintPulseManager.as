@@ -199,6 +199,7 @@ package com.photodispatcher.print{
 			
 			var latch:DbLatch=loadPrintQueue();
 			latch.join(loadLabMeter());
+			latch.join(loadLastRolls());
 			latch.join(loadOnlineRolls());
 			latch.start();
 		}
@@ -229,10 +230,32 @@ package com.photodispatcher.print{
 			}
 		}
 
+		protected function loadLastRolls():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onLoadLastRolls);
+			latch.addLatch(labService.loadLastRolls());
+			latch.start();
+			return latch;
+		}
+		protected function onLoadLastRolls(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			var localTime:Date= new Date();
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoadLastRolls);
+				if(!latch.complite) return;
+				for each (var r:LabRoll in latch.lastDataArr){
+					if(r){
+						var dev:LabDevice=deviceMap[r.lab_device] as LabDevice;
+						if(dev) dev.lastRoll=r;
+					}
+				}
+			}
+		}
+
 		protected function loadOnlineRolls():DbLatch{
 			var latch:DbLatch=new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onLoadOnlineRolls);
-			latch.addLatch(labService.loadLastRolls());
+			latch.addLatch(labService.loadOnlineRolls());
 			latch.start();
 			return latch;
 		}
@@ -242,12 +265,18 @@ package com.photodispatcher.print{
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onLoadOnlineRolls);
 				if(!latch.complite) return;
+				var dev:LabDevice;
+				//reset online rolls
+				for each (dev in devices) dev.resetOnlineRolls();
+				//set online rolls
 				for each (var r:LabRoll in latch.lastDataArr){
 					if(r){
-						var dev:LabDevice=deviceMap[r.lab_device] as LabDevice;
-						if(dev) dev.lastRoll=r;
+						dev=deviceMap[r.lab_device] as LabDevice;
+						if(dev) dev.setRollOnline(r);
 					}
 				}
+				//refresh online rolls
+				for each (dev in devices) dev.rollsOnline.refresh();
 			}
 		}
 

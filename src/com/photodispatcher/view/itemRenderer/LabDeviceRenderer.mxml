@@ -72,12 +72,13 @@
 				if (!item) return;
 				item.is_online= false;
 				applyActiveRollsFilter();
-				refreshParentOnlineRolls();
+				//refreshParentOnlineRolls();
 				updateRollItem(item);
 				
 			}
 			
 			
+			/*
 			private function getPreferRolls():ArrayCollection{
 				var parent:LabInfo=getParentLabInfo();
 				if(parent){
@@ -108,12 +109,13 @@
 				}while(parent);
 				return null;
 			}
+			*/
 			
 			private var addPopup:AddOnlineRollPopup;
 			protected function btAddActRoll_clickHandler(event:MouseEvent):void{
 				addPopup= new AddOnlineRollPopup();
-				addPopup.rolls=aclRolls;
-				addPopup.preferRolls=getPreferRolls();
+				addPopup.device=dev;
+				//addPopup.preferRolls=getPreferRolls();
 				addPopup.addEventListener(PopUpEvent.CLOSE,onAddPopupClose);
 				addPopup.show();
 			}
@@ -125,7 +127,7 @@
 					if(item){
 						item.is_online=true;
 						applyActiveRollsFilter();
-						refreshParentOnlineRolls();
+						//refreshParentOnlineRolls();
 						
 						updateRollItem(item);
 						
@@ -148,7 +150,7 @@
 			{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
-					latch.removeEventListener(Event.COMPLETE,updateRollItem);
+					latch.removeEventListener(Event.COMPLETE,onRollUpdate);
 				}
 			}
 			

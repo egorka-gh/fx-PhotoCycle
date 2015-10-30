@@ -368,6 +368,10 @@ package com.photodispatcher.provider.ftp{
 						//fbook order run suborders load
 						order.state=OrderState.FTP_LOAD;
 						checkDownload();
+					}else{
+						if(DEBUG_TRACE) trace('FTPDownloadManager empty order nothing to list & no suborders');
+						order.state=OrderState.ERR_FTP;
+						order.setErrLimit();
 					}
 				}
 				if(!result){
@@ -472,17 +476,6 @@ package com.photodispatcher.provider.ftp{
 			listApplicant=null;
 			stopListen(cnn);
 			
-			if(source.type==SourceType.SRC_FBOOK){
-				//remove photo suborders 
-				var so:SubOrder;
-				var newso:Array=[];
-				if(order.hasSuborders){
-					for each(so in order.suborders){
-						if(so.native_type!=1) newso.push(so);
-					}
-					order.suborders= new ArrayCollection(newso);
-				}
-			}
 			//check 4 empty fileStructure
 			var frwState:int=0;
 			if(!order.isFileStructureOk){
@@ -504,7 +497,7 @@ package com.photodispatcher.provider.ftp{
 				order.state=OrderState.ERR_FTP;
 				if(order.exceedErrLimit){
 					StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов.');
-					if(!order.hasSuborders){
+					if(!order.hasSuborders || order.hasPhotoSuborder){
 						//remove from download (double err)
 						idx=downloadOrders.indexOf(order);
 						if(idx!=-1) downloadOrders.splice(idx,1);
@@ -527,6 +520,10 @@ package com.photodispatcher.provider.ftp{
 				connectionManager.reconnect(cnn);
 				return;
 			}
+			
+			//list complited - remove photo suborders 
+			if(source.type==SourceType.SRC_FBOOK) order.removePhotoSuborder();
+
 			if(source.type==SourceType.SRC_PROFOTO){
 				//buid suborders (book folder) 
 				try{

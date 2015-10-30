@@ -26,6 +26,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _len_std:int;
         private var _paper:int;
         private var _paper_name:String;
+        private var _printQueueLen:int;
+        private var _printQueueTime:int;
         private var _width:int;
 
         public function set is_online(value:Boolean):void {
@@ -84,6 +86,20 @@ package com.photodispatcher.model.mysql.entities {
             return _paper_name;
         }
 
+        public function set printQueueLen(value:int):void {
+            _printQueueLen = value;
+        }
+        public function get printQueueLen():int {
+            return _printQueueLen;
+        }
+
+        public function set printQueueTime(value:int):void {
+            _printQueueTime = value;
+        }
+        public function get printQueueTime():int {
+            return _printQueueTime;
+        }
+
         public function set width(value:int):void {
             _width = value;
         }
@@ -101,6 +117,8 @@ package com.photodispatcher.model.mysql.entities {
             _len_std = input.readObject() as int;
             _paper = input.readObject() as int;
             _paper_name = input.readObject() as String;
+            _printQueueLen = input.readObject() as int;
+            _printQueueTime = input.readObject() as int;
             _width = input.readObject() as int;
         }
 
@@ -114,6 +132,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_len_std is IPropertyHolder) ? IPropertyHolder(_len_std).object : _len_std);
             output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
             output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
+            output.writeObject((_printQueueLen is IPropertyHolder) ? IPropertyHolder(_printQueueLen).object : _printQueueLen);
+            output.writeObject((_printQueueTime is IPropertyHolder) ? IPropertyHolder(_printQueueTime).object : _printQueueTime);
             output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
         }
     }

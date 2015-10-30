@@ -82,10 +82,10 @@ package com.photodispatcher.model.mysql.entities {
 			if(roll && rolls && rolls.length>0){
 				for each (var r:LabRoll in rolls){
 					if(r.paper==roll.paper && r.width==roll.width){
-						r.is_online=true;
+						r.is_last=true;
 						_lastRoll=r;
 					}else{
-						r.is_online=false;
+						r.is_last=false;
 					}
 				}
 			}
@@ -120,22 +120,24 @@ package com.photodispatcher.model.mysql.entities {
 			return _rollsOnline;
 		}
 		
-		/*
-		private static function filterOnlineRolls(item:LabRoll):Boolean {
-			return item.is_online;
+		public function setRollOnline(roll:LabRoll):void{
+			if(roll && rolls && rolls.length>0){
+				for each (var r:LabRoll in rolls){
+					if(r.paper==roll.paper && r.width==roll.width){
+						r.is_online=true;
+						//rollsOnline.refresh();
+						break;
+					}
+				}
+			}
 		}
-		*/
-		
+
 		public function LabDevice() {
 			super();
 		}
 		
 		public override function readExternal(input:IDataInput):void {
-			// хрень полная рулон будет онлайн только одини и только в рантайме (?)
 			super.readExternal(input);
-
-			rollsOnline = new ListCollectionView(rolls);
-			/*	
 			if(rolls){
 				rollsOnline = new ListCollectionView(rolls);
 				rollsOnline.filterFunction = filterOnlineRolls;
@@ -143,7 +145,9 @@ package com.photodispatcher.model.mysql.entities {
 			} else {
 				rollsOnline = null;
 			}
-			*/
+		}
+		private static function filterOnlineRolls(item:LabRoll):Boolean {
+			return item.is_online;
 		}
 		
 		public function refresh():Boolean{
@@ -168,10 +172,7 @@ package com.photodispatcher.model.mysql.entities {
 			return true;
 		}
 		
-		/**
-		 * deprecated
-		 */
-		private function resetOnlineRolls():void{
+		public function resetOnlineRolls():void{
 			if(rolls){
 				var roll:LabRoll;
 				for each(roll in rolls) roll.is_online=false;

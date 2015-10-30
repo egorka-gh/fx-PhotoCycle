@@ -2,7 +2,7 @@
 <s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
-		 cornerRadius="4" borderWeight="1" borderColor="#555555" backgroundColor="#ffffff">
+		 cornerRadius="4" borderWeight="1" borderColor="#555555" backgroundColor="#eeeeee">
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.print.LabGeneric;

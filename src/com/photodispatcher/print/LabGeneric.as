@@ -292,10 +292,18 @@ package com.photodispatcher.print{
 		public function getOnLineRollDevices(pg:PrintGroup):Array {
 			var result:Array = [];
 			var dev:LabDevice;
-			var code:LabPrintCode;
+			
+			//var code:LabPrintCode;
 			if(devices){
 				for each (dev in devices){
-					if(dev.lastRoll &&  printChannel(pg, [dev.lastRoll])) result.push(dev);
+					var add:Boolean=false;
+					//check online rolls
+					if(dev.rollsOnline && dev.rollsOnline.length>0){
+						add=printChannel(pg, dev.rollsOnline.toArray())!=null;
+					}
+					//check by last roll
+					if(!add) add=dev.lastRoll &&  printChannel(pg, [dev.lastRoll])!=null;
+					if(add) result.push(dev);
 				}
 			}
 			return result;

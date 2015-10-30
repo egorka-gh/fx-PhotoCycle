@@ -144,6 +144,25 @@ package com.photodispatcher.model.mysql.entities {
 			return (suborders && suborders.length>0);
 		}
 
+		public function get hasPhotoSuborder():Boolean{
+			if(!hasSuborders) return false;
+			//look for photo suborders 
+			for each(var so:SubOrder in suborders){
+				if(so.native_type==1) return true;
+			}
+			return false;
+		}
+		
+		public function removePhotoSuborder():void{
+			if(!hasSuborders) return;
+			var so:SubOrder;
+			var newso:Array=[];
+			for each(so in suborders){
+				if(so.native_type!=1) newso.push(so);
+			}
+			suborders= new ArrayCollection(newso);
+		}
+
 		public function addSuborder(so:SubOrder):void{
 			if(!suborders){
 				suborders=new ArrayCollection;
@@ -162,6 +181,7 @@ package com.photodispatcher.model.mysql.entities {
 			if(!hasSuborders || !subId) return null;
 			return ArrayUtil.searchItem('sub_id',subId,suborders.toArray()) as SubOrder;
 		}
+		/*
 		public function removeSuborder(so:SubOrder):void{
 			if(!suborders || suborders.length==0) return;
 			var i:int=suborders.getItemIndex(so);
@@ -169,6 +189,8 @@ package com.photodispatcher.model.mysql.entities {
 				suborders.removeItemAt(i);
 			}
 		}
+		*/
+		
 		public function resetSuborders():void{
 			suborders=new ArrayCollection();
 		}

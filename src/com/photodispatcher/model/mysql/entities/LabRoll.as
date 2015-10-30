@@ -17,10 +17,11 @@ package com.photodispatcher.model.mysql.entities {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabRoll")]
     public class LabRoll extends LabRollBase {
 		//run time
-		public var printQueueLen:int=0;
-		public var printQueueTime:int=0;//sec
+		//public var printQueueLen:int=0;
+		//public var printQueueTime:int=0;//sec
 		public var speed:int=0;//mm/sec
 		public var printGroups:Array=[];
+		public var is_last:Boolean;
 		
 		public static function gridColumnsEdit():ArrayList{
 			var result:ArrayList= new ArrayList();
