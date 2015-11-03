@@ -16,6 +16,8 @@ package com.photodispatcher.print{
 	
 	import flash.events.Event;
 	import flash.events.IEventDispatcher;
+	
+	import mx.collections.ArrayCollection;
 
 	[Event(name="postComplete", type="com.photodispatcher.event.PrintEvent")]
 	public class LabGeneric extends Lab implements IEventDispatcher{
@@ -329,15 +331,26 @@ package com.photodispatcher.print{
 			return res;
 			
 		}
+
+		[Bindable]
+		public var stops:ArrayCollection;
+		
+		public function resetStops():void{
+			stops=new ArrayCollection();
+		}
 		
 		protected var _postMeter:LabMeter;
 		protected var devPrintMetersMap:Object={};
 		protected var devStopMetersMap:Object={};
 		
+		[Bindable]
+		public var currMetersAC:ArrayCollection;
+		
 		public function resetMeters():void{
 			_postMeter=null;
 			devPrintMetersMap={};
 			devStopMetersMap={};
+			currMetersAC=new ArrayCollection();
 		}
 		
 		public function addMeter(meter:LabMeter):void{
@@ -352,6 +365,7 @@ package com.photodispatcher.print{
 				//device stop meter
 				devStopMetersMap[meter.lab_device]=meter;
 			}
+			currMetersAC.addItem(meter);
 		}
 
 		public function getPostMeter():LabMeter{
@@ -477,17 +491,17 @@ package com.photodispatcher.print{
 		}
 		
 		/**
-		 * deprecated
+		 * deprecated ?
 		 */
 		public function refresh():void{
+			refreshOnlineState();
 			//TODO closed while not in use
 			return;
-			refreshOnlineState();
 			refreshPrintQueue();
 		}
 		
 		/**
-		 * deprecated
+		 * deprecated ?
 		 */
 		public function refreshPrintQueue():void{
 			// deprecated, не нужно

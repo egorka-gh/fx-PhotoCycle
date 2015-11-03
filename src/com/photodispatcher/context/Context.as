@@ -170,6 +170,7 @@ package com.photodispatcher.context{
 			//latch.join(BookSynonym.initSynonymMap());
 			//latch.join(FieldValue.initSynonymMap());
 			latch.join(Roll.initItemsMap());
+			latch.join(LabStopType.initMap());
 			//latch.join(LabPrintCode.initChanelMap());
 			//latch.join(AttrJsonMap.initJsonMap());
 			//latch.join(SourceProperty.initMap());
@@ -647,7 +648,9 @@ package com.photodispatcher.context{
 			latchAttributeLists.addLatch(dict.getStateValueList(onFieldList),'state');
 			//racks 
 			latchAttributeLists.addLatch(dict.getRackValueList(onFieldList),'rack');
-
+			//lab stop_type
+			latchAttributeLists.addLatch(dict.getStopTypeValueList(onFieldList),'lab_stop_type');
+			
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){
 				a=new ArrayCollection();

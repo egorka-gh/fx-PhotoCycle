@@ -286,7 +286,7 @@ package com.photodispatcher.print{
 			// тут нужно послать запрос на загрузку очереди ГП, определяется по набору статусов
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onLoadPrintQueue);
-			latch.addLatch(printGroupService.loadInPrintPost(0));
+			latch.addLatch(printGroupService.loadInPrintPost(null));
 			//latch.start();
 			return latch;
 		}

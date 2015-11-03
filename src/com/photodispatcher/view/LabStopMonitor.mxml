@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.PrintEvent;
+			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Lab;
+			import com.photodispatcher.model.mysql.entities.LabRoll;
+			import com.photodispatcher.model.mysql.entities.LabStopLog;
+			import com.photodispatcher.model.mysql.entities.LabStopType;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.LabService;
+			import com.photodispatcher.model.mysql.services.PrintGroupService;
+			import com.photodispatcher.print.LabGeneric;
+			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var stopList:ArrayCollection=new ArrayCollection();
+			
+			//filters
+			[Bindable]
+			private var labFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var stopTypeFilterList:ArrayCollection;
+			
+			private var gridMenu:GridContexMenu;
+
+			//private var labId:int;
+			//private var lab:LabBase;
+			private var labMap:Object;
+
+			[Bindable]
+			private var ordTotal:int;
+			[Bindable]
+			private var pgTotal:int;
+			[Bindable]
+			private var phTotal:int;
+
+			[Bindable]
+			private var printManager:PrintQueueManager;
+			
+			private var viewPrintgroups:Array=[];
+
+			public function init():void{
+				if(!printManager){
+					printManager=PrintQueueManager.instance;
+					// printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
+				}
+				
+				labMap=printManager.labMap;
+				var l:LabGeneric= new LabGeneric(new Lab()); l.id=0; l.name='-';
+				labFilterList.addItem(l);
+				for each (l in printManager.labs) labFilterList.addItem(l);
+				stopTypeFilterList=Context.getAttribute('lab_stop_typeList');
+				/*
+				var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadLab);
+				latch.addLatch(svc.loadList());
+				latch.start();
+				*/
+			}
+			/*
+			private function onLoadLab(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadLab);
+					if(!latch.complite) return;
+					var a:Array=latch.lastDataArr;
+					if(!a) a=[];
+					var lab:Lab= new Lab(); lab.id=0; lab.name='-';
+					a.unshift(lab);
+					labFilterList.source=a;
+					refresh();
+				}
+			}
+			*/
+
+
+			public function refresh():void{
+				var from:Date = dfFrom.selectedDate;
+				if(!from) return;
+				var to:Date =dfTo.selectedDate;
+				if(!to) to=new Date(from.time + 1000*60*60*24); // прибавим 24 часа
+				
+				var idAc:ArrayCollection= new ArrayCollection();
+				for each (var l:LabGeneric in printManager.labs) idAc.addItem(l.id);
+
+				var svc:LabService = Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadLabStops);
+				latch.addLatch(svc.loadLabStops(from,to,idAc));
+				latch.start();
+			}
+			private function onLoadLabStops(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadLabStops);
+					if(!latch.complite) return;
+					stopList=latch.lastDataAC;
+					stopList.filterFunction=filterPGList;
+					stopList.refresh();
+				}
+			}
+
+			
+
+			private function filterPGList(item:Object):Boolean {
+				var it:LabStopLog=item as LabStopLog;
+				if(!it) return false;
+				if(ddLabFilter && ddLabFilter.selectedIndex>0 && it.lab!=ddLabFilter.selectedItem.id) return false;
+				if(ddStopTypeFilter && ddStopTypeFilter.selectedIndex>0 && it.lab_stop_type !=ddStopTypeFilter.selectedItem.value) return false;
+				return true;
+			}
+
+			private function applyFilter():void{
+				stopList.refresh();
+				if(dgPGroups){
+					dgPGroups.clearSelection();
+					dgPGroups.dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+				}
+			}
+
+			private function sizesListLabel(item:Object):String{
+				if(item.size!=-1){
+					return item.size+' '+item.paper+' (фото: '+item.file_num+'; длина: '+ Math.round(item.len/1000).toString()+'м)';
+				}else{
+					return '-';
+				}
+			}
+
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="5" width="100%" height="100%">
+		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			
+			<s:Spacer width="5"/>
+			<s:Label text="C"/>
+			<mx:DateField id="dfFrom"  formatString="DD.MM.YYYY" />
+			
+			<s:Spacer width="5"/>
+			<s:Label text="По"/>
+			<mx:DateField id="dfTo" formatString="DD.MM.YYYY" />
+			
+			<s:Spacer width="5"/>
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+
+			<s:Spacer width="10"/>
+			<s:Label text="Лаборатория"/>
+			<s:DropDownList id="ddLabFilter" dataProvider="{labFilterList}" labelField="name" change="{applyFilter()}" width="100"/>
+			
+			<s:Spacer width="5"/>
+			<s:Label text="Тип"/>
+			<s:DropDownList id="ddStopTypeFilter" dataProvider="{stopTypeFilterList}" change="{applyFilter()}" width="250"/>
+			
+		</s:HGroup>
+		<s:DataGrid id="dgPGroups" selectionMode="singleRow"
+					width="100%" height="100%" 
+					dataProvider="{stopList}" locale="ru_RU" columns="{LabStopLog.gridColumns(true)}"/>
+		<!--<s:DataGrid id="dgPGroups" selectionMode="multipleRows"
+					width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
+					dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns(true)}"/>-->
+	</s:VGroup>
+	
+</s:Group>

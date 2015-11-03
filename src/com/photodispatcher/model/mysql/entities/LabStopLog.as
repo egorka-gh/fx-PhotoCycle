@@ -10,24 +10,40 @@ package com.photodispatcher.model.mysql.entities {
 	
 	import flash.globalization.DateTimeStyle;
 	
+	import mx.collections.ArrayList;
 	import mx.utils.StringUtil;
 	
+	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 	
 	[Bindable]
 	[RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabStopLog")]
 	public class LabStopLog extends LabStopLogBase {
 		
+		
+		public static function gridColumns(showLab:Boolean=false):ArrayList{
+			var result:ArrayList= new ArrayList();
+			var fmt:DateTimeFormatter=new DateTimeFormatter();
+			fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			fmt.setStyle('locale', 'ru_RU');
+			
+			var col:GridColumn;
+			if(showLab) col= new GridColumn('lab_name'); col.headerText='Лаба'; result.addItem(col);
+			col= new GridColumn('device_name'); col.headerText='Устройство'; result.addItem(col);
+			col= new GridColumn('lab_stop_type_name'); col.headerText='Тип'; result.addItem(col); 
+			col= new GridColumn('time_from'); col.headerText='C'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('time_to'); col.headerText='По'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('log_comment'); col.headerText='Коментарий'; result.addItem(col); 
+			return result;
+		}
+
+		
 		public function LabStopLog() {
 			super();
 		}
 		
-		public var labDeviceName:String;
-		
 		public function get logDate():Date {
-			
 			return time_updated? time_updated : time_created;
-			
 		}
 		
 		public function toString():String {

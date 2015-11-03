@@ -9,11 +9,13 @@ package com.photodispatcher.model.mysql.entities {
 	
 	import flash.globalization.DateTimeStyle;
 	
+	import mx.collections.ArrayList;
 	import mx.utils.StringUtil;
 	
 	import org.granite.reflect.Field;
 	import org.granite.reflect.Type;
 	
+	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
@@ -23,6 +25,21 @@ package com.photodispatcher.model.mysql.entities {
 		public static const TYPE_PRINT:int = 1;
 		public static const TYPE_STOP:int = 10;
 
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+
+			var col:GridColumn= new GridColumn('device_name'); col.headerText='Устройство'; result.addItem(col);
+			col= new GridColumn('type_name'); col.headerText='Тип'; result.addItem(col); 
+			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col); 
+			col= new GridColumn('start_time'); col.headerText='Старт'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('last_time'); col.headerText='Обновлен'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('print_group'); col.headerText='Группа печати'; result.addItem(col); 
+			col= new GridColumn('amt'); col.headerText='Кол-во'; result.addItem(col); 
+			return result;
+		}
+
+		
         public function LabMeter() {
             super();
         }

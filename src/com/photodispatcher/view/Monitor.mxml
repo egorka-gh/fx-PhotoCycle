@@ -222,7 +222,7 @@
 				var svc:LabService = Tide.getInstance().getContext().byType(LabService,true) as LabService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onLoadLabStops);
-				latch.addLatch(svc.loadLabStops(from,to));
+				latch.addLatch(svc.loadLabStops(from,to,null));
 				latch.start();
 				
 				
@@ -238,14 +238,6 @@
 					if(!latch.complite) return;
 					
 					stopLogList = latch.lastDataAC;
-					
-					for each (var ls:LabStopLog in stopLogList){
-						//TODO ёпте
-						ls.labDeviceName = (devMap[ls.lab_device] as LabDevice).name;
-						
-					}
-					
-					
 				}
 				
 			}
@@ -500,7 +492,7 @@
 				<s:DataGrid width="100%" height="100%" dataProvider="{stopLogList}">
 					<s:columns>
 						<s:ArrayList>
-							<s:GridColumn dataField="labDeviceName" headerText="Устройство" />
+							<s:GridColumn dataField="device_name" headerText="Устройство" />
 							<s:GridColumn dataField="lab_stop_type_name" headerText="Причина" />
 							<s:GridColumn dataField="time_from" headerText="Начало" width="100">
 								<s:formatter>

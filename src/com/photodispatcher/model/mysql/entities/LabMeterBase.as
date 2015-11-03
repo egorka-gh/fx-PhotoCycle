@@ -19,20 +19,31 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         private var _amt:int;
+        private var _device_name:String;
         private var _lab:int;
         private var _lab_device:int;
+        private var _lab_name:String;
         private var _last_time:Date;
         private var _meter_type:int;
         private var _print_group:String;
         private var _server_time:Date;
         private var _start_time:Date;
         private var _state:int;
+        private var _state_name:String;
+        private var _type_name:String;
 
         public function set amt(value:int):void {
             _amt = value;
         }
         public function get amt():int {
             return _amt;
+        }
+
+        public function set device_name(value:String):void {
+            _device_name = value;
+        }
+        public function get device_name():String {
+            return _device_name;
         }
 
         public function set lab(value:int):void {
@@ -47,6 +58,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get lab_device():int {
             return _lab_device;
+        }
+
+        public function set lab_name(value:String):void {
+            _lab_name = value;
+        }
+        public function get lab_name():String {
+            return _lab_name;
         }
 
         public function set last_time(value:Date):void {
@@ -91,30 +109,52 @@ package com.photodispatcher.model.mysql.entities {
             return _state;
         }
 
+        public function set state_name(value:String):void {
+            _state_name = value;
+        }
+        public function get state_name():String {
+            return _state_name;
+        }
+
+        public function set type_name(value:String):void {
+            _type_name = value;
+        }
+        public function get type_name():String {
+            return _type_name;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _amt = input.readObject() as int;
+            _device_name = input.readObject() as String;
             _lab = input.readObject() as int;
             _lab_device = input.readObject() as int;
+            _lab_name = input.readObject() as String;
             _last_time = input.readObject() as Date;
             _meter_type = input.readObject() as int;
             _print_group = input.readObject() as String;
             _server_time = input.readObject() as Date;
             _start_time = input.readObject() as Date;
             _state = input.readObject() as int;
+            _state_name = input.readObject() as String;
+            _type_name = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
             output.writeObject((_amt is IPropertyHolder) ? IPropertyHolder(_amt).object : _amt);
+            output.writeObject((_device_name is IPropertyHolder) ? IPropertyHolder(_device_name).object : _device_name);
             output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
             output.writeObject((_lab_device is IPropertyHolder) ? IPropertyHolder(_lab_device).object : _lab_device);
+            output.writeObject((_lab_name is IPropertyHolder) ? IPropertyHolder(_lab_name).object : _lab_name);
             output.writeObject((_last_time is IPropertyHolder) ? IPropertyHolder(_last_time).object : _last_time);
             output.writeObject((_meter_type is IPropertyHolder) ? IPropertyHolder(_meter_type).object : _meter_type);
             output.writeObject((_print_group is IPropertyHolder) ? IPropertyHolder(_print_group).object : _print_group);
             output.writeObject((_server_time is IPropertyHolder) ? IPropertyHolder(_server_time).object : _server_time);
             output.writeObject((_start_time is IPropertyHolder) ? IPropertyHolder(_start_time).object : _start_time);
             output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
+            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
+            output.writeObject((_type_name is IPropertyHolder) ? IPropertyHolder(_type_name).object : _type_name);
         }
     }
 }

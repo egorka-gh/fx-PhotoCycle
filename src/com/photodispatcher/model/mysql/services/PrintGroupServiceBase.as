@@ -69,7 +69,7 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
-        public function loadInPrintPost(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+        public function loadInPrintPost(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadInPrintPost", arg0, resultHandler, faultHandler) as AsyncToken;
             else if (resultHandler is Function || resultHandler is ITideResponder)

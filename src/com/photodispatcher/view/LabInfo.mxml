@@ -2,9 +2,11 @@
 <s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
-		 cornerRadius="4" borderWeight="1" borderColor="#555555" backgroundColor="#eeeeee">
+		 cornerRadius="4" borderWeight="1" borderColor="#555555" backgroundColor="#eeeeee" xmlns:config="com.photodispatcher.view.config.*">
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.LabMeter;
+			import com.photodispatcher.model.mysql.entities.LabStopLog;
 			import com.photodispatcher.print.LabGeneric;
 			
 			import mx.managers.PopUpManager;
@@ -39,12 +41,43 @@
 			 buttonMode="true" top="-5" right="-5" width="28" height="28" click="btClose_clickHandler(event)"/>
 
 	<s:HGroup gap="0" left="4" top="4" right="4" bottom="4" visible="{lab!=null}">
-		<s:VGroup gap="5">
-			<s:HGroup gap="5" verticalAlign="middle" paddingTop="10" paddingLeft="20">
+		<s:VGroup gap="5" paddingLeft="10" paddingRight="10">
+			<s:HGroup gap="5" verticalAlign="middle" paddingTop="10" paddingLeft="10">
 				<s:Label text="{lab.name}" fontSize="14" fontWeight="bold"/>
 				<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
 			</s:HGroup>
-			<s:Form>
+			
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Тип" width="{lbLong.width}"/>
+				<s:TextInput text="{lab.src_type_name}" editable="false" width="200"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Hot folder" width="{lbLong.width}"/>
+				<s:TextInput id="tiHot" text="{lab.hot}"  editable="false" width="200"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Hot folder NHF" width="{lbLong.width}"/>
+				<s:TextInput id="tiHotNsf" text="{lab.hot_nfs}"  editable="false" width="200"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Автопечать" width="{lbLong.width}"/>
+				<s:CheckBox selected="@{lab.is_managed}" enabled="false" change="{lab.changed=true}"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label id="lbLong" text="Ограничение очереди (мин)"/>
+				<s:TextInput text="{lab.queue_limit.toString()}"  editable="false" width="200"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Активна" width="{lbLong.width}"/>
+				<s:CheckBox id="chbOnline" selected="{lab.is_active}" enabled="false"/>
+			</s:HGroup>
+
+			<!--<s:Form>
 				<s:layout>
 					<s:FormLayout gap="-16"/>
 				</s:layout>
@@ -78,9 +111,30 @@
 						</s:DataGroup>
 					</s:VGroup>
 				</s:FormItem> 
-			</s:Form>
+			</s:Form>-->
 		</s:VGroup>
-		<s:VGroup gap="5" height="100%" width="100%">
+		<s:VGroup gap="0" width="750" height="100%">
+			<s:TabBar id="tbView" width="100%" dataProvider="{vsSubInfo}" />
+			<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+				<s:NavigatorContent label="Устройства" backgroundAlpha="0" width="100%" height="100%">
+					<s:Scroller width="100%" height="100%" verticalScrollPolicy="on">
+						<s:DataGroup dataProvider="{lab.devices}"  
+									 itemRenderer="com.photodispatcher.view.itemRenderer.LabDeviceRenderer">
+							<s:layout>
+								<s:VerticalLayout gap="5"/>
+							</s:layout>
+						</s:DataGroup>
+					</s:Scroller>
+				</s:NavigatorContent> 
+				<s:NavigatorContent label="Текущее состояние" backgroundAlpha="0" width="100%" height="100%">
+					<config:ItemsGrid editable="false" currentData="{lab.currMetersAC}" currentColumns="{LabMeter.gridColumns()}" width="100%" height="100%"/>	
+				</s:NavigatorContent>
+				<s:NavigatorContent label="Текущее cтопы" backgroundAlpha="0" width="100%" height="100%">
+					<s:DataGrid editable="false" width="100%" height="100%" dataProvider="{lab.stops}" locale="ru_RU" columns="{LabStopLog.gridColumns()}"/>
+				</s:NavigatorContent>
+			</mx:ViewStack>
+		</s:VGroup>
+		<!--<s:VGroup gap="5" height="100%" width="100%">
 			<s:Label text="Устройства" fontWeight="bold"/>
 			<s:Scroller width="750" height="100%">
 				<s:DataGroup dataProvider="{lab.devices}" itemRenderer="com.photodispatcher.view.itemRenderer.LabDeviceRenderer">
@@ -89,6 +143,6 @@
 					</s:layout>
 				</s:DataGroup>
 			</s:Scroller>
-		</s:VGroup>
+		</s:VGroup>-->
 	</s:HGroup>
 </s:BorderContainer>

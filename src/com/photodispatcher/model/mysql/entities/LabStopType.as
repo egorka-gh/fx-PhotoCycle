@@ -76,7 +76,8 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		public static function getStopTypeName(stopType:int):String{
-			var res:String=itemsMap[stopType];
+			var res:String;
+			if(itemsMap) res=itemsMap[stopType];
 			if(!res) res='Тип id: '+ stopType.toString();
 			return res;
 		}

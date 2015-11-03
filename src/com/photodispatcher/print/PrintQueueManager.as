@@ -8,6 +8,8 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.AbstractEntity;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.LabMeter;
+	import com.photodispatcher.model.mysql.entities.LabStopLog;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
@@ -45,6 +47,9 @@ package com.photodispatcher.print{
 
 		[Bindable]
 		public var isBusy:Boolean=false;
+
+		[Bindable]
+		public var labMetersAC:ArrayCollection;
 		
 		//print queue (printgroups)
 		private var queue:Array;
@@ -119,6 +124,7 @@ package com.photodispatcher.print{
 		}
 		
 		private function fillLabs(rawLabs:Array):void{
+			_labMap=null;
 			//fill labs 
 			var lab:Lab;
 			var result:Array=[];
@@ -146,6 +152,7 @@ package com.photodispatcher.print{
 		
 		private function initErr(msg:String):void{
 			_labs.source=[];
+			_labMap=null;
 			dispatchEvent(new Event("labsChange"));
 			_devices = null;
 			dispatchEvent(new Event("devicesChange"));
@@ -155,8 +162,11 @@ package com.photodispatcher.print{
 			dispatchEvent(new PrintEvent(PrintEvent.MANAGER_ERROR_EVENT,null,msg));
 		}
 
+		private var _labMap:Object;
 		public function get labMap():Object{
 			if(!initCompleted) return null;
+			if(!_labs) return null;
+			if(_labMap) return _labMap;
 			var result:Object= new Object();
 			var lab:LabGeneric;
 			for each(lab in _labs.source){
@@ -164,7 +174,13 @@ package com.photodispatcher.print{
 					result[lab.id.toString()]=lab;
 				}
 			}
-			return result;
+			_labMap=result;
+			return _labMap;
+		}
+		
+		public function getLab(id:int):LabGeneric{
+			if(!_labMap) return null;
+			return _labMap[id.toString()] as LabGeneric;
 		}
 		
 		public function get labDeviceMap():Object {
@@ -177,6 +193,73 @@ package com.photodispatcher.print{
 				}
 			}
 			return result;
+		}
+
+		public function refreshStops():DbLatch{
+			//get current date stops
+			var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+			var latch:DbLatch= new DbLatch();
+			var dtFrom:Date= new Date();
+			dtFrom=new Date(dtFrom.fullYear, dtFrom.month, dtFrom.date);
+			var dtTo:Date=new Date(dtFrom.time + 1000*60*60*24);
+			var idAc:ArrayCollection= new ArrayCollection();
+			for each (var l:LabGeneric in labs) idAc.addItem(l.id);
+			latch.addEventListener(Event.COMPLETE,onrefreshStops);
+			latch.addLatch(svc.loadLabStops(dtFrom,dtTo,idAc));
+			latch.start();
+			return latch;
+		}
+		private function onrefreshStops(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onrefreshStops);
+			if(!latch.complite) return;
+			if(!labMap) return;
+			//fill labs
+			var lm:LabStopLog;
+			var lab:LabGeneric;
+			//clear
+			for each(lab in labs){
+				if(lab) lab.resetStops();
+			}
+			for each(lm in latch.lastDataAC){
+				if(lm){
+					lab=getLab(lm.lab);
+					if(lab) lab.stops.addItem(lm);
+				}
+			}
+		}
+
+		public function refreshMeters():DbLatch{
+			var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onrefreshMeters);
+			latch.addLatch(svc.showLabMeters());
+			latch.start();
+			return latch;
+		}
+		private function onrefreshMeters(evt:Event):void{
+			var currDate:Date= new Date();
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onrefreshMeters);
+			if(!latch.complite) return;
+			labMetersAC=latch.lastDataAC;
+			if(!labMap) return;
+			//fill labs
+			var lm:LabMeter;
+			var lab:LabGeneric;
+			//clear
+			for each(lab in labs){
+				if(lab) lab.resetMeters();
+			}
+			for each(lm in labMetersAC){
+				if(lm){
+					lm.toLocalTime(currDate);
+					lab=getLab(lm.lab);
+					if(lab) lab.addMeter(lm);
+				}
+			}
 		}
 		
 		public function reSync(printGrps:Array=null):void{
@@ -621,6 +704,13 @@ package com.photodispatcher.print{
 			var newqueuePGs:int;
 			var newqueuePrints:int;
 			var lab:LabGeneric;
+
+			refreshMeters();
+			refreshStops();
+
+			//TODO closed while not in use
+			return;
+
 			for each(lab in _labs.source){
 				if(!recalcOnly) lab.refresh();
 				newqueueOrders+=lab.printQueue.queueOrders;

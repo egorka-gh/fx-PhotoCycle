@@ -30,9 +30,12 @@
 						currentState='labs';
 						break;
 					case 1:
-						currentState='print';
+						currentState='labStops';
 						break;
 					case 2:
+						currentState='print';
+						break;
+					case 3:
 						currentState='ready';
 						break;
 				}
@@ -44,6 +47,7 @@
 	
 	<s:states>
 		<s:State name="labs"/>
+		<s:State name="labStops"/>
 		<s:State name="print"/>
 		<s:State name="ready"/>
 	</s:states>
@@ -53,6 +57,7 @@
 	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
 		<mx:ArrayCollection>
 			<fx:String>Лаборатория</fx:String> 
+			<fx:String>Стопы</fx:String> 
 			<fx:String>Печать</fx:String> 
 			<fx:String>Напечатаны</fx:String> 
 		</mx:ArrayCollection>
@@ -60,6 +65,7 @@
 	
 	<s:Group top="30" left="10" right="10" bottom="10">
 		<view:LabLabsState  width="100%" height="100%" includeIn="labs"/>
+		<view:LabStopMonitor width="100%" height="100%" includeIn="labStops"/>
 		<view:LabPrintMonitor width="100%" height="100%" includeIn="print"/>
 		<view:LabPrinted width="100%" height="100%" includeIn="ready"/>
 	</s:Group>
