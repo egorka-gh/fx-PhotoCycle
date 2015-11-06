@@ -26,7 +26,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _len_std:int;
         private var _paper:int;
         private var _paper_name:String;
-        private var _printQueueLen:int;
+        private var _printQueueLen:Number;
         private var _printQueueTime:int;
         private var _width:int;
 
@@ -86,10 +86,10 @@ package com.photodispatcher.model.mysql.entities {
             return _paper_name;
         }
 
-        public function set printQueueLen(value:int):void {
+        public function set printQueueLen(value:Number):void {
             _printQueueLen = value;
         }
-        public function get printQueueLen():int {
+        public function get printQueueLen():Number {
             return _printQueueLen;
         }
 
@@ -117,7 +117,7 @@ package com.photodispatcher.model.mysql.entities {
             _len_std = input.readObject() as int;
             _paper = input.readObject() as int;
             _paper_name = input.readObject() as String;
-            _printQueueLen = input.readObject() as int;
+            _printQueueLen = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _printQueueTime = input.readObject() as int;
             _width = input.readObject() as int;
         }

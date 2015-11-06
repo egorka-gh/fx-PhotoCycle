@@ -33,9 +33,15 @@
 						currentState='labStops';
 						break;
 					case 2:
-						currentState='print';
+						currentState='printQueue';
 						break;
 					case 3:
+						currentState='printPost';
+						break;
+					case 4:
+						currentState='print';
+						break;
+					case 5:
 						currentState='ready';
 						break;
 				}
@@ -48,6 +54,8 @@
 	<s:states>
 		<s:State name="labs"/>
 		<s:State name="labStops"/>
+		<s:State name="printQueue"/>
+		<s:State name="printPost"/>
 		<s:State name="print"/>
 		<s:State name="ready"/>
 	</s:states>
@@ -58,6 +66,8 @@
 		<mx:ArrayCollection>
 			<fx:String>Лаборатория</fx:String> 
 			<fx:String>Стопы</fx:String> 
+			<fx:String>Ожидают печать</fx:String> 
+			<fx:String>Постановка на печать</fx:String> 
 			<fx:String>Печать</fx:String> 
 			<fx:String>Напечатаны</fx:String> 
 		</mx:ArrayCollection>
@@ -66,6 +76,8 @@
 	<s:Group top="30" left="10" right="10" bottom="10">
 		<view:LabLabsState  width="100%" height="100%" includeIn="labs"/>
 		<view:LabStopMonitor width="100%" height="100%" includeIn="labStops"/>
+		<view:LabQueueMonitor width="100%" height="100%" includeIn="printQueue"/>
+		<view:LabPostMonitor width="100%" height="100%" includeIn="printPost"/>
 		<view:LabPrintMonitor width="100%" height="100%" includeIn="print"/>
 		<view:LabPrinted width="100%" height="100%" includeIn="ready"/>
 	</s:Group>

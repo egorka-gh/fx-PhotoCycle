@@ -12,6 +12,7 @@ package com.photodispatcher.model.mysql.entities {
 	import mx.core.ClassFactory;
 	
 	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.NumberFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.LabRoll")]
@@ -42,7 +43,19 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('len'); col.headerText='Длина (мм)'; result.addItem(col);
 			return result;
 		}
-		
+
+		public static function gridColumnsQueue():ArrayList{
+			var result:ArrayList= new ArrayList();
+			var col:GridColumn;
+			var fmt:NumberFormatter=new NumberFormatter();
+			fmt.fractionalDigits=1;
+			
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.addItem(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; col.editable=false; result.addItem(col);
+			col= new GridColumn('printQueueLen'); col.headerText='Длина (м)'; col.formatter=fmt; result.addItem(col);
+			return result;
+		}
+
 		public function clone():LabRoll{
 			var result:LabRoll= new LabRoll();
 			result.lab_device=lab_device;
