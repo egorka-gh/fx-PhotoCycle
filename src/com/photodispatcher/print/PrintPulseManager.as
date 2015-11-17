@@ -39,6 +39,16 @@ package com.photodispatcher.print{
 		AND lml.end_time IS NOT NULL
 		GROUP BY lml.lab, lml.lab_device
 		*/
+		/*скорость печати лабы мм/сек
+		SELECT lml.lab, GREATEST(SUM((lml.amt - 1) * pg.height) / SUM(TIMESTAMPDIFF(SECOND, lml.start_time, lml.end_time)), IFNULL(SUM(IF(lml.start_time > DATE_ADD(NOW(), INTERVAL -1 DAY), (lml.amt - 1) * pg.height, NULL)) / SUM(IF(lml.start_time > DATE_ADD(NOW(), INTERVAL -1 DAY), TIMESTAMPDIFF(SECOND, lml.start_time, lml.end_time), NULL)), 0)) soft_speed
+		FROM lab_meter_log lml
+		INNER JOIN print_group pg ON lml.print_group = pg.id
+		WHERE lml.state = 255
+		AND lml.amt > 1
+		AND lml.end_time IS NOT NULL
+		AND lml.start_time > DATE_ADD(CURDATE(), INTERVAL -3 MONTH)
+		GROUP BY lml.lab
+		*/
 		/* скорость постановки
 		SELECT lml.lab, SUM(TIMESTAMPDIFF(SECOND, lml.start_time, lml.end_time)) ttime, SUM(pg.prints) amt, SUM(pg.prints) * 60 / SUM(TIMESTAMPDIFF(SECOND, lml.start_time, lml.end_time))
 		FROM lab_meter_log lml

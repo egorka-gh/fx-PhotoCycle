@@ -261,7 +261,34 @@ package com.photodispatcher.print{
 				}
 			}
 		}
-		
+
+		public function refreshSpeed():DbLatch{
+			var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onrefreshSpeed);
+			latch.addLatch(svc.loadLabsSpeed());
+			latch.start();
+			return latch;
+		}
+		private function onrefreshSpeed(evt:Event):void{
+			var currDate:Date= new Date();
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onrefreshSpeed);
+			if(!latch.complite) return;
+			if(!labMap) return;
+			var speeds:Array=latch.lastDataArr;
+			//set labs speed 
+			var ls:Lab;
+			var lab:LabGeneric;
+			for each(ls in speeds){
+				if(ls){
+					lab=getLab(ls.id);
+					if(lab) lab.soft_speed=ls.soft_speed;
+				}
+			}
+		}
+
 		public function reSync(printGrps:Array=null):void{
 			if(printGrps){
 				_reSync(printGrps);
@@ -707,6 +734,7 @@ package com.photodispatcher.print{
 
 			refreshMeters();
 			refreshStops();
+			refreshSpeed();
 
 			//TODO closed while not in use
 			return;

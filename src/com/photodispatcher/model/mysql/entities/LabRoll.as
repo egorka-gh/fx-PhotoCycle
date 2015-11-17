@@ -53,6 +53,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.addItem(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.editable=false; result.addItem(col);
 			col= new GridColumn('printQueueLen'); col.headerText='Длина (м)'; col.formatter=fmt; result.addItem(col);
+			col= new GridColumn('printQueueTime'); col.headerText='Время (мин)'; col.formatter=fmt; result.addItem(col);
 			return result;
 		}
 

@@ -27,7 +27,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _paper:int;
         private var _paper_name:String;
         private var _printQueueLen:Number;
-        private var _printQueueTime:int;
+        private var _printQueueTime:Number;
         private var _width:int;
 
         public function set is_online(value:Boolean):void {
@@ -93,10 +93,10 @@ package com.photodispatcher.model.mysql.entities {
             return _printQueueLen;
         }
 
-        public function set printQueueTime(value:int):void {
+        public function set printQueueTime(value:Number):void {
             _printQueueTime = value;
         }
-        public function get printQueueTime():int {
+        public function get printQueueTime():Number {
             return _printQueueTime;
         }
 
@@ -118,7 +118,7 @@ package com.photodispatcher.model.mysql.entities {
             _paper = input.readObject() as int;
             _paper_name = input.readObject() as String;
             _printQueueLen = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
-            _printQueueTime = input.readObject() as int;
+            _printQueueTime = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _width = input.readObject() as int;
         }
 

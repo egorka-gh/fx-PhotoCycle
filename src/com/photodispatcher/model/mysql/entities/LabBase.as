@@ -29,7 +29,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _name:String;
         private var _profiles:ListCollectionView;
         private var _queue_limit:int;
-        private var _soft_speed:int;
+        private var _soft_speed:Number;
         private var _src_type:int;
         private var _src_type_name:String;
 
@@ -96,10 +96,10 @@ package com.photodispatcher.model.mysql.entities {
             return _queue_limit;
         }
 
-        public function set soft_speed(value:int):void {
+        public function set soft_speed(value:Number):void {
             _soft_speed = value;
         }
-        public function get soft_speed():int {
+        public function get soft_speed():Number {
             return _soft_speed;
         }
 
@@ -129,7 +129,7 @@ package com.photodispatcher.model.mysql.entities {
             _name = input.readObject() as String;
             _profiles = input.readObject() as ListCollectionView;
             _queue_limit = input.readObject() as int;
-            _soft_speed = input.readObject() as int;
+            _soft_speed = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _src_type = input.readObject() as int;
             _src_type_name = input.readObject() as String;
         }

@@ -14,6 +14,7 @@
 			import com.photodispatcher.model.mysql.entities.LabRoll;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.Roll;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.model.mysql.services.PrintGroupService;
@@ -88,6 +89,14 @@
 					if(rollList && rollList.length>0){
 						dgRolls.selectedItem=rollList.getItemAt(0);
 						//dgRolls_selectionChangeHandler(null);
+						//calc time
+						var l:LabGeneric=lstLabs.selectedItem as LabGeneric;
+						var r:LabRoll;
+						if(l && l.soft_speed){
+							for each(r in rollList){
+								if(r) r.printQueueTime
+							}
+						}
 					}
 					applyFilter();
 				}

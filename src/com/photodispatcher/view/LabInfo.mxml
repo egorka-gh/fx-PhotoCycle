@@ -35,6 +35,7 @@
 	<fx:Declarations>
 		<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>
 		<!--<s:ArrayCollection id="aclDevices" source="{lab.devices}"/>-->
+		<s:NumberFormatter id="numFmt" fractionalDigits="0"/>
 	</fx:Declarations>
 
 	<s:Image id="btClose" visible="{isPopup}" source="assets/offLine.png" 
@@ -75,6 +76,11 @@
 			<s:HGroup gap="5" verticalAlign="baseline">
 				<s:Label text="Активна" width="{lbLong.width}"/>
 				<s:CheckBox id="chbOnline" selected="{lab.is_active}" enabled="false"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Скорость (мм/сек)" width="{lbLong.width}"/>
+				<s:TextInput text="{numFmt.format(lab.soft_speed)}"  editable="false" width="200"/>
 			</s:HGroup>
 
 			<!--<s:Form>
