@@ -25,7 +25,7 @@ package com.photodispatcher.model.mysql.entities {
 			var result:ArrayList= new ArrayList();
 			var fmt:DateTimeFormatter=new DateTimeFormatter();
 			fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
-			fmt.setStyle('locale', 'ru_RU');
+			//fmt.setStyle('locale', 'ru_RU');
 			
 			var col:GridColumn;
 			if(showLab) col= new GridColumn('lab_name'); col.headerText='Лаба'; result.addItem(col);
