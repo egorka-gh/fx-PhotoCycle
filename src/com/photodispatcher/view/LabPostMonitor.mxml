@@ -90,6 +90,12 @@
 				refresh();
 			}
 			
+			private var gridMenu:GridContexMenu;
+			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
+				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER, GridContexMenu.CANCEL_PRINT_STATE]);
+	
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -117,6 +123,7 @@
 						  cornerRadius="4" width="22" height="22" baseline="4"/>
 			</s:HGroup>
 			<s:DataGrid id="dgPGroups" selectionMode="multipleRows" width="100%" height="100%"
+						creationComplete="dgPGroups_creationCompleteHandler(event)"
 						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns(true)}"/>
 		</s:VGroup>
 	</s:HGroup>

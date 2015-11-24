@@ -86,7 +86,7 @@
 					var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
 					var latch:DbLatch=new DbLatch();
 					latch.addEventListener(Event.COMPLETE, onQueuleLoad);
-					latch.addLatch(svc.loadQueueByDevice(device.id));
+					latch.addLatch(svc.loadQueueByDevice(device.id,0)); //0- all pgs, 1 - books only
 					latch.start();
 				}
 				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
