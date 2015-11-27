@@ -149,7 +149,7 @@ package com.photodispatcher.context{
 				SourceService, 
 				//LabResizeService, 
 				OrderStateService, 
-				//BookSynonymService, 
+				BookSynonymService, 
 				RollService, 
 				//ContentFilterService, 
 				LabService,
@@ -167,7 +167,7 @@ package com.photodispatcher.context{
 			latch.join(Context.initAttributeLists());
 			//latch.join(LabResize.initSizeMap());
 			latch.join(OrderState.initStateMap());
-			//latch.join(BookSynonym.initSynonymMap());
+			latch.join(BookSynonym.initSynonymMap());
 			//latch.join(FieldValue.initSynonymMap());
 			latch.join(Roll.initItemsMap());
 			latch.join(LabStopType.initMap());

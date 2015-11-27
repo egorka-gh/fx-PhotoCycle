@@ -800,11 +800,8 @@ package com.photodispatcher.print{
 					lab = labMap[dev.lab] as LabGeneric;
 					
 					printChannelReady = lab.printChannel(pg, dev.rollsOnline.toArray()) != null;
-					
-					if(checkAliases){
-						
+					if(printChannelReady && checkAliases){
 						printChannelReady = printChannelReady && lab.checkAliasPrintCompatiable(pg);
-						
 					}
 					
 					if(printChannelReady){
@@ -984,9 +981,9 @@ package com.photodispatcher.print{
 		 * определяет, можно ли загрузить в девайс еще ГП
 		 */
 		protected function checkDevicePrintQueueReady(printQueue:IList):Boolean {
-			
-			return checkQueue? printQueue.length < 2 : true;
-			
+			if(!checkQueue) return true;
+			if(printQueue && printQueue.length>1) return false;
+			return true;
 		}
 		
 		protected var loadReadyForPrintingPgListHandler:Function;

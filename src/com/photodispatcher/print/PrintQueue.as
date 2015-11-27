@@ -1,255 +1,234 @@
 package com.photodispatcher.print{
+	
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
-	import com.photodispatcher.model.mysql.entities.LabPrintCode;
-	import com.photodispatcher.model.mysql.entities.LabRoll;
+	import com.photodispatcher.model.mysql.entities.LabMeter;
+	import com.photodispatcher.model.mysql.entities.LabStopType;
+	import com.photodispatcher.model.mysql.entities.LabTimetable;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
+	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
+	import flash.events.EventDispatcher;
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
+	import flash.utils.getTimer;
 	
 	import org.granite.tide.Tide;
 
-	public class PrintQueue{
-		private static const READ_DELAY_MIN:int=400;
-		private static const READ_DELAY_MAX:int=1000;
-		private static const READ_MAX_WAITE:int=30000;
+	[Event(name="complete", type="flash.events.Event")]
+	public class PrintQueue extends EventDispatcher{
 
-
-		[Bindable]
-		public var printQueueLen:int=-1;//sek
-		[Bindable]
-		public var printQueueLimit:int;//sek
-
-		public var queueOrders:int;
-		public var queuePGs:int;
-		public var queuePrints:int;
-
-		[Bindable]
-		public var printQueueLenM:int=0;//metre
-
-		[Bindable]
-		public  var rolls:Array=[];
+		public static const STRATEGY_BY_CHANEL:int=1;
+		public static const STRATEGY_BY_ALIAS:int=2;
+		public static const REFRESH_INTERVAL:int=5*60*1000; //mksek
 		
-		private var printGroups:Array=[];
-
-		private var lab:LabGeneric;
 		
-		public function PrintQueue(lab:LabGeneric){
-			this.lab=lab;
+		[Bindable]
+		public var  strategy:int=STRATEGY_BY_ALIAS;
+		[Bindable]
+		public var queueLimit:int=100;
+		
+		protected var printManager:PrintQueueManager;
+
+		//print groups ordered by state date & current strategy
+		protected var queue:Array;
+		protected var pgFetched:Array; // :PrintGroup;
+
+		private var refreshInterval:int=REFRESH_INTERVAL;
+		private var lastRefresh:int;
+		
+
+		public function PrintQueue(printManager:PrintQueueManager){
+			super();
+			this.printManager=printManager;
+			queue=[];
 		}
 		
-		/**
-		 * deprecated
-		 */
-		public function refreshOnlineRolls():void{
-			var roll:LabRoll;
-			var temp:LabRoll;
-			for each(roll in rolls){
-				temp=lab.getOnlineRoll(roll.paper, roll.width);
-				if(roll.is_online){
-					if(!temp){
-						roll.is_online=false;
-						roll.lab_device=0;
-						roll.len=0;
-						lab.setRollSpeed(roll);
-					}
-				}else{
-					if(temp){
-						roll.is_online=temp.is_online;
-						roll.lab_device=temp.lab_device;
-						roll.len=temp.len;
-						lab.setRollSpeed(roll);
-					}
-				}
+		public function fetch():void{
+			pgFetched=[];
+			//need refresh?
+			if(lastRefresh==0 || (getTimer()-lastRefresh)>refreshInterval){
+				refresh();
+			}else{
+				fetchInternal();
 			}
-			recalc();
 		}
-		
-		/**
-		 * deprecated
-		 */
-		public function refresh():void{
-			if(!lab) return;
-			/*
-			//read print groups in Print state
-			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
-			var latch:DbLatch= new DbLatch();
-			latch.addEventListener(Event.COMPLETE,onLoadPg);
-			latch.addLatch(svc.loadInPrint(lab.id));
+
+		protected function refresh():void{
+			//load main queue
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE, onRefresh);
+			// получаем список в статусе 200, готовые к печати
+			latch.addLatch(printGroupService.loadReady4Print(queueLimit, true));
 			latch.start();
-			//_refresh();
-			*/
 		}
 		
-		/**
-		 * deprecated
-		 */
-		private function onLoadPg(evt:Event):void{ //_refresh():void{
+		private function onRefresh(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
-			if(!latch || !latch.complite) return;
-			var pgs:Array= latch.lastDataArr;
-			if(!pgs) return;
-			var ordersMap:Object=new Object();
-			/*
-			var pgDao:PrintGroupDAO= new PrintGroupDAO();
-			var pgs:Array=pgDao.findInPrint(lab.id);
-			if(!pgs){
-				//read lock
-				refreshLate();
-				return;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE, onRefresh);
+				if(!latch.complite) return;
+				//TODO some sync?
+				queue=latch.lastDataArr;
+				syncQueue();
 			}
-			*/
-			//set device last pg
-			var dev:LabDevice;
-			if(lab.devices){
-				for each(dev in lab.devices){
-					if(!dev.refresh()){
-						//read lock
-						//refreshLate();
-						return;
-					}
-					dev.setRollByChanel(lab.printChannel(dev.lastPG));
-					dev.setCurrentBusyTime(pgs);
-				}
-			}
-			//reads complited
-			queueOrders=0;
-			queuePGs=0;
-			queuePrints=0;
-			printGroups=pgs;
-			queuePGs=printGroups.length;
-			var newRolls:Array;
+			fetchInternal();
+		}
+		
+		private function syncQueue():void{
+			if(!queue || queue.length==0) return;
+			var idx:int;
 			var pg:PrintGroup;
-			var roll:LabRoll;
-			var channel:LabPrintCode;
-			var rMap:Object= new Object();
-			var height:int;
-			//add online rolls
-			newRolls=lab.getOnlineRolls();
-			for each(roll in newRolls){
-				lab.setRollSpeed(roll);
-				rMap[roll.width.toString()+'~'+roll.paper.toString()]=roll;
-			}
-			//fill rolls queue
-			for each(pg in pgs){
-				ordersMap[pg.order_id]=pg.order_id;
-				channel=lab.printChannel(pg);
-				//TODO more then 1 online rolls vs same width/papper?????? 
-				if(channel){
-					roll=rMap[channel.roll.toString()+'~'+channel.paper.toString()] as LabRoll;
-					if(!roll){
-						roll=new LabRoll();
-						roll.paper=pg.paper;
-						roll.paper_name=pg.paper_name;
-						roll.width=channel.roll;
-						lab.setRollSpeed(roll);
-						rMap[channel.roll.toString()+'~'+channel.paper.toString()]=roll;
-					}
-					height=pg.width==channel.width?pg.height:pg.width;
-					queuePrints+=(pg.prints-pg.prints_done);
-					roll.printQueueLen+=height*(pg.prints-pg.prints_done);
-					roll.printGroups.push(pg);
+			for each(pg in pgFetched){
+				if(pg){
+					idx=ArrayUtil.searchItemIdx('id',pg.id,queue);
+					//remove from queue
+					if(idx>-1) queue.splice(idx,1);
 				}
 			}
-			var key:String;
-			for (key in ordersMap) queueOrders++;
-			newRolls=[];
-			for each(roll in rMap){
-				if(roll){
-					if(roll.is_online){
-						newRolls.unshift(roll);
+		}
+		
+		
+		protected function fetchInternal():void{
+			var readyDevices:Array = printManager.getPrintReadyDevices();
+			if(!readyDevices || readyDevices.length==0) return;
+			var devCandidat:LabDevice;
+			
+			var pg:PrintGroup;
+			var dev:LabDevice;
+			for each (pg in queue){
+				if(pg) dev=chooseDevice(pg,readyDevices);
+				if(dev){
+					//found 
+					pgFetched.push(pg);
+					if(dev.compatiableQueue.length>0){
+						//device full
+						//remove device
+						var idx:int=ArrayUtil.searchItemIdx('id',dev.id,readyDevices);
+						if(idx>-1) readyDevices.splice(idx,1);
 					}else{
-						newRolls.push(roll);
+						//4 chooseDevice
+						dev.compatiableQueue.push(pg);
+						dev.lastPostDate=new Date();
+					}
+					if(readyDevices.length==0) break;
+				}
+			}
+
+			if(pgFetched.length>0){
+				//has some
+				//remove from queue
+				syncQueue();
+				//call print manager
+				dispatchEvent(new Event(Event.COMPLETE));
+			}
+			
+			if(readyDevices.length>0){
+				//TODO get pgs by devices
+			}
+		}
+		
+		protected function chooseDevice(pg:PrintGroup, devices:Array):LabDevice{
+			var setA:Array=[];
+			var setB:Array=[];
+			var dev:LabDevice;
+			var lab:LabGeneric;
+			var result:LabDevice;
+			
+			//can print set
+			for each(dev in devices){
+				lab = printManager.labMap[dev.lab] as LabGeneric;
+				if(lab && lab.canPrint(pg)) setA.push(dev);
+			}
+			if(setA.length==0) return null;
+			
+			//by alias set
+			if(strategy==STRATEGY_BY_ALIAS){
+				for each(dev in setA){
+					lab = printManager.labMap[dev.lab] as LabGeneric;
+					if(lab && lab.checkAliasPrintCompatiable(pg)) setB.push(dev);
+				}
+				if(setB.length>0) setA=setB;
+			}
+
+			if(setA.length==1){
+				result= setA[0] as LabDevice; 
+			}else{
+				//coose by dev Queue or last post
+				for each(dev in setA){
+					if(!result){
+						result=dev;
+					}else{
+						if(result.compatiableQueue > dev.compatiableQueue){
+							result=dev;
+						}else if(result.compatiableQueue == dev.compatiableQueue && result.lastPostDate){
+							if((dev.lastPostDate==null) || (dev.lastPostDate.time < result.lastPostDate.time)) result=dev;
+						}
 					}
 				}
 			}
-			rolls=newRolls;
-			recalc();
-		}
-		
-		private function recalc():void{
-			//TODO dumy calc if dev >1
-			var devs:Array=lab.getOnlineDevices();
-			var streems:int=1;
-			if(devs.length>1) streems=devs.length;
-			if(rolls.length==0){
-				printQueueLen=-1;
-				printQueueLenM=0;
-				return;
+			if(result){
+				//set destination lab
+				lab = printManager.labMap[dev.lab] as LabGeneric;
+				pg.destinationLab=lab;
 			}
-			var roll:LabRoll;
-			var result:int=0;
-			var resultM:int=0;
-			//calc rolls time
-			for each(roll in rolls){
-				if(roll.speed==0){
-					roll.printQueueTime=-1;
-				}else{
-					roll.printQueueTime=roll.printQueueLen/roll.speed;
-				}
-			}
-			//serial print
-			for each(roll in rolls){
-				if(roll.printQueueTime>0) result+=roll.printQueueTime;
-				resultM+=roll.printQueueLen;
-			}
-			if(streems>1){
-				//parallel
-				//dumy calc
-				result=Math.round(result/(Number(streems)-0.5));
-			}
-			printQueueLen=result;
-			printQueueLenM=Math.round(resultM/1000);
-		}
-		
-		private var readDelay:int=0;
-		private var timer:Timer;
-		private var readAttempt:int=0;
-		
-		private function getDelay():int{
-			var timeout:int=0;
-			while (timeout<READ_DELAY_MIN){
-				timeout=Math.random()*(READ_DELAY_MAX+READ_DELAY_MIN*readAttempt);
-			}
-			return timeout;
+			return result;
 		}
 
 		/*
-		private function refreshLate():void{
-			if(!isReading){
-				isReading= true;
-				readDelay=0;
-				readAttempt=0;
-			}
-			if (readDelay>=READ_MAX_WAITE){
-				//max wait reached
-				//clean up
-				isReading= false;
-				readDelay=0;
-				readAttempt=0;
-				return;
-			}
-
-			if(!timer){
-				timer=new Timer(getDelay(),1);
-			}else{
-				timer.reset();
-				timer.delay=getDelay();
-			}
-			timer.addEventListener(TimerEvent.TIMER,onTimer);
-			readDelay+=timer.delay;
-			readAttempt++;
-			timer.start();
+		protected function checkWebReady(printGroups:Array):void {
+			
+			if(!printGroups || printGroups.length == 0) return;
+			
+			var webTask:PrintQueueWebTask = new PrintQueueWebTask(printGroups);
+			webTask.addEventListener(Event.COMPLETE, onWebCheck);
+			webTask.execute();
 		}
 
-		private function onTimer(e:TimerEvent):void{
-			timer.removeEventListener(TimerEvent.TIMER,onTimer);
-			_refresh();
+		protected function onWebCheck(event:Event):void{
+			pgFetched=null;
+			var webTask:PrintQueueWebTask= event.target as PrintQueueWebTask;
+			if(!webTask) return;
+			webTask.removeEventListener(Event.COMPLETE, onWebCheck);
+			var webReady:Array = webTask.getItemsReady();
+			if(webReady && webReady.length>0){
+				var pg:PrintGroup=webReady[0] as PrintGroup;
+				if(pg && pgCandidat &&  pg.id==pgCandidat.id){
+					pgFetched=pgCandidat;
+					// нужно поставить корректный статус для очереди, при веб проверке может меняться ??
+					pgFetched.state = OrderState.PRN_QUEUE;
+				}
+			}
+			pgCandidat=null;
+			
+			if(pgFetched){
+				
+				dispatchEvent(new Event(Event.COMPLETE));
+			}
 		}
 		*/
+		
+		public function getFetched():Array{
+			var ret:Array=pgFetched.concat();
+			pgFetched=[];
+			return ret;
+		}
+
+		
+		private var _labService:LabService;
+		protected function get labService():LabService{
+			if(!_labService) _labService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+			return _labService;
+		}
+		private var _printGroupService:PrintGroupService;
+		protected function get printGroupService():PrintGroupService{
+			if(!_printGroupService) _printGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			return _printGroupService;
+		}
 
 	}
 }

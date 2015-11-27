@@ -56,9 +56,9 @@ package com.photodispatcher.print{
 		/**
 		 * deprecated??
 		 * никак не используется, нужно отвязать view?
-		 */
 		[Bindable]
 		public var printQueue:PrintQueue;
+		 */
 		
 		/**
 		 * deprecated??
@@ -80,7 +80,7 @@ package com.photodispatcher.print{
 		public function LabGeneric(lab:Lab){
 			super();
 			lab.cloneTo(this);
-			printQueue=new PrintQueue(this);
+			//printQueue=new PrintQueue(this);
 		}
 
 		public function orderFolderName(printGroup:PrintGroup):String{
@@ -312,24 +312,13 @@ package com.photodispatcher.print{
 		}
 
 		public function checkAliasPrintCompatiable(pg:PrintGroup):Boolean {
-			
-			var res:Boolean;
-			
+			//var res:Boolean;
 			var alias:BookSynonym = pg.bookSynonym;
 			if(alias) {
-				
 				var pgTemplate:BookPgTemplate = alias.getBookPgTemplateByPart(pg.book_part);
-				
-				if(pgTemplate){
-					
-					res = pgTemplate.lab_type == this.src_type;
-					
-				}
-				
+				if(pgTemplate && pgTemplate.lab_type == this.src_type) return true;
 			}
-			
-			return res;
-			
+			return false;
 		}
 
 		[Bindable]

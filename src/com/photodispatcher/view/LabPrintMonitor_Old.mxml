@@ -306,9 +306,11 @@
 					var a:Array=[];
 					var l:LabGeneric= lstLabs.selectedItem as LabGeneric;
 					var lr:LabRoll;
+					/*
 					for each(lr in l.printQueue.rolls){
 						a=a.concat(lr.printGroups);
 					}
+					*/
 					pgList.source=a;
 				}else{
 					pgList.source=viewPrintgroups;

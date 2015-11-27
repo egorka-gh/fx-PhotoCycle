@@ -10,6 +10,8 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabMeter;
 	import com.photodispatcher.model.mysql.entities.LabStopLog;
+	import com.photodispatcher.model.mysql.entities.LabStopType;
+	import com.photodispatcher.model.mysql.entities.LabTimetable;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
@@ -30,6 +32,8 @@ package com.photodispatcher.print{
 	import flash.events.IOErrorEvent;
 	import flash.events.SecurityErrorEvent;
 	import flash.filesystem.File;
+	import flash.utils.Dictionary;
+	import flash.utils.flash_proxy;
 	
 	import mx.collections.ArrayCollection;
 	
@@ -50,7 +54,10 @@ package com.photodispatcher.print{
 
 		[Bindable]
 		public var labMetersAC:ArrayCollection;
-		
+
+		[Bindable]
+		public var autoPrint:Boolean;
+
 		//print queue (printgroups)
 		private var queue:Array;
 		
@@ -183,16 +190,21 @@ package com.photodispatcher.print{
 			return _labMap[id.toString()] as LabGeneric;
 		}
 		
+		private var _labDeviceMap:Object;
 		public function get labDeviceMap():Object {
 			if(!initCompleted) return null;
-			var result:Object= new Object();
+			if(_labDeviceMap) return _labDeviceMap;
+			_labDeviceMap= new Object();
 			var dev:LabDevice;
 			for each(dev in _devices.source){
-				if(dev){
-					result[dev.id.toString()]=dev;
-				}
+				if(dev) _labDeviceMap[dev.id]=dev;
 			}
-			return result;
+			return _labDeviceMap;
+		}
+
+		public function getDevice(id:int):LabDevice{
+			if(!_labDeviceMap) return null;
+			return _labDeviceMap[id] as LabDevice;
 		}
 
 		public function refreshStops():DbLatch{
@@ -364,7 +376,6 @@ package com.photodispatcher.print{
 		
 		/**
 		 * deprecated
-		 */
 		public function autoPost():void{
 			//labs is refreshed
 			//queue is in sync
@@ -375,10 +386,10 @@ package com.photodispatcher.print{
 			if (getAvailableLabs().length==0) return;
 			
 		}
+		 */
 		
 		/**
 		 * deprecated
-		 */
 		private function getAvailableLabs():Array{
 			if(labs.length==0) return [];
 			var lab:LabGeneric;
@@ -392,6 +403,7 @@ package com.photodispatcher.print{
 			}
 			return result;
 		}
+		 */
 		
 		/*
 		*ручная постановка в печать
@@ -406,7 +418,7 @@ package com.photodispatcher.print{
 				try{
 					hot= new File(lab.hot);
 				}catch(e:Error){}
-				if(!hot || !hot.exists || !hot.isDirectory){ 
+				if(!hot || !hot.exists || !hot.isDirectory || hot.getDirectoryListing().length==0){ 
 					dispatchManagerErr('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');
 					return;
 				}
@@ -736,6 +748,7 @@ package com.photodispatcher.print{
 			refreshStops();
 			refreshSpeed();
 
+			/*			
 			//TODO closed while not in use
 			return;
 
@@ -748,6 +761,7 @@ package com.photodispatcher.print{
 			queueOrders=newqueueOrders;
 			queuePGs=newqueuePGs;
 			queuePrints=newqueuePrints;
+			*/
 		}
 		
 
@@ -762,7 +776,6 @@ package com.photodispatcher.print{
 			latch.addLatch(svc.printEndManual(ids));
 			latch.start();
 		}
-		
 
 		/************ cancel print ***********/
 		private var cancelPostPrintGrps:Array;
@@ -882,6 +895,91 @@ package com.photodispatcher.print{
 			dstFolder.removeEventListener(IOErrorEvent.IO_ERROR, onDelIoFault);
 			dstFolder.removeEventListener(Event.COMPLETE,onDelete);
 			deleteNextFolder();
+		}
+
+		/*--------------------------- autoprint -------------------------*/
+		
+		protected var printQueue:PrintQueue;
+
+		public function getPrintReadyDevices(checkQueue:Boolean=true):Array {
+			var now:Date = new Date
+			var readyDevices:Array = [];
+			var tt:LabTimetable;
+			var lab:LabGeneric;
+			var devIsReady:Boolean;
+			
+			if(!labMap) return [];
+			
+			for each (var dev:LabDevice in devices){
+				lab = (labMap[dev.lab] as LabGeneric);
+				if(!lab.is_managed){
+					// пропускает девайсы лаб, на которых идет ручная постановка в печать
+					continue;
+				}
+				devIsReady = false;
+				// если нет проверки очереди, то готовность определяем только по расписанию, иначе проверяем только лог простоя
+				var lastStop:LabMeter=lab.getDeviceStopMeter(dev.id);
+				if(!checkQueue || lastStop == null || lastStop.state == LabStopType.NO_ORDER){
+					// если простоя нет или он уже закончился или простой из-за отсутствия заказов
+					tt = dev.getCurrentTimeTableByDate(now);
+					if(tt && now.time>=tt.time_from.time && now.time<=tt.time_to.time){
+						// если девайс работает по расписанию
+						devIsReady = true;
+					} else if(tt && (tt.time_from.time - now.time) <= 5000*60){
+						// если девайс начнет работать по расписанию меньше чем через 5 мин.
+						devIsReady = true;
+					}
+				}
+				// проверяем очередь
+				if(devIsReady && (!checkQueue || !dev.compatiableQueue || dev.compatiableQueue.length<2)){
+					readyDevices.push(dev);
+				}
+			}
+			
+			return readyDevices;
+		}
+
+		public function runAutoPrint():void{
+			if(!autoPrint) return;
+			if(getPrintReadyDevices().length==0) return;
+			
+			if(!printQueue){
+				printQueue= new PrintQueue(this);
+				printQueue.addEventListener(Event.COMPLETE, onPrintQueueFetch);
+			}
+			printQueue.fetch();
+		}
+		
+		protected function onPrintQueueFetch(event:Event):void{
+			if(!printQueue) return; 
+			var toPost:Array=printQueue.getFetched();
+			if(!toPost || toPost.length==0) return;
+			
+			var posts:Dictionary= new Dictionary();
+			var v:Vector.<Object>;
+			var pg:PrintGroup;
+			
+			//build posts by lab
+			for each (pg in toPost){
+				if(pg && pg.destinationLab){
+					v=posts[pg.destinationLab] as Vector.<Object>;
+					if(!v){
+						v=new Vector.<Object>();
+						posts[pg.destinationLab]=v;
+					}
+					v.push(pg);
+				}
+			}
+			
+			//post
+			var lab:LabGeneric;
+			for(var key:Object in posts){
+				lab=key as LabGeneric;
+				if(lab){
+					v=posts[key] as Vector.<Object>;
+					if(v) postManual(v,lab);
+				}
+			}
 		}
 		
 	}

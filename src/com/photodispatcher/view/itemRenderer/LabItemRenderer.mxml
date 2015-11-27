@@ -95,7 +95,7 @@
 	</fx:Script>
 	
 	<fx:Declarations>
-		<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>
+		<!--<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>-->
 	</fx:Declarations>
 	
 	<s:states>
@@ -118,12 +118,12 @@
 			<s:Image id="btLabInfo" source="assets/info.png" buttonMode="true" verticalCenter="-2" 
 					 visible="{showInfoButton}" click="btLabInfo_clickHandler(event)"/>
 		</s:HGroup>
-		<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}" width="100%"/>
-		<s:DataGroup itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" dataProvider="{aclRolls}" width="100%">
+		<!--<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}" width="100%"/>-->
+		<!--<s:DataGroup itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRenderer" dataProvider="{aclRolls}" width="100%">
 			<s:layout>
 				<s:VerticalLayout gap="2"/>
 			</s:layout> 
-		</s:DataGroup>
+		</s:DataGroup>-->
 		<s:Label text="{lab.stateCaption}" width="100%" maxDisplayedLines="1"/>
 	</s:VGroup>
 </s:ItemRenderer>

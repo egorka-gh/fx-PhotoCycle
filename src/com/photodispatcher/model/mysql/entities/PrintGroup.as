@@ -168,6 +168,13 @@ package com.photodispatcher.model.mysql.entities {
 				destination=0;
 			}
 		}
+		
+		/**
+		 * runtime
+		 * auto print temprorary saves choosen lab device 
+		public var destinationDeviceId:int;
+		 */
+		
 
 		/**
 		 * runtime

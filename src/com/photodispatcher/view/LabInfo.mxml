@@ -33,7 +33,7 @@
 	</fx:Script>
 	
 	<fx:Declarations>
-		<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>
+		<!--<s:ArrayCollection id="aclRolls" source="{lab.printQueue.rolls}"/>-->
 		<!--<s:ArrayCollection id="aclDevices" source="{lab.devices}"/>-->
 		<s:NumberFormatter id="numFmt" fractionalDigits="0"/>
 	</fx:Declarations>
