@@ -32,6 +32,7 @@ package com.photodispatcher.print{
 	import flash.events.IOErrorEvent;
 	import flash.events.SecurityErrorEvent;
 	import flash.filesystem.File;
+	import flash.globalization.DateTimeStyle;
 	import flash.utils.Dictionary;
 	import flash.utils.flash_proxy;
 	
@@ -39,9 +40,12 @@ package com.photodispatcher.print{
 	
 	import org.granite.tide.Tide;
 	
+	import spark.formatters.DateTimeFormatter;
+	
 	[Event(name="managerError", type="com.photodispatcher.event.PrintEvent")]
 	public class PrintQueueManager extends EventDispatcher{
-		
+		public static const DEV_COMP_QUEUE_LEN:int=1000;
+
 		[Bindable]
 		public var queueOrders:int;
 		[Bindable]
@@ -918,7 +922,7 @@ package com.photodispatcher.print{
 				}
 				devIsReady = false;
 				// если нет проверки очереди, то готовность определяем только по расписанию, иначе проверяем только лог простоя
-				var lastStop:LabMeter=lab.getDeviceStopMeter(dev.id);
+				var lastStop:LabMeter=null; //=lab.getDeviceStopMeter(dev.id);
 				if(!checkQueue || lastStop == null || lastStop.state == LabStopType.NO_ORDER){
 					// если простоя нет или он уже закончился или простой из-за отсутствия заказов
 					tt = dev.getCurrentTimeTableByDate(now);
@@ -931,7 +935,7 @@ package com.photodispatcher.print{
 					}
 				}
 				// проверяем очередь
-				if(devIsReady && (!checkQueue || !dev.compatiableQueue || dev.compatiableQueue.length<2)){
+				if(devIsReady && (!checkQueue || !dev.compatiableQueue || dev.compatiableQueue.length<DEV_COMP_QUEUE_LEN)){
 					readyDevices.push(dev);
 				}
 			}
@@ -941,7 +945,12 @@ package com.photodispatcher.print{
 
 		public function runAutoPrint():void{
 			if(!autoPrint) return;
-			if(getPrintReadyDevices().length==0) return;
+			if(getPrintReadyDevices().length==0){
+				log("Нет свободных девайсов (runAutoPrint)");
+				return;
+			}else{
+				log("Есть свободные девайсы: дергаем printQueue (runAutoPrint)");
+			}
 			
 			if(!printQueue){
 				printQueue= new PrintQueue(this);
@@ -951,9 +960,15 @@ package com.photodispatcher.print{
 		}
 		
 		protected function onPrintQueueFetch(event:Event):void{
+			var msg:String="";
 			if(!printQueue) return; 
 			var toPost:Array=printQueue.getFetched();
-			if(!toPost || toPost.length==0) return;
+			if(!toPost || toPost.length==0){
+				log("Нечего печатать (onPrintQueueFetch)");
+				return;
+			}else{
+				log("Прилетело от printQueue "+toPost.length.toString()+". (onPrintQueueFetch)");
+			}
 			
 			var posts:Dictionary= new Dictionary();
 			var v:Vector.<Object>;
@@ -970,17 +985,39 @@ package com.photodispatcher.print{
 					v.push(pg);
 				}
 			}
-			
+
 			//post
 			var lab:LabGeneric;
 			for(var key:Object in posts){
 				lab=key as LabGeneric;
 				if(lab){
 					v=posts[key] as Vector.<Object>;
-					if(v) postManual(v,lab);
+					if(v){
+						postManual(v,lab); 
+						log('Автопостановка. Лаба:'+lab.name+'. Гп: '+v.join()+'. (onPrintQueueFetch)');
+					}
 				}
 			}
 		}
+		
+		[Bindable]
+		public var logText:String = '';
+		
+		private var dtFmt:DateTimeFormatter;
+		
+		public function log(mesage:String):void{
+			if(!dtFmt){
+				dtFmt=new DateTimeFormatter();
+				dtFmt.timeStyle=DateTimeStyle.LONG;
+				dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
+			}
+			logText=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
+			if(logText.length>5000) logText=logText.substr(0,5000);
+		}
+		public function clearLog():void{
+			logText='';
+		}
+
 		
 	}
 }

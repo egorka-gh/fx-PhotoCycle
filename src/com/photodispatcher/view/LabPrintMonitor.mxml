@@ -155,7 +155,7 @@
 				for each(var o:Object in grid.selectedItems){
 					pg= o as PrintGroup;
 					//if(pg && pg.state==OrderState.PRN_PRINT && labMap[pg.destination.toString()]){
-					if(pg && pg.state==OrderState.PRN_PRINT){
+					if(pg && (pg.state==OrderState.PRN_PRINT || (pg.state==OrderState.PRN_INPRINT))){
 						pg.state=OrderState.PRN_COMPLETE;
 						a.push(pg);
 					}

@@ -3,6 +3,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabMeter;
 	import com.photodispatcher.model.mysql.entities.LabRoll;
@@ -208,10 +209,39 @@ package com.photodispatcher.print{
 			debugStr = "";
 			
 			var latch:DbLatch=loadPrintQueue();
+			latch.join(loadRefreshLab());
 			latch.join(loadLabMeter());
 			latch.join(loadLastRolls());
 			latch.join(loadOnlineRolls());
 			latch.start();
+		}
+		
+		protected function loadRefreshLab():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onLoadRefreshLab);
+			latch.addLatch(labService.loadList());
+			latch.start();
+			return latch;
+		}
+		protected function onLoadRefreshLab(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoadRefreshLab);
+				if(!latch.complite) return;
+				var res:Array=latch.lastDataArr;
+				if(res){
+					var lab:LabGeneric;
+					for each(var l:Lab in res){
+						if(l){
+							lab=labMap[l.id] as LabGeneric;
+							if(lab){
+								lab.is_active=l.is_active;
+								lab.is_managed=l.is_managed;
+							}
+						}
+					}
+				}
+			}
 		}
 		
 		protected function loadLabMeter():DbLatch{
@@ -286,7 +316,7 @@ package com.photodispatcher.print{
 					}
 				}
 				//refresh online rolls
-				for each (dev in devices) dev.rollsOnline.refresh();
+				//for each (dev in devices) dev.rollsOnline.refresh();
 			}
 		}
 
@@ -521,12 +551,14 @@ package com.photodispatcher.print{
 				}
 			}
 			
-			//4 debug, while auto print under refactoring
+			//
+			printQueueManager.runAutoPrint();
 			getPulse();
 			return;
 			
 			// auto print under refactoring
-			updatePrintQueue();
+			//kill
+			//updatePrintQueue();
 		}
 		
 		/**
@@ -799,7 +831,7 @@ package com.photodispatcher.print{
 					dev = devList[i] as LabDevice;
 					lab = labMap[dev.lab] as LabGeneric;
 					
-					printChannelReady = lab.printChannel(pg, dev.rollsOnline.toArray()) != null;
+					printChannelReady = lab.printChannel(pg, dev.rollsOnline) != null;
 					if(printChannelReady && checkAliases){
 						printChannelReady = printChannelReady && lab.checkAliasPrintCompatiable(pg);
 					}

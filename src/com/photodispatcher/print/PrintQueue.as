@@ -101,11 +101,11 @@ package com.photodispatcher.print{
 			var pg:PrintGroup;
 			var dev:LabDevice;
 			for each (pg in queue){
-				if(pg) dev=chooseDevice(pg,readyDevices);
+				dev=chooseDevice(pg,readyDevices);
 				if(dev){
 					//found 
 					pgFetched.push(pg);
-					if(dev.compatiableQueue.length>0){
+					if(dev.compatiableQueue.length>=2){ //TODO dumy check limit 1 (max 2 ) post per fetch
 						//device full
 						//remove device
 						var idx:int=ArrayUtil.searchItemIdx('id',dev.id,readyDevices);
@@ -115,24 +115,27 @@ package com.photodispatcher.print{
 						dev.compatiableQueue.push(pg);
 						dev.lastPostDate=new Date();
 					}
-					if(readyDevices.length==0) break;
 				}
+				if(readyDevices.length==0) break;
 			}
 
 			if(pgFetched.length>0){
 				//has some
 				//remove from queue
 				syncQueue();
-				//call print manager
-				dispatchEvent(new Event(Event.COMPLETE));
 			}
+			//call print manager
+			dispatchEvent(new Event(Event.COMPLETE));
 			
+			/*
 			if(readyDevices.length>0){
 				//TODO get pgs by devices
 			}
+			*/
 		}
 		
 		protected function chooseDevice(pg:PrintGroup, devices:Array):LabDevice{
+			if(!pg || !devices || devices.length==0) return null;
 			var setA:Array=[];
 			var setB:Array=[];
 			var dev:LabDevice;
@@ -146,13 +149,28 @@ package com.photodispatcher.print{
 			}
 			if(setA.length==0) return null;
 			
+			//has online rool set
+			for each(dev in setA){
+				if(dev.rollsOnline && dev.rollsOnline.length>0){
+					lab = printManager.labMap[dev.lab] as LabGeneric;
+					if(lab && lab.printChannel(pg,dev.rollsOnline)) setB.push(dev);
+					
+				}
+			}
+			if(setB.length==0) return null; 
+			setA=setB;
+			setB=[];
+			
 			//by alias set
 			if(strategy==STRATEGY_BY_ALIAS){
 				for each(dev in setA){
 					lab = printManager.labMap[dev.lab] as LabGeneric;
 					if(lab && lab.checkAliasPrintCompatiable(pg)) setB.push(dev);
 				}
-				if(setB.length>0) setA=setB;
+				if(setB.length>0){
+					setA=setB;
+					setB=[];//??
+				}
 			}
 
 			if(setA.length==1){
@@ -213,6 +231,7 @@ package com.photodispatcher.print{
 		*/
 		
 		public function getFetched():Array{
+			if(!pgFetched) return [];
 			var ret:Array=pgFetched.concat();
 			pgFetched=[];
 			return ret;

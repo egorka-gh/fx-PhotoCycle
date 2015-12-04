@@ -301,7 +301,7 @@ package com.photodispatcher.print{
 					var add:Boolean=false;
 					//check online rolls
 					if(dev.rollsOnline && dev.rollsOnline.length>0){
-						add=printChannel(pg, dev.rollsOnline.toArray())!=null;
+						add=printChannel(pg, dev.rollsOnline)!=null;
 					}
 					//check by last roll
 					if(!add) add=dev.lastRoll &&  printChannel(pg, [dev.lastRoll])!=null;

@@ -12,6 +12,7 @@ package com.photodispatcher.model.mysql.entities {
 	import flash.events.Event;
 	import flash.utils.IDataInput;
 	
+	import mx.collections.ArrayCollection;
 	import mx.collections.IList;
 	import mx.collections.ListCollectionView;
 	import mx.events.PropertyChangeEvent;
@@ -111,12 +112,13 @@ package com.photodispatcher.model.mysql.entities {
 		public var lastStop:LabMeter;
 
 		
-		protected var _rollsOnline:ListCollectionView;
+		protected var _rollsOnline:Array;
+		/*
 		public function set rollsOnline(value:ListCollectionView):void {
 			_rollsOnline = value;
 		}
-		public function get rollsOnline():ListCollectionView {
-			
+		*/
+		public function get rollsOnline():Array {
 			return _rollsOnline;
 		}
 		
@@ -125,6 +127,7 @@ package com.photodispatcher.model.mysql.entities {
 				for each (var r:LabRoll in rolls){
 					if(r.paper==roll.paper && r.width==roll.width){
 						r.is_online=true;
+						_rollsOnline.push(r);
 						//rollsOnline.refresh();
 						break;
 					}
@@ -136,6 +139,7 @@ package com.photodispatcher.model.mysql.entities {
 			super();
 		}
 		
+		/*
 		public override function readExternal(input:IDataInput):void {
 			super.readExternal(input);
 			if(rolls){
@@ -149,6 +153,7 @@ package com.photodispatcher.model.mysql.entities {
 		private static function filterOnlineRolls(item:LabRoll):Boolean {
 			return item.is_online;
 		}
+		*/
 		
 		public function refresh():Boolean{
 			if(!tech_point){
@@ -177,6 +182,7 @@ package com.photodispatcher.model.mysql.entities {
 				var roll:LabRoll;
 				for each(roll in rolls) roll.is_online=false;
 			}
+			_rollsOnline=[];
 		}
 		
 		/**

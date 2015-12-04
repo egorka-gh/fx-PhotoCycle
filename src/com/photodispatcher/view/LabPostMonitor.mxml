@@ -93,8 +93,24 @@
 			private var gridMenu:GridContexMenu;
 			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
 				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER, GridContexMenu.CANCEL_PRINT_STATE]);
-	
+				gridMenu.addItem('Напечатан',setPrintedCallBack);
 			}
+			
+			private function setPrintedCallBack(grid:DataGrid,param:int):void{
+				if(!printManager) return;
+				var a:Array=[];
+				var pg:PrintGroup;
+				for each(var o:Object in grid.selectedItems){
+					pg= o as PrintGroup;
+					//if(pg && pg.state==OrderState.PRN_PRINT && labMap[pg.destination.toString()]){
+					if(pg && (pg.state==OrderState.PRN_PRINT || (pg.state==OrderState.PRN_INPRINT))){
+						pg.state=OrderState.PRN_COMPLETE;
+						a.push(pg);
+					}
+				}
+				if(a.length>0)  printManager.setPrintedState(a);
+			}
+
 			
 		]]>
 	</fx:Script>
