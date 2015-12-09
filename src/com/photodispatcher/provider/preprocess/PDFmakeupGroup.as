@@ -570,6 +570,12 @@ package com.photodispatcher.provider.preprocess{
 					}
 				}
 			}
+			
+			//vertical annotate
+			if(printGroup.bookTemplate.fontv_size){
+				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
+			}
+
 			IMCommandUtil.setOutputParams(command);
 			return command;
 		}
