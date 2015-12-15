@@ -414,7 +414,13 @@ package com.photodispatcher.print{
 		*
 		*/
 		public function postManual(printGrps:Vector.<Object>,lab:LabGeneric):void{
-			if(!lab || !printGrps || printGrps.length==0) return;
+			//log('PostManual start');
+			if(!lab || !printGrps || printGrps.length==0){
+				//log('PostManual wrong data');
+				return;
+			}
+			//if(pg.isAutoPrint) log('Сарт постановки на печать'+pg+' (postManual)');
+			//log('PostManual Лаба '+ lab.name+' hot '+ lab.hot+'; гуппы '+printGrps.join());
 			
 			//check lab hot folder
 			if(lab.src_type!=SourceType.LAB_XEROX){
@@ -422,11 +428,14 @@ package com.photodispatcher.print{
 				try{
 					hot= new File(lab.hot);
 				}catch(e:Error){}
-				if(!hot || !hot.exists || !hot.isDirectory || hot.getDirectoryListing().length==0){ 
+				if(!hot || !hot.exists || !hot.isDirectory){ // || hot.getDirectoryListing().length==0){ 
 					dispatchManagerErr('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');
+					log('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');
 					return;
 				}
 			}
+
+			//log('Hot OK');
 
 			var pg:PrintGroup;
 			var idx:int;
@@ -435,11 +444,17 @@ package com.photodispatcher.print{
 			var postList:Array=[];
 			for each(pg in printGrps){
 				if(pg.state<=OrderState.PRN_QUEUE){
+					//log('lab.canPrint?');
 					if(lab.canPrint(pg)){
 						pg.destinationLab=lab;
 						pg.state=OrderState.PRN_QUEUE;
 						postList.push(pg);
+						if(pg.isAutoPrint) log('Сарт постановки на печать'+pg+' (postManual)');
+					}else{
+						if(pg.isAutoPrint) log(pg+' Не может быть распечатана в '+lab.name+' (postManual)');
 					}
+				}else{
+					if(pg.isAutoPrint) log('Не верный статус '+pg+' '+pg.state.toString()+ ' (postManual)');
 				}
 			}
 			if(postList.length!=printGrps.length){
@@ -451,6 +466,21 @@ package com.photodispatcher.print{
 			pushToWebQueue(postList);
 		}
 
+		public function isInWebQueue(pg:PrintGroup):Boolean{
+			if(!pg) return false;
+			if(pg.is_reprint) return false;
+			var srcOrders:Object=webQueue[pg.source_id.toString()];
+			if(!srcOrders) return false;
+			var order:Order= srcOrders[pg.order_id] as Order;
+			if(!order) return false;
+			if(order.printGroups && order.printGroups.length>0 ){
+				for each(var p:PrintGroup in order.printGroups){
+					if(p.id==pg.id) return true;
+				}
+			}
+			return false;
+		}
+		
 		/*
 		push to webQueue (check print group state)
 		*/
@@ -458,7 +488,7 @@ package com.photodispatcher.print{
 			if(!printGrps || printGrps.length==0) return;
 			var pg:PrintGroup;
 			var srcOrders:Object;
-			var order:Order
+			var order:Order;
 			var toLoad:Array=[];
 			for each(pg in printGrps){
 				if(pg.is_reprint){
@@ -592,6 +622,7 @@ package com.photodispatcher.print{
 								if(prnGrp){
 									if(prnGrp.state==OrderState.PRN_WEB_CHECK){
 										prnGrp.state=OrderState.PRN_WEB_OK;
+										if(prnGrp.isAutoPrint) log('Веб проверка выполнена '+prnGrp+' (serviceCompliteHandler)');
 										//add to loadQueue
 										toLoad.push(prnGrp);
 									}else{
@@ -669,6 +700,7 @@ package com.photodispatcher.print{
 						if((pgBd.state!=OrderState.PRN_QUEUE) || !pgBd.files || pgBd.files.length==0){
 							//wrong state or empty files
 							pg.state=pgBd.state; 
+							if(pg.isAutoPrint) log('Блокировка на печать не выполнена '+pg+' (capturePrintGroups)');
 							hasErr=true;
 						}else{
 							//files loaded & state ok
@@ -679,6 +711,7 @@ package com.photodispatcher.print{
 								postQueue.push(pg);
 								//post to lab
 								var revers:Boolean=Context.getAttribute('reversPrint');
+								if(pg.isAutoPrint) log('Блокирован и отправлен на печать '+pg+' в '+pg.destinationLab.name+' (capturePrintGroups)');
 								pg.destinationLab.post(pg,revers);
 							}
 						}
@@ -982,6 +1015,7 @@ package com.photodispatcher.print{
 						v=new Vector.<Object>();
 						posts[pg.destinationLab]=v;
 					}
+					pg.isAutoPrint=true;
 					v.push(pg);
 				}
 			}
@@ -993,8 +1027,8 @@ package com.photodispatcher.print{
 				if(lab){
 					v=posts[key] as Vector.<Object>;
 					if(v){
-						postManual(v,lab); 
 						log('Автопостановка. Лаба:'+lab.name+'. Гп: '+v.join()+'. (onPrintQueueFetch)');
+						postManual(v,lab); 
 					}
 				}
 			}

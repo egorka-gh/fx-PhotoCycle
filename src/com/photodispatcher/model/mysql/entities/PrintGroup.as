@@ -168,6 +168,12 @@ package com.photodispatcher.model.mysql.entities {
 				destination=0;
 			}
 		}
+
+		/**
+		 * runtime
+		 * used in PrintManager 
+		 */
+		public var isAutoPrint:Boolean=false;
 		
 		/**
 		 * runtime
@@ -826,12 +832,6 @@ package com.photodispatcher.model.mysql.entities {
 			return result+StrUtil.lPad(tStr,2);
 		}
 		
-		public function get bookSynonym():BookSynonym {
-			
-			return BookSynonym.translatePath(this.alias);
-			
-		}
-
 		public static function tech2BookBarcode(techBarcode:String):String{
 			if(!techBarcode || techBarcode.length<14) return '';
 			var bookNum:int=parseInt(techBarcode.substr(0,3));

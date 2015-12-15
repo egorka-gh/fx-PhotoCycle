@@ -1,6 +1,7 @@
 package com.photodispatcher.print{
 	
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
 	import com.photodispatcher.model.mysql.entities.LabMeter;
 	import com.photodispatcher.model.mysql.entities.LabStopType;
@@ -101,6 +102,7 @@ package com.photodispatcher.print{
 			var pg:PrintGroup;
 			var dev:LabDevice;
 			for each (pg in queue){
+				if(printManager.isInWebQueue(pg)) continue;
 				dev=chooseDevice(pg,readyDevices);
 				if(dev){
 					//found 
@@ -157,9 +159,13 @@ package com.photodispatcher.print{
 					
 				}
 			}
-			if(setB.length==0) return null; 
-			setA=setB;
-			setB=[];
+			if(setB.length>0){
+				setA=setB;
+				setB=[];
+			}else{
+				//check active rool - off
+				//return null;
+			}
 			
 			//by alias set
 			if(strategy==STRATEGY_BY_ALIAS){
@@ -170,7 +176,10 @@ package com.photodispatcher.print{
 				if(setB.length>0){
 					setA=setB;
 					setB=[];//??
+				}else{
+					return null;
 				}
+				
 			}
 
 			if(setA.length==1){

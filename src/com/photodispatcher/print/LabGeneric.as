@@ -313,10 +313,10 @@ package com.photodispatcher.print{
 
 		public function checkAliasPrintCompatiable(pg:PrintGroup):Boolean {
 			//var res:Boolean;
-			var alias:BookSynonym = pg.bookSynonym;
+			var alias:BookSynonym = BookSynonym.getBookSynonym(pg.alias);
 			if(alias) {
 				var pgTemplate:BookPgTemplate = alias.getBookPgTemplateByPart(pg.book_part);
-				if(pgTemplate && pgTemplate.lab_type == this.src_type) return true;
+				if(pgTemplate && (pgTemplate.lab_type == 0 || pgTemplate.lab_type == this.src_type)) return true;
 			}
 			return false;
 		}

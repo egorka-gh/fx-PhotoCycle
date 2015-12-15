@@ -127,6 +127,13 @@ package com.photodispatcher.model.mysql.entities {
 			return aliasMap[alias] as BookSynonym; 
 		}
 		
+		public static function getBookSynonym(alias:String):BookSynonym{
+			if(!alias) return null;
+			var bs:BookSynonym=translateAlias(alias);
+			if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
+			return bs;
+		}
+		
 		public static function guess(paper:int,coverSize:Point,blockSise:Point,sliceSise:Point):BookSynonym{
 			if(!paper || !blockSise) return null;
 			if(!synonymMap){
