@@ -151,6 +151,7 @@ package com.photodispatcher.print{
 			}
 			if(setA.length==0) return null;
 			
+			/*
 			//has online rool set
 			for each(dev in setA){
 				if(dev.rollsOnline && dev.rollsOnline.length>0){
@@ -163,9 +164,9 @@ package com.photodispatcher.print{
 				setA=setB;
 				setB=[];
 			}else{
-				//check active rool - off
-				//return null;
+				return null;
 			}
+			*/
 			
 			//by alias set
 			if(strategy==STRATEGY_BY_ALIAS){
