@@ -8,6 +8,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.LabTimetable;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.util.ArrayUtil;
@@ -64,7 +65,9 @@ package com.photodispatcher.print{
 			var latch:DbLatch=new DbLatch();
 			latch.addEventListener(Event.COMPLETE, onRefresh);
 			// получаем список в статусе 200, готовые к печати
-			latch.addLatch(printGroupService.loadReady4Print(queueLimit, true));
+			//latch.addLatch(printGroupService.loadReady4Print(queueLimit, true));
+			//all types
+			latch.addLatch(printGroupService.loadReady4Print(queueLimit, false));
 			latch.start();
 		}
 		
@@ -168,8 +171,21 @@ package com.photodispatcher.print{
 			}
 			*/
 			
-			//by alias set
-			if(strategy==STRATEGY_BY_ALIAS){
+			if(pg.book_type==0){
+				//PHOTO print
+				for each(dev in setA){
+					lab = printManager.labMap[dev.lab] as LabGeneric;
+					//TODO hardcoded SourceType.LAB_FUJI for photo
+					if(lab && lab.src_type==SourceType.LAB_FUJI) setB.push(dev);
+				}
+				if(setB.length>0){
+					setA=setB;
+					setB=[];//??
+				}else{
+					return null;
+				}
+			}else if(strategy==STRATEGY_BY_ALIAS){
+				//by alias set
 				for each(dev in setA){
 					lab = printManager.labMap[dev.lab] as LabGeneric;
 					if(lab && lab.checkAliasPrintCompatiable(pg)) setB.push(dev);
@@ -180,7 +196,6 @@ package com.photodispatcher.print{
 				}else{
 					return null;
 				}
-				
 			}
 
 			if(setA.length==1){

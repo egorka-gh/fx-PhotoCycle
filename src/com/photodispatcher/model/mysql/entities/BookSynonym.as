@@ -19,9 +19,9 @@ package com.photodispatcher.model.mysql.entities {
 	import mx.collections.ArrayList;
 	import mx.core.ClassFactory;
 	
-	import spark.components.gridClasses.GridColumn;
-	
 	import org.granite.tide.Tide;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.BookSynonym")]
@@ -127,11 +127,28 @@ package com.photodispatcher.model.mysql.entities {
 			return aliasMap[alias] as BookSynonym; 
 		}
 		
-		public static function getBookSynonym(alias:String):BookSynonym{
+		public static function getBookSynonym(pg:PrintGroup):BookSynonym{
+			if(!pg) return null;
+			var alias:String;
+			if(!pg.sub_id){
+				//regular - get by path
+				alias=pg.path;
+				if(!alias) alias=pg.alias;
+				return translatePath(alias,SourceType.SRC_FOTOKNIGA);
+			}else{
+				alias=pg.alias;
+				if(!alias) return null;
+				var bs:BookSynonym=translateAlias(alias);
+				if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
+				return bs;
+			}
+			/*
+			var alias:String;
 			if(!alias) return null;
 			var bs:BookSynonym=translateAlias(alias);
 			if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
 			return bs;
+			*/
 		}
 		
 		public static function guess(paper:int,coverSize:Point,blockSise:Point,sliceSise:Point):BookSynonym{

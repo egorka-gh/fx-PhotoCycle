@@ -31,8 +31,10 @@ package com.photodispatcher.service.web{
 		/*
 		30 => 'Принят в работу',
 		*/
-		public static const PARAM_STATUS_ORDERED_VALUE:int=30;
-		public static const PARAM_STATUS_PRELOAD_VALUES:Array=[];
+		public static const PARAM_STATUS_ORDERED_VALUE:int=FotoknigaWeb.ORDER_STATE_PAYMENT_ACCEPTED;
+		//public static const PARAM_STATUS_PRELOAD_VALUES:Array=[];
+		public static const PARAM_STATUS_PRELOAD_VALUES:Array=[FotoknigaWeb.ORDER_STATE_CHECK,FotoknigaWeb.ORDER_STATE_PAYMENT,FotoknigaWeb.ORDER_STATE_PAYMENT_CHECK];
+
 		
 		public static const COMMAND_GET_ORDER_STATE:String='status';
 		public static const PARAM_ORDER_ID:String='args[number]';

@@ -19,7 +19,6 @@ package com.photodispatcher.shell{
 	public class OORuner extends EventDispatcher{
 		public static const TRANSPORT_URL:int=0;
 		public static const TRANSPORT_FILESYSTEM:int=1;
-
 		
 		private static const EXECUTABLE_CALC:String='scalc.exe';
 		private static const EXECUTABLE_OFFICE:String='soffice.exe';
@@ -134,6 +133,7 @@ package com.photodispatcher.shell{
 				if(url.charAt(url.length-1)!='/' && path.charAt(0)!='/') url+='/';
 				path=url+path;
 			}else{
+				//TODO rewrite, download from url
 				//local file
 				var file:File=new File(path);
 				if(!file.exists || file.isDirectory){
@@ -141,7 +141,9 @@ package com.photodispatcher.shell{
 					return;
 				}
 			}
-			
+			printInternal(path, printer);
+		}
+		private function printInternal(path:String, printer:String=null):void{	
 			runner= new ProcessRunner(ooPath+File.separator+EXECUTABLE_OFFICE);
 			var args:Vector.<String>=new Vector.<String>();
 			if(printer){

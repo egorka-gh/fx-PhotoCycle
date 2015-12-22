@@ -87,11 +87,8 @@ package com.photodispatcher.print{
 			hasBackPrint=true;
 			
 			//check hasBackPrint
-			if(printGrp.alias){
-				var bs:BookSynonym=BookSynonym.translateAlias(printGrp.alias);
-				if(!bs) bs=BookSynonym.translatePath(printGrp.alias,SourceType.SRC_FOTOKNIGA);
-				if(bs) hasBackPrint=bs.has_backprint;
-			}
+			var bs:BookSynonym= BookSynonym.getBookSynonym(printGroup);
+			if(bs) hasBackPrint=bs.has_backprint;
 			
 			printContext= new Object();
 			printContext[KEY_ORDER_ID]=printGrp.order_id;

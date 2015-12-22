@@ -708,7 +708,12 @@ package com.photodispatcher.print{
 							pg.alias=pgBd.alias;
 							if(pg.destinationLab){
 								//add to postQueue
-								postQueue.push(pg);
+								idx=ArrayUtil.searchItemIdx('id',pg.id,postQueue);
+								if(idx==-1){
+									postQueue.push(pg);
+								}else{
+									postQueue[idx]=pg;
+								}
 								//post to lab
 								var revers:Boolean=Context.getAttribute('reversPrint');
 								if(pg.isAutoPrint) log('Блокирован и отправлен на печать '+pg+' в '+pg.destinationLab.name+' (capturePrintGroups)');
@@ -749,10 +754,10 @@ package com.photodispatcher.print{
 
 		private function onPostComplete(e:PrintEvent):void{
 			//remove from postQueue
-			var idx:int;
-			idx=ArrayUtil.searchItemIdx('id',e.printGroup.id,postQueue);
-			if(idx!=-1){
+			var idx:int=ArrayUtil.searchItemIdx('id',e.printGroup.id,postQueue);
+			while(idx!=-1){
 				postQueue.splice(idx,1);
+				idx=ArrayUtil.searchItemIdx('id',e.printGroup.id,postQueue);
 			}
 			if(!e.hasErr){
 				//print ticket

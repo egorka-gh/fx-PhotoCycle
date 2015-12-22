@@ -12,5 +12,18 @@ package com.photodispatcher.model.mysql.entities.report {
     public class Report extends ReportBase {
 		public var isRunning:Boolean=false;
 		public var printer:String;
+		
+		public var logOn:Boolean=false;
+		public var logPrintGroupId:String; 
+		public var logOrderId:String; 
+		
+		override public function get name():String{
+			return super.name?super.name:super.id;
+		}
+		override public function set name(value:String):void{
+			super.name = value;
+		}
+		
+		
     }
 }
