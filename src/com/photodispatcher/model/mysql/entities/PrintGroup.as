@@ -149,7 +149,7 @@ package com.photodispatcher.model.mysql.entities {
 
 		
 		public var bookTemplate:BookPgTemplate;
-		public var butt:int=0;
+		//public var butt:int=0;
 		public var is_horizontal:Boolean;
 		
 		private var _destinationLab:LabGeneric;

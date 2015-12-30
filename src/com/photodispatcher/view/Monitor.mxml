@@ -524,21 +524,21 @@
 		
 		
 		
-		<s:HGroup includeIn="printPulse" width="100%" height="100%">
+		<!--<s:HGroup includeIn="printPulse" width="100%" height="100%">
 			
 			<s:VGroup width="30%" height="100%">
 				
 				<s:Button label="{printManager.autoPrint? 'Выключить' : 'Включить'}" 
 						  color="{printManager.autoPrint? 0xff0000 : 0}" 
 						  click="{printManager.autoPrint = !printManager.autoPrint}"
-						  />
+						  />-->
 				
 				<!--<s:HGroup verticalAlign="baseline">
 					<s:TextInput id="printGroupListLimitInput" text="{printPulseManager.printGroupListLimit}" restrict="0-9" />
 					<s:Button label="Сохранить" click="{printPulseManager.printGroupListLimit = int(printGroupListLimitInput.text)}" />
 				</s:HGroup>-->
 				
-				<s:TextArea text="{printPulseManager.debugStr}" editable="false" width="100%" height="100%" />
+				<!--<s:TextArea text="{printPulseManager.debugStr}" editable="false" width="100%" height="100%" />
 				<s:TextArea text="{printManager.logText}" editable="false" width="100%" height="100%" />
 				
 			</s:VGroup>
@@ -548,7 +548,9 @@
 						dataProvider="{printPulseManager.printQueueList}" locale="ru_RU"
 						columns="{PrintGroup.printGridColumns()}"/>
 			
-		</s:HGroup>
+		</s:HGroup>-->
+		
+		<view:MonitorAutoPrint includeIn="printPulse" printPulseManager="{printPulseManager}" printManager="{printManager}" width="100%" height="100%"/>
 		
 	</s:Group>
 	

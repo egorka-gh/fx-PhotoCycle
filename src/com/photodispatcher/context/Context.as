@@ -33,6 +33,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
+	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
 	import com.photodispatcher.model.mysql.services.StaffActivityService;
@@ -110,7 +111,8 @@ package com.photodispatcher.context{
 				TechService,
 				ConfigService,
 				StaffActivityService,
-				MailPackageService//+
+				MailPackageService,
+				PrnStrategyService//+
 			]);
 			
 			//fill from config
@@ -650,6 +652,8 @@ package com.photodispatcher.context{
 			latchAttributeLists.addLatch(dict.getRackValueList(onFieldList),'rack');
 			//lab stop_type
 			latchAttributeLists.addLatch(dict.getStopTypeValueList(onFieldList),'lab_stop_type');
+			//print strategy_type
+			latchAttributeLists.addLatch(dict.getPrnStrategyValueList(onFieldList),'strategy_type');
 			
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){

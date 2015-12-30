@@ -29,8 +29,9 @@ package com.photodispatcher.print{
 		public static const REFRESH_INTERVAL:int=5*60*1000; //mksek
 		
 		
-		[Bindable]
-		public var  strategy:int=STRATEGY_BY_ALIAS;
+		
+		private var  strategy:int=STRATEGY_BY_ALIAS;
+		
 		[Bindable]
 		public var queueLimit:int=100;
 		
@@ -216,7 +217,7 @@ package com.photodispatcher.print{
 			}
 			if(result){
 				//set destination lab
-				lab = printManager.labMap[dev.lab] as LabGeneric;
+				lab = printManager.labMap[result.lab] as LabGeneric;
 				pg.destinationLab=lab;
 			}
 			return result;

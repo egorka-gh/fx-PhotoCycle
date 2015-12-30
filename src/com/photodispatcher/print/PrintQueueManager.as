@@ -16,6 +16,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrnStrategy;
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
@@ -23,6 +24,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
+	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.printer.Printer;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
@@ -31,9 +33,11 @@ package com.photodispatcher.print{
 	import flash.events.EventDispatcher;
 	import flash.events.IOErrorEvent;
 	import flash.events.SecurityErrorEvent;
+	import flash.events.TimerEvent;
 	import flash.filesystem.File;
 	import flash.globalization.DateTimeStyle;
 	import flash.utils.Dictionary;
+	import flash.utils.Timer;
 	import flash.utils.flash_proxy;
 	
 	import mx.collections.ArrayCollection;
@@ -45,6 +49,7 @@ package com.photodispatcher.print{
 	[Event(name="managerError", type="com.photodispatcher.event.PrintEvent")]
 	public class PrintQueueManager extends EventDispatcher{
 		public static const DEV_COMP_QUEUE_LEN:int=1000;
+		public static const STRATEGY_REFRESH_INTERVAL:int = 10*60*1000;
 
 		[Bindable]
 		public var queueOrders:int;
@@ -58,6 +63,9 @@ package com.photodispatcher.print{
 
 		[Bindable]
 		public var labMetersAC:ArrayCollection;
+
+		[Bindable]
+		public var strategiesAC:ArrayCollection;
 
 		[Bindable]
 		public var autoPrint:Boolean;
@@ -111,18 +119,35 @@ package com.photodispatcher.print{
 			}
 		}
 		
+		
+		
 		public function init(rawLabs:Array=null):void{
 			if(!rawLabs && initCompleted) return;
 			if(rawLabs){
 				fillLabs(rawLabs);
 				return;
 			}
-			//read from bd
+			//read labs from bd
 			var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onLabsLoad);
 			latch.addLatch(svc.loadAll(false));
 			latch.start();
+			
+			//load strategies
+			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			latch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onStrategyLoad);
+			latch.addLatch(svcs.loadStrategies());
+			latch.start();
+			startTimer();
+		}
+		private function onStrategyLoad(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onStrategyLoad);
+			if(!latch.complite) return;
+			strategiesAC=latch.lastDataAC;
 		}
 		private function onLabsLoad(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
@@ -159,6 +184,31 @@ package com.photodispatcher.print{
 			_initCompleted=true;
 			dispatchEvent(new Event("labsChange"));
 			
+		}
+		
+		private var timer:Timer;
+		
+		private function startTimer():void{
+			if(!timer){
+				timer= new Timer(STRATEGY_REFRESH_INTERVAL,1);
+				timer.addEventListener(TimerEvent.TIMER,onTimer);
+			}
+			timer.start();
+		}
+		private function onTimer(event:TimerEvent):void{
+			if(!initCompleted || ! strategiesAC) return;
+			for each(var item:PrnStrategy in strategiesAC){
+				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF && item.time_start){
+					//check time
+					var now:Date = new Date;
+					var currDay:Date = new Date(now.fullYear,now.month,now.date);
+					var start:Date= new Date(item.time_start.time);
+					start.date=1; start.fullYear=now.fullYear; start.month=now.month; start.date=now.date;
+					if(now.time>=start.time && (!item.last_start || item.last_start.time<currDay.time)){
+						//start strategy
+					}
+				}
+			}
 		}
 		
 		private function initErr(msg:String):void{
@@ -449,7 +499,10 @@ package com.photodispatcher.print{
 						pg.destinationLab=lab;
 						pg.state=OrderState.PRN_QUEUE;
 						postList.push(pg);
-						if(pg.isAutoPrint) log('Сарт постановки на печать'+pg+' (postManual)');
+						if(pg.isAutoPrint){
+							log('Сарт постановки на печать'+pg+' (postManual)');
+							StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pg.id,'Сарт постановки на печать в '+ lab.name);
+						}
 					}else{
 						if(pg.isAutoPrint) log(pg+' Не может быть распечатана в '+lab.name+' (postManual)');
 					}
@@ -700,7 +753,10 @@ package com.photodispatcher.print{
 						if((pgBd.state!=OrderState.PRN_QUEUE) || !pgBd.files || pgBd.files.length==0){
 							//wrong state or empty files
 							pg.state=pgBd.state; 
-							if(pg.isAutoPrint) log('Блокировка на печать не выполнена '+pg+' (capturePrintGroups)');
+							if(pg.isAutoPrint){
+								log('Блокировка на печать не выполнена '+pg+' (capturePrintGroups)');
+								StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pg.id,'Блокировка на печать не выполнена');
+							}
 							hasErr=true;
 						}else{
 							//files loaded & state ok
@@ -716,7 +772,10 @@ package com.photodispatcher.print{
 								}
 								//post to lab
 								var revers:Boolean=Context.getAttribute('reversPrint');
-								if(pg.isAutoPrint) log('Блокирован и отправлен на печать '+pg+' в '+pg.destinationLab.name+' (capturePrintGroups)');
+								if(pg.isAutoPrint){
+									log('Блокирован и отправлен на печать '+pg+' в '+pg.destinationLab.name+' (capturePrintGroups)');
+									StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG, pg.id,'Блокирован и отправлен на печать в '+pg.destinationLab.name);
+								}
 								pg.destinationLab.post(pg,revers);
 							}
 						}
