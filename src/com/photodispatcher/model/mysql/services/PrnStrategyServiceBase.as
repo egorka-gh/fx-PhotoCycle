@@ -8,6 +8,7 @@
 package com.photodispatcher.model.mysql.services {
 
     import com.photodispatcher.model.mysql.entities.SelectResult;
+    import com.photodispatcher.model.mysql.entities.SqlResult;
     import flash.utils.flash_proxy;
     import mx.collections.ListCollectionView;
     import mx.rpc.AsyncToken;
@@ -23,6 +24,17 @@ package com.photodispatcher.model.mysql.services {
             super();
         }
     
+        
+        public function loadQueues(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadQueues", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadQueues", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadQueues") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
         
         public function loadStrategies(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
@@ -42,6 +54,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("persistStrategies", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("persistStrategies", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function startStrategy2(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("startStrategy2", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("startStrategy2", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("startStrategy2", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }

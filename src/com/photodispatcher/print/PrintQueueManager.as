@@ -16,6 +16,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrnQueue;
 	import com.photodispatcher.model.mysql.entities.PrnStrategy;
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
@@ -66,6 +67,30 @@ package com.photodispatcher.print{
 
 		[Bindable]
 		public var strategiesAC:ArrayCollection;
+		
+		private var _prnQueuesAC:ArrayCollection;
+		[Bindable]
+		public function get prnQueuesAC():ArrayCollection{
+			return _prnQueuesAC;
+		}
+		public function set prnQueuesAC(value:ArrayCollection):void{
+			_prnQueuesAC = value;
+			if(value && labMap){
+				var lab:LabGeneric;
+				//reset lab prn queue
+				for each (lab in labs) lab.prnQueues=[];
+				//refill lab prn queue
+				for each(var pq:PrnQueue in value){
+					if(pq.lab>0){
+						lab=getLab(pq.lab);
+						if(lab){
+							lab.prnQueues.push(pq);
+						}
+					}
+				}
+			}
+		}
+
 
 		[Bindable]
 		public var autoPrint:Boolean;
@@ -197,6 +222,8 @@ package com.photodispatcher.print{
 		}
 		private function onTimer(event:TimerEvent):void{
 			if(!initCompleted || ! strategiesAC) return;
+			var startlatch:DbLatch;
+			var sublatch:DbLatch;
 			for each(var item:PrnStrategy in strategiesAC){
 				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF && item.time_start){
 					//check time
@@ -206,8 +233,43 @@ package com.photodispatcher.print{
 					start.date=1; start.fullYear=now.fullYear; start.month=now.month; start.date=now.date;
 					if(now.time>=start.time && (!item.last_start || item.last_start.time<currDay.time)){
 						//start strategy
+						var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+						sublatch= new DbLatch();
+						//latch.addEventListener(Event.COMPLETE,onStrategyLoad);
+						sublatch.addLatch(svcs.startStrategy2(item.id));
+						sublatch.start();
+						if(!startlatch) startlatch=new DbLatch();
+						startlatch.join(sublatch);
 					}
 				}
+			}
+			if(startlatch){
+				startlatch.addEventListener(Event.COMPLETE,onstartStrategy);
+				startlatch.start();
+			}
+		}
+		
+		private function onstartStrategy(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onstartStrategy);
+			loadPrnQueues();
+		}
+
+		private function loadPrnQueues():DbLatch{
+			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onloadPrnQueues);
+			latch.addLatch(svcs.loadQueues());
+			latch.start();
+			return latch;
+		}
+		private function onloadPrnQueues(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onloadPrnQueues);
+			if(latch.complite){
+				prnQueuesAC=latch.lastDataAC;
 			}
 		}
 		

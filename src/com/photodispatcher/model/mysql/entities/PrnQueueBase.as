@@ -9,6 +9,7 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
+    import mx.collections.ListCollectionView;
     import org.granite.tide.IPropertyHolder;
 
     [Bindable]
@@ -25,11 +26,14 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_active:Boolean;
         private var _lab:int;
         private var _label:String;
+        private var _printGroups:ListCollectionView;
+        private var _priority:int;
         private var _started:Date;
         private var _strategy:int;
         private var _strategy_name:String;
         private var _strategy_type:int;
         private var _strategy_type_name:String;
+        private var _sub_queue:int;
 
         public function set complited(value:Date):void {
             _complited = value;
@@ -80,6 +84,20 @@ package com.photodispatcher.model.mysql.entities {
             return _label;
         }
 
+        public function set printGroups(value:ListCollectionView):void {
+            _printGroups = value;
+        }
+        public function get printGroups():ListCollectionView {
+            return _printGroups;
+        }
+
+        public function set priority(value:int):void {
+            _priority = value;
+        }
+        public function get priority():int {
+            return _priority;
+        }
+
         public function set started(value:Date):void {
             _started = value;
         }
@@ -115,6 +133,13 @@ package com.photodispatcher.model.mysql.entities {
             return _strategy_type_name;
         }
 
+        public function set sub_queue(value:int):void {
+            _sub_queue = value;
+        }
+        public function get sub_queue():int {
+            return _sub_queue;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _complited = input.readObject() as Date;
@@ -124,11 +149,14 @@ package com.photodispatcher.model.mysql.entities {
             _is_active = input.readObject() as Boolean;
             _lab = input.readObject() as int;
             _label = input.readObject() as String;
+            _printGroups = input.readObject() as ListCollectionView;
+            _priority = input.readObject() as int;
             _started = input.readObject() as Date;
             _strategy = input.readObject() as int;
             _strategy_name = input.readObject() as String;
             _strategy_type = input.readObject() as int;
             _strategy_type_name = input.readObject() as String;
+            _sub_queue = input.readObject() as int;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -140,11 +168,14 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_is_active is IPropertyHolder) ? IPropertyHolder(_is_active).object : _is_active);
             output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
             output.writeObject((_label is IPropertyHolder) ? IPropertyHolder(_label).object : _label);
+            output.writeObject((_printGroups is IPropertyHolder) ? IPropertyHolder(_printGroups).object : _printGroups);
+            output.writeObject((_priority is IPropertyHolder) ? IPropertyHolder(_priority).object : _priority);
             output.writeObject((_started is IPropertyHolder) ? IPropertyHolder(_started).object : _started);
             output.writeObject((_strategy is IPropertyHolder) ? IPropertyHolder(_strategy).object : _strategy);
             output.writeObject((_strategy_name is IPropertyHolder) ? IPropertyHolder(_strategy_name).object : _strategy_name);
             output.writeObject((_strategy_type is IPropertyHolder) ? IPropertyHolder(_strategy_type).object : _strategy_type);
             output.writeObject((_strategy_type_name is IPropertyHolder) ? IPropertyHolder(_strategy_type_name).object : _strategy_type_name);
+            output.writeObject((_sub_queue is IPropertyHolder) ? IPropertyHolder(_sub_queue).object : _sub_queue);
         }
     }
 }

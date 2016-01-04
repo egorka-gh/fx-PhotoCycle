@@ -71,6 +71,8 @@ package com.photodispatcher.print{
 		//public var currentPG:PrintGroup;
 		
 		
+		public var prnQueues:Array=[];
+
 		protected var printTasks:Array=[];
 		
 		protected var currentPrintTask:PrintTask;
