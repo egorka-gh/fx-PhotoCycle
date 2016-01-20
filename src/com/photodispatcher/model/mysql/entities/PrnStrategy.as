@@ -24,7 +24,7 @@ package com.photodispatcher.model.mysql.entities {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrnStrategy")]
     public class PrnStrategy extends PrnStrategyBase {
 
-		public static const STRATEGY_MINIMAL:int = 0;
+		public static const STRATEGY_PUSHER:int = 0;
 		public static const STRATEGY_BYROLL:int = 1;
 		public static const STRATEGY_BYPARTPDF:int = 2;
 		

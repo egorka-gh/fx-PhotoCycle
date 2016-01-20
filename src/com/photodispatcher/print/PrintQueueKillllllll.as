@@ -22,7 +22,7 @@ package com.photodispatcher.print{
 	import org.granite.tide.Tide;
 
 	[Event(name="complete", type="flash.events.Event")]
-	public class PrintQueue extends EventDispatcher{
+	public class PrintQueueKillllllll extends EventDispatcher{
 
 		public static const STRATEGY_BY_CHANEL:int=1;
 		public static const STRATEGY_BY_ALIAS:int=2;
@@ -45,7 +45,7 @@ package com.photodispatcher.print{
 		private var lastRefresh:int;
 		
 
-		public function PrintQueue(printManager:PrintQueueManager){
+		public function PrintQueueKillllllll(printManager:PrintQueueManager){
 			super();
 			this.printManager=printManager;
 			queue=[];

@@ -25,6 +25,17 @@ package com.photodispatcher.model.mysql.services {
         }
     
         
+        public function checkQueue2(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("checkQueue2", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("checkQueue2", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("checkQueue2") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadQueues(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadQueues", resultHandler, faultHandler) as AsyncToken;
@@ -54,6 +65,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("persistStrategies", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("persistStrategies", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function startQueue(arg0:int, arg1:int, arg2:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("startQueue", arg0, arg1, arg2, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("startQueue", arg0, arg1, arg2, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("startQueue", arg0, arg1, arg2) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

@@ -25,12 +25,12 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:int;
         private var _is_active:Boolean;
         private var _lab:int;
+        private var _lab_name:String;
         private var _label:String;
         private var _printGroups:ListCollectionView;
         private var _priority:int;
         private var _started:Date;
         private var _strategy:int;
-        private var _strategy_name:String;
         private var _strategy_type:int;
         private var _strategy_type_name:String;
         private var _sub_queue:int;
@@ -77,6 +77,13 @@ package com.photodispatcher.model.mysql.entities {
             return _lab;
         }
 
+        public function set lab_name(value:String):void {
+            _lab_name = value;
+        }
+        public function get lab_name():String {
+            return _lab_name;
+        }
+
         public function set label(value:String):void {
             _label = value;
         }
@@ -112,13 +119,6 @@ package com.photodispatcher.model.mysql.entities {
             return _strategy;
         }
 
-        public function set strategy_name(value:String):void {
-            _strategy_name = value;
-        }
-        public function get strategy_name():String {
-            return _strategy_name;
-        }
-
         public function set strategy_type(value:int):void {
             _strategy_type = value;
         }
@@ -148,12 +148,12 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as int;
             _is_active = input.readObject() as Boolean;
             _lab = input.readObject() as int;
+            _lab_name = input.readObject() as String;
             _label = input.readObject() as String;
             _printGroups = input.readObject() as ListCollectionView;
             _priority = input.readObject() as int;
             _started = input.readObject() as Date;
             _strategy = input.readObject() as int;
-            _strategy_name = input.readObject() as String;
             _strategy_type = input.readObject() as int;
             _strategy_type_name = input.readObject() as String;
             _sub_queue = input.readObject() as int;
@@ -167,12 +167,12 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_is_active is IPropertyHolder) ? IPropertyHolder(_is_active).object : _is_active);
             output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
+            output.writeObject((_lab_name is IPropertyHolder) ? IPropertyHolder(_lab_name).object : _lab_name);
             output.writeObject((_label is IPropertyHolder) ? IPropertyHolder(_label).object : _label);
             output.writeObject((_printGroups is IPropertyHolder) ? IPropertyHolder(_printGroups).object : _printGroups);
             output.writeObject((_priority is IPropertyHolder) ? IPropertyHolder(_priority).object : _priority);
             output.writeObject((_started is IPropertyHolder) ? IPropertyHolder(_started).object : _started);
             output.writeObject((_strategy is IPropertyHolder) ? IPropertyHolder(_strategy).object : _strategy);
-            output.writeObject((_strategy_name is IPropertyHolder) ? IPropertyHolder(_strategy_name).object : _strategy_name);
             output.writeObject((_strategy_type is IPropertyHolder) ? IPropertyHolder(_strategy_type).object : _strategy_type);
             output.writeObject((_strategy_type_name is IPropertyHolder) ? IPropertyHolder(_strategy_type_name).object : _strategy_type_name);
             output.writeObject((_sub_queue is IPropertyHolder) ? IPropertyHolder(_sub_queue).object : _sub_queue);

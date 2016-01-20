@@ -3,6 +3,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.factory.LabBuilder;
+	import com.photodispatcher.factory.PrintQueueBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.AbstractEntity;
@@ -68,35 +69,16 @@ package com.photodispatcher.print{
 		[Bindable]
 		public var strategiesAC:ArrayCollection;
 		
-		private var _prnQueuesAC:ArrayCollection;
 		[Bindable]
-		public function get prnQueuesAC():ArrayCollection{
-			return _prnQueuesAC;
-		}
-		public function set prnQueuesAC(value:ArrayCollection):void{
-			_prnQueuesAC = value;
-			if(value && labMap){
-				var lab:LabGeneric;
-				//reset lab prn queue
-				for each (lab in labs) lab.prnQueues=[];
-				//refill lab prn queue
-				for each(var pq:PrnQueue in value){
-					if(pq.lab>0){
-						lab=getLab(pq.lab);
-						if(lab){
-							lab.prnQueues.push(pq);
-						}
-					}
-				}
-			}
-		}
-
+		private var prnQueuesAC:ArrayCollection;
 
 		[Bindable]
 		public var autoPrint:Boolean;
 
 		//print queue (printgroups)
 		private var queue:Array;
+
+		private var prnPusher:PrintQueuePusher;
 		
 		//map by source.id->map by order.id->Order 
 		private var webQueue:Object=new Object;
@@ -173,6 +155,15 @@ package com.photodispatcher.print{
 			latch.removeEventListener(Event.COMPLETE,onStrategyLoad);
 			if(!latch.complite) return;
 			strategiesAC=latch.lastDataAC;
+			//create pusher
+			if(!strategiesAC) return;
+			for each(var st:PrnStrategy in strategiesAC){
+				if(st.strategy_type==PrnStrategy.STRATEGY_PUSHER){
+					prnPusher=new PrintQueuePusher(this,null);
+					prnPusher.strategy=st;
+					break;
+				}
+			}
 		}
 		private function onLabsLoad(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
@@ -225,7 +216,7 @@ package com.photodispatcher.print{
 			var startlatch:DbLatch;
 			var sublatch:DbLatch;
 			for each(var item:PrnStrategy in strategiesAC){
-				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF && item.time_start){
+				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF && item.is_active && item.time_start){
 					//check time
 					var now:Date = new Date;
 					var currDay:Date = new Date(now.fullYear,now.month,now.date);
@@ -246,6 +237,9 @@ package com.photodispatcher.print{
 			if(startlatch){
 				startlatch.addEventListener(Event.COMPLETE,onstartStrategy);
 				startlatch.start();
+			}else{
+				//refresh PrnQueues
+				loadPrnQueues();
 			}
 		}
 		
@@ -269,7 +263,30 @@ package com.photodispatcher.print{
 			if(!latch) return;
 			latch.removeEventListener(Event.COMPLETE,onloadPrnQueues);
 			if(latch.complite){
-				prnQueuesAC=latch.lastDataAC;
+				var pqg:PrintQueueGeneric;
+				
+				//stop listen old
+				if(prnQueuesAC){
+					for each(pqg in prnQueuesAC){
+						pqg.removeEventListener(Event.COMPLETE, onPrintQueueFetch);
+					}
+				}
+
+				prnQueuesAC=new ArrayCollection();
+				var pq:PrnQueue;
+				for each(pq in latch.lastDataAC){
+					pqg=PrintQueueBuilder.build(this, pq);
+					if(pqg) prnQueuesAC.addItem(pqg);
+				}
+				if(prnPusher) prnQueuesAC.addItem(prnPusher);
+
+				//start listen
+				for each(pqg in prnQueuesAC){
+					pqg.addEventListener(Event.COMPLETE, onPrintQueueFetch);
+				}
+				
+				//prnQueuesAC.refresh();
+				//prnQueuesAC=latch.lastDataAC;
 			}
 		}
 		
@@ -299,6 +316,28 @@ package com.photodispatcher.print{
 			}
 			_labMap=result;
 			return _labMap;
+		}
+
+		public function isLabLocked(lab:int):Boolean{
+			if(!prnQueuesAC) return false;
+			var pq:PrintQueueGeneric;
+			for each(pq in prnQueuesAC){
+				if(pq.isLabLocked(lab)) return true;
+			}
+			return false;
+		}
+		
+		public function isPgLocked(pgId:String, priority:int):Boolean{
+			if(!prnQueuesAC) return false;
+			var pq:PrintQueueGeneric;
+			for each(pq in prnQueuesAC){
+				if(pq.prnQueue.priority>priority){
+					if(pq.isPgLocked(pgId)) return true;
+				}else{
+					break;
+				}
+			}
+			return false;
 		}
 		
 		public function getLab(id:int):LabGeneric{
@@ -1062,9 +1101,9 @@ package com.photodispatcher.print{
 
 		/*--------------------------- autoprint -------------------------*/
 		
-		protected var printQueue:PrintQueue;
+		//protected var printQueue:PrintQueue;
 
-		public function getPrintReadyDevices(checkQueue:Boolean=true):Array {
+		public function getPrintReadyDevices(checkQueue:Boolean=true, devQueueLen:int=DEV_COMP_QUEUE_LEN):Array {
 			var now:Date = new Date
 			var readyDevices:Array = [];
 			var tt:LabTimetable;
@@ -1094,7 +1133,7 @@ package com.photodispatcher.print{
 					}
 				}
 				// проверяем очередь
-				if(devIsReady && (!checkQueue || !dev.compatiableQueue || dev.compatiableQueue.length<DEV_COMP_QUEUE_LEN)){
+				if(devIsReady && (!checkQueue || !dev.compatiableQueue || dev.compatiableQueue.length<=devQueueLen)){
 					readyDevices.push(dev);
 				}
 			}
@@ -1108,25 +1147,36 @@ package com.photodispatcher.print{
 				log("Нет свободных девайсов (runAutoPrint)");
 				return;
 			}else{
-				log("Есть свободные девайсы: дергаем printQueue (runAutoPrint)");
+				log("Есть свободные девайсы: проверяем очереди (runAutoPrint)");
 			}
 			
+			var pqg:PrintQueueGeneric;
+			if(prnQueuesAC){
+				for each(pqg in prnQueuesAC){
+					//TODO run in sequence????
+					if(pqg.isActive()) pqg.fetch();
+				}
+			}
+
+			/*
 			if(!printQueue){
 				printQueue= new PrintQueue(this);
 				printQueue.addEventListener(Event.COMPLETE, onPrintQueueFetch);
 			}
 			printQueue.fetch();
+			*/
 		}
 		
 		protected function onPrintQueueFetch(event:Event):void{
 			var msg:String="";
+			var printQueue:PrintQueueGeneric= event.target as PrintQueueGeneric; 
 			if(!printQueue) return; 
 			var toPost:Array=printQueue.getFetched();
 			if(!toPost || toPost.length==0){
-				log("Нечего печатать (onPrintQueueFetch)");
+				log(printQueue.caption+ " Нечего печатать (onPrintQueueFetch)");
 				return;
 			}else{
-				log("Прилетело от printQueue "+toPost.length.toString()+". (onPrintQueueFetch)");
+				log(printQueue.caption+ " Прилетело "+toPost.length.toString()+". (onPrintQueueFetch)");
 			}
 			
 			var posts:Dictionary= new Dictionary();
