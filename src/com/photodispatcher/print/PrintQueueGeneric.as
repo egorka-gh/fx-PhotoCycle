@@ -1,15 +1,41 @@
 package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.PrnQueue;
+	import com.photodispatcher.model.mysql.entities.PrnStrategy;
 	import com.photodispatcher.util.ArrayUtil;
+	import com.photodispatcher.util.GridUtil;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
+	import flash.globalization.DateTimeStyle;
 	
 	import mx.collections.ArrayCollection;
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 	
 	[Event(name="complete", type="flash.events.Event")]
 	public class PrintQueueGeneric extends EventDispatcher{
+		
+		public static function gridColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('prnQueue.strategy_type_name'); col.headerText='Стратегия'; result.push(col);
+			col= new GridColumn('prnQueue.label'); col.headerText='Наименование'; result.push(col);
+			col= new GridColumn('prnQueue.sub_queue'); col.headerText='№'; col.width=50; result.push(col);
+//			col= new GridColumn('prnQueue.is_active'); col.headerText='Активна'; col.width=50; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('prnQueue.is_active'); col.headerText='Активна'; col.width=50; result.push(col);
+			col= new GridColumn('prnQueue.priority'); col.headerText='Приоритет'; col.width=50; result.push(col);
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
+			col= new GridColumn('prnQueue.created'); col.headerText='Создана'; col.formatter=fmt;  col.width=100; result.push(col);
+			col= new GridColumn('prnQueue.started'); col.headerText='Старт'; col.formatter=fmt;  col.width=100; result.push(col);
+			col= new GridColumn('prnQueue.lab_name'); col.headerText='Лаба'; result.push(col);
+
+			return new ArrayList(result);
+		}
+
 		
 		//print groups ordered by state date, or ordered within the meaning of current strategy
 		[Bindable]
@@ -45,6 +71,14 @@ package com.photodispatcher.print{
 
 		public function isLabLocked(lab:int):Boolean{
 			return isActive() && canLockLab && lab!=0 && prnQueue.lab!=0 && prnQueue.lab==lab;
+		}
+
+		/*
+		* 
+		*очередь не контролирует длинну очереди девайса на печать
+		*/
+		public function isPusher():Boolean{
+			return prnQueue.strategy_type==PrnStrategy.STRATEGY_PUSHER;
 		}
 
 		public function isPgLocked(pgId:String):Boolean{

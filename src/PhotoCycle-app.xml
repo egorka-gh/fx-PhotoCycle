@@ -70,7 +70,7 @@
 		<!-- <resizable></resizable> -->
 
 		<!-- The window's initial width in pixels. Optional. -->
-		<width>1650</width>
+		<width>1400</width>
 
 		<!-- The window's initial height in pixels. Optional. -->
 		<height>800</height>

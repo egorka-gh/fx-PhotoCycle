@@ -11,9 +11,11 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.PrnStrategy;
 			import com.photodispatcher.model.mysql.services.PrnStrategyService;
 			import com.photodispatcher.print.PrintPulseManager;
+			import com.photodispatcher.print.PrintQueueGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
 			
 			import org.granite.tide.Tide;
@@ -72,6 +74,20 @@
 					<s:Button id="addStrategy" label="+" click="addStrategy_clickHandler(event)"/>
 					<s:Button id="btSaveStrategy" label="Сохранить" click="btSaveStrategy_clickHandler(event)"/>
 				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Очереди" backgroundAlpha="0" width="100%" height="100%">
+			<s:VGroup gap="5" width="100%" height="100%">
+				<s:Label text="Очереди"/>
+				<s:DataGrid id="dgQueue" width="100%" height="50%"
+							selectionMode="singleRow" locale="ru_RU"
+							dataProvider="{printManager.prnQueuesAC}"
+							columns="{PrintQueueGeneric.gridColumns()}"/>
+				<s:Label text="Группы печати"/>
+				<s:DataGrid id="dgQueuePg" width="100%" height="50%"
+							selectionMode="singleRow" locale="ru_RU"
+							dataProvider="{dgQueue.selectedItem.queue}"
+							columns="{PrintGroup.printQueueColumns()}"/>
 			</s:VGroup>
 		</s:NavigatorContent>
 		<s:NavigatorContent label="Лог" backgroundAlpha="0" width="100%" height="100%">

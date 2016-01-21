@@ -128,6 +128,25 @@ package com.photodispatcher.model.mysql.entities {
 			return new ArrayList(result);
 		}
 
+		public static function printQueueColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('id'); col.headerText='ID'; col.width=85; result.push(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=90; result.push(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('alias'); col.headerText='Алиас'; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
+			col= new GridColumn('prints_done'); col.headerText='Напечатано'; result.push(col);
+			return new ArrayList(result);
+		}
+
 		public static function reprintGridColumns():ArrayList{
 			var result:Array= [];
 			var col:GridColumn;

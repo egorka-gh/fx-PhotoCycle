@@ -70,7 +70,7 @@ package com.photodispatcher.print{
 		public var strategiesAC:ArrayCollection;
 		
 		[Bindable]
-		private var prnQueuesAC:ArrayCollection;
+		public var prnQueuesAC:ArrayCollection;
 
 		[Bindable]
 		public var autoPrint:Boolean;
@@ -141,30 +141,13 @@ package com.photodispatcher.print{
 			latch.addLatch(svc.loadAll(false));
 			latch.start();
 			
-			//load strategies
-			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
-			latch= new DbLatch();
-			latch.addEventListener(Event.COMPLETE,onStrategyLoad);
-			latch.addLatch(svcs.loadStrategies());
-			latch.start();
+			//load strategies && PrnQueues
+			loadStrategy();
+			
 			startTimer();
 		}
-		private function onStrategyLoad(evt:Event):void{
-			var latch:DbLatch= evt.target as DbLatch;
-			if(!latch) return;
-			latch.removeEventListener(Event.COMPLETE,onStrategyLoad);
-			if(!latch.complite) return;
-			strategiesAC=latch.lastDataAC;
-			//create pusher
-			if(!strategiesAC) return;
-			for each(var st:PrnStrategy in strategiesAC){
-				if(st.strategy_type==PrnStrategy.STRATEGY_PUSHER){
-					prnPusher=new PrintQueuePusher(this,null);
-					prnPusher.strategy=st;
-					break;
-				}
-			}
-		}
+		
+		
 		private function onLabsLoad(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(!latch) return;
@@ -241,12 +224,39 @@ package com.photodispatcher.print{
 				//refresh PrnQueues
 				loadPrnQueues();
 			}
+			startTimer();
 		}
 		
 		private function onstartStrategy(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(!latch) return;
 			latch.removeEventListener(Event.COMPLETE,onstartStrategy);
+			loadPrnQueues();
+		}
+
+		private function loadStrategy():DbLatch{
+			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onStrategyLoad);
+			latch.addLatch(svcs.loadStrategies());
+			latch.start();
+			return latch;
+		}
+		private function onStrategyLoad(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onStrategyLoad);
+			if(!latch.complite) return;
+			strategiesAC=latch.lastDataAC;
+			//create pusher
+			if(!strategiesAC) return;
+			for each(var st:PrnStrategy in strategiesAC){
+				if(st.strategy_type==PrnStrategy.STRATEGY_PUSHER){
+					prnPusher=new PrintQueuePusher(this,null);
+					prnPusher.strategy=st;
+					break;
+				}
+			}
 			loadPrnQueues();
 		}
 
@@ -1103,7 +1113,7 @@ package com.photodispatcher.print{
 		
 		//protected var printQueue:PrintQueue;
 
-		public function getPrintReadyDevices(checkQueue:Boolean=true, devQueueLen:int=DEV_COMP_QUEUE_LEN):Array {
+		public function getPrintReadyDevices(checkQueue:Boolean=false, devQueueLen:int=DEV_COMP_QUEUE_LEN):Array {
 			var now:Date = new Date
 			var readyDevices:Array = [];
 			var tt:LabTimetable;
@@ -1113,8 +1123,8 @@ package com.photodispatcher.print{
 			if(!labMap) return [];
 			
 			for each (var dev:LabDevice in devices){
-				lab = (labMap[dev.lab] as LabGeneric);
-				if(!lab.is_managed){
+				lab =  getLab(dev.lab);
+				if(!lab || !lab.is_managed){
 					// пропускает девайсы лаб, на которых идет ручная постановка в печать
 					continue;
 				}
@@ -1143,22 +1153,35 @@ package com.photodispatcher.print{
 
 		public function runAutoPrint():void{
 			if(!autoPrint) return;
-			if(getPrintReadyDevices().length==0){
-				log("Нет свободных девайсов (runAutoPrint)");
-				return;
-			}else{
-				log("Есть свободные девайсы: проверяем очереди (runAutoPrint)");
-			}
-			
 			var pqg:PrintQueueGeneric;
+			var devs:int;
 			if(prnQueuesAC){
 				for each(pqg in prnQueuesAC){
 					//TODO run in sequence????
-					if(pqg.isActive()) pqg.fetch();
+					if(pqg.isActive()){
+						log("Проверяю очередь " +pqg.caption);
+						if(pqg.isPusher()){
+							devs=getPrintReadyDevices().length;
+						}else{
+							devs=getPrintReadyDevices(true,2).length;
+						}
+						if(devs==0){
+							log("Нет свободных девайсов");
+						}else{
+							log("Есть свободные девайсы дергаю очередь");
+							pqg.fetch();
+						}
+					}
 				}
 			}
 
 			/*
+			if(getPrintReadyDevices().length==0){
+			log("Нет свободных девайсов (runAutoPrint)");
+			return;
+			}else{
+			log("Есть свободные девайсы: проверяем очереди (runAutoPrint)");
+			}
 			if(!printQueue){
 				printQueue= new PrintQueue(this);
 				printQueue.addEventListener(Event.COMPLETE, onPrintQueueFetch);

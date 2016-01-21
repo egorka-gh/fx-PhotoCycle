@@ -24,6 +24,7 @@ package com.photodispatcher.print{
 			if(!value || value.strategy_type!=PrnStrategy.STRATEGY_PUSHER) return; 
 			_strategy = value;
 			if(prnQueue && _strategy){
+				prnQueue.is_active=_strategy.is_active;
 				prnQueue.strategy_type=_strategy.strategy_type;
 				prnQueue.strategy_type_name=_strategy.strategy_type_name;
 			}
