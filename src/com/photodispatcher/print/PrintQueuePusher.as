@@ -19,6 +19,7 @@ package com.photodispatcher.print{
 		public static const STRATEGY_BY_ALIAS:int=2;
 		public static const REFRESH_INTERVAL:int=5*60*1000; //mksek
 		
+		/*
 		private var _strategy:PrnStrategy;
 		public function set strategy(value:PrnStrategy):void{
 			if(!value || value.strategy_type!=PrnStrategy.STRATEGY_PUSHER) return; 
@@ -29,6 +30,7 @@ package com.photodispatcher.print{
 				prnQueue.strategy_type_name=_strategy.strategy_type_name;
 			}
 		}
+		*/
 		
 		private var  strategyInternal:int=STRATEGY_BY_ALIAS;
 		private var queueLimit:int=100;
@@ -40,13 +42,15 @@ package com.photodispatcher.print{
 			prnQueue.label='пихалка';
 			prnQueue.strategy=PrnStrategy.STRATEGY_PUSHER;
 			prnQueue.created=new Date();
-			prnQueue.started=new Date();
+			//prnQueue.started=new Date();
 			super(printManager, prnQueue);
 		}
 		
+		/*
 		override public function isActive():Boolean{
 			return _strategy && _strategy.is_active;
 		}
+		*/
 		
 		override public function fetch():Boolean{
 			if(!super.fetch()) return false;
@@ -125,7 +129,7 @@ package com.photodispatcher.print{
 			
 			for each (pg in queue){
 				if(printManager.isInWebQueue(pg)) continue;
-				if(printManager.isPgLocked(pg.id, _strategy.priority)) continue;
+				if(printManager.isPgLocked(pg.id, prnQueue.priority)) continue;
 				dev=chooseDevice(pg,readyDevices);
 				if(dev){
 					//found 

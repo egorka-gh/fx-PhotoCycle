@@ -31,13 +31,20 @@
 			}
 			
 			private function setTime():void{
+				/*
+				if(nsHour==0 && nsMinute==0){
+					_value=null;
+					return;
+				}
+				*/
 				if(!_value) _value= new Date();
 				_value.hours=nsHour.value;
 				_value.minutes=nsMinute.value;
 			}
 			
 			override public function save():Boolean{
-				data[column.dataField]=_value; 
+				data[column.dataField]=_value;
+				if(data.hasOwnProperty('changed')) data['changed']=true;
 				return true;
 			}
 

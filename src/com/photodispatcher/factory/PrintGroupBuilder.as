@@ -554,7 +554,7 @@ package com.photodispatcher.factory{
 									pgf.prt_qty=1;
 									if(proj.isPageCover(page.pageNum)){
 										if(pgBody.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
-											if(pgBody.butt) pgf.caption=pgf.caption+' t'+pgCover.butt.toString();
+											if(pgBody.butt) pgf.caption=pgf.caption+' t'+pgBody.butt.toString();
 											pgBody.addFile(pgf);
 										}else if(pgCover){
 											//add butt to caption

@@ -37,6 +37,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('priority'); col.headerText='Приоритет'; result.addItem(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateTimePattern='HH:mm'; fmt.useUTC=false;
 			col= new GridColumn('time_start'); col.headerText='Время запуска'; col.formatter=fmt; col.itemEditor=new ClassFactory(TimeGridEditor); col.width=100; result.addItem(col);
+			col= new GridColumn('time_end'); col.headerText='Время остановки'; col.formatter=fmt; col.itemEditor=new ClassFactory(TimeGridEditor); col.width=100; result.addItem(col);
 			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('last_start'); col.headerText='Последний запуск'; col.formatter=fmt; col.editable=false;  result.addItem(col);
 
@@ -47,5 +48,25 @@ package com.photodispatcher.model.mysql.entities {
         public function PrnStrategy() {
             super();
         }
+		
+		public function isTimeToStart():Boolean{
+			if(!time_start || (time_start.hours==0 && time_start.minutes==0)) return false;
+			var now:Date = new Date;
+			var currDay:Date = new Date(now.fullYear,now.month,now.date);
+			var start:Date= new Date(time_start.time);
+			start.date=1; start.fullYear=now.fullYear; start.month=now.month; start.date=now.date;
+			return (now.time>=start.time && (!last_start || last_start.time<currDay.time));
+		}
+
+		public function isTimeToStop():Boolean{
+			if(!time_end || (time_end.hours==0 && time_end.minutes==0)) return false;
+			var now:Date = new Date;
+			var currDay:Date = new Date(now.fullYear,now.month,now.date);
+			var stop:Date= new Date(time_end.time);
+			stop.date=1; stop.fullYear=now.fullYear; stop.month=now.month; stop.date=now.date;
+			return now.time>=stop.time;
+			
+		}
+		
     }
 }

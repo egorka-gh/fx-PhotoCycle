@@ -8,6 +8,7 @@
 package com.photodispatcher.model.mysql.services {
 
     import com.photodispatcher.model.mysql.entities.SelectResult;
+    import com.photodispatcher.model.mysql.entities.SqlResult;
     import com.photodispatcher.model.mysql.entities.report.Report;
     import com.photodispatcher.model.mysql.entities.report.ReportResult;
     import flash.utils.flash_proxy;
@@ -121,6 +122,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("getSources", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("getSources") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function releaseReport(arg0:ReportResult, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("releaseReport", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("releaseReport", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("releaseReport", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }

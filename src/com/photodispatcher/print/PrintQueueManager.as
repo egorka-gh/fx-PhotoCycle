@@ -198,14 +198,10 @@ package com.photodispatcher.print{
 			if(!initCompleted || ! strategiesAC) return;
 			var startlatch:DbLatch;
 			var sublatch:DbLatch;
+
 			for each(var item:PrnStrategy in strategiesAC){
-				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF && item.is_active && item.time_start){
-					//check time
-					var now:Date = new Date;
-					var currDay:Date = new Date(now.fullYear,now.month,now.date);
-					var start:Date= new Date(item.time_start.time);
-					start.date=1; start.fullYear=now.fullYear; start.month=now.month; start.date=now.date;
-					if(now.time>=start.time && (!item.last_start || item.last_start.time<currDay.time)){
+				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF){
+					if(item.is_active && item.isTimeToStart()){
 						//start strategy
 						var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 						sublatch= new DbLatch();
@@ -214,6 +210,30 @@ package com.photodispatcher.print{
 						sublatch.start();
 						if(!startlatch) startlatch=new DbLatch();
 						startlatch.join(sublatch);
+					}
+				}else if(item.strategy_type==PrnStrategy.STRATEGY_PUSHER){
+					if(!prnPusher){
+						prnPusher=new PrintQueuePusher(this,null);
+						prnPusher.prnQueue.priority=item.priority;
+						prnPusher.prnQueue.strategy_type=item.strategy_type;
+						prnPusher.prnQueue.strategy_type_name=item.strategy_type_name;
+					}
+					if(item.is_active){
+						//stop/start  pusher
+						if(prnPusher.isActive()){
+							if(item.isTimeToStop()){
+								//stop pusher
+								prnPusher.prnQueue.is_active=false;
+								prnPusher.queue=null;
+							}
+						}else if(item.isTimeToStart()){
+							prnPusher.prnQueue.is_active=true;
+							prnPusher.prnQueue.started=new Date();
+						}
+					}else{
+						//stop pusher
+						prnPusher.prnQueue.is_active=false;
+						prnPusher.queue=null;
 					}
 				}
 			}
@@ -253,7 +273,10 @@ package com.photodispatcher.print{
 			for each(var st:PrnStrategy in strategiesAC){
 				if(st.strategy_type==PrnStrategy.STRATEGY_PUSHER){
 					prnPusher=new PrintQueuePusher(this,null);
-					prnPusher.strategy=st;
+					//prnPusher.prnQueue.is_active=st.is_active && st.isTimeToStart();
+					prnPusher.prnQueue.priority=st.priority;
+					prnPusher.prnQueue.strategy_type=st.strategy_type;
+					prnPusher.prnQueue.strategy_type_name=st.strategy_type_name;
 					break;
 				}
 			}
