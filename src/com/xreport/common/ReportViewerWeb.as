@@ -6,9 +6,9 @@ package com.xreport.common{
 
 	public class ReportViewerWeb implements IReportViewer{
 
-		public function open(url:String, report:Report):void{
-			if(url){
-				var urlRequest:URLRequest = new URLRequest(url);
+		public function open(report:Report, releaseReport:Boolean=true):void{
+			if(report && report.result && report.result.url){
+				var urlRequest:URLRequest = new URLRequest(report.result.url);
 				navigateToURL(urlRequest,'_new');
 			}
 		}
