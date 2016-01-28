@@ -88,14 +88,14 @@ package com.photodispatcher.print{
 		}
 
 		public function fetch():Boolean{
-			pgFetched=[];
 			if(isFetching){
-				compliteFetch();
 				return false;
 			}
-			//TODO implement im child class fetchig and call compliteFetch
+			pgFetched=[];
 			isFetching=true;
-			return isFetching;
+			//TODO implement im child class fetchig and call compliteFetch
+			//Generic will hang on fetching 
+			return true;
 		}
 		
 		protected function compliteFetch():void{

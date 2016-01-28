@@ -550,6 +550,7 @@ package com.photodispatcher.print{
 						//add?
 						trace('PrintManager.reSync printGroup not found, add');
 						if(pg.state == OrderState.ERR_WRITE_LOCK 
+							|| pg.state == OrderState.PRN_QUEUE
 							|| pg.state == OrderState.PRN_WEB_CHECK
 							|| pg.state == OrderState.PRN_WEB_OK
 							|| pg.state == OrderState.PRN_PREPARE
@@ -1177,21 +1178,22 @@ package com.photodispatcher.print{
 		public function runAutoPrint():void{
 			if(!autoPrint) return;
 			var pqg:PrintQueueGeneric;
-			var devs:int;
+			var devs:Array;
 			if(prnQueuesAC){
 				for each(pqg in prnQueuesAC){
 					//TODO run in sequence????
 					if(pqg.isActive()){
 						log("Проверяю очередь " +pqg.caption);
 						if(pqg.isPusher()){
-							devs=getPrintReadyDevices().length;
+							devs=getPrintReadyDevices();
 						}else{
-							devs=getPrintReadyDevices(true,2).length;
+							devs=getPrintReadyDevices(true,2);
 						}
-						if(devs==0){
+						if(devs.length==0){
 							log("Нет свободных девайсов");
 						}else{
-							log("Есть свободные девайсы дергаю очередь");
+							log("Cвободные девайсы: "+devs.join());
+							log("Дергаю очередь");
 							pqg.fetch();
 						}
 					}
@@ -1237,6 +1239,7 @@ package com.photodispatcher.print{
 						v=new Vector.<Object>();
 						posts[pg.destinationLab]=v;
 					}
+					//TODO replace in manager manual queue?
 					pg.isAutoPrint=true;
 					v.push(pg);
 				}

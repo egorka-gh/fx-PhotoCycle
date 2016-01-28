@@ -303,5 +303,9 @@ package com.photodispatcher.model.mysql.entities {
 			
 		}
 
+		public function toString():String {
+			return this.name+'('+this.id+')';
+		}
+
     }
 }
