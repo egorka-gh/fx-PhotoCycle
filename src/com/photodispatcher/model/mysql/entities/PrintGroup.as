@@ -280,6 +280,7 @@ package com.photodispatcher.model.mysql.entities {
 					//SourceType.LAB_PLOTTER - short key, exlude correction, cutting & frame 
 					result=sizeKey+'_'+paper.toString(); 
 					break;
+				case SourceType.LAB_XEROX_LONG:
 				case SourceType.LAB_XEROX:
 					//SourceType.LAB_XEROX - short key, include w/h/pape/duplex
 					result=sizeKey+'_'+paper.toString()+'_'+is_duplex.toString(); 
@@ -706,7 +707,7 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			return result;
 		}
-		
+
 		public function get numericId():int{
 			if(!id) return 0;
 			var arr:Array= id.split('_');
@@ -744,7 +745,8 @@ package com.photodispatcher.model.mysql.entities {
 			var src:Source=Context.getSource(sourceId);
 			if(!src) return '';
 			text+=(src.code?src.code:'u');
-			text+=orderHumanId;
+			//text+=orderHumanId;
+			text+=humanId;
 			if(file.book_num>0){
 				text=text+':'+file.book_num.toString();
 			}

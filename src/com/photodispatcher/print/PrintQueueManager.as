@@ -608,7 +608,7 @@ package com.photodispatcher.print{
 			//log('PostManual Лаба '+ lab.name+' hot '+ lab.hot+'; гуппы '+printGrps.join());
 			
 			//check lab hot folder
-			if(lab.src_type!=SourceType.LAB_XEROX){
+			if(lab.src_type!=SourceType.LAB_XEROX && lab.src_type!=SourceType.LAB_XEROX_LONG){
 				var hot:File;
 				try{
 					hot= new File(lab.hot);
@@ -1068,7 +1068,7 @@ package com.photodispatcher.print{
 				deleteNextFolder();
 				return;
 			}
-			if(currentLab.src_type==SourceType.LAB_XEROX){
+			if(currentLab.src_type==SourceType.LAB_XEROX || currentLab.src_type==SourceType.LAB_XEROX_LONG){
 				//TODO implement delete by fiie
 				//skiped, xerox hasn't order folder, pdf is order container  
 				deleteNextFolder();

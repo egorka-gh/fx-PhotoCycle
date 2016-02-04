@@ -9,6 +9,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.print.LabThermo;
 	import com.photodispatcher.print.LabVirtual;
 	import com.photodispatcher.print.LabXerox;
+	import com.photodispatcher.print.LabXeroxLong;
 	
 	import mx.collections.ArrayCollection;
 
@@ -25,6 +26,9 @@ package com.photodispatcher.factory{
 					break;
 				case SourceType.LAB_XEROX:
 					return new LabXerox(lab);
+					break;
+				case SourceType.LAB_XEROX_LONG:
+					return new LabXeroxLong(lab);
 					break;
 				case SourceType.LAB_PLOTTER:
 					return new LabPlotter(lab);

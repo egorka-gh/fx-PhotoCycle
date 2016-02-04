@@ -553,6 +553,7 @@ package com.photodispatcher.factory{
 									pgf.book_num=proj.bookNumber;
 									pgf.prt_qty=1;
 									if(proj.isPageCover(page.pageNum)){
+										pgf.book_part=BookSynonym.BOOK_PART_COVER;
 										if(pgBody.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
 											if(pgBody.butt) pgf.caption=pgf.caption+' t'+pgBody.butt.toString();
 											pgBody.addFile(pgf);
@@ -562,6 +563,7 @@ package com.photodispatcher.factory{
 											pgCover.addFile(pgf);
 										}
 									}else{
+										pgf.book_part=BookSynonym.BOOK_PART_BLOCK;
 										pgBody.addFile(pgf);
 									}
 								}

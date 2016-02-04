@@ -223,8 +223,10 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			//draw body caption
-			//TODO implement 4 BOOK_PART_BLOCKCOVER?
-			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK && file.page_num==printGroup.pageNumber){
+			if(printGroup.bookTemplate.bar_size>0 
+				&& ((printGroup.book_part==BookSynonym.BOOK_PART_BLOCK) 
+					|| (printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_BLOCK)) 
+				&& file.page_num==printGroup.pageNumber){
 				barcode=printGroup.bookBarcodeText(file);
 				if(barcode) IMCommandUtil.annotateTransparent(command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookTemplate.bar_offset,-90);
 			}
