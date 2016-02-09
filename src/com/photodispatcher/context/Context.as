@@ -10,8 +10,10 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
+	import com.photodispatcher.model.mysql.entities.HelloResponce;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabResize;
+	import com.photodispatcher.model.mysql.entities.LabStopType;
 	import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintForm;
@@ -31,6 +33,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
+	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.model.mysql.services.RollService;
 	import com.photodispatcher.model.mysql.services.SourceService;
 	import com.photodispatcher.model.mysql.services.StaffActivityService;
@@ -39,14 +42,17 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.TechService;
 	import com.photodispatcher.model.mysql.services.XReportService;
 	import com.photodispatcher.util.ArrayUtil;
+	import com.photodispatcher.util.NetUtil;
 	
 	import flash.events.Event;
+	import flash.filesystem.File;
 	import flash.net.SharedObject;
 	import flash.utils.Dictionary;
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.IList;
 	import mx.rpc.AsyncToken;
+	import mx.utils.UIDUtil;
 	
 	import org.granite.meta;
 	import org.granite.tide.Tide;
@@ -61,6 +67,7 @@ package com.photodispatcher.context{
 		private static var instance:Context;
 
 		public static var config:AppConfig;
+
 
 		// Static initializer
 		{
@@ -104,7 +111,8 @@ package com.photodispatcher.context{
 				TechService,
 				ConfigService,
 				StaffActivityService,
-				MailPackageService//+
+				MailPackageService,
+				PrnStrategyService//+
 			]);
 			
 			//fill from config
@@ -126,7 +134,9 @@ package com.photodispatcher.context{
 			latch.join(LayersetSynonym.initMap());
 			latch.join(DeliveryTypeDictionary.initDeliveryTypeMap());
 			latch.join(AliasForward.initMap());
-			latch.join(DeliveryType.initHideClienMap());
+			latch.join(LabStopType.initMap());
+
+			latch.addEventListener(Event.COMPLETE,oninitTechOTK);
 
 			//latch.start();//start at caller?
 			return latch;
@@ -141,7 +151,7 @@ package com.photodispatcher.context{
 				SourceService, 
 				//LabResizeService, 
 				OrderStateService, 
-				//BookSynonymService, 
+				BookSynonymService, 
 				RollService, 
 				//ContentFilterService, 
 				LabService,
@@ -159,9 +169,10 @@ package com.photodispatcher.context{
 			latch.join(Context.initAttributeLists());
 			//latch.join(LabResize.initSizeMap());
 			latch.join(OrderState.initStateMap());
-			//latch.join(BookSynonym.initSynonymMap());
+			latch.join(BookSynonym.initSynonymMap());
 			//latch.join(FieldValue.initSynonymMap());
 			latch.join(Roll.initItemsMap());
+			latch.join(LabStopType.initMap());
 			//latch.join(LabPrintCode.initChanelMap());
 			//latch.join(AttrJsonMap.initJsonMap());
 			//latch.join(SourceProperty.initMap());
@@ -279,6 +290,25 @@ package com.photodispatcher.context{
 			return latch;
 		}
 
+		public static function initPhotoCorrector():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initPhotoCorrector';
+			//register services
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				OrderStateService, 
+				TechPointService,
+				OrderService //+
+			]);
+
+			//init static maps
+			latch.join(Context.initSourceLists());
+			latch.join(Context.initAttributeLists());
+			latch.join(OrderState.initStateMap());
+			return latch;
+		}
+
 		public static function initTechOTK():DbLatch{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initTechOTK';
@@ -368,36 +398,26 @@ package com.photodispatcher.context{
 			return latch;
 		}
 
-		/*
-		public static function fillFromConfig():void{
-			var appConfDAO:AppConfigDAO=new AppConfigDAO();
-			var appConf:AppConfig=appConfDAO.getItem();
-			if(appConf){
-				//Context.setAttribute('workFolder',appConf.wrk_path);//backward compatibility, use local SharedObject .data.workFolder
-				
-				Context.setAttribute('syncInterval',appConf.monitor_interval);
-				//content filter
-				//load content filters
-				var cfilters:Array=ContentFilter.filters;
-				//current content filter
-				var currCFilter:ContentFilter;
-				if(cfilters) currCFilter=ArrayUtil.searchItem('id',appConf.content_filter,cfilters) as ContentFilter;
-				if(!currCFilter){
-					currCFilter= new ContentFilter();
-					currCFilter.is_alias_filter=false;
-					currCFilter.is_photo_allow=true;
-					currCFilter.is_pro_allow=true;
-					currCFilter.is_retail_allow=true;
-				}
-				Context.setAttribute('contentFilter',currCFilter);
-			}else{
-				//set to defaults
-				
-				Context.setAttribute('syncInterval',10);
 
+		private static var _appID:String;
+		public static function get appID():String{
+			if(_appID) return _appID;
+			
+			_appID=NetUtil.getIP();
+			if(_appID){
+				_appID=_appID+':'+currentOSUser;
+				_appID=_appID.substr(0,50);
 			}
+			if(!_appID) _appID=UIDUtil.createUID();
+			return _appID;
 		}
-		*/
+
+		public static function get currentOSUser():String		{
+			var userDir:String = File.userDirectory.nativePath;
+			var userName:String = userDir.substr(userDir.lastIndexOf(File.separator) + 1);
+			return userName;
+		}
+
 		
 		public static function setAttribute(name:String, value:*):void{
 			instance[name] = value;	
@@ -606,6 +626,9 @@ package com.photodispatcher.context{
 			//tech layers
 			latchAttributeLists.addLatch(dict.getTechLayerValueList(true, onFieldList),'layer');
 
+			//tech interlayer
+			latchAttributeLists.addLatch(dict.getInterlayerValueList(onFieldList),'interlayer');
+
 			//tech seq layers
 			latchAttributeLists.addLatch(dict.getTechLayerValueList(true, onFieldList),'seqlayer');
 			
@@ -627,7 +650,11 @@ package com.photodispatcher.context{
 			latchAttributeLists.addLatch(dict.getStateValueList(onFieldList),'state');
 			//racks 
 			latchAttributeLists.addLatch(dict.getRackValueList(onFieldList),'rack');
-
+			//lab stop_type
+			latchAttributeLists.addLatch(dict.getStopTypeValueList(onFieldList),'lab_stop_type');
+			//print strategy_type
+			latchAttributeLists.addLatch(dict.getPrnStrategyValueList(onFieldList),'strategy_type');
+			
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){
 				a=new ArrayCollection();
