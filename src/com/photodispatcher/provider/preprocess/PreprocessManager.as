@@ -91,7 +91,7 @@ package com.photodispatcher.provider.preprocess{
 			for each(var order:Order in toAdd){
 				if(order){
 					if(!currOrder || order.id!=currOrder.id){
-						if(order.state!=OrderState.PREPROCESS_WAITE) order.state=OrderState.PREPROCESS_WAITE;
+						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORWARD) order.state=OrderState.PREPROCESS_WAITE;
 						var oldOrder:Order=ArrayUtil.searchItem('id',order.id,queue.source) as Order;
 						if(oldOrder){
 							newItems.push(oldOrder);
@@ -126,7 +126,7 @@ package com.photodispatcher.provider.preprocess{
 			
 			for each(o in queue.source){
 				if(o){
-					if(o.state==OrderState.PREPROCESS_FORVARD){
+					if(o.state==OrderState.PREPROCESS_FORWARD){
 						order=o;
 						break;
 					}else if(o.state==OrderState.PREPROCESS_WAITE){
@@ -412,7 +412,7 @@ package com.photodispatcher.provider.preprocess{
 			for each (var order:Order in queue.source){
 				if(order){
 					if(!currOrder || (currOrder.id!=order.id)){
-						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORVARD ){
+						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORWARD ){
 							order.state=OrderState.PREPROCESS_WAITE;
 						}
 					}

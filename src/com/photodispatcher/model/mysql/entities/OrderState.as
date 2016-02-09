@@ -59,7 +59,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PREPROCESS_WAITE:int=150;
 		//public static const PREPROCESS_DEPLOY:int=124;
 		//public static const PREPROCESS_REMOTE:int=125;
-		public static const PREPROCESS_FORVARD:int=151;
+		public static const PREPROCESS_FORWARD:int=151;
 		public static const PREPROCESS_WEB_CHECK:int=155;
 		public static const PREPROCESS_WEB_OK:int=156;
 		public static const PREPROCESS_CAPTURED:int=157;

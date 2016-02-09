@@ -72,7 +72,7 @@
 			protected function btForvard_clickHandler(event:MouseEvent):void{
 				var order:Order=dgProcess.selectedItem as Order;
 				if(!order || order.state!=OrderState.PREPROCESS_WAITE) return;
-				order.state=OrderState.PREPROCESS_FORVARD;			
+				order.state=OrderState.PREPROCESS_FORWARD;			
 			}
 			
 		]]>

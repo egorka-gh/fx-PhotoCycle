@@ -61,6 +61,15 @@
     <application path="PhotoCycleP.mxml">
       <airExcludes/>
     </application>
+    <application path="BarcodePrinter.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoCorrector.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoPicker2.mxml">
+      <airExcludes/>
+    </application>
   </applications>
   <modules/>
   <buildCSSFiles/>
