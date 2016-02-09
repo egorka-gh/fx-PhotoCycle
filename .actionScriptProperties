@@ -40,6 +40,12 @@
     <application path="PhotoPicker.mxml">
       <airExcludes/>
     </application>
+    <application path="BarcodePrinter.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoCycleP.mxml">
+      <airExcludes/>
+    </application>
     <application path="PhotoPickerS.mxml">
       <airExcludes/>
     </application>
@@ -56,9 +62,6 @@
       <airExcludes/>
     </application>
     <application path="TechSpyS.mxml">
-      <airExcludes/>
-    </application>
-    <application path="PhotoCycleP.mxml">
       <airExcludes/>
     </application>
   </applications>
