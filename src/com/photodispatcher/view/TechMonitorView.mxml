@@ -161,10 +161,6 @@
 				switch(techPoint.tech_type){
 					case SourceType.TECH_PRINT:
 						result= new TechRegisterPrint(printGroup,books,sheets);
-						/*
-						var dao:PrintGroupDAO= new PrintGroupDAO();
-						dao.setState(printGroup,OrderState.PRN_INPRINT);
-						*/
 						var latch:DbLatch= new DbLatch();
 						var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 						//latch.addEventListener(Event.COMPLETE,onTPLoad);

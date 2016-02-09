@@ -32,27 +32,42 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_LOAD_REMOTE:int=-317;//04.04.2013
 		public static const ERR_GET_PROJECT:int=-318;//22.05.2013
 		public static const ERR_APP_INIT:int=-319;//
-		public static const ERR_PRODUCTION_NOT_SET:int=-320;//
+		public static const ERR_PRODUCTION_NOT_SET:int=-320;
+		public static const ERR_LOCK_FAULT:int=-321;
+		public static const ERR_WRONG_STATE:int=-322;
 		
 		//flow state
 		//public static const FTP_RELOAD:int=95;
-		public static const WAITE_FTP:int=100;
+		public static const FTP_WAITE:int=100;
 		public static const FTP_FORWARD:int=101;
-		public static const FTP_WEB_CHECK:int=105;
-		public static const FTP_WEB_OK:int=106;
+		public static const FTP_WEB_CHECK:int=103;
+		public static const FTP_WEB_OK:int=104;
+		public static const FTP_CAPTURED:int=105;
 		public static const FTP_WAITE_SUBORDER:int=107; //22.05.13
 		public static const FTP_GET_PROJECT:int=108; //22.05.13
 		public static const FTP_LIST:int=109;
 		public static const FTP_LOAD:int=110;
 		public static const FTP_DEPLOY:int=111;//04.04.2013
 		public static const FTP_REMOTE:int=112;//04.04.2013
-		public static const FTP_COMPLETE:int=113;//04.04.2013
-		public static const PREPROCESS_WAITE:int=114;
-		public static const PREPROCESS_RESIZE:int=115;
-		public static const PREPROCESS_PDF:int=120;
-		public static const PREPROCESS_DEPLOY:int=124;
-		public static const PREPROCESS_REMOTE:int=125;
-		public static const PREPROCESS_COMPLETE:int=140;
+		
+		public static const FTP_INCOMPLITE:int=120;
+		public static const FTP_COMPLETE:int=130;
+		
+		public static const COLOR_CORRECTION_WAITE:int=139;
+		public static const COLOR_CORRECTION:int=140;
+		
+		public static const PREPROCESS_WAITE:int=150;
+		//public static const PREPROCESS_DEPLOY:int=124;
+		//public static const PREPROCESS_REMOTE:int=125;
+		public static const PREPROCESS_FORWARD:int=151;
+		public static const PREPROCESS_WEB_CHECK:int=155;
+		public static const PREPROCESS_WEB_OK:int=156;
+		public static const PREPROCESS_CAPTURED:int=157;
+		public static const PREPROCESS_RESIZE:int=160;
+		public static const PREPROCESS_PDF:int=165;
+		public static const PREPROCESS_INCOMPLETE:int=170;
+		public static const PREPROCESS_COMPLETE:int=180;
+		
 		public static const PRN_WAITE_ORDER_STATE:int=199;
 		public static const PRN_WAITE:int=200;
 		public static const PRN_QUEUE:int=203;
@@ -60,14 +75,17 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PRN_WEB_OK:int=206;
 		public static const PRN_PREPARE:int=209;
 		public static const PRN_POST:int=210;
-		public static const PRN_POST_COMPLITE:int=212;
+		//public static const PRN_POST_COMPLITE:int=212;
 		public static const PRN_CANCEL:int=215;
-		public static const PRN_POST_FORWARD:int=220;
+		public static const PRN_AUTOPRINTLOG:int=220;
+		//public static const PRN_POST_FORWARD:int=220;
 		public static const PRN_PRINT:int=250;
 		public static const PRN_REPRINT:int=251;
 		public static const PRN_INPRINT:int=255;
 		public static const PRN_COMPLETE:int=300;
+		
 		public static const CANCELED_OLD:int=310;
+		
 		public static const TECH_BFOLDING:int=318;
 		public static const TECH_FOLDING:int=320;
 		public static const TECH_LAMINATION:int=330;
@@ -96,7 +114,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static function getStateName(id:int):String{
 			if(!stateMap){
-				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				throw new Error('Ошибка инициализации OrderState.initSynonymMap',OrderState.ERR_APP_INIT);
 				return;
 			}
 			var os:OrderState;
@@ -106,7 +124,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static function getStateArray(from:int=-1, to:int=-1, excludeRuntime:Boolean=false):Array{
 			if(!stateMap){
-				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				throw new Error('Ошибка инициализации OrderState.initSynonymMap',OrderState.ERR_APP_INIT);
 				return;
 			}
 			var result:Array=[];
@@ -125,7 +143,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static function getStateList():ArrayCollection{
 			if(!stateMap){
-				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
+				throw new Error('Ошибка инициализации OrderState.initSynonymMap',OrderState.ERR_APP_INIT);
 				return;
 			}
 			var result:ArrayCollection=new ArrayCollection();

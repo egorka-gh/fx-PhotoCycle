@@ -23,7 +23,7 @@ package com.photodispatcher.provider.ftp{
 	
 	import mx.controls.Alert;
 	
-	public class LoadHelpersManager extends QueueManager{
+	public class LoadHelpersManagerKill extends DownloadQueueManager{
 		
 		private var _localQueues:Array=[];
 		public function get localQueues():Array{
@@ -40,9 +40,9 @@ package com.photodispatcher.provider.ftp{
 		private var helpersMap:Dictionary;
 		private var chatServer:ChatServerService;
 		
-		public function LoadHelpersManager(){
+		public function LoadHelpersManagerKill(){
 			super(null);
-			_type=QueueManager.TYPE_REMOTE;
+			_type=DownloadQueueManager.TYPE_REMOTE;
 			sourceCaption='Удаленная загрузка';
 		}
 		
@@ -294,8 +294,8 @@ package com.photodispatcher.provider.ftp{
 		}
 		
 		override public function fetchNext():Order{
-			var q:QueueManager;
-			var queue:QueueManager;
+			var q:DownloadQueueManager;
+			var queue:DownloadQueueManager;
 			var order:Order;
 			//get longest local queue
 			for each (q in localQueues){
@@ -314,8 +314,8 @@ package com.photodispatcher.provider.ftp{
 		
 		override public function unFetch(order:Order):void{
 			if(!order) return;
-			var q:QueueManager;
-			var queue:QueueManager;
+			var q:DownloadQueueManager;
+			var queue:DownloadQueueManager;
 			for each (q in localQueues){
 				if(q && q.source.id==order.source){
 					queue=q;

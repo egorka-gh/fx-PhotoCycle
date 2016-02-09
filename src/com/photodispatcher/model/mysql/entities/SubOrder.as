@@ -62,6 +62,16 @@ package com.photodispatcher.model.mysql.entities {
 			return super.sub_id;
 		}
 		
+		override public function set state(value:int):void{
+			if(!state_name || super.state!=value) state_name= OrderState.getStateName(value);
+			super.state = value;
+		}
+		
+		override public function get state():int{
+			return super.state;
+		}
+		
+		
 		public function get humanId():String{
 			var res:String=order_id;
 			if(sub_id) res=res+':'+sub_id;

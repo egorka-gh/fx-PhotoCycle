@@ -33,12 +33,12 @@ package com.photodispatcher.model.mysql.entities {
 			col.headerText='Источник'; result.addItem(col);
 			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col); 
 			col= new GridColumn('id'); result.addItem(col);
+			col= new GridColumn('groupId');  col.headerText='Группа'; result.addItem(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('src_date'); col.headerText='Размещен'; col.formatter=fmt;  result.addItem(col);
 			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
 			col= new GridColumn('ftp_folder'); col.headerText='Ftp Папка'; result.addItem(col);
-			col= new GridColumn('fotos_num'); col.headerText='Кол фото'; result.addItem(col);
 			return result;
 		}
 		
@@ -127,6 +127,7 @@ package com.photodispatcher.model.mysql.entities {
 			if(value<0 &&
 				value!=OrderState.ERR_READ_LOCK && 
 				value!=OrderState.ERR_WRITE_LOCK && 
+				value!=OrderState.ERR_LOCK_FAULT && 
 				//_state!=OrderState.ERR_FILE_SYSTEM &&
 				//_state!=OrderState.ERR_FTP &&
 				value!=OrderState.ERR_WEB){
@@ -143,6 +144,25 @@ package com.photodispatcher.model.mysql.entities {
 			return (suborders && suborders.length>0);
 		}
 
+		public function get hasPhotoSuborder():Boolean{
+			if(!hasSuborders) return false;
+			//look for photo suborders 
+			for each(var so:SubOrder in suborders){
+				if(so.native_type==1) return true;
+			}
+			return false;
+		}
+		
+		public function removePhotoSuborder():void{
+			if(!hasSuborders) return;
+			var so:SubOrder;
+			var newso:Array=[];
+			for each(so in suborders){
+				if(so.native_type!=1) newso.push(so);
+			}
+			suborders= new ArrayCollection(newso);
+		}
+
 		public function addSuborder(so:SubOrder):void{
 			if(!suborders){
 				suborders=new ArrayCollection;
@@ -157,6 +177,11 @@ package com.photodispatcher.model.mysql.entities {
 				suborders.addItem(so);
 			}
 		}
+		public function getSuborder(subId:String):SubOrder{
+			if(!hasSuborders || !subId) return null;
+			return ArrayUtil.searchItem('sub_id',subId,suborders.toArray()) as SubOrder;
+		}
+		/*
 		public function removeSuborder(so:SubOrder):void{
 			if(!suborders || suborders.length==0) return;
 			var i:int=suborders.getItemIndex(so);
@@ -164,6 +189,8 @@ package com.photodispatcher.model.mysql.entities {
 				suborders.removeItemAt(i);
 			}
 		}
+		*/
+		
 		public function resetSuborders():void{
 			suborders=new ArrayCollection();
 		}

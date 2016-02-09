@@ -6,24 +6,45 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.LabDevice;
 			import com.photodispatcher.model.mysql.entities.LabRoll;
+			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
 			
+			import org.granite.tide.Tide;
+			
 			import spark.collections.Sort;
 			import spark.collections.SortField;
 			import spark.events.IndexChangeEvent;
 
+			
+			private var _device:LabDevice;
+			[Bindable]
+			public function get device():LabDevice{
+				return _device;
+			}
+			public function set device(value:LabDevice):void{
+				_device = value;
+				if(_device){
+					rolls=_device.rolls as ArrayCollection;
+				}else{
+					rolls=null;
+				}
+			}
+
+			
 			private var rollMap:Object;
 			private var _rolls:ArrayCollection;
 			[Bindable]
-			public function get rolls():ArrayCollection{
+			private function get rolls():ArrayCollection{
 				return _rolls;
 			}
-			public function set rolls(value:ArrayCollection):void{
+			private function set rolls(value:ArrayCollection):void{
 				_rolls = new ArrayCollection(); 
 				if(value && value.source) _rolls.source=value.source;
 				rollMap= new Object();
@@ -53,17 +74,33 @@
 			
 			public function show():void{
 				paperFilterList=Context.getAttribute('paperValueList');
+				
 				if(preferRolls){
 						preferRolls.filterFunction=preferRollsFilter;
 						var sortA:Sort = new Sort();
 						sortA.fields=[new SortField("printQueueLen",true,true)];
 						preferRolls.sort=sortA;
 						preferRolls.refresh();
+				}else if(device){
+					//load queule
+					var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+					var latch:DbLatch=new DbLatch();
+					latch.addEventListener(Event.COMPLETE, onQueuleLoad);
+					latch.addLatch(svc.loadQueueByDevice(device.id,0)); //0- all pgs, 1 - books only
+					latch.start();
 				}
 				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
 				PopUpManager.centerPopUp(this);
 			}
+			protected function onQueuleLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onQueuleLoad);
+					if(latch.complite) preferRolls=latch.lastDataAC;
+				}
+			}
 
+			
 			private function getRoll(paper:int,width:int):LabRoll{
 				return rollMap[paper.toString()+'~'+width.toString()] as LabRoll;
 			}

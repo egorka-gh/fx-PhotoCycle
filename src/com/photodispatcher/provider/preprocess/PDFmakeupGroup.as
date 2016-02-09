@@ -15,9 +15,7 @@ package com.photodispatcher.provider.preprocess{
 	public class PDFmakeupGroup extends BookMakeupGroup{
 		public static const TEXT_LEFT_OFFSET_PIX:int=522;
 		public static const TEXT_TOP_OFFSET_PIX:int=2;
-		//public static const TEXT_OFFSET_PIX:int=22;
 		public static const TEXT_OFFSET:String='+'+TEXT_LEFT_OFFSET_PIX.toString()+'+'+TEXT_TOP_OFFSET_PIX.toString();
-		//public static const TEXT_UNDERCOLOR:String='#ffffff80';
 		public static const TEXT_UNDERCOLOR:String='white';
 
 		public static const TEMP_FOLDER:String='pdf_wrk';
@@ -26,16 +24,12 @@ package com.photodispatcher.provider.preprocess{
 		protected static const FILENAME_COVER_BACK:String=TEMP_FOLDER+'/cover_back';
 		protected static const FONT_COVER_BACK:int=6;
 		protected static const TEMP_FILE_TYPE:String='.jpg';//IM bug - broken jpg - use png or some else
-		//protected static const TEMP_FILE_TYPE:String='.png';
-		
-		//protected static const PDF_PAGE_LIMIT:int=100;
 
 		public function PDFmakeupGroup(printGroup:PrintGroup, order_id:String, folder:String, prtFolder:String){
 			super(printGroup, order_id, folder, prtFolder);
 		}
 		
 		override public function createCommands():void{
-			//if(Context.getAttribute("pdfJpgQuality")) jpgQuality=Context.getAttribute("pdfJpgQuality");
 			if(Context.config && Context.config.pdf_quality>60) jpgQuality=Context.config.pdf_quality.toString();
 
 			commands=[];
@@ -64,9 +58,6 @@ package com.photodispatcher.provider.preprocess{
 			var sheetSize:Point;
 			var pageLimit:int=Context.getAttribute('pdfPageLimit');
 			if(!pageLimit) pageLimit=30;
-			var pdfPageNum:int=0;
-			var pdfName:String;
-			var newFile:PrintGroupFile;
 			var prints:int=0;
 			
 			files=printGroup.bookFiles;
@@ -104,33 +95,13 @@ package com.photodispatcher.provider.preprocess{
 
 			printGroup.resetFiles();
 			var sh:PdfSheet;
+			command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
+			command2.folder=folder;
+
 			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER){
-				command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
-				command2.folder=folder;
 				//create covers pdf
 				if(printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL){
 					for (i=0; i<(files.length/3); i++){
-						//check page limit & split pdf
-						if(pdfPageNum==pageLimit){
-							pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
-
-							//add to printGroup.files
-							newFile= new PrintGroupFile();
-							newFile.file_name=pdfName;
-							newFile.prt_qty=1;
-							printGroup.addFile(newFile);
-
-							//finalyze pdf cmd
-							IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
-							command2.add(outPath(pdfName));
-							finalCommands.push(command2);
-							
-							//reset
-							pdfPageNum=0;
-							command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
-							command2.folder=folder;
-						}
-						
 						//cover
 						it=files[i*3] as PrintGroupFile;
 						if(!it){
@@ -168,43 +139,14 @@ package com.photodispatcher.provider.preprocess{
 							//add 2 pdf cmd
 							command2.add(outName);
 							//2 pages added
-							pdfPageNum=pdfPageNum+2;
+							//pdfPageNum=pdfPageNum+2;
 							prints+=2;
 						}
-					}
-					//finalyze pdf cmd
-					if(!reprintMode || pdfPageNum>0){
-						pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
-						IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
-						command2.add(outPath(pdfName));
-						finalCommands.push(command2);
-						//add to printGroup.files
-						newFile= new PrintGroupFile();
-						newFile.file_name=pdfName;
-						newFile.prt_qty=1;
-						printGroup.addFile(newFile);
 					}
 				}else if(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK){
 					var backName:String;
 					//crop & annotate covers
 					for (i=0; i<files.length; i++){
-						//check page limit & split pdf
-						if(pdfPageNum==pageLimit){
-							//finalyze pdf cmd
-							pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
-							IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
-							command2.add(outPath(pdfName));
-							finalCommands.push(command2);
-							//add to printGroup.files
-							newFile= new PrintGroupFile();
-							newFile.file_name=pdfName;
-							newFile.prt_qty=1;
-							printGroup.addFile(newFile);
-							//reset
-							pdfPageNum=0;
-							command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
-							command2.folder=folder;
-						}
 						it=files[i] as PrintGroupFile;
 						if(!it){
 							state=STATE_ERR;
@@ -220,23 +162,10 @@ package com.photodispatcher.provider.preprocess{
 							commands.push(command);
 							//add 2 final cmd
 							command2.add(outName);
-							pdfPageNum++;
+							//pdfPageNum++;
 							prints++;
 						}
 					}
-					//finalyze pdf cmd
-					if(!reprintMode || pdfPageNum>0){
-						pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((i*2).toString(),3)+'.pdf';
-						IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
-						command2.add(outPath(pdfName));
-						finalCommands.push(command2);
-						//add to printGroup.files
-						newFile= new PrintGroupFile();
-						newFile.file_name=pdfName;
-						newFile.prt_qty=1;
-						printGroup.addFile(newFile);
-					}
-					if(reprintMode) printGroup.prints=prints;
 				}
 				//expand format by tech
 				if(printGroup.bookTemplate.tech_bar &&
@@ -258,31 +187,11 @@ package com.photodispatcher.provider.preprocess{
 				//create sheets & apply order 
 				var sheets:Array=createSheets(files);
 				//create commands
-				//final cmd
-				command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
-				command2.folder=folder;
 				
 				// height-format width, width- format length
 				pageSize= new Point(printGroup.bookTemplate.page_len,printGroup.bookTemplate.page_width);
 				sheetSize= new Point(printGroup.bookTemplate.sheet_len,printGroup.bookTemplate.sheet_width);
 				for (i=0;i<sheets.length;i++){
-					//check page limit & split pdf
-					if(pdfPageNum==pageLimit){
-						//finalyze pdf cmd
-						pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
-						IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
-						command2.add(outPath(pdfName));
-						finalCommands.push(command2);
-						//add to printGroup.files
-						newFile= new PrintGroupFile();
-						newFile.file_name=pdfName;
-						newFile.prt_qty=1;
-						printGroup.addFile(newFile);
-						//reset
-						pdfPageNum=0;
-						command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
-						command2.folder=folder;
-					}
 					//process sheet
 					sh=sheets[i] as PdfSheet;
 					if(!reprintMode || sh.reprint){
@@ -300,7 +209,7 @@ package com.photodispatcher.provider.preprocess{
 						//add 2 pdf cmd
 						command2.add(outName);
 						//page added
-						pdfPageNum++;
+						//pdfPageNum++;
 						prints++;
 					}
 				}
@@ -312,22 +221,42 @@ package com.photodispatcher.provider.preprocess{
 						printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
 					if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
 				}
-
-				//finalyze pdf cmd
-				if(!reprintMode || pdfPageNum>0){
-					pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad(i.toString(),3)+'.pdf';
-					IMCommandUtil.setPDFOutputParams(command2,jpgQuality);
-					command2.add(outPath(pdfName));
-					finalCommands.push(command2);
-					//add to printGroup.files
-					newFile= new PrintGroupFile();
-					newFile.file_name=pdfName;
-					newFile.prt_qty=1;
-					printGroup.addFile(newFile);
-				}
-				
-				if(reprintMode) printGroup.prints=prints;
 			}
+			//finalize
+			if(reprintMode) printGroup.prints=prints;
+			
+			//create pdf commands
+			//split by limit
+			var idx:int;
+			var pdfNum:int;
+			var pdfName:String;
+			var newFile:PrintGroupFile;
+			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
+				command=new IMCommand(IMCommand.IM_CMD_CONVERT);
+				command.folder=folder;
+				for(i=0;i<pageLimit;i++){
+					//parm idx
+					idx=pdfNum*pageLimit+i;
+					if(printGroup.bookTemplate.revers){
+						//revers
+						idx=command2.parameters.length-1-idx;
+					}
+					//check if out of command2.parameters.length
+					if(idx<0 || idx>=command2.parameters.length) break;
+					command.add(command2.parameters[idx]);
+				}
+				//finalize pdf command
+				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
+				IMCommandUtil.setPDFOutputParams(command,jpgQuality);
+				command.add(outPath(pdfName));
+				finalCommands.push(command);
+				//add to printGroup.files
+				newFile= new PrintGroupFile();
+				newFile.file_name=pdfName;
+				newFile.prt_qty=1;
+				printGroup.addFile(newFile);
+			}
+			
 		}
 
 		private function createSheets(files:Array):Array{
@@ -641,6 +570,12 @@ package com.photodispatcher.provider.preprocess{
 					}
 				}
 			}
+			
+			//vertical annotate
+			if(printGroup.bookTemplate.fontv_size){
+				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
+			}
+
 			IMCommandUtil.setOutputParams(command);
 			return command;
 		}
@@ -649,7 +584,7 @@ package com.photodispatcher.provider.preprocess{
 			if(!command || !file) return;
 			var strOff:String=printGroup.bookTemplate.font_offset;
 			if(!strOff) strOff=TEXT_OFFSET;
-			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,printGroup.annotateText(file),TEXT_OFFSET);
+			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,printGroup.annotateText(file), strOff);
 		}
 
 	}

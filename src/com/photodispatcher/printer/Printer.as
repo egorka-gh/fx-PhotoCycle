@@ -1,5 +1,6 @@
 package com.photodispatcher.printer{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.DeliveryType;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.MailPackage;
@@ -9,6 +10,7 @@ package com.photodispatcher.printer{
 	import com.photodispatcher.model.mysql.entities.PrintFormField;
 	import com.photodispatcher.model.mysql.entities.PrintFormParametr;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.entities.report.Parameter;
 	import com.photodispatcher.model.mysql.entities.report.Report;
 	import com.photodispatcher.model.mysql.entities.report.ReportResult;
@@ -71,6 +73,13 @@ package com.photodispatcher.printer{
 		}
 		
 		private function releaseErr(err:String):void{
+			if(curReport && curReport.logOn){
+				if(curReport.logPrintGroupId){
+					StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,'Форма: '+curReport.name+'. Ошибка печати: '+err);
+				}else if(curReport.logOrderId){
+					StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'','Форма: '+curReport.name+'. Ошибка печати: '+err);
+				}
+			}
 			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,'Ошибка печати: '+err));
 		}
 		
@@ -81,20 +90,42 @@ package com.photodispatcher.printer{
 			reportService.buildReport(curReport, DATA_SOURCE, onBuildReport, onBuildReportFault);
 		}
 		private function onBuildReport(event:TideResultEvent):void{
-			var result:ReportResult=event.result as ReportResult;
-			if (!result) return; //alert?
-			if(result.hasError){
-				releaseErr(result.error);
+			//var result:ReportResult=event.result as ReportResult;
+			curReport.result=event.result as ReportResult;
+			if (!curReport.result) return; //alert?
+			if(curReport.result.hasError){
+				releaseErr(curReport.result.error);
+				if(curReport && curReport.logOn){
+					if(curReport.logPrintGroupId){
+						StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,'Форма: '+curReport.name+'. Ошибка печати: '+curReport.result.error);
+					}else if(curReport.logOrderId){
+						StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'','Форма: '+curReport.name+'. Ошибка печати: '+curReport.result.error);
+					}
+				}
 				curReport=null;
 				printNext();
 			}
-			if(result.url){
+			if(curReport.result.url){
 				if(reportPrinter && reportPrinter.enabled){
 					var prn:String=curReport.printer;
 					if(!prn) prn=Context.getAttribute('printer');
-					reportPrinter.print(result.url, prn);
+					if(curReport.logOn){
+						if(curReport.logPrintGroupId){
+							StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,curReport.name+' отправлен на принтер '+prn);
+						}else if(curReport.logOrderId){
+							StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'',curReport.name+' отправлен на принтер '+prn);
+						}
+					}
+					reportPrinter.print(curReport.result.url, prn);
 				}else{
-					reportViewer.open(result.url,curReport);
+					if(curReport.logOn){
+						if(curReport.logPrintGroupId){
+							StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,'Форма: '+curReport.name+'. Не напечатана, принтер не доступен');
+						}else if(curReport.logOrderId){
+							StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'','Форма: '+curReport.name+'.  Не напечатана, принтер не доступен');
+						}
+					}
+					reportViewer.open(curReport,false);
 				}
 			}
 		}
@@ -111,6 +142,18 @@ package com.photodispatcher.printer{
 		}
 
 		private function onPrintComplite(event:Event):void{
+			if(curReport && curReport.result){
+				var latch:DbLatch= new DbLatch();
+				latch.addLatch(reportService.releaseReport(curReport.result));
+				latch.start();
+			}
+			if(curReport && curReport.logOn){
+				if(curReport.logPrintGroupId){
+					StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,'Форма: '+curReport.name+' напечатана');
+				}else if(curReport.logOrderId){
+					StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'','Форма: '+curReport.name+' напечатана');
+				}
+			}
 			curReport=null;
 			printNext();
 		}
@@ -122,6 +165,11 @@ package com.photodispatcher.printer{
 			var report:Report=new Report();
 			
 			report.id='OrderTicketFrm';
+			report.name='Квиток';
+
+			report.logOn=true;
+			report.logPrintGroupId=pg.id;
+			
 			report.parameters=[];
 			var param:Parameter;
 			param=new Parameter(); param.id='pgid'; param.valString=pg.id; report.parameters.push(param);

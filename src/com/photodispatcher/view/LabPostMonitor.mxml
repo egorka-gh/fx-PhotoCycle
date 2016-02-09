@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.PrintEvent;
+			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Lab;
+			import com.photodispatcher.model.mysql.entities.LabRoll;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.LabService;
+			import com.photodispatcher.model.mysql.services.PrintGroupService;
+			import com.photodispatcher.print.LabGeneric;
+			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.GridSelectionEvent;
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var pgList:ArrayCollection=new ArrayCollection();
+		
+
+			[Bindable]
+			private var printManager:PrintQueueManager;
+			
+			public function init():void{
+				if(!printManager){
+					printManager=PrintQueueManager.instance;
+					//printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
+				}
+				if(printManager && printManager.labs && printManager.labs.length>0) lstLabs.selectedItem=printManager.labs.getItemAt(0);
+			}
+
+			public function refresh():void{
+				if(!printManager || !printManager.labs || printManager.labs.length==0) return;
+				
+				var svc2:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+				var latch2:DbLatch=new DbLatch();
+				latch2.addEventListener(Event.COMPLETE,onLoadPgs);
+				latch2.addLatch(svc2.loadByState(OrderState.PRN_QUEUE,OrderState.PRN_PRINT));
+				latch2.start();
+
+			}
+			private function onLoadPgs(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadPgs);
+					if(!latch.complite) return;
+					pgList=latch.lastDataAC;
+					pgList.filterFunction=filterPGList;
+				}
+				applyFilter();
+			}
+			
+			private function filterPGList(item:Object):Boolean {
+				var pg:PrintGroup=item as PrintGroup;
+				if(!pg) return false;
+				if(!printManager || !printManager.labs || printManager.labs.length==0 || !lstLabs) return false;
+				
+				var l:LabGeneric=lstLabs.selectedItem as LabGeneric;
+				if(!l){
+					l=printManager.labs.getItemAt(0) as LabGeneric;
+					if(l) lstLabs.selectedItem=l;
+				}
+				if(!l) return false;
+				if(pg.destination!=l.id) return false;
+				return true;
+			}
+
+			private function applyFilter():void{
+				pgList.refresh();
+			}
+
+			protected function lstLab_changeHandler(event:IndexChangeEvent):void{
+				refresh();
+			}
+			
+			private var gridMenu:GridContexMenu;
+			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
+				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER, GridContexMenu.CANCEL_PRINT_STATE]);
+				gridMenu.addItem('Напечатан',setPrintedCallBack);
+			}
+			
+			private function setPrintedCallBack(grid:DataGrid,param:int):void{
+				if(!printManager) return;
+				var a:Array=[];
+				var pg:PrintGroup;
+				for each(var o:Object in grid.selectedItems){
+					pg= o as PrintGroup;
+					//if(pg && pg.state==OrderState.PRN_PRINT && labMap[pg.destination.toString()]){
+					if(pg && (pg.state==OrderState.PRN_PRINT || (pg.state==OrderState.PRN_INPRINT))){
+						pg.state=OrderState.PRN_COMPLETE;
+						a.push(pg);
+					}
+				}
+				if(a.length>0)  printManager.setPrintedState(a);
+			}
+
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:ArrayCollection id="acLabRolls" source="{lstLabs.selectedItem.printQueue.rolls}"/>	
+	</fx:Declarations>
+	
+	<s:HGroup gap="10" width="100%" height="100%">
+		<s:VGroup gap="5" width="150" height="100%">
+			<s:Label text="Лаборатории" />
+			<s:List id="lstLabs" dataProvider="{printManager.labs}" contentBackgroundAlpha="0" borderAlpha="0" 
+					itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRendererShort" 
+					width="100%"
+					change="{lstLab_changeHandler(event)}">
+				<s:layout>
+					<s:VerticalLayout gap="0" requestedRowCount="{printManager.labs.length}"/>
+				</s:layout>
+			</s:List>
+		</s:VGroup>
+		<s:VGroup gap="5" width="100%" height="100%">
+			<s:HGroup width="100%">
+				<s:Label text="Группы печати"/>
+				<s:Spacer width="100%"/>
+				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:DataGrid id="dgPGroups" selectionMode="multipleRows" width="100%" height="100%"
+						creationComplete="dgPGroups_creationCompleteHandler(event)"
+						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns(true)}"/>
+		</s:VGroup>
+	</s:HGroup>
+	
+</s:Group>

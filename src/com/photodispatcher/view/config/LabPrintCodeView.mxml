@@ -119,6 +119,7 @@
 						newCode.paper=paper; newCode.paper_name=paper_name; 
 						break;
 					case SourceType.LAB_XEROX:
+					case SourceType.LAB_XEROX_LONG:
 						//result=sizeKey+'_'+paper.toString()+'_'+is_duplex.toString(); 
 						newCode.paper=paper; newCode.paper_name=paper_name;
 						newCode.is_pdf=true;

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				autoDrawBackground="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.provider.colorcorrection.CCImage;
+			
+			import mx.events.FlexEvent;
+			import mx.graphics.BitmapFillMode;
+			[Bindable]
+			private var item:CCImage;
+			
+			override public function get data():Object{
+				return super.data;
+			}
+			override public function set data(value:Object):void{
+				super.data = value;
+				item= value as CCImage;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="hovered"/>
+		<s:State name="selected"/>
+	</s:states>     
+
+	<!--border-->
+	<s:Rect radiusX="0" top="0" left="0" right="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#eeeeee" color.hovered="#777777" color.selected="#0000ff" weight="3"/>
+		</s:stroke>
+	</s:Rect>
+
+	<s:Image id="img" clearOnLoad="true" scaleMode="letterbox" smooth="false" fillMode="scale" top="3" left="3" right="3" bottom="3"
+			  source="{item.orgPath}" backgroundColor="#eeeeee" backgroundColor.hovered="#cccccc" />
+	
+	<s:Rect radiusX="0" width="10" height="10" right="13" bottom="3">
+		<s:fill>
+			<s:SolidColor color="#ff0000" alpha="{item.hasErr?1:0}"/> 
+		</s:fill>
+	</s:Rect>
+	<s:Rect radiusX="0" width="10" height="10" right="3" bottom="3">
+		<s:fill>
+			<s:SolidColor color="#00ff00" alpha="{item.done?1:0}"/> 
+		</s:fill>
+	</s:Rect>
+</s:ItemRenderer>

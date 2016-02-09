@@ -12,6 +12,7 @@
    	
     <fx:Script>
         <![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.report.Parameter;
 			import com.photodispatcher.model.mysql.entities.report.Report;
 			import com.photodispatcher.model.mysql.entities.report.ReportGroup;
@@ -143,6 +144,7 @@
 				runReport();
 			}
 			private function runReport():void {
+				cleanupLastResult();
 				var src:ReportSource;
 				if (!ddSource.selectedItem || !curReport || !paramLst) return; 
 				src=ddSource.selectedItem as ReportSource;
@@ -155,19 +157,28 @@
 				curReport.isRunning=true;
 				xReportService.buildReport(curReport, src.id ,onBuildReport, onBuildReportFault)
 			}
-			private function onBuildReport(event:TideResultEvent):void {
-				var result:ReportResult=event.result as ReportResult;
-				if (!result) return; //alert?
-				if(result.id) releaseReport(result.id);
-				if(result.hasError){
-					Alert.show(result.error);
+			
+			private var lastResult:ReportResult;
+			
+			public function cleanupLastResult():void{
+				if(lastResult){
+					var latch:DbLatch= new DbLatch();
+					latch.addLatch(xReportService.releaseReport(lastResult));
+					latch.start();
 				}
-				if(result.url && reportViewer){
-					reportViewer.open(result.url,getReport(result.id));
-					/*
-					var urlRequest:URLRequest = new URLRequest(result.url);
-					navigateToURL(urlRequest,'_new');
-					*/
+				lastResult=null;
+			}
+			
+			private function onBuildReport(event:TideResultEvent):void {
+				curReport.result=event.result as ReportResult;
+				lastResult=curReport.result;
+				if (!curReport.result) return; //alert?
+				if(curReport.result.id) releaseReport(curReport.result.id);
+				if(curReport.result.hasError){
+					Alert.show(curReport.result.error);
+				}
+				if(curReport.result.url && reportViewer){
+					reportViewer.open(curReport,false);
 				}
 			}
 			private function onBuildReportFault(event:TideFaultEvent):void {

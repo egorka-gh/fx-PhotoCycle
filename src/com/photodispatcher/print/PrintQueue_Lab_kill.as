@@ -12,7 +12,7 @@ package com.photodispatcher.print{
 	
 	import org.granite.tide.Tide;
 
-	public class PrintQueue{
+	public class PrintQueue_Lab_kill{
 		private static const READ_DELAY_MIN:int=400;
 		private static const READ_DELAY_MAX:int=1000;
 		private static const READ_MAX_WAITE:int=30000;
@@ -73,6 +73,7 @@ package com.photodispatcher.print{
 		 */
 		public function refresh():void{
 			if(!lab) return;
+			/*
 			//read print groups in Print state
 			var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 			var latch:DbLatch= new DbLatch();
@@ -80,6 +81,7 @@ package com.photodispatcher.print{
 			latch.addLatch(svc.loadInPrint(lab.id));
 			latch.start();
 			//_refresh();
+			*/
 		}
 		
 		/**

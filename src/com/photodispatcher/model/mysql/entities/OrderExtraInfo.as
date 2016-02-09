@@ -54,6 +54,16 @@ package com.photodispatcher.model.mysql.entities {
 			_parseMessages(MESSAGE_TYPE_ORDER, rawMessagesOrder);
 		}
 		
+		override public function get remark():String{
+			return super.remark?super.remark.substr(0,255):super.remark;
+		}
+		
+		override public function set remark(value:String):void{
+			if(value) value=value.substr(0,255);
+			super.remark = value;
+		}
+		
+		
 		private function _parseMessages(type:int, raw:String):void{
 			if(!raw) return;
 			var str:String=raw.replace(String.fromCharCode(13),'');
@@ -71,6 +81,7 @@ package com.photodispatcher.model.mysql.entities {
 					it.lod_key=subArr[0];
 					it.log_user=subArr[1];
 					it.message=subArr[2];
+					if(it.message) it.message=it.message.substr(0,255);
 					it.persistState=AbstractEntity.PERSIST_NEW;
 					messagesLog.addItem(it);
 				}

@@ -71,7 +71,14 @@ package com.photodispatcher.service.barcode{
 		public static const ACKNOWLEDGE_TIMEOUT:int	=200;
 		
 
-		public var logger:ISimpleLogger;
+		private var _logger:ISimpleLogger;
+		public function get logger():ISimpleLogger{
+			return _logger;
+		}
+		public function set logger(value:ISimpleLogger):void{
+			_logger = value;
+		}
+
 		
 		private var _isBusy:Boolean;
 		public function get isBusy():Boolean{

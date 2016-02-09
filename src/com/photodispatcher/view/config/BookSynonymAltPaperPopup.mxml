@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx" 
+						   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*" xmlns:config="com.photodispatcher.view.config.*" >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
+			import com.photodispatcher.model.mysql.entities.BookPgTemplate;
+			
+			import mx.collections.ArrayCollection;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			
+			[Bindable]
+			private var template:BookPgTemplate;
+			[Bindable]
+			private var itemsList:ArrayCollection;
+
+			/*
+			[Bindable]
+			private var gravityAC:ArrayCollection= new ArrayCollection(['От центра','От нижнего края']);
+			*/
+			
+			public function show(template:BookPgTemplate):void{
+				if(!template) return;
+				this.template=template;
+				itemsList=template.altPaper as ArrayCollection;
+				if(!itemsList) itemsList= new ArrayCollection();
+				
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				//this.width=FlexGlobals.topLevelApplication.width-50;
+				//this.height=FlexGlobals.topLevelApplication.height-100;
+				PopUpManager.centerPopUp(this);
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(template) template.changed=true;
+				close();
+			}
+			
+			protected function btAdd_clickHandler(event:MouseEvent):void{
+				if(!template || !template.loaded) return;
+				var item:BookPgAltPaper= new BookPgAltPaper();
+				item.template= template.id;
+				itemsList.addItem(item);
+				itemsList.refresh();
+				itemsGrid.currentItem=item;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0" radiusX="4">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+	<s:VGroup top="4" left="4" right="4" bottom="4">
+		<config:ItemsGrid id="itemsGrid" editable="true" 
+						  currentData="{itemsList}" currentColumns="{BookPgAltPaper.gridColumns()}"
+						  requestedRowCount="7" width="550"/>
+		<s:HGroup width="100%"  gap="10" verticalAlign="baseline" horizontalAlign="right">
+			<s:Button id="btAdd" label="Добавить" click="btAdd_clickHandler(event)"/>
+			<s:Button label="Закрыть" click="button1_clickHandler(event)"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

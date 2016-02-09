@@ -19,6 +19,8 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         private var _book_num:int;
+        private var _book_part:int;
+        private var _book_part_name:String;
         private var _caption:String;
         private var _file_name:String;
         private var _id:int;
@@ -37,6 +39,20 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get book_num():int {
             return _book_num;
+        }
+
+        public function set book_part(value:int):void {
+            _book_part = value;
+        }
+        public function get book_part():int {
+            return _book_part;
+        }
+
+        public function set book_part_name(value:String):void {
+            _book_part_name = value;
+        }
+        public function get book_part_name():String {
+            return _book_part_name;
         }
 
         public function set caption(value:String):void {
@@ -126,6 +142,8 @@ package com.photodispatcher.model.mysql.entities {
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _book_num = input.readObject() as int;
+            _book_part = input.readObject() as int;
+            _book_part_name = input.readObject() as String;
             _caption = input.readObject() as String;
             _file_name = input.readObject() as String;
             _id = input.readObject() as int;
@@ -143,6 +161,8 @@ package com.photodispatcher.model.mysql.entities {
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
             output.writeObject((_book_num is IPropertyHolder) ? IPropertyHolder(_book_num).object : _book_num);
+            output.writeObject((_book_part is IPropertyHolder) ? IPropertyHolder(_book_part).object : _book_part);
+            output.writeObject((_book_part_name is IPropertyHolder) ? IPropertyHolder(_book_part_name).object : _book_part_name);
             output.writeObject((_caption is IPropertyHolder) ? IPropertyHolder(_caption).object : _caption);
             output.writeObject((_file_name is IPropertyHolder) ? IPropertyHolder(_file_name).object : _file_name);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);

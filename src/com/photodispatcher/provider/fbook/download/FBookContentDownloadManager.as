@@ -20,6 +20,7 @@ package com.photodispatcher.provider.fbook.download{
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.TripleState;
+	import com.photodispatcher.provider.fbook.makeup.TextImageBuilder;
 	import com.photodispatcher.provider.fbook.model.FrameData;
 	import com.photodispatcher.provider.fbook.model.FrameMaskedData;
 	import com.photodispatcher.util.JsonUtil;
@@ -129,6 +130,26 @@ package com.photodispatcher.provider.fbook.download{
 			_totalLoaded=0;
 		}
 		
+		private function isElementLoaded(path:String, checkCache:Boolean=false):Boolean{
+			if(!workFolder) return false;
+			var file:File=workFolder.resolvePath(path);
+			if(file.exists) return true;
+			if(!checkCache || !FBookDownloadManager.cacheClipart) return false;
+			var cachefile:File;
+			if(cacheFolder && cacheFolder.exists && cacheFolder.isDirectory){
+				cachefile=cacheFolder.resolvePath(path);
+				if(cachefile.exists && !cachefile.isDirectory){
+					trace('File exists in cache: '+path);
+					subOrder.log='File exists in cache: '+path;
+					try{
+						cachefile.copyTo(file,false);
+					}catch(error:Error){}
+				}
+			}
+			file=workFolder.resolvePath(path);
+			return file.exists; 
+		}
+		
 		private function prepareElement(proj:FBookProject, pageNum:int, contentElement:Object):void{
 			if(contentElement.hasOwnProperty('type')){
 				var name:String;
@@ -142,8 +163,12 @@ package com.photodispatcher.provider.fbook.download{
 						if(req){
 							//save to art subdir
 							name=FBookProject.artSubDir+getItemName(name);
-							loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id});
-							//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
+							if(isElementLoaded(name,true)){
+								subOrder.log='File allready downloaded: '+name+ '. Skip download';
+							}else{
+								loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:contentElement.type, content_id:contentElement.id, cache: cacheItem(name)});
+								//loader.add(req,{id:name, type:BulkLoader.TYPE_TEXT, content_type:contentElement.type, content_id:contentElement.id});
+							}
 						}
 						break;
 					case CanvasPhotoBackgroundImage.TYPE: //BookPhotoBackgroundImage.TYPE:
@@ -152,7 +177,11 @@ package com.photodispatcher.provider.fbook.download{
 						if(req){
 							//save to user subdir
 							name=FBookProject.userSubDir+getItemName(name);
-							loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_PHOTO_BG, content_id:contentElement.id});
+							if(isElementLoaded(name)){
+								subOrder.log='File allready downloaded: '+name+ '. Skip download';
+							}else{
+								loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_PHOTO_BG, content_id:contentElement.id});
+							}
 						}
 						break;
 					case BookCoverFrameImage.TYPE:
@@ -166,8 +195,12 @@ package com.photodispatcher.provider.fbook.download{
 								if(req){
 									//save to art subdir
 									var sub_name:String= FBookProject.artSubDir+getItemName(name)+FrameData.getFileNameSufix(el);
-									loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id});
-									//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
+									if(isElementLoaded(sub_name,true)){
+										subOrder.log='File allready downloaded: '+name+ '. Skip download';
+									}else{
+										loader.add(req, {id: sub_name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_ELEMENT, content_id:contentElement.id, cache: cacheItem(name)});
+										//loader.add(req, {id: name, type:BulkLoader.TYPE_TEXT});
+									}
 								}
 							}
 						}
@@ -178,8 +211,12 @@ package com.photodispatcher.provider.fbook.download{
 							if(req){
 								//save to user subdir
 								name=FBookProject.userSubDir+getItemName(name);
-								loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
-								//loader.add(req,{id: name, type:BulkLoader.TYPE_TEXT, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+								if(isElementLoaded(name)){
+									subOrder.log='File allready downloaded: '+name+ '. Skip download';
+								}else{
+									loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+									//loader.add(req,{id: name, type:BulkLoader.TYPE_TEXT, content_type:CONTENT_FRAME_IMG, content_id:contentElement.iId});
+								}
 							}
 						}
 						break;
@@ -193,7 +230,11 @@ package com.photodispatcher.provider.fbook.download{
 								if(req){
 									//save to user subdir
 									name=FBookProject.userSubDir+getItemName(name);
-									loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:fmd.imageId});
+									if(isElementLoaded(name)){
+										subOrder.log='File allready downloaded: '+name+ '. Skip download';
+									}else{
+										loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:fmd.imageId});
+									}
 								}
 							}
 							//add mask image
@@ -205,7 +246,11 @@ package com.photodispatcher.provider.fbook.download{
 									if(req){
 										//save to art subdir
 										name=FBookProject.artSubDir+getItemName(name);
-										loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:info.imgName});
+										if(isElementLoaded(name,true)){
+											subOrder.log='File allready downloaded: '+name+ '. Skip download';
+										}else{
+											loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:info.imgName, cache: cacheItem(name)});
+										}
 									}
 								}
 								var element:Object;
@@ -223,27 +268,6 @@ package com.photodispatcher.provider.fbook.download{
 								}
 							}
 						}
-						/*
-						if(contentElement.iId){
-							name=contentElement.iId;
-							req=createRequest(proj, name,userImagePath(),pageNum);
-							if(req){
-								//save to user subdir
-								name=FBookProject.userSubDir+getItemName(name);
-								loader.add(req,{id: name, type:BulkLoader.TYPE_BINARY, content_type:CONTENT_FRAME_MASKED_IMAGE, content_id:contentElement.iId});
-							}
-							if(contentElement.size){
-								var maskElement:Object = JsonUtil.decode(contentElement.size);
-								name=maskElement.id;
-								req=createRequest(proj, name,clipartPath(name),pageNum);
-								if(req){
-									//save to art subdir
-									name=FBookProject.artSubDir+getItemName(name);
-									loader.add(req,{id:name, type:BulkLoader.TYPE_BINARY, content_type:ClipartType.MASK, content_id:maskElement.id});
-								}
-							}
-						}
-						*/
 						break;
 					case CanvasText.TYPE: //BookText.TYPE:
 						//fonts to load list 
@@ -286,6 +310,12 @@ package com.photodispatcher.provider.fbook.download{
 				id=StrUtil.contentIdToFileName(id);
 			}
 			return id;
+		}
+		
+		private function cacheItem(itemId:String):Boolean{
+			if(!itemId) return false;
+			//is custom art?
+			return itemId.indexOf('::')==-1;
 		}
 			
 		private function createRequest(book:FBookProject, name:String, url:String, pageNum:int, corner:String=''):URLRequest{
@@ -350,6 +380,7 @@ package com.photodispatcher.provider.fbook.download{
 			return service.url;
 		}
 
+		public var cacheFolder:File;
 		private var workFolder:File;
 		public function start(workFolder:File):void{
 			if (!service || !subOrder || !subOrder.projects || subOrder.projects.length==0 || !workFolder || service.connections<=0){
@@ -535,6 +566,19 @@ package com.photodispatcher.provider.fbook.download{
 						fs.writeBytes(ba);
 						fs.close();
 						subOrder.log='File downloaded: '+file.nativePath;
+						//write to cache
+						if(item.properties['cache'] && FBookDownloadManager.cacheClipart){
+							if(cacheFolder && cacheFolder.exists && cacheFolder.isDirectory){
+								try{
+									file=cacheFolder.resolvePath(item.id);
+									trace('Write to cache: '+file.nativePath+'.');
+									fs= new FileStream();
+									fs.open(file, FileMode.WRITE);
+									fs.writeBytes(ba);
+									fs.close();
+								}catch(error:Error){}
+							}
+						}
 					}
 				}else{
 					result=false;
@@ -611,8 +655,47 @@ package com.photodispatcher.provider.fbook.download{
 			}else{
 				subOrder.log='Fonts loaded.';
 			}
+			//finalizeLoad();
+			renderTexts();
+		}
+		
+		private var textBuilder:TextImageBuilder;
+		private var textBuildError:Boolean;
+		private function renderTexts():void{
+			textBuildError=false;
+			textBuilder=new TextImageBuilder(subOrder);
+			textBuilder.addEventListener(Event.COMPLETE, onTxtComplite);
+			textBuilder.addEventListener(ProgressEvent.PROGRESS, onTxtProgress);
+			textBuilder.addEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onTxtFlowError);
+			textBuilder.build(workFolder);
+		}
+		private function onTxtProgress(event:ProgressEvent):void{
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,event.bytesLoaded, event.bytesTotal));
+		}
+		
+		private function onTxtFlowError(event:ImageProviderEvent):void{
+			textBuilder.removeEventListener(Event.COMPLETE, onTxtComplite);
+			textBuilder.removeEventListener(ProgressEvent.PROGRESS, onTxtProgress);
+			textBuilder.removeEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onTxtFlowError);
+			textBuildError=true;
+			errType='TXTError';
+			errText = event.error;
+			finalizeLoad();
+			//dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FLOW_ERROR_EVENT,null,'Ошибка подготовки текстов: '+event.error));
+		}
+		
+		private function onTxtComplite(event:Event):void{
+			textBuilder.removeEventListener(Event.COMPLETE, onTxtComplite);
+			textBuilder.removeEventListener(ProgressEvent.PROGRESS, onTxtProgress);
+			textBuilder.removeEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onTxtFlowError);
+			if(textBuilder.hasError){
+				textBuildError=true;
+				errType='TXTError';
+				errText = textBuilder.errorMesage;
+			}
 			finalizeLoad();
 		}
+
 		
 		private function finalizeLoad():void{
 			var proj:FBookProject;
@@ -667,7 +750,7 @@ package com.photodispatcher.provider.fbook.download{
 		
 		private var _hasFatalError:Boolean=false;
 		public function hasFatalError():Boolean{
-			return _hasFatalError;
+			return _hasFatalError || textBuildError;
 		}
 		/*
 		public function get errorItems():Array{

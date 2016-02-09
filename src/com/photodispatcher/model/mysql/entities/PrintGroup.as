@@ -110,7 +110,43 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
 			return new ArrayList(result);
 		}
-		
+
+		public static function printGridColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('lab_name'); col.headerText='Лаборатория'; col.width=70; result.push(col);
+			col= new GridColumn('id'); col.headerText='ID'; col.width=85; result.push(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=90; result.push(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			return new ArrayList(result);
+		}
+
+		public static function printQueueColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('id'); col.headerText='ID'; col.width=85; result.push(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=90; result.push(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('alias'); col.headerText='Алиас'; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
+			col= new GridColumn('prints_done'); col.headerText='Напечатано'; result.push(col);
+			return new ArrayList(result);
+		}
+
 		public static function reprintGridColumns():ArrayList{
 			var result:Array= [];
 			var col:GridColumn;
@@ -132,7 +168,7 @@ package com.photodispatcher.model.mysql.entities {
 
 		
 		public var bookTemplate:BookPgTemplate;
-		public var butt:int=0;
+		//public var butt:int=0;
 		public var is_horizontal:Boolean;
 		
 		private var _destinationLab:LabGeneric;
@@ -151,6 +187,19 @@ package com.photodispatcher.model.mysql.entities {
 				destination=0;
 			}
 		}
+
+		/**
+		 * runtime
+		 * used in PrintManager 
+		 */
+		public var isAutoPrint:Boolean=false;
+		
+		/**
+		 * runtime
+		 * auto print temprorary saves choosen lab device 
+		public var destinationDeviceId:int;
+		 */
+		
 
 		/**
 		 * runtime
@@ -231,6 +280,7 @@ package com.photodispatcher.model.mysql.entities {
 					//SourceType.LAB_PLOTTER - short key, exlude correction, cutting & frame 
 					result=sizeKey+'_'+paper.toString(); 
 					break;
+				case SourceType.LAB_XEROX_LONG:
 				case SourceType.LAB_XEROX:
 					//SourceType.LAB_XEROX - short key, include w/h/pape/duplex
 					result=sizeKey+'_'+paper.toString()+'_'+is_duplex.toString(); 
@@ -426,7 +476,7 @@ package com.photodispatcher.model.mysql.entities {
 			
 			if(book_part==BookSynonym.BOOK_PART_COVER){
 				prepareCovers();
-			}else if(book_part==BookSynonym.BOOK_PART_BLOCK){
+			}else if(book_part==BookSynonym.BOOK_PART_BLOCK || book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
 				prepareSheets();
 			}else if(book_part==BookSynonym.BOOK_PART_INSERT){
 				prepareInserts();
@@ -447,7 +497,7 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		private function prepareSheets():void{
-			if(!files || book_type==0 || book_part!=BookSynonym.BOOK_PART_BLOCK) return;
+			if(!files || book_type==0) return; // || book_part!=BookSynonym.BOOK_PART_BLOCK) return;
 			var i:int;
 			var j:int;
 			var it:PrintGroupFile;
@@ -487,6 +537,14 @@ package com.photodispatcher.model.mysql.entities {
 					bookFiles.unshift(null);
 					bookFiles.push(null);
 				}
+				
+				//cover has to be last 4 BOOK_PART_BLOCKCOVER
+				if(book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
+					//reorder
+					it=bookFiles.shift() as PrintGroupFile;
+					bookFiles.push(it);
+				}
+				
 				books[i]=bookFiles;
 			}
 			
@@ -649,7 +707,7 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			return result;
 		}
-		
+
 		public function get numericId():int{
 			if(!id) return 0;
 			var arr:Array= id.split('_');
@@ -687,7 +745,8 @@ package com.photodispatcher.model.mysql.entities {
 			var src:Source=Context.getSource(sourceId);
 			if(!src) return '';
 			text+=(src.code?src.code:'u');
-			text+=orderHumanId;
+			//text+=orderHumanId;
+			text+=humanId;
 			if(file.book_num>0){
 				text=text+':'+file.book_num.toString();
 			}
@@ -752,7 +811,8 @@ package com.photodispatcher.model.mysql.entities {
 		 * книга(всегоКниг)-страница(всегоСтраниц) IdГруппыПечати
 		 */		
 		public function techBarcodeText(file:PrintGroupFile):String{
-			var text:String=StrUtil.lPad(file.book_num.toString(),3)+'('+StrUtil.lPad(book_num.toString(),3)+')-'+StrUtil.lPad(file.page_num.toString(),2)+'('+StrUtil.lPad(pageNumber.toString(),2)+') '+id;
+			//var text:String=StrUtil.lPad(file.book_num.toString(),3)+'('+StrUtil.lPad(book_num.toString(),3)+')-'+StrUtil.lPad(file.page_num.toString(),2)+'('+StrUtil.lPad(pageNumber.toString(),2)+') '+id;
+			var text:String=StrUtil.lPad(file.book_num.toString(),3)+'('+StrUtil.lPad(book_num.toString(),3)+')-'+StrUtil.lPad(file.page_num.toString(),2)+'('+StrUtil.lPad(sheet_num.toString(),2)+') '+id;
 			return text;
 		}
 		
@@ -767,7 +827,8 @@ package com.photodispatcher.model.mysql.entities {
 			var text:String=StrUtil.lPad(file.book_num.toString(),3)+StrUtil.lPad(book_num.toString(),3)
 			+StrUtil.lPad(file.page_num.toString(),2)+StrUtil.lPad(pageNumber.toString(),2)
 			+getDigitId();*/
-			return techBarcode(file.book_num, book_num, file.page_num, pageNumber);
+			//return techBarcode(file.book_num, book_num, file.page_num, pageNumber);
+			return techBarcode(file.book_num, book_num, file.page_num, sheet_num);
 		}
 		public function techBarcode(book:int, bookTotal:int, sheet:int, sheetTotal:int):String{
 			var text:String=StrUtil.lPad(book.toString(),3)+StrUtil.lPad(bookTotal.toString(),3)
@@ -792,12 +853,6 @@ package com.photodispatcher.model.mysql.entities {
 			return result+StrUtil.lPad(tStr,2);
 		}
 		
-		public function get bookSynonym():BookSynonym {
-			
-			return BookSynonym.translatePath(this.alias);
-			
-		}
-
 		public static function tech2BookBarcode(techBarcode:String):String{
 			if(!techBarcode || techBarcode.length<14) return '';
 			var bookNum:int=parseInt(techBarcode.substr(0,3));
@@ -877,6 +932,6 @@ package com.photodispatcher.model.mysql.entities {
 			if(isNaN(book)) return 0;
 			return book;
 		}
-
+		
     }
 }

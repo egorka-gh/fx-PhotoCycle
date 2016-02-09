@@ -160,8 +160,16 @@ package com.photodispatcher.provider.fbook.makeup{
 			var pageNum:int=0;
 			var ts:CanvasTextStyle;
 			fontMap= new Object();
-			
+
 			var project:FBookProject;
+			if(suborder.isMultibook){
+				//numerate books
+				var book:int=0;
+				for each (project in suborder.projects){
+					book++;
+					project.bookNumber=book;
+				}
+			}
 			for each (project in suborder.projects){
 				pageNum=0;
 				for each (var page:ProjectBookPage in project.bookPages){

@@ -34,6 +34,11 @@ package com.photodispatcher.service.barcode{
 			return uint(comInfo.suffix);
 		}
 
+		public function get tray():int{
+			if(!comInfo) return 0;
+			return comInfo.tray;
+		}
+
 		public function get doubleScanGap():int{
 			if(!comInfo || comInfo.type!=ComInfo.COM_TYPE_BARREADER || comInfo.doubleScanGap<=0) return 0;
 			return comInfo.doubleScanGap;

@@ -1,6 +1,8 @@
 package com.xreport.common{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.report.Report;
+	import com.photodispatcher.model.mysql.services.XReportService;
 	import com.photodispatcher.util.RemoteFileLoader;
 	
 	import flash.events.ErrorEvent;
@@ -8,13 +10,16 @@ package com.xreport.common{
 	import flash.events.EventDispatcher;
 	
 	import mx.controls.Alert;
+	
+	import org.granite.tide.Tide;
 
 	[Event(name="complete", type="flash.events.Event")]
 	public class ReportViewer extends EventDispatcher implements IReportViewer{
 		
-		public var url:String;
 		public var report:Report;
 		public var silent:Boolean;
+		
+		private var releaseReport:Boolean;
 		
 		public function ReportViewer(){
 			super(null);
@@ -39,11 +44,11 @@ package com.xreport.common{
 			}
 		}
 
-		public function open(url:String, report:Report):void{
-			this.url=url;
+		public function open(report:Report, releaseReport:Boolean=true):void{
 			this.report=report;
-			if(!url || !report) return;
-			loader= new RemoteFileLoader(url,report.id+'.xls',Context.getServerRootUrl());
+			this.releaseReport=releaseReport;
+			if(!report || !report.result || !report.result.url) return;
+			loader= new RemoteFileLoader(report.result.url,report.id+'.xls',Context.getServerRootUrl());
 			loader.load();
 		}
 		
@@ -51,7 +56,12 @@ package com.xreport.common{
 			if(loader && loader.targetFile){
 				loader.targetFile.openWithDefaultApplication();
 			}
-			url=null;
+			if(report && releaseReport){
+				var reportService:XReportService=Tide.getInstance().getContext().byType(XReportService,true) as XReportService;
+				var latch:DbLatch=new DbLatch();
+				latch.addLatch(reportService.releaseReport(report.result));
+				latch.start();
+			}
 			report=null;
 			loader=null;
 			dispatchEvent(new Event(Event.COMPLETE));

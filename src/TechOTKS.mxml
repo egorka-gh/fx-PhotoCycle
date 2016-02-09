@@ -15,6 +15,8 @@
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
@@ -72,6 +74,8 @@
 			[Bindable]
 			private var termPrinter:String;
 			
+			//to link class
+			private var ap:BookPgAltPaper; 
 
 			private var bdPopup:DatabasePopup;
 			private function initApp():void{
@@ -98,6 +102,7 @@
 				startPopup= new ModalPopUp();
 				startPopup.label='Инициализация';
 				startPopup.open(null);
+				
 				
 				var initLatch:DbLatch=Context.initTechOTK();
 				initLatch.addEventListener(Event.COMPLETE, onInit);

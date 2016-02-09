@@ -80,13 +80,13 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('width'); col.headerText='Ширина'; result.addItem(col);
 			col= new GridColumn('height'); col.headerText='Длина'; result.addItem(col);
 			
-			col= new GridColumn('roll'); col.headerText='Рулон'; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=labType!=SourceType.LAB_PLOTTER && labType!=SourceType.LAB_XEROX; result.addItem(col);
+			col= new GridColumn('roll'); col.headerText='Рулон'; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=labType!=SourceType.LAB_PLOTTER && labType!=SourceType.LAB_XEROX && labType!=SourceType.LAB_XEROX_LONG; result.addItem(col);
 			col= new GridColumn('paper'); col.headerText='Бумага'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=visible; result.addItem(col);
 			
 			visible= visible && labType!=SourceType.LAB_PLOTTER;
-			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.visible= visible && labType==SourceType.LAB_XEROX; result.addItem(col);
+			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.visible= visible && (labType==SourceType.LAB_XEROX || labType==SourceType.LAB_XEROX_LONG); result.addItem(col);
 			
-			visible= visible && labType!=SourceType.LAB_XEROX;
+			visible= visible && labType!=SourceType.LAB_XEROX && labType!=SourceType.LAB_XEROX_LONG;
 			col= new GridColumn('frame'); col.headerText='Рамка'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.visible=visible; result.addItem(col);
 			
 			visible= visible && labType!=SourceType.LAB_FUJI;
@@ -121,6 +121,7 @@ package com.photodispatcher.model.mysql.entities {
 					//SourceType.LAB_PLOTTER - short key, exlude correction, cutting & frame 
 					result=sizeKey+'_'+paper.toString(); 
 					break;
+				case SourceType.LAB_XEROX_LONG:
 				case SourceType.LAB_XEROX:
 					//SourceType.LAB_XEROX - short key, include w/h/pape/duplex
 					result=sizeKey+'_'+paper.toString()+'_'+is_duplex.toString(); 

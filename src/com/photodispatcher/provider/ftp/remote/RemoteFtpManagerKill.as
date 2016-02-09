@@ -12,22 +12,22 @@ package com.photodispatcher.provider.ftp.remote{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.provider.ftp.QueueManager;
+	import com.photodispatcher.provider.ftp.DownloadQueueManager;
 	import com.photodispatcher.provider.ftp.QueueManagerFBManual;
 	
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.events.ProgressEvent;
 	
-	public class RemoteFtpManager extends EventDispatcher{
+	public class RemoteFtpManagerKill extends EventDispatcher{
 		
 		private var _chatService:ChatService;
 		[Bindable]
-		public var loader:QueueManager;
+		public var loader:DownloadQueueManager;
 		private var currentOrder:Order;
 		private var isRunning:Boolean;
 		
-		public function RemoteFtpManager(){
+		public function RemoteFtpManagerKill(){
 			super();
 		}
 		
@@ -77,7 +77,7 @@ package com.photodispatcher.provider.ftp.remote{
 						_chatService.sendLoadMessage(InstructionConstants.CLIENT_LOAD_REJECT,'Ошибка. Не задан заказ (null)',null,'null');
 						return;
 					}
-					currentOrder.state=OrderState.WAITE_FTP;
+					currentOrder.state=OrderState.FTP_WAITE;
 					_chatService.sendLoadMessage(InstructionConstants.CLIENT_LOAD_CONFIRM,ChatPretender.postConfirmMessage()+currentOrder.id);
 					startLoad();
 					break;
@@ -99,9 +99,9 @@ package com.photodispatcher.provider.ftp.remote{
 			isRunning=true;
 			//create loader
 			if(source.type==SourceType.SRC_FBOOK_MANUAL){
-				loader=new QueueManagerFBManual(source,true);
+				loader=new QueueManagerFBManual(source);
 			}else{
-				loader=new QueueManager(source,true);
+				loader=new DownloadQueueManager(source);
 			}
 
 			//listen

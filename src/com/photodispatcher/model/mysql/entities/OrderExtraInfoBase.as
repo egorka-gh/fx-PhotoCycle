@@ -20,6 +20,7 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         private var _bookThickness:Number;
+        private var _book_part:int;
         private var _book_type:int;
         private var _books:int;
         private var _calcAlias:String;
@@ -47,6 +48,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get bookThickness():Number {
             return _bookThickness;
+        }
+
+        public function set book_part(value:int):void {
+            _book_part = value;
+        }
+        public function get book_part():int {
+            return _book_part;
         }
 
         public function set book_type(value:int):void {
@@ -199,6 +207,7 @@ package com.photodispatcher.model.mysql.entities {
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _bookThickness = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
+            _book_part = input.readObject() as int;
             _book_type = input.readObject() as int;
             _books = input.readObject() as int;
             _calcAlias = input.readObject() as String;
@@ -225,6 +234,7 @@ package com.photodispatcher.model.mysql.entities {
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
             output.writeObject((_bookThickness is IPropertyHolder) ? IPropertyHolder(_bookThickness).object : _bookThickness);
+            output.writeObject((_book_part is IPropertyHolder) ? IPropertyHolder(_book_part).object : _book_part);
             output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
             output.writeObject((_books is IPropertyHolder) ? IPropertyHolder(_books).object : _books);
             output.writeObject((_calcAlias is IPropertyHolder) ? IPropertyHolder(_calcAlias).object : _calcAlias);

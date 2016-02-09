@@ -25,6 +25,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _book_part_name:String;
         private var _book_type:int;
         private var _book_type_name:String;
+        private var _butt:int;
         private var _correction:int;
         private var _correction_name:String;
         private var _cutting:int;
@@ -47,6 +48,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _path:String;
         private var _prints:int;
         private var _prints_done:int;
+        private var _prn_queue:int;
         private var _reprint_id:String;
         private var _sheet_num:int;
         private var _source_id:int;
@@ -97,6 +99,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get book_type_name():String {
             return _book_type_name;
+        }
+
+        public function set butt(value:int):void {
+            _butt = value;
+        }
+        public function get butt():int {
+            return _butt;
         }
 
         public function set correction(value:int):void {
@@ -253,6 +262,13 @@ package com.photodispatcher.model.mysql.entities {
             return _prints_done;
         }
 
+        public function set prn_queue(value:int):void {
+            _prn_queue = value;
+        }
+        public function get prn_queue():int {
+            return _prn_queue;
+        }
+
         public function set reprint_id(value:String):void {
             _reprint_id = value;
         }
@@ -324,6 +340,7 @@ package com.photodispatcher.model.mysql.entities {
             _book_part_name = input.readObject() as String;
             _book_type = input.readObject() as int;
             _book_type_name = input.readObject() as String;
+            _butt = input.readObject() as int;
             _correction = input.readObject() as int;
             _correction_name = input.readObject() as String;
             _cutting = input.readObject() as int;
@@ -346,6 +363,7 @@ package com.photodispatcher.model.mysql.entities {
             _path = input.readObject() as String;
             _prints = input.readObject() as int;
             _prints_done = input.readObject() as int;
+            _prn_queue = input.readObject() as int;
             _reprint_id = input.readObject() as String;
             _sheet_num = input.readObject() as int;
             _source_id = input.readObject() as int;
@@ -365,6 +383,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_book_part_name is IPropertyHolder) ? IPropertyHolder(_book_part_name).object : _book_part_name);
             output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
             output.writeObject((_book_type_name is IPropertyHolder) ? IPropertyHolder(_book_type_name).object : _book_type_name);
+            output.writeObject((_butt is IPropertyHolder) ? IPropertyHolder(_butt).object : _butt);
             output.writeObject((_correction is IPropertyHolder) ? IPropertyHolder(_correction).object : _correction);
             output.writeObject((_correction_name is IPropertyHolder) ? IPropertyHolder(_correction_name).object : _correction_name);
             output.writeObject((_cutting is IPropertyHolder) ? IPropertyHolder(_cutting).object : _cutting);
@@ -387,6 +406,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_path is IPropertyHolder) ? IPropertyHolder(_path).object : _path);
             output.writeObject((_prints is IPropertyHolder) ? IPropertyHolder(_prints).object : _prints);
             output.writeObject((_prints_done is IPropertyHolder) ? IPropertyHolder(_prints_done).object : _prints_done);
+            output.writeObject((_prn_queue is IPropertyHolder) ? IPropertyHolder(_prn_queue).object : _prn_queue);
             output.writeObject((_reprint_id is IPropertyHolder) ? IPropertyHolder(_reprint_id).object : _reprint_id);
             output.writeObject((_sheet_num is IPropertyHolder) ? IPropertyHolder(_sheet_num).object : _sheet_num);
             output.writeObject((_source_id is IPropertyHolder) ? IPropertyHolder(_source_id).object : _source_id);

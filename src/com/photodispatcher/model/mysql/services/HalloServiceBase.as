@@ -7,6 +7,7 @@
 
 package com.photodispatcher.model.mysql.services {
 
+    import com.photodispatcher.model.mysql.entities.HelloResponce;
     import flash.utils.flash_proxy;
     import mx.rpc.AsyncToken;
     import org.granite.tide.BaseContext;

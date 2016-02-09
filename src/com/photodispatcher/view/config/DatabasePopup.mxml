@@ -6,6 +6,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.entities.HelloResponce;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			
 			import flash.display.DisplayObjectContainer;
@@ -14,13 +15,13 @@
 			import mx.events.FlexEvent;
 			import mx.managers.PopUpManager;
 			
-			import spark.events.PopUpEvent;
-			
 			import org.granite.tide.Tide;
 			import org.granite.tide.events.TideFaultEvent;
 			import org.granite.tide.events.TideResultEvent;
 			import org.granite.tide.service.DefaultServiceInitializer;
 			import org.granite.tide.spring.Spring;
+			
+			import spark.events.PopUpEvent;
 			//public static const DEFAULT_DB_FILE_PATH:String = 'app-storage:/data/data.sqlite';
 
 			//private var _databaseFile:File;
@@ -78,6 +79,8 @@
 			private function onPingServer(event:TideResultEvent):void {
 				//server - ok
 				_connected=true;
+				var resp:HelloResponce =event.result as HelloResponce;
+				
 				if(!isOpen){
 					dispatchEvent(new PopUpEvent(PopUpEvent.CLOSE,false,false,true));
 				}else{

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 minWidth="400" minHeight="300">
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.factory.PrintQueueBuilder;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.PrnQueue;
+			import com.photodispatcher.model.mysql.entities.PrnStrategy;
+			import com.photodispatcher.model.mysql.services.PrnStrategyService;
+			import com.photodispatcher.print.PrintPulseManager;
+			import com.photodispatcher.print.PrintQueueGeneric;
+			import com.photodispatcher.print.PrintQueueManager;
+			
+			import mx.collections.ArrayCollection;
+			
+			import org.granite.tide.Tide;
+			
+			[Bindable]
+			public var printPulseManager:PrintPulseManager;
+			
+			[Bindable]
+			public var printManager:PrintQueueManager; 
+			
+			[Bindable]
+			private var prnQueuesComplitedAC:ArrayCollection;
+
+			
+			protected function addStrategy_clickHandler(event:MouseEvent):void{
+				var item:PrnStrategy= new PrnStrategy();
+				item.is_active=true;
+				item.strategy_type_name='Не определен';
+				printManager.strategiesAC.addItem(item);
+				//printManager.strategiesAC.refresh();
+				if(dgStrategy) dgStrategy.selectedItem=item;
+			}
+			
+			protected function btSaveStrategy_clickHandler(event:MouseEvent):void{
+				var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onStrategySave);
+				latch.addLatch(svcs.persistStrategies(printManager.strategiesAC));
+				latch.start();
+			}
+			private function onStrategySave(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(!latch) return;
+				latch.removeEventListener(Event.COMPLETE,onStrategySave);
+				if(!latch.complite) return;
+				printManager.strategiesAC=latch.lastDataAC;
+			}
+
+			
+			private function loadComplitedQueues():void{
+				var onDate:Date=dfComplitedQueues.selectedDate;
+				if(!onDate) onDate= new Date();
+				var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,on_loadComplitedQueues);
+				latch.addLatch(svcs.loadComplitedQueues(onDate));
+				latch.start();
+			}
+			private function on_loadComplitedQueues(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(!latch) return;
+				latch.removeEventListener(Event.COMPLETE,on_loadComplitedQueues);
+				if(!latch.complite) return;
+				
+				prnQueuesComplitedAC=latch.lastDataAC;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout gap="5"/>
+	</s:layout>
+	
+	<s:Button label="{printManager.autoPrint? 'Выключить' : 'Включить'}" 
+			  color="{printManager.autoPrint? 0xff0000 : 0}" 
+			  click="{printManager.autoPrint = !printManager.autoPrint}"
+			  />
+	<s:TabBar id="tbView"  dataProvider="{vsSubInfo}"/>
+	<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+		<s:NavigatorContent label="Стратегии" backgroundAlpha="0" width="100%" height="100%">
+			<s:VGroup gap="5" width="100%" height="100%">
+				<s:DataGrid id="dgStrategy" selectionMode="singleRow" editable="true"
+							width="100%" height="100%"
+							dataProvider="{printManager.strategiesAC}" locale="ru_RU"
+							columns="{PrnStrategy.gridColumns()}"/>
+				<s:HGroup gap="10">
+					<s:Button id="addStrategy" label="+" click="addStrategy_clickHandler(event)"/>
+					<s:Button id="btSaveStrategy" label="Сохранить" click="btSaveStrategy_clickHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Очереди" backgroundAlpha="0" width="100%" height="100%">
+			<s:VGroup gap="5" width="100%" height="100%">
+				<s:Label text="Очереди"/>
+				<s:DataGrid id="dgQueue" width="100%" height="50%"
+							selectionMode="singleRow" locale="ru_RU"
+							dataProvider="{printManager.prnQueuesAC}"
+							columns="{PrintQueueGeneric.gridColumns()}"/>
+				<s:Label text="Группы печати"/>
+				<s:DataGrid id="dgQueuePg" width="100%" height="50%"
+							selectionMode="singleRow" locale="ru_RU"
+							dataProvider="{dgQueue.selectedItem.queue}"
+							columns="{PrintGroup.printQueueColumns()}"/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Завершенные очереди" backgroundAlpha="0" width="100%" height="100%">
+			<s:VGroup gap="5" width="100%" height="100%">
+				<s:HGroup width="100%" verticalAlign="baseline">
+					<s:Label text="Очереди"/>
+					<s:Spacer width="10"/>
+					<mx:DateField id="dfComplitedQueues" formatString="DD.MM.YYYY"
+								  creationComplete="{dfComplitedQueues.selectedDate= new Date();}"
+								  change="{loadComplitedQueues()}"/>
+					<s:Spacer width="100%"/>
+					<s:Button id="btRefreshComplited" icon="assets/icon-refresh.gif" click="{loadComplitedQueues()}" 
+							  cornerRadius="4" width="22" height="22" baseline="4"/>
+				</s:HGroup>
+				<s:DataGrid id="dgQueueComplited" width="100%" height="50%"
+							selectionMode="singleRow" locale="ru_RU"
+							dataProvider="{prnQueuesComplitedAC}"
+							columns="{PrnQueue.gridColumns()}"/>
+				<s:Label text="Группы печати"/>
+				<s:DataGrid id="dgQueuePgComplited" width="100%" height="50%"
+							selectionMode="singleRow" locale="ru_RU"
+							dataProvider="{dgQueueComplited.selectedItem.printGroups}"
+							columns="{PrintGroup.printQueueColumns()}"/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Лог" backgroundAlpha="0" width="100%" height="100%">
+			<s:Group width="100%" height="100%">
+				<s:TextArea text="{printManager.logText}" editable="false" width="100%" height="100%" />
+			</s:Group>
+		</s:NavigatorContent>
+	</mx:ViewStack>
+</s:Group>

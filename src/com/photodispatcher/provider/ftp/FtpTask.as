@@ -205,16 +205,16 @@ package com.photodispatcher.provider.ftp{
 				return;
 			}
 			var lst:Array=evt.listing;
-			var fl:FTPFile;
+			var ftFile:FTPFile;
 			if(lst){
 				for each(var o:* in lst){
-					fl=o as FTPFile;
-					if(fl && fl.name!='..'){//skip parent dir
-						if(fl._isDir){
-							foldersToScan.push(fl);
-							folders.push(fl.name);
+					ftFile=o as FTPFile;
+					if(ftFile && ftFile.name!='..'){//skip parent dir
+						if(ftFile._isDir){
+							foldersToScan.push(ftFile);
+							folders.push(ftFile.name);
 						}else{
-							ftpFiles.push(fl);
+							ftpFiles.push(ftFile);
 						}
 					}
 				}
@@ -222,11 +222,11 @@ package com.photodispatcher.provider.ftp{
 			//check queue
 			if(foldersToScan.length>0){
 				//list next
-				fl=foldersToScan.shift() as FTPFile;
-				if(fl){
-					currFolder=fl;
-					trace('FtpTask scan subdir, folder :'+fl.fullPath);
-					ftpClient.list(fl.fullPath);
+				ftFile=foldersToScan.shift() as FTPFile;
+				if(ftFile){
+					currFolder=ftFile;
+					trace('FtpTask scan subdir, folder :'+ftFile.fullPath);
+					ftpClient.list(ftFile.fullPath);
 				}else{
 					trace('ftp scan subdir bug');
 					//TODO posible bug (hung if !fl)
@@ -236,8 +236,8 @@ package com.photodispatcher.provider.ftp{
 				ftpClient.removeEventListener(FTPEvent.LISTING, handleListing);
 				filesNum=ftpFiles.length;
 				var toLoad:int;
-				for each(fl in ftpFiles){
-					if(fl) toLoad+=fl.size;
+				for each(ftFile in ftpFiles){
+					if(ftFile) toLoad+=ftFile.size;
 				}
 				bytesTotal=toLoad;
 				mbytesTotal= Math.round(bytesTotal/(1024*1024));
@@ -271,13 +271,13 @@ package com.photodispatcher.provider.ftp{
 				return;
 			}
 			var lst:Array=[];
-			var fl:FTPFile;
+			var ftFile:FTPFile;
 			if(evt.listing){
 				for each(var o:* in evt.listing){
-					fl=(o as FTPFile);
-					if(fl && fl.name!='..'){//skip parent dir
+					ftFile=(o as FTPFile);
+					if(ftFile && ftFile.name!='..'){//skip parent dir
 						//if(fl._isDir)
-						lst.push(fl);
+						lst.push(ftFile);
 					}
 				}
 			}
@@ -312,15 +312,33 @@ package com.photodispatcher.provider.ftp{
 				dispatchErr('FtpTask. Disconnected');
 				return;
 			}
-			//ftpClient.addEventListener(FTPEvent.PROGRESS, progressListener);
-			ftpClient.addEventListener(FTPEvent.DOWNLOAD, downloadListener);
 			downloadFile=ftpFile;
 			localFolder=dstFolder;
 			var f:File=new File(destPath());
-			//TODO try/catch
-			f.createDirectory();
+			try{
+				f.createDirectory();
+			}catch(error:Error){}
+			
+			//check if exists
+			var df:File=f.resolvePath(destName());
+			if(df.exists){
+				//complited
+				downloadFile.loadState=FTPFile.LOAD_COMPLETE;
+				startIdleTimer();
+				var e:FTPEvent=new FTPEvent(FTPEvent.DOWNLOAD);
+				e.file=f.nativePath;
+				dispatchEvent(e);
+				return;
+			}
+
+			ftpClient.addEventListener(FTPEvent.DOWNLOAD, downloadListener);
 			//add .tmp ext'n (download incompleted)
 			f=f.resolvePath(destName()+'.tmp');
+			if(f.exists){
+				try{
+					f.deleteFile();
+				}catch(error:Error){}
+			}
 			trace('FtpTask. Start download file: '+ftpFile.fullPath);
 			ftpFile.loadState=FTPFile.LOAD_STARTED;
 			ftpClient.getFile(ftpFile.fullPath, ftpFile.size, f.nativePath, 0);
@@ -382,21 +400,21 @@ package com.photodispatcher.provider.ftp{
 		 * 
 		 */
 		public function fillFileStructure(order:Order):void{
-			var fl:FTPFile;
+			var ftFile:FTPFile;
 			var path:String;
 			if(!order) return;
 			if(!order.fileStructure) order.fileStructure=new Dictionary;
 			if(!ftpFiles) return;
 			var arr:Array;
-			for each(fl in ftpFiles){
-				if(fl){
-					path=fl.parentDir;
+			for each(ftFile in ftpFiles){
+				if(ftFile){
+					path=ftFile.parentDir;
 					arr=order.fileStructure[path] as Array;
 					if(!arr){
 						arr=new Array();
 						order.fileStructure[path]=arr;
 					}
-					arr.push(fl.name);
+					arr.push(ftFile.name);
 				}
 			}
 			//remove root

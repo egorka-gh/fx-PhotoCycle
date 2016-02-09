@@ -9,8 +9,8 @@
 	<![CDATA[
 		import com.photodispatcher.context.Context;
 		import com.photodispatcher.event.AsyncSQLEvent;
-		import com.photodispatcher.model.dao.BaseDAO;
 		import com.photodispatcher.model.mysql.DbLatch;
+		import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
 		import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 		import com.photodispatcher.model.mysql.entities.BookSynonym;
 		import com.photodispatcher.model.mysql.entities.SourceType;
@@ -140,14 +140,10 @@
 			if(!currentList) return;
 			var item:BookSynonym;
 			var temp:BookPgTemplate;
+			var ap:BookPgAltPaper;
 			var itemsToSave:ArrayCollection= new ArrayCollection(); 
 			for each (item in currentList.source){
 				if(item){
-					/*
-					if(item.id==284){
-						trace('debug');
-					}
-					*/
 					if(!item.loaded || item.changed){
 						itemsToSave.addItem(item);
 					}else if(item.templates){
@@ -215,6 +211,19 @@
 			pop.show(templ);
 		}
 		
+		protected function btAltPaper_clickHandler(event:MouseEvent):void{
+			if(!tempGrid || !tempGrid.currentItem) return;
+			var templ:BookPgTemplate= tempGrid.currentItem as BookPgTemplate;
+			if(!templ) return;
+			if(!templ.loaded){
+				Alert.show('Необходимо сохранить новую запись.');
+				return;
+			}
+			
+			var pop:BookSynonymAltPaperPopup= new BookSynonymAltPaperPopup();
+			pop.show(templ);
+		}
+		
 	]]>
 </fx:Script>
 	<s:states>
@@ -260,6 +269,7 @@
 			<s:Button id="btCancel" label="Отмена" click="{currentState='list';refresh();}"/>
 			<s:Spacer width="50"/>
 			<s:Button id="btTech" label="Технологическая разметка" includeIn="itemEdit" click="btTech_clickHandler(event)"/>
+			<s:Button id="btAltPaper" label="Бумага" includeIn="itemEdit" click="btAltPaper_clickHandler(event)"/>
 		</s:HGroup>
 	</s:VGroup>
 </s:Group>

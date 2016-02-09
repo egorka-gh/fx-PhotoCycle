@@ -4,6 +4,7 @@ package com.photodispatcher.provider.fbook.download{
 		public static const DOWNLOAD_EMPTY_RESPONCE_ERROR:int = 2;
 		public static const DOWNLOAD_FILESYSTEM_ERROR:int = 3;
 		public static const DOWNLOAD_FONT_ERROR:int = 4;
+		public static const DOWNLOAD_TXT_RENDER_ERROR:int = 5;
 		
 		
 		public static const FATAL_ERRORS:Array=[DOWNLOAD_EMPTY_RESPONCE_ERROR, DOWNLOAD_FILESYSTEM_ERROR, DOWNLOAD_FONT_ERROR];
@@ -26,6 +27,9 @@ package com.photodispatcher.provider.fbook.download{
 					break;
 				case DOWNLOAD_FONT_ERROR:
 					res='Ошибка загрузки фонта.';
+					break;
+				case DOWNLOAD_TXT_RENDER_ERROR:
+					res='Ошибка подготовки текста.';
 					break;
 				default:
 					res='Не известная ошибка #'+err.toString()+'.';

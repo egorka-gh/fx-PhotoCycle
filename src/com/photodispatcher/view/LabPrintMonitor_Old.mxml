@@ -1,0 +1,419 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.PrintEvent;
+			import com.photodispatcher.factory.LabBuilder;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Lab;
+			import com.photodispatcher.model.mysql.entities.LabRoll;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.services.LabService;
+			import com.photodispatcher.model.mysql.services.PrintGroupService;
+			import com.photodispatcher.print.LabGeneric;
+			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var pgList:ArrayCollection=new ArrayCollection();
+			
+			//filters
+			[Bindable]
+			private var labFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var sizesList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var sourceFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var paperFilterList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var statesFilterList:ArrayCollection= new ArrayCollection();
+			
+			private var gridMenu:GridContexMenu;
+
+			//private var labId:int;
+			//private var lab:LabBase;
+			private var labMap:Object;
+
+			[Bindable]
+			private var ordTotal:int;
+			[Bindable]
+			private var pgTotal:int;
+			[Bindable]
+			private var phTotal:int;
+
+			[Bindable]
+			private var printManager:PrintQueueManager;
+			
+			private var viewPrintgroups:Array=[];
+
+			public function init():void{
+				if(!printManager){
+					printManager=PrintQueueManager.instance;
+					printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
+				}
+				
+				labMap=PrintQueueManager.instance.labMap;
+
+				//var lDao:SourcesDAO= new SourcesDAO();
+				var a:Array=Context.getSources(); //lDao.findAllArray();
+				if(!a) a=[];
+				var s:Source=new Source(); s.id=0; s.name='-';
+				a.unshift(s);
+				sourceFilterList.source=a;
+
+				//Context.initAttributeLists();
+				paperFilterList=Context.getAttribute('paperList');
+
+				a=OrderState.getStateArray(OrderState.FTP_WAITE,OrderState.PRN_COMPLETE+1,true);
+				var os:OrderState=new OrderState(); os.id=0; os.name='-';
+				a.unshift(os);
+				statesFilterList.source=a;
+
+				/*
+				var labDao:LabDAO= new LabDAO();
+				a=labDao.findAllArray();
+				if(!a) a=[];
+				var lab:Lab= new Lab(); lab.id=0; lab.name='-';
+				a.unshift(lab);
+				labFilterList.source=a;
+
+				refresh();
+				
+			}*/
+				var svc:LabService=Tide.getInstance().getContext().byType(LabService,true) as LabService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadLab);
+				latch.addLatch(svc.loadList());
+				latch.start();
+			}
+			private function onLoadLab(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadLab);
+					if(!latch.complite) return;
+					var a:Array=latch.lastDataArr;
+					if(!a) a=[];
+					var lab:Lab= new Lab(); lab.id=0; lab.name='-';
+					a.unshift(lab);
+					labFilterList.source=a;
+					refresh();
+				}
+			}
+
+
+			public function refresh():void{
+				/*
+				if(printManager) printManager.refreshLabs();
+				var pgDao:PrintGroupDAO=new PrintGroupDAO();
+				var a:Array=pgDao.findAllInPrint();
+				lstLabs.selectedIndex=-1;
+				lstLabRolls.selectedIndex=-1;
+				if(a){
+					viewPrintgroups=a;
+					pgList.source=a;
+					pgList.filterFunction=filterPGList;
+					pgList.refresh();
+				}
+				*/
+				var svc:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onLoadPgs);
+				latch.addLatch(svc.loadByOrderState(OrderState.PRN_POST,OrderState.PRN_COMPLETE));
+				latch.start();
+			}
+			private function onLoadPgs(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadPgs);
+					if(!latch.complite) return;
+					var ac:ArrayCollection=latch.lastDataAC;
+					lstLabs.selectedIndex=-1;
+					lstLabRolls.selectedIndex=-1;
+					if(ac){
+						viewPrintgroups=ac.source;
+						pgList=ac;
+						pgList.filterFunction=filterPGList;
+						pgList.refresh();
+					}
+				}
+			}
+			
+			private function onManagerError(e:PrintEvent):void{
+				lbManagerError.text=e.errMsg;
+			}
+
+			/*
+			private function calcTotals(pintGroups:Array):void{
+				var pgArray:Array=pintGroups.filter(totalsFilter);
+				ordTotal=0;
+				pgTotal=pgArray.length;
+				phTotal=0;
+				if(!pgArray){
+					sizesList.source=[];
+					return;
+				}
+				var pg:PrintGroup; 
+				var orderMap:Object=new Object();
+				var o:Object;
+				var sizeMap:Object= new Object();
+				var key:String;
+				var size:PhotoSizeAccum;
+				for each(o in pgArray){
+					pg= o as PrintGroup;
+					orderMap[pg.order_id]=pg.order_id;
+					//total files
+					phTotal+=pg.file_num;
+					//fill sizesList 
+					key=pg.width.toString()+'~'+pg.paper.toString();
+					size=sizeMap[key] as PhotoSizeAccum;
+					if(!size){
+						size= new PhotoSizeAccum();
+						size.size=pg.width;
+						size.paper_id=pg.paper;
+						size.paper=pg.paper_name;
+						sizeMap[key]=size;
+					}
+					size.pg_num++;
+					size.file_num+=pg.file_num;
+					size.len+=pg.file_num*pg.height;
+				}
+				//total orders
+				for (o in orderMap) ordTotal++;
+				//sizesList
+				var a:Array=[];
+				for each (o in sizeMap) a.push(o);
+				a.sortOn('file_num',Array.DESCENDING | Array.NUMERIC);
+				size=new PhotoSizeAccum(); size.size=-1;
+				a.unshift(size);
+				sizesList.source=a;
+			}
+			protected function totalsFilter(element:*, index:int, arr:Array):Boolean {
+				var o:PrintGroup=element as PrintGroup;
+				//return o!=null && o.state==syncState;
+				//return o!=null && o.destination==labId && o.state==OrderState.PRN_PRINT;
+				return o!=null && labMap && labMap[o.destination.toString()] && o.state==OrderState.PRN_PRINT;
+			}
+			*/
+
+			private function filterPGList(item:Object):Boolean {
+				var pg:PrintGroup=item as PrintGroup;
+				if(!pg) return false;
+
+				if(ddSourceFilter && ddSourceFilter.selectedIndex>0 && pg.source_id!=ddSourceFilter.selectedItem.id) return false;
+				if(tiOrderFilter && tiOrderFilter.text && pg.id.indexOf(tiOrderFilter.text)==-1) return false;
+				if(!lstLabs || lstLabs.selectedIndex==-1){
+					if(ddLabFilter && ddLabFilter.selectedIndex>0 && pg.destination!=ddLabFilter.selectedItem.id) return false;
+					if(ddStateFilter && ddStateFilter.selectedIndex>0 && pg.state!=ddStateFilter.selectedItem.id) return false;
+					if(tiSizeFilter && tiSizeFilter.text){
+						if(pg.width!=int(tiSizeFilter.text) && pg.height!=int(tiSizeFilter.text)) return false;
+					}
+					if(ddPaperFilter && ddPaperFilter.selectedIndex>0 && pg.paper!=ddPaperFilter.selectedItem.value) return false;
+				}
+				return true;
+			}
+
+			private function applyFilter():void{
+				pgList.refresh();
+				if(dgPGroups){
+					dgPGroups.clearSelection();
+					dgPGroups.dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
+				}
+			}
+
+			private function sizesListLabel(item:Object):String{
+				if(item.size!=-1){
+					return item.size+' '+item.paper+' (фото: '+item.file_num+'; длина: '+ Math.round(item.len/1000).toString()+'м)';
+				}else{
+					return '-';
+				}
+			}
+
+			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
+				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER]);
+				gridMenu.addItem('Отменить печать',cancelPrintCallBack);
+				gridMenu.addItem('Напечатан',setPrintedCallBack);
+			}
+			
+			
+			private function cancelPrintCallBack(grid:DataGrid,param:int):void{
+				//if(!lab) return;
+				if(!labMap) return;
+				if(!printManager) return;
+				if (printManager.isBusy){
+					Alert.show('Не завершена предыдущая операция. Повторите отмену позже.');
+					return;
+				}
+				var a:Array=[];
+				var pg:PrintGroup;
+				for each(var o:Object in grid.selectedItems){
+					pg= o as PrintGroup;
+					//if(pg && pg.state==OrderState.PRN_PRINT && pg.destination==labId){
+					if(pg && pg.state==OrderState.PRN_PRINT && labMap[pg.destination.toString()]){
+						a.push(pg);
+					}
+				}
+				if(a.length>0){
+					printManager.cancelPost(a);
+				}
+			}
+			
+			private function setPrintedCallBack(grid:DataGrid,param:int):void{
+				//if(!lab) return;
+				if(!labMap) return;
+				if(!printManager) return;
+				var a:Array=[];
+				var pg:PrintGroup;
+				for each(var o:Object in grid.selectedItems){
+					pg= o as PrintGroup;
+					if(pg && pg.state==OrderState.PRN_PRINT && labMap[pg.destination.toString()]){
+						pg.state=OrderState.PRN_COMPLETE;
+						a.push(pg);
+					}
+				}
+				if(a.length>0){
+					//printManager.cancelPost(a,lab);
+					printManager.setPrintedState(a);
+				}
+			}
+
+			protected function lstLab_changeHandler(event:IndexChangeEvent):void{
+				var enabled:Boolean=lstLabs.selectedIndex==-1;
+				ddLabFilter.enabled=enabled;
+				ddStateFilter.enabled=enabled;
+				tiSizeFilter.enabled=enabled;
+				ddPaperFilter.enabled=enabled;
+				
+				if(lstLabRolls.selectedIndex!=-1){
+					pgList.source=(lstLabRolls.selectedItem as LabRoll).printGroups;
+				}else if(lstLabs.selectedIndex!=-1){
+					var a:Array=[];
+					var l:LabGeneric= lstLabs.selectedItem as LabGeneric;
+					var lr:LabRoll;
+					/*
+					for each(lr in l.printQueue.rolls){
+						a=a.concat(lr.printGroups);
+					}
+					*/
+					pgList.source=a;
+				}else{
+					pgList.source=viewPrintgroups;
+				}
+				
+				applyFilter();				
+			}
+
+			/*
+			protected function lstSizes_changeHandler(event:IndexChangeEvent):void{
+				var enabled:Boolean=lstSizes.selectedIndex<1;
+				ddLabFilter.enabled=enabled;
+				ddStateFilter.enabled=enabled;
+				tiSizeFilter.enabled=enabled;
+				ddPaperFilter.enabled=enabled;
+				
+				applyFilter();				
+			}
+			*/
+			
+			protected function btResetLabFilter_clickHandler(event:MouseEvent):void{
+				lstLabRolls.selectedIndex=-1;
+				lstLabs.selectedIndex=-1;
+				lstLab_changeHandler(null);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:ArrayCollection id="acLabRolls" source="{lstLabs.selectedItem.printQueue.rolls}"/>	
+	</fx:Declarations>
+	
+	<s:HGroup gap="10" width="100%" height="100%">
+		<s:VGroup gap="5" width="250" height="100%">
+			<s:Label text="Заказов: {printManager.queueOrders.toString()}"/>
+			<s:Label text="Групп печати: {printManager.queuePGs.toString()}"/>
+			<s:Label text="Кол. отпечатков: {printManager.queuePrints.toString()}"/>
+			<s:HGroup width="100%" verticalAlign="baseline">
+				<s:Label text="Очередь печати" fontWeight="bold" width="100%"/>
+				<s:Button id="btResetLabFilter" label="Показать все" click="btResetLabFilter_clickHandler(event)"/>
+			</s:HGroup>
+			<s:Label text="По лабораториям" />
+			<s:List id="lstLabs" dataProvider="{printManager.labs}" contentBackgroundAlpha="0" borderAlpha="0" 
+					itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRendererShort" width="100%"
+					change="{lstLabRolls.selectedIndex=-1;lstLab_changeHandler(event);}">
+				<s:layout>
+					<s:VerticalLayout gap="0" requestedRowCount="{printManager.labs.length}"/>
+				</s:layout>
+			</s:List>
+			<s:Label text="По магазинам" />
+			<s:List id="lstLabRolls" dataProvider="{acLabRolls}"
+					itemRenderer="com.photodispatcher.view.itemRenderer.LabRollRendererM" 
+					width="100%" height="100%" contentBackgroundAlpha="0" borderAlpha="0"
+					change="lstLab_changeHandler(event)"/>
+			
+<!--			<s:Label text="Заказов - {ordTotal}" left="0" verticalCenter="0"/>
+			<s:Label text="Групп печати - {pgTotal}"/>
+			<s:Label text="Фото - {phTotal}"/>
+			<s:Spacer height="5"/>
+			<s:Label text="Варианты ширины"/>
+			<s:List id="lstSizes" width="100%" height="100%"
+					labelFunction="sizesListLabel" dataProvider="{sizesList}"
+					change="lstSizes_changeHandler(event)"/>--> 
+		</s:VGroup>
+		<s:VGroup gap="5" width="100%" height="100%">
+			<s:Label id="lbManagerError" color="#ff0000" width="100%" maxDisplayedLines="1"/>
+			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+				<s:Label text="Фильтрация" fontWeight="bold"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Лаборатория"/>
+				<s:DropDownList id="ddLabFilter" dataProvider="{labFilterList}" labelField="name" change="{applyFilter()}" width="100"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Источник"/>
+				<s:DropDownList id="ddSourceFilter" dataProvider="{sourceFilterList}" labelField="name" change="{applyFilter()}" width="100"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="ID"/>
+				<s:TextInput id="tiOrderFilter" width="80" change="{applyFilter()}"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Статус"/>
+				<s:DropDownList id="ddStateFilter" dataProvider="{statesFilterList}" width="150" labelField="name" change="{applyFilter()}"/>
+
+				<s:Spacer width="5"/>
+				<s:Label text="Размер"/>
+				<!--<s:DropDownList id="ddSizeFilter" dataProvider="{sizesFilterList}" labelField="name" change="{applyFilter()}"/>-->
+				<s:TextInput id="tiSizeFilter" restrict="0123456789" width="60" change="{applyFilter()}"/>
+				
+				<s:Spacer width="5"/>
+				<s:Label text="Бумага"/>
+				<s:DropDownList id="ddPaperFilter" dataProvider="{paperFilterList}" change="{applyFilter()}" width="100"/>
+				
+				<s:Spacer width="100%"/>
+				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:DataGrid id="dgPGroups" selectionMode="multipleRows"
+						width="100%" height="100%" creationComplete="dgPGroups_creationCompleteHandler(event)"
+						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns(true)}"/>
+		</s:VGroup>
+	</s:HGroup>
+	
+</s:Group>

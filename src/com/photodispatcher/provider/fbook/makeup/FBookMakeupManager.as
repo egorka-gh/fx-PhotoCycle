@@ -75,7 +75,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			if(logStates) StateLog.log(order.state,order.id,'','Подготовка подзаказов');
 			var so:SubOrder;
 			for each(so in order.suborders){
-				if(so && so.state<OrderState.CANCELED) so.state=OrderState.PREPROCESS_WAITE;
+				if(so && so.state<OrderState.CANCELED_SYNC) so.state=OrderState.PREPROCESS_WAITE;
 			}
 			nextSuborder();
 		}
@@ -129,14 +129,18 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 
 			if(logStates) StateLog.log(currSuborder.state,order.id,currSuborder.sub_id,'');
+			buildScripts();
+			/*
 			var dir:File=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
 			textBuilder=new TextImageBuilder(currSuborder);
 			textBuilder.addEventListener(Event.COMPLETE, onTxtComplite);
 			textBuilder.addEventListener(ProgressEvent.PROGRESS, onTxtProgress);
 			textBuilder.addEventListener(ImageProviderEvent.FLOW_ERROR_EVENT, onTxtFlowError);
 			textBuilder.build(dir);
+			*/
 		}
 		
+		/*
 		private function onTxtProgress(event:ProgressEvent):void{
 			reportProgress('Подготовка текстов',event.bytesLoaded,event.bytesTotal);
 		}
@@ -158,6 +162,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				buildScripts();
 			}
 		}
+		*/
 		
 		private function buildScripts():void{
 			var outFolder:String=prtFolder+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+PrintGroup.SUBFOLDER_PRINT;

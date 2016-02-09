@@ -10,6 +10,9 @@ package com.photodispatcher.model.mysql.entities {
 	
 	import mx.collections.ArrayList;
 	
+	import org.granite.reflect.Field;
+	import org.granite.reflect.Type;
+	
 	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
@@ -52,12 +55,22 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public function clone():PrintGroupFile{
 			var res:PrintGroupFile=new PrintGroupFile();
+			/*
 			res.file_name=file_name;
 			res.prt_qty=prt_qty;
 			res.book_num=book_num;
 			res.page_num=page_num;
 			res.caption=caption;
 			res.isCustom=isCustom;
+			*/
+			var type:Type=Type.forClass(PrintGroupFile);
+			var props:Array=type.properties;
+			if(!props || props.length==0) return res;
+			var prop:Field;
+			for each(prop in props){
+				res[prop.name]=this[prop.name];
+			}
+
 			return res;
 		}
 		

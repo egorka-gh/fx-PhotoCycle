@@ -18,6 +18,8 @@
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.service.barcode.ValveController;
 			import com.photodispatcher.tech.picker.TechPicker;
+			import com.photodispatcher.tech.picker.TechPickerFeeder;
+			import com.photodispatcher.view.itemRenderer.TraySetDataGridRowBackground;
 			
 			import flash.globalization.DateTimeStyle;
 			import flash.sampler.NewObjectSample;
@@ -33,6 +35,7 @@
 			public var techPoint:TechPoint;
 			public var reversOrder:Boolean;
 			public var turnInterval:int;
+			public var feedDelay:int;
 			public var engineOnStartOn:Boolean=false;
 			public var vacuumOnStartOn:Boolean=false;
 			public var engineOnErrOff:Boolean=false;
@@ -41,6 +44,8 @@
 			public var stopOnComplite:Boolean=false;
 			public var pauseOnComplite:Boolean=false;
 			public var layerOnComplite:int=0;
+			
+			public  var doubleSheetOff:Boolean=false;
 
 			[Bindable]
 			private var acTemplates:ArrayCollection;
@@ -64,7 +69,7 @@
 					dtFmt.timeStyle=DateTimeStyle.LONG;
 					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
 				}
-				logText=logText+dtFmt.format(new Date())+' '+ mesage+'\n';
+				logText=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
 			}
 			public function clear():void{
 				logText='';
@@ -81,9 +86,13 @@
 			[Bindable]
 			private var techPicker:TechPicker;
 			
-			public function start():void{
+			public function start(feederMode:Boolean=false):void{
 				techGroup=Context.getAttribute('techGroup.id');
-				techPicker= new TechPicker(techGroup);
+				if(feederMode){
+					techPicker= new TechPickerFeeder(techGroup);
+				}else{
+					techPicker= new TechPicker(techGroup);
+				}
 
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE, onStartLatch);
@@ -91,10 +100,6 @@
 				latch.addLatch(svc.loadLayersets(Layerset.LAYERSET_TYPE_TEMPLATE, techGroup));
 				latch.join(techPicker.init());
 				latch.start();
-				/*	
-				var dao:LayersetDAO=new LayersetDAO();
-				acTemplates=dao.findAll();
-				*/
 			}
 			private function onStartLatch(evt:Event):void{
 				var latch:DbLatch= evt.target as DbLatch;
@@ -115,9 +120,11 @@
 				techPicker.stopOnComplite=stopOnComplite;
 				techPicker.pauseOnComplite=pauseOnComplite;
 				techPicker.layerOnComplite=layerOnComplite;
+				techPicker.doubleSheetOff=doubleSheetOff;
 				techPicker.reversOrder=reversOrder;
 				techPicker.techPoint=techPoint;
 				techPicker.turnInterval=turnInterval;
+				techPicker.feedDelay=feedDelay;
 				techPicker.logger=this;
 				techPicker.addEventListener(ErrorEvent.ERROR, onPickerErr);
 			}
@@ -175,25 +182,25 @@
 					<s:VGroup gap="5" width="100%">
 						<s:HGroup gap="10" width="100%">
 							<s:Label text="Заказ: {techPicker.currPgId}"/>
-							<s:Label text="Тип книги: {techPicker.currBookTypeName}"/>
+							<s:Label text="Тип книги: {techPicker.currBookTypeName} {techPicker.currExtraInfo?techPicker.currExtraInfo.book_part:''}"/>
 							<s:Label text="Книга: {techPicker.currBookIdx.toString()}({techPicker.currBookTot.toString()})"/>
 							<s:Label text="Разворот: {techPicker.currSheetIdx.toString()}({techPicker.currSheetTot.toString()})"/>
 						</s:HGroup>
 						<s:HGroup gap="15" width="100%">
 							<s:VGroup gap="7" width="200">
-								<s:Label text="Тип: {techPicker.currExtraInfo.calc_type}" width="100%" maxDisplayedLines="1"/>
-								<s:Label text="Обложка: {techPicker.currExtraInfo.cover}" width="100%" maxDisplayedLines="1"/>
-								<s:Label text="Углы/Каптал: {techPicker.currExtraInfo.corner_type}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Тип: {techPicker.currExtraInfo?techPicker.currExtraInfo.calc_type:''}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Обложка: {techPicker.currExtraInfo?techPicker.currExtraInfo.cover:''}" width="100%" maxDisplayedLines="1"/>
+								<s:Label text="Углы/Каптал: {techPicker.currExtraInfo?techPicker.currExtraInfo.corner_type:''}" width="100%" maxDisplayedLines="1"/>
 							</s:VGroup>
 							<s:VGroup gap="5" width="100%">
 								<s:HGroup gap="5" verticalAlign="baseline">
-									<s:Label text="Формат заказа: {techPicker.currExtraInfo.format}" width="200"/>
+									<s:Label text="Формат заказа: {techPicker.currExtraInfo?techPicker.currExtraInfo.format:''}" width="200"/>
 									<s:Spacer width="5"/>
 									<s:Label text="Загружен формат:" width="120" textAlign="right"/>
 									<s:DropDownList id="ddCurrFormat" width="150" enabled="false"/>
 								</s:HGroup>
 								<s:HGroup gap="5" verticalAlign="baseline">
-									<s:Label text="Прослойка заказа: {techPicker.currExtraInfo.interlayer}" width="200"/>
+									<s:Label text="Прослойка заказа: {techPicker.currExtraInfo?techPicker.currExtraInfo.interlayer:''}" width="200"/>
 									<s:Spacer width="5"/>
 									<s:Label text="Шаблон прослойки:" width="120" textAlign="right"/>
 									<s:DropDownList id="ddCurrInterlayer" labelField="name" width="150" 
@@ -202,7 +209,7 @@
 													changing="preventChanging(event)"/>
 								</s:HGroup>
 								<s:HGroup gap="5" verticalAlign="baseline">
-									<s:Label text="Форзац заказа: {techPicker.currExtraInfo.endpaper}" width="200"/>
+									<s:Label text="Форзац заказа: {techPicker.currExtraInfo?techPicker.currExtraInfo.endpaper:''}" width="200"/>
 									<s:Spacer width="5"/>
 									<s:Label text="Шаблон форзаца:" width="120" textAlign="right"/>
 									<s:DropDownList id="ddCurrEndpaper" width="150" labelField="name" 
@@ -219,17 +226,17 @@
 					<s:ToggleButton id="tgVacuum" label="Вакуум" change="{tgVacuum.selected?techPicker.controller.vacuumOn():techPicker.controller.vacuumOff()}"/>
 					<s:ToggleButton id="tgEngine" label="Мотор" change="{tgEngine.selected?techPicker.controller.engineOn():techPicker.controller.engineOff()}"/>
 				</s:HGroup>-->
-				<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}" verticalAlign="baseline" width="150">
+				<s:HGroup gap="5" verticalAlign="baseline" width="150">
 					<s:Label text="Вакуум"/>
 					<s:Spacer width="100%"/>
-					<s:Button label="On" width="40" click="{techPicker.controller.vacuumOn()}"/>
-					<s:Button label="Off" width="40" click="{techPicker.controller.vacuumOff()}"/>
+					<s:Button label="On" width="40" click="{techPicker.setVacuumOn()}"/>
+					<s:Button label="Off" width="40" click="{techPicker.setVacuumOff()}"/>
 				</s:HGroup>
-				<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}" verticalAlign="baseline" width="150">
+				<s:HGroup gap="5" verticalAlign="baseline" width="150">
 					<s:Label text="Мотор"/>
 					<s:Spacer width="100%"/>
-					<s:Button label="On" width="40" click="{techPicker.controller.engineOn()}"/>
-					<s:Button label="Off" width="40" click="{techPicker.controller.engineOff()}"/>
+					<s:Button label="On" width="40" click="{techPicker.setEngineOn()}"/>
+					<s:Button label="Off" width="40" click="{techPicker.setEngineOff()}"/>
 				</s:HGroup>
 				<s:HGroup gap="10">
 					<s:Button id="btStart" label="Старт" enabled="{!techPicker.isRunning || techPicker.isPaused}" click="techPicker.start()"/>
@@ -247,7 +254,10 @@
 				<s:Label text="Загрузка лотков"/>
 				<config:ItemsGrid id="traysGrid" currentData="{techPicker.traySet.tarys}" width="100%" 
 								  currentIndex="{techPicker.currentTray}" editable="{!techPicker.isRunning || techPicker.isPaused}"
-								  currentColumns="{LayerAllocation.gridColumns()}" disableSorting="true"/>
+								  lockRows="{ {parametr:'tray', values:[-1]}}"
+								  currentColumns="{LayerAllocation.gridColumns()}" disableSorting="true"
+								  rowBackground="{new ClassFactory(TraySetDataGridRowBackground)}"
+								  />
 				<!--<s:Spacer height="5"/>-->
 				<s:Label text="Блокировки"/>
 				<s:List id="lstLatches" dataProvider="{acLatches}" width="100%" changing="preventChanging(event)" 

@@ -22,6 +22,7 @@ package com.photodispatcher.model.mysql.entities.report {
         private var _error:String;
         private var _hasError:Boolean;
         private var _id:String;
+        private var _messageId:String;
         private var _url:String;
 
         public function set error(value:String):void {
@@ -45,6 +46,13 @@ package com.photodispatcher.model.mysql.entities.report {
             return _id;
         }
 
+        public function set messageId(value:String):void {
+            _messageId = value;
+        }
+        public function get messageId():String {
+            return _messageId;
+        }
+
         public function set url(value:String):void {
             _url = value;
         }
@@ -57,6 +65,7 @@ package com.photodispatcher.model.mysql.entities.report {
             _error = input.readObject() as String;
             _hasError = input.readObject() as Boolean;
             _id = input.readObject() as String;
+            _messageId = input.readObject() as String;
             _url = input.readObject() as String;
         }
 
@@ -65,6 +74,7 @@ package com.photodispatcher.model.mysql.entities.report {
             output.writeObject((_error is IPropertyHolder) ? IPropertyHolder(_error).object : _error);
             output.writeObject((_hasError is IPropertyHolder) ? IPropertyHolder(_hasError).object : _hasError);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
+            output.writeObject((_messageId is IPropertyHolder) ? IPropertyHolder(_messageId).object : _messageId);
             output.writeObject((_url is IPropertyHolder) ? IPropertyHolder(_url).object : _url);
         }
     }

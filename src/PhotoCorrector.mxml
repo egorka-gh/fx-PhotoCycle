@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:view="com.photodispatcher.view.*"
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*" 
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   showStatusBar="false"
+					   creationComplete="{initApp()}">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.IMRunerEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.AsyncLatch;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.TechPointService;
+			import com.photodispatcher.shell.IMRuner;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.ModalPopUp;
+			import com.photodispatcher.view.PasswPopup;
+			import com.photodispatcher.view.config.DatabasePopup;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var techPiontsAC:ArrayCollection;
+			
+			[Bindable]
+			private var techPointObj:TechPoint;
+			private var techPoint:int;
+
+			[Bindable]
+			private var workFolder:String;
+			[Bindable]
+			private var tmpFolder:String;
+			[Bindable]
+			private var imPath:String;
+			[Bindable]
+			private var imPathValid:Boolean=false;
+			[Bindable]
+			private var imRespond:String;
+			[Bindable]
+			private var imThreads:int=0;
+			[Bindable]
+			private var ccStep:int=5;
+			[Bindable]
+			private var ccAdvance:int=0;
+
+			private var bdPopup:DatabasePopup;
+			private function initApp():void{
+				bdPopup= new DatabasePopup();
+				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
+				bdPopup.chekConnect();
+			}
+			private function bdPopClose(e:PopUpEvent):void{
+				var connected:Boolean=e.commit;
+				if(connected){
+					//connected
+					init();
+				}else{
+					//no connection
+					currentState='disconnected';
+					bdPopup.open(null);
+				}
+			}
+			
+			private var startPopup:ModalPopUp;
+			
+			private function init():void{
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+				
+				
+				var initLatch:DbLatch=Context.initPhotoCorrector();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+				
+				var latch:DbLatch= new DbLatch();
+				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				latch.addEventListener(Event.COMPLETE,onTPLoad);
+				latch.addLatch(svc.loadAll(OrderState.COLOR_CORRECTION));
+				latch.start();
+				initLatch.join(latch);
+				
+				initLatch.start();
+			}
+			private function onTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPLoad);
+					if(latch.complite){
+						techPiontsAC=latch.lastDataAC;
+					}
+				}
+			}
+
+			private function onInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						return;
+					}
+				}
+				
+				startPopup.close();
+				startPopup=null;
+
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					techPoint=so.data.monitorTechPoint;
+					var configPass:String=so.data.configPass;;
+					if(configPass) Context.setAttribute('configPass',configPass);
+					workFolder=so.data.workFolder;
+					tmpFolder=so.data.tmpFolder;
+					imPath = so.data.imPath;
+					imThreads=so.data.imThreads;
+					ccAdvance=so.data.ccAdvance;
+					ccStep=so.data.ccStep;
+				}
+				if(imThreads==0 || imThreads<0) imThreads=1;
+				if(ccStep==0) ccStep=5;
+				Context.setAttribute("workFolder", workFolder);
+				chkSetTmpFolder(tmpFolder);
+				if(techPoint) techPointObj=ArrayUtil.searchItem('id',techPoint,techPiontsAC.source) as TechPoint;
+				//detect IM
+				pingIM();
+				cfgEnabled=true;
+				currentState='config';
+			}
+
+			private function pingIM():void{
+				if(imPathValid) Context.setAttribute('imPath','');
+				if(imPath){
+					var f:File=File.applicationStorageDirectory;
+					//var im:IMRuner= new IMRuner(imPath,Context.getAttribute('workFolder'));
+					var im:IMRuner= new IMRuner(imPath,f.nativePath);
+					im.addEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+					im.ping(imPath);
+				}
+			}
+			private function onImPing(e:IMRunerEvent):void{
+				var im:IMRuner=e.target as IMRuner;
+				im.removeEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+				imPathValid=!e.hasError;
+				imRespond=e.error;
+				if(imPathValid) Context.setAttribute('imPath',imPath);
+
+				//currentState='config';
+			}
+
+			private function chkSetTmpFolder(path:String):void{
+				if(chkFolder(path)){
+					tmpFolder=path;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.tmpFolder = tmpFolder;
+					so.flush();  
+				}else{
+					tmpFolder='';
+					var f:File=File.userDirectory;
+					f=f.resolvePath('cc_temp');
+					try{
+						if(f.exists){
+							if(f.isDirectory){
+								f.deleteDirectory(true);
+							}else{
+								f.deleteFile();
+							}
+						}
+						f.createDirectory();
+						tmpFolder=f.nativePath;
+					}catch(error:Error){
+						trace(error.message);
+					}
+				}
+				Context.setAttribute("tmpFolder", tmpFolder);
+			}
+
+			private function chkFolder(path:String):Boolean{
+				if(!path) return false;
+				var f:File=new File(path);
+				return f.exists && f.isDirectory;
+			}
+			
+			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
+				techPointObj= ddTechPoint.selectedItem as TechPoint;
+				if(techPointObj){
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.monitorTechPoint = techPointObj.id;
+					so.flush();  
+				}
+			}
+			
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				/*
+				if(!techPointObj){ 
+					Alert.show('Не настроена тех точка');
+					return;
+				}
+				*/
+				if(!imPathValid){
+					Alert.show('Не настроен IM');
+					return;
+				} 
+				if(!chkFolder(workFolder)){
+					Alert.show('Не настроена рабочая папка');
+					return;
+				}
+				if(viewCC) viewCC.start();
+				currentState='monitor';
+			}
+			
+			
+			protected function button2_clickHandler(event:MouseEvent):void{
+				//if(techMonitor) techMonitor.stop();
+				currentState='config';
+				checkCfgPass(true);
+			}
+			
+			protected function state1_enterStateHandler(event:FlexEvent):void{
+				//cfgEnabled=false;
+				cfgEnabled=true;
+			}
+			
+			protected function btSetPass_clickHandler(event:MouseEvent):void{
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPass);
+				passPop.show('',true);
+			}
+			protected function onCfgPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(!passPop) return;
+				passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					var newPass:String=passPop.pass;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.configPass = newPass;
+					so.flush();  
+					Context.setAttribute('configPass', newPass);
+				}
+			}
+			
+			protected function btOffPass_clickHandler(event:MouseEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.configPass = '';
+				so.flush();  
+				Context.setAttribute('configPass', '');
+			}
+			[Bindable]
+			private var cfgEnabled:Boolean;
+			
+			protected function checkCfgPass(ask:Boolean=false):void{
+				cfgEnabled=true;
+				return;
+				
+				var configPass:String=Context.getAttribute('configPass');
+				if(!configPass){
+					cfgEnabled=true;
+					return;
+				}
+				cfgEnabled=false;
+				if(!ask) return;
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPassCheck);
+				passPop.show(configPass);
+			}
+			protected function onCfgPassCheck(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(passPop) passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPassCheck);
+				if(event.commit){
+					cfgEnabled=true;
+				}
+			}
+			
+			
+			protected function button3_clickHandler(event:MouseEvent):void{
+				checkCfgPass(true);
+			}
+			
+			protected function button4_clickHandler(event:MouseEvent):void{
+				FlexGlobals.topLevelApplication.exit()
+			}
+			
+			protected function btWrkFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var sPath:String='';
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,wrkFolderSet);
+				file.browseForDirectory('Выбирите рабочую папку');
+			}
+			protected function wrkFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,wrkFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					workFolder=file.nativePath;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.workFolder = workFolder;
+					so.flush();  
+					Context.setAttribute("workFolder", workFolder);
+				}
+			}
+			
+			protected function btTmpFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var sPath:String='';
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,tmpFolderSet);
+				file.browseForDirectory('Выбирите папку');
+			}
+			protected function tmpFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,tmpFolderSet);
+					chkSetTmpFolder(file.nativePath);
+				}
+			}
+			
+			protected function tiIMFolder_enterHandler(event:FlexEvent):void{
+				imPathValid=false;
+				imPath=tiIMFolder.text;
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imPath = imPath;
+				so.flush();  
+				Context.setAttribute("imPath", imPath);
+				if(imPath) pingIM();
+			}
+			
+			protected function btIMFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,imFolderSet);
+				file.browseForDirectory('Выбирите папку ImageMagick');
+			}
+			protected function imFolderSet(event:Event):void{
+				imPathValid=false;
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,imFolderSet);
+					imPath=file.nativePath;
+					
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.imPath = file.nativePath;
+					so.flush();  
+					Context.setAttribute("imPath", imPath);
+					
+					if(imPath) pingIM();
+				}
+			}
+			
+			/* protected function tiIMThreads_changeHandler(event:TextOperationEvent):void{
+				imThreads=int(tiIMThreads.text);
+				if(imThreads<=0 ) imThreads=1;
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imThreads = imThreads;
+				so.flush();  
+				Context.setAttribute("imThreads", imThreads);
+			} */
+			
+			protected function nsStep_changeHandler(event:Event):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.ccStep = nsStep.value;
+				so.flush();  
+			}
+			
+			protected function nsAdvance_changeHandler(event:Event):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.ccAdvance = nsAdvance.value;
+				so.flush();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="disconnected"/>
+		<s:State name="config"/>
+		<s:State name="monitor" enterState="state1_enterStateHandler(event)"/>
+	</s:states>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
+			  top="5" right="5"/>
+	
+	<s:VGroup  includeIn="config" enabled="{cfgEnabled}" 
+			   gap="5" top="20" left="20" right="5" bottom="50">
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Технологическая точка:"/>
+			<s:DropDownList id="ddTechPoint" dataProvider="{techPiontsAC}" selectedItem="{techPointObj}" 
+							labelField="name"  width="250" change="ddTechPoint_changeHandler(event)"/>
+		</s:HGroup>
+
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Рабочая папка:" width="{lbLong.width}"/>
+			<s:TextInput id="tiWrkFolder" text="{workFolder}" editable="false" width="400"/>
+			<s:Button id="btWrkFolder" label="..." click="btWrkFolder_clickHandler(event)"/>
+		</s:HGroup>
+		
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label id="lbLong" text="Папка временных файлов:"/>
+			<s:TextInput id="tiTmpFolder" text="{tmpFolder}" editable="false" width="400"/>
+			<s:Button id="btTmpFolder" label="..." click="btTmpFolder_clickHandler(event)"/>
+		</s:HGroup>
+
+		<s:Spacer height="10"/>
+		<s:VGroup gap="3" width="100%">
+			<s:HGroup gap="5" width="100%">
+				<s:Label text="Папка ImageMagick:" width="{lbLong.width}"/>
+				<s:TextInput id="tiIMFolder" text="{imPath}" width="400" color="{imPathValid?0:0xff0000}" enter="tiIMFolder_enterHandler(event)"/>
+				<s:Button id="btIMFolder" label="..." click="btIMFolder_clickHandler(event)"/>
+			</s:HGroup>
+			<s:Label text="{imRespond}" color="{imPathValid?0:0xff0000}" width="100%" paddingLeft="{lbLong.width}"/>
+		</s:VGroup>
+		<!--<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Кол потоков" width="{lbLong.width}"/>
+			<s:TextInput id="tiIMThreads" text="{imThreads.toString()}" restrict="0123456789" width="50" enabled="{imPathValid}"
+						 change="tiIMThreads_changeHandler(event)"/>
+		</s:HGroup>-->
+
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Шаг" width="{lbLong.width}"/>
+			<s:NumericStepper id="nsStep" minimum="1" maximum="20" snapInterval="1" width="50" value="@{ccStep}" change="nsStep_changeHandler(event)"/>
+		</s:HGroup>
+
+		<s:Spacer height="10"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Упреждение" width="{lbLong.width}"/>
+			<s:NumericStepper id="nsAdvance" minimum="0" maximum="5" snapInterval="1" width="50" value="@{ccAdvance}" change="nsAdvance_changeHandler(event)"/>
+		</s:HGroup>
+
+		
+		<!--<s:Spacer height="20"/>
+		<s:HGroup gap="10" verticalAlign="baseline">
+			<s:Label text="Защита конфигурации"/>
+			<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
+			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+		</s:HGroup>-->
+		
+		
+	</s:VGroup>
+	
+	<!--<view:TechOTKMonitor id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" isActive="{currentState=='monitor'}"
+						 top="20" left="20" right="20" bottom="50"/>-->
+	<view:ColorCorrectionMainView id="viewCC" includeIn="monitor"
+								  ccAdvance="{ccAdvance}" ccStep="{ccStep}"
+								  top="20" left="20" right="20" bottom="50"/>
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+		<s:Spacer width="100%"/>
+		<s:Button label="Конфигурация" includeIn="monitor" click="button2_clickHandler(event)"/>
+		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
+		<s:Button label="Старт" includeIn="config" click="button1_clickHandler(event)"/>
+		<s:Button label="Закрыть программу" click="button4_clickHandler(event)" />
+	</s:HGroup>
+	
+</s:WindowedApplication>

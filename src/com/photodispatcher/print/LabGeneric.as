@@ -1,9 +1,11 @@
 package com.photodispatcher.print{
+	import com.google.zxing.common.flexdatatypes.ArrayList;
 	import com.photodispatcher.event.PrintEvent;
 	import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Lab;
 	import com.photodispatcher.model.mysql.entities.LabDevice;
+	import com.photodispatcher.model.mysql.entities.LabMeter;
 	import com.photodispatcher.model.mysql.entities.LabPrintCode;
 	import com.photodispatcher.model.mysql.entities.LabProfile;
 	import com.photodispatcher.model.mysql.entities.LabRoll;
@@ -14,6 +16,8 @@ package com.photodispatcher.print{
 	
 	import flash.events.Event;
 	import flash.events.IEventDispatcher;
+	
+	import mx.collections.ArrayCollection;
 
 	[Event(name="postComplete", type="com.photodispatcher.event.PrintEvent")]
 	public class LabGeneric extends Lab implements IEventDispatcher{
@@ -52,9 +56,9 @@ package com.photodispatcher.print{
 		/**
 		 * deprecated??
 		 * никак не используется, нужно отвязать view?
-		 */
 		[Bindable]
 		public var printQueue:PrintQueue;
+		 */
 		
 		/**
 		 * deprecated??
@@ -67,6 +71,8 @@ package com.photodispatcher.print{
 		//public var currentPG:PrintGroup;
 		
 		
+		//public var prnQueues:Array=[];
+
 		protected var printTasks:Array=[];
 		
 		protected var currentPrintTask:PrintTask;
@@ -76,7 +82,7 @@ package com.photodispatcher.print{
 		public function LabGeneric(lab:Lab){
 			super();
 			lab.cloneTo(this);
-			printQueue=new PrintQueue(this);
+			//printQueue=new PrintQueue(this);
 		}
 
 		public function orderFolderName(printGroup:PrintGroup):String{
@@ -269,50 +275,114 @@ package com.photodispatcher.print{
 		}
 		
 		/**
-		 * возвращает массив элементов {dev: dev (LabDevice), code: code (LabPrintCode)}
+		 * возвращает массив LabDevice у которых есть подходящий рулон 
 		 */
 		public function getCompatiableDevices(pg:PrintGroup):Array {
-			
 			var result:Array = [];
 			var dev:LabDevice;
 			var code:LabPrintCode;
 			if(devices){
-				
 				for each (dev in devices){
-					
-					code = printChannel(pg, dev.rollsOnline.toArray());
-					
-					if(code){
-						result.push({dev: dev, code: code});
-					}
-					
+					//if(printChannel(pg, dev.rollsOnline.toArray())) result.push(dev);
+					if(printChannel(pg, dev.rolls.toArray())) result.push(dev);
 				}
-				
 			}
-			
 			return result;
 		}
-		
-		public function checkAliasPrintCompatiable(pg:PrintGroup):Boolean {
+
+		/**
+		 * возвращает массив LabDevice у которых подходящий рулон online 
+		 */
+		public function getOnLineRollDevices(pg:PrintGroup):Array {
+			var result:Array = [];
+			var dev:LabDevice;
 			
-			var res:Boolean;
-			
-			var alias:BookSynonym = pg.bookSynonym;
-			if(alias) {
-				
-				var pgTemplate:BookPgTemplate = alias.getBookPgTemplateByPart(pg.book_part);
-				
-				if(pgTemplate){
-					
-					res = pgTemplate.lab_type == this.src_type;
-					
+			//var code:LabPrintCode;
+			if(devices){
+				for each (dev in devices){
+					var add:Boolean=false;
+					//check online rolls
+					if(dev.rollsOnline && dev.rollsOnline.length>0){
+						add=printChannel(pg, dev.rollsOnline)!=null;
+					}
+					//check by last roll
+					if(!add) add=dev.lastRoll &&  printChannel(pg, [dev.lastRoll])!=null;
+					if(add) result.push(dev);
 				}
-				
 			}
-			
-			return res;
-			
+			return result;
 		}
+
+		public function checkAliasPrintCompatiable(pg:PrintGroup):Boolean {
+			//var res:Boolean;
+			var alias:BookSynonym = BookSynonym.getBookSynonym(pg);
+			if(alias) {
+				var pgTemplate:BookPgTemplate = alias.getBookPgTemplateByPart(pg.book_part);
+				if(pgTemplate && (pgTemplate.lab_type == 0 || pgTemplate.lab_type == this.src_type)) return true;
+			}
+			return false;
+		}
+
+		[Bindable]
+		public var stops:ArrayCollection;
+		
+		public function resetStops():void{
+			stops=new ArrayCollection();
+		}
+		
+		protected var _postMeter:LabMeter;
+		protected var devPrintMetersMap:Object={};
+		protected var devStopMetersMap:Object={};
+		
+		[Bindable]
+		public var currMetersAC:ArrayCollection;
+		
+		public function resetMeters():void{
+			_postMeter=null;
+			devPrintMetersMap={};
+			devStopMetersMap={};
+			currMetersAC=new ArrayCollection();
+		}
+		
+		public function addMeter(meter:LabMeter):void{
+			if(!meter) return;
+			if (meter.meter_type==LabMeter.TYPE_POST){
+				//post printgroup, no device - lab meter
+				_postMeter=meter;
+			}else if (meter.meter_type==LabMeter.TYPE_PRINT){
+				//device print meter
+				devPrintMetersMap[meter.lab_device]=meter;
+			}else if (meter.meter_type==LabMeter.TYPE_STOP){
+				//device stop meter
+				devStopMetersMap[meter.lab_device]=meter;
+			}
+			currMetersAC.addItem(meter);
+		}
+
+		public function getPostMeter():LabMeter{
+			return _postMeter;
+		}
+
+		public function getPrintMeter(deviceId:int):LabMeter{
+			return devPrintMetersMap[deviceId] as LabMeter;
+		}
+		
+		/*
+		public function getDeviceMeter(deviceId:int):LabMeter{
+			var meter:LabMeter=devPrintMetersMap[deviceId] as LabMeter;
+			if(!meter) return _postMeter;
+			if(_postMeter){
+				return _postMeter.isNewer(meter)?_postMeter:meter;
+			}
+			return meter;
+		}
+		*/
+		public function getDeviceStopMeter(deviceId:int):LabMeter{
+			return devStopMetersMap[deviceId] as LabMeter;
+		}
+		
+		
+		/************************************ deprecated ************************************/
 		
 		/**
 		 * deprecated
@@ -412,17 +482,17 @@ package com.photodispatcher.print{
 		}
 		
 		/**
-		 * deprecated
+		 * deprecated ?
 		 */
 		public function refresh():void{
+			refreshOnlineState();
 			//TODO closed while not in use
 			return;
-			refreshOnlineState();
 			refreshPrintQueue();
 		}
 		
 		/**
-		 * deprecated
+		 * deprecated ?
 		 */
 		public function refreshPrintQueue():void{
 			// deprecated, не нужно
@@ -449,5 +519,8 @@ package com.photodispatcher.print{
 			}
 			onlineState=newState;
 		}
+		
+		
+		
 	}
 }

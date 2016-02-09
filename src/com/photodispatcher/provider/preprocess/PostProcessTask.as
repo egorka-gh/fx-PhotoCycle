@@ -51,7 +51,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			for each(printGroup in order.printGroups){
-				if(printGroup && printGroup.state<OrderState.CANCELED){
+				if(printGroup && printGroup.state<OrderState.CANCELED_SYNC){
 					if((printGroup.book_type==0 || !printGroup.is_pdf) && !reprintMode){
 						if(printGroup.files && printGroup.files.length>0){
 							for each (pgf in printGroup.files){

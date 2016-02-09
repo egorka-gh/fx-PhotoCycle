@@ -44,7 +44,11 @@ package com.photodispatcher.provider.fbook{
 		public function get project():ProjectBook{
 			return _project;
 		}
-		
+
+		public function get rawProject():Object{
+			return projectRaw;
+		}
+
 		public var downloadState:int=TripleState.TRIPLE_STATE_NON;
 		
 		public function FBookProject(raw:Object=null){

@@ -15,7 +15,7 @@ package com.photodispatcher.provider.ftp{
 	[Event(name="connectionsProgress", type="com.photodispatcher.event.ConnectionsProgressEvent")]
 	public class FTPConnectionManager extends EventDispatcher{
 
-		private static const DEBUG_TRACE:Boolean=false;
+		private static const DEBUG_TRACE:Boolean=true;
 		private static const CNN_ERR_LIMIT:int=3;
 
 		

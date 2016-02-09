@@ -12,7 +12,8 @@ package com.photodispatcher.model.mysql{
 		public var complite:Boolean=false;
 		public var hasError:Boolean=false;
 		public var error:String;
-		
+		public var callContext:Object;
+
 		public var debugName:String;
 		public var silent:Boolean=true;
 		

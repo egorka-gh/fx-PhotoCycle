@@ -19,6 +19,7 @@ package com.photodispatcher.service.barcode{
 		
 		public static const KEY_TYPE:String='comm_type';
 		public static const KEY_COM:String='comm_num';
+		public static const KEY_TRAY:String='comm_tray';
 		public static const KEY_PORT:String='net_port';
 		public static const KEY_BAUD:String='comm_baud';
 		public static const KEY_DATABITS:String='comm_databits';
@@ -46,6 +47,7 @@ package com.photodispatcher.service.barcode{
 		public var suffix:int=10; //LF default
 		public var proxy:Socket2Com;
 		public var doubleScanGap:int=ComReader.DOUBLE_SCAN_GAP;
+		public var tray:int=0;
 
 		public static function save(arr:Array):void{
 			var so:SharedObject=SharedObject.getLocal('comm_ports','/');
@@ -105,6 +107,7 @@ package com.photodispatcher.service.barcode{
 			if(type!=COM_TYPE_NONE && num){
 				result[KEY_TYPE]=type;
 				result[KEY_COM]=num;
+				result[KEY_TRAY]=tray;
 				if(baud) result[KEY_BAUD]=baud;
 				if(databits) result[KEY_DATABITS]=databits;
 				if(stopbits) result[KEY_STOPBITS]=stopbits;
@@ -118,6 +121,7 @@ package com.photodispatcher.service.barcode{
 		public function fromRaw(value:Object):void{
 			if(value.hasOwnProperty(KEY_TYPE)) type=value[KEY_TYPE];
 			if(value.hasOwnProperty(KEY_COM)) num=value[KEY_COM];
+			if(value.hasOwnProperty(KEY_TRAY)) tray=value[KEY_TRAY];
 			if(value.hasOwnProperty(KEY_BAUD)) baud=value[KEY_BAUD];
 			if(value.hasOwnProperty(KEY_DATABITS)) databits=value[KEY_DATABITS];
 			if(value.hasOwnProperty(KEY_STOPBITS)) stopbits=value[KEY_STOPBITS];

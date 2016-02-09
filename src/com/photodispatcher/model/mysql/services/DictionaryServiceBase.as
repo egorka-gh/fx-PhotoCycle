@@ -78,6 +78,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function getInterlayerValueList(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getInterlayerValueList", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getInterlayerValueList", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getInterlayerValueList") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function getLayerGroupValueList(arg0:Boolean, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("getLayerGroupValueList", arg0, resultHandler, faultHandler) as AsyncToken;
@@ -107,6 +118,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("getPrintAttrs", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("getPrintAttrs") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function getPrnStrategyValueList(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getPrnStrategyValueList", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getPrnStrategyValueList", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getPrnStrategyValueList") as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
@@ -184,6 +206,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("getStateValueList", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("getStateValueList") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function getStopTypeValueList(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getStopTypeValueList", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getStopTypeValueList", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getStopTypeValueList") as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

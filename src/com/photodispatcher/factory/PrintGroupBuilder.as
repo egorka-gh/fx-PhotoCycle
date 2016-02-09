@@ -30,7 +30,7 @@ package com.photodispatcher.factory{
 	import mx.controls.Alert;
 	
 	public class PrintGroupBuilder{
-		private static const ALLOWED_EXTENSIONS:Object={jpg:true,jpeg:true,png:true,tif:true,tiff:true,bmp:true,gif:true};
+		public static const ALLOWED_EXTENSIONS:Object={jpg:true,jpeg:true,png:true,tif:true,tiff:true,bmp:true,gif:true};
 		
 		/**
 		 * parse PrintGroups from file structure
@@ -97,7 +97,7 @@ package com.photodispatcher.factory{
 							}
 						}
 						//sheets group
-						cpg=bookSynonym.createPrintGroup(path, BookSynonym.BOOK_PART_BLOCK);
+						cpg=bookSynonym.createPrintGroup(path, BookSynonym.BOOK_PART_BLOCK, pg.butt);
 						if(cpg){
 							fillSheets(pg,cpg, preview);
 							if(cpg.files){
@@ -108,8 +108,6 @@ package com.photodispatcher.factory{
 						}
 					}else{
 						//parse pg from path by parts
-						//TODO check if read completed
-						//var afv:Array=dicDAO.translatePath(source.type_id,path);
 						var afv:Array=FieldValue.translatePath(source.type,path);
 						pg=new PrintGroup();
 						pg.path=path;
@@ -338,8 +336,9 @@ package com.photodispatcher.factory{
 			if(!pg.files) return;
 			var f:PrintGroupFile;
 			for each(f in pg.files){
-				if (f && f.page_num!=0 
+				if (f && (f.page_num!=0 || dst.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) 
 					&& !(dst.book_type==BookSynonym.BOOK_TYPE_JOURNAL && dst.is_pdf && !dst.bookTemplate.is_sheet_ready && (f.page_num==1 || f.page_num==pg.pageNumber))){
+					f.book_part=f.page_num==0?BookSynonym.BOOK_PART_COVER:BookSynonym.BOOK_PART_BLOCK;
 					dst.addFile(f);
 				}
 			}
@@ -362,12 +361,28 @@ package com.photodispatcher.factory{
 				}
 			}
 			
+			/*
 			//sort by book / sheet
+			if(dst.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && !preview){
+				//cover after block, set cover page 100000
+				for each(f in dst.files){
+					if(f.page_num==0) f.page_num=100000;
+				}
+			}
+			*/
 			if(dst.files){
 				var arr:Array=dst.files.toArray();
 				arr.sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
 				dst.files= new ArrayCollection(arr);
 			}
+			/*
+			//reset covers
+			if(dst.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && !preview){
+				for each(f in dst.files){
+					if(f.page_num==100000) f.page_num=0;
+				}
+			}
+			*/
 		}
 		
 		public function buildFromSuborders(order:Order):Array{
@@ -390,7 +405,7 @@ package com.photodispatcher.factory{
 			var pgf:PrintGroupFile;
 			for each(so in order.suborders){
 				proj=so.referenceProject;
-				if(proj && so.state<OrderState.CANCELED){
+				if(proj && so.state<OrderState.CANCELED_SYNC){
 					//reset vars
 					paper=0;
 					coverPixels=proj.getPixelSise(BookSynonym.BOOK_PART_COVER);
@@ -487,12 +502,13 @@ package com.photodispatcher.factory{
 						}
 					}
 					//create print gruops
+					var but:int=UnitUtil.pixels2mm300(proj.buttWidth());
 					//covers
 					if (proj.bookType==BookSynonym.BOOK_TYPE_BOOK ||
 						proj.bookType==BookSynonym.BOOK_TYPE_JOURNAL ||
 						proj.bookType==BookSynonym.BOOK_TYPE_LEATHER){
 						//cover
-						pgCover=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_COVER, UnitUtil.pixels2mm300(proj.buttWidth()));
+						pgCover=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_COVER, but);
 						if(pgCover){
 							pgCover.order_id=order.id;
 							pgCover.path=so.ftp_folder;
@@ -513,7 +529,7 @@ package com.photodispatcher.factory{
 						}
 					}
 					//block
-					pgBody=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_BLOCK);
+					pgBody=bookSynonym.createPrintGroup(so.ftp_folder, BookSynonym.BOOK_PART_BLOCK,but);
 					pgBody.order_id=order.id;
 					pgBody.path=so.ftp_folder;
 					pgBody.book_type=proj.bookType; 
@@ -537,32 +553,54 @@ package com.photodispatcher.factory{
 									pgf.book_num=proj.bookNumber;
 									pgf.prt_qty=1;
 									if(proj.isPageCover(page.pageNum)){
-										if(pgCover){
-											if(pgCover.butt){
-												//add butt to caption
-												pgf.caption=pgf.caption+' t'+pgCover.butt.toString();
-											}
+										pgf.book_part=BookSynonym.BOOK_PART_COVER;
+										if(pgBody.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
+											if(pgBody.butt) pgf.caption=pgf.caption+' t'+pgBody.butt.toString();
+											pgBody.addFile(pgf);
+										}else if(pgCover){
+											//add butt to caption
+											if(pgCover.butt) pgf.caption=pgf.caption+' t'+pgCover.butt.toString();
 											pgCover.addFile(pgf);
 										}
 									}else{
+										pgf.book_part=BookSynonym.BOOK_PART_BLOCK;
 										pgBody.addFile(pgf);
 									}
 								}
 							}
 						}
 					}
+					
+					/*
+					//sort by book / sheet
+					if(pgBody.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && pgBody.files){
+						//cover after block, set cover page 100000
+						var f:PrintGroupFile;
+						for each(f in pgBody.files){
+							if(f.page_num==0) f.page_num=100000;
+						}
+						var arr:Array=pgBody.files.toArray();
+						arr.sortOn(['book_num','page_num'],[Array.NUMERIC,Array.NUMERIC]);
+						pgBody.files= new ArrayCollection(arr);
+						//reset covers
+						for each(f in pgBody.files){
+							if(f.page_num==100000) f.page_num=0;
+						}
+					}
+					*/
 
 					if(so.extraInfo){
 						so.extraInfo.books=so.books_num;
 						so.extraInfo.sheets=so.sheets_num;
 					}
-
+					
+					
 					//add to order
 					if(pgCover && pgCover.files && pgCover.files.length>0){
 						pgCover.sub_id=so.sub_id;
 						pgCover.id=order.id+'_'+pgNum.toString();
-						pgCover.sheet_num=so.books_num; //pgCover.files.length;
-						pgCover.prints=pgCover.book_num*pgCover.sheet_num;
+						pgCover.sheet_num=so.books_num; 
+						pgCover.prints=pgCover.book_num;
 						if(!order.printGroups) order.printGroups=new ArrayCollection();
 						order.printGroups.addItem(pgCover);
 						result.push(pgCover);
@@ -571,13 +609,8 @@ package com.photodispatcher.factory{
 					if(pgBody.files && pgBody.files.length>0){
 						pgBody.sub_id=so.sub_id;
 						pgBody.id=order.id+'_'+pgNum.toString();
-						pgBody.sheet_num=so.sheets_num; //pgBody.files.length;
-						/*
-						if(so.extraInfo){
-							so.extraInfo.books=pgBody.book_num;
-							so.extraInfo.sheets=pgBody.sheet_num;
-						}
-						*/
+						pgBody.sheet_num=so.sheets_num; 
+						if(pgBody.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) pgBody.sheet_num+=1; //add cover
 						pgBody.prints=pgBody.book_num*pgBody.sheet_num;
 						if(!order.printGroups) order.printGroups=new ArrayCollection();
 						order.printGroups.addItem(pgBody);
@@ -626,21 +659,38 @@ package com.photodispatcher.factory{
 			} catch(error:Error){
 				trace('buildPreview err: '+error.message);
 			}
+			if(!bookSynonym){
+				//may be fbook
+				if(order.hasSuborders){
+					var so:SubOrder=order.suborders.getItemAt(0) as SubOrder;
+					if(so){
+						try{
+							bookSynonym=BookSynonym.translatePath(so.alias,src.type);
+							if(!bookSynonym) bookSynonym=BookSynonym.translateAlias(so.alias);
+						} catch(error:Error){
+							trace('buildPreview err: '+error.message);
+						}
+					}
+				}
+			}
+
 			var template:BookPgTemplate;
 			if(!bookSynonym){
+				//simple (not paged) pdf
 				template=new BookPgTemplate;
 				template.is_pdf=false;
-				template.is_sheet_ready= false;
+				template.is_sheet_ready= true;
 			}
 			for each(pg in order.printGroups){
 				if(pg.book_type!=0){
 					//build book prview
 					//reset book_type 4 preview 
 					if(pg.book_type==BookSynonym.BOOK_TYPE_JOURNAL) pg.book_type=BookSynonym.BOOK_TYPE_BOOK;
-					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
+					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK || pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
 						if(bookSynonym){
 							pg.bookTemplate=bookSynonym.blockTemplate;
 						}else{
+							//fbook or wrong template
 							pg.bookTemplate=template;
 						}
 						fillSheets(ppg, pg, true);
@@ -663,7 +713,7 @@ package com.photodispatcher.factory{
 		}
 		
 		/*
-		 * for books only 
+		 * for books reprint only 
 		*/
 		public function recreateFromFilesystem(order:Order, pg:PrintGroup):Boolean{
 			if(!Order || !pg) return false;
@@ -706,6 +756,8 @@ package com.photodispatcher.factory{
 			if(!bookSynonym) return false;
 			
 			pg.files=null;
+			//store current pg paper, case when alt papper inuse
+			var paper:int=pg.paper;
 			if(pg.book_part==BookSynonym.BOOK_PART_COVER){
 				//covers group
 				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_COVER, ppg.butt, pg)){
@@ -723,12 +775,14 @@ package com.photodispatcher.factory{
 				}
 			}else if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
 				//sheets group
-				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_BLOCK,0,pg)){
+				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_BLOCK, ppg.butt, pg)){
 					fillSheets(ppg, pg, false);
 				}
 			}
+			//restore paper
+			pg.paper=paper;
 			if(pg.files){
-				pg.book_num=ppg.book_num;
+				//pg.book_num=Math.max(ppg.book_num,pg.book_num);
 				a=pg.bookFiles;
 				//remove empty
 				var a2:Array=[];

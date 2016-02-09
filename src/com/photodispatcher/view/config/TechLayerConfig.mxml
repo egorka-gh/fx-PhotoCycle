@@ -178,7 +178,6 @@
 				var arr:Array=[];
 				var lg:LayerGroup;
 				var newState:String;
-				//var dao:DictionaryCommonDAO;
 				var sarr:Array;
 				if(currentState=='templates'){
 					newState='template_edit';

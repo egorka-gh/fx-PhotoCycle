@@ -1,217 +1,430 @@
 package com.photodispatcher.provider.preprocess{
-	import com.jxl.chat.vo.InstructionConstants;
-	import com.jxl.chat.vo.messages.ChatMessageVO;
-	import com.jxl.chatserver.events.ServiceEvent;
-	import com.jxl.chatserver.mvcs.services.ChatServerService;
-	import com.jxl.chatserver.vo.ClientVO;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.OrderBuildEvent;
 	import com.photodispatcher.event.OrderBuildProgressEvent;
+	import com.photodispatcher.factory.OrderBuilder;
+	import com.photodispatcher.factory.WebServiceBuilder;
+	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.StateLog;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
+	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.model.mysql.services.OrderStateService;
+	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.events.ProgressEvent;
+	import flash.events.TimerEvent;
 	import flash.sampler.NewObjectSample;
 	import flash.utils.Dictionary;
+	import flash.utils.Timer;
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
+	import mx.events.FlexEvent;
+	
+	import org.granite.tide.Tide;
 
 	[Event(name="orderPreprocessed", type="com.photodispatcher.event.OrderBuildEvent")]
+	[Event(name="dataChange", type="mx.events.FlexEvent")]
 	public class PreprocessManager extends EventDispatcher{
 
-		[Bindable(event="queueLenthChange")]
-		public function get queueLenth():int{
-			return queue.length;
-		}
+		public static const WEB_ERRORS_LIMIT:int=3;
 
-		[Bindable(event="queueLenthChange")]
-		public function get errorOrdersLenth():int{
-			return errOrders.length;
-		}
-
-		[Bindable(event="remoteBuildersCountChange")]
-		public function get remoteBuildersCount():int{
-			var result:int=0;
-			if(buildesMap){
-				var b:OrderBuilderBase;
-				for each(b in buildesMap){
-					if(b && b.type!=OrderBuilderBase.TYPE_LOCAL) result++;
-				}
-			}
-			return result;
-		}
-
-		[Bindable]
-		public  var orderList:ArrayCollection=new ArrayCollection();
-		
-		private function refreshOrderList(e:Event):void{
-			orderList.source=queue.concat(errOrders);
-			orderList.refresh();
-			
-		}
-		
 		[Bindable]
 		public var lastError:String='';
 		[Bindable]
+		public var lastLoadTime:Date;
+		[Bindable]
 		public var progressCaption:String='';
+		
+		public var builder:OrderBuilderLocal;
 
-		private var buildesMap:Dictionary;
-		private var queue:Array=[];
-		private var errOrders:Array=[];
+		[Bindable]
+		public  var queue:ArrayCollection;
+
+		private var webErrCounter:int=0;
 		
 		public function PreprocessManager(){
 			super();
-			addEventListener('queueLenthChange',refreshOrderList);
+			queue= new ArrayCollection();
+			builder= new OrderBuilderLocal();
+			listenBuilder(builder);
 		}
 		
-		public function resync(orders:Array):void{
-			if(!orders) return;
-			
-			var a:Array=[];
-			var wOrder:Order;
-			var idx:int;
+		private function get orderService():OrderService{
+			return Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+		}
+		
+		public function reLoad():void{
+			stopTimer();
+			//reset errors
+			for each(var o:Order in queue.source){
+				if(o && o.state<0) o.state=OrderState.PREPROCESS_WAITE;
+			}
 
-			//resync resize orders
-			if(queue.length>0) a=a.concat(queue);
-			if(a.length>0){
-				for each(wOrder in a){
-					if(wOrder){
-						idx=ArrayUtil.searchItemIdx('id',wOrder.id,orders);
-						if(idx!=-1){
-							//replace in sync array
-							orders[idx]=wOrder;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onloadFromDB);
+			latch.addLatch(orderService.loadByState(OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED));
+			latch.start();
+		}
+		private function onloadFromDB(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onloadFromDB);
+			if(autoLoad) startTimer();
+			lastLoadTime= new Date();
+			if(!latch || !latch.complite) return;
+			var toAdd:Array=latch.lastDataArr;
+			if(!toAdd || toAdd.length==0) return;
+			var newItems:Array=[];
+			if(currOrder) newItems.push(currOrder);
+			for each(var order:Order in toAdd){
+				if(order){
+					if(!currOrder || order.id!=currOrder.id){
+						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORWARD) order.state=OrderState.PREPROCESS_WAITE;
+						var oldOrder:Order=ArrayUtil.searchItem('id',order.id,queue.source) as Order;
+						if(oldOrder){
+							newItems.push(oldOrder);
 						}else{
-							//add to sync array
-							orders.unshift(wOrder);
+							newItems.push(order);
 						}
 					}
 				}
 			}
-			
-			//restart resizeErrOrders
-			if(errOrders.length>0){
-				for each(wOrder in errOrders){
-					if(wOrder){
-						idx=ArrayUtil.searchItemIdx('id',wOrder.id,orders);
-						if(idx!=-1){
-							//reset ??
-							//replace in sync array
-							orders[idx]=wOrder;
-						}
-					}
-				}
-				errOrders=[];
-			}
-			dispatchEvent(new Event('queueLenthChange'));
-			//wake up
+			queue = new ArrayCollection(newItems);
+			webErrCounter=0;
+			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
 			startNext();
 		}
-		
-		public function build(order:Order):void{
+
+		private var currOrder:Order;
+
+		private function startNext():void{
+			progressCaption='';
+			if(!isStarted){
+				currOrder=null;
+				return;
+			}
+			if(currOrder) return;
+			if(builder.isBusy) return;
+			if(queue.source.length==0) return;
+			
+			//get order
+			var o:Order;
+			var order:Order;
+			//var faultOrder:Order;
+			
+			for each(o in queue.source){
+				if(o){
+					if(o.state==OrderState.PREPROCESS_FORWARD){
+						order=o;
+						break;
+					}else if(o.state==OrderState.PREPROCESS_WAITE){
+						if(!order) order=o;
+						/*
+					}else if(!faultOrder && o.state<0 && o.state!=OrderState.ERR_PREPROCESS && o.state!=OrderState.ERR_LOCK_FAULT){
+						faultOrder=o;
+						*/
+					}
+				}
+			}
+			//if(!order) order=faultOrder;
 			if(!order) return;
-			order.state=OrderState.PREPROCESS_WAITE;
-			queue.push(order);
-			dispatchEvent(new Event('queueLenthChange'));
-			startNext();
+			
+			currOrder=order;
+			if(currOrder.state!=OrderState.PREPROCESS_WAITE) currOrder.state=OrderState.PREPROCESS_WAITE;
+			
+			getLock();
+		}
+
+		private function getLock():void{
+			if(!isStarted) currOrder=null;
+			if(!currOrder) return;
+			progressCaption='Захват на обработку '+currOrder.id;
+			var latch:DbLatch=OrderService.getPreprocessLock(currOrder.id);
+			latch.addEventListener(Event.COMPLETE,ongetLock);
+			latch.start();
+		}
+		private function ongetLock(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			latch.removeEventListener(Event.COMPLETE,ongetLock);
+			if(!currOrder) return;
+			if(latch.resultCode>0){
+				checkWebState();
+			}else{
+				lastError='Заказ '+currOrder.id+' обрабатывается на другой станции';
+				StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','soft lock');
+				currOrder.state= OrderState.ERR_LOCK_FAULT;
+				currOrder=null;
+				startNext();
+			}
+		}
+
+		private function releaseLock():void{
+			if(!currOrder) return;
+			//TODO can release another's lock
+			OrderService.releasePreprocessLock(currOrder.id);
+		}
+
+		
+		private function checkWebState():void{
+			if(!currOrder) return;
+			progressCaption='Проверка Web '+currOrder.id;
+			trace('PreprocessManager.checkQueue web request '+currOrder.ftp_folder);
+			//check state on site
+			var source:Source= Context.getSource(currOrder.source);
+			if(!source) return;
+			var webService:BaseWeb=WebServiceBuilder.build(source);
+			if(!webService) return;
+			currOrder.state=OrderState.PREPROCESS_WEB_CHECK;
+			webService.addEventListener(Event.COMPLETE,getOrderHandle);
+			webService.getOrder(currOrder);
 		}
 		
-		public function init():void{
-			var chatServer:ChatServerService=ChatServerService.instance;
-			/*
-			//TODO implement process allready connected
-			if(!chatServer.isOnline) chatServer.startServer();
-			*/
-			chatServer.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_ERROR,onServerError);
-			chatServer.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_USER_ONLINE,onNewBuilder);
-			chatServer.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_USER_OFFLINE,onBuilderDisconnect);
-			chatServer.addEventListener(ServiceEvent.CHAT_SERVER_SERVICE_USER_MESSAGE,onChatMessage);
+		private function getOrderHandle(e:Event):void{
+			var pw:BaseWeb=e.target as BaseWeb;
+			pw.removeEventListener(Event.COMPLETE,getOrderHandle);
+			if(!currOrder) return;
 			
-			if(!chatServer.isOnline){
-				var servIp:String;
-				servIp=Context.getAttribute("serverIP");
-				if(servIp){
-					chatServer.startServer(servIp);
+			if(pw.hasError){
+				webErrCounter++;
+				trace('getOrderHandle web check order err: '+pw.errMesage);
+				lastError='Заказ '+currOrder.id+'. Ошибка проверки на сайте: '+pw.errMesage;
+				currOrder.state=OrderState.ERR_WEB;
+				StateLog.log(OrderState.ERR_WEB,currOrder.id,'','Ошибка проверки на сайте: '+pw.errMesage);
+				//releaseLock();
+				currOrder= null;
+				//to prevent cycle web check when network error or offline
+				if(webErrCounter<WEB_ERRORS_LIMIT) startNext();
+				return;
+			}
+			webErrCounter=0;
+			if(pw.isValidLastOrder(true)){
+				//check production
+				if(pw.source.type==SourceType.SRC_FOTOKNIGA && Context.getProduction()!=Context.PRODUCTION_ANY){
+					currOrder.production=pw.getLastOrder().production;
+					if(currOrder.production==Context.PRODUCTION_NOT_SET){
+						trace('PreprocessManager.getOrderHandle; order production not set '+currOrder.id);
+						currOrder.state=OrderState.ERR_PRODUCTION_NOT_SET;
+						//releaseLock();
+						currOrder= null;
+						return;
+					}
+					if(currOrder.production!=Context.getProduction()){
+						trace('PreprocessManager.getOrderHandle; wrong order production; cancel order '+currOrder.id);
+						currOrder.state=OrderState.CANCELED_PRODUCTION;
+						//releaseLock();
+						currOrder= null;
+						return;
+					}
+				}
+				trace('PreprocessManager.getOrderHandle: web check Ok'+currOrder.ftp_folder);
+				currOrder.state=OrderState.PREPROCESS_WEB_OK;
+				//fill extra info
+				if(pw.getLastOrder().extraInfo) currOrder.extraInfo=pw.getLastOrder().extraInfo;
+				
+				//forvard
+				fillFromDb();
+			}else{
+				//mark as canceled
+				trace('PreprocessManager.getOrderHandle; web check fault; order canceled '+currOrder.ftp_folder);
+				currOrder.state=OrderState.CANCELED_SYNC;
+				releaseLock();
+				releaseOrder();
+				currOrder= null;
+				startNext();
+			}
+		}
+
+		
+		private function fillFromDb():void{
+			if(!currOrder) return;
+			progressCaption='Загрузка из БД '+currOrder.id;
+			var latch:DbLatch=new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onfillFromDb);
+			latch.addLatch(orderService.loadOrderVsChilds(currOrder.id));
+			latch.start();
+		}
+		private function onfillFromDb(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			var dbOrder:Order;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onfillFromDb);
+				if (latch.complite){
+					dbOrder=latch.lastDataItem as Order;
+				}else{
+					trace('PreprocessManager.fillFromDb: db error '+latch.lastError);
+					lastError='Ошибка базы данных заказ: '+currOrder.id+'. '+latch.lastError;
 				}
 			}
-			buildesMap=new Dictionary();
-			var lb:OrderBuilderLocal= new OrderBuilderLocal();
-			listenBuilder(lb);
-			buildesMap['local']=lb;
+			if(!currOrder) return;
+			if(!dbOrder){
+				currOrder.state= OrderState.ERR_READ_LOCK;
+				releaseLock();
+				currOrder= null;
+				startNext();
+				return;
+			}
+			
+			currOrder.suborders=dbOrder.suborders;
+			//forvard
+			//restore from filesystem
+			if(OrderBuilder.restoreFromFilesystem(currOrder)<0){
+				//releaseLock();
+				currOrder= null;
+				startNext();
+				return;
+			}
+
+			//forvard
+			//capturestate
+			progressCaption='Блокировка на обработку '+currOrder.id;
+			currOrder.state=OrderState.PREPROCESS_CAPTURED;
+			latch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,oncaptureState);
+			latch.addLatch(orderService.captureState(currOrder.id, OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED, Context.appID));
+			latch.start();
 		}
-		
-		public function destroy():void{
-			//TODO implement
-		}
-		
-		private function onServerError(evt:ServiceEvent):void{
-			Alert.show('Ошибка chatServer: '+evt.lastError);
-		}
-		private function onNewBuilder(evt:ServiceEvent):void{
-			var client:ClientVO=evt.user;
-			if(client && (client.userType==ClientVO.TYPE_BUILDER || client.userType==ClientVO.TYPE_HELPER)){
-				if(!buildesMap[client]){
-					var builder:OrderBuilderBase=new OrderBuilderRemote(client);
-					listenBuilder(builder);
-					buildesMap[client]=builder;
-					dispatchEvent(new Event('remoteBuildersCountChange'));
+		private function oncaptureState(evt:Event):void{
+			releaseLock();
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,oncaptureState);
+				if(!currOrder) return;
+				if (latch.complite && latch.resultCode==OrderState.PREPROCESS_CAPTURED){
+					//forvard
+					//build
+					builder.build(currOrder);
+					//TODO remove currOrder from queue after complite
+				}else{
+					trace('PreprocessManager.captureState: db error '+latch.lastError);
+					lastError='Заказ: '+currOrder.id+' блокирован другим процессом '+latch.lastError;
+					StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','hard lock');
+					currOrder.state= OrderState.ERR_LOCK_FAULT;
+					currOrder=null;
 					startNext();
 				}
 			}
 		}
-		private function onBuilderDisconnect(evt:ServiceEvent):void{
-			var builder:OrderBuilderRemote=buildesMap[evt.user] as OrderBuilderRemote;
-			if(builder){
-				if(builder.isBusy ){
-					//release order
-					//TODO order can be still processed
-					resetOrder(builder.lastOrder);
-				}
-				destroyBuilder(builder);
-				delete buildesMap[evt.user];
-			}
-			dispatchEvent(new Event('remoteBuildersCountChange'));
-			startNext();
-		}
-		private function resetOrder(order:Order):void{
-			if(order && order.state!=OrderState.PREPROCESS_WAITE){
-				order.state=OrderState.PREPROCESS_WAITE;
-			}
-		}
-		private function onChatMessage(evt:ServiceEvent):void{
-			var msg:ChatMessageVO= evt.message;
-			if(!msg) return;
-			switch(msg.instructions){
-				case InstructionConstants.CLIENT_SET_USERTYPE:
-					//add if new
-					checkUserMode(evt);
-					break;
-			}
-			var builder:OrderBuilderRemote=buildesMap[evt.user] as OrderBuilderRemote;
-			if(builder) builder.processMessage(evt.message);
-		}
-		
-		private function checkUserMode(evt:ServiceEvent):void{
-			var client:ClientVO=evt.user;
-			var builder:OrderBuilderRemote;
-			if(client){
-				builder=buildesMap[client] as OrderBuilderRemote;
-				if(builder){
-					if(!builder.isBusy && client.userType!=ClientVO.TYPE_BUILDER && client.userType!=ClientVO.TYPE_HELPER){
-						destroyBuilder(builder);
-						delete buildesMap[client];
-						dispatchEvent(new Event('remoteBuildersCountChange'));
-					}
-				}else{
-					onNewBuilder(evt);
-				}
-			}
+
+		private function releaseOrder():void{
+			if(!currOrder) return;
+			var idx:int=ArrayUtil.searchItemIdx('id',currOrder.id, queue.source);
+			if(idx==-1) return;
+			queue.source.splice(idx,1);
+			queue.refresh();
+			currOrder=null;
 		}
 
+		private var timer:Timer;
+
+		private var _autoLoadInterval:int=10; //min
+		public function get autoLoadInterval():int{
+			return _autoLoadInterval;
+		}
+		public function set autoLoadInterval(value:int):void{
+			if(value<=0){
+				autoLoad=false;
+				_autoLoadInterval=10;
+			}else{
+				_autoLoadInterval = value;
+			}
+			if(timer) timer.delay=_autoLoadInterval*60*1000;
+		}
+
+		
+		private var _autoLoad:Boolean;
+		public function set autoLoad(load:Boolean):void{
+			if(!load) stopTimer();
+			_autoLoad=load;
+			if(_autoLoad) startTimer();
+		}
+		public function get autoLoad():Boolean{
+			return _autoLoad;
+		}
+		
+		private function startTimer():void{
+			if(!timer){
+				timer= new Timer(autoLoadInterval*60*1000);
+				timer.addEventListener(TimerEvent.TIMER, onTimer);
+			}
+			if(isStarted) timer.start();
+		}
+		private function stopTimer():void{
+			if(timer) timer.stop();
+		}
+		private function onTimer(evt:TimerEvent):void{
+			reLoad();
+		}
+
+		private var _isStarted:Boolean;
+		[Bindable]
+		public function get isStarted():Boolean{
+			return _isStarted;
+		}
+		public function set isStarted(value:Boolean):void{
+			if(value){ 
+				start();
+			}else{
+				stop();
+			}
+			_isStarted = value;
+		}
+
+		
+		private function start():void{
+			if(_isStarted) return;
+			_isStarted=true;
+			autoLoadInterval=Context.getAttribute('syncInterval');
+			reLoad();
+		}
+		
+		private function stop():void{
+			_isStarted=false;
+			stopTimer();
+			progressCaption='';
+			releaseLock();
+			if(currOrder){ 
+				if(currOrder.state < OrderState.PREPROCESS_CAPTURED){
+					currOrder.state=OrderState.PREPROCESS_WAITE;
+				}else{
+					builder.stop();
+					//unlock
+					currOrder.state=OrderState.PREPROCESS_WAITE;
+					var latch:DbLatch= new DbLatch(true);
+					//latch.addEventListener(Event.COMPLETE,onOrderSave);
+					latch.addLatch(orderService.setState(currOrder));
+					latch.start();
+				}
+				currOrder=null;
+			}
+			//reset states
+			for each (var order:Order in queue.source){
+				if(order){
+					if(!currOrder || (currOrder.id!=order.id)){
+						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORWARD ){
+							order.state=OrderState.PREPROCESS_WAITE;
+						}
+					}
+				}
+			}
+
+		}
+
+		public function destroy():void{
+			//TODO implement
+		}
+		
 		private function listenBuilder(builder:OrderBuilderBase):void{
 			if(!builder) return;
 			builder.addEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);
@@ -229,103 +442,117 @@ package com.photodispatcher.provider.preprocess{
 			progressCaption=e.caption;
 			dispatchEvent(e.clone());
 		}
-
 		private function onBuilderError(evt:OrderBuildEvent):void{
-			//builder internal error
-			resetOrder(evt.order);
-			var builder:OrderBuilderBase=evt.target as OrderBuilderBase;
-			var msg:String='';
-			if(builder){
-				if(builder.type==OrderBuilderBase.TYPE_LOCAL){
-					msg='Local builder: ';
-				}else if(builder is OrderBuilderRemote){
-					msg=(builder as OrderBuilderRemote).client.username+': ';
-				}
-			}
-			lastError=msg+evt.err_msg;
-			//TODO do something vs builder
+			//builder error
+			lastError=evt.err_msg;
+			if(!currOrder) return;
+			currOrder.state=OrderState.PREPROCESS_INCOMPLETE;
+			saveOrder(currOrder);
+			currOrder=null;
 			startNext();
 		}
 		private function onOrderPreprocessed(evt:OrderBuildEvent):void{
+			if(!currOrder) return;
 			//order complited
 			//remove from queue
-			var idx:int=-1;
-			if(evt.order) idx=queue.indexOf(evt.order);
-			if(idx!=-1) queue.splice(idx,1);
 			if(evt.err<0){
 				//completed vs error
-				if(evt.order){
-					//evt.order.resetPreprocess();
-					errOrders.push(evt.order);
-				}
+				currOrder.state=OrderState.PREPROCESS_INCOMPLETE;
 			}else{
-				dispatchEvent(evt.clone());
+				if(currOrder.is_preload){
+					currOrder.state=OrderState.PRN_WAITE_ORDER_STATE;
+				}else{
+					currOrder.state=OrderState.PRN_WAITE;
+				}
 			}
-			dispatchEvent(new Event('queueLenthChange'));
+			
+			//apply alt paper
+			var so:SubOrder;
+			var pg:PrintGroup;
+			var newPaper:int=-1;
+			var newInterlayer:String;
+			for each(pg in currOrder.printGroups){
+				if(pg.book_type==0 || !pg.bookTemplate) continue;
+				if(pg.book_part!= BookSynonym.BOOK_PART_BLOCK && pg.book_part!= BookSynonym.BOOK_PART_BLOCKCOVER) continue;
+				newPaper=0;
+				newInterlayer="";
+				if(pg.bookTemplate.altPaper){
+					for each (var ap:BookPgAltPaper in pg.bookTemplate.altPaper){
+						if(pg.sheet_num>=ap.sh_from && pg.sheet_num<=ap.sh_to){
+							if(ap.paper>0 && newPaper==0) newPaper=ap.paper;
+							if(ap.interlayer_name && !newInterlayer) newInterlayer=ap.interlayer_name;
+							if(newPaper>0 && newInterlayer) break;
+						}
+					}
+				}
+				if(newPaper>0) pg.paper=newPaper;
+				if(newInterlayer){
+					var ei:OrderExtraInfo;
+					if(!pg.sub_id){
+						//get order extrainfo
+						if(!currOrder.extraInfo){
+							currOrder.extraInfo= new OrderExtraInfo();
+							currOrder.extraInfo.id=currOrder.id;
+							currOrder.extraInfo.sub_id='';
+						}
+						ei=currOrder.extraInfo;
+					}else{
+						//get suborder extraInfo
+						so=currOrder.getSuborder(pg.sub_id);
+						if(so){
+							if(!so.extraInfo){
+								so.extraInfo= new OrderExtraInfo();
+								so.extraInfo.id=currOrder.id;
+								so.extraInfo.sub_id=pg.sub_id;
+							}
+							ei=so.extraInfo;
+						}
+					}
+					if(ei) ei.interlayer=newInterlayer;
+				}
+			}
+			
+			//clean
+			if(currOrder.hasSuborders){
+				for each(so in currOrder.suborders) so.destroyChilds();
+			}
+			saveOrder(currOrder);
+			releaseOrder();
 			startNext();
 		}
 		
-		private function startNext():void{
-			if(queue.length==0) return;
-
-			//get order
-			var o:Order;
-			var order:Order;
-			for each(o in queue){
-				if(o && o.state==OrderState.PREPROCESS_WAITE){
-					order=o;
-					break;
+		private function saveOrder(order:Order):void{
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onsaveOrder);
+			if(order.state<0){
+				//save error state
+				latch.addLatch(orderService.setState(order));
+			}else{
+				//persist
+				var tag:String;
+				if(order.state==OrderState.PRN_WAITE) tag=order.id;
+				latch.addLatch(orderService.fillUpOrder(order), tag);
+			}
+			latch.start();
+		}
+		private function onsaveOrder(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onsaveOrder);
+				var id:String= latch.lastTag;
+				if (latch.complite && id){
+					//set extra state
+					//if(!order || order.state!=OrderState.PRN_WAITE) return;
+					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+					latch=new DbLatch();
+					//latch.addEventListener(Event.COMPLETE,onCompleteOrder);
+					//set PRN_WAITE extra state 
+					latch.addLatch(svc.extraStateFix(id, OrderState.PRN_WAITE, new Date()));
+					latch.start();
 				}
 			}
-			if(!order) return;
-
-			var toKill:Array=[];
-			//get builder
-			var b:OrderBuilderBase;
-			var builder:OrderBuilderBase;
-			for each(b in buildesMap){
-				if(b && !b.isBusy){
-					if(isBuilderValid(b)){ //chek if remote is still builder
-						if(b.skipOnReject){
-							b.skipOnReject=false;
-						}else{
-							if(!builder){
-								builder=b;
-							}else{
-								if(builder.type==OrderBuilderBase.TYPE_LOCAL){
-									builder=b;
-								}else if(b.type!=OrderBuilderBase.TYPE_LOCAL && b.lastBuildDate.time<builder.lastBuildDate.time){
-									builder=b;
-								}
-							}
-						}
-					}else{
-						toKill.push(b);
-					}
-				}
-			}
-			if(toKill.length){
-				var rb:OrderBuilderRemote;
-				for each (rb in toKill){
-					if(rb){
-						destroyBuilder(rb);
-						delete buildesMap[rb.client];
-					}
-				}
-				dispatchEvent(new Event('remoteBuildersCountChange'));
-			}
-			
-			if(!builder) return;
-
-			builder.build(order);
+			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
 		}
 
-		private function isBuilderValid(builder:OrderBuilderBase):Boolean{
-			if (!builder) return false;
-			if(builder.type==OrderBuilderBase.TYPE_LOCAL) return true;
-			var rb:OrderBuilderRemote= builder as OrderBuilderRemote;
-			if (!rb) return false;
-			return  rb.client.userType==ClientVO.TYPE_BUILDER || rb.client.userType==ClientVO.TYPE_HELPER;
-		}
 	}
 } 

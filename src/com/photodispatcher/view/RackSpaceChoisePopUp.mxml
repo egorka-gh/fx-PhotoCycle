@@ -12,6 +12,7 @@
 			import com.photodispatcher.model.mysql.services.MailPackageService;
 			
 			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;
 			
@@ -37,6 +38,11 @@
 			private function get bdService():MailPackageService{
 				if(!_bdService) _bdService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				return _bdService;
+			}
+			
+			private function refresh():void{
+				if(dgSpaces) dgSpaces.clearSelection();
+				loadSpaces();
 			}
 			
 			private function loadSpaces():void{
@@ -86,7 +92,17 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onsetSpace);
 					if(latch.complite){
-						close(true);
+						if(latch.resultCode<0){
+							// some error
+							if(latch.resultCode==-1){
+								Alert.show('Полка занята другой группой заказов.');
+							}else if(latch.resultCode==-2){
+								Alert.show('Превышен вес полки.');
+							}
+							refresh();
+						}else{
+							close(true);
+						}
 					}
 				}
 			}

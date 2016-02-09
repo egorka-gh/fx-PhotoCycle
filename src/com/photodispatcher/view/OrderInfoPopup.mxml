@@ -31,6 +31,7 @@
 			import com.photodispatcher.provider.preprocess.ReprintBuilder;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.itemRenderer.PGFileReprintItemRenderer;
+			import com.photodispatcher.view.menu.MenuCommonActions;
 			
 			import flash.utils.flash_proxy;
 			
@@ -205,11 +206,15 @@
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if (!order) return;
+				/*
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onOrderClean);
 				latch.addLatch(svc.cleanUpOrder(order.id));
 				latch.start();
+				*/
+				var latch:DbLatch=MenuCommonActions.cleanUpOrder(order, OrderState.FTP_WAITE);
+				latch.addEventListener(Event.COMPLETE,onOrderClean);
 			}
 			private function onOrderClean(e:Event):void{
 				var latch:DbLatch=e.target as DbLatch;
@@ -330,8 +335,25 @@
 				reprintFileList=new ArrayCollection(a);
 			}
 			
-			private var pop:StaffActivityPopup;
 			protected function btReprint_clickHandler(event:MouseEvent):void{
+				//get soft lock
+				progressCaption='Захват на обработку '+order.id;
+				var latch:DbLatch=OrderService.getPreprocessLock(order.id);
+				latch.addEventListener(Event.COMPLETE,ongetLock);
+				latch.start();
+			}
+			private function ongetLock(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				latch.removeEventListener(Event.COMPLETE,ongetLock);
+				if(latch.resultCode>0){
+					runActivityPopup();
+				}else{
+					Alert.show('Заказ '+order.id+' обрабатывается на другой станции');
+				}
+			}
+			
+			private var pop:StaffActivityPopup;
+			private function runActivityPopup():void{
 				//ask 4 activity
 				pop= new StaffActivityPopup();
 				pop.addEventListener(PopUpEvent.CLOSE, onActivityPop);
@@ -341,6 +363,8 @@
 				if(evt.commit){
 					var activity:StaffActivity=evt.data as StaffActivity;
 					createReprint(activity);
+				}else{
+					OrderService.releasePreprocessLock(order.id);
 				}
 			}
 			
@@ -372,9 +396,11 @@
 			}
 			
 			private function onBuilderError(evt:OrderBuildEvent):void{
+				OrderService.releasePreprocessLock(order.id);
 				Alert.show(evt.err_msg);
 			}
 			private function onOrderPreprocessed(evt:OrderBuildEvent):void{
+				OrderService.releasePreprocessLock(order.id);
 				if(evt.err<0){
 					//completed vs error
 					Alert.show(evt.err_msg);
@@ -382,100 +408,6 @@
 					close();
 				}
 			}
-
-			
-			/*
-			private var activityList:ArrayCollection;
-			protected function createReprint(activity:StaffActivity=null):void{
-				var pg:PrintGroup;
-				var pgf:PrintGroupFile;
-				var arrPG:Array=[];
-				var files:ListCollectionView;
-				//get reprint pg
-				for each (pg in reprintPGList){
-					if(pg){
-						for each (pgf in pg.files){
-							if(pgf && pgf.reprint){
-								arrPG.push(pg);
-								break;
-							}
-						}
-					}
-				}
-				if(arrPG.length==0) return;
-				
-				//get reprint files
-				var pgIdx:int=pgList.length;
-				var prints:int;
-				var pdfPG:Array=[];
-				var simplePG:Array=[];
-				for each (pg in arrPG){
-					if(pg){
-						//set pg props
-						pgIdx++;
-						prints=0;
-						pg.is_reprint=true;
-						pg.reprint_id=pg.id;
-						pg.id=order.id+'_'+pgIdx.toString();
-						if(pg.is_pdf){
-							pdfPG.push(pg);
-						}else{
-							pg.state=OrderState.PRN_WAITE;
-							//get files
-							files=pg.files;
-							pg.resetFiles();
-							for each (pgf in files){
-								if(pgf && pgf.reprint){
-									pgf.print_group=pg.id;
-									pg.addFile(pgf);
-									prints+=pgf.prt_qty>0?pgf.prt_qty:1;
-								}
-							}
-							pg.file_num=pg.files.length;
-							pg.prints=prints;
-							pg.book_num=1;
-							pg.sheet_num=pg.files.length;
-							simplePG.push(pg);
-						}
-					}
-				}
-				
-				//fill activity list
-				activityList= new ArrayCollection();
-				if(activity){
-					var sa:StaffActivity;
-					for each (pg in arrPG){
-						if(pg){
-							sa=activity.clone();
-							sa.order_id=pg.order_id;
-							sa.pg_id=pg.id;
-							activityList.addItem(sa);
-						}
-					}
-				}
-				
-				//save pgs
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onReprint);
-				latch.addLatch(svc.addReprintPGroups(new ArrayCollection(arrPG)));
-				latch.start();
-				btReprint.enabled=false;
-				btLookup.enabled=false;
-			}
-			private function onReprint(e:Event):void{
-				var latch:DbLatch=e.target as DbLatch;
-				if(latch) latch.removeEventListener(Event.COMPLETE,onReprint);
-				if(activityList && activityList.length>0){
-					var svc:StaffActivityService=Tide.getInstance().getContext().byType(StaffActivityService,true) as StaffActivityService;
-					latch= new DbLatch();
-					//latch.addEventListener(Event.COMPLETE,onReprint);
-					latch.addLatch(svc.logActivityBatch(activityList));
-					latch.start();
-				}
-				close();
-			}
-			*/
 
 			protected function btReprintAll_clickHandler(event:MouseEvent):void{
 				if(!reprintFileList) return;
@@ -505,6 +437,32 @@
 				}
 				return res;
 			}
+			
+			protected function btRebuild_clickHandler(event:MouseEvent):void{
+				if (!order) return;
+				if (order.state<OrderState.PRN_WAITE_ORDER_STATE) return;
+				var latch:DbLatch=MenuCommonActions.cleanUpOrder(order, OrderState.PREPROCESS_WAITE);
+				latch.addEventListener(Event.COMPLETE,onOrderClean);
+			}
+			
+			protected function btColCor_clickHandler(event:MouseEvent):void{
+				if (!order) return;
+				if (order.state<OrderState.FTP_COMPLETE) return;
+				if (order.state==OrderState.COLOR_CORRECTION ||order.state==OrderState.COLOR_CORRECTION_WAITE) return;
+				if (!order.hasSuborders){
+					Alert.show('Закз не содержит подзаказов');
+					return;
+				}
+				/*
+				if (order.state>OrderState.COLOR_CORRECTION){
+					Alert.show('Закз будет сброшен');
+				}
+				*/
+				var latch:DbLatch=MenuCommonActions.cleanUpOrder(order, OrderState.COLOR_CORRECTION_WAITE);
+				latch.addEventListener(Event.COMPLETE,onOrderClean);
+			}
+			
+			
 		]]>
 	</fx:Script>
 	
@@ -593,7 +551,17 @@
 						</s:FormItem> 
 					</s:Form>
 				<!--</s:Scroller>-->
-				<s:Button label="Сброс" bottom="10" right="10" click="button1_clickHandler(event)" includeIn="infoFull"/>
+				<s:VGroup gap="10" width="100%" bottom="0" paddingBottom="10" paddingRight="10" paddingLeft="10" includeIn="infoFull">
+					<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="right">
+						<s:Button id="btColCor" label="Цветокорекция" click="btColCor_clickHandler(event)" 
+								  enabled="{order.state>OrderState.FTP_COMPLETE}"/>
+						<s:Button id="btRebuild" label="Переподготовить" click="btRebuild_clickHandler(event)" 
+								  enabled="{order.state>OrderState.PREPROCESS_COMPLETE}"/>
+					</s:HGroup>
+					<s:HGroup gap="10" verticalAlign="baseline" width="100%"  horizontalAlign="right">
+						<s:Button label="Перезагрузить" click="button1_clickHandler(event)"/>
+					</s:HGroup>
+				</s:VGroup>
 			</s:Group>
 			
 			<s:VGroup id="gDet" gap="0" width="100%" height="100%" includeIn="info">
@@ -613,7 +581,7 @@
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:VGroup width="450" height="100%" gap="5">
 									<s:Label text="Подзаказы"/>
-									<s:DataGrid id="dgSuborders" selectionMode="singleRow" width="100%" height="100%" 
+									<s:DataGrid id="dgSuborders" selectionMode="singleRow" width="100%" height="100%" editable="true"
 												selectionChange="{currEI=dgSuborders.selectedItem.extraInfo as OrderExtraInfo}" 
 												dataProvider="{soList}" locale="ru_RU" columns="{SubOrder.gridColumns()}"/>
 								</s:VGroup>
@@ -686,7 +654,7 @@
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterPg" dataProvider="{soFilterList}" labelField="sub_id"
 										width="100" height="100%" change="{applyPgFilter()}"/>
-								<s:DataGrid id="dgPGroups" selectionMode="none" width="100%" height="100%"
+								<s:DataGrid id="dgPGroups" selectionMode="singleRow" width="100%" height="100%" editable="true"
 											dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.shortGridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
@@ -694,7 +662,7 @@
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterFiles" dataProvider="{pgList}" labelField="id"
 										width="100" height="100%"/>
-								<s:DataGrid id="dgFiles" selectionMode="none" width="100%" height="100%"
+								<s:DataGrid id="dgFiles" selectionMode="singleRow" width="100%" height="100%" editable="true"
 											dataProvider="{lstFilterFiles.selectedItem.files}" locale="ru_RU" columns="{PrintGroupFile.gridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>
@@ -721,7 +689,7 @@
 							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
 								<s:List id="lstFilterLog" dataProvider="{logFilterList}" labelField="id"
 										width="100" height="100%" change="{applyLogFilter()}"/>
-								<s:DataGrid id="dgLog" selectionMode="none" width="100%" height="100%"
+								<s:DataGrid id="dgLog" selectionMode="singleRow" width="100%" height="100%" editable="true"
 											dataProvider="{logList}" locale="ru_RU" columns="{StateLog.gridColumns()}"/>
 							</s:HGroup>
 						</s:NavigatorContent>

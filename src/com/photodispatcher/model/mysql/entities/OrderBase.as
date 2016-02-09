@@ -35,6 +35,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _printGroups:ListCollectionView;
         private var _production:int;
         private var _production_name:String;
+        private var _resume_load:Boolean;
         private var _source:int;
         private var _source_code:String;
         private var _source_name:String;
@@ -160,6 +161,13 @@ package com.photodispatcher.model.mysql.entities {
             return _production_name;
         }
 
+        public function set resume_load(value:Boolean):void {
+            _resume_load = value;
+        }
+        public function get resume_load():Boolean {
+            return _resume_load;
+        }
+
         public function set source(value:int):void {
             _source = value;
         }
@@ -262,6 +270,7 @@ package com.photodispatcher.model.mysql.entities {
             _printGroups = input.readObject() as ListCollectionView;
             _production = input.readObject() as int;
             _production_name = input.readObject() as String;
+            _resume_load = input.readObject() as Boolean;
             _source = input.readObject() as int;
             _source_code = input.readObject() as String;
             _source_name = input.readObject() as String;
@@ -294,6 +303,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_printGroups is IPropertyHolder) ? IPropertyHolder(_printGroups).object : _printGroups);
             output.writeObject((_production is IPropertyHolder) ? IPropertyHolder(_production).object : _production);
             output.writeObject((_production_name is IPropertyHolder) ? IPropertyHolder(_production_name).object : _production_name);
+            output.writeObject((_resume_load is IPropertyHolder) ? IPropertyHolder(_resume_load).object : _resume_load);
             output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
             output.writeObject((_source_code is IPropertyHolder) ? IPropertyHolder(_source_code).object : _source_code);
             output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);

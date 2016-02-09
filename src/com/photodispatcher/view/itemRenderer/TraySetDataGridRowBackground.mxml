@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:DefaultGridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/halo"
+						   implements="spark.components.gridClasses.IGridVisualElement"
+						   background="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.LayerAllocation;
+			import com.photodispatcher.service.barcode.FeederController;
+			
+			import mx.binding.utils.ChangeWatcher;
+			
+			import spark.components.Grid;
+			
+			private var item:LayerAllocation;
+			private var watchTray:ChangeWatcher;
+			private var watchDev:ChangeWatcher;
+			
+			public function prepareGridVisualElement(grid:Grid, rowIndex:int, columnIndex:int):void{
+				if (!grid.dataProvider || rowIndex >= grid.dataProvider.length)
+					data = null;
+				else
+					data = grid.dataProvider.getItemAt(rowIndex);
+				item= data as LayerAllocation;
+				checkBg(null);
+				if(item){
+					watchTray=ChangeWatcher.watch(item, "tray", checkBg,false,true);
+					watchDev=ChangeWatcher.watch(item, "controller", checkBg,false,true);
+				}
+			}
+			
+			private function checkBg(evt:Event):void{
+				if(item){
+					if(item.tray==-1){
+						listenController(null);
+						backgroundColor=0x888888;
+					}else{
+						//to monitor controller state
+						if(item.controller){
+							checkConnected(null);
+						}else{
+							backgroundColor=0xFFFFFF;	
+						}
+						listenController(item.controller);
+					}
+				}else{
+					//backgroundColor=0xDDDDDD;
+					backgroundColor=0xFFFFFF;
+				}
+			}
+			
+			private var fController:FeederController;
+			private function listenController(value:FeederController):void{
+				if(fController==value) return;
+				if(fController){
+					fController.removeEventListener(BarCodeEvent.BARCODE_CONNECTED,checkConnected);
+					fController.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED,checkConnected);
+				}
+				fController=value;
+				if(fController){
+					fController.addEventListener(BarCodeEvent.BARCODE_CONNECTED,checkConnected, false,0,true);
+					fController.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED,checkConnected, false,0,true);
+				}
+			}
+			
+			private function checkConnected(evt:BarCodeEvent):void{
+				if(item.tray>=0 && item.controller){
+					if(item.controller.connected){
+						//gereen
+						backgroundColor=0x99EE99;	
+					}else{
+						//yellow
+						backgroundColor=0xEEEE99;	
+					}
+				}
+			}
+		]]>
+	</fx:Script>
+	
+	
+</s:DefaultGridItemRenderer>

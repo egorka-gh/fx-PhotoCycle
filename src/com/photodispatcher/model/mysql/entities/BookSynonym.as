@@ -19,9 +19,9 @@ package com.photodispatcher.model.mysql.entities {
 	import mx.collections.ArrayList;
 	import mx.core.ClassFactory;
 	
-	import spark.components.gridClasses.GridColumn;
-	
 	import org.granite.tide.Tide;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.BookSynonym")]
@@ -40,6 +40,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const BOOK_PART_BLOCK:int=2;
 		public static const BOOK_PART_INSERT:int=3;
 		public static const BOOK_PART_AU_INSERT:int=4;
+		public static const BOOK_PART_BLOCKCOVER:int=5;
 
 		
 		public static function gridColumns(short:Boolean=false):ArrayList{
@@ -88,7 +89,7 @@ package com.photodispatcher.model.mysql.entities {
 									newMap[bs.src_type.toString()]=subMap;
 								}
 								subMap[bs.synonym]=bs;
-							}else{
+							}else if(bs.synonym_type==1){
 								//add to alias map
 								newAliasMap[bs.synonym]=bs;
 							}
@@ -124,6 +125,30 @@ package com.photodispatcher.model.mysql.entities {
 				return;
 			}
 			return aliasMap[alias] as BookSynonym; 
+		}
+		
+		public static function getBookSynonym(pg:PrintGroup):BookSynonym{
+			if(!pg) return null;
+			var alias:String;
+			if(!pg.sub_id){
+				//regular - get by path
+				alias=pg.path;
+				if(!alias) alias=pg.alias;
+				return translatePath(alias,SourceType.SRC_FOTOKNIGA);
+			}else{
+				alias=pg.alias;
+				if(!alias) return null;
+				var bs:BookSynonym=translateAlias(alias);
+				if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
+				return bs;
+			}
+			/*
+			var alias:String;
+			if(!alias) return null;
+			var bs:BookSynonym=translateAlias(alias);
+			if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
+			return bs;
+			*/
 		}
 		
 		public static function guess(paper:int,coverSize:Point,blockSise:Point,sliceSise:Point):BookSynonym{
@@ -188,11 +213,13 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public function createPrintGroup(path:String, bookPart:int, butt:int=0, printGroup:PrintGroup=null):PrintGroup{
 			var pg:PrintGroup;
-			var it:BookPgTemplate;
 			if(!templates) return null;
-			for each(it in templates){
-				if(it && it.book_part==bookPart){
-					pg=it.createPrintGroup(path,book_type,butt,printGroup);
+			for each(var t:BookPgTemplate in templates){
+				if(t){
+					if(t.book_part==bookPart || (bookPart==BOOK_PART_BLOCK && t.book_part==BOOK_PART_BLOCKCOVER)){
+						pg=t.createPrintGroup(path,book_type,butt,printGroup);
+						break;
+					}
 				}
 			}
 			if(pg) pg.is_horizontal=is_horizontal;
@@ -202,7 +229,7 @@ package com.photodispatcher.model.mysql.entities {
 		public function get blockTemplate():BookPgTemplate{
 			var it:BookPgTemplate;
 			for each(it in templates){
-				if(it.book_part==BOOK_PART_BLOCK) return it;
+				if(it.book_part==BOOK_PART_BLOCK || it.book_part==BOOK_PART_BLOCKCOVER) return it;
 			}
 			return null;
 		}

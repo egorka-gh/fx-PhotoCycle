@@ -155,7 +155,7 @@ package com.photodispatcher.print
 				} else {
 					
 					for each (pg in order.printGroups){
-						pg.state = OrderState.CANCELED;
+						pg.state = OrderState.CANCELED_SYNC;
 					}
 					
 				}

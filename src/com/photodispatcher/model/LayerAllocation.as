@@ -1,7 +1,7 @@
 package com.photodispatcher.model{
+	import com.photodispatcher.service.barcode.FeederController;
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
-	//import com.photodispatcher.view.itemRenderer.RowNumGridRenderer;
 	
 	import mx.collections.ArrayList;
 	import mx.core.ClassFactory;
@@ -10,17 +10,23 @@ package com.photodispatcher.model{
 
 	public class LayerAllocation extends DBRecord{
 		//db fileds
+		/*
 		[Bindable]
 		public var layerset:int;
+		*/
 		[Bindable]
 		public var tray:int;
 		[Bindable]
 		public var layer:int;
 		
+		[Bindable]
+		public var controller:FeederController;
+		
 		//db drived
 		[Bindable]
 		public var layer_name:String;
 		
+		/*
 		public static function gridColumns__():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
@@ -29,6 +35,7 @@ package com.photodispatcher.model{
 			col= new GridColumn('layer'); col.headerText='Слой'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			return result;
 		}
+		*/
 
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();

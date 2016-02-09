@@ -6,8 +6,10 @@
 		 xmlns:views="com.jxl.chatserver.views.*" 
 		 xmlns:services="com.jxl.chatserver.mvcs.services.*" 
 		 xmlns:remote="com.photodispatcher.view.remote.*"
+		 xmlns:preprocess="com.photodispatcher.provider.preprocess.*"
+		 xmlns:ftp="com.photodispatcher.provider.ftp.*"
 		 creationComplete="{init()}"
-		 keyDown="onKey(event)" >
+		 keyDown="onKey(event)">
 	
 	<fx:Declarations>
 		<services:ChatServerService id="chatServer" />
@@ -30,9 +32,10 @@
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.print.PrintPulseManager;
 			import com.photodispatcher.print.PrintQueueManager;
-			import com.photodispatcher.provider.ftp.FtpManager;
+			import com.photodispatcher.provider.ftp.DownloadManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
 			import com.photodispatcher.service.SyncService;
+			import com.photodispatcher.util.NetUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
@@ -54,42 +57,29 @@
 			private var sources:ArrayCollection;
 
 			[Bindable]
-			public var lockLoad:Boolean=false;
+			public var lockSync:Boolean=false;
 
 			private var syncService:SyncService;
-			[Bindable]
-			private var ftpManager:FtpManager;
-
-			[Bindable]
-			private var sourcesFList:ArrayCollection= new ArrayCollection();
-			[Bindable]
-			private var statesFList:ArrayCollection= new ArrayCollection();
 			
-			[Bindable]
-			private var ordersPendingList:ArrayCollection= new ArrayCollection();
-			[Bindable]
-			private var ordersErrLimitList:ArrayCollection= new ArrayCollection();
+			//[Bindable]
+			//private var ordersErrLimitList:ArrayCollection= new ArrayCollection();
 			[Bindable]
 			private var logList:ArrayCollection= new ArrayCollection();
-			[Bindable]
-			private var preprocessManager:PreprocessManager;
 			
 			private var timer:Timer;
-			private var ordersGridMenu:GridContexMenu;
 			private var ordersQueueGridMenu:GridContexMenu;
 			private var ordersWriteQueueGridMenu:GridContexMenu;
 			private var ordersErrLimitGridMenu:GridContexMenu;
 			private var logGridMenu:GridContexMenu;
 
-			private var forceStarHour:int=0;
-			private var forceStarMinute:int=0;
-			private var forceStarTimer:Timer;
-			
 			[Bindable]
 			private var stopLogList:IList;
 			
 			[Bindable]
 			public var printPulseManager:PrintPulseManager;
+			
+			[Bindable]
+			private var printManager:PrintQueueManager; 
 			
 			[Bindable]
 			private var productionName:String='Не назначено';
@@ -98,58 +88,11 @@
 				sources=new ArrayCollection(Context.getSources());
 				productionName=Context.getProductionName();
 				
-				buildFilterLists();
-				
 				syncService= new SyncService();
 				syncService.sources=sources.source;
 				
-				if(!preprocessManager){
-					preprocessManager= new PreprocessManager();
-					preprocessManager.init();
-				}
-
-				if(!ftpManager) ftpManager=new FtpManager();
-				ftpManager.sources=sources.source;
-				ftpManager.preprocessManager=preprocessManager;
-
-				ordersErrLimitList.filterFunction=filterOrdersErrLimitList;
-				ordersPendingList.filterFunction=filterOrdersList;
-				fillOrdersPendingList();
-				
-				//TODO refactor, incorrect implementation
-				//startForceStarTimer();
-				
-				if(lockLoad && tbView){
-					tbView.selectedIndex=2;
-					detectState();
-				}
-				
 				if(focusManager) focusManager.setFocus(focusHolder);
-			}
-
-			private function startForceStarTimer():void{
-				forceStarHour=Context.getAttribute('forceStarHour');
-				forceStarMinute=Context.getAttribute('forceStarMinute');
-				if(forceStarHour || forceStarMinute){
-					if(forceStarTimer){
-						if(forceStarTimer.running) forceStarTimer.stop();
-						forceStarTimer.removeEventListener(TimerEvent.TIMER,onForceStarTimer);
-					}
-					forceStarTimer= new Timer(FORCE_START_INTERVAL*60*1000,0);
-					forceStarTimer.addEventListener(TimerEvent.TIMER,onForceStarTimer);
-					forceStarTimer.start();
-				}
-			}
-
-			private function onForceStarTimer(e:TimerEvent):void{
-				var dt:Date=new Date();
-				if(dt.hours>=forceStarHour && dt.minutes>= forceStarMinute){
-					if(forceStarTimer.running) forceStarTimer.stop();
-					forceStarTimer.removeEventListener(TimerEvent.TIMER,onForceStarTimer);
-					forceStarTimer=null;
-					start();
-					ftpManager.start(true);
-				}
+				printManager=PrintQueueManager.instance;
 			}
 
 			private function onKey(e:KeyboardEvent):void{
@@ -160,37 +103,13 @@
 				}
 			}
 			
-
-			private function buildFilterLists():void{
-				var a:Array;
-				//sources filter
-				if(sources){
-					a=sources.source.slice();
-					var s:Source= new Source(); s.id=0; s.name='-';
-					a.unshift(s);
-					sourcesFList.source=a;
-				}
-				//state filter
-				switch(currentState){
-					case 'ordersPending':
-					default:
-						a=OrderState.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_WAITE+1);
-						var os:OrderState=new OrderState(); os.id=0; os.name='-';
-						a.unshift(os);
-						os=new OrderState(); os.id=-1; os.name='Ошибки';
-						a.push(os);
-						statesFList.source=a;
-						break;
-				}
-				if(ddSourceFilter) ddSourceFilter.selectedIndex=0;
-				if(ddStateFilter) ddStateFilter.selectedIndex=0;
-			}
-			
-			public function start():void{
+			private function startSync():void{
 				productionName=Context.getProductionName();
 				if(isRuning) return;
 				isRuning=true;
 				resync();
+				//preprocessManager.isStarted=true;
+				//downloadManager.isStarted=true;
 			}
 			private function onTimer(e:TimerEvent):void{
 				resync();
@@ -203,7 +122,6 @@
 			private function resyncCompleted(e:Event):void{
 				syncService.removeEventListener(Event.COMPLETE,resyncCompleted);
 				trace('resyncCompleted');
-				fillOrdersPendingList();
 				
 				if(!timer){
 					var interval:int=Context.getAttribute('syncInterval');
@@ -212,120 +130,48 @@
 					timer.addEventListener(TimerEvent.TIMER,onTimer);
 				}
 				timer.start();
-			}
-			
-			
-			public function ftpStart():void{
-				if(!ftpManager) return;
-				if(!sources) init();
-				ftpManager.start();
-			}
-			public function ftpStop():void{
-				if(ftpManager) ftpManager.stop();
-				//startForceStarTimer();
+				
+				if(startServices){
+					startServices=false;
+					preprocessManager.isStarted=true;
+					downloadManager.isStarted=true;
+				}
 			}
 
-			public function stop(force:Boolean=false):void{
+			private function stopSync():void{
 				if(timer){
 					timer.stop();
 					timer.removeEventListener(TimerEvent.TIMER,onTimer);
 					timer=null;
 				}
 				isRuning=false;
-				//startForceStarTimer();
-			}
-			
-			private function detectState():void{
-				switch(tbView.selectedIndex){
-					case 0:
-						currentState='stateView';
-						break;
-					case 1:
-						currentState='ordersPending';
-						break;
-					case 2:
-						currentState='printDeploy';
-						break;
-					case 3:
-						currentState='printPrint';
-						break;
-					case 4:
-						currentState='printReady';
-						break;
-					case 5:
-						currentState='logView';
-						break;
-					
-					case 6:
-						currentState='stopLogView'; // лог простоя
-						break;
-					
-					case 7:
-						currentState='printPulse'; // автопостановка
-						break;
-					
-				}
-				focusManager.setFocus(focusHolder);
-			}
-			private function fillOrdersPendingList():void{
-				var latch:DbLatch=new DbLatch();
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				latch.addEventListener(Event.COMPLETE, onPendingList);
-				latch.addLatch(svc.loadByState(OrderState.WAITE_FTP,OrderState.PRN_WAITE+1));
-				latch.start();
-			}
-			private function onPendingList(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onPendingList);
-					if(latch.complite){
-						var a:Array=latch.lastDataArr;
-						if(a){
-							if(ftpManager) ftpManager.resync(a);
-							ordersPendingList.source=a;
-							applyOrdersFilter();
-							ordersErrLimitList.source=a;
-							ordersErrLimitList.refresh();
-						}
-					}
-				}
 			}
 
-			private function filterOrdersErrLimitList(item:Object):Boolean {
-				var o:Order=item as Order;
-				if(!o) return false;
-				return o.exceedErrLimit;
+			
+			private var startServices:Boolean;
+			public function start():void{
+				if(!Context.getAttribute('manualStart')){
+					if(lockSync){
+						//helper mode, sync disabled
+						preprocessManager.isStarted=true;
+						downloadManager.isStarted=true;
+					}else{
+						//main cycle, start services after first sync
+						startSync();
+						startServices=true;
+					}
+				}else{
+					downloadManager.reLoad();
+					preprocessManager.reLoad();
+				}
+			}
+			
+			public function stop():void{
+				stopSync();
+				preprocessManager.isStarted=false;
+				downloadManager.isStarted=false;
 			}
 
-			private function filterOrdersList(item:Object):Boolean {
-				var o:Order=item as Order;
-				if(!o) return false;
-				if(ddSourceFilter && ddSourceFilter.selectedIndex>0 && o.source!=ddSourceFilter.selectedItem.id) return false;
-				if(ddStateFilter && ddStateFilter.selectedIndex>0){
-					if(ddStateFilter.selectedItem.id==-1){
-						if(o.state>0) return false;
-					}else if(o.state!=ddStateFilter.selectedItem.id){
-						return false;
-					}
-				}
-				if(tiOrderFilter && tiOrderFilter.text && o.id.indexOf(tiOrderFilter.text)==-1) return false;
-				return true;
-			}
-			
-			private function applyOrdersFilter():void{
-				ordersPendingList.refresh();
-				if(dgOrders){
-					dgOrders.clearSelection();
-					dgOrders.dispatchEvent(new FlexEvent(FlexEvent.VALUE_COMMIT));
-				}
-			}
-			
-			protected function dgOrders_creationCompleteHandler(event:FlexEvent):void{
-				ordersGridMenu= new GridContexMenu(dgOrders,[GridContexMenu.CANCEL_ORDER,GridContexMenu.FORVARD_FTP,GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
-			}
-			private function callBack(dg:DataGrid,newState:int):void{
-				Alert.show('callBack '+newState.toString());
-			}
 			
 			protected function dgErrors_creationCompleteHandler(event:FlexEvent):void{
 				logGridMenu= new GridContexMenu(dgLog,[GridContexMenu.SHOW_ORDER]);
@@ -341,12 +187,6 @@
 				latch.addEventListener(Event.COMPLETE,onLogLoad);
 				latch.addLatch(svc.loadStateLogs(date, true));
 				latch.start();
-				/*
-				var dao:StateLogDAO=new StateLogDAO();
-				var a:Array=dao.findeAllArray(date);
-				if(a) logList.source=a;
-				logList.refresh();
-				*/
 			}
 			private function onLogLoad(evt:Event):void{
 				var latch:DbLatch=evt.target as DbLatch;
@@ -366,47 +206,33 @@
 				errDateFilter.selectedDate=new Date(dt.fullYear,dt.month,dt.date);
 			}
 
+			/*
 			protected function dgPrepocessQueue_creationCompleteHandler(event:FlexEvent):void{
 				ordersQueueGridMenu= new GridContexMenu(dgPrepocessQueue,[GridContexMenu.SHOW_ORDER]);
 			}
+			*/
 			
 /* 			protected function dgWriteQueue_creationCompleteHandler(event:FlexEvent):void{
 				ordersWriteQueueGridMenu= new GridContexMenu(dgWriteQueue,[GridContexMenu.SHOW_ORDER]);
 			}
  */			
-			protected function dgErrLimit_creationCompleteHandler(event:FlexEvent):void{
-				ordersErrLimitGridMenu= new GridContexMenu(dgErrLimit,[GridContexMenu.SHOW_ORDER,GridContexMenu.RESET_ERRLIMIT]);
-			}
 			
-			private var addPopup:OrderAddManualPopup;
-			protected function btAddOrder_clickHandler(event:MouseEvent):void{
-				addPopup= new OrderAddManualPopup();
-				addPopup.addEventListener(PopUpEvent.CLOSE,onAddPopupClose);
-				addPopup.show();
-			}
-			private function onAddPopupClose(evt:PopUpEvent):void{
-				addPopup.removeEventListener(PopUpEvent.CLOSE,onAddPopupClose);
-				addPopup= null;
-				//refresh & start load if added
-				if(evt.commit) fillOrdersPendingList();
-			}
-			
-			protected function btRefreshStopLog(date:Date):void
-			{
+			protected function btRefreshStopLog(date:Date):void{
+				if(!date) return;
+				
 				var to:Date = new Date(date.time + 1000*60*60*24); // прибавим 24 часа
 				var from:Date = date;
 				
 				var svc:LabService = Tide.getInstance().getContext().byType(LabService,true) as LabService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onLoadLabStops);
-				latch.addLatch(svc.getLabStops(from,to));
+				latch.addLatch(svc.loadLabStops(from,to,null));
 				latch.start();
 				
 				
 			}
 			
-			protected function onLoadLabStops(event:Event):void
-			{
+			protected function onLoadLabStops(event:Event):void{
 				
 				var latch:DbLatch= event.target as DbLatch;
 				var devMap:Object = PrintQueueManager.instance.labDeviceMap;
@@ -416,28 +242,58 @@
 					if(!latch.complite) return;
 					
 					stopLogList = latch.lastDataAC;
-					
-					for each (var ls:LabStopLog in stopLogList){
-						
-						ls.labDeviceName = (devMap[ls.lab_device] as LabDevice).name;
-						
-					}
-					
-					
 				}
 				
 			}
 			
+			private function detectState():void{
+				switch(tbView.selectedIndex){
+					case 0:
+						currentState='stateView';
+						break;
+					case 1:
+						currentState='ordersPending';
+						break;
+					case 2:
+						currentState='ordersBuild';
+						break;
+					case 3:
+						currentState='printDeploy';
+						break;
+					case 4:
+						currentState='printPrint';
+						break;
+					case 5:
+						currentState='printReady';
+						break;
+					case 6:
+						currentState='logView';
+						break;
+					
+					case 7:
+						currentState='stopLogView'; // лог простоя
+						break;
+					
+					case 8:
+						currentState='printPulse'; // автопостановка
+						break;
+					
+				}
+				focusManager.setFocus(focusHolder);
+			}
+
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
-		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<ftp:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true"/>
+		<preprocess:PreprocessManager id="preprocessManager" autoLoad="true"/>
 	</fx:Declarations>
 	
 	<s:states>
 		<s:State name="stateView"/>
 		<s:State name="ordersPending"/>
+		<s:State name="ordersBuild"/>
 		<s:State name="printDeploy"/>
 		<s:State name="printPrint"/>
 		<s:State name="printReady"/>
@@ -456,7 +312,8 @@
 		<mx:ArrayCollection>
 			<fx:String>Состояние</fx:String> 
 			<fx:String>Загрузка заказов</fx:String> 
-			<fx:String>Заказы ожидающие распределения</fx:String> 
+			<fx:String>Подготовка заказов</fx:String> 
+			<fx:String>Распределение на печать</fx:String> 
 			<fx:String>Печать</fx:String> 
 			<fx:String>Напечатаны</fx:String> 
 			<fx:String>Лог</fx:String>
@@ -467,12 +324,12 @@
 
 	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
 	<s:Group top="30" left="10" right="10" bottom="10">
-		<s:HGroup id="gState" includeIn="stateView" gap="10" top="0" left="0" right="0" bottom="0" enabled="{!lockLoad}">
-			<s:VGroup gap="10" height="100%">
-				<s:Label text="Web синхронизация"/>
+		<s:HGroup id="gState" includeIn="stateView" gap="10" top="0" left="0" right="0" bottom="0">
+			<s:VGroup gap="10" height="100%"  enabled="{!lockSync}">
+				<s:Label text="Web синхронизация" fontWeight="bold"/>
 				<s:HGroup gap="10">
 					<s:Button id="btStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить синхронизацию" 
-							  click="{start()}" enabled="{!isRuning}"/>
+							  click="{startSync()}" enabled="{!isRuning}"/>
 					<s:Button id="btStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить синхронизацию"
 							  click="{stop()}" enabled="{isRuning}"/>
 				</s:HGroup>
@@ -486,15 +343,15 @@
 				</s:Scroller>
 			</s:VGroup>
 			<s:VGroup gap="10" width="510" height="100%">
-				<s:Label text="FTP     Производство: {productionName}"/>
+				<s:Label text="Загрузка     Производство: {productionName}" fontWeight="bold"/>
 				<s:HGroup gap="10">
-					<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить FTP загрузку" 
-							  click="{ftpStart()}"/>
-					<s:Button id="btFtpStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить FTP загрузку"
-							  click="{ftpStop()}"/>
+					<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить загрузку" 
+							  enabled="{!downloadManager.isStarted}" click="{downloadManager.isStarted=true}"/>
+					<s:Button id="btFtpStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить загрузку"
+							  click="{downloadManager.isStarted=false}"/>
 				</s:HGroup>
 				<s:Scroller width="100%" height="100%">
-					<s:DataGroup width="100%" height="100%" dataProvider="{ftpManager.servicesList}" 
+					<s:DataGroup width="100%" height="100%" dataProvider="{downloadManager.servicesList}" 
 								 itemRenderer="com.photodispatcher.view.itemRenderer.QueueManagerRenderer">
 							 <!--itemRenderer="com.photodispatcher.view.itemRenderer.FtpServiceRenderer">-->
 						<s:layout>
@@ -503,7 +360,23 @@
 					</s:DataGroup>
 				</s:Scroller>
 			</s:VGroup>
-			<s:VGroup gap="0" width="400" height="100%">
+			
+			<s:Spacer width="10"/>
+			<s:VGroup gap="5" height="100%">
+				<s:Label text="Подготовка     Очередь: {preprocessManager.queue.length}" fontWeight="bold"/>
+				<s:HGroup gap="10">
+					<s:Button id="btBuilderStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить подготовку" 
+							  enabled="{!preprocessManager.isStarted}" click="{preprocessManager.isStarted=true}"/>
+					<s:Button id="btBuilderStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить подготовку"
+							  enabled="{preprocessManager.isStarted}" click="{preprocessManager.isStarted=false}"/>
+				</s:HGroup>
+				
+				<s:Spacer height="15"/>
+				<s:Label text="Печать     Очередь: " fontWeight="bold"/>
+
+			</s:VGroup>
+			
+			<!--<s:VGroup gap="0" width="400" height="100%">
 				<s:Label text="Очереди"/>
 				<s:Spacer height="5"/>
 				<s:TabBar id="tbQueue" top="0" left="0" height="20" dataProvider="{vsQueue}"/>
@@ -522,48 +395,28 @@
 								<s:Label text="Очередь {preprocessManager.queueLenth}({preprocessManager.errorOrdersLenth})"/>
 								<s:Label text="{preprocessManager.lastError}" color="#ff0000"/>
 							</s:HGroup>
-							<!--<s:Label text="{preprocessManager.progressCaption}"/>-->
 							<mx:ProgressBar mode="event" source="{preprocessManager}" labelPlacement="top" width="100%"
 											fontWeight="normal" labelWidth="{vPrepocess.width-20}"
 											label="{preprocessManager.progressCaption} %1 из %2"/>
 
 						</s:VGroup>
 					</s:NavigatorContent>
-					<!--<s:NavigatorContent label="Запись" backgroundAlpha="{ftpManager.isWriting?1:0}" backgroundColor="#00ff00" width="100%" height="100%">
+					<s:NavigatorContent label="Запись" backgroundAlpha="{ftpManager.isWriting?1:0}" backgroundColor="#00ff00" width="100%" height="100%">
 						<s:DataGrid id="dgWriteQueue" selectionMode="singleRow"
 									width="100%" height="100%" creationComplete="dgWriteQueue_creationCompleteHandler(event)"
 									dataProvider="{ftpManager.writeOrdersList}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
-					</s:NavigatorContent>-->
+					</s:NavigatorContent>
 				</mx:ViewStack>
-			</s:VGroup>
-			<s:VGroup gap="10" width="400" height="100%" visible="true">
+			</s:VGroup>-->
+			<!--<s:VGroup gap="10" width="400" height="100%" visible="true">
 				<s:Label text="Загрузчиков: {ftpManager.remoteLoadManager.connectionsLimit}. Обработчиков: {preprocessManager.remoteBuildersCount}" 
 						 width="100%" maxDisplayedLines="1"/>
 				<remote:ChatServerView width="100%" height="100%" chatService="{chatServer}"/>
-			</s:VGroup>
+			</s:VGroup>-->
 		</s:HGroup>
 		
-		<s:VGroup id="gGrid" includeIn="ordersPending" gap="5" top="0" left="0" right="0" bottom="0">
-			<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
-				<s:Label text="Фильтрация" fontWeight="bold"/>
-				<s:Spacer width="5"/>
-				<s:Label text="Источник"/>
-				<s:DropDownList id="ddSourceFilter" dataProvider="{sourcesFList}" labelField="name" change="{applyOrdersFilter()}"/>
-				<s:Spacer width="5"/>
-				<s:Label text="Статус"/>
-				<s:DropDownList id="ddStateFilter" dataProvider="{statesFList}" labelField="name" width="150" change="{applyOrdersFilter()}"/>
-				<s:Spacer width="5"/>
-				<s:Label text="ID"/>
-				<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>
-				<s:Spacer width="100%"/>
-				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{fillOrdersPendingList()}"
-						  cornerRadius="4" width="22" height="22" baseline="4"/>
-			</s:HGroup>
-			<s:DataGrid id="dgOrders" selectionMode="multipleRows"
-						width="100%" height="100%" creationComplete="dgOrders_creationCompleteHandler(event)"
-						dataProvider="{ordersPendingList}" locale="ru_RU" columns="{Order.gridColumns()}"/>
-			<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)"/>
-		</s:VGroup>
+		<view:MonitorLoad id="monitorLoad" top="0" left="0" right="0" bottom="0" includeIn="ordersPending" loader="{downloadManager}"/>
+		<view:MonitorBuild id="monitorBuild" top="0" left="0" right="0" bottom="0" includeIn="ordersBuild" builder="{preprocessManager}"/>
 		<view:PrintDistribute id="printDistribute" top="0" left="0" right="0" bottom="0" includeIn="printDeploy"/>
 		<view:PrintMonitor id="printMonitor" top="0" left="0" right="0" bottom="0" 
 						   includeIn="printPrint,printReady"
@@ -595,7 +448,7 @@
 
 				<s:Spacer width="5"/>
 				<s:Label text="Статус"/>
-				<s:DropDownList id="errStateFilter" dataProvider="{statesFList}" labelField="name" width="150" enabled="false"/>
+				<s:DropDownList id="errStateFilter"  labelField="name" width="150" enabled="false"/>
 
 				<s:Spacer width="100%"/>
 				<s:Button id="btLogRefresh" icon="assets/icon-refresh.gif" click="{fillLogList()}"
@@ -615,18 +468,23 @@
 						<s:ArrayList>
 							<s:GridColumn dataField="name" headerText="Устройство" />
 							<s:GridColumn dataField="tech_point_name" headerText="Тех. точка" />
+							<s:GridColumn dataField="lastPostDate" headerText="Постановка на печать">
+								<s:formatter>
+									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
+								</s:formatter>
+							</s:GridColumn>
 							<s:GridColumn dataField="lastPrintDate" headerText="Последняя печать">
 								<s:formatter>
 									<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
 								</s:formatter>
 							</s:GridColumn>
-							<s:GridColumn dataField="lastStopLog" headerText="Простой" />
+							<s:GridColumn dataField="lastStop" headerText="Простой" />
 						</s:ArrayList>
 					</s:columns>
 				</s:DataGrid>
 			</s:VGroup>
 			
-			<s:VGroup width="50%">
+			<s:VGroup width="50%" height="100%">
 				
 				<s:HGroup verticalAlign="baseline">
 					<s:Label text="Лог простоя:"/>
@@ -638,7 +496,7 @@
 				<s:DataGrid width="100%" height="100%" dataProvider="{stopLogList}">
 					<s:columns>
 						<s:ArrayList>
-							<s:GridColumn dataField="labDeviceName" headerText="Устройство" />
+							<s:GridColumn dataField="device_name" headerText="Устройство" />
 							<s:GridColumn dataField="lab_stop_type_name" headerText="Причина" />
 							<s:GridColumn dataField="time_from" headerText="Начало" width="100">
 								<s:formatter>
@@ -666,44 +524,33 @@
 		
 		
 		
-		<s:HGroup includeIn="printPulse" width="100%" height="100%">
+		<!--<s:HGroup includeIn="printPulse" width="100%" height="100%">
 			
-			<s:VGroup width="30%">
+			<s:VGroup width="30%" height="100%">
 				
-				<s:Button label="{printPulseManager.autoPrinting? 'Выключить' : 'Включить'}" 
-						  color="{printPulseManager.autoPrinting? 0xff0000 : 0}" 
-						  click="{printPulseManager.autoPrinting = !printPulseManager.autoPrinting}"
-						  />
+				<s:Button label="{printManager.autoPrint? 'Выключить' : 'Включить'}" 
+						  color="{printManager.autoPrint? 0xff0000 : 0}" 
+						  click="{printManager.autoPrint = !printManager.autoPrint}"
+						  />-->
 				
-				<s:HGroup verticalAlign="baseline">
+				<!--<s:HGroup verticalAlign="baseline">
 					<s:TextInput id="printGroupListLimitInput" text="{printPulseManager.printGroupListLimit}" restrict="0-9" />
 					<s:Button label="Сохранить" click="{printPulseManager.printGroupListLimit = int(printGroupListLimitInput.text)}" />
-				</s:HGroup>
+				</s:HGroup>-->
 				
-				<s:TextArea text="{printPulseManager.debugStr}" editable="false" width="100%" height="100%" />
+				<!--<s:TextArea text="{printPulseManager.debugStr}" editable="false" width="100%" height="100%" />
+				<s:TextArea text="{printManager.logText}" editable="false" width="100%" height="100%" />
 				
 			</s:VGroup>
 			
-			<s:DataGrid selectionMode="singleRow"
+			<s:DataGrid selectionMode="singleRow" editable="true"
 						width="70%" height="100%"
-						dataProvider="{printPulseManager.printQueueList}" locale="ru_RU">
-				<s:columns>
-					<s:ArrayList>
-						<s:GridColumn dataField="id" headerText="Id" />
-						<s:GridColumn dataField="lab_name" headerText="Лаба" />
-						<s:GridColumn dataField="state" headerText="Статус" />
-						<s:GridColumn dataField="state_date" headerText="Дата статуса">
-							<s:formatter>
-								<s:DateTimeFormatter locale="ru_RU" dateStyle="short" timeStyle="short" />
-							</s:formatter>
-						</s:GridColumn>
-						<s:GridColumn dataField="width" headerText="Ширина" />
-						<s:GridColumn dataField="height" headerText="Длина" />
-					</s:ArrayList>
-				</s:columns>
-			</s:DataGrid>
+						dataProvider="{printPulseManager.printQueueList}" locale="ru_RU"
+						columns="{PrintGroup.printGridColumns()}"/>
 			
-		</s:HGroup>
+		</s:HGroup>-->
+		
+		<view:MonitorAutoPrint includeIn="printPulse" printPulseManager="{printPulseManager}" printManager="{printManager}" width="100%" height="100%"/>
 		
 	</s:Group>
 	

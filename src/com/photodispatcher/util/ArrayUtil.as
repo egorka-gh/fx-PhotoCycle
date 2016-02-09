@@ -22,5 +22,15 @@ package com.photodispatcher.util{
 			return null;
 		}
 
+		/**
+		 * "вращает" массив
+		 * [0,1,2,3,4,5] => (firstIndex = 4) => [4,5,0,1,2,3]
+		 */
+		public static function rotateArray(firstIndex:int, array:Array):Array {
+			
+			return array.slice(firstIndex).concat(array.slice(0,firstIndex));
+			
+		}
+
 	}
 }

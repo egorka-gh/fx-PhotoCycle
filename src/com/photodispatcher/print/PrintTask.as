@@ -87,11 +87,8 @@ package com.photodispatcher.print{
 			hasBackPrint=true;
 			
 			//check hasBackPrint
-			if(printGrp.alias){
-				var bs:BookSynonym=BookSynonym.translateAlias(printGrp.alias);
-				if(!bs) bs=BookSynonym.translatePath(printGrp.alias,SourceType.SRC_FOTOKNIGA);
-				if(bs) hasBackPrint=bs.has_backprint;
-			}
+			var bs:BookSynonym= BookSynonym.getBookSynonym(printGroup);
+			if(bs) hasBackPrint=bs.has_backprint;
 			
 			printContext= new Object();
 			printContext[KEY_ORDER_ID]=printGrp.order_id;
@@ -240,7 +237,7 @@ package com.photodispatcher.print{
 			try{
 				dstFolder= new File(lab.hot);
 			}catch(e:Error){}
-			if(lab.src_type!=SourceType.LAB_XEROX && (!dstFolder || !dstFolder.exists || !dstFolder.isDirectory)){ 
+			if(lab.src_type!=SourceType.LAB_XEROX && lab.src_type!=SourceType.LAB_XEROX_LONG && (!dstFolder || !dstFolder.exists || !dstFolder.isDirectory)){ 
 				printGrp.state=OrderState.ERR_PRINT_LAB_FOLDER_NOT_FOUND;
 				dstFolder=null;
 				dispatchErr('Hot folder "'+lab.hot+'" лаборатории "'+lab.name+'" не доступен.');
@@ -294,7 +291,7 @@ package com.photodispatcher.print{
 				groupFolderName=groupFolderName+sufix;
 			}
 			if(groupFolderName) dstFolder=dstFolder.resolvePath(groupFolderName);
-			if(lab.src_type!=SourceType.LAB_XEROX && groupFolderName!=''){
+			if(lab.src_type!=SourceType.LAB_XEROX && lab.src_type!=SourceType.LAB_XEROX_LONG && groupFolderName!=''){
 				//attemt to create group folder in hot
 				try{
 					if(dstFolder.exists) dstFolder.deleteDirectory(true); 
@@ -433,7 +430,7 @@ package com.photodispatcher.print{
 				return;
 			}
 			var dstFileName:String;
-			if(lab.src_type==SourceType.LAB_XEROX || lab.src_type==SourceType.LAB_VIRTUAL){
+			if(lab.src_type==SourceType.LAB_XEROX || lab.src_type==SourceType.LAB_XEROX_LONG || lab.src_type==SourceType.LAB_VIRTUAL){
 				dstFileName=StrUtil.getFileName(pf.file_name);
 			}else{
 				dstFileName=StrUtil.lPad(currCopyIdx.toString())+'.'+currCopyFile.extension;

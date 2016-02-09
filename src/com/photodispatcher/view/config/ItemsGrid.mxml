@@ -26,6 +26,14 @@
 				_currentData = value;
 			}
 
+			public function get rowBackground():IFactory{
+				return dgItems.rowBackground;
+			}
+			public function set rowBackground(value:IFactory):void{
+				dgItems.rowBackground= value; //new ClassFactory(value);
+			}
+			
+				
 			public function refresh():void{
 				//if(_currentData) _currentData.refresh();
 				//dgItems.invalidateDisplayList();
@@ -64,7 +72,6 @@
 				_currentData.refresh();
 				dgItems.selectedItem=item;
 				ensureSelectionVisible();
-
 			}
 			
 			protected function dgItems_gridItemEditorSessionStartingHandler(event:GridItemEditorEvent):void{

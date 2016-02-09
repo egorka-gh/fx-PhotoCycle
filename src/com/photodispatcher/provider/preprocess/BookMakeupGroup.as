@@ -140,14 +140,44 @@ package com.photodispatcher.provider.preprocess{
 				'; heigh-'+printGroup.height.toString()+
 				'; sheet_len-'+len.toString());
 
-			//crop
+			//crop size
 			var sheetCrop:String=len.toString()+'x'+width.toString()+'+0+0!';
-			//var line:String;
-			command.add('-gravity'); command.add('Center');
+			var barcode:String
+			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
+				//BLOCKCOVER
+				//align to left
+				command.add(file.file_name);
+				if(printGroup.bookTemplate.bar_size>0  && file.book_part==BookSynonym.BOOK_PART_COVER){
+					//draw cover barcode before crop
+					barcode=printGroup.bookBarcode(file);
+					if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
+				}
+				//crop
+				command.add('-gravity'); command.add('West');
+				command.add('-background'); command.add('white');
+				command.add('-crop'); command.add(sheetCrop);
+				command.add('-flatten');
+			}else{
+				//regular crop
+				command.add('-gravity'); command.add('Center');
+				command.add('-background'); command.add('white');
+				command.add(file.file_name);
+				command.add('-crop'); command.add(sheetCrop);
+				command.add('-flatten');
+			}
+
+			/*
+			//crop
+			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_COVER){
+				command.add('-gravity'); command.add('West');
+			}else{
+				command.add('-gravity'); command.add('Center');
+			}
 			command.add('-background'); command.add('white');
 			command.add(file.file_name);
 			command.add('-crop'); command.add(sheetCrop);
 			command.add('-flatten');
+			*/
 			
 			//annotate 
 			annotateCommand(command,file);
@@ -160,7 +190,15 @@ package com.photodispatcher.provider.preprocess{
 						IMCommandUtil.drawNotching(command,notching,len,width,buttPix);
 					}
 				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
+					//standart
 					IMCommandUtil.drawNotching(command,notching,len,width,0);
+				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_BLOCK){
+					//BLOCKCOVER block
+					//TODO refactor make crop by template page_width*page_len then crop to print size aligned on the left edge
+					//use template.page_len 4 notching (print is aligned on the left edge)
+					if(printGroup.bookTemplate.page_len>0){
+						IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
+					}
 				}
 			}
 			
@@ -177,8 +215,7 @@ package com.photodispatcher.provider.preprocess{
 				command.add('-draw'); command.add(draw);
 			}
 			
-			//draw cover barcode
-			var barcode:String
+			//draw cover barcode 
 			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_COVER){
 				//barcode=printGroup.bookBarcodeText(file);
 				barcode=printGroup.bookBarcode(file);
@@ -186,7 +223,10 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			//draw body caption
-			if(printGroup.bookTemplate.bar_size>0 && printGroup.book_part==BookSynonym.BOOK_PART_BLOCK && file.page_num==printGroup.pageNumber){
+			if(printGroup.bookTemplate.bar_size>0 
+				&& ((printGroup.book_part==BookSynonym.BOOK_PART_BLOCK) 
+					|| (printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_BLOCK)) 
+				&& file.page_num==printGroup.pageNumber){
 				barcode=printGroup.bookBarcodeText(file);
 				if(barcode) IMCommandUtil.annotateTransparent(command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookTemplate.bar_offset,-90);
 			}
@@ -240,6 +280,7 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 			
+			//vertical annotate
 			if(printGroup.bookTemplate.fontv_size){
 				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
 			}

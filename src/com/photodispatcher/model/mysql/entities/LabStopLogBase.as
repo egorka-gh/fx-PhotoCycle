@@ -18,8 +18,11 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _device_name:String;
         private var _id:int;
+        private var _lab:int;
         private var _lab_device:int;
+        private var _lab_name:String;
         private var _lab_stop_type:int;
         private var _lab_stop_type_name:String;
         private var _log_comment:String;
@@ -28,6 +31,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _time_to:Date;
         private var _time_updated:Date;
 
+        public function set device_name(value:String):void {
+            _device_name = value;
+        }
+        public function get device_name():String {
+            return _device_name;
+        }
+
         public function set id(value:int):void {
             _id = value;
         }
@@ -35,11 +45,25 @@ package com.photodispatcher.model.mysql.entities {
             return _id;
         }
 
+        public function set lab(value:int):void {
+            _lab = value;
+        }
+        public function get lab():int {
+            return _lab;
+        }
+
         public function set lab_device(value:int):void {
             _lab_device = value;
         }
         public function get lab_device():int {
             return _lab_device;
+        }
+
+        public function set lab_name(value:String):void {
+            _lab_name = value;
+        }
+        public function get lab_name():String {
+            return _lab_name;
         }
 
         public function set lab_stop_type(value:int):void {
@@ -93,8 +117,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _device_name = input.readObject() as String;
             _id = input.readObject() as int;
+            _lab = input.readObject() as int;
             _lab_device = input.readObject() as int;
+            _lab_name = input.readObject() as String;
             _lab_stop_type = input.readObject() as int;
             _lab_stop_type_name = input.readObject() as String;
             _log_comment = input.readObject() as String;
@@ -106,8 +133,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_device_name is IPropertyHolder) ? IPropertyHolder(_device_name).object : _device_name);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
+            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
             output.writeObject((_lab_device is IPropertyHolder) ? IPropertyHolder(_lab_device).object : _lab_device);
+            output.writeObject((_lab_name is IPropertyHolder) ? IPropertyHolder(_lab_name).object : _lab_name);
             output.writeObject((_lab_stop_type is IPropertyHolder) ? IPropertyHolder(_lab_stop_type).object : _lab_stop_type);
             output.writeObject((_lab_stop_type_name is IPropertyHolder) ? IPropertyHolder(_lab_stop_type_name).object : _lab_stop_type_name);
             output.writeObject((_log_comment is IPropertyHolder) ? IPropertyHolder(_log_comment).object : _log_comment);

@@ -90,7 +90,14 @@
 			<s:SolidColor color="#ffffff" alpha="0.6"/>
 		</s:fill>
 	</s:Rect>
-	<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
+
+	<s:HGroup gap="0" verticalAlign="middle" top="6" left="6" right="6" bottom="6">
+		<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
+		<s:Spacer width="5"/>
+		<s:Label text="{lab.name}" fontSize="12" fontWeight="bold" width="100%" maxDisplayedLines="1"/>
+	</s:HGroup>
+
+	<!--<s:VGroup gap="5" top="6" left="6" right="6" bottom="6">
 		<s:HGroup gap="0" verticalAlign="middle" width="100%">
 			<itemRenderer:LabStateIndicator state="{lab.onlineState}"/>
 			<s:Spacer width="5"/>
@@ -101,5 +108,5 @@
 			<itemRenderer:SecondToMinuteRenderer seconds="{lab.printQueue.printQueueLen}"/>
 			<s:Label text="({lab.printQueue.printQueueLenM}м)"/>
 		</s:HGroup>
-	</s:VGroup>
+	</s:VGroup>-->
 </s:ItemRenderer>

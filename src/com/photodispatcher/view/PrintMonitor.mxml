@@ -64,7 +64,7 @@
 				a.unshift(s);
 				sourceFilterList.source=a;
 
-				a=OrderState.getStateArray(OrderState.WAITE_FTP,OrderState.PRN_COMPLETE+1,true);
+				a=OrderState.getStateArray(OrderState.FTP_WAITE,OrderState.PRN_COMPLETE+1,true);
 				var os:OrderState=new OrderState(); os.id=0; os.name='-';
 				a.unshift(os);
 				statesFilterList.source=a;

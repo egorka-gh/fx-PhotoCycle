@@ -11,6 +11,9 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
+			import com.photodispatcher.model.mysql.entities.BookPgTemplate;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.Lab;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Roll;
@@ -35,6 +38,12 @@
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
 
+			/*dummy vars*/
+			private var dbs:BookSynonym;
+			private var dit:BookPgTemplate;
+			private var daltp:BookPgAltPaper;
+
+			
 			private var bdPopup:DatabasePopup;
 			
 			[Bindable]
@@ -64,40 +73,8 @@
 			}
 			
 			private var startPopup:ModalPopUp;
-			/*
-			private function pingBdServer():void{
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				var bdServer:String=so.data.bdServer;
-				if(!bdServer){
-					Alert.show('Не указан сервер базы данных');
-					//currentState='config';
-					return;
-				}
-				startPopup= new ModalPopUp();
-				startPopup.label='Подключение к Базе данных';
-				startPopup.open(null);
-				
-				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
-				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
-				//run hallo
-				Tide.getInstance().addComponents([HalloService]);
-				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
-				hallosvc.ping(onPingServer, onPingServerFault);
-			}
-			private function onPingServer(event:TideResultEvent):void {
-				startPopup.close();
-				startPopup=null;
-				fillContext();
-			}
-			private function onPingServerFault(event:TideFaultEvent):void {
-				startPopup.label='Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString;
-			}
-			*/
-
 
 			private function fillContext():void{
-				//var appConfDAO:AppConfigDAO=new AppConfigDAO();
-				//var appConf:AppConfig=appConfDAO.getItem();
 				Context.setAttribute('syncInterval',10);//appConf.monitor_interval);
 				Context.setAttribute('hideLabInfoButton',true);
 				
@@ -215,7 +192,7 @@
 
 			protected function lstLbs_clickHandler(event:MouseEvent):void{
 				if(event.target.id=='cbox'){
-					var lab:LabGeneric;
+					var lab:Lab;
 					var arr:Array=[];
 					for each (lab in labList){
 						if(lab && lab.isSelected){
@@ -254,7 +231,7 @@
 	<s:VGroup gap="10" top="5" left="5" right="5" bottom="30"
 			  top.workplace="0" left.workplace="0" right.workplace="0">
 		<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"/>
-		<s:Label text="Уражите лаборатории для данной рабочей станции" includeIn="config" color="#FF0000" visible="{!labMap}" includeInLayout="{!labMap}"/>
+		<s:Label text="Укажите лаборатории для данной рабочей станции" includeIn="config" color="#FF0000" visible="{!labMap}" includeInLayout="{!labMap}"/>
 		<s:VGroup gap="5" includeIn="config" paddingLeft="50">
 			<s:Label text="Лаборатории"/>
 			<s:List id="lstLbs" dataProvider="{labList}" click="lstLbs_clickHandler(event)">
