@@ -64,9 +64,6 @@
     <application path="TechSpyS.mxml">
       <airExcludes/>
     </application>
-    <application path="BarcodePrinter.mxml">
-      <airExcludes/>
-    </application>
     <application path="PhotoCorrector.mxml">
       <airExcludes/>
     </application>
