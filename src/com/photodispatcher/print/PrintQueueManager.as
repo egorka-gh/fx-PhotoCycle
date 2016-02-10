@@ -191,6 +191,8 @@ package com.photodispatcher.print{
 			if(!timer){
 				timer= new Timer(STRATEGY_REFRESH_INTERVAL,1);
 				timer.addEventListener(TimerEvent.TIMER,onTimer);
+			}else{
+				timer.reset();
 			}
 			timer.start();
 		}
@@ -283,7 +285,7 @@ package com.photodispatcher.print{
 			loadPrnQueues();
 		}
 
-		private function loadPrnQueues():DbLatch{
+		public function loadPrnQueues():DbLatch{
 			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onloadPrnQueues);
@@ -661,8 +663,24 @@ package com.photodispatcher.print{
 			if(!srcOrders) return false;
 			var order:Order= srcOrders[pg.order_id] as Order;
 			if(!order) return false;
+			
+			var p:PrintGroup;
+			var remove:Boolean;
+			//check if some pg i wrong state BUGGG 
+			for each(p in order.printGroups){
+				if(p.state==OrderState.PRN_WAITE){
+					remove=true;
+					break;
+				}
+			}
+			if(remove){
+				for each(p in order.printGroups) p.state=OrderState.PRN_WAITE;
+				delete srcOrders[pg.order_id];
+				return false;
+			}
+			
 			if(order.printGroups && order.printGroups.length>0 ){
-				for each(var p:PrintGroup in order.printGroups){
+				for each(p in order.printGroups){
 					if(p.id==pg.id) return true;
 				}
 			}
@@ -753,80 +771,83 @@ package com.photodispatcher.print{
 			if(svc){
 				var oMap:Object=webQueue[svc.source.id.toString()];
 				var order:Order=oMap[svc.lastOrderId] as Order;
-				//check web service err
-				if(svc.hasError){
-					dispatchManagerErr('Ошибка web сервиса: '+svc.errMesage);
-					for each (prnGrp in order.printGroups){
-						prnGrp.state=OrderState.ERR_WEB;
-						StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка проверки на сайте: '+svc.errMesage);
-					}
-				}else{
-					if(svc.isValidLastOrder()){
-						//update extra info 4  FOTOKNIGA type
-						if(svc.source.type==SourceType.SRC_FOTOKNIGA && svc.getLastOrder()){
-							//check production
-							if(Context.getProduction()!=Context.PRODUCTION_ANY){
-								if(svc.getLastOrder().production==Context.PRODUCTION_NOT_SET){
-									trace('PrintQueueManager.serviceCompliteHandler; order production not set '+svc.lastOrderId);
-									hasProductionErr=true;
-									dispatchManagerErr('Заказ #'+svc.lastOrderId+' не назначено производство. Размещение на печать отменено.');
-									//mark vs error
-									for each (prnGrp in order.printGroups){
-										prnGrp.state=OrderState.ERR_PRODUCTION_NOT_SET;
-										prnGrp.destinationLab=null;
-										StateLog.logByPGroup(OrderState.ERR_PRODUCTION_NOT_SET,prnGrp.id,'Не назначено производство. Размещение на печать отменено.');
+				
+				if(order){
+					//check web service err
+					if(svc.hasError){
+						dispatchManagerErr('Ошибка web сервиса: '+svc.errMesage);
+						for each (prnGrp in order.printGroups){
+							prnGrp.state=OrderState.ERR_WEB;
+							StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка проверки на сайте: '+svc.errMesage);
+						}
+					}else{
+						if(svc.isValidLastOrder()){
+							//update extra info 4  FOTOKNIGA type
+							if(svc.source.type==SourceType.SRC_FOTOKNIGA && svc.getLastOrder()){
+								//check production
+								if(Context.getProduction()!=Context.PRODUCTION_ANY){
+									if(svc.getLastOrder().production==Context.PRODUCTION_NOT_SET){
+										trace('PrintQueueManager.serviceCompliteHandler; order production not set '+svc.lastOrderId);
+										hasProductionErr=true;
+										dispatchManagerErr('Заказ #'+svc.lastOrderId+' не назначено производство. Размещение на печать отменено.');
+										//mark vs error
+										for each (prnGrp in order.printGroups){
+											prnGrp.state=OrderState.ERR_PRODUCTION_NOT_SET;
+											prnGrp.destinationLab=null;
+											StateLog.logByPGroup(OrderState.ERR_PRODUCTION_NOT_SET,prnGrp.id,'Не назначено производство. Размещение на печать отменено.');
+										}
+									}else if(svc.getLastOrder().production!=Context.getProduction()){
+										trace('PrintQueueManager.serviceCompliteHandler; wrong order production; cancel order '+svc.lastOrderId);
+										hasProductionErr=true;
+										dispatchManagerErr('Заказ #'+svc.lastOrderId+' неверное производство. Размещение на печать отменено.');
+										//mark log canceled
+										for each (prnGrp in order.printGroups){
+											prnGrp.state=OrderState.CANCELED_PRODUCTION;
+											prnGrp.destinationLab=null;
+											StateLog.logByPGroup(OrderState.CANCELED_PRODUCTION, prnGrp.id,'Неверное производство ('+svc.getLastOrder().production.toString()+'). Размещение на печать отменено.');
+										}
+										//cancel order
+										var bdSvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+										latch= new DbLatch();
+										latch.addLatch(bdSvc.cancelOrders([svc.lastOrderId], OrderState.CANCELED_PRODUCTION));
+										latch.start();
 									}
-								}else if(svc.getLastOrder().production!=Context.getProduction()){
-									trace('PrintQueueManager.serviceCompliteHandler; wrong order production; cancel order '+svc.lastOrderId);
-									hasProductionErr=true;
-									dispatchManagerErr('Заказ #'+svc.lastOrderId+' неверное производство. Размещение на печать отменено.');
-									//mark log canceled
-									for each (prnGrp in order.printGroups){
-										prnGrp.state=OrderState.CANCELED_PRODUCTION;
-										prnGrp.destinationLab=null;
-										StateLog.logByPGroup(OrderState.CANCELED_PRODUCTION, prnGrp.id,'Неверное производство ('+svc.getLastOrder().production.toString()+'). Размещение на печать отменено.');
-									}
-									//cancel order
-									var bdSvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-									latch= new DbLatch();
-									latch.addLatch(bdSvc.cancelOrders([svc.lastOrderId], OrderState.CANCELED_PRODUCTION));
+								}
+								
+								var ei:OrderExtraInfo=svc.getLastOrder().extraInfo;
+								if(ei && !hasProductionErr){
+									ei.persistState=AbstractEntity.PERSIST_CHANGED;
+									var osvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+									latch= new DbLatch(true);
+									latch.addLatch(osvc.persistExtraInfo(ei));
 									latch.start();
 								}
 							}
-
-							var ei:OrderExtraInfo=svc.getLastOrder().extraInfo;
-							if(ei && !hasProductionErr){
-								ei.persistState=AbstractEntity.PERSIST_CHANGED;
-								var osvc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-								latch= new DbLatch(true);
-								latch.addLatch(osvc.persistExtraInfo(ei));
-								latch.start();
-							}
-						}
-						if(!hasProductionErr){
-							//set state 
-							for each (prnGrp in order.printGroups){
-								//prnGrp= pg as PrintGroup;
-								if(prnGrp){
-									if(prnGrp.state==OrderState.PRN_WEB_CHECK){
-										prnGrp.state=OrderState.PRN_WEB_OK;
-										if(prnGrp.isAutoPrint) log('Веб проверка выполнена '+prnGrp+' (serviceCompliteHandler)');
-										//add to loadQueue
-										toLoad.push(prnGrp);
-									}else{
-										StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
+							if(!hasProductionErr){
+								//set state 
+								for each (prnGrp in order.printGroups){
+									//prnGrp= pg as PrintGroup;
+									if(prnGrp){
+										if(prnGrp.state==OrderState.PRN_WEB_CHECK){
+											prnGrp.state=OrderState.PRN_WEB_OK;
+											if(prnGrp.isAutoPrint) log('Веб проверка выполнена '+prnGrp+' (serviceCompliteHandler)');
+											//add to loadQueue
+											toLoad.push(prnGrp);
+										}else{
+											StateLog.logByPGroup(OrderState.ERR_WEB,prnGrp.id,'Ошибка статуса при проверке на сайте ('+prnGrp.state.toString()+')');
+										}
 									}
 								}
+								//lock/load pg
+								capturePrintGroups(toLoad);
 							}
-							//lock/load pg
-							capturePrintGroups(toLoad);
-						}
-					}else{
-						dispatchManagerErr('Заказ #'+svc.lastOrderId+' отменен на сайте. Обновите данные. Размещение заказа на печать отменено.');
-						//mark as canceled
-						for each (prnGrp in order.printGroups){
-							prnGrp.state=OrderState.CANCELED_SYNC;
-							prnGrp.destinationLab=null;
+						}else{
+							dispatchManagerErr('Заказ #'+svc.lastOrderId+' отменен на сайте. Обновите данные. Размещение заказа на печать отменено.');
+							//mark as canceled
+							for each (prnGrp in order.printGroups){
+								prnGrp.state=OrderState.CANCELED_SYNC;
+								prnGrp.destinationLab=null;
+							}
 						}
 					}
 				}

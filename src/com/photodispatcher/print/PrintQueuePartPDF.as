@@ -34,7 +34,7 @@ package com.photodispatcher.print{
 			var pgCandidat:PrintGroup=nextPG();
 			
 			if(!pgCandidat){
-				prnQueue.is_active=false;
+				if(isComplited()) prnQueue.is_active=false;
 				compliteFetch();
 				return false;
 			}
@@ -72,9 +72,15 @@ package com.photodispatcher.print{
 				return false;
 			}
 			
-			//???
+			//TODO complite or proceed???
+			/*
 			while(pgCandidat!=null && printManager.isInWebQueue(pgCandidat)){
 				pgCandidat=nextPG();
+			}
+			*/
+			if(pgCandidat!=null && printManager.isInWebQueue(pgCandidat)){
+				compliteFetch();
+				return true;
 			}
 
 			while(pgCandidat!=null && !lab.canPrint(pgCandidat)){
@@ -98,6 +104,8 @@ package com.photodispatcher.print{
 						pgCandidat=pg;
 						break;
 					}
+					//reset errs ?? 4 next itteration
+					if(pg.state<0) pg.state=OrderState.PRN_WAITE;
 				}
 			}
 			return pgCandidat;

@@ -231,6 +231,7 @@ package com.photodispatcher.view.menu{
 			for each(var o:Object in grid.selectedItems){
 				pg=o as PrintGroup;
 				if(pg && pg.id && pg.state>OrderState.PRN_WAITE && pg.state<OrderState.PRN_PRINT){
+					pg.state=OrderState.PRN_WAITE;
 					ids.push(pg.id);
 				}
 			}

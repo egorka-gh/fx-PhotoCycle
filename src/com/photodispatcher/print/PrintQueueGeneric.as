@@ -1,4 +1,6 @@
 package com.photodispatcher.print{
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrnQueue;
 	import com.photodispatcher.model.mysql.entities.PrnStrategy;
 	import com.photodispatcher.util.ArrayUtil;
@@ -97,7 +99,17 @@ package com.photodispatcher.print{
 			//Generic will hang on fetching 
 			return true;
 		}
-		
+
+		protected function isComplited():Boolean{
+			if(!queue) return true;
+			for each(var pg:PrintGroup in queue){
+				if(pg.state<OrderState.PRN_PRINT){
+					return false;
+				}
+			}
+			return true;
+		}
+
 		protected function compliteFetch():void{
 			isFetching=false;
 			//call print manager
