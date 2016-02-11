@@ -11,7 +11,7 @@ package com.photodispatcher.factory{
 		
 			if (!printManager || !prnQueue) return null;
 			// if(!prnQueue)
-			switch(prnQueue.strategy){
+			switch(prnQueue.strategy_type){
 				case PrnStrategy.STRATEGY_BYPARTPDF:
 					return new PrintQueuePartPDF(printManager,prnQueue);
 					break;

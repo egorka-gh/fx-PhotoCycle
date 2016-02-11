@@ -304,7 +304,10 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		public function toString():String {
-			return this.name+'('+this.id+')';
+			var res:String=this.name;
+			if(!res) res='id'+this.id;
+			if(this.compatiableQueue) res='(cq'+this.compatiableQueue.length+')';
+			return res;
 		}
 
     }
