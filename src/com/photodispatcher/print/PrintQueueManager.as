@@ -185,6 +185,33 @@ package com.photodispatcher.print{
 			
 		}
 		
+		
+		public function startStrategyBYPARTPDF():void{
+			if(!initCompleted || ! strategiesAC) return;
+			var sublatch:DbLatch;
+			var hasStrategy:Boolean;
+			var item:PrnStrategy;
+			
+			for each(item in strategiesAC){
+				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF){
+					hasStrategy=true;
+					break;
+				}
+			}
+			if(!hasStrategy) return;
+			
+			if(timer) timer.stop(); 
+			
+			//start strategy
+			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			sublatch= new DbLatch();
+			sublatch.addEventListener(Event.COMPLETE,onstartStrategy);
+			sublatch.addLatch(svcs.startStrategy2(item.id));
+			sublatch.start();
+			
+			startTimer();
+		}
+		
 		private var timer:Timer;
 		
 		private function startTimer():void{

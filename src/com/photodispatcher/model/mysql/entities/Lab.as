@@ -45,6 +45,7 @@ package com.photodispatcher.model.mysql.entities {
 			lab.devices=this.devices;
 			lab.profiles=this.profiles;
 			lab.isSelected=this.isSelected;
+			lab.post_delay=this.post_delay
 		}
 
     }

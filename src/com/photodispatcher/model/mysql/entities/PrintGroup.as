@@ -853,6 +853,12 @@ package com.photodispatcher.model.mysql.entities {
 			return result+StrUtil.lPad(tStr,2);
 		}
 		
+		public static function isTechBarcode(techBarcode:String):Boolean{
+			if(!techBarcode || techBarcode.length<14) return false;
+			//uses fact that books <199 & source id is 1 char len and is >0
+			return techBarcode.charAt(0)=='0';
+		}
+		
 		public static function tech2BookBarcode(techBarcode:String):String{
 			if(!techBarcode || techBarcode.length<14) return '';
 			var bookNum:int=parseInt(techBarcode.substr(0,3));
@@ -932,6 +938,7 @@ package com.photodispatcher.model.mysql.entities {
 			if(isNaN(book)) return 0;
 			return book;
 		}
-		
+
+
     }
 }

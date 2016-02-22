@@ -1,4 +1,5 @@
 package com.photodispatcher.print{
+	import com.akmeful.fotokniga.book.data.Book;
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
@@ -17,9 +18,11 @@ package com.photodispatcher.print{
 	import flash.events.IEventDispatcher;
 	import flash.events.IOErrorEvent;
 	import flash.events.SecurityErrorEvent;
+	import flash.events.TimerEvent;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
+	import flash.utils.Timer;
 	import flash.utils.flash_proxy;
 	
 	import mx.collections.ArrayCollection;
@@ -336,6 +339,11 @@ package com.photodispatcher.print{
 			}
 			if(currCopyIdx >=printGrp.printFiles.length){
 				//complited
+				if(copyTimer){
+					copyTimer.stop();
+					copyTimer.removeEventListener(TimerEvent.TIMER_COMPLETE,onCopyTimer);
+					copyTimer=null;
+				}
 				//concat script
 				printScript=printScript+printBody01+printBody02;
 				if(printScript){
@@ -550,6 +558,22 @@ package com.photodispatcher.print{
 		
 		private function copyComplete(e:Event):void{
 			stopListen();
+			if(!startCopyTimer()) copyNext();
+		}
+		
+		private var copyTimer:Timer;
+		private function startCopyTimer():Boolean{
+			//complited or has no delay
+			if((lab.post_delay<=0) || (currCopyIdx >=printGrp.printFiles.length)) return false;
+			if(!copyTimer){
+				copyTimer= new Timer(lab.post_delay*1000,1);
+				copyTimer.addEventListener(TimerEvent.TIMER_COMPLETE,onCopyTimer);
+			}
+			copyTimer.reset();
+			copyTimer.start();
+			return true;
+		}
+		private function onCopyTimer(evt:TimerEvent):void{
 			copyNext();
 		}
 		

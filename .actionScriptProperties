@@ -40,12 +40,6 @@
     <application path="PhotoPicker.mxml">
       <airExcludes/>
     </application>
-    <application path="BarcodePrinter.mxml">
-      <airExcludes/>
-    </application>
-    <application path="PhotoCycleP.mxml">
-      <airExcludes/>
-    </application>
     <application path="PhotoPickerS.mxml">
       <airExcludes/>
     </application>
@@ -64,6 +58,12 @@
     <application path="TechSpyS.mxml">
       <airExcludes/>
     </application>
+    <application path="PhotoCycleP.mxml">
+      <airExcludes/>
+    </application>
+    <application path="BarcodePrinter.mxml">
+      <airExcludes/>
+    </application>
     <application path="PhotoCorrector.mxml">
       <airExcludes/>
     </application>
@@ -78,8 +78,8 @@
     <buildTarget buildTargetName="default">
       <airSettings airCertificatePath="D:/Egorka/Folders/flex/airCert/egorka.p12" airTimestamp="false" anePathSet="true" version="1">
         <airExcludes>
-          <pathEntry path="jp"/>
           <pathEntry path="com"/>
+          <pathEntry path="jp"/>
         </airExcludes>
         <anePaths/>
       </airSettings>

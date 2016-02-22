@@ -128,6 +128,10 @@
 				<s:FormItem label="Hot folder NHF" enabled="{isNoritsu}">
 					<s:TextInput id="tiHotNsf" text="@{currentItem.hot_nfs}" change="{currentItem.changed=true}" width="200"/>
 				</s:FormItem> 
+				<s:FormItem label="Задержка копирования (сек)" >
+					<s:NumericStepper value="@{currentItem.post_delay}" minimum="0" maximum="6000" stepSize="10"
+									  change="{currentItem.changed=true}"/>
+				</s:FormItem>
 				<s:FormItem label="Автопечать">
 					<s:CheckBox selected="@{currentItem.is_managed}" change="{currentItem.changed=true}"/>
 				</s:FormItem> 
