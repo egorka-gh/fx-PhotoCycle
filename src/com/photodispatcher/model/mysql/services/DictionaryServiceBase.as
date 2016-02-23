@@ -155,6 +155,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function getRejectUnitValueList(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getRejectUnitValueList", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getRejectUnitValueList", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getRejectUnitValueList") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function getRollValueList(arg0:Boolean, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("getRollValueList", arg0, resultHandler, faultHandler) as AsyncToken;
@@ -250,6 +261,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("getTechTypeValueList", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("getTechTypeValueList") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function getTechUnitValueList(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getTechUnitValueList", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getTechUnitValueList", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getTechUnitValueList") as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

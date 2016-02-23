@@ -55,7 +55,10 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static const COLOR_CORRECTION_WAITE:int=139;
 		public static const COLOR_CORRECTION:int=140;
-		
+
+		public static const REPRINT_WAITE:int=145;
+		public static const REPRINT_CAPTURED:int=146;
+
 		public static const PREPROCESS_WAITE:int=150;
 		//public static const PREPROCESS_DEPLOY:int=124;
 		//public static const PREPROCESS_REMOTE:int=125;

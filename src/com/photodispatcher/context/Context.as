@@ -39,6 +39,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.StaffActivityService;
 	import com.photodispatcher.model.mysql.services.TechPickerService;
 	import com.photodispatcher.model.mysql.services.TechPointService;
+	import com.photodispatcher.model.mysql.services.TechRejecService;
 	import com.photodispatcher.model.mysql.services.TechService;
 	import com.photodispatcher.model.mysql.services.XReportService;
 	import com.photodispatcher.util.ArrayUtil;
@@ -290,6 +291,26 @@ package com.photodispatcher.context{
 			return latch;
 		}
 
+		public static function initReject():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initReject';
+			//register services
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				OrderStateService, 
+				TechPointService,
+				OrderService ,
+				TechRejecService//+
+			]);
+
+			//init static maps
+			latch.join(Context.initSourceLists());
+			latch.join(Context.initAttributeLists());
+			latch.join(OrderState.initStateMap());
+			return latch;
+		}
+
 		public static function initPhotoCorrector():DbLatch{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoCorrector';
@@ -301,7 +322,7 @@ package com.photodispatcher.context{
 				TechPointService,
 				OrderService //+
 			]);
-
+			
 			//init static maps
 			latch.join(Context.initSourceLists());
 			latch.join(Context.initAttributeLists());
@@ -654,7 +675,12 @@ package com.photodispatcher.context{
 			latchAttributeLists.addLatch(dict.getStopTypeValueList(onFieldList),'lab_stop_type');
 			//print strategy_type
 			latchAttributeLists.addLatch(dict.getPrnStrategyValueList(onFieldList),'strategy_type');
-			
+
+			//reject_unit
+			latchAttributeLists.addLatch(dict.getRejectUnitValueList(onFieldList),'reject_unit');
+			//reject_unit
+			latchAttributeLists.addLatch(dict.getTechUnitValueList(onFieldList),'thech_unit');
+
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){
 				a=new ArrayCollection();

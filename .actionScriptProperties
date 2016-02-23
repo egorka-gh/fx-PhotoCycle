@@ -70,6 +70,9 @@
     <application path="PhotoPicker2.mxml">
       <airExcludes/>
     </application>
+    <application path="PhotoReprint.mxml">
+      <airExcludes/>
+    </application>
   </applications>
   <modules/>
   <buildCSSFiles/>

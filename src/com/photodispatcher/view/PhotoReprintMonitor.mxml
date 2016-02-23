@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.TechReject;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+		
+			
+			
+			public var techPoint:TechPoint;
+			[Bindable]
+			public var order:Order;
+
+			[Bindable]
+			private var labelWidth:int=100;
+			[Bindable]
+			private var valueWidth:int=150;
+
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
+				return _barcodeReader;
+			}
+			public function set barcodeReader(value:ComReader):void{
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+				_barcodeReader = value;
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+			}
+
+			private function onError(event:BarCodeEvent):void{
+				log('Ошибка: '+event.error+'; ШК:'+event.barcode, true);
+			}
+
+			private function onBarDisconnect(event:BarCodeEvent):void{
+				log('Отключен '+event.barcode, true);
+			}
+			private function onReaderConnect(event:BarCodeEvent):void{
+				log('Сканер ШК подключен '+event.barcode);
+			}
+
+			
+			private function onBarCode(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				log('ШК:'+event.barcode);
+				//parce barcode
+				var pgId:String;
+				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				if(!pgId){
+					//TODO rise err
+					log('Не верный штрих код: '+barcode, true);
+					return;
+				}
+				
+				var bookNum:int=int(barcode.substr(0,3));
+				var pageNum:int=int(barcode.substr(6,2));
+				
+				/*
+				if(currRegister && currRegister.printGroupId==pgId){
+					currRegister.register(bookNum,pageNum);
+					if (currRegister.isComplete) logToScreen('Группа печати "'+currRegister.printGroupId+'" завершена',false);
+				}else{
+					if(currRegister && !currRegister.finalise()) return;
+					//create new
+					var bookTot:int=int(barcode.substr(3,3));
+					var pageTot:int=int(barcode.substr(8,2));
+					createRegister(pgId,bookTot,pageTot);
+					if(!currRegister){
+						logToScreen('---------- Не поддерживаемый режим регистрации ШК ----------',true);
+						return;
+					}
+					//start new
+					barText='';
+					barText=barcode+'\n';
+					regList= new ArrayCollection();
+					currRegister.register(bookNum,pageNum);
+				}
+				regList.addItemAt({log_date:new Date(), page: StrUtil.sheetName(bookNum,pageNum)},0);
+				if(regList.length> REGLISTLIMIT){
+					regList.source.length=REGLISTLIMIT;
+					regList.refresh();
+						
+				}
+				*/
+			}
+			
+
+			public function log(mesage:String, isErr:Boolean=false):void{
+				lbLog.text=mesage;
+				if(isErr){
+					lbLog.setStyle('backgroundAlpha',0.5);
+				}else{
+					lbLog.setStyle('backgroundAlpha',0);
+				}
+			}
+
+			public function start():void{
+				if(!techPoint){
+					//TODO rise err or log in screen
+					log('Не задана технологическая точка',true);
+				}
+				if(barcodeReader) barcodeReader.start();
+			}
+
+
+			public function stop():void{
+				if(barcodeReader) barcodeReader.stop();
+			}
+			
+			
+			private var barPG:String;
+			private var barSO:String;
+			private var barBook:int;
+			private var barSheet:int;
+			
+			private function resetOrder():void{
+				barPG="";
+				barSO="";
+				barBook=-1;
+				barSheet=-1;
+				resetBook();
+				if(ddSubOrder) ddSubOrder.selectedItem=null;
+				if(ddPG) ddPG.selectedItem=null;
+				order=null;
+			}
+
+			private function resetBook():void{
+				if(nsBook){
+					nsBook.minimum=-1;
+					nsBook.value=-1;
+					nsBook.maximum=-1;
+				}
+				if(nsSheet){
+					nsSheet.minimum=-1;
+					nsSheet.value=-1;
+					nsSheet.maximum=-1;
+				}
+			}
+			
+			private function setRejectUnit(unit:int):void{
+				if(ddRejectUnit){
+					var item:Object=null;
+					for each(var it:Object in ddRejectUnit.dataProvider){
+						if(it.hasOwnProperty('value') && it.value==unit){
+							item=it;
+							break;
+						}
+					}
+					ddRejectUnit.selectedItem=item;
+				}
+			}
+			
+			protected function btAddManual_clickHandler(event:MouseEvent):void{
+				var pop:OrderSearchPopup= new OrderSearchPopup();
+				pop.findeMode=true
+				pop.addEventListener(PopUpEvent.CLOSE,onPopup);
+				pop.open(null);
+				resetOrder();
+				setRejectUnit(TechReject.UNIT_PART);
+			}
+			private function onPopup(event:PopUpEvent):void{
+				var pop:OrderSearchPopup=event.target as OrderSearchPopup;
+				if(!pop) return;
+				pop.removeEventListener(PopUpEvent.CLOSE,onPopup);
+				if(event.commit && pop.lastOrder){
+					loadOrder(pop.lastOrder.id);
+				}
+			}
+			
+			private function loadOrder(orderId:String):void{
+				if(!orderId) return;
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onOrderLoad);
+				latch.addLatch(svc.loadOrderFull(orderId));
+				latch.start();
+			}
+			private function onOrderLoad(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
+					if(!latch.complite) return;
+					order=latch.lastDataItem as Order;
+				}
+				if(!order){
+					log('Заказ не найден',true);
+					return;
+				}
+				
+				if(!order.printGroups){
+					log('Заказ '+order.id+'. Нет групп печати',true);
+					return;
+				}
+
+				ddSubOrder.enabled=order.hasSuborders;
+				order.printGroups.filterFunction=filterPG;
+				order.printGroups.refresh();
+				
+				//TODO apply barcode data
+			}
+
+			
+			private function filterPG(item:Object):Boolean{
+				var pg:PrintGroup=item as PrintGroup;
+				if(!pg) return false;
+				if(pg.is_reprint) return false;
+				if(ddSubOrder && ddSubOrder.dataProvider && ddSubOrder.dataProvider.length>0 && !ddSubOrder.selectedItem) return false;
+				if(ddSubOrder && ddSubOrder.selectedItem && ddSubOrder.selectedItem.sub_id != pg.sub_id) return false;
+				return true;
+			}
+			
+			protected function ddSubOrder_changeHandler(event:IndexChangeEvent):void{
+				resetBook();
+				ddPG.selectedItem= null;
+				if(order){
+					order.printGroups.refresh();
+				}
+			}
+			
+			protected function ddPG_changeHandler(event:IndexChangeEvent):void{
+				resetBook();
+				var pg:PrintGroup=ddPG.selectedItem as PrintGroup;
+				if(pg && pg.book_type>0){
+					nsBook.minimum=1;
+					nsBook.value=1;
+					nsBook.maximum=pg.book_num;
+					
+					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
+						nsSheet.minimum=1;
+						nsSheet.value=1;
+					}else{
+						nsSheet.minimum=0;
+						nsSheet.value=0;
+					}
+					
+					nsSheet.maximum=pg.sheet_num;
+				}
+			}
+			
+			protected function ddRejectUnit_changeHandler(event:IndexChangeEvent):void{
+				// TODO implement
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="0" width="100%" height="100%" horizontalAlign="right" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" >
+			<s:Label id="lbLog" maxDisplayedLines="1" backgroundColor="#FF0000" backgroundAlpha="0" />
+		</s:HGroup>
+		
+		<s:VGroup gap="5" width="100%" height="100%">
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Источник" width="{labelWidth}"/>
+				<s:TextInput editable="false" text="{order.source_name}"/>
+			</s:HGroup>
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Заказ" width="{labelWidth}"/>
+				<s:TextInput editable="false" text="{order.id}"/>
+				<s:Label text="Статус"/>
+				<s:TextInput editable="false" text="{order.state_name}"/>
+			</s:HGroup>
+			
+			
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Подзаказ" width="{labelWidth}"/>
+				<s:DropDownList id="ddSubOrder" dataProvider="{order.suborders}" labelField="sub_id"
+								change="ddSubOrder_changeHandler(event)"
+								width="{valueWidth}"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Перепечатать" width="{labelWidth}"/>
+				<s:DropDownList id="ddRejectUnit" dataProvider="{Context.getAttribute('reject_unitValueList')}"
+								change="ddRejectUnit_changeHandler(event)"
+								width="{valueWidth}"/>
+			</s:HGroup>
+			
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Группа печати" width="{labelWidth}"/>
+				<s:DropDownList id="ddPG" dataProvider="{order.printGroups}" labelField="id"
+								change="ddPG_changeHandler(event)"
+								width="{valueWidth}"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Книга" width="{labelWidth}"/>
+				<s:NumericStepper id="nsBook" minimum="0" maximum="10" stepSize="1" width="50"/>
+				<s:Spacer width="5"/>
+				<s:Label text="Разворот"/>
+				<s:NumericStepper id="nsSheet" minimum="0" maximum="10" stepSize="1" width="50"/>
+			</s:HGroup>
+
+			
+		</s:VGroup>
+
+		<s:HGroup gap="5" width="100%">
+			<s:Button id="btAddManual" label="Найти заказ" click="btAddManual_clickHandler(event)"/>
+			<s:Spacer width="100%"/>
+		</s:HGroup> 
+	</s:VGroup>
+	
+</s:Group>
