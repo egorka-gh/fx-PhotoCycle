@@ -197,7 +197,7 @@
 					//barcodeReader.start();
 				}
 				
-				//if(techMonitor) techMonitor.start();
+				if(photoReprintMonitor) photoReprintMonitor.start();
 			}
 			
 			private function stop():void{
@@ -211,7 +211,7 @@
 				//if(flap) flap.stop();
 				//if(barcodeReader) barcodeReader.stop();
 				if(serialProxy) serialProxy.stop();
-				//if(techMonitor) techMonitor.stop();
+				if(photoReprintMonitor) photoReprintMonitor.stop();
 			}
 			
 			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
@@ -264,6 +264,12 @@
 				so.flush();  
 			}
 			*/
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(serialProxy) serialProxy.stop();
+				if(photoReprintMonitor) photoReprintMonitor.stop();
+				FlexGlobals.topLevelApplication.exit();
+			}
 			
 		]]>
 	</fx:Script>
@@ -328,9 +334,9 @@
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
 		<s:Spacer width="100%"/>
-		<s:Button label="Стоп" includeIn="monitor" click="{stop()}"/>
+		<s:Button label="Конфигурация" includeIn="monitor" click="{stop()}"/>
 		<s:Button label="Старт" includeIn="config" click="{start()}"/>
-		<s:Button label="Закрыть" click="{FlexGlobals.topLevelApplication.exit()}" />
+		<s:Button label="Закрыть" click="button1_clickHandler(event)" />
 	</s:HGroup>
 	
 </s:WindowedApplication>

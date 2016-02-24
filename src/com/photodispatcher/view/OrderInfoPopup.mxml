@@ -71,6 +71,8 @@
 			private var logList:ArrayCollection;
 			
 
+			public var reprintDisabled:Boolean=false;
+			
 			[Bindable]
 			private var reprintPGList:ArrayCollection;
 			[Bindable]
@@ -263,6 +265,7 @@
 			*/
 			
 			protected function btReprintMode_clickHandler(event:MouseEvent):void{
+				if(reprintDisabled) return;
 				var srcArr:Array=pgList.source;
 				if(!srcArr) return;
 

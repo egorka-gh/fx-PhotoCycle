@@ -301,7 +301,8 @@ package com.photodispatcher.context{
 				OrderStateService, 
 				TechPointService,
 				OrderService ,
-				TechRejecService//+
+				TechRejecService,
+				StaffActivityService//+
 			]);
 
 			//init static maps

@@ -6,10 +6,29 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.util.GridUtil;
+	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
+	
+	import mx.collections.ArrayList;
+	import mx.core.ClassFactory;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.TechRejectItems")]
     public class TechRejectItems extends TechRejectItemsBase {
+
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			col= new GridColumn('pg_src'); col.headerText='Группа печати'; result.addItem(col);
+			col= new GridColumn('thech_unit'); col.headerText='Перепечатать'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			col= new GridColumn('book'); col.headerText='Книга'; result.addItem(col);
+			col= new GridColumn('sheet'); col.headerText='Лист'; result.addItem(col);
+
+			return result;
+		}
 
         public function TechRejectItems() {
             super();

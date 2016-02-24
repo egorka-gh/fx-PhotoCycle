@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
-		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:view="com.photodispatcher.view.*"
 		 >
 	
 	<fx:Script>
@@ -14,18 +14,26 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.StaffActivityGroup;
 			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.entities.TechReject;
+			import com.photodispatcher.model.mysql.entities.TechRejectItems;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.model.mysql.services.TechRejecService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.util.StrUtil;
 			
 			import mx.collections.ArrayCollection;
+			import mx.collections.ISort;
+			import mx.collections.ISortField;
+			import mx.events.FlexEvent;
 			
 			import org.granite.tide.Tide;
 			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
 			import spark.components.gridClasses.GridColumn;
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
@@ -37,6 +45,8 @@
 			public var techPoint:TechPoint;
 			[Bindable]
 			public var order:Order;
+			[Bindable]
+			public var reject:TechReject;
 
 			[Bindable]
 			private var labelWidth:int=100;
@@ -157,6 +167,8 @@
 				if(ddSubOrder) ddSubOrder.selectedItem=null;
 				if(ddPG) ddPG.selectedItem=null;
 				order=null;
+				reject=null;
+				if(staffActivityView) staffActivityView.reset();
 			}
 
 			private function resetBook():void{
@@ -191,7 +203,7 @@
 				pop.addEventListener(PopUpEvent.CLOSE,onPopup);
 				pop.open(null);
 				resetOrder();
-				setRejectUnit(TechReject.UNIT_PART);
+				setRejectUnit(TechReject.UNIT_SHEET);
 			}
 			private function onPopup(event:PopUpEvent):void{
 				var pop:OrderSearchPopup=event.target as OrderSearchPopup;
@@ -230,6 +242,26 @@
 				ddSubOrder.enabled=order.hasSuborders;
 				order.printGroups.filterFunction=filterPG;
 				order.printGroups.refresh();
+				
+				//create reject
+				reject= new TechReject();
+				reject.order_id=order.id;
+				reject.state=OrderState.REPRINT_WAITE;
+				reject.items=new ArrayCollection;
+				var sort:ISort = new Sort();
+				var sfarr:Array=[];
+				var sortfield:ISortField
+				sortfield = new SortField("pg_src",false,false);
+				sfarr.push(sortfield);
+				sortfield = new SortField("thech_unit",false,true);
+				sfarr.push(sortfield);
+				sortfield = new SortField("book",false,true);
+				sfarr.push(sortfield);
+				sortfield = new SortField("sheet",false,true);
+				sfarr.push(sortfield);
+				sort.fields=sfarr;
+				reject.items.sort=sort;
+				
 				
 				//TODO apply barcode data
 			}
@@ -273,8 +305,100 @@
 			}
 			
 			protected function ddRejectUnit_changeHandler(event:IndexChangeEvent):void{
-				// TODO implement
+				// TODO 
+				var unit:int=ddRejectUnit.selectedItem.value;
+				nsBook.enabled=true;
+				nsSheet.enabled=true;
+				switch(unit){
+					case TechReject.UNIT_BLOCK:
+					case TechReject.UNIT_COVER:
+					case TechReject.UNIT_BOOK:
+						nsSheet.enabled=false;
+						nsSheet.value=nsSheet.minimum;
+						break;
+					case TechReject.UNIT_ALL:
+						nsBook.enabled=false;
+						nsSheet.enabled=false;
+						break;
+					default:
+						break;
+				}
+			}
+			
+			protected function btAddItem_clickHandler(event:MouseEvent):void{
+				if(!reject) return;
+				if(!ddRejectUnit.selectedItem) return; 
+				var pg:PrintGroup=ddPG.selectedItem as PrintGroup;
+				var unit:int=ddRejectUnit.selectedItem.value;
+				if(!pg) return;
 				
+				var item:TechRejectItems= new TechRejectItems();
+				item.pg_src=pg.id;
+				item.thech_unit=unit;
+				item.thech_unit_name=ddRejectUnit.selectedItem.label;
+				item.book=nsBook.value;
+				item.sheet=nsSheet.value;
+				item.qty=1;
+				
+				reject.items.addItem(item);
+				reject.items.refresh();
+				
+			}
+			
+			protected function btDelItem_clickHandler(event:MouseEvent):void{
+				if(!reject) return;
+				if(!dgItems || dgItems.selectedIndex==-1) return;
+				dgItems.dataProvider.removeItemAt(dgItems.selectedIndex);
+				dgItems.selectedIndex=-1;
+				reject.items.refresh();
+			}
+			
+			protected function btClearItems_clickHandler(event:MouseEvent):void{
+				if(!reject) return;
+				reject.items.removeAll();
+				reject.items.refresh();
+			}
+			
+			protected function staffActivityView_creationCompleteHandler(event:FlexEvent):void{
+				staffActivityView.show(StaffActivityGroup.REPRINT,'Причина перепечатки');
+			}
+			
+			protected function staffActivityView_complitedHandler(event:Event):void{
+				if(!reject || reject.items.length==0) return;
+				reject.created=new Date();
+				reject.state_date=reject.created;
+				if(reject.items.length==1){
+					var item:TechRejectItems=reject.items.getItemAt(0) as TechRejectItems;
+					if(item){
+						reject.reject_unit=item.thech_unit;
+						reject.book=item.book;
+					}
+				}else{
+					reject.reject_unit=TechReject.UNIT_PART;
+				}
+				reject.activityObj=staffActivityView.staffActivity;
+				if(reject.activityObj){
+					reject.activityObj.order_id=reject.order_id;
+					reject.activityObj.log_date=reject.created;
+				}
+				
+				//save
+				var svc:TechRejecService=Tide.getInstance().getContext().byType(TechRejecService,true) as TechRejecService;
+				var latch:DbLatch= new DbLatch();
+				//latch.addEventListener(Event.COMPLETE, onStaffATLoad);
+				latch.addLatch(svc.create(reject));
+				latch.start();
+
+				//reset
+				resetOrder();
+			}
+			
+			protected function btOpenOrder_clickHandler(event:MouseEvent):void{
+				if(order && order.id){
+					var pop:OrderInfoPopup=new OrderInfoPopup();
+					pop.reprintDisabled=true;
+					pop.show(order.id);
+				}
 			}
 			
 		]]>
@@ -296,6 +420,10 @@
 				<s:TextInput editable="false" text="{order.id}"/>
 				<s:Label text="Статус"/>
 				<s:TextInput editable="false" text="{order.state_name}"/>
+				<!--<s:Spacer width="5"/>
+				<s:Button id="btOpenOrder" label="Открыть" click="btOpenOrder_clickHandler(event)"/>-->
+				<s:Spacer width="5"/>
+				<s:Button id="btAddManual" label="Найти" click="btAddManual_clickHandler(event)"/>
 			</s:HGroup>
 			
 			
@@ -307,13 +435,6 @@
 			</s:HGroup>
 
 			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-				<s:Label text="Перепечатать" width="{labelWidth}"/>
-				<s:DropDownList id="ddRejectUnit" dataProvider="{Context.getAttribute('reject_unitValueList')}"
-								change="ddRejectUnit_changeHandler(event)"
-								width="{valueWidth}"/>
-			</s:HGroup>
-			
-			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 				<s:Label text="Группа печати" width="{labelWidth}"/>
 				<s:DropDownList id="ddPG" dataProvider="{order.printGroups}" labelField="id"
 								change="ddPG_changeHandler(event)"
@@ -321,20 +442,43 @@
 			</s:HGroup>
 
 			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+				<s:Label text="Перепечатать" width="{labelWidth}"/>
+				<s:DropDownList id="ddRejectUnit" dataProvider="{Context.getAttribute('reject_unitValueList')}"
+								change="ddRejectUnit_changeHandler(event)"
+								width="{valueWidth}"/>
+			</s:HGroup>
+			
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 				<s:Label text="Книга" width="{labelWidth}"/>
 				<s:NumericStepper id="nsBook" minimum="0" maximum="10" stepSize="1" width="50"/>
 				<s:Spacer width="5"/>
 				<s:Label text="Разворот"/>
 				<s:NumericStepper id="nsSheet" minimum="0" maximum="10" stepSize="1" width="50"/>
+				<s:Spacer width="5"/>
+				<s:Button id="btAddItem" label="Добавить" click="btAddItem_clickHandler(event)"/>
 			</s:HGroup>
-
 			
+			<s:Spacer height="5"/>
+			<s:Label text="К перепечатке"/>
+			<s:DataGrid id="dgItems" width="100%" height="100%"
+						selectionMode="singleRow"  locale="ru_RU" 
+						dataProvider="{reject.items}" columns="{TechRejectItems.gridColumns()}"/>
+			<s:HGroup gap="5" width="100%" horizontalAlign="right">
+				<s:Button id="btDelItem" label="Удалить" click="btDelItem_clickHandler(event)"/>
+				<s:Button id="btClearItems" label="Удалить все" click="btClearItems_clickHandler(event)"/>
+			</s:HGroup>
+			
+			<s:Spacer height="5"/>
+			<view:StaffActivityView id="staffActivityView" popupMode="false" okLabel="Сформировать"
+									creationComplete="staffActivityView_creationCompleteHandler(event)"
+									complited="staffActivityView_complitedHandler(event)"
+									width="100%"/>
 		</s:VGroup>
 
-		<s:HGroup gap="5" width="100%">
+		<!--<s:HGroup gap="5" width="100%">
 			<s:Button id="btAddManual" label="Найти заказ" click="btAddManual_clickHandler(event)"/>
 			<s:Spacer width="100%"/>
-		</s:HGroup> 
+		</s:HGroup> -->
 	</s:VGroup>
 	
 </s:Group>

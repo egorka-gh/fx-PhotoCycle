@@ -285,6 +285,12 @@
 				so.flush();  
 			}
 			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(serialProxy) serialProxy.stop();
+				if(techMonitor) techMonitor.stop();
+				FlexGlobals.topLevelApplication.exit();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -349,7 +355,7 @@
 		<s:Spacer width="100%"/>
 		<s:Button label="Стоп" includeIn="monitor" click="{stop()}"/>
 		<s:Button label="Старт" includeIn="config" click="{start()}"/>
-		<s:Button label="Закрыть" click="{FlexGlobals.topLevelApplication.exit()}" />
+		<s:Button label="Закрыть" click="button1_clickHandler(event)" />
 	</s:HGroup>
 	
 </s:WindowedApplication>
