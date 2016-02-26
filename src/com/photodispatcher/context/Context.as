@@ -113,7 +113,8 @@ package com.photodispatcher.context{
 				ConfigService,
 				StaffActivityService,
 				MailPackageService,
-				PrnStrategyService//+
+				PrnStrategyService,
+				TechRejecService//+
 			]);
 			
 			//fill from config

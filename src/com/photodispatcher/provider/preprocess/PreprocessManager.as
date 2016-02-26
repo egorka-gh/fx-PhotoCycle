@@ -17,6 +17,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
+	import com.photodispatcher.model.mysql.services.TechRejecService;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -65,24 +66,79 @@ package com.photodispatcher.provider.preprocess{
 		private function get orderService():OrderService{
 			return Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 		}
+		private function get rejectService():TechRejecService{
+			return Tide.getInstance().getContext().byType(TechRejecService,true) as TechRejecService;
+		}
 		
 		public function reLoad():void{
 			stopTimer();
 			//reset errors
 			for each(var o:Order in queue.source){
-				if(o && o.state<0) o.state=OrderState.PREPROCESS_WAITE;
+				if(o && o.state<0 && !o.tag) o.state=OrderState.PREPROCESS_WAITE;
 			}
 
+			//preprocess order
 			var latch:DbLatch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onloadFromDB);
 			latch.addLatch(orderService.loadByState(OrderState.PREPROCESS_WAITE, OrderState.PREPROCESS_CAPTURED));
 			latch.start();
+
+			//reprint orders
+			var rLatch:DbLatch= new DbLatch(true);
+			rLatch.addEventListener(Event.COMPLETE,onloadReprintOrders);
+			rLatch.addLatch(rejectService.loadReprintWaiteAsOrder());
+			rLatch.join(latch);
+			rLatch.start();
+			
+
 		}
+
+		private function onloadReprintOrders(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE,onloadReprintOrders);
+			if(autoLoad) startTimer();
+			lastLoadTime= new Date();
+			if(!latch || !latch.complite) return;
+			var toAdd:Array=latch.lastDataArr;
+			if(toAdd && toAdd.length>0){
+				var newItems:Array=[];
+				var order:Order;
+				if(currOrder) newItems.push(currOrder);
+				
+				//save preprocess oreders
+				for each(order in queue){
+					if(order && (!currOrder || order.id!=currOrder.id) && !order.tag){
+						newItems.push(order);
+					}
+				}
+				
+				//TODO
+				// add reprint orders
+				for each(order in toAdd){
+					if(order){
+						if(!currOrder || order.id!=currOrder.id){
+							!!
+							var oldOrder:Order=ArrayUtil.searchItem('id',order.id,queue.source) as Order;
+							if(oldOrder){
+								newItems.push(oldOrder);
+							}else{
+								newItems.push(order);
+							}
+						}
+					}
+				}
+				queue = new ArrayCollection(newItems);
+				dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
+			}
+			
+			startNext();
+		}
+		
 		private function onloadFromDB(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch) latch.removeEventListener(Event.COMPLETE,onloadFromDB);
-			if(autoLoad) startTimer();
-			lastLoadTime= new Date();
+			//if(autoLoad) startTimer();
+			//lastLoadTime= new Date();
 			if(!latch || !latch.complite) return;
 			var toAdd:Array=latch.lastDataArr;
 			if(!toAdd || toAdd.length==0) return;
@@ -104,7 +160,7 @@ package com.photodispatcher.provider.preprocess{
 			queue = new ArrayCollection(newItems);
 			webErrCounter=0;
 			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
-			startNext();
+			//startNext();
 		}
 
 		private var currOrder:Order;

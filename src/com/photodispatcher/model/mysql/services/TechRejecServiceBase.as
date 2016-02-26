@@ -7,6 +7,7 @@
 
 package com.photodispatcher.model.mysql.services {
 
+    import com.photodispatcher.model.mysql.entities.DmlResult;
     import com.photodispatcher.model.mysql.entities.SelectResult;
     import com.photodispatcher.model.mysql.entities.SqlResult;
     import com.photodispatcher.model.mysql.entities.TechReject;
@@ -48,13 +49,35 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
-        public function loadReprintWaite(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+        public function loadByOrder(arg0:String, arg1:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
-                return callProperty("loadReprintWaite", resultHandler, faultHandler) as AsyncToken;
+                return callProperty("loadByOrder", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
             else if (resultHandler is Function || resultHandler is ITideResponder)
-                return callProperty("loadReprintWaite", resultHandler) as AsyncToken;
+                return callProperty("loadByOrder", arg0, arg1, resultHandler) as AsyncToken;
             else if (resultHandler == null)
-                return callProperty("loadReprintWaite") as AsyncToken;
+                return callProperty("loadByOrder", arg0, arg1) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadReprintWaiteAsOrder(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadReprintWaiteAsOrder", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadReprintWaiteAsOrder", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadReprintWaiteAsOrder") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function updateReject(arg0:TechReject, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("updateReject", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("updateReject", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("updateReject", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }

@@ -84,49 +84,36 @@
 				log('Сканер ШК подключен '+event.barcode);
 			}
 
+			private var barPG:String;
+			private var barOrdId:String;
+			private var barBook:int;
+			private var barSheet:int;
 			
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
 				log('ШК:'+event.barcode);
 				//parce barcode
-				var pgId:String;
-				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
-				if(!pgId){
-					//TODO rise err
+				
+				if(!PrintGroup.isTechBarcode(barcode)){
 					log('Не верный штрих код: '+barcode, true);
 					return;
 				}
 				
-				var bookNum:int=int(barcode.substr(0,3));
-				var pageNum:int=int(barcode.substr(6,2));
+				barBook=PrintGroup.bookFromTechBarcode(barcode);
+				barSheet=PrintGroup.sheetFromTechBarcode(barcode);
+				barOrdId=PrintGroup.orderIdFromId(PrintGroup.digitIdFromTechBarcode(barcode));
+				barPG=PrintGroup.idFromDigitId(PrintGroup.digitIdFromTechBarcode(barcode));
+				if(!barOrdId){
+					log('Не верный штрих код (id заказа): '+barcode, true);
+					return;
+				}
 				
-				/*
-				if(currRegister && currRegister.printGroupId==pgId){
-					currRegister.register(bookNum,pageNum);
-					if (currRegister.isComplete) logToScreen('Группа печати "'+currRegister.printGroupId+'" завершена',false);
-				}else{
-					if(currRegister && !currRegister.finalise()) return;
-					//create new
-					var bookTot:int=int(barcode.substr(3,3));
-					var pageTot:int=int(barcode.substr(8,2));
-					createRegister(pgId,bookTot,pageTot);
-					if(!currRegister){
-						logToScreen('---------- Не поддерживаемый режим регистрации ШК ----------',true);
-						return;
-					}
-					//start new
-					barText='';
-					barText=barcode+'\n';
-					regList= new ArrayCollection();
-					currRegister.register(bookNum,pageNum);
+				if(order && order.id==barOrdId){
+					applyBarData();
+					return;
 				}
-				regList.addItemAt({log_date:new Date(), page: StrUtil.sheetName(bookNum,pageNum)},0);
-				if(regList.length> REGLISTLIMIT){
-					regList.source.length=REGLISTLIMIT;
-					regList.refresh();
-						
-				}
-				*/
+				
+				loadOrder(barOrdId);
 			}
 			
 
@@ -152,17 +139,13 @@
 				if(barcodeReader) barcodeReader.stop();
 			}
 			
-			
-			private var barPG:String;
-			private var barSO:String;
-			private var barBook:int;
-			private var barSheet:int;
-			
-			private function resetOrder():void{
-				barPG="";
-				barSO="";
-				barBook=-1;
-				barSheet=-1;
+			private function resetOrder(keepBarData:Boolean=false):void{
+				if(!keepBarData){
+					barPG="";
+					barOrdId="";
+					barBook=-1;
+					barSheet=-1;
+				}
 				resetBook();
 				if(ddSubOrder) ddSubOrder.selectedItem=null;
 				if(ddPG) ddPG.selectedItem=null;
@@ -195,6 +178,7 @@
 					}
 					ddRejectUnit.selectedItem=item;
 				}
+				ddRejectUnit_changeHandler(null);
 			}
 			
 			protected function btAddManual_clickHandler(event:MouseEvent):void{
@@ -262,10 +246,55 @@
 				sort.fields=sfarr;
 				reject.items.sort=sort;
 				
-				
-				//TODO apply barcode data
+				//apply barcode data
+				applyBarData();
 			}
 
+			private function applyBarData():void{
+				if(!order || !order.printGroups) return;
+				if(!barOrdId || !barPG) return;
+				if(barOrdId!=order.id) return;
+				
+				//look for pg
+				var pg:PrintGroup;
+				for each(var p:PrintGroup in order.printGroups.toArray()){
+					if(p.id==barPG){
+						pg=p;
+						break;
+					}
+				}
+				if(!pg) return;
+				
+				var so:SubOrder;
+				if(pg.sub_id && order.hasSuborders){
+					//look for suborder
+					for each(var o:SubOrder in order.suborders){
+						if(o.sub_id==pg.sub_id){
+							so=o;
+							break;
+						}
+					}
+				}
+				
+				ddSubOrder.selectedItem=so;
+				order.printGroups.refresh();
+				ddPG.selectedItem=pg;
+				ddPG_changeHandler(null);
+				
+				if(pg.book_type==0) return;
+				
+				if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
+					setRejectUnit(TechReject.UNIT_BLOCK);
+				}else if(pg.book_part==BookSynonym.BOOK_PART_COVER){
+					setRejectUnit(TechReject.UNIT_COVER);
+				}else if(pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
+					setRejectUnit(TechReject.UNIT_BOOK);
+				}
+				
+				//set barcode book & sheet
+				if(barBook) nsBook.value=barBook;
+				nsSheet.value=barSheet; 
+			}
 			
 			private function filterPG(item:Object):Boolean{
 				var pg:PrintGroup=item as PrintGroup;
@@ -305,7 +334,7 @@
 			}
 			
 			protected function ddRejectUnit_changeHandler(event:IndexChangeEvent):void{
-				// TODO 
+				if(!ddRejectUnit || !ddRejectUnit.selectedItem) return;
 				var unit:int=ddRejectUnit.selectedItem.value;
 				nsBook.enabled=true;
 				nsSheet.enabled=true;

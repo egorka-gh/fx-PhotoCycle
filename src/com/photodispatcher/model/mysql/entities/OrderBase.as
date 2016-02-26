@@ -47,6 +47,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _state_name:String;
         private var _suborders:ListCollectionView;
         private var _sync:int;
+        private var _tag:String;
         private var _techLog:ListCollectionView;
 
         public function set clean_fs(value:Boolean):void {
@@ -245,6 +246,13 @@ package com.photodispatcher.model.mysql.entities {
             return _sync;
         }
 
+        public function set tag(value:String):void {
+            _tag = value;
+        }
+        public function get tag():String {
+            return _tag;
+        }
+
         public function set techLog(value:ListCollectionView):void {
             _techLog = value;
         }
@@ -282,6 +290,7 @@ package com.photodispatcher.model.mysql.entities {
             _state_name = input.readObject() as String;
             _suborders = input.readObject() as ListCollectionView;
             _sync = input.readObject() as int;
+            _tag = input.readObject() as String;
             _techLog = input.readObject() as ListCollectionView;
         }
 
@@ -315,6 +324,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
             output.writeObject((_suborders is IPropertyHolder) ? IPropertyHolder(_suborders).object : _suborders);
             output.writeObject((_sync is IPropertyHolder) ? IPropertyHolder(_sync).object : _sync);
+            output.writeObject((_tag is IPropertyHolder) ? IPropertyHolder(_tag).object : _tag);
             output.writeObject((_techLog is IPropertyHolder) ? IPropertyHolder(_techLog).object : _techLog);
         }
     }
