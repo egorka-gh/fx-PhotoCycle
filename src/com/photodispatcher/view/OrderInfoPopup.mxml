@@ -399,10 +399,22 @@
 			}
 			
 			private function onBuilderError(evt:OrderBuildEvent):void{
+				var builder:ReprintBuilder=evt.target as ReprintBuilder;
+				if(builder){
+					builder.removeEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);
+					builder.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
+					builder.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
+				}
 				OrderService.releasePreprocessLock(order.id);
 				Alert.show(evt.err_msg);
 			}
 			private function onOrderPreprocessed(evt:OrderBuildEvent):void{
+				var builder:ReprintBuilder=evt.target as ReprintBuilder;
+				if(builder){
+					builder.removeEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);
+					builder.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
+					builder.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
+				}
 				OrderService.releasePreprocessLock(order.id);
 				if(evt.err<0){
 					//completed vs error

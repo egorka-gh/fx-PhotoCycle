@@ -22,6 +22,9 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.Order")]
     public class Order extends OrderBase {
+
+		public static const TAG_REPRINT:String='reject';
+
 		public static const ERROR_COUNTER_LIMIT:int=2;
 		public static const BILL_TYPE_TXT:int=0;
 		public static const BILL_TYPE_HTML:int=1;

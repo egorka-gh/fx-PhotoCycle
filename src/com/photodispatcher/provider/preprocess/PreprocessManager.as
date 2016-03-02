@@ -49,7 +49,8 @@ package com.photodispatcher.provider.preprocess{
 		[Bindable]
 		public var progressCaption:String='';
 		
-		public var builder:OrderBuilderLocal;
+		protected var orderBuilder:OrderBuilderLocal;
+		protected var reprintBuilder:ReprintOrderBuilder;
 
 		[Bindable]
 		public  var queue:ArrayCollection;
@@ -59,8 +60,11 @@ package com.photodispatcher.provider.preprocess{
 		public function PreprocessManager(){
 			super();
 			queue= new ArrayCollection();
-			builder= new OrderBuilderLocal();
-			listenBuilder(builder);
+			orderBuilder= new OrderBuilderLocal();
+			listenBuilder(orderBuilder);
+			
+			reprintBuilder=new ReprintOrderBuilder();
+			listenReprintBuilder(reprintBuilder);
 		}
 		
 		private function get orderService():OrderService{
@@ -74,7 +78,13 @@ package com.photodispatcher.provider.preprocess{
 			stopTimer();
 			//reset errors
 			for each(var o:Order in queue.source){
-				if(o && o.state<0 && !o.tag) o.state=OrderState.PREPROCESS_WAITE;
+				if(o && o.state<0){
+					if(o.tag==Order.TAG_REPRINT){
+						o.state=OrderState.REPRINT_WAITE;
+					}else{
+						o.state=OrderState.PREPROCESS_WAITE;
+					}
+				}
 			}
 
 			//preprocess order
@@ -112,12 +122,10 @@ package com.photodispatcher.provider.preprocess{
 					}
 				}
 				
-				//TODO
 				// add reprint orders
 				for each(order in toAdd){
 					if(order){
 						if(!currOrder || order.id!=currOrder.id){
-							!!
 							var oldOrder:Order=ArrayUtil.searchItem('id',order.id,queue.source) as Order;
 							if(oldOrder){
 								newItems.push(oldOrder);
@@ -142,14 +150,25 @@ package com.photodispatcher.provider.preprocess{
 			if(!latch || !latch.complite) return;
 			var toAdd:Array=latch.lastDataArr;
 			if(!toAdd || toAdd.length==0) return;
+			
 			var newItems:Array=[];
 			if(currOrder) newItems.push(currOrder);
-			for each(var order:Order in toAdd){
+			var order:Order;
+			//save reprint oreders
+			for each(order in queue){
+				if(order && (!currOrder || order.id!=currOrder.id) && order.tag==Order.TAG_REPRINT){
+					newItems.push(order);
+				}
+			}
+
+			// add preprocess orders
+			for each(order in toAdd){
 				if(order){
 					if(!currOrder || order.id!=currOrder.id){
 						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORWARD) order.state=OrderState.PREPROCESS_WAITE;
 						var oldOrder:Order=ArrayUtil.searchItem('id',order.id,queue.source) as Order;
-						if(oldOrder){
+						//reprint can't be before regular build
+						if(oldOrder && order.tag!=Order.TAG_REPRINT){
 							newItems.push(oldOrder);
 						}else{
 							newItems.push(order);
@@ -166,43 +185,52 @@ package com.photodispatcher.provider.preprocess{
 		private var currOrder:Order;
 
 		private function startNext():void{
-			progressCaption='';
 			if(!isStarted){
+				progressCaption='';
 				currOrder=null;
 				return;
 			}
 			if(currOrder) return;
-			if(builder.isBusy) return;
+
+			progressCaption='';
+			if(orderBuilder.isBusy) return;
 			if(queue.source.length==0) return;
 			
-			//get order
 			var o:Order;
 			var order:Order;
-			//var faultOrder:Order;
-			
+
+			//get reprint order
 			for each(o in queue.source){
-				if(o){
-					if(o.state==OrderState.PREPROCESS_FORWARD){
-						order=o;
-						break;
-					}else if(o.state==OrderState.PREPROCESS_WAITE){
-						if(!order) order=o;
-						/*
-					}else if(!faultOrder && o.state<0 && o.state!=OrderState.ERR_PREPROCESS && o.state!=OrderState.ERR_LOCK_FAULT){
-						faultOrder=o;
-						*/
-					}
+				if(o && o.state==OrderState.REPRINT_WAITE){
+					order=o;
+					break;
 				}
 			}
-			//if(!order) order=faultOrder;
+			
+			//get preprocess order
+			if(!order){
+				for each(o in queue.source){
+					if(o){
+						if(o.state==OrderState.PREPROCESS_FORWARD){
+							order=o;
+							break;
+						}else if(o.state==OrderState.PREPROCESS_WAITE){
+							if(!order) order=o;
+						}
+					}
+				}
+				if(order && order.state!=OrderState.PREPROCESS_WAITE) order.state=OrderState.PREPROCESS_WAITE;
+			}
+
 			if(!order) return;
 			
 			currOrder=order;
-			if(currOrder.state!=OrderState.PREPROCESS_WAITE) currOrder.state=OrderState.PREPROCESS_WAITE;
+			//if(currOrder.state!=OrderState.PREPROCESS_WAITE) currOrder.state=OrderState.PREPROCESS_WAITE;
 			
 			getLock();
 		}
 
+		//get soft lock
 		private function getLock():void{
 			if(!isStarted) currOrder=null;
 			if(!currOrder) return;
@@ -216,7 +244,12 @@ package com.photodispatcher.provider.preprocess{
 			latch.removeEventListener(Event.COMPLETE,ongetLock);
 			if(!currOrder) return;
 			if(latch.resultCode>0){
-				checkWebState();
+				if(currOrder.state==OrderState.PREPROCESS_WAITE){
+					//preprocess web check
+					checkWebState();
+				}else{
+					//TODO build reprint
+				}
 			}else{
 				lastError='Заказ '+currOrder.id+' обрабатывается на другой станции';
 				StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','soft lock');
@@ -226,6 +259,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 		}
 
+		//release soft lock
 		private function releaseLock():void{
 			if(!currOrder) return;
 			//TODO can release another's lock
@@ -360,7 +394,7 @@ package com.photodispatcher.provider.preprocess{
 				if (latch.complite && latch.resultCode==OrderState.PREPROCESS_CAPTURED){
 					//forvard
 					//build
-					builder.build(currOrder);
+					orderBuilder.build(currOrder);
 					//TODO remove currOrder from queue after complite
 				}else{
 					trace('PreprocessManager.captureState: db error '+latch.lastError);
@@ -454,7 +488,7 @@ package com.photodispatcher.provider.preprocess{
 				if(currOrder.state < OrderState.PREPROCESS_CAPTURED){
 					currOrder.state=OrderState.PREPROCESS_WAITE;
 				}else{
-					builder.stop();
+					orderBuilder.stop();
 					//unlock
 					currOrder.state=OrderState.PREPROCESS_WAITE;
 					var latch:DbLatch= new DbLatch(true);
