@@ -6,6 +6,12 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import flash.globalization.DateTimeStyle;
+	
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.TechReject")]
@@ -20,5 +26,21 @@ package com.photodispatcher.model.mysql.entities {
         public function TechReject() {
             super();
         }
+		
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			col= new GridColumn('order_id'); col.headerText='Заказ'; result.addItem(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col);
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('staff_name'); col.headerText='Сотрудник'; result.addItem(col);
+			col= new GridColumn('sa_type_name'); col.headerText='Причина'; result.addItem(col);
+			col= new GridColumn('sa_remark'); col.headerText='Примечание'; result.addItem(col);
+			
+			return result;
+		}
+
     }
 }

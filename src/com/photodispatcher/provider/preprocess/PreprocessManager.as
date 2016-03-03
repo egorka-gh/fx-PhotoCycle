@@ -64,7 +64,7 @@ package com.photodispatcher.provider.preprocess{
 			listenBuilder(orderBuilder);
 			
 			reprintBuilder=new ReprintOrderBuilder();
-			listenReprintBuilder(reprintBuilder);
+			listenReprint(reprintBuilder);
 		}
 		
 		private function get orderService():OrderService{
@@ -193,7 +193,7 @@ package com.photodispatcher.provider.preprocess{
 			if(currOrder) return;
 
 			progressCaption='';
-			if(orderBuilder.isBusy) return;
+			if(orderBuilder.isBusy || reprintBuilder.isBusy) return;
 			if(queue.source.length==0) return;
 			
 			var o:Order;
@@ -249,6 +249,7 @@ package com.photodispatcher.provider.preprocess{
 					checkWebState();
 				}else{
 					//TODO build reprint
+					reprintBuilder.build(currOrder);
 				}
 			}else{
 				lastError='Заказ '+currOrder.id+' обрабатывается на другой станции';
@@ -484,37 +485,79 @@ package com.photodispatcher.provider.preprocess{
 			stopTimer();
 			progressCaption='';
 			releaseLock();
-			if(currOrder){ 
-				if(currOrder.state < OrderState.PREPROCESS_CAPTURED){
-					currOrder.state=OrderState.PREPROCESS_WAITE;
-				}else{
-					orderBuilder.stop();
-					//unlock
-					currOrder.state=OrderState.PREPROCESS_WAITE;
-					var latch:DbLatch= new DbLatch(true);
-					//latch.addEventListener(Event.COMPLETE,onOrderSave);
-					latch.addLatch(orderService.setState(currOrder));
-					latch.start();
+			if(currOrder){
+				reprintBuilder.stop();
+				if(!currOrder.tag){
+					if(currOrder.state < OrderState.PREPROCESS_CAPTURED){
+						currOrder.state=OrderState.PREPROCESS_WAITE;
+					}else{
+						orderBuilder.stop();
+						//unlock
+						currOrder.state=OrderState.PREPROCESS_WAITE;
+						var latch:DbLatch= new DbLatch(true);
+						//latch.addEventListener(Event.COMPLETE,onOrderSave);
+						latch.addLatch(orderService.setState(currOrder));
+						latch.start();
+					}
+				}else if(currOrder.tag==Order.TAG_REPRINT){
+					currOrder.state=OrderState.REPRINT_WAITE;
 				}
 				currOrder=null;
 			}
 			//reset states
 			for each (var order:Order in queue.source){
 				if(order){
-					if(!currOrder || (currOrder.id!=order.id)){
+					if(!order.tag){
 						if(order.state!=OrderState.PREPROCESS_WAITE && order.state!=OrderState.PREPROCESS_FORWARD ){
 							order.state=OrderState.PREPROCESS_WAITE;
 						}
+					}else if(order.tag==Order.TAG_REPRINT){
+						order.state=OrderState.REPRINT_WAITE;
 					}
 				}
 			}
-
 		}
 
 		public function destroy():void{
 			//TODO implement
 		}
-		
+
+		private function listenReprint(builder:OrderBuilderBase, listen:Boolean=true):void{
+			if(!builder) return;
+			if(listen){
+				builder.addEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onReprintError);
+				builder.addEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onReprint);
+				builder.addEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
+			}else{
+				builder.removeEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onReprintError);
+				builder.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onReprint);
+				builder.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
+			}
+		}
+		private function onReprintError(evt:OrderBuildEvent):void{
+			//builder error
+			lastError=evt.err_msg;
+			if(!currOrder) return;
+			releaseLock();
+			currOrder.state=OrderState.ERR_REPRINT;
+			currOrder=null;
+			startNext();
+		}
+		private function onReprint(evt:OrderBuildEvent):void{
+			if(!currOrder) return;
+			//order complited
+			//remove from queue
+			releaseLock();
+			if(evt.err<0){
+				//completed vs error
+				currOrder.state=OrderState.ERR_REPRINT;
+				currOrder=null;
+			}else{
+				releaseOrder();
+			}
+			startNext();
+		}
+
 		private function listenBuilder(builder:OrderBuilderBase):void{
 			if(!builder) return;
 			builder.addEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);

@@ -41,6 +41,7 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		override public function stop():void{
+			super.stop();
 			if(preprocessTask){
 				preprocessTask.removeEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
 				preprocessTask.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);

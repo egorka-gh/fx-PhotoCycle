@@ -29,6 +29,9 @@ package com.photodispatcher.model.mysql.entities {
         private var _pgroups:ListCollectionView;
         private var _reject_unit:int;
         private var _reject_unit_name:String;
+        private var _sa_remark:String;
+        private var _sa_type_name:String;
+        private var _staff_name:String;
         private var _state:int;
         private var _state_date:Date;
         private var _state_name:String;
@@ -104,6 +107,27 @@ package com.photodispatcher.model.mysql.entities {
             return _reject_unit_name;
         }
 
+        public function set sa_remark(value:String):void {
+            _sa_remark = value;
+        }
+        public function get sa_remark():String {
+            return _sa_remark;
+        }
+
+        public function set sa_type_name(value:String):void {
+            _sa_type_name = value;
+        }
+        public function get sa_type_name():String {
+            return _sa_type_name;
+        }
+
+        public function set staff_name(value:String):void {
+            _staff_name = value;
+        }
+        public function get staff_name():String {
+            return _staff_name;
+        }
+
         public function set state(value:int):void {
             _state = value;
         }
@@ -144,6 +168,9 @@ package com.photodispatcher.model.mysql.entities {
             _pgroups = input.readObject() as ListCollectionView;
             _reject_unit = input.readObject() as int;
             _reject_unit_name = input.readObject() as String;
+            _sa_remark = input.readObject() as String;
+            _sa_type_name = input.readObject() as String;
+            _staff_name = input.readObject() as String;
             _state = input.readObject() as int;
             _state_date = input.readObject() as Date;
             _state_name = input.readObject() as String;
@@ -162,6 +189,9 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_pgroups is IPropertyHolder) ? IPropertyHolder(_pgroups).object : _pgroups);
             output.writeObject((_reject_unit is IPropertyHolder) ? IPropertyHolder(_reject_unit).object : _reject_unit);
             output.writeObject((_reject_unit_name is IPropertyHolder) ? IPropertyHolder(_reject_unit_name).object : _reject_unit_name);
+            output.writeObject((_sa_remark is IPropertyHolder) ? IPropertyHolder(_sa_remark).object : _sa_remark);
+            output.writeObject((_sa_type_name is IPropertyHolder) ? IPropertyHolder(_sa_type_name).object : _sa_type_name);
+            output.writeObject((_staff_name is IPropertyHolder) ? IPropertyHolder(_staff_name).object : _staff_name);
             output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
             output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
             output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);

@@ -343,7 +343,7 @@
 			}
 			
 			protected function tg_rotatePrint_changeHandler(event:Event):void{
-				printRotated =tg_rotatePrint.selected;
+				//printRotated =tg_rotatePrint.selected;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.printRotated = printRotated;
 				so.flush();  
@@ -594,7 +594,7 @@
 			</s:FormItem> 
 
 			<s:FormItem label="Переворачивать при печати на Noritsu">
-				<s:CheckBox id="tg_rotatePrint" selected="{printRotated}" change="tg_rotatePrint_changeHandler(event)"/>
+				<s:CheckBox id="tg_rotatePrint" selected="@{printRotated}" change="tg_rotatePrint_changeHandler(event)"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Параметры печати">

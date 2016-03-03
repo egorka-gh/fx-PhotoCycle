@@ -35,6 +35,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_PRODUCTION_NOT_SET:int=-320;
 		public static const ERR_LOCK_FAULT:int=-321;
 		public static const ERR_WRONG_STATE:int=-322;
+		public static const ERR_REPRINT:int=-323;
 		
 		//flow state
 		//public static const FTP_RELOAD:int=95;

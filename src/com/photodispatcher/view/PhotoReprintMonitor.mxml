@@ -18,7 +18,7 @@
 			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.entities.TechReject;
-			import com.photodispatcher.model.mysql.entities.TechRejectItems;
+			import com.photodispatcher.model.mysql.entities.TechRejectItem;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.TechRejecService;
@@ -73,6 +73,10 @@
 				}
 			}
 
+			private function get rejectService():TechRejecService{
+				return Tide.getInstance().getContext().byType(TechRejecService,true) as TechRejecService;
+			}
+
 			private function onError(event:BarCodeEvent):void{
 				log('Ошибка: '+event.error+'; ШК:'+event.barcode, true);
 			}
@@ -92,6 +96,9 @@
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
 				log('ШК:'+event.barcode);
+				
+				if(tbView) tbView.selectedIndex=0;
+				
 				//parce barcode
 				
 				if(!PrintGroup.isTechBarcode(barcode)){
@@ -361,7 +368,7 @@
 				var unit:int=ddRejectUnit.selectedItem.value;
 				if(!pg) return;
 				
-				var item:TechRejectItems= new TechRejectItems();
+				var item:TechRejectItem= new TechRejectItem();
 				item.pg_src=pg.id;
 				item.thech_unit=unit;
 				item.thech_unit_name=ddRejectUnit.selectedItem.label;
@@ -397,7 +404,7 @@
 				reject.created=new Date();
 				reject.state_date=reject.created;
 				if(reject.items.length==1){
-					var item:TechRejectItems=reject.items.getItemAt(0) as TechRejectItems;
+					var item:TechRejectItem=reject.items.getItemAt(0) as TechRejectItem;
 					if(item){
 						reject.reject_unit=item.thech_unit;
 						reject.book=item.book;
@@ -412,10 +419,10 @@
 				}
 				
 				//save
-				var svc:TechRejecService=Tide.getInstance().getContext().byType(TechRejecService,true) as TechRejecService;
+				//var svc:TechRejecService=Tide.getInstance().getContext().byType(TechRejecService,true) as TechRejecService;
 				var latch:DbLatch= new DbLatch();
 				//latch.addEventListener(Event.COMPLETE, onStaffATLoad);
-				latch.addLatch(svc.create(reject));
+				latch.addLatch(rejectService.create(reject));
 				latch.start();
 
 				//reset
@@ -430,79 +437,128 @@
 				}
 			}
 			
+			protected function btLoadRejects_clickHandler(event:MouseEvent):void{
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onLoadRejects);
+				latch.addLatch(rejectService.loadByState(OrderState.REPRINT_WAITE,OrderState.REPRINT_CAPTURED));
+				latch.start();
+			}
+			
+			[Bindable]
+			private var rejectsAC:ArrayCollection;
+			
+			private function onLoadRejects(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadRejects);
+					if(!latch.complite) return;
+					rejectsAC=latch.lastDataAC;
+				}
+			}
+
+			
+			
 		]]>
 	</fx:Script>
 	
 	<s:VGroup gap="0" width="100%" height="100%" horizontalAlign="right" 
-			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+			  paddingBottom="0" paddingLeft="0" paddingRight="0" paddingTop="0">
 		<s:HGroup gap="5" width="100%" >
 			<s:Label id="lbLog" maxDisplayedLines="1" backgroundColor="#FF0000" backgroundAlpha="0" />
 		</s:HGroup>
+		<s:TabBar id="tbView"  dataProvider="{vsSubInfo}" width="100%"/>
+		<mx:ViewStack id="vsSubInfo" borderStyle="solid" borderColor="0" backgroundAlpha="0"
+					  paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5" 
+					  width="100%" height="100%">
+			<s:NavigatorContent label="Создание" backgroundAlpha="0" width="100%" height="100%">
+				<s:VGroup gap="5" width="100%" height="100%">
+					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+						<s:Label text="Источник" width="{labelWidth}"/>
+						<s:TextInput editable="false" text="{order.source_name}"/>
+					</s:HGroup>
+					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+						<s:Label text="Заказ" width="{labelWidth}"/>
+						<s:TextInput editable="false" text="{order.id}"/>
+						<s:Label text="Статус"/>
+						<s:TextInput editable="false" text="{order.state_name}"/>
+						<!--<s:Spacer width="5"/>
+						<s:Button id="btOpenOrder" label="Открыть" click="btOpenOrder_clickHandler(event)"/>-->
+						<s:Spacer width="5"/>
+						<s:Button id="btAddManual" label="Найти" click="btAddManual_clickHandler(event)"/>
+					</s:HGroup>
+					
+					
+					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+						<s:Label text="Подзаказ" width="{labelWidth}"/>
+						<s:DropDownList id="ddSubOrder" dataProvider="{order.suborders}" labelField="sub_id"
+										change="ddSubOrder_changeHandler(event)"
+										width="{valueWidth}"/>
+					</s:HGroup>
+					
+					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+						<s:Label text="Группа печати" width="{labelWidth}"/>
+						<s:DropDownList id="ddPG" dataProvider="{order.printGroups}" labelField="id"
+										change="ddPG_changeHandler(event)"
+										width="{valueWidth}"/>
+					</s:HGroup>
+					
+					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+						<s:Label text="Перепечатать" width="{labelWidth}"/>
+						<s:DropDownList id="ddRejectUnit" dataProvider="{Context.getAttribute('reject_unitValueList')}"
+										change="ddRejectUnit_changeHandler(event)"
+										width="{valueWidth}"/>
+					</s:HGroup>
+					
+					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+						<s:Label text="Книга" width="{labelWidth}"/>
+						<s:NumericStepper id="nsBook" minimum="0" maximum="10" stepSize="1" width="50"/>
+						<s:Spacer width="5"/>
+						<s:Label text="Разворот"/>
+						<s:NumericStepper id="nsSheet" minimum="0" maximum="10" stepSize="1" width="50"/>
+						<s:Spacer width="5"/>
+						<s:Button id="btAddItem" label="Добавить" click="btAddItem_clickHandler(event)"/>
+					</s:HGroup>
+					
+					<s:Spacer height="5"/>
+					<s:Label text="К перепечатке"/>
+					<s:DataGrid id="dgItems" width="100%" height="100%"
+								selectionMode="singleRow"  locale="ru_RU" 
+								dataProvider="{reject.items}" columns="{TechRejectItem.gridColumns()}"/>
+					<s:HGroup gap="5" width="100%" horizontalAlign="right">
+						<s:Button id="btDelItem" label="Удалить" click="btDelItem_clickHandler(event)"/>
+						<s:Button id="btClearItems" label="Удалить все" click="btClearItems_clickHandler(event)"/>
+					</s:HGroup>
+					
+					<s:Spacer height="5"/>
+					<view:StaffActivityView id="staffActivityView" popupMode="false" okLabel="Сформировать"
+											creationComplete="staffActivityView_creationCompleteHandler(event)"
+											complited="staffActivityView_complitedHandler(event)"
+											width="100%"/>
+				</s:VGroup>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Просмотр" backgroundAlpha="0" width="100%" height="100%">
+				<s:VGroup gap="5" width="100%" height="100%">
+					<s:HGroup width="100%" verticalAlign="baseline">
+						<s:Label text="Перепечатки"/>
+						<s:Spacer width="100%"/>
+						<s:Button id="btLoadRejects" 
+								  icon="assets/icon-refresh.gif" 
+								  click="btLoadRejects_clickHandler(event)" 
+								  cornerRadius="4" width="22" height="22" baseline="4"/>
+					</s:HGroup>
+					<s:DataGrid id="dgRejects" width="100%" height="70%"
+								selectionMode="singleRow" locale="ru_RU"
+								dataProvider="{rejectsAC}"
+								columns="{TechReject.gridColumns()}"/>
+					<s:Label text="Элементы"/>
+					<s:DataGrid id="dgRejectsItems" width="100%" height="30%"
+								selectionMode="singleRow" locale="ru_RU"
+								dataProvider="{dgRejects.selectedItem.items}"
+								columns="{TechRejectItem.gridColumns()}"/>
+				</s:VGroup>
+			</s:NavigatorContent>
+		</mx:ViewStack>
 		
-		<s:VGroup gap="5" width="100%" height="100%">
-			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-				<s:Label text="Источник" width="{labelWidth}"/>
-				<s:TextInput editable="false" text="{order.source_name}"/>
-			</s:HGroup>
-			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-				<s:Label text="Заказ" width="{labelWidth}"/>
-				<s:TextInput editable="false" text="{order.id}"/>
-				<s:Label text="Статус"/>
-				<s:TextInput editable="false" text="{order.state_name}"/>
-				<!--<s:Spacer width="5"/>
-				<s:Button id="btOpenOrder" label="Открыть" click="btOpenOrder_clickHandler(event)"/>-->
-				<s:Spacer width="5"/>
-				<s:Button id="btAddManual" label="Найти" click="btAddManual_clickHandler(event)"/>
-			</s:HGroup>
-			
-			
-			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-				<s:Label text="Подзаказ" width="{labelWidth}"/>
-				<s:DropDownList id="ddSubOrder" dataProvider="{order.suborders}" labelField="sub_id"
-								change="ddSubOrder_changeHandler(event)"
-								width="{valueWidth}"/>
-			</s:HGroup>
-
-			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-				<s:Label text="Группа печати" width="{labelWidth}"/>
-				<s:DropDownList id="ddPG" dataProvider="{order.printGroups}" labelField="id"
-								change="ddPG_changeHandler(event)"
-								width="{valueWidth}"/>
-			</s:HGroup>
-
-			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-				<s:Label text="Перепечатать" width="{labelWidth}"/>
-				<s:DropDownList id="ddRejectUnit" dataProvider="{Context.getAttribute('reject_unitValueList')}"
-								change="ddRejectUnit_changeHandler(event)"
-								width="{valueWidth}"/>
-			</s:HGroup>
-			
-			<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-				<s:Label text="Книга" width="{labelWidth}"/>
-				<s:NumericStepper id="nsBook" minimum="0" maximum="10" stepSize="1" width="50"/>
-				<s:Spacer width="5"/>
-				<s:Label text="Разворот"/>
-				<s:NumericStepper id="nsSheet" minimum="0" maximum="10" stepSize="1" width="50"/>
-				<s:Spacer width="5"/>
-				<s:Button id="btAddItem" label="Добавить" click="btAddItem_clickHandler(event)"/>
-			</s:HGroup>
-			
-			<s:Spacer height="5"/>
-			<s:Label text="К перепечатке"/>
-			<s:DataGrid id="dgItems" width="100%" height="100%"
-						selectionMode="singleRow"  locale="ru_RU" 
-						dataProvider="{reject.items}" columns="{TechRejectItems.gridColumns()}"/>
-			<s:HGroup gap="5" width="100%" horizontalAlign="right">
-				<s:Button id="btDelItem" label="Удалить" click="btDelItem_clickHandler(event)"/>
-				<s:Button id="btClearItems" label="Удалить все" click="btClearItems_clickHandler(event)"/>
-			</s:HGroup>
-			
-			<s:Spacer height="5"/>
-			<view:StaffActivityView id="staffActivityView" popupMode="false" okLabel="Сформировать"
-									creationComplete="staffActivityView_creationCompleteHandler(event)"
-									complited="staffActivityView_complitedHandler(event)"
-									width="100%"/>
-		</s:VGroup>
 
 		<!--<s:HGroup gap="5" width="100%">
 			<s:Button id="btAddManual" label="Найти заказ" click="btAddManual_clickHandler(event)"/>

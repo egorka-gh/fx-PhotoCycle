@@ -773,9 +773,9 @@ package com.photodispatcher.factory{
 				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_INSERT,0,pg)){
 					fillInsert(ppg,pg);
 				}
-			}else if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
+			}else if(pg.book_part==BookSynonym.BOOK_PART_BLOCK || pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
 				//sheets group
-				if(bookSynonym.createPrintGroup(pg.path, BookSynonym.BOOK_PART_BLOCK, ppg.butt, pg)){
+				if(bookSynonym.createPrintGroup(pg.path, pg.book_part, ppg.butt, pg)){
 					fillSheets(ppg, pg, false);
 				}
 			}

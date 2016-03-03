@@ -11,7 +11,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.entities.TechReject;
-	import com.photodispatcher.model.mysql.entities.TechRejectItems;
+	import com.photodispatcher.model.mysql.entities.TechRejectItem;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.TechRejecService;
 	
@@ -31,17 +31,38 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		override public function stop():void{
-			// TODO Auto Generated method stub
 			super.stop();
+			if(builder){
+				builder.stop();
+				builder.removeEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);
+				builder.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
+				builder.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
+			}
+			builder=null;
+			//restore rejects state (uncapture)
+			setRejectsState(OrderState.REPRINT_WAITE);
+			rejects=null;
 		}
 
 		override protected function startBuild():void{
-			// TODO 
 			//load order
 			rejects=null;
 			srcPGs=[];
 			loadOrder(lastOrder.id);
 		}
+		
+		override protected function releaseWithError(error:int, msg:String):void{
+			//restore rejects state (uncapture)
+			setRejectsState(OrderState.REPRINT_WAITE);
+			rejects=null;
+			super.releaseWithError(error, msg);
+		}
+		
+		override protected function releaseComplite():void{
+			super.releaseComplite();
+			rejects=null;
+		}
+		
 		
 		
 		private var rejects:ArrayCollection;
@@ -109,6 +130,7 @@ package com.photodispatcher.provider.preprocess{
 				}
 				rejects=latch.lastDataAC;
 			}
+			if(forceStop) return;
 			if(!rejects || rejects.length==0){
 				if(logStates) StateLog.log(lastOrder.state,lastOrder.id,'','Нет перепечаток к обработке (1)');
 				releaseComplite();
@@ -130,8 +152,9 @@ package com.photodispatcher.provider.preprocess{
 			
 			//capture rejects
 			for each(var reject:TechReject in rejects){
+				var dt:Date= new Date();
 				reject.state=OrderState.REPRINT_CAPTURED;
-				reject.state_date=new Date();
+				reject.state_date=dt;
 			}
 			latch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,oncaptureState);
@@ -144,6 +167,7 @@ package com.photodispatcher.provider.preprocess{
 			var order:Order;
 			if(!latch) return;
 			latch.removeEventListener(Event.COMPLETE,oncaptureState);
+			if(forceStop) return;
 			if(!latch.complite){
 				releaseWithError(OrderState.ERR_READ_LOCK,latch.error);
 				return;
@@ -158,11 +182,12 @@ package com.photodispatcher.provider.preprocess{
 			//mark reprints
 			markReprints();
 			//create reprint groups
+			createReprint();
 		}
 
 		private function fillSrcPgs():Boolean{
 			var srcArr:Array= lastOrder.printGroups.toArray();
-			if(!srcArr) return;
+			if(!srcArr) return false;
 			
 			var pg:PrintGroup;
 			var pgf:PrintGroupFile;
@@ -219,7 +244,7 @@ package com.photodispatcher.provider.preprocess{
 		private function markReprints():void{
 			for each(var reject:TechReject in rejects){
 				if(reject.items){
-					for each(var ritem:TechRejectItems in reject.items){
+					for each(var ritem:TechRejectItem in reject.items){
 						var pg:PrintGroup=pgById(ritem.pg_src);
 						if(pg){
 							if(ritem.thech_unit==TechReject.UNIT_SHEET){
@@ -269,15 +294,19 @@ package com.photodispatcher.provider.preprocess{
 			}
 		}
 		
+		private var builder:ReprintBuilder;
+		
 		protected function createReprint():void{
+			if(forceStop) return;
 			//clone order
+			if(logStates) StateLog.log(OrderState.PRN_REPRINT,lastOrder.id,'','Формирование перепечатки');
 			var o:Order= new Order();
 			o.id=lastOrder.id;
 			o.source=lastOrder.source;
 			o.ftp_folder=lastOrder.ftp_folder;
 			o.printGroups=new ArrayCollection(srcPGs);
 			//start bulder
-			var builder:ReprintBuilder=new ReprintBuilder();
+			builder=new ReprintBuilder();
 			//builder.reprintActivity=activity;
 			builder.startingPgIdx=lastOrder.printGroups.length;
 			//listen
@@ -291,31 +320,46 @@ package com.photodispatcher.provider.preprocess{
 			dispatchEvent(e.clone());
 		}
 		private function onBuilderError(evt:OrderBuildEvent):void{
-			var builder:ReprintBuilder=evt.target as ReprintBuilder;
 			if(builder){
 				builder.removeEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);
 				builder.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
 				builder.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
 			}
+			builder=null;
+			if(forceStop) return;
 			releaseWithError(evt.err,evt.err_msg);
 			dispatchEvent(new OrderBuildProgressEvent());
 		}
 		private function onOrderPreprocessed(evt:OrderBuildEvent):void{
-			var builder:ReprintBuilder=evt.target as ReprintBuilder;
 			if(builder){
 				builder.removeEventListener(OrderBuildEvent.BUILDER_ERROR_EVENT,onBuilderError);
 				builder.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
 				builder.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
 			}
+			builder=null;
+			if(forceStop) return;
 			if(evt.err<0){
 				//completed vs error
 				releaseWithError(evt.err,evt.err_msg);
 			}else{
-				//TODO finalise reprints
-				!!!!!
+				//finalise reprints
+				setRejectsState(OrderState.PRN_REPRINT);
 				releaseComplite();
 			}
 			dispatchEvent(new OrderBuildProgressEvent());
+		}
+		
+		private function setRejectsState(state:int):void{
+			if(!rejects || rejects.length==0) return;
+			for each(var reject:TechReject in rejects){
+				var dt:Date=new Date();
+				reject.state=state;
+				reject.state_date= dt;
+			}
+			var latch:DbLatch= new DbLatch();
+			//latch.addEventListener(Event.COMPLETE,oncaptureState);
+			latch.addLatch(rejectService.updateRejectBatch(rejects));
+			latch.start();
 		}
 
 	}

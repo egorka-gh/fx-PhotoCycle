@@ -30,6 +30,7 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		public function build(order:Order):void{
+			forceStop=false;
 			if(isBusy){
 				builderError('Internal error. Builder is busy.');
 				return;
@@ -45,7 +46,11 @@ package com.photodispatcher.provider.preprocess{
 			startBuild();
 		}
 		
+		
+		protected var forceStop:Boolean=false;
 		public function stop():void{
+			forceStop=true;
+			isBusy=false;
 			//TODO implement
 		}
 

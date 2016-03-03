@@ -24,6 +24,7 @@ package com.photodispatcher.provider.preprocess{
 
 		public var reprintActivity:StaffActivity;
 		public var startingPgIdx:int;
+		private var preprocessTask:PreprocessTask;
 		
 		//implement full cycle (create & build & save in to database)
 		//order - clone of original order vs pringroups 4 reprint only (no existing original pgs!!!!)
@@ -32,7 +33,15 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		override public function stop():void{
+			super.stop();
+			if(preprocessTask){
+				preprocessTask.stop();
+				preprocessTask.removeEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
+				preprocessTask.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
+				preprocessTask=null;
+			}
 		}
+		
 		
 		override protected function startBuild():void{
 
@@ -122,7 +131,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 
 			//build pdfs
-			var preprocessTask:PreprocessTask=new PreprocessTask(lastOrder,source.getWrkFolder(),source.getPrtFolder(),true,true);
+			preprocessTask=new PreprocessTask(lastOrder,source.getWrkFolder(),source.getPrtFolder(),true,true);
 			preprocessTask.addEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
 			preprocessTask.addEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
 			preprocessTask.run();
@@ -184,11 +193,11 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		private function onOrderResize(e:OrderPreprocessEvent):void{
-			var preprocessTask:PreprocessTask=e.target as PreprocessTask;
 			if(preprocessTask){
 				preprocessTask.removeEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
 				preprocessTask.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
 			}
+			preprocessTask=null;
 			if(e.err==0){
 				saveToDatabase();
 			}else{

@@ -15,6 +15,7 @@
 			import com.photodispatcher.view.menu.MenuCommonActions;
 			
 			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 			
 			import org.granite.tide.Tide;
@@ -71,8 +72,24 @@
 			
 			protected function btForvard_clickHandler(event:MouseEvent):void{
 				var order:Order=dgProcess.selectedItem as Order;
-				if(!order || order.state!=OrderState.PREPROCESS_WAITE) return;
+				if(!order || order.tag || order.state!=OrderState.PREPROCESS_WAITE) return;
 				order.state=OrderState.PREPROCESS_FORWARD;			
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				var order:Order=dgProcess.selectedItem as Order;
+				if(!order) return;
+				if(order.tag==Order.TAG_REPRINT){
+					Alert.show('Не реализовано для перепечатки');
+					return;
+				}
+				MenuCommonActions.cancelOrders([order]);
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void{
+				var order:Order=dgProcess.selectedItem as Order;
+				if(!order || order.tag) return;
+				MenuCommonActions.cleanUpOrder(order, OrderState.FTP_WAITE);				
 			}
 			
 		]]>
@@ -115,8 +132,8 @@
 					  enabled="{dgProcess.selectedItem}">
 				<s:Button id="btForvard" label="В первую очередь" width="100%" click="btForvard_clickHandler(event)"/>
 				<s:Button label="Открыть" width="100%" click="{MenuCommonActions.showOrder(dgProcess.selectedItem)}"/>
-				<s:Button label="Перезагрузить" width="100%" click="{MenuCommonActions.cleanUpOrder(dgProcess.selectedItem, OrderState.FTP_WAITE)}"/>
-				<s:Button label="Отменить заказ" width="100%" click="{MenuCommonActions.cancelOrders([dgProcess.selectedItem])}"/>
+				<s:Button label="Перезагрузить" width="100%" click="button2_clickHandler(event)"/>
+				<s:Button label="Отменить заказ" width="100%" click="button1_clickHandler(event)"/>
 			</s:VGroup>
 		</s:Scroller>
 	</s:HGroup>
