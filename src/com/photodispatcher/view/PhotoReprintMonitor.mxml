@@ -37,6 +37,7 @@
 			import spark.components.gridClasses.GridColumn;
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
+			import spark.events.TextOperationEvent;
 			import spark.formatters.DateTimeFormatter;
 			import spark.utils.TextFlowUtil;
 		
@@ -268,11 +269,28 @@
 				if(barOrdId!=order.id) return;
 				
 				//look for pg
+				var p:PrintGroup;
 				var pg:PrintGroup;
-				for each(var p:PrintGroup in order.printGroups.toArray()){
+				var pgs:Array=(order.printGroups as ArrayCollection).source;
+				for each(p in pgs){
 					if(p.id==barPG){
 						pg=p;
 						break;
+					}
+				}
+				if(!pg) return;
+				
+				//check if reprint
+				if(pg.is_reprint){
+					var pgId:String=pg.reprint_id;
+					pg=null;
+					if(pgId){
+						for each(p in pgs){
+							if(p.id==pgId){
+								pg=p;
+								break;
+							}
+						}
 					}
 				}
 				if(!pg) return;
@@ -463,6 +481,12 @@
 
 			
 			
+			protected function tiBarEmul_changeHandler(event:TextOperationEvent):void{
+				if(!tiBarEmul.text) return;
+				var ev:BarCodeEvent= new BarCodeEvent(BarCodeEvent.BARCODE_READED,tiBarEmul.text);
+				onBarCode(ev);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -480,6 +504,7 @@
 					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 						<s:Label text="Источник" width="{labelWidth}"/>
 						<s:TextInput editable="false" text="{order.source_name}"/>
+						<s:TextInput id="tiBarEmul" change="tiBarEmul_changeHandler(event)"/>
 					</s:HGroup>
 					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 						<s:Label text="Заказ" width="{labelWidth}"/>
