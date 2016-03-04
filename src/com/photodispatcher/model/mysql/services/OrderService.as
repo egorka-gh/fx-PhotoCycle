@@ -110,7 +110,7 @@ package com.photodispatcher.model.mysql.services {
 			return latch;
 		}
 
-		public static function clearLocks():DbLatch{
+		public static function clearSoftLocks():DbLatch{
 			var service:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch(true);
 			latch.addLatch(service.clearLocks());

@@ -110,7 +110,8 @@ package com.photodispatcher.provider.preprocess{
 			lastLoadTime= new Date();
 			if(!latch || !latch.complite) return;
 			var toAdd:Array=latch.lastDataArr;
-			if(toAdd && toAdd.length>0){
+			//if(toAdd && toAdd.length>0){
+			if(toAdd){
 				var newItems:Array=[];
 				var order:Order;
 				if(currOrder) newItems.push(currOrder);
@@ -149,7 +150,8 @@ package com.photodispatcher.provider.preprocess{
 			//lastLoadTime= new Date();
 			if(!latch || !latch.complite) return;
 			var toAdd:Array=latch.lastDataArr;
-			if(!toAdd || toAdd.length==0) return;
+			//if(!toAdd || toAdd.length==0) return;
+			if(!toAdd) return;
 			
 			var newItems:Array=[];
 			if(currOrder) newItems.push(currOrder);
@@ -201,7 +203,7 @@ package com.photodispatcher.provider.preprocess{
 
 			//get reprint order
 			for each(o in queue.source){
-				if(o && o.state==OrderState.REPRINT_WAITE){
+				if(o && o.tag==Order.TAG_REPRINT && o.state==OrderState.REPRINT_WAITE){
 					order=o;
 					break;
 				}
@@ -210,7 +212,7 @@ package com.photodispatcher.provider.preprocess{
 			//get preprocess order
 			if(!order){
 				for each(o in queue.source){
-					if(o){
+					if(o && !o.tag){
 						if(o.state==OrderState.PREPROCESS_FORWARD){
 							order=o;
 							break;
@@ -244,10 +246,10 @@ package com.photodispatcher.provider.preprocess{
 			latch.removeEventListener(Event.COMPLETE,ongetLock);
 			if(!currOrder) return;
 			if(latch.resultCode>0){
-				if(currOrder.state==OrderState.PREPROCESS_WAITE){
+				if(!currOrder.tag && currOrder.state==OrderState.PREPROCESS_WAITE){
 					//preprocess web check
 					checkWebState();
-				}else{
+				}else if(currOrder.tag==Order.TAG_REPRINT){
 					//TODO build reprint
 					reprintBuilder.build(currOrder);
 				}
@@ -579,6 +581,7 @@ package com.photodispatcher.provider.preprocess{
 			//builder error
 			lastError=evt.err_msg;
 			if(!currOrder) return;
+			releaseLock();
 			currOrder.state=OrderState.PREPROCESS_INCOMPLETE;
 			saveOrder(currOrder);
 			currOrder=null;
@@ -586,6 +589,7 @@ package com.photodispatcher.provider.preprocess{
 		}
 		private function onOrderPreprocessed(evt:OrderBuildEvent):void{
 			if(!currOrder) return;
+			releaseLock();
 			//order complited
 			//remove from queue
 			if(evt.err<0){

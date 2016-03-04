@@ -18,6 +18,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _cfg_pwd:String;
         private var _clean_fs:Boolean;
         private var _clean_fs_days:int;
         private var _clean_fs_hour:int;
@@ -30,6 +31,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _print_rotate:Boolean;
         private var _production:int;
         private var _production_name:String;
+
+        public function set cfg_pwd(value:String):void {
+            _cfg_pwd = value;
+        }
+        public function get cfg_pwd():String {
+            return _cfg_pwd;
+        }
 
         public function set clean_fs(value:Boolean):void {
             _clean_fs = value;
@@ -117,6 +125,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _cfg_pwd = input.readObject() as String;
             _clean_fs = input.readObject() as Boolean;
             _clean_fs_days = input.readObject() as int;
             _clean_fs_hour = input.readObject() as int;
@@ -133,6 +142,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_cfg_pwd is IPropertyHolder) ? IPropertyHolder(_cfg_pwd).object : _cfg_pwd);
             output.writeObject((_clean_fs is IPropertyHolder) ? IPropertyHolder(_clean_fs).object : _clean_fs);
             output.writeObject((_clean_fs_days is IPropertyHolder) ? IPropertyHolder(_clean_fs_days).object : _clean_fs_days);
             output.writeObject((_clean_fs_hour is IPropertyHolder) ? IPropertyHolder(_clean_fs_hour).object : _clean_fs_hour);

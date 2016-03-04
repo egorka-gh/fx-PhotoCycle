@@ -92,10 +92,12 @@
 			private var barOrdId:String;
 			private var barBook:int;
 			private var barSheet:int;
+			private var lastBarCode:String;
 			
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
 				log('ШК:'+event.barcode);
+				lastBarCode=barcode;
 				
 				if(tbView) tbView.selectedIndex=0;
 				
@@ -108,7 +110,7 @@
 				
 				barBook=PrintGroup.bookFromTechBarcode(barcode);
 				barSheet=PrintGroup.sheetFromTechBarcode(barcode);
-				barOrdId=PrintGroup.orderIdFromId(PrintGroup.digitIdFromTechBarcode(barcode));
+				barOrdId=PrintGroup.orderIdFromTechBarcode(barcode);
 				barPG=PrintGroup.idFromDigitId(PrintGroup.digitIdFromTechBarcode(barcode));
 				if(!barOrdId){
 					log('Не верный штрих код (id заказа): '+barcode, true);
@@ -189,6 +191,7 @@
 			}
 			
 			protected function btAddManual_clickHandler(event:MouseEvent):void{
+				lastBarCode='';
 				var pop:OrderSearchPopup= new OrderSearchPopup();
 				pop.findeMode=true
 				pop.addEventListener(PopUpEvent.CLOSE,onPopup);
@@ -215,13 +218,15 @@
 			}
 			private function onOrderLoad(e:Event):void{
 				var latch:DbLatch=e.target as DbLatch;
+				var bar:String='';
+				if(lastBarCode) bar ='; ШК:'+lastBarCode;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
 					if(!latch.complite) return;
 					order=latch.lastDataItem as Order;
 				}
 				if(!order){
-					log('Заказ не найден',true);
+					log('Заказ не найден'+bar,true);
 					return;
 				}
 				
@@ -440,7 +445,7 @@
 			protected function btLoadRejects_clickHandler(event:MouseEvent):void{
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE, onLoadRejects);
-				latch.addLatch(rejectService.loadByState(OrderState.REPRINT_WAITE,OrderState.REPRINT_CAPTURED));
+				latch.addLatch(rejectService.loadByState(OrderState.REPRINT_WAITE,OrderState.REPRINT_WAITE));
 				latch.start();
 			}
 			
@@ -546,12 +551,12 @@
 								  click="btLoadRejects_clickHandler(event)" 
 								  cornerRadius="4" width="22" height="22" baseline="4"/>
 					</s:HGroup>
-					<s:DataGrid id="dgRejects" width="100%" height="70%"
+					<s:DataGrid id="dgRejects" width="100%" height="60%"
 								selectionMode="singleRow" locale="ru_RU"
 								dataProvider="{rejectsAC}"
 								columns="{TechReject.gridColumns()}"/>
 					<s:Label text="Элементы"/>
-					<s:DataGrid id="dgRejectsItems" width="100%" height="30%"
+					<s:DataGrid id="dgRejectsItems" width="100%" height="40%"
 								selectionMode="singleRow" locale="ru_RU"
 								dataProvider="{dgRejects.selectedItem.items}"
 								columns="{TechRejectItem.gridColumns()}"/>

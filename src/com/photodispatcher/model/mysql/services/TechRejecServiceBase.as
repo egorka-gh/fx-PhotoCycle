@@ -27,13 +27,24 @@ package com.photodispatcher.model.mysql.services {
         }
     
         
-        public function cancelReject(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+        public function cancelReject(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("cancelReject", arg0, resultHandler, faultHandler) as AsyncToken;
             else if (resultHandler is Function || resultHandler is ITideResponder)
                 return callProperty("cancelReject", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("cancelReject", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function cancelRejectByOrder(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("cancelRejectByOrder", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("cancelRejectByOrder", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("cancelRejectByOrder", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

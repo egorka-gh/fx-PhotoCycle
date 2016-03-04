@@ -674,7 +674,7 @@ package com.photodispatcher.model.mysql.entities {
 			if (book_type!=0 && is_pdf){
 				if(book_part==BookSynonym.BOOK_PART_COVER){
 					result=humanId+'-'+PDF_FILENAME_COVERS;
-				}else if(book_part==BookSynonym.BOOK_PART_BLOCK){
+				}else if(book_part==BookSynonym.BOOK_PART_BLOCK || book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
 					result=humanId+'-'+PDF_FILENAME_SHEETS;
 				}
 				result=SUBFOLDER_PRINT+File.separator+result;
@@ -948,6 +948,14 @@ package com.photodispatcher.model.mysql.entities {
 		public static function digitIdFromTechBarcode(code:String):String{
 			if(!code || code.length<14) return '';
 			return code.substr(10);
+		}
+		public static function orderIdFromTechBarcode(code:String):String{
+			var digitId:String=digitIdFromTechBarcode(code);
+			if(!digitId || digitId.length<5) return '';
+			var tInt:int= parseInt(digitId.substr(0,2));
+			if(isNaN(tInt)) return '';
+			var result:String=tInt.toString()+'_'+digitId.substr(2,digitId.length-4);
+			return result;
 		}
 
 		public static function bookFromBookBarcode(code:String):int{
