@@ -26,6 +26,7 @@ package com.photodispatcher.provider.preprocess{
 	import flash.events.IEventDispatcher;
 	import flash.events.ProgressEvent;
 	import flash.events.TimerEvent;
+	import flash.filesystem.File;
 	import flash.sampler.NewObjectSample;
 	import flash.utils.Dictionary;
 	import flash.utils.Timer;
@@ -188,10 +189,11 @@ package com.photodispatcher.provider.preprocess{
 
 		private function startNext():void{
 			if(!isStarted){
-				progressCaption='';
+				//progressCaption='';
 				currOrder=null;
 				return;
 			}
+			
 			if(currOrder) return;
 
 			progressCaption='';
@@ -246,6 +248,7 @@ package com.photodispatcher.provider.preprocess{
 			latch.removeEventListener(Event.COMPLETE,ongetLock);
 			if(!currOrder) return;
 			if(latch.resultCode>0){
+				StateLog.log(currOrder.state, currOrder.id,'','Получена мягкая блокировка ' + Context.appID);
 				if(!currOrder.tag && currOrder.state==OrderState.PREPROCESS_WAITE){
 					//preprocess web check
 					checkWebState();
@@ -255,7 +258,7 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}else{
 				lastError='Заказ '+currOrder.id+' обрабатывается на другой станции';
-				StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','soft lock');
+				//StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','soft lock');
 				currOrder.state= OrderState.ERR_LOCK_FAULT;
 				currOrder=null;
 				startNext();
@@ -395,14 +398,14 @@ package com.photodispatcher.provider.preprocess{
 				latch.removeEventListener(Event.COMPLETE,oncaptureState);
 				if(!currOrder) return;
 				if (latch.complite && latch.resultCode==OrderState.PREPROCESS_CAPTURED){
-					//forvard
+					StateLog.log(currOrder.state, currOrder.id,'','Получена жесткая блокировка ' + Context.appID);
 					//build
 					orderBuilder.build(currOrder);
 					//TODO remove currOrder from queue after complite
 				}else{
 					trace('PreprocessManager.captureState: db error '+latch.lastError);
 					lastError='Заказ: '+currOrder.id+' блокирован другим процессом '+latch.lastError;
-					StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','hard lock');
+					//StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','hard lock');
 					currOrder.state= OrderState.ERR_LOCK_FAULT;
 					currOrder=null;
 					startNext();
@@ -477,6 +480,36 @@ package com.photodispatcher.provider.preprocess{
 		
 		private function start():void{
 			if(_isStarted) return;
+
+			//perfom checks
+			//check IM & wrk folders
+			if(!Context.getAttribute('imPath') || ! Context.getAttribute('imThreads')){
+				progressCaption='Не настроен ImageMagick';
+				return;
+			}
+			
+			var dstFolder:String=Context.getAttribute('workFolder');
+			if(!dstFolder){
+				progressCaption='Не задана рабочая папка';
+				return;
+			}
+			var file:File=new File(dstFolder);
+			if(!file.exists || !file.isDirectory){
+				progressCaption='Рабочая папка не доступна';
+				return;
+			}
+			dstFolder=Context.getAttribute('prtPath');
+			if(!dstFolder){
+				progressCaption='Не задана папка печати';
+				return;
+			}
+			file=new File(dstFolder);
+			if(!file.exists || !file.isDirectory){
+				progressCaption='Папка печати не доступна';
+				return;
+			}
+			
+
 			_isStarted=true;
 			autoLoadInterval=Context.getAttribute('syncInterval');
 			reLoad();

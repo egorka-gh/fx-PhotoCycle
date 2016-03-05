@@ -463,7 +463,7 @@
 			protected function btLoadRejects_clickHandler(event:MouseEvent):void{
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE, onLoadRejects);
-				latch.addLatch(rejectService.loadByState(OrderState.REPRINT_WAITE,OrderState.REPRINT_WAITE));
+				latch.addLatch(rejectService.loadByState(OrderState.REPRINT_WAITE,OrderState.REPRINT_CAPTURED));
 				latch.start();
 			}
 			
@@ -480,12 +480,13 @@
 			}
 
 			
-			
+			/*
 			protected function tiBarEmul_changeHandler(event:TextOperationEvent):void{
 				if(!tiBarEmul.text) return;
 				var ev:BarCodeEvent= new BarCodeEvent(BarCodeEvent.BARCODE_READED,tiBarEmul.text);
 				onBarCode(ev);
 			}
+			*/
 			
 		]]>
 	</fx:Script>
@@ -504,7 +505,7 @@
 					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 						<s:Label text="Источник" width="{labelWidth}"/>
 						<s:TextInput editable="false" text="{order.source_name}"/>
-						<s:TextInput id="tiBarEmul" change="tiBarEmul_changeHandler(event)"/>
+						<!--<s:TextInput id="tiBarEmul" change="tiBarEmul_changeHandler(event)"/>-->
 					</s:HGroup>
 					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 						<s:Label text="Заказ" width="{labelWidth}"/>

@@ -470,11 +470,12 @@ package com.photodispatcher.provider.ftp{
 			latch.removeEventListener(Event.COMPLETE,ongetLock);
 			if(!webApplicant || !isStarted || forceStop) return;
 			if(latch.resultCode>0){
+				StateLog.log(webApplicant.state, webApplicant.id,'','Получена мягкая блокировка ' + Context.appID);
 				checkWebState();
 			}else{
 				lastError='Заказ '+webApplicant.id+' обрабатывается на другой станции';
 				trace('QueueManager.getLock fault '+webApplicant.id);
-				StateLog.log(OrderState.ERR_LOCK_FAULT, webApplicant.id,'','soft lock');
+				//StateLog.log(OrderState.ERR_LOCK_FAULT, webApplicant.id,'','soft lock');
 				webApplicant.state= OrderState.ERR_LOCK_FAULT;
 				webApplicant=null;
 				checkQueue();
@@ -601,11 +602,12 @@ package com.photodispatcher.provider.ftp{
 
 			if (latch.complite && latch.resultCode==OrderState.FTP_CAPTURED){
 				//download
+				StateLog.log(startOrder.state, startOrder.id,'','Получена жесткая блокировка ' + Context.appID);
 				startDownload(startOrder);
 			}else{
 				trace('QueueManager.captureState: db error '+latch.lastError);
 				lastError='Заказ: '+startOrder.id+' блокирован другим процессом '+latch.lastError;
-				StateLog.log(OrderState.ERR_LOCK_FAULT, startOrder.id,'','hard lock');
+				//StateLog.log(OrderState.ERR_LOCK_FAULT, startOrder.id,'','hard lock');
 				startOrder.state= OrderState.ERR_LOCK_FAULT;
 				checkQueue();
 			}
