@@ -67,7 +67,7 @@
 				*/
 			}
 			
-			protected function btOk_clickHandler(event:MouseEvent):void{
+			public function createActivity():Boolean{
 				var staff:int=0;
 				var activityType:int=0;
 				var remark:String=tiRemark.text;
@@ -80,11 +80,11 @@
 				//perfom checks
 				if(staff==0){
 					Alert.show("Не указан сотрудник");
-					return;
+					return false;
 				}
 				if(activityType==0 && ! remark){
 					Alert.show("Необходимо указать причину или коментарий");
-					return;
+					return false;
 				}
 				
 				staffActivity= new StaffActivity();
@@ -97,8 +97,12 @@
 					staffActivity.order_id=PrintGroup.orderIdFromId(pgId);
 					staffActivity.pg_id=pgId;
 				}
+				return true;
+			}
+			
+			protected function btOk_clickHandler(event:MouseEvent):void{
 				//close(true, staffActivity);
-				dispatchEvent(new Event('complited'));
+			 	if(createActivity()) dispatchEvent(new Event('complited'));
 			}
 			
 			

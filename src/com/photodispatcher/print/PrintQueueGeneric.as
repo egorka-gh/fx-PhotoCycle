@@ -123,5 +123,16 @@ package com.photodispatcher.print{
 			return ret;
 		}
 
+		public function hasWaitingPG():Boolean{
+			if(queue){
+				for each(var pg:PrintGroup in queue){
+					if(pg.state==OrderState.PRN_WAITE || pg.state<0){
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
 	}
 }

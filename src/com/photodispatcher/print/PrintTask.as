@@ -9,6 +9,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.util.StrUtil;
@@ -230,6 +231,7 @@ package com.photodispatcher.print{
 				dispatchErr('Не верный статус группы печати (сapture state '+OrderState.PRN_POST.toString()+') '+printGrp.id);
 				return;
 			}
+			StateLog.logByPGroup(printGrp.state, printGrp.id,'Блокирован (h) '+Context.appID);
 			postInternal();
 		}
 

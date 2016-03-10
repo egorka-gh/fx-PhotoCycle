@@ -23,11 +23,13 @@
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.TechRejecService;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			
 			import mx.collections.ArrayCollection;
 			import mx.collections.ISort;
 			import mx.collections.ISortField;
+			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 			
 			import org.granite.tide.Tide;
@@ -94,6 +96,7 @@
 			private var barBook:int;
 			private var barSheet:int;
 			private var lastBarCode:String;
+			private var autoUnit:int=-1;
 			
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
@@ -109,20 +112,33 @@
 					return;
 				}
 				
-				barBook=PrintGroup.bookFromTechBarcode(barcode);
-				barSheet=PrintGroup.sheetFromTechBarcode(barcode);
-				barOrdId=PrintGroup.orderIdFromTechBarcode(barcode);
-				barPG=PrintGroup.idFromDigitId(PrintGroup.digitIdFromTechBarcode(barcode));
-				if(!barOrdId){
+				var nbarBook:int=PrintGroup.bookFromTechBarcode(barcode);
+				var nbarSheet:int=PrintGroup.sheetFromTechBarcode(barcode);
+				var nbarOrdId:String=PrintGroup.orderIdFromTechBarcode(barcode);
+				var nbarPG:String=PrintGroup.idFromDigitId(PrintGroup.digitIdFromTechBarcode(barcode));
+				if(!nbarOrdId){
 					log('Не верный штрих код (id заказа): '+barcode, true);
 					return;
 				}
 				
-				if(order && order.id==barOrdId){
+				if(order && order.id==nbarOrdId){
+					barBook=nbarBook;
+					barSheet=nbarSheet;
+					barOrdId=nbarOrdId;
+					barPG=nbarPG;
+					
 					applyBarData();
 					return;
+				}else if(reject && reject.items && reject.items.length>0){
+					Alert.show('Лист из другого заказа. Сформируйте или очистите текущую перепечатку.');
+					return;
 				}
-				
+
+				resetOrder();
+				barBook=nbarBook;
+				barSheet=nbarSheet;
+				barOrdId=nbarOrdId;
+				barPG=nbarPG;
 				loadOrder(barOrdId);
 			}
 			
@@ -312,18 +328,33 @@
 				ddPG_changeHandler(null);
 				
 				if(pg.book_type==0) return;
-				
-				if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
-					setRejectUnit(TechReject.UNIT_BLOCK);
-				}else if(pg.book_part==BookSynonym.BOOK_PART_COVER){
-					setRejectUnit(TechReject.UNIT_COVER);
-				}else if(pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
-					setRejectUnit(TechReject.UNIT_BOOK);
+
+				var autoCreate:Boolean=false;
+				if(autoUnit==TechReject.UNIT_NONE || autoUnit==TechReject.UNIT_SHEET){
+					setRejectUnit(TechReject.UNIT_SHEET);
+					autoCreate= autoUnit==TechReject.UNIT_SHEET;
+				}else{
+					if(autoUnit==TechReject.UNIT_BOOK){
+						setRejectUnit(TechReject.UNIT_BOOK);
+						autoCreate=true;
+					}else{
+						if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
+							setRejectUnit(TechReject.UNIT_BLOCK);
+							autoCreate= autoUnit==TechReject.UNIT_BLOCK;
+						}else if(pg.book_part==BookSynonym.BOOK_PART_COVER){
+							setRejectUnit(TechReject.UNIT_COVER);
+							autoCreate= autoUnit==TechReject.UNIT_COVER;
+						}else if(pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
+							setRejectUnit(autoUnit);
+							autoCreate= true;
+						}
+					}
 				}
 				
 				//set barcode book & sheet
 				if(barBook) nsBook.value=barBook;
-				nsSheet.value=barSheet; 
+				nsSheet.value=barSheet;
+				if(barBook && autoCreate) btAddItem_clickHandler(null);
 			}
 			
 			private function filterPG(item:Object):Boolean{
@@ -488,6 +519,31 @@
 			}
 			*/
 			
+			protected function ddAddUnit_changeHandler(event:IndexChangeEvent):void{
+				autoUnit=-1;
+				if(ddAddUnit.selectedIndex>0){
+					autoUnit=ddAddUnit.selectedItem.value;
+				}
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.autoUnit = autoUnit;
+				so.flush();  
+			}
+			
+			protected function ddAddUnit_creationCompleteHandler(event:FlexEvent):void{
+				autoUnit=-1;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if(so.data.hasOwnProperty('autoUnit')){
+					autoUnit=so.data.autoUnit;
+				}
+				if(autoUnit==-1){
+					ddAddUnit.selectedIndex=0;
+				}else{
+					var idx:int= ArrayUtil.searchItemIdx('value',autoUnit,ddAddUnit.dataProvider.toArray());
+					if(idx==0) idx=1;
+					ddAddUnit.selectedIndex=idx;
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -502,6 +558,13 @@
 					  width="100%" height="100%">
 			<s:NavigatorContent label="Создание" backgroundAlpha="0" width="100%" height="100%">
 				<s:VGroup gap="5" width="100%" height="100%">
+					<s:HGroup gap="5" width="100%" verticalAlign="baseline" horizontalAlign="right">
+						<s:Label text="Автодобавление"/>
+						<s:DropDownList id="ddAddUnit" dataProvider="{Context.getAttribute('reject_unitList')}"
+										creationComplete="ddAddUnit_creationCompleteHandler(event)"
+										change="ddAddUnit_changeHandler(event)"
+										width="{valueWidth}"/>
+					</s:HGroup>
 					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 						<s:Label text="Источник" width="{labelWidth}"/>
 						<s:TextInput editable="false" text="{order.source_name}"/>

@@ -953,11 +953,12 @@ package com.photodispatcher.print{
 								}else{
 									postQueue[idx]=pg;
 								}
+								StateLog.logByPGroup(pg.state, pg.id,'Блокирован (h) '+Context.appID);
 								//post to lab
 								var revers:Boolean=Context.getAttribute('reversPrint');
 								if(pg.isAutoPrint){
 									log('Блокирован и отправлен на печать '+pg+' в '+pg.destinationLab.name+' (capturePrintGroups)');
-									StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG, pg.id,'Блокирован и отправлен на печать в '+pg.destinationLab.name);
+									StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG, pg.id,'Отправлен на печать в '+pg.destinationLab.name);
 								}
 								pg.destinationLab.post(pg,revers);
 							}
@@ -1269,7 +1270,13 @@ package com.photodispatcher.print{
 			if(!printQueue) return; 
 			var toPost:Array=printQueue.getFetched();
 			if(!toPost || toPost.length==0){
-				log(printQueue.caption+ " Нечего печатать (onPrintQueueFetch)");
+				msg=printQueue.caption;
+				if(!printQueue.hasWaitingPG()){
+					msg=msg+" Нечего печатать (onPrintQueueFetch)";
+				}else{
+					msg=msg+" Нет подходящей лабы (onPrintQueueFetch)";
+				}
+				log(msg);
 				return;
 			}else{
 				log(printQueue.caption+ " Прилетело "+toPost.length.toString()+". (onPrintQueueFetch)");

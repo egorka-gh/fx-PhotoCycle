@@ -103,6 +103,7 @@ package com.photodispatcher.print{
 				dispatchErr('Не верный статус группы печати (сapture state '+OrderState.PRN_PREPARE.toString()+') '+printGrp.id);
 				return;
 			}
+			StateLog.logByPGroup(printGrp.state, printGrp.id,'Блокирован (h) '+Context.appID);
 			runRotate();
 		}
 

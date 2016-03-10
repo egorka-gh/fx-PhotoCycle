@@ -16,6 +16,7 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.TechReject")]
     public class TechReject extends TechRejectBase {
+		public static const UNIT_NONE:int=-1;
 		public static const UNIT_SHEET:int=0;
 		public static const UNIT_COVER:int=1;
 		public static const UNIT_BLOCK:int=2;
