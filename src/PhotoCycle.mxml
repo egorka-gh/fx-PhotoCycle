@@ -11,7 +11,7 @@
 					   xmlns:print="com.photodispatcher.print.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="{destroy()}" >
+					   closing="windowedapplication1_closingHandler(event)" >
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
@@ -44,14 +44,6 @@
 
 			[Bindable]
 			private var cleaner:CleanService;
-			
-			private function destroy():void{
-				IMRuner.stopAll();
-				if(vMonitor){
-					vMonitor.stop();
-					if(vMonitor.chatServer) vMonitor.chatServer.close();
-				}
-			}
 
 			private function initApp():void{
 				bdPopup= new DatabasePopup();
@@ -119,14 +111,30 @@
 				//currentState='monitor';
 			}
 			
-			protected function button3_clickHandler(event:MouseEvent):void{
+			private function destroy():void{
+				IMRuner.stopAll();
 				if(vMonitor){
 					vMonitor.stop();
-					//vMonitor.ftpStop();
+					if(vMonitor.chatServer) vMonitor.chatServer.close();
 				}
+			}
+
+			protected function button3_clickHandler(event:MouseEvent):void{
+				forceClose=true;
+				destroy();
+				if(printQueueManager){
+					printQueueManager.addEventListener("stopComplited", onPrintQueueManagerStop);
+					printQueueManager.stop();
+					
+				} else{
+					FlexGlobals.topLevelApplication.exit();
+				}
+			}
+			private function onPrintQueueManagerStop(e:Event):void{
+				printQueueManager.removeEventListener("stopComplited", onPrintQueueManagerStop);
 				FlexGlobals.topLevelApplication.exit();
 			}
-			
+
 			private var latchIM:AsyncLatch;
 			
 			private function fillContext():void{
@@ -293,6 +301,11 @@
 				if(event.commit){
 					cfgEnabled=true;
 				}
+			}
+			
+			private var forceClose:Boolean=false;
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				if(!forceClose) event.preventDefault();
 			}
 			
 		]]>

@@ -1,5 +1,6 @@
 package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	
@@ -321,7 +322,7 @@ package com.photodispatcher.provider.ftp{
 			
 			//check if exists
 			var df:File=f.resolvePath(destName());
-			if(df.exists){
+			if(df.exists && df.size>0){
 				//complited
 				downloadFile.loadState=FTPFile.LOAD_COMPLETE;
 				startIdleTimer();
@@ -337,7 +338,12 @@ package com.photodispatcher.provider.ftp{
 			if(f.exists){
 				try{
 					f.deleteFile();
-				}catch(error:Error){}
+				}catch(error:Error){
+					trace('FtpTask. Delete error:'+ error.message);
+					downloadFile.loadState=FTPFile.LOAD_ERR;
+					dispatchErr('FtpTask. Delete error:'+ error.message);
+					return;
+				}
 			}
 			trace('FtpTask. Start download file: '+ftpFile.fullPath);
 			ftpFile.loadState=FTPFile.LOAD_STARTED;
@@ -375,6 +381,15 @@ package com.photodispatcher.provider.ftp{
 				var ff:File=f.parent;
 				//ff=ff.resolvePath(downloadFile.name);
 				ff=ff.resolvePath(destName());
+
+				//check if empty
+				if(PrintGroupBuilder.ALLOWED_EXTENSIONS[ff.extension.toLowerCase()] && f.size==0){
+					trace('FtpTask. Empty file error');
+					downloadFile.loadState=FTPFile.LOAD_ERR;
+					dispatchErr('FtpTask. Empty file error');
+					return;
+				}
+				
 				try{
 					f.moveTo(ff,true);
 				}catch (error:Error){

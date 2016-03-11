@@ -30,6 +30,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.printer.Printer;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
+	import com.photodispatcher.view.ModalPopUp;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
@@ -49,6 +50,7 @@ package com.photodispatcher.print{
 	import spark.formatters.DateTimeFormatter;
 	
 	[Event(name="managerError", type="com.photodispatcher.event.PrintEvent")]
+	[Event(name="stopComplited", type="flash.events.Event")]
 	public class PrintQueueManager extends EventDispatcher{
 		public static const DEV_COMP_QUEUE_LEN:int=1000;
 		public static const STRATEGY_REFRESH_INTERVAL:int = 10*60*1000;
@@ -127,6 +129,97 @@ package com.photodispatcher.print{
 		}
 		
 		
+		private var forceStop:Boolean=false;
+		private var stopPopup:ModalPopUp;
+		public function stop():Boolean{
+			//TODO implement
+			
+			forceStop=true;
+			var stopItems:Array=[];
+			var o:Object;
+			var pg:PrintGroup;
+			
+			//stop web check
+			//scan sources
+			var src_id:String;
+			for(src_id in webQueue){
+				var svc:BaseWeb=webServices[src_id] as BaseWeb;
+				if(svc){
+					//stop listen
+					svc.removeEventListener(Event.COMPLETE,serviceCompliteHandler);
+				}
+				//reset printgroups
+				var oMap:Object=webQueue[src_id];
+				if (oMap){
+					var order:Order;
+					for each(o in oMap){
+						order=o as Order;
+						if(order && order.printGroups){
+							for each(pg in order.printGroups){
+								pg.state=OrderState.PRN_WAITE;
+							}
+						}
+					}
+				}
+			}
+			//clear
+			webQueue=new Object;
+			webServices=new Object;
+			
+			//locks in process
+			//clear state
+			resetPrintState(lockQueue);
+			lockQueue=[];
+			
+			//posted
+			var lab:LabGeneric;
+			postQueue=[];
+			stopItems=[];
+			if(labs){
+				for each(lab in labs){
+					if(lab){
+						//reset state
+						stopItems=stopItems.concat(lab.resetPostQueue());
+						//in process, waite post complite
+						pg=lab.currentPrintGroup();
+						if(pg) postQueue.push(pg);
+					}
+				}
+				resetPrintState(stopItems);
+			}
+			
+			//waite post complite
+			if(postQueue.length>0){
+				stopPopup= new ModalPopUp();
+				stopPopup.label='Остановка менеджера печати';
+				stopPopup.open(null);
+				return false;
+			}
+			forceStop=false;
+			dispatchEvent(new Event('stopComplited'));
+			return true;
+		}
+		
+		private function resetPrintState(items:Array):void{
+			if(!items || items.length==0) return;
+			var o:Object;
+			var pg:PrintGroup;
+			var toReset:Array=[];
+			
+			for each(o in items){
+				pg=o as PrintGroup;
+				if(pg && pg.id && pg.state>OrderState.PRN_WAITE && pg.state<OrderState.PRN_PRINT){
+					pg.state=OrderState.PRN_WAITE;
+					toReset.push(pg.id);
+				}
+			}
+			if(toReset.length>0){
+				var osSvc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch= new DbLatch();
+				latch.addLatch(osSvc.printCancel(toReset));
+				latch.start();
+			}
+		}
 		
 		public function init(rawLabs:Array=null):void{
 			if(!rawLabs && initCompleted) return;
@@ -628,6 +721,7 @@ package com.photodispatcher.print{
 		*
 		*/
 		public function postManual(printGrps:Vector.<Object>,lab:LabGeneric):void{
+			if(forceStop) return;
 			//log('PostManual start');
 			if(!lab || !printGrps || printGrps.length==0){
 				//log('PostManual wrong data');
@@ -718,6 +812,7 @@ package com.photodispatcher.print{
 		push to webQueue (check print group state)
 		*/
 		private function pushToWebQueue(printGrps:Array):void{
+			if(forceStop) return;
 			if(!printGrps || printGrps.length==0) return;
 			var pg:PrintGroup;
 			var srcOrders:Object;
@@ -766,6 +861,7 @@ package com.photodispatcher.print{
 		}
 		
 		private function serviceCheckNext(service:BaseWeb):void{
+			if(forceStop) return;
 			if(service.isRunning) return;
 			
 			var oMap:Object;
@@ -795,6 +891,9 @@ package com.photodispatcher.print{
 			var toLoad:Array=[];
 			var hasProductionErr:Boolean=false;
 			var latch:DbLatch;
+			
+			if(forceStop) return;
+			
 			if(svc){
 				var oMap:Object=webQueue[svc.source.id.toString()];
 				var order:Order=oMap[svc.lastOrderId] as Order;
@@ -895,6 +994,7 @@ package com.photodispatcher.print{
 		}
 
 		private function capturePrintGroups(printGroups:Array):void{
+			if(forceStop) return;
 			if(!printGroups || printGroups.length==0) return;
 			var prnGrp:PrintGroup;
 			//set state
@@ -915,6 +1015,8 @@ package com.photodispatcher.print{
 			var pg:PrintGroup;
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch) latch.removeEventListener(Event.COMPLETE,onPGLoad);
+			if(forceStop) return;
+			
 			if(!latch || !latch.complite){
 				//reset all ??
 				for each(pg in lockQueue) pg.state=OrderState.PRN_WAITE;
@@ -1005,13 +1107,25 @@ package com.photodispatcher.print{
 			if(!e.hasErr){
 				//print ticket
 				Printer.instance.printOrderTicket(e.printGroup);
-				if(postQueue.length==0){
+				if(postQueue.length==0 && !forceStop){
 					//complited refresh lab
 					refreshLabs();
 				}
 			}
+			
+			if(forceStop){
+				if(postQueue.length==0){
+					//stop complited
+					if(stopPopup) stopPopup.close();
+					stopPopup=null;
+					forceStop=false;
+					//refreshLabs();
+					dispatchEvent(new Event('stopComplited'));
+				}
+			}
+			
 		}
-		
+		/*
 		private function onPostWrite(evt:Event):void{ 
 			var latch:DbLatch=evt.target as DbLatch;
 			if(latch){
@@ -1022,7 +1136,7 @@ package com.photodispatcher.print{
 				refreshLabs();
 			}
 		}
-		
+		*/
 		public function refreshLabs(recalcOnly:Boolean=false):void{
 			var newqueueOrders:int;
 			var newqueuePGs:int;
@@ -1226,6 +1340,8 @@ package com.photodispatcher.print{
 
 		public function runAutoPrint():void{
 			if(!autoPrint) return;
+			if(forceStop) return;
+
 			var pqg:PrintQueueGeneric;
 			var devs:Array;
 			if(prnQueuesAC){
@@ -1265,6 +1381,8 @@ package com.photodispatcher.print{
 		}
 		
 		protected function onPrintQueueFetch(event:Event):void{
+			if(forceStop) return;
+
 			var msg:String="";
 			var printQueue:PrintQueueGeneric= event.target as PrintQueueGeneric; 
 			if(!printQueue) return; 

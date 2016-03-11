@@ -121,12 +121,28 @@ package com.photodispatcher.print{
 		public function hasInPostQueue(pgId:String):Boolean{
 			if(!pgId) return false;
 			if(!printTasks || printTasks.length==0) return false;
+			if(currentPrintTask && currentPrintTask.printGrp && currentPrintTask.printGrp.id==pgId) return true;
 			var pt:PrintTask;
 			for each (pt in printTasks){
 				if (pt.printGrp.id==pgId) return true;
 			}
 			return false;
 		}
+		
+		public function resetPostQueue():Array{
+			var res:Array=[];
+			if(printTasks){
+				res=printTasks.concat();
+			}
+			printTasks=[];
+			return res;
+		}
+
+		public function currentPrintGroup():PrintGroup{
+			if(currentPrintTask ) return currentPrintTask.printGrp;
+			return null;
+		}
+
 		
 		protected function dispatchErr(pg:PrintGroup, msg:String):void{
 			StateLog.logByPGroup(pg.state, pg.id,'Ошибка размещения на печать: '+msg);

@@ -321,6 +321,16 @@
 				printManager.refreshLabs();
 			}
 			
+			protected function btResetPrintManager_clickHandler(event:MouseEvent):void{
+				printManager.addEventListener("stopComplited", onManagerStop);
+				printManager.stop();
+			}
+			private function onManagerStop(e:Event):void{
+				printManager.removeEventListener("stopComplited", onManagerStop);
+				refreshPgList();
+				printManager.refreshLabs();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -329,7 +339,8 @@
 	</s:layout>
 	
 	<s:VGroup gap="5" width="230" height="100%">
-		<s:Label text="Заказов - {ordTotal}" left="0" verticalCenter="0"/>
+		<s:Button id="btResetPrintManager" label="Сброс менеджера печати" click="btResetPrintManager_clickHandler(event)"/>
+		<s:Label text="Заказов - {ordTotal}" />
 		<s:Label text="Групп печати - {pgTotal}"/>
 		<s:Label text="Кол. отпечатков - {phTotal}"/>
 		<s:Spacer height="5"/>

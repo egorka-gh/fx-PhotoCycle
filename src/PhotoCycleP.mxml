@@ -10,7 +10,7 @@
 					   xmlns:download="com.photodispatcher.provider.fbook.download.*" 
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="{destroy()}">
+					   closing="windowedapplication1_closingHandler(event)">
 	<fx:Script>
 		<![CDATA[
 			import com.akmeful.fotokniga.book.data.Book;
@@ -44,14 +44,6 @@
 			import spark.events.PopUpEvent;
 
 			private var bdPopup:DatabasePopup;
-
-			private function destroy():void{
-				IMRuner.stopAll();
-				if(vMonitor){
-					vMonitor.stop();
-					if(vMonitor.chatServer) vMonitor.chatServer.close();
-				}
-			}
 
 			private function initApp():void{
 				bdPopup= new DatabasePopup();
@@ -117,10 +109,22 @@
 				//currentState='monitor';
 			}
 			
-			protected function button3_clickHandler(event:MouseEvent):void{
+			private function destroy():void{
+				IMRuner.stopAll();
 				if(vMonitor){
 					vMonitor.stop();
+					if(vMonitor.chatServer) vMonitor.chatServer.close();
 				}
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void{
+				forceClose=true;
+				destroy();
+				PrintQueueManager.instance.addEventListener("stopComplited", onPrintQueueManagerStop);
+				PrintQueueManager.instance.stop();
+			}
+			private function onPrintQueueManagerStop(e:Event):void{
+				PrintQueueManager.instance.removeEventListener("stopComplited", onPrintQueueManagerStop);
 				FlexGlobals.topLevelApplication.exit();
 			}
 			
@@ -266,6 +270,11 @@
 				if(event.commit){
 					cfgEnabled=true;
 				}
+			}
+			
+			private var forceClose:Boolean=false;
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				if(!forceClose) event.preventDefault();
 			}
 			
 		]]>

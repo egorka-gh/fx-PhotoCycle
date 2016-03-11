@@ -4,7 +4,7 @@ package pl.maliboo.ftp{
 		public static const LOAD_WAIT:int=0;
 		public static const LOAD_STARTED:int=1;
 		public static const LOAD_COMPLETE:int=2;
-		public static const LOAD_ERR:int=3;
+		public static const LOAD_ERR:int=-1;
 		
 		public static const RESIZE_WAIT:int=20;
 		public static const RESIZE_PREPARED:int=21;
