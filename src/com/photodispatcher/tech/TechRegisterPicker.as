@@ -49,7 +49,13 @@ package com.photodispatcher.tech{
 				registred++;
 				log=true;
 			}
-			if(log) logRegistred(book,sheet);
+			if(log){
+				if(!calcOnLog){
+					_needFlush=true;
+					startFlushTimer();
+				}
+				logRegistred(book,sheet);
+			}
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		

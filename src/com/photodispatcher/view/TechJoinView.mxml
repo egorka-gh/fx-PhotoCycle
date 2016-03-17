@@ -256,7 +256,7 @@
 					var latch:DbLatch=new DbLatch();
 					var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
 					//latch.addEventListener(Event.COMPLETE,onLog);
-					latch.addLatch(svc.logByPg(tl));
+					latch.addLatch(svc.logByPg(tl,1));
 					latch.start();
 				}
 

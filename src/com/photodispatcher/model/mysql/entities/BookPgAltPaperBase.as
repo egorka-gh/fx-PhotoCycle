@@ -23,6 +23,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _interlayer_name:String;
         private var _paper:int;
         private var _paper_name:String;
+        private var _revers:Boolean;
         private var _sh_from:int;
         private var _sh_to:int;
         private var _template:int;
@@ -62,6 +63,13 @@ package com.photodispatcher.model.mysql.entities {
             return _paper_name;
         }
 
+        public function set revers(value:Boolean):void {
+            _revers = value;
+        }
+        public function get revers():Boolean {
+            return _revers;
+        }
+
         public function set sh_from(value:int):void {
             _sh_from = value;
         }
@@ -90,6 +98,7 @@ package com.photodispatcher.model.mysql.entities {
             _interlayer_name = input.readObject() as String;
             _paper = input.readObject() as int;
             _paper_name = input.readObject() as String;
+            _revers = input.readObject() as Boolean;
             _sh_from = input.readObject() as int;
             _sh_to = input.readObject() as int;
             _template = input.readObject() as int;
@@ -102,6 +111,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_interlayer_name is IPropertyHolder) ? IPropertyHolder(_interlayer_name).object : _interlayer_name);
             output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
             output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
+            output.writeObject((_revers is IPropertyHolder) ? IPropertyHolder(_revers).object : _revers);
             output.writeObject((_sh_from is IPropertyHolder) ? IPropertyHolder(_sh_from).object : _sh_from);
             output.writeObject((_sh_to is IPropertyHolder) ? IPropertyHolder(_sh_to).object : _sh_to);
             output.writeObject((_template is IPropertyHolder) ? IPropertyHolder(_template).object : _template);

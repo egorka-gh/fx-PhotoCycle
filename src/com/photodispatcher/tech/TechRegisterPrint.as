@@ -15,14 +15,15 @@ package com.photodispatcher.tech{
 		override protected function logRegistred(book:int, sheet:int):void{
 			super.logRegistred(book, sheet);
 			//update meter
-			var latch:DbLatch=new DbLatch();
+			var latch:DbLatch=new DbLatch(true);
 			var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
 			latch.addLatch(svc.forwardMeterByTechPoint(techPoint.id, printGroupId));
-			latch.addEventListener(Event.COMPLETE, onLogComplie);
+			latch.addEventListener(Event.COMPLETE, onforwardMeter);
 			latch.start();
 		}
-		private function onLogComplie(evt:Event):void{
+		private function onforwardMeter(evt:Event):void{
 			var latch:DbLatch=evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE, onforwardMeter);
 			if(latch && !latch.complite){
 				logSequeceErr('Ошибка базы данных: '+latch.error);
 			}

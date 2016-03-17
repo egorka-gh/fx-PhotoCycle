@@ -7,6 +7,7 @@
 
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.util.GridUtil;
+	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditorFullList;
 	
@@ -26,6 +27,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('sh_to'); col.headerText='Разворотов по'; col.width=100; result.addItem(col);
 			col= new GridColumn('paper'); col.headerText='Бумага'; col.width=150; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			col= new GridColumn('interlayer'); col.headerText='Прослойка'; col.width=150; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditorFullList); result.addItem(col);
+			col= new GridColumn('revers'); col.headerText='Обратный порядок'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
 			return result;
 		}
 

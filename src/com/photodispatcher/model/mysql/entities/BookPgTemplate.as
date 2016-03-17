@@ -69,6 +69,16 @@ package com.photodispatcher.model.mysql.entities {
 			return pg;
 		}
 		
+		public function applyAltRevers(printGroup:PrintGroup):void{
+			if(!printGroup || !altPaper || altPaper.length==0) return;
+			for each (var ap:BookPgAltPaper in altPaper){
+				if(printGroup.sheet_num>=ap.sh_from && printGroup.sheet_num<=ap.sh_to){
+					this.revers=ap.revers;
+					break;
+				}
+			}
+		}
+		
 		public function toRaw():Object{
 			var raw:Object= new Object;
 			raw.id=id;

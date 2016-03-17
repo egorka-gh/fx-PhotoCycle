@@ -13,6 +13,7 @@ package com.photodispatcher.tech{
 			super(printGroup, books, sheets);
 			_logSequenceErr=false;
 			logOk=false;
+			calcOnLog=true;
 			//_canInterrupt=true;
 			//_strictSequence=true;
 		}
@@ -26,15 +27,16 @@ package com.photodispatcher.tech{
 				tl.print_group=printGroupId;
 				tl.src_id= techPoint.id;
 
-				var latch:DbLatch=new DbLatch();
+				var latch:DbLatch=new DbLatch(true);
 				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
 				latch.addEventListener(Event.COMPLETE, onLogComplie);
-				latch.addLatch(svc.logByPg(tl));
+				latch.addLatch(svc.logByPg(tl,1));
 				latch.start();
 			}
 		}
 		private function onLogComplie(evt:Event):void{
 			var latch:DbLatch=evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE, onLogComplie);
 			if(latch && !latch.complite){
 				logSequeceErr('Ошибка базы данных: '+latch.error);
 			}

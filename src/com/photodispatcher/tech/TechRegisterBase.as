@@ -13,13 +13,18 @@ package com.photodispatcher.tech{
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
+	import flash.events.TimerEvent;
+	import flash.utils.Timer;
 	
 	import org.granite.tide.Tide;
+	import org.osmf.events.TimeEvent;
 	
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	public class TechRegisterBase extends EventDispatcher{
 		public static const ERROR_SEQUENCE:int=1;
+		public static const FLUSH_TIMER_INTERVAL:int=15*1000;//15sek
+		
 
 		public var techPoint:TechPoint;
 		[Bindable]
@@ -58,6 +63,34 @@ package com.photodispatcher.tech{
 		public function get logSequenceErr():Boolean{
 			return _logSequenceErr;
 		}
+		
+		public var calcOnLog:Boolean;
+		
+		protected var _needFlush:Boolean=false;
+		public function get needFlush():Boolean{
+			return _needFlush;
+		}
+
+		public function  flushData():void{
+			if(calcOnLog) return;
+			if(!_needFlush || !printGroupId || !techPoint) return;
+
+			//recalc
+			var latch:DbLatch=new DbLatch(true);
+			var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+			latch.addEventListener(Event.COMPLETE, onCalc);
+			latch.addLatch(svc.calcByPg(printGroupId, techPoint.id));
+			latch.start();
+			_needFlush=false;
+		}
+		private function onCalc(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE, onCalc);
+			if(latch && !latch.complite){
+				logSequeceErr('Ошибка базы данных: '+latch.error);
+				_needFlush=true;
+			}
+		}
 
 		public function TechRegisterBase(printGroup:String, books:int,sheets:int){
 			super(null);
@@ -68,6 +101,7 @@ package com.photodispatcher.tech{
 			bookPart=BookSynonym.BOOK_PART_ANY;
 			registred=0;
 			logOk=true;
+			calcOnLog=false;
 			//complited=false;
 		}
 		
@@ -92,9 +126,32 @@ package com.photodispatcher.tech{
 				registred++;
 				log=true;
 			}
-			if(log) logRegistred(book,sheet);
+			if(log){
+				if(!calcOnLog){
+					_needFlush=true;
+					startFlushTimer();
+				}
+				logRegistred(book,sheet);
+			}
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
+		
+		protected  var flushTimer:Timer;
+		
+		protected function startFlushTimer():void{
+			if(calcOnLog) return;
+			if(!flushTimer){
+				flushTimer= new Timer(FLUSH_TIMER_INTERVAL,1);
+			}
+			flushTimer.addEventListener(TimerEvent.TIMER, onFlushTimer);
+			flushTimer.reset();
+			flushTimer.start();
+		}
+		protected function onFlushTimer(event:TimeEvent):void{
+			flushTimer.removeEventListener(TimerEvent.TIMER, onFlushTimer);
+			flushData();
+		}
+		
 		
 		protected function logRegistred(book:int,sheet:int):void{
 			//log to data base
@@ -103,15 +160,16 @@ package com.photodispatcher.tech{
 			tl.setSheet(book,sheet);
 			tl.print_group=printGroupId;
 			tl.src_id= techPoint.id;
-			var latch:DbLatch=new DbLatch();
+			var latch:DbLatch=new DbLatch(true);
 			var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
 			//latch.addEventListener(Event.COMPLETE,onLog);
-			latch.addLatch(svc.logByPg(tl));
+			latch.addLatch(svc.logByPg(tl,calcOnLog?1:0));
 			latch.addEventListener(Event.COMPLETE, onLogComplie);
 			latch.start();
 		}
 		private function onLogComplie(evt:Event):void{
 			var latch:DbLatch=evt.target as DbLatch;
+			if(latch) latch.removeEventListener(Event.COMPLETE, onLogComplie);
 			if(latch && !latch.complite){
 				logSequeceErr('Ошибка базы данных: '+latch.error);
 			}
@@ -184,6 +242,7 @@ package com.photodispatcher.tech{
 			}else{
 				if(logOk) logMsg('Ok');
 			}
+			flushData();
 			return result;
 		}
 

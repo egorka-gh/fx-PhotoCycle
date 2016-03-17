@@ -231,6 +231,10 @@ package com.photodispatcher.provider.preprocess{
 			var pdfNum:int;
 			var pdfName:String;
 			var newFile:PrintGroupFile;
+			
+			//apply alt revers
+			printGroup.bookTemplate.applyAltRevers(printGroup);
+			
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
 				command=new IMCommand(IMCommand.IM_CMD_CONVERT);
 				command.folder=folder;
