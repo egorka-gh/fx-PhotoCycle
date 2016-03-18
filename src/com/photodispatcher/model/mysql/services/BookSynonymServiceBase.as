@@ -47,6 +47,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function loadBookGlueEdit(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadBookGlueEdit", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadBookGlueEdit", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadBookGlueEdit", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadFull(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadFull", resultHandler, faultHandler) as AsyncToken;
@@ -54,6 +65,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadFull", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadFull") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function loadGlueCommandAll(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadGlueCommandAll", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadGlueCommandAll", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadGlueCommandAll") as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
@@ -76,6 +98,28 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("persistBatch", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("persistBatch", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function persistBookGlue(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("persistBookGlue", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("persistBookGlue", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("persistBookGlue", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function persistGlueCommandBatch(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("persistGlueCommandBatch", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("persistGlueCommandBatch", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("persistGlueCommandBatch", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }

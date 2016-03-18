@@ -222,7 +222,10 @@ package com.photodispatcher.model.mysql.entities {
 					}
 				}
 			}
-			if(pg) pg.is_horizontal=is_horizontal;
+			if(pg){
+				pg.is_horizontal=is_horizontal;
+				pg.alias=synonym;
+			}
 			return pg;
 		}
 		
