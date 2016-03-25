@@ -565,11 +565,11 @@
 										change="ddAddUnit_changeHandler(event)"
 										width="{valueWidth}"/>
 					</s:HGroup>
-					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+					<!--<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 						<s:Label text="Источник" width="{labelWidth}"/>
 						<s:TextInput editable="false" text="{order.source_name}"/>
-						<!--<s:TextInput id="tiBarEmul" change="tiBarEmul_changeHandler(event)"/>-->
-					</s:HGroup>
+					</s:HGroup>-->
+					<!--<s:TextInput id="tiBarEmul" change="tiBarEmul_changeHandler(event)"/>-->
 					<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 						<s:Label text="Заказ" width="{labelWidth}"/>
 						<s:TextInput editable="false" text="{order.id}"/>

@@ -74,8 +74,20 @@ package com.photodispatcher.print{
 		[Bindable]
 		public var prnQueuesAC:ArrayCollection;
 
+		private var _autoPrint:Boolean;
+
 		[Bindable]
-		public var autoPrint:Boolean;
+		public function get autoPrint():Boolean{
+			return _autoPrint && isAutoPrintManager;
+		}
+
+		public function set autoPrint(value:Boolean):void{
+			_autoPrint = value && isAutoPrintManager;
+		}
+
+
+		[Bindable]
+		public var isAutoPrintManager:Boolean=false;
 
 		//print queue (printgroups)
 		private var queue:Array;
@@ -281,6 +293,8 @@ package com.photodispatcher.print{
 		
 		public function startStrategyBYPARTPDF():void{
 			if(!initCompleted || ! strategiesAC) return;
+			if(!isAutoPrintManager) return;
+
 			var sublatch:DbLatch;
 			var hasStrategy:Boolean;
 			var item:PrnStrategy;
@@ -308,6 +322,7 @@ package com.photodispatcher.print{
 		private var timer:Timer;
 		
 		private function startTimer():void{
+			if(!isAutoPrintManager) return;
 			if(!timer){
 				timer= new Timer(STRATEGY_REFRESH_INTERVAL,1);
 				timer.addEventListener(TimerEvent.TIMER,onTimer);
@@ -318,6 +333,7 @@ package com.photodispatcher.print{
 		}
 		private function onTimer(event:TimerEvent):void{
 			if(!initCompleted || ! strategiesAC) return;
+			if(!isAutoPrintManager) return;
 			var startlatch:DbLatch;
 			var sublatch:DbLatch;
 
@@ -392,6 +408,7 @@ package com.photodispatcher.print{
 			strategiesAC=latch.lastDataAC;
 			//create pusher
 			if(!strategiesAC) return;
+
 			for each(var st:PrnStrategy in strategiesAC){
 				if(st.strategy_type==PrnStrategy.STRATEGY_PUSHER){
 					prnPusher=new PrintQueuePusher(this,null);
@@ -417,6 +434,7 @@ package com.photodispatcher.print{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(!latch) return;
 			latch.removeEventListener(Event.COMPLETE,onloadPrnQueues);
+
 			if(latch.complite){
 				var pqg:PrintQueueGeneric;
 				
@@ -1341,6 +1359,8 @@ package com.photodispatcher.print{
 		public function runAutoPrint():void{
 			if(!autoPrint) return;
 			if(forceStop) return;
+			if(!isAutoPrintManager) return;
+
 
 			var pqg:PrintQueueGeneric;
 			var devs:Array;

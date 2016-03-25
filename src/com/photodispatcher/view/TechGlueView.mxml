@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.BookSynonymGlue;
+			import com.photodispatcher.model.mysql.entities.Layerset;
+			import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechLog;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.model.mysql.services.PrintGroupService;
+			import com.photodispatcher.model.mysql.services.TechPickerService;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.EBS6kController;
+			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.tech.TechRegisterBase;
+			import com.photodispatcher.tech.TechRegisterCommon;
+			import com.photodispatcher.tech.TechRegisterFolding;
+			import com.photodispatcher.tech.TechRegisterGlue;
+			import com.photodispatcher.tech.TechRegisterPrint;
+			import com.photodispatcher.tech.picker.InterlayerSet;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+		
+			public static const LOG_LEN_LIMIT:int=4000;
+			public static const BAR_LEN_LIMIT:int=2000;
+			public static const REGLISTLIMIT:int=100;
+			
+			public var extendedPrint:Boolean;
+			
+			public var techPoint:TechPoint;
+
+			
+			private var _barcodeCtrlReader:ComReader;
+			public function get barcodeCtrlReader():ComReader{
+				return _barcodeCtrlReader;
+			}
+			public function set barcodeCtrlReader(value:ComReader):void{
+				if(_barcodeCtrlReader){
+					_barcodeCtrlReader.removeEventListener(BarCodeEvent.BARCODE_READED,onCtrlBarCode);
+					_barcodeCtrlReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeCtrlReader.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeCtrlReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+				_barcodeCtrlReader = value;
+				if(_barcodeCtrlReader){
+					_barcodeCtrlReader.addEventListener(BarCodeEvent.BARCODE_READED,onCtrlBarCode);
+					_barcodeCtrlReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeCtrlReader.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeCtrlReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+			}
+
+			
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
+				return _barcodeReader;
+			}
+			public function set barcodeReader(value:ComReader):void{
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+				_barcodeReader = value;
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+			}
+
+			private var _flap:ValveCom;
+			[Bindable]
+			public function get flap():ValveCom{
+				return _flap;
+			}
+
+			public function set flap(value:ValveCom):void{
+				if(_flap){
+					_flap.removeEventListener(BarCodeEvent.BARCODE_READED,onFlapMsg);
+					_flap.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+				_flap = value;
+				if(_flap){
+					_flap.addEventListener(BarCodeEvent.BARCODE_READED,onFlapMsg);
+					_flap.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+			}
+
+			private var _printer:EBS6kController;
+			[Bindable]
+			public function get printer():EBS6kController{
+				return _printer;
+			}
+			public function set printer(value:EBS6kController):void{
+				if(_printer){
+					_printer.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_printer.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onPrinterDisconnect);
+					_printer.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onPrinterConnect);
+				}
+				_printer = value;
+				if(_printer){
+					//_printer.logger=this;
+					_printer.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_printer.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onPrinterDisconnect);
+					_printer.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onPrinterConnect);
+				}
+			}
+
+			
+			private var logText:String = '';
+
+			private var _barText:String='';
+			[Bindable]
+			public function get barText():String{
+				return _barText;
+			}
+			public function set barText(value:String):void{
+				if(!value){
+					_barText='';
+					return;
+				}
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				var txt:String=fmt.format(new Date())+': '+ value+_barText; 
+				if(txt.length>BAR_LEN_LIMIT) txt=txt.substr(0,BAR_LEN_LIMIT);
+				_barText=txt;
+			}
+
+
+			private function onError(event:BarCodeEvent):void{
+				barText=event.barcode+'\n';
+				logToScreen('Ошибка: '+event.error,true);
+				
+			}
+
+			private function onFlapMsg(event:BarCodeEvent):void{
+				logToScreen('Защелка: '+event.barcode,true);
+			}
+			
+			private function onPrinterDisconnect(event:BarCodeEvent):void{
+				log('!Принтер отключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			private function onPrinterConnect(event:BarCodeEvent):void{
+				log('Принтер подключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+
+			private function onBarDisconnect(event:BarCodeEvent):void{
+				log('Отключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			private function onReaderConnect(event:BarCodeEvent):void{
+				log('Сканер ШК подключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+
+			
+			private function createRegister(printGroup:String,books:int,sheets:int):void{
+				var result:TechRegisterBase;
+				if(!techPoint){
+					if(currRegister){
+						currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterErr);
+						currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
+					}
+					currRegister=null;
+					return;
+				}
+				
+				result= new TechRegisterGlue(printGroup,books,sheets);
+				
+				if(result){
+					result.techPoint=techPoint;
+					result.flap=flap;
+					result.revers=Boolean(Context.getAttribute("reversOrder"));
+				}
+				//stop listen old one
+				if(currRegister){
+					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterErr);
+					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
+				}
+				currRegister=result;
+				if(currRegister){
+					//listen
+					currRegister.addEventListener(ErrorEvent.ERROR,onRegisterErr);
+					currRegister.addEventListener(Event.COMPLETE,onRegisterComplite);
+				}
+			}
+			
+			private function onRegisterErr(event:ErrorEvent):void{
+				logToScreen(event.text,event.errorID>0);
+				if(event.errorID>0){
+					//TODO stop glue
+				}
+			}
+
+			private function onRegisterComplite(event:Event):void{
+			}
+
+			[Bindable]
+			private var currRegister:TechRegisterBase;
+			
+			private function onBarCode(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				print(barcode);
+				//parce barcode
+				var pgId:String;
+				barText=barcode+'\n';
+				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				if(!pgId){
+					//TODO rise err
+					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
+					if(flap) flap.setOff();
+					return;
+				}
+				
+				var bookNum:int=int(barcode.substr(0,3));
+				var pageNum:int=int(barcode.substr(6,2));
+				
+				if(currRegister && currRegister.printGroupId==pgId){
+					currRegister.register(bookNum,pageNum);
+					if (currRegister.isComplete){
+						currRegister.flushData();
+						logToScreen('Группа печати "'+currRegister.printGroupId+'" завершена',false);
+					}
+				}else{
+					if(currRegister && !currRegister.finalise()) return;
+					//create new
+					var bookTot:int=int(barcode.substr(3,3));
+					var pageTot:int=int(barcode.substr(8,2));
+					createRegister(pgId,bookTot,pageTot);
+					if(!currRegister){
+						logToScreen('---------- Не поддерживаемый режим регистрации ШК ----------',true);
+						return;
+					}
+					//start new
+					barText='';
+					barText=barcode+'\n';
+					regList= new ArrayCollection();
+					currRegister.register(bookNum,pageNum);
+				}
+				regList.addItemAt({log_date:new Date(), page: StrUtil.sheetName(bookNum,pageNum)},0);
+				if(regList.length> REGLISTLIMIT){
+					regList.source.length=REGLISTLIMIT;
+					regList.refresh();
+						
+				}
+			}
+			
+			private function print(barcode:String):void{
+				if(!printer || !barcode) return;
+				var printBar:String=PrintGroup.tech2BookBarcode(barcode);
+				if(!extendedPrint){
+					if(printBar){
+						log('Печать ШК '+printBar);
+						if(printer) printer.sendMessage(printBar);
+					}else{
+						log('!! Не верный ШК. Ошибка преобразования ШК.');
+					}
+					return;
+				}
+				var printCaption:String=PrintGroup.tech2BookBarcodeCaption(barcode);
+				if(printBar && printCaption){
+					log('Печать ШК '+printBar+' '+printCaption);
+					if(printer) printer.sendMessages([printBar, printCaption]);
+				}else{
+					log('!! Не верный ШК. Ошибка преобразования ШК.');
+				}
+			}
+
+
+			public function log(mesage:String):void{
+				logToScreen(mesage);
+			}
+			public function clear():void{
+				cleanLog();
+			}
+			
+			private function logToScreen(msg:String, isError:Boolean=false):void{
+				var color:String=isError?"'#990000'":"'#006600'";
+				var bold:String=isError?"fontWeight='bold'":'';
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				logText ="<span>"+fmt.format(new Date())+" </span>"+"<span color="+color+" "+bold+">"+msg+"</span> <br />"+logText ;
+
+				//cut
+				if(logText.length> LOG_LEN_LIMIT){
+					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
+					if(idx!=-1){
+						logText=logText.substr(0,idx+6);
+					}
+				}
+
+				try{
+					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
+				}catch(error:Error){
+					trace('TextFlow err, txt: '+logText);
+					trace(error.message);
+				}
+				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
+			}
+
+			[Bindable]
+			private var regList:ArrayCollection;
+			[Bindable]
+			private var regListColumnth:ArrayCollection;
+			
+			public function start():void{
+				cleanLog();
+				barText='';
+				if(!techPoint){
+					//TODO rise err or log in screen
+					logToScreen('---------- Не задана технологическая точка ----------',true);
+				}
+				regList=new ArrayCollection();
+				createGridColumns();
+				if(barcodeReader) barcodeReader.start();
+				if(barcodeCtrlReader) barcodeCtrlReader.start();
+				if(printer) printer.start();
+				if(flap) flap.start();
+				
+				//loade interlayers
+				interlayerSet= new InterlayerSet();
+				interlayerSet.init(-1);
+			}
+
+			public function createGridColumns():void{
+				var result:Array= [];
+				var col:GridColumn;
+				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateTimePattern='HH:mm:ss';
+				col= new GridColumn('log_date'); col.headerText='Время'; col.formatter=fmt;  col.width=70; result.push(col);
+				//col= new GridColumn('book'); col.headerText='Книга'; col.width=45; result.push(col);
+				col= new GridColumn('page'); col.headerText='Лист'; col.width=70; result.push(col);
+				regListColumnth=new ArrayCollection(result);
+			}
+
+			public function stop():void{
+				cleanLog();
+				if(currRegister){
+					currRegister.finalise();
+					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterErr);
+					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
+				}
+				currRegister=null;
+				if(barcodeReader) barcodeReader.stop();
+				if(printer) printer.stop();
+				if(flap) flap.stop();
+			}
+			
+			private function cleanLog():void{
+				logText='';
+				logTextArea.text='';
+				barText='';
+				regList= new ArrayCollection();
+			}
+			
+			protected function btFlapOn_clickHandler(event:MouseEvent):void{
+				if(flap) flap.setOn();
+			}
+			
+			protected function btFlapOff_clickHandler(event:MouseEvent):void{
+				if(flap) flap.setOff();
+			}
+			
+			
+			private function onCtrlBarCode(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				//parce barcode
+				var pgId:String;
+				barText='ШК управления: '+barcode+'\n';
+				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				if(!pgId){
+					//TODO rise err
+					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
+					return;
+				}
+				
+				if(currRegister && !currRegister.isComplete){
+					logToScreen('---------- ШК управления отменен. Не закончена текуща песледовательность ----------',true);
+					return;
+				}
+				
+				loadPgParams( pgId);
+			}
+			
+			[Bindable]
+			protected var currPG:PrintGroup;
+			[Bindable]
+			protected var currExtraInfo:OrderExtraInfo;
+			[Bindable]
+			public var currInerlayer:Layerset;
+			public var interlayerSet:InterlayerSet; 
+			[Bindable]
+			public var currGlueCmd:BookSynonymGlue; 
+
+			protected function loadPgParams(pgId:String):void{
+				if(!pgId) return;
+				currPG=null;
+				currExtraInfo=null;
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addLatch(svc.loadExtraIfoByPG(pgId));
+				latch.addEventListener(Event.COMPLETE,onOrderFinde);
+				
+				//load pg
+				var latchR:DbLatch= new DbLatch();
+				var svcPG:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+				latchR.addEventListener(Event.COMPLETE,onPgLoad);
+				latchR.addLatch(svcPG.loadById(pgId));
+				latchR.start();
+				latch.join(latchR);
+				latch.start();
+			}
+			protected function onPgLoad(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onPgLoad);
+					if(latch.complite){
+						currPG==latch.lastDataItem as PrintGroup;
+					}
+				}
+			}
+			protected function onOrderFinde(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				var ei:OrderExtraInfo;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderFinde);
+					currExtraInfo=latch.lastDataItem as OrderExtraInfo;
+				}
+				
+				if(detectGlueCmd()){
+					//TODO set command 
+				}
+					
+			}
+			
+			protected function detectGlueCmd():Boolean{
+				var hasErr:Boolean;
+				var msg:String;
+				if(!currPG){
+					hasErr=true;
+					msg='Не найдена группа печати';
+				}
+				if(!hasErr && !currExtraInfo){
+					hasErr=true;
+					msg='Нет доп информации по заказу';
+				}
+				
+				if(!hasErr && !interlayerSet){
+					hasErr=true;
+					msg='Ошибка инициализации';
+				}
+				
+				//checkget interlayer
+				//check interlayer
+				if(!hasErr){ 
+					currInerlayer=interlayerSet.getBySynonym(currExtraInfo.interlayer);
+					//if(currExtraInfo.interlayer && !currInerlayer){
+					if(!currInerlayer){
+						hasErr=true;
+						msg='Неопределен тип прослойки "'+currExtraInfo.interlayer+'"';
+					}
+				}
+				
+				var bs:BookSynonym;
+				if(!hasErr){
+					bs=BookSynonym.getBookSynonym(currPG);
+					if(bs){
+						hasErr=true;
+						msg='Неопределен шаблон книги для "'+currPG.alias+'"';
+					}else{
+						//detect glue command
+						currGlueCmd=bs.getGlueCmd(currPG.paper, currInerlayer.id);
+						if(!currGlueCmd || !currGlueCmd.glue_cmd_name){
+							hasErr=true;
+							msg='Неопределена команда склейки "'+currPG.paper_name +'"-"'+currInerlayer.name+'"';
+						}
+					}
+				}
+
+				if(hasErr){
+					Alert.show(msg);
+					logToScreen('Ошибка: '+msg,true);
+					return false;
+				}
+				
+				return true;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" >
+			<s:Label text="Склейка"/>
+			<s:Spacer width="100%"/>
+			<s:Label text="Бумага: {currPG.paper_name}"/>
+			<s:Label text="Прослойка: {currExtraInfo.interlayer}/{currInerlayer.name}"/>
+			<s:Label text="Разворотов: {currPG.sheet_num}"/>
+			<s:Label text="Команда: {currGlueCmd.glue_cmd_name}"/>
+		</s:HGroup>
+		<s:HGroup gap="25" width="100%" paddingLeft="15" paddingRight="15" 
+				  horizontalAlign="center"
+				  fontSize="20">
+			<s:Button id="btGlueStart" label="Старт" height="50"/>
+			<s:Button id="btGluePause" label="Пауза" height="50"/>
+			<s:Button id="btGlueStop" label="Стоп" height="50"/>
+		</s:HGroup>
+		<s:HGroup gap="5" width="100%" >
+			<s:Label text="Порядок: {currRegister.revers?'Обратный':'Прямой'}"/>
+			<s:Spacer width="100%"/>
+			<s:Label text="Заказ: {currRegister.printGroupId}"/>
+			<s:Label text="Книг: {currRegister.books}"/>
+			<s:Label text="Листов: {currRegister.sheets}"/>
+			<s:Label text="Выполнено: {currRegister.registred.toString()}"/>
+		</s:HGroup>
+		<s:HGroup gap="5" width="100%" height="100%">
+			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
+			<s:DataGrid width="160" height="100%" fontSize="10"
+						dataProvider="{regList}" locale="ru_RU" columns="{regListColumnth}"/>
+			<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="160" height="100%" editable="false"/>
+		</s:HGroup>
+		<s:HGroup gap="5" width="100%">
+			<s:Button label="Очистить" click="{cleanLog()}"/>
+			<s:Spacer width="100%"/>
+			<s:Button id="btFlapOn" label="Зщелка Вкл" click="btFlapOn_clickHandler(event)" enabled="{flap!=null}"/>
+			<s:Button id="btFlapOff" label="Зщелка Выкл" click="btFlapOff_clickHandler(event)" enabled="{flap!=null}"/>
+		</s:HGroup> 
+	</s:VGroup>
+	
+</s:Group>

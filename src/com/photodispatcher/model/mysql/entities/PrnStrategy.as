@@ -50,7 +50,7 @@ package com.photodispatcher.model.mysql.entities {
         }
 		
 		public function isTimeToStart():Boolean{
-			if(!time_start || (time_start.hours==0 && time_start.minutes==0)) return false;
+			if(!time_start || !is_active || (time_start.hours==0 && time_start.minutes==0)) return false;
 			var now:Date = new Date;
 			var currDay:Date = new Date(now.fullYear,now.month,now.date);
 			var start:Date= new Date(time_start.time);

@@ -683,6 +683,9 @@ package com.photodispatcher.context{
 			//reject_unit
 			latchAttributeLists.addLatch(dict.getTechUnitValueList(onFieldList),'thech_unit');
 
+			//glue_cmd
+			latchAttributeLists.addLatch(dict.getGlueCmdValueList(onFieldList),'glue_cmd');
+
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){
 				a=new ArrayCollection();

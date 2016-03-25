@@ -19,8 +19,8 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         private var _book_synonym:int;
-        private var _cmd:String;
         private var _glue_cmd:int;
+        private var _glue_cmd_name:String;
         private var _id:int;
         private var _interlayer:int;
         private var _interlayer_name:String;
@@ -34,18 +34,18 @@ package com.photodispatcher.model.mysql.entities {
             return _book_synonym;
         }
 
-        public function set cmd(value:String):void {
-            _cmd = value;
-        }
-        public function get cmd():String {
-            return _cmd;
-        }
-
         public function set glue_cmd(value:int):void {
             _glue_cmd = value;
         }
         public function get glue_cmd():int {
             return _glue_cmd;
+        }
+
+        public function set glue_cmd_name(value:String):void {
+            _glue_cmd_name = value;
+        }
+        public function get glue_cmd_name():String {
+            return _glue_cmd_name;
         }
 
         public function set id(value:int):void {
@@ -86,8 +86,8 @@ package com.photodispatcher.model.mysql.entities {
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _book_synonym = input.readObject() as int;
-            _cmd = input.readObject() as String;
             _glue_cmd = input.readObject() as int;
+            _glue_cmd_name = input.readObject() as String;
             _id = input.readObject() as int;
             _interlayer = input.readObject() as int;
             _interlayer_name = input.readObject() as String;
@@ -98,8 +98,8 @@ package com.photodispatcher.model.mysql.entities {
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
             output.writeObject((_book_synonym is IPropertyHolder) ? IPropertyHolder(_book_synonym).object : _book_synonym);
-            output.writeObject((_cmd is IPropertyHolder) ? IPropertyHolder(_cmd).object : _cmd);
             output.writeObject((_glue_cmd is IPropertyHolder) ? IPropertyHolder(_glue_cmd).object : _glue_cmd);
+            output.writeObject((_glue_cmd_name is IPropertyHolder) ? IPropertyHolder(_glue_cmd_name).object : _glue_cmd_name);
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_interlayer is IPropertyHolder) ? IPropertyHolder(_interlayer).object : _interlayer);
             output.writeObject((_interlayer_name is IPropertyHolder) ? IPropertyHolder(_interlayer_name).object : _interlayer_name);

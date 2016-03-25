@@ -18,6 +18,7 @@
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.mysql.AsyncLatch;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookSynonymGlue;
 			import com.photodispatcher.model.mysql.entities.HelloResponce;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
@@ -40,6 +41,10 @@
 			
 			import spark.events.PopUpEvent;
 
+			
+			//dumy declaration 2 include tgranite objs
+			private var glue:BookSynonymGlue;
+			
 			private var bdPopup:DatabasePopup;
 
 			[Bindable]
@@ -329,7 +334,7 @@
 		<download:FontDownloadManager/>
 		
 		<print:LabConfigManager id="labConfigManager" />
-		<print:PrintQueueManager id="printQueueManager" />
+		<print:PrintQueueManager id="printQueueManager"  isAutoPrintManager="true"/>
 		<print:PrintPulseManager id="printPulseManager" 
 								 labs="{printQueueManager.labs}" 
 								 devices="{printQueueManager.devices}"

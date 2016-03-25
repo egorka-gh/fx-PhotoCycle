@@ -255,6 +255,16 @@ package com.photodispatcher.model.mysql.entities {
 			return null;
 			
 		}
+		
+		public function getGlueCmd(paper:int, interlayer:int):BookSynonymGlue{
+			if(!glueCommands) return null;
+			for each(var bg:BookSynonymGlue in glueCommands){
+				if(bg && bg.paper==paper && bg.interlayer==interlayer){
+					return bg;
+				}
+			}
+			return null;
+		}
 
     }
 }

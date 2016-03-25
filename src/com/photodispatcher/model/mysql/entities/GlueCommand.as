@@ -6,11 +6,24 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.GlueCommand")]
     public class GlueCommand extends GlueCommandBase {
 
+		public static function gridColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('cmd'); col.headerText='Команда'; result.push(col);
+			
+			return new ArrayList(result);
+		}
+
+		
         public function GlueCommand() {
             super();
         }

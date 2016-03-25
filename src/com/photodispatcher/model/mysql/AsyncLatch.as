@@ -53,6 +53,12 @@ package com.photodispatcher.model.mysql{
 			checkComplite();
 		}
 
+		public function reset():void{
+			thisComplite=false;
+			started=false;
+			destroyJoint();
+		}
+
 		public function releaseError(err:String):void{
 			complite=false;
 			hasError=true;

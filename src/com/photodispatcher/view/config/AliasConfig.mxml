@@ -2,20 +2,30 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
-		 creationComplete="{init()}" xmlns:config="com.photodispatcher.view.config.*"
+		 xmlns:config="com.photodispatcher.view.config.*"
+		 creationComplete="{init()}"
 		 >
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.AliasForward;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.BookSynonymGlue;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
+			import com.photodispatcher.model.mysql.entities.GlueCommand;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.services.BookSynonymService;
 			import com.photodispatcher.model.mysql.services.ConfigService;
 			
 			import mx.collections.ArrayCollection;
 			
 			import org.granite.tide.Tide;
 			
+			import spark.events.IndexChangeEvent;
+			
 			[Bindable]
-			private var aliasAC:ArrayCollection;
+			private var nonTechAliasAC:ArrayCollection;
 			[Bindable]
 			private var currItem:Object;
 
@@ -27,7 +37,9 @@
 
 				var initLatch:DbLatch= new DbLatch();
 
-				initLatch.join(loadAlias());
+				initLatch.join(loadNonTechAlias());
+				initLatch.join(loadGlueCmd());
+				initLatch.join(loadAliasList());
 				
 				initLatch.addEventListener(Event.COMPLETE, onInitComplite);
 				initLatch.start();
@@ -44,38 +56,38 @@
 				}
 			}
 			
-			private function loadAlias():DbLatch{
+			private function loadNonTechAlias():DbLatch{
 				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE, onStaffLoad);
+				latch.addEventListener(Event.COMPLETE, onLoadNonTechAlias);
 				latch.addLatch(cfgService.loadAliasForward());
 				latch.start();
 				return latch;
 			}
-			private function onStaffLoad(event:Event):void{
+			private function onLoadNonTechAlias(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				currItem=null;
 				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onStaffLoad);
+					latch.removeEventListener(Event.COMPLETE,onLoadNonTechAlias);
 					if(latch.complite){
-						aliasAC=latch.lastDataAC;
+						nonTechAliasAC=latch.lastDataAC;
 					}else{
-						aliasAC=null;
+						nonTechAliasAC=null;
 					}
 				}
 			}
 
 			
 
-			protected function btAddStaff_clickHandler(event:MouseEvent):void{
+			protected function btAddNonTechAlias_clickHandler(event:MouseEvent):void{
 				var it:AliasForward= new AliasForward();
-				aliasAC.addItem(it);
+				nonTechAliasAC.addItem(it);
 				currItem=it;
 			}
 			
-			protected function btSaveStaff_clickHandler(event:MouseEvent):void{
+			protected function btSaveNonTechAlias_clickHandler(event:MouseEvent):void{
 				var items:ArrayCollection= new ArrayCollection();
 				var it:AliasForward;
-				for each(it in aliasAC){
+				for each(it in nonTechAliasAC){
 					if (it.changed || (!it.loaded && it.alias) ) items.addItem(it);
 				}
 				if(items.length==0) return;
@@ -88,11 +100,150 @@
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onStaffSave);
-					loadAlias();
+					loadNonTechAlias();
 				}
 			}
 
+			//glue 
+			
+			private function get bSynonimSrvise():BookSynonymService{
+				return Tide.getInstance().getContext().byType(BookSynonymService,true) as BookSynonymService;
+			}
+			
+			[Bindable]
+			private var glueCmdAC:ArrayCollection;
+			
+			private function loadGlueCmd():DbLatch{
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onLoadGlueCmd);
+				latch.addLatch(bSynonimSrvise.loadGlueCommandAll());
+				latch.start();
+				return latch;
+			}
+			private function onLoadGlueCmd(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadGlueCmd);
+					if(latch.complite){
+						glueCmdAC=latch.lastDataAC;
+					}else{
+						glueCmdAC=null;
+					}
+				}
+			}
 
+			protected function btAddGlueCmd_clickHandler(event:MouseEvent):void{
+				if(!glueCmdAC) return;
+				if(!grGlueCmd) return;
+				var item:GlueCommand= new GlueCommand();
+				glueCmdAC.addItem(item);
+				glueCmdAC.refresh();
+				grGlueCmd.currentItem=item;
+			}
+			
+			protected function btSaveGlueCmd_clickHandler(event:MouseEvent):void{
+				if(!glueCmdAC) return;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onSaveGlueCmd);
+				latch.addLatch(bSynonimSrvise.persistGlueCommandBatch(glueCmdAC));
+				latch.start();
+			}
+			private function onSaveGlueCmd(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSaveGlueCmd);
+					if(latch.complite){
+						glueCmdAC=latch.lastDataAC;
+						if(grGlueCmd) grGlueCmd.currentItem=null;
+						
+						//Context.setAttribute('glue_cmdValueList', glueCmdAC);
+						//add empty 0 value, ' ' label
+						var ac:ArrayCollection=new ArrayCollection();
+						var fv:FieldValue= new FieldValue();
+						fv.value=0;
+						fv.label='';
+						ac.addItem(fv);
+						for each (var gc:GlueCommand in glueCmdAC){
+							fv= new FieldValue();
+							fv.value=gc.id;
+							fv.label=gc.cmd;
+							ac.addItem(fv);
+						}
+						Context.setAttribute('glue_cmdList', ac);
+						Context.setAttribute('glue_cmdValueList', ac);
+					}else{
+						glueCmdAC=null;
+					}
+				}
+			}
+
+			[Bindable]
+			private var aliasListAC:ArrayCollection;
+			
+			private function loadAliasList():DbLatch{
+				var latch:DbLatch= new DbLatch(false);
+				latch.addEventListener(Event.COMPLETE, onLoadAliasList);
+				latch.addLatch(bSynonimSrvise.loadAll(SourceType.SRC_FOTOKNIGA,0));
+				latch.start();
+				return latch;
+			}
+			private function onLoadAliasList(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadAliasList);
+					if(latch.complite){
+						aliasListAC=latch.lastDataAC;
+						aliasListAC.filterFunction=filterAliasList;
+						aliasListAC.refresh();
+					}
+				}
+			}
+			
+			private function filterAliasList(item:Object):Boolean{
+				if(!tiFilterAliasList || !tiFilterAliasList.text) return true;
+				var flt:String=tiFilterAliasList.text;
+				var syn:String=item.synonym;
+				if(!syn || syn.indexOf(flt)==-1) return false;
+				return true;
+			}
+
+			private function aliasListlabelFunction(item:Object):String{
+				var bs:BookSynonym=item as BookSynonym;
+				if(!bs) return '';
+				return bs.synonym_type_name+':'+bs.synonym;
+			}
+			
+			protected function lstAliasList_changeHandler(event:IndexChangeEvent):void{
+				var bs:BookSynonym=lstAliasList.selectedItem as BookSynonym;
+				if(!bs) return;
+				
+				var latch:DbLatch= new DbLatch(false);
+				latch.addEventListener(Event.COMPLETE, onLoadBookGlue);
+				latch.addLatch(bSynonimSrvise.loadBookGlueEdit(bs.id),bs.id.toString());
+				latch.start();
+			}
+			private function onLoadBookGlue(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadBookGlue);
+					if(latch.complite){
+						var bs:BookSynonym=lstAliasList.selectedItem as BookSynonym;
+						if(!bs || bs.id.toString()!=latch.lastTag) return;
+						bs.glueCommands=latch.lastDataAC;
+					}
+				}
+			}
+
+			
+			protected function btSaveSynonymGlue_clickHandler(event:MouseEvent):void{
+				var bs:BookSynonym=lstAliasList.selectedItem as BookSynonym;
+				if(!bs || !bs.glueCommands || bs.glueCommands.length==0) return;
+
+				var latch:DbLatch= new DbLatch(false);
+				latch.addLatch(bSynonimSrvise.persistBookGlue(bs.glueCommands));
+				latch.start();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -100,20 +251,92 @@
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
 	
-	<s:HGroup width="100%" height="100%" gap="5" paddingLeft="10">
+	<s:layout>
+		<s:VerticalLayout gap="5" paddingLeft="10"/>
+	</s:layout>
+
+	<s:TabBar id="tbView"  dataProvider="{vsSubView}"/>
+	
+	<mx:ViewStack id="vsSubView" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+		<s:NavigatorContent label="Не производственные алиасы" backgroundAlpha="0" width="100%" height="100%">
+			<s:VGroup width="400" height="100%" gap="10">
+				<s:Label text="Не производственные алиасы"/>
+				<config:ItemsGrid id="aliasGrid" editable="true" 
+								  currentData="{nonTechAliasAC}"
+								  currentColumns="{AliasForward.gridColumns()}"
+								  currentItem="@{currItem}"
+								  width="100%"
+								  height="100%"/>
+				<s:HGroup width="100%" gap="5" horizontalAlign="right">
+					<s:Button id="btAddStaff" label="Добавить" click="btAddNonTechAlias_clickHandler(event)"/>
+					<s:Button id="btSaveStaff" label="Сохранить" click="btSaveNonTechAlias_clickHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%" height="100%">
+			<s:HGroup gap="20" width="100%" height="100%">
+				<s:VGroup width="200" height="100%">
+					<s:Label text="Команды склейки"/>
+					<config:ItemsGrid id="grGlueCmd" editable="true"
+									  currentData="{glueCmdAC}"
+									  currentColumns="{GlueCommand.gridColumns()}"
+									  width="100%" height="100%"
+									  />
+					<s:HGroup width="100%" gap="5" horizontalAlign="right">
+						<s:Button id="btAddGlueCmd" label="Добавить" click="btAddGlueCmd_clickHandler(event)"/>
+						<s:Button id="btSaveGlueCmd" label="Сохранить" click="btSaveGlueCmd_clickHandler(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+				<s:VGroup width="100%" height="100%">
+					<s:Label text="Склейка алиасов"/>
+					<s:HGroup width="100%" height="100%">
+						<s:VGroup width="100%" height="100%">
+							<s:HGroup width="{lstAliasList.width}" gap="0" verticalAlign="baseline">
+								<s:Label text="Алиасы"/>
+								<s:Spacer width="100%"/>
+								<s:Button id="btReloadAliasList" icon="assets/icon-refresh.gif" 
+										  click="{loadAliasList()}" 
+										  cornerRadius="4" width="22" height="22" baseline="4"/>
+							</s:HGroup>
+							<s:TextInput id="tiFilterAliasList" width="{lstAliasList.width}" change="{aliasListAC.refresh()}"/>
+							<s:HGroup width="100%" height="100%" gap="10">
+								<s:List width="300" height="100%"
+										id="lstAliasList"
+										dataProvider="{aliasListAC}"
+										labelFunction="aliasListlabelFunction"
+										change="lstAliasList_changeHandler(event)"
+										/>
+								<s:VGroup width="100%" height="100%" gap="5">
+									<s:Label text="Команды склейки для алиаса"/>
+									<config:ItemsGrid id="grAliasGlueCmd" editable="true"
+										currentData="{lstAliasList.selectedItem.glueCommands}"
+										currentColumns="{BookSynonymGlue.gridColumns()}"
+										width="100%" height="100%"
+										/>
+										<s:Button id="btSaveSynonymGlue" label="Сохранить" click="btSaveSynonymGlue_clickHandler(event)"/>
+								</s:VGroup>
+							</s:HGroup>
+						</s:VGroup>
+					</s:HGroup>
+				</s:VGroup>
+			</s:HGroup>
+		</s:NavigatorContent>
+	</mx:ViewStack>
+	
+	<!--<s:HGroup width="100%" height="100%" gap="5" paddingLeft="10">
 		<s:VGroup width="400" height="100%" gap="10">
 			<s:Label text="Не производственные алиасы"/>
 			<config:ItemsGrid id="aliasGrid" editable="true" 
-							  currentData="{aliasAC}"
+							  currentData="{nonTechAliasAC}"
 							  currentColumns="{AliasForward.gridColumns()}"
 							  currentItem="@{currItem}"
 							  width="100%"
 							  height="100%"/>
 			<s:HGroup width="100%" gap="5" horizontalAlign="right">
-				<s:Button id="btAddStaff" label="Добавить" click="btAddStaff_clickHandler(event)"/>
-				<s:Button id="btSaveStaff" label="Сохранить" click="btSaveStaff_clickHandler(event)"/>
+				<s:Button id="btAddStaff" label="Добавить" click="btAddNonTechAlias_clickHandler(event)"/>
+				<s:Button id="btSaveStaff" label="Сохранить" click="btSaveNonTechAlias_clickHandler(event)"/>
 			</s:HGroup>
 		</s:VGroup>
-	</s:HGroup>
+	</s:HGroup>-->
 	
 </s:Group>

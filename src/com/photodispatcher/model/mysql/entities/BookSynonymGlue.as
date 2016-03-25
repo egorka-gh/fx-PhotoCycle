@@ -6,10 +6,28 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.util.GridUtil;
+	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
+	
+	import mx.collections.ArrayList;
+	import mx.core.ClassFactory;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.BookSynonymGlue")]
     public class BookSynonymGlue extends BookSynonymGlueBase {
+
+		public static function gridColumns():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.push(col);
+			col= new GridColumn('interlayer_name'); col.headerText='Прослойка'; col.editable=false; result.push(col);
+			col= new GridColumn('glue_cmd'); col.headerText='Команда склейки'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.push(col);
+			
+			return new ArrayList(result);
+		}
 
         public function BookSynonymGlue() {
             super();
