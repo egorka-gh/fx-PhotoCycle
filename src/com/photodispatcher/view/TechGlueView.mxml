@@ -9,10 +9,14 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.LayerAllocation;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.BookSynonymGlue;
+			import com.photodispatcher.model.mysql.entities.Layer;
+			import com.photodispatcher.model.mysql.entities.LayerSequence;
 			import com.photodispatcher.model.mysql.entities.Layerset;
+			import com.photodispatcher.model.mysql.entities.LayersetSynonym;
 			import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
@@ -58,6 +62,11 @@
 			[Bindable]
 			protected var glueDevice:GlueProxy;
 
+			//dumy declarations
+			protected var d1:Layer;
+			protected var d2:LayerAllocation;
+			protected var d3:LayerSequence;
+			protected var d4:LayersetSynonym;
 			
 			private var _barcodeCtrlReader:ComReader;
 			public function get barcodeCtrlReader():ComReader{
@@ -223,7 +232,7 @@
 				logToScreen(event.text,event.errorID>0);
 				if(event.errorID>0){
 					//stop glue
-					if(glueDevice.isStarted) glueDevice.run_Stop();
+					//if(glueDevice.isStarted) glueDevice.run_Stop();
 				}
 			}
 
@@ -464,7 +473,7 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onPgLoad);
 					if(latch.complite){
-						currPG==latch.lastDataItem as PrintGroup;
+						currPG=latch.lastDataItem as PrintGroup;
 					}
 				}
 			}
