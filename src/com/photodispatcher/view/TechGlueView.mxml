@@ -23,6 +23,7 @@
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.PrintGroupService;
 			import com.photodispatcher.model.mysql.services.TechPickerService;
+			import com.photodispatcher.service.GlueProxy;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.ValveCom;
@@ -50,6 +51,12 @@
 			public var extendedPrint:Boolean;
 			
 			public var techPoint:TechPoint;
+
+			public var glueIP:String;
+			public var gluePort:int;
+			
+			[Bindable]
+			protected var glueDevice:GlueProxy;
 
 			
 			private var _barcodeCtrlReader:ComReader;
@@ -215,7 +222,8 @@
 			private function onRegisterErr(event:ErrorEvent):void{
 				logToScreen(event.text,event.errorID>0);
 				if(event.errorID>0){
-					//TODO stop glue
+					//stop glue
+					if(glueDevice.isStarted) glueDevice.run_Stop();
 				}
 			}
 
@@ -247,6 +255,7 @@
 					if (currRegister.isComplete){
 						currRegister.flushData();
 						logToScreen('Группа печати "'+currRegister.printGroupId+'" завершена',false);
+						if(glueDevice.isStarted) glueDevice.run_Stop();
 					}
 				}else{
 					if(currRegister && !currRegister.finalise()) return;
@@ -344,9 +353,15 @@
 				if(printer) printer.start();
 				if(flap) flap.start();
 				
-				//loade interlayers
+				//load interlayers
 				interlayerSet= new InterlayerSet();
 				interlayerSet.init(-1);
+				
+				//start glue proxy
+				glueDevice=new GlueProxy();
+				glueDevice.loger=this;
+				glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
+				glueDevice.start(glueIP,gluePort);
 			}
 
 			public function createGridColumns():void{
@@ -367,6 +382,11 @@
 					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
 				}
 				currRegister=null;
+				if(glueDevice){
+					glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
+					glueDevice.stop();
+				}
+				glueDevice=null;
 				if(barcodeReader) barcodeReader.stop();
 				if(printer) printer.stop();
 				if(flap) flap.stop();
@@ -387,6 +407,9 @@
 				if(flap) flap.setOff();
 			}
 			
+			protected function onGlueErr(event:ErrorEvent):void{
+				logToScreen('Склейка ошибка: '+event.text,true);
+			}
 			
 			private function onCtrlBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
@@ -455,6 +478,10 @@
 				
 				if(detectGlueCmd()){
 					//TODO set command 
+					if(glueDevice){
+						glueDevice.run_SetProduct(currGlueCmd.glue_cmd_name);
+						glueDevice.run_SetSheets(currPG.sheet_num);
+					}
 				}
 					
 			}
@@ -525,12 +552,12 @@
 			<s:Label text="Разворотов: {currPG.sheet_num}"/>
 			<s:Label text="Команда: {currGlueCmd.glue_cmd_name}"/>
 		</s:HGroup>
-		<s:HGroup gap="25" width="100%" paddingLeft="15" paddingRight="15" 
-				  horizontalAlign="center"
-				  fontSize="20">
-			<s:Button id="btGlueStart" label="Старт" height="50"/>
-			<s:Button id="btGluePause" label="Пауза" height="50"/>
-			<s:Button id="btGlueStop" label="Стоп" height="50"/>
+		<s:HGroup gap="25" width="100%" paddingLeft="15" paddingRight="15"
+				  enabled="{glueDevice.isStarted}"
+				  horizontalAlign="center" fontSize="20">
+			<s:Button id="btGlueStart" label="Старт" height="50" click="{glueDevice.run_Start()}"/>
+			<s:Button id="btGluePause" label="Пауза" height="50" enabled="false"/>
+			<s:Button id="btGlueStop" label="Стоп" height="50" click="{glueDevice.run_Stop()}"/>
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%" >
 			<s:Label text="Порядок: {currRegister.revers?'Обратный':'Прямой'}"/>

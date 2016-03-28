@@ -38,6 +38,7 @@
 			
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
+			import spark.events.TextOperationEvent;
 			
 			[Bindable]
 			private var techPionts:ArrayCollection;
@@ -66,6 +67,10 @@
 				Context.setAttribute("reversOrder", value);
 			}
 			
+			[Bindable]
+			protected var glueIP:String;
+			[Bindable]
+			protected var gluePort:int;
 
 			protected var _extendedPrint:Boolean;
 			[Bindable]
@@ -163,7 +168,10 @@
 					techPointID=so.data.techPoint;
 					reversOrder=so.data.reversOrder;
 					extendedPrint=so.data.extendedPrint;
+					glueIP=so.data.glueIP;
 				}
+				
+				gluePort=8000;
 				
 				if(techPointObj && coms.length>0){
 					start();
@@ -238,6 +246,10 @@
 					flap.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
 					//flap.start();
 				}
+				
+				techMonitor.glueIP=glueIP;
+				techMonitor.gluePort=gluePort;
+				
 				if(techMonitor) techMonitor.start();
 			}
 			
@@ -312,6 +324,12 @@
 				FlexGlobals.topLevelApplication.exit();
 			}
 			
+			protected function tiGlueIP_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.glueIP = glueIP;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -341,7 +359,16 @@
 							width="250"
 							labelField="name" change="ddTechPoint_changeHandler(event)"/>
 		</s:HGroup>
-		
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Склейка"/>
+			<s:Spacer width="10"/>
+			<s:Label text="IP:"/>
+			<s:TextInput id="tiGlueIP" text="@{glueIP}" change="tiGlueIP_changeHandler(event)"/>
+			<s:Label text="Порт:"/>
+			<s:TextInput id="tiGluePort" text="{gluePort.toString()}" editable="false"/>
+		</s:HGroup>
+
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>

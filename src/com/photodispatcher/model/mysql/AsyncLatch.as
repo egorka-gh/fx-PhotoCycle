@@ -89,12 +89,14 @@ package com.photodispatcher.model.mysql{
 		public function checkComplite():void{
 			if(!started) return;
 			if(hasError){
+				started=false;
 				dispatchEvent(new Event(Event.COMPLETE));
 				if(!silent) showError();
 				return;
 			}
 			complite=isComplite();
 			if(complite){
+				started=false;
 				if(debugName) trace('Latch '+debugName+' complited. state' +(hasError?'error':'complite'));
 				dispatchEvent(new Event(Event.COMPLETE));
 			}
