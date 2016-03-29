@@ -12,9 +12,13 @@ package com.photodispatcher.tech.picker{
 
 	public class InterlayerSet{
 		
+		public static const INTERLAYER_EMPTY_ID:int=15;
+		
 		[Bindable]
 		public var layersets:ArrayCollection;
 
+		public var emptyInterlayer:Layerset;
+		
 		protected var _prepared:Boolean;
 		protected var synonymMap:Object;
 		
@@ -50,6 +54,7 @@ package com.photodispatcher.tech.picker{
 			//fill synonym map
 			synonymMap=new Object;
 			for each(ls in layersets){
+				if(ls.id==INTERLAYER_EMPTY_ID) emptyInterlayer=ls;
 				if(ls.synonyms){
 					for each (var syn:String in ls.synonyms) synonymMap[syn]=ls;
 				}
@@ -58,7 +63,8 @@ package com.photodispatcher.tech.picker{
 		}
 		
 		public function getBySynonym(synonym:String):Layerset{
-			if(!synonymMap || !synonym) return null;
+			if(!synonymMap) return null;
+			if(!synonym) return emptyInterlayer;
 			return (synonymMap[synonym] as Layerset);
 		}
 	}

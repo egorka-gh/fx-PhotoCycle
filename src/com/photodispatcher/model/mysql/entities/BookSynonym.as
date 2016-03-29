@@ -80,6 +80,12 @@ package com.photodispatcher.model.mysql.entities {
 					var subMap:Object;
 					var bs:BookSynonym;
 					for each(bs in a){
+						/*
+						if(bs.id==655){
+						4 debug
+							var iii:int=0;
+						}
+						*/
 						if(bs && bs.synonym){
 							if(bs.synonym_type==0){
 								//add to synonym map

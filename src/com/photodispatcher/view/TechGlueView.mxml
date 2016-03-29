@@ -36,6 +36,7 @@
 			import com.photodispatcher.tech.TechRegisterFolding;
 			import com.photodispatcher.tech.TechRegisterGlue;
 			import com.photodispatcher.tech.TechRegisterPrint;
+			import com.photodispatcher.tech.picker.EndpaperSet;
 			import com.photodispatcher.tech.picker.InterlayerSet;
 			import com.photodispatcher.util.StrUtil;
 			
@@ -362,9 +363,23 @@
 				if(printer) printer.start();
 				if(flap) flap.start();
 				
-				//load interlayers
+				//load picker config
+				var initLatch:DbLatch= new DbLatch();
+				initLatch.addEventListener(Event.COMPLETE, onInitLatch);
 				interlayerSet= new InterlayerSet();
-				interlayerSet.init(-1);
+				endpaperSet= new EndpaperSet();
+				initLatch.join(interlayerSet.init(-1));
+				initLatch.join(endpaperSet.init(-1));
+
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE, onTeplatesLoad);
+				var svc:TechPickerService=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
+				latch.addLatch(svc.loadLayersets(Layerset.LAYERSET_TYPE_TEMPLATE, -1));
+				initLatch.join(latch);
+				latch.start();
+				
+				initLatch.start();
+
 				
 				//start glue proxy
 				glueDevice=new GlueProxy();
@@ -372,7 +387,23 @@
 				glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
 				glueDevice.start(glueIP,gluePort);
 			}
-
+			private function onInitLatch(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(!latch) return;
+				latch.removeEventListener(Event.COMPLETE,onInitLatch);
+				if(!latch.complite){
+					logToScreen('Ошибка инициализации: '+latch.error,true);
+				}
+			}
+			private function onTeplatesLoad(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(!latch) return;
+				latch.removeEventListener(Event.COMPLETE,onTeplatesLoad);
+				if(latch.complite){
+					templateSet=latch.lastDataArr;
+				}
+			}
+			
 			public function createGridColumns():void{
 				var result:Array= [];
 				var col:GridColumn;
@@ -446,7 +477,17 @@
 			protected var currExtraInfo:OrderExtraInfo;
 			[Bindable]
 			public var currInerlayer:Layerset;
-			public var interlayerSet:InterlayerSet; 
+			public var interlayerSet:InterlayerSet;
+			[Bindable]
+			public var currTemplate:Layerset;
+			public var templateSet:Array;
+			[Bindable]
+			public var currEndPaper:Layerset;
+			public var endpaperSet:InterlayerSet;
+			[Bindable]
+			public var currSheetsNum:int;
+			
+			
 			[Bindable]
 			public var currGlueCmd:BookSynonymGlue; 
 
@@ -454,6 +495,11 @@
 				if(!pgId) return;
 				currPG=null;
 				currExtraInfo=null;
+				currInerlayer=null;
+				currTemplate=null;
+				currEndPaper=null;
+				currSheetsNum=0;
+				
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				var latch:DbLatch= new DbLatch();
 				latch.addLatch(svc.loadExtraIfoByPG(pgId));
@@ -486,7 +532,7 @@
 				}
 				
 				if(detectGlueCmd()){
-					//TODO set command 
+					//set command 
 					if(glueDevice){
 						glueDevice.run_SetProduct(currGlueCmd.glue_cmd_name);
 						glueDevice.run_SetSheets(currPG.sheet_num);
@@ -526,7 +572,7 @@
 				var bs:BookSynonym;
 				if(!hasErr){
 					bs=BookSynonym.getBookSynonym(currPG);
-					if(bs){
+					if(!bs){
 						hasErr=true;
 						msg='Неопределен шаблон книги для "'+currPG.alias+'"';
 					}else{
@@ -538,12 +584,36 @@
 						}
 					}
 				}
+				
+				/*
+				if(!hasErr && templateSet){
+					for each (var ls:Layerset in templateSet){
+						if(ls.book_type==currPG.book_type){
+							currTemplate=ls;
+							break;
+						}
+					}
+					if(!currTemplate){
+						hasErr=true;
+						msg='Неопределен шаблон сборки для "'+currPG.alias+'"';
+					}
+				}
+				*/
+				
 
 				if(hasErr){
 					Alert.show(msg);
 					logToScreen('Ошибка: '+msg,true);
 					return false;
 				}
+				
+				//calc sheets
+				currSheetsNum=currPG.sheet_num;
+				
+				//TODO template book start/end or endpaper
+				
+				//interlayer
+				if(currInerlayer.sequenceMiddle) currSheetsNum=currSheetsNum+(currPG.sheet_num-1)*currInerlayer.sequenceMiddle.length;
 				
 				return true;
 			}
