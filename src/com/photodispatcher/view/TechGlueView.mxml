@@ -60,6 +60,8 @@
 			public var glueIP:String;
 			public var gluePort:int;
 			
+			public var stopOnErr:Boolean;
+			
 			[Bindable]
 			protected var glueDevice:GlueProxy;
 
@@ -233,7 +235,7 @@
 				logToScreen(event.text,event.errorID>0);
 				if(event.errorID>0){
 					//stop glue
-					//if(glueDevice.isStarted) glueDevice.run_Stop();
+					if(stopOnErr && glueDevice.isStarted) glueDevice.run_Stop();
 				}
 			}
 
@@ -535,7 +537,7 @@
 					//set command 
 					if(glueDevice){
 						glueDevice.run_SetProduct(currGlueCmd.glue_cmd_name);
-						glueDevice.run_SetSheets(currPG.sheet_num);
+						glueDevice.run_SetSheets(currSheetsNum);
 					}
 				}
 					

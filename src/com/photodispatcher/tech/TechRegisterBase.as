@@ -107,10 +107,25 @@ package com.photodispatcher.tech{
 		
 		public function register(book:int,sheet:int):void{
 			if(bookPart==BookSynonym.BOOK_PART_ANY){
+				//first time, init
 				if(sheet==0){
 					bookPart=BookSynonym.BOOK_PART_COVER;
 				}else{
 					bookPart=BookSynonym.BOOK_PART_BLOCK;
+				}
+				if(!strictSequence && !lastBook){
+					//detect order
+					if(!revers){
+						if(book==books && ((bookPart==BookSynonym.BOOK_PART_COVER && sheet==0) || (bookPart==BookSynonym.BOOK_PART_BLOCK && sheet==sheets))){
+							logMsg('Переключение на обратный порядок');
+							revers=true;
+						}
+					}else{
+						if(book==1 && ((bookPart==BookSynonym.BOOK_PART_COVER && sheet==0) || (bookPart==BookSynonym.BOOK_PART_BLOCK && sheet==1))){
+							logMsg('Переключение на прямой порядок');
+							revers=false;
+						}
+					}
 				}
 			}
 			if(!checkSequece(book,sheet) && strictSequence) return;

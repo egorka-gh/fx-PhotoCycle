@@ -71,6 +71,20 @@
 			protected var glueIP:String;
 			[Bindable]
 			protected var gluePort:int;
+			
+			protected var _stopOnErr:Boolean;
+			[Bindable]
+			public function get stopOnErr():Boolean{
+				return _stopOnErr;
+			}
+			public function set stopOnErr(value:Boolean):void{
+				_stopOnErr = value;
+				Context.setAttribute("stopOnErr", value);
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.stopOnErr = value;
+				so.flush();  
+			}
+
 
 			protected var _extendedPrint:Boolean;
 			[Bindable]
@@ -168,6 +182,7 @@
 					techPointID=so.data.techPoint;
 					reversOrder=so.data.reversOrder;
 					extendedPrint=so.data.extendedPrint;
+					stopOnErr=so.data.stopOnErr;
 					glueIP=so.data.glueIP;
 				}
 				
@@ -370,6 +385,11 @@
 		</s:HGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Останавливать при ошибке последовательности:"/>
+			<s:CheckBox id="chbStopOnErr" selected="@{stopOnErr}"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
 		</s:HGroup>
@@ -397,6 +417,7 @@
 		<view:TechGlueView id="techMonitor" techPoint="{techPointObj}"
 						   barcodeCtrlReader="{barcodeCtrlReader}"
 						   barcodeReader="{barcodeReader}" flap="{flap}" printer="{printer}" extendedPrint="{extendedPrint}"
+						   stopOnErr="{stopOnErr}"
 						   width="100%" height="100%"/>
 	</s:VGroup>
 	

@@ -5,7 +5,7 @@ package com.photodispatcher.tech
 		public function TechRegisterGlue(printGroup:String, books:int, sheets:int){
 			super(printGroup, books, sheets);
 			logOk=false;
-			_strictSequence=true;
+			_strictSequence=false;
 		}
 	}
 }

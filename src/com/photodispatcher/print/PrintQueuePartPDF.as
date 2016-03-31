@@ -30,6 +30,8 @@ package com.photodispatcher.print{
 				return false;
 			}
 
+			////check lab type by alias ???
+			
 			//get next print group
 			var pgCandidat:PrintGroup=nextPG();
 			
@@ -44,7 +46,7 @@ package com.photodispatcher.print{
 			if(prnQueue.lab==0){
 				for each(dev in readyDevices){
 					lab = printManager.getLab(dev.lab);
-					if(lab && !printManager.isLabLocked(lab.id) && lab.canPrint(pgCandidat)){
+					if(lab && !printManager.isLabLocked(lab.id) && lab.canPrint(pgCandidat) && lab.checkAliasPrintCompatiable(pgCandidat)){
 						prnQueue.lab=lab.id;
 						break;
 					}else{
