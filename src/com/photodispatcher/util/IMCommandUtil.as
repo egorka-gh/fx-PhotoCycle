@@ -193,12 +193,21 @@ package com.photodispatcher.util{
 			command.add('-quality'); command.add(quality);
 		}
 
-		public static function setPDFOutputParams(command:IMCommand, quality:String='100'):void{
-			command.add('-units'); command.add('PixelsPerInch');
-			command.add('-density'); command.add('300x300');
-			command.add('-quality'); command.add(quality);
-			command.add('-compress'); command.add('jpeg');
 
+		public static function setPDFOutputParams(command:IMCommand, quality:String='100'):void{
+			if(command.executable==IMCommand.IM_CMD_ALTPDF){
+				//jpeg2pdf.exe -o tst.pdf -p auto -m 0mm -z none -r none -k phcycle  *.jpg
+				command.add('-p'); command.add('auto');
+				command.add('-m'); command.add('0mm');
+				command.add('-z'); command.add('none');
+				command.add('-r'); command.add('none');
+				command.add('-k'); command.add('phcycle');
+			}else{
+				command.add('-units'); command.add('PixelsPerInch');
+				command.add('-density'); command.add('300x300');
+				command.add('-quality'); command.add(quality);
+				command.add('-compress'); command.add('jpeg');
+			}
 		}
 		
 		public static function expandImageV(command:IMCommand, amountMM:int, imageGravity:String='North'):void{

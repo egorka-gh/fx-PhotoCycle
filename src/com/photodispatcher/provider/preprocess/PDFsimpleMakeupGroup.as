@@ -23,6 +23,8 @@ package com.photodispatcher.provider.preprocess{
 		override public function createCommands():void{
 			//if(Context.getAttribute("pdfJpgQuality")) jpgQuality=Context.getAttribute("pdfJpgQuality");
 			if(Context.config && Context.config.pdf_quality>60) jpgQuality=Context.config.pdf_quality.toString();
+			
+			var altPdf:Boolean=Context.getAttribute("altPDF");
 
 			commands=[];
 			finalCommands=[];
@@ -94,7 +96,11 @@ package com.photodispatcher.provider.preprocess{
 					return;
 				}
 				if(!reprintMode || it.reprint){
-					command=createCommand(it,folder);
+					if(altPdf){
+						command=createCommand(it,folder,jpgQuality);
+					}else{
+						command=createCommand(it,folder);
+					}
 					//save
 					outName= TEMP_FOLDER+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+TEMP_FILE_TYPE;
 					command.add(outName);
@@ -125,8 +131,22 @@ package com.photodispatcher.provider.preprocess{
 			printGroup.bookTemplate.applyAltRevers(printGroup);
 			
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
-				command=new IMCommand(IMCommand.IM_CMD_CONVERT);
-				command.folder=folder;
+				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
+
+				if(altPdf){
+					command=new IMCommand(IMCommand.IM_CMD_ALTPDF);
+					command.folder=folder;
+					// hide log output
+					command.redirectOut='>log.txt';
+					//set out file
+					////jpeg2pdf.exe -o tst.pdf -p auto -m 0mm -z none -r none -k phcycle  *.jpg
+					command.add('-o'); command.add(outPath(pdfName));
+					IMCommandUtil.setPDFOutputParams(command);
+				}else{
+					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
+					command.folder=folder;
+				}
+				
 				for(i=0;i<pageLimit;i++){
 					//parm idx
 					idx=pdfNum*pageLimit+i;
@@ -138,10 +158,13 @@ package com.photodispatcher.provider.preprocess{
 					if(idx<0 || idx>=command2.parameters.length) break;
 					command.add(command2.parameters[idx]);
 				}
+				
 				//finalize pdf command
-				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
-				IMCommandUtil.setPDFOutputParams(command,jpgQuality);
-				command.add(outPath(pdfName));
+				if(!altPdf){
+					IMCommandUtil.setPDFOutputParams(command,jpgQuality);
+					command.add(outPath(pdfName));
+				}
+				
 				finalCommands.push(command);
 				//add to printGroup.files
 				newFile= new PrintGroupFile();

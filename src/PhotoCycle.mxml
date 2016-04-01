@@ -23,6 +23,7 @@
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
 			import com.photodispatcher.service.CleanService;
+			import com.photodispatcher.shell.IMCommand;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.view.ModalPopUp;
@@ -140,6 +141,26 @@
 				FlexGlobals.topLevelApplication.exit();
 			}
 
+			private function setAltPDF(imPath:String, value:Boolean):void{
+				var result:Boolean=true;;
+				if(value){
+					if(!imPath || !IMCommand.IM_CMD_ALTPDF){
+						result=false;
+					}
+					//check file exists
+					var file:File=new File(imPath);
+					if(!file.exists || !file.isDirectory){
+						result=false;
+					}
+					file=file.resolvePath(IMCommand.IM_CMD_ALTPDF);
+					if(!file.exists || file.isDirectory){
+						result=false;
+					}
+				}
+				result = result && value;
+				Context.setAttribute("altPDF", result);
+			}
+
 			private var latchIM:AsyncLatch;
 			
 			private function fillContext():void{
@@ -172,6 +193,7 @@
 					if(printer) Context.setAttribute('printer',printer);
 
 					Context.setAttribute('cacheClipart',Boolean(so.data.cacheClipart));
+					setAltPDF(imPath,Boolean(so.data.altPDF));
 				}
 				
 				Context.setAttribute('syncInterval',syncInterval);

@@ -12,6 +12,7 @@
 			import com.photodispatcher.model.mysql.entities.ContentFilter;
 			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.service.CleanService;
+			import com.photodispatcher.shell.IMCommand;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.util.ArrayUtil;
@@ -79,7 +80,42 @@
 			private var stateAc:ArrayCollection;
 			[Bindable]
 			private var cacheClipart:Boolean;
-			
+
+			[Bindable]
+			public var altPDF:Boolean;
+
+			public function setAltPDF(value:Boolean, silent:Boolean=false):Boolean{
+				if(value){
+					if(!imPath || !IMCommand.IM_CMD_ALTPDF){
+						altPDF=false;
+						if(tg_altPdf) tg_altPdf.selected=false;
+						return false;
+					}
+					//check file exists
+					var file:File=new File(imPath);
+					if(!file.exists || !file.isDirectory){
+						altPDF=false;
+						if(tg_altPdf) tg_altPdf.selected=false;
+						return false;
+					}
+					file=file.resolvePath(IMCommand.IM_CMD_ALTPDF);
+					if(!file.exists || file.isDirectory){
+						if(!silent) Alert.show("Файл не найден. " +file.nativePath);
+						altPDF=false;
+						if(tg_altPdf) tg_altPdf.selected=false;
+						return false;
+					}
+				}
+				
+				altPDF = value;
+				Context.setAttribute("altPDF", value);
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.altPDF = value;
+				so.flush();
+				
+				return altPDF;
+			}
+
 			
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
 				
@@ -94,8 +130,11 @@
 					serverIP=so.data.serverIP;
 					bdServer=so.data.bdServer;
 				}
+
 				if(!imThreads || imThreads<0) imThreads=0;
+				setAltPDF(Boolean(so.data.altPDF),true);;
 				pingIM();
+				
 				//so= SharedObject.getLocal('appProps','/');
 				forceStarHour=so.data.forceStarHour;
 				forceStarMinute=so.data.forceStarMinute;
@@ -575,6 +614,10 @@
 
 			<s:FormItem label="Кэшировать клипарт">
 				<s:CheckBox id="tg_cacheClipart" selected="{cacheClipart}" change="tg_cacheClipart_changeHandler(event)"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Альтернативная сборка в PDF" enabled="{Boolean(imPath)}">
+				<s:CheckBox id="tg_altPdf" selected="{altPDF}" change="{setAltPDF(tg_altPdf.selected)}"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Сжатие jpg в PDF файле">

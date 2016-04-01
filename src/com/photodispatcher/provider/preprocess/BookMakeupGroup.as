@@ -125,7 +125,7 @@ package com.photodispatcher.provider.preprocess{
 			return (commands && commands.length>0);// || (finalCommands && finalCommands.length>0); 
 		}
 
-		protected function createCommand(file:PrintGroupFile, folder:String):IMCommand{
+		protected function createCommand(file:PrintGroupFile, folder:String, quality:String='100'):IMCommand{
 			
 			var buttPix:int=UnitUtil.mm2Pixels300(printGroup.butt);
 			var width:int=printGroup.bookTemplate.sheet_width;
@@ -286,7 +286,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 			
 			//complete
-			IMCommandUtil.setOutputParams(command);
+			IMCommandUtil.setOutputParams(command, quality);
 			return command;
 		}
 

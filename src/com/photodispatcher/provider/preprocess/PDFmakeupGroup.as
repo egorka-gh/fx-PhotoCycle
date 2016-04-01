@@ -29,9 +29,12 @@ package com.photodispatcher.provider.preprocess{
 			super(printGroup, order_id, folder, prtFolder);
 		}
 		
+		private var altPdf:Boolean;
+		
 		override public function createCommands():void{
 			if(Context.config && Context.config.pdf_quality>60) jpgQuality=Context.config.pdf_quality.toString();
-
+			altPdf=Context.getAttribute("altPDF");
+			
 			commands=[];
 			finalCommands=[];
 			if(state==STATE_ERR) return;
@@ -132,7 +135,7 @@ package com.photodispatcher.provider.preprocess{
 							//expand (left side)
 							IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add,'West');
 							//save file
-							IMCommandUtil.setOutputParams(command);
+							IMCommandUtil.setOutputParams(command, altPdf?jpgQuality:'100');
 							outName=FILENAME_COVER_BACK+(i+1).toString()+TEMP_FILE_TYPE;
 							command.add(outName);
 							commands.push(command);
@@ -202,7 +205,7 @@ package com.photodispatcher.provider.preprocess{
 						drawSheetTechBar(command, i);
 						command.folder=folder;
 						//save file
-						IMCommandUtil.setOutputParams(command);
+						IMCommandUtil.setOutputParams(command, altPdf?jpgQuality:'100');
 						outName=FILENAME_SHEET+(i+1).toString()+TEMP_FILE_TYPE;
 						command.add(outName);
 						commands.push(command);
@@ -236,8 +239,22 @@ package com.photodispatcher.provider.preprocess{
 			printGroup.bookTemplate.applyAltRevers(printGroup);
 			
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
-				command=new IMCommand(IMCommand.IM_CMD_CONVERT);
-				command.folder=folder;
+				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
+
+				if(altPdf){
+					command=new IMCommand(IMCommand.IM_CMD_ALTPDF);
+					command.folder=folder;
+					// hide log output
+					command.redirectOut='>log.txt';
+					//set out file
+					////jpeg2pdf.exe -o tst.pdf -p auto -m 0mm -z none -r none -k phcycle  *.jpg
+					command.add('-o'); command.add(outPath(pdfName));
+					IMCommandUtil.setPDFOutputParams(command);
+				}else{
+					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
+					command.folder=folder;
+				}
+				
 				for(i=0;i<pageLimit;i++){
 					//parm idx
 					idx=pdfNum*pageLimit+i;
@@ -249,10 +266,13 @@ package com.photodispatcher.provider.preprocess{
 					if(idx<0 || idx>=command2.parameters.length) break;
 					command.add(command2.parameters[idx]);
 				}
+				
 				//finalize pdf command
-				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
-				IMCommandUtil.setPDFOutputParams(command,jpgQuality);
-				command.add(outPath(pdfName));
+				if(!altPdf){
+					IMCommandUtil.setPDFOutputParams(command,jpgQuality);
+					command.add(outPath(pdfName));
+				}
+				
 				finalCommands.push(command);
 				//add to printGroup.files
 				newFile= new PrintGroupFile();
@@ -506,7 +526,7 @@ package com.photodispatcher.provider.preprocess{
 					}
 				}
 			}
-			IMCommandUtil.setOutputParams(command);
+			IMCommandUtil.setOutputParams(command, altPdf?jpgQuality:'100');
 			command.add(fileName);
 			return command;
 		}
@@ -580,7 +600,7 @@ package com.photodispatcher.provider.preprocess{
 				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
 			}
 
-			IMCommandUtil.setOutputParams(command);
+			IMCommandUtil.setOutputParams(command, altPdf?jpgQuality:'100');
 			return command;
 		}
 

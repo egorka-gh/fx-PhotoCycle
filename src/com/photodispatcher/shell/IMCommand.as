@@ -20,6 +20,11 @@ package com.photodispatcher.shell{
 			return 'montage';
 		}
 
+		public static function get IM_CMD_ALTPDF():String{
+			if (ProcessRunner.isWindows()) return 'jpeg2pdf.exe';
+			return '';
+		}
+
 		public static const STATE_WAITE:int=0;
 		public static const STATE_STARTED:int=1;
 		public static const STATE_COMPLITE:int=2;
@@ -38,6 +43,9 @@ package com.photodispatcher.shell{
 		public var profileEnd:Number;
 		[Bindable]
 		public var profileDuration:Number;
+
+		public var redirectOut:String;
+
 		
 		public var parameters:Array=[];
 		public var executable:String;
@@ -60,7 +68,9 @@ package com.photodispatcher.shell{
 		}
 		
 		public function toString():String{
-			return executable+' "'+parameters.join('" "')+'"';
+			var result:String=executable+' "'+parameters.join('" "')+'"';
+			if(redirectOut) result=result+' '+redirectOut;
+			return result;
 		}
 
 		public function setProfile(caption:String,target:String):void{
