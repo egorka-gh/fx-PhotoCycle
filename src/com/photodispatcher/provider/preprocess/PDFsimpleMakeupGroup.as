@@ -85,7 +85,9 @@ package com.photodispatcher.provider.preprocess{
 			printGroup.resetFiles();
 			//pack to pdf command
 			command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
-			command2.folder=folder;
+			//command2.folder=folder;
+			command2.folder=wrkFolder.nativePath;
+			
 			//prepare sheets
 			for (i=0; i<files.length; i++){
 				it=files[i] as PrintGroupFile;
@@ -102,8 +104,9 @@ package com.photodispatcher.provider.preprocess{
 						command=createCommand(it,folder);
 					}
 					//save
-					outName= TEMP_FOLDER+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+TEMP_FILE_TYPE;
-					command.add(outName);
+					//outName= TEMP_FOLDER+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+TEMP_FILE_TYPE;
+					outName= StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+TEMP_FILE_TYPE;
+					command.add(TEMP_FOLDER+File.separator+outName);
 					commands.push(command);
 					//add 2 final(pdf) cmd
 					command2.add(outName);
@@ -135,16 +138,14 @@ package com.photodispatcher.provider.preprocess{
 
 				if(altPdf){
 					command=new IMCommand(IMCommand.IM_CMD_ALTPDF);
-					command.folder=folder;
-					// hide log output
-					command.redirectOut='>log.txt';
+					command.folder=command2.folder;
 					//set out file
 					////jpeg2pdf.exe -o tst.pdf -p auto -m 0mm -z none -r none -k phcycle  *.jpg
 					command.add('-o'); command.add(outPath(pdfName));
 					IMCommandUtil.setPDFOutputParams(command);
 				}else{
 					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
-					command.folder=folder;
+					command.folder=command2.folder;
 				}
 				
 				for(i=0;i<pageLimit;i++){

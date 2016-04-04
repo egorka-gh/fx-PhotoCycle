@@ -19,9 +19,14 @@ package com.photodispatcher.provider.preprocess{
 		public static const TEXT_UNDERCOLOR:String='white';
 
 		public static const TEMP_FOLDER:String='pdf_wrk';
-		protected static const FILENAME_SHEET:String=TEMP_FOLDER+'/sheet';
-		protected static const FILENAME_COVER:String=TEMP_FOLDER+'/cover';
-		protected static const FILENAME_COVER_BACK:String=TEMP_FOLDER+'/cover_back';
+		protected static const FILENAME_SHEET:String='sheet';
+		protected static const FILENAME_COVER:String='cover';
+		protected static const FILENAME_COVER_BACK:String='cover_back';
+		
+		//protected static const FILENAME_SHEET:String=TEMP_FOLDER+File.separator+'sheet';
+		//protected static const FILENAME_COVER:String=TEMP_FOLDER+File.separator+'cover';
+		//protected static const FILENAME_COVER_BACK:String=TEMP_FOLDER+File.separator+'cover_back';
+		
 		protected static const FONT_COVER_BACK:int=6;
 		protected static const TEMP_FILE_TYPE:String='.jpg';//IM bug - broken jpg - use png or some else
 
@@ -99,7 +104,8 @@ package com.photodispatcher.provider.preprocess{
 			printGroup.resetFiles();
 			var sh:PdfSheet;
 			command2=new IMCommand(IMCommand.IM_CMD_CONVERT);
-			command2.folder=folder;
+			//command2.folder=folder;
+			command2.folder=wrkFolder.nativePath;
 
 			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER){
 				//create covers pdf
@@ -122,7 +128,7 @@ package com.photodispatcher.provider.preprocess{
 							command=createCoverCommand(it,folder);
 							//save
 							outName=FILENAME_COVER+(i+1).toString()+TEMP_FILE_TYPE;
-							command.add(outName);
+							command.add(TEMP_FOLDER+File.separator+outName);
 							commands.push(command);
 							//add 2 final cmd
 							command2.add(outName);
@@ -137,7 +143,7 @@ package com.photodispatcher.provider.preprocess{
 							//save file
 							IMCommandUtil.setOutputParams(command, altPdf?jpgQuality:'100');
 							outName=FILENAME_COVER_BACK+(i+1).toString()+TEMP_FILE_TYPE;
-							command.add(outName);
+							command.add(TEMP_FOLDER+File.separator+outName);
 							commands.push(command);
 							//add 2 pdf cmd
 							command2.add(outName);
@@ -161,7 +167,7 @@ package com.photodispatcher.provider.preprocess{
 							command=createCoverCommand(it,folder);
 							//save
 							outName=FILENAME_COVER+(i+1).toString()+TEMP_FILE_TYPE;
-							command.add(outName);
+							command.add(TEMP_FOLDER+File.separator+outName);
 							commands.push(command);
 							//add 2 final cmd
 							command2.add(outName);
@@ -207,7 +213,7 @@ package com.photodispatcher.provider.preprocess{
 						//save file
 						IMCommandUtil.setOutputParams(command, altPdf?jpgQuality:'100');
 						outName=FILENAME_SHEET+(i+1).toString()+TEMP_FILE_TYPE;
-						command.add(outName);
+						command.add(TEMP_FOLDER+File.separator+outName);
 						commands.push(command);
 						//add 2 pdf cmd
 						command2.add(outName);
@@ -243,16 +249,14 @@ package com.photodispatcher.provider.preprocess{
 
 				if(altPdf){
 					command=new IMCommand(IMCommand.IM_CMD_ALTPDF);
-					command.folder=folder;
-					// hide log output
-					command.redirectOut='>log.txt';
+					command.folder=command2.folder;
 					//set out file
 					////jpeg2pdf.exe -o tst.pdf -p auto -m 0mm -z none -r none -k phcycle  *.jpg
 					command.add('-o'); command.add(outPath(pdfName));
 					IMCommandUtil.setPDFOutputParams(command);
 				}else{
 					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
-					command.folder=folder;
+					command.folder=command2.folder;
 				}
 				
 				for(i=0;i<pageLimit;i++){

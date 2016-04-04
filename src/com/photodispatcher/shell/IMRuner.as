@@ -158,7 +158,11 @@ package  com.photodispatcher.shell{
 			proc= runner.prepare(workFolder,args);
 			if(proc){
 				proc.addEventListener(NativeProcessExitEvent.EXIT,complite);
-				proc.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, procRespond);
+
+				if(!command.executable || command.executable!=IMCommand.IM_CMD_ALTPDF){
+					proc.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, procRespond);
+				}
+				
 				proc.addEventListener(ProgressEvent.STANDARD_ERROR_DATA, procErr);
 				try{
 					command.profileStart=getTimer();

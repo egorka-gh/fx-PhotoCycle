@@ -44,6 +44,7 @@ package com.photodispatcher.shell{
 		[Bindable]
 		public var profileDuration:Number;
 
+		//TODO implement in IMRuner.procRespond
 		public var redirectOut:String;
 
 		
