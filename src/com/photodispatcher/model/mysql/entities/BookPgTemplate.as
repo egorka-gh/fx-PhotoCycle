@@ -69,6 +69,7 @@ package com.photodispatcher.model.mysql.entities {
 			return pg;
 		}
 		
+		/*
 		public function applyAltRevers(printGroup:PrintGroup):void{
 			if(!printGroup || !altPaper || altPaper.length==0) return;
 			for each (var ap:BookPgAltPaper in altPaper){
@@ -77,6 +78,18 @@ package com.photodispatcher.model.mysql.entities {
 					break;
 				}
 			}
+		}
+		*/
+		public function getRevers(printGroup:PrintGroup):Boolean{
+			var result:Boolean=this.revers;
+			if(!printGroup || !altPaper || altPaper.length==0) return result;
+			for each (var ap:BookPgAltPaper in altPaper){
+				if(printGroup.sheet_num>=ap.sh_from && printGroup.sheet_num<=ap.sh_to){
+					result=ap.revers;
+					break;
+				}
+			}
+			return result;
 		}
 		
 		public function toRaw():Object{

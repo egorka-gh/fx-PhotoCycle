@@ -131,7 +131,7 @@ package com.photodispatcher.provider.preprocess{
 			var newFile:PrintGroupFile;
 			
 			//apply alt revers
-			printGroup.bookTemplate.applyAltRevers(printGroup);
+			var revers:Boolean=printGroup.bookTemplate.getRevers(printGroup);
 			
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
 				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
@@ -151,7 +151,7 @@ package com.photodispatcher.provider.preprocess{
 				for(i=0;i<pageLimit;i++){
 					//parm idx
 					idx=pdfNum*pageLimit+i;
-					if(printGroup.bookTemplate.revers){
+					if(revers){
 						//revers
 						idx=command2.parameters.length-1-idx;
 					}

@@ -112,6 +112,29 @@
 										   change="{template.tech_bar_boffset=tiTechBarBOffs.data}"/>
 			</s:HGroup>
 		</s:FormItem>
+		<s:FormHeading label="Квадрат"/>
+		<s:FormItem label="Размер (pix):">
+			<s:NumericStepper minimum="0" maximum="1000" value="@{template.mark_size}"/>
+		</s:FormItem> 
+		<s:FormItem label="Смещение (pix):">
+			<itemRenderer:OffsetEditor id="tiMarkOffs" enabled="{Boolean(template.mark_size)}"
+									   data="{template.mark_offset}" 
+									   change="{template.mark_offset=tiMarkOffs.data}"/>
+		</s:FormItem> 
+		<!--<s:FormItem label="Квадрат">
+			<s:HGroup gap="0" verticalAlign="middle">
+				<s:Label text="Размер (pix):"/>
+				<s:Spacer width="5"/>
+				<s:NumericStepper minimum="0" maximum="1000" value="@{template.mark_size}"/>
+				<s:Spacer width="10"/>
+				<s:Label text="Смещение (pix):"/>
+				<s:Spacer width="5"/>
+				<itemRenderer:OffsetEditor id="tiMarkOffs" enabled="{Boolean(template.mark_size)}"
+										   data="{template.mark_offset}" 
+										   change="{template.mark_offset=tiMarkOffs.data}"/>
+			</s:HGroup>
+		</s:FormItem> -->
+		
 		<s:FormHeading label="Лесенка"/>
 		<s:FormItem label="Увеличение высоты формата (мм)">
 			<s:NumericStepper minimum="0" maximum="10" value="@{template.tech_stair_add}"/>

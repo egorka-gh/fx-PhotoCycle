@@ -205,6 +205,8 @@ package com.photodispatcher.provider.preprocess{
 					sh=sheets[i] as PdfSheet;
 					if(!reprintMode || sh.reprint){
 						command=sh.getCommand(pageSize,sheetSize,printGroup);
+						//draw mark
+						IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
 						//draw stair
 						drawSheetStair(command,sh,sheetSize, i);
 						//draw tech barcode
@@ -242,7 +244,7 @@ package com.photodispatcher.provider.preprocess{
 			var newFile:PrintGroupFile;
 			
 			//apply alt revers
-			printGroup.bookTemplate.applyAltRevers(printGroup);
+			var revers:Boolean=printGroup.bookTemplate.getRevers(printGroup);
 			
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
 				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
@@ -262,7 +264,7 @@ package com.photodispatcher.provider.preprocess{
 				for(i=0;i<pageLimit;i++){
 					//parm idx
 					idx=pdfNum*pageLimit+i;
-					if(printGroup.bookTemplate.revers){
+					if(revers){
 						//revers
 						idx=command2.parameters.length-1-idx;
 					}
@@ -552,6 +554,10 @@ package com.photodispatcher.provider.preprocess{
 			if(printGroup.bookTemplate.notching>0 && buttPix){
 				IMCommandUtil.drawNotching(command,printGroup.bookTemplate.notching,len,width,buttPix);
 			}
+
+			//draw mark
+			IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
+
 			var barcode:String;
 			//draw barcode
 			if(printGroup.bookTemplate.bar_size>0){

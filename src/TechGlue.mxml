@@ -80,9 +80,26 @@
 			public function set stopOnErr(value:Boolean):void{
 				_stopOnErr = value;
 				Context.setAttribute("stopOnErr", value);
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.stopOnErr = value;
-				so.flush();  
+				if(initComplete){
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.stopOnErr = value;
+					so.flush();
+				}
+			}
+
+			private var _inexactBookSequence:Boolean;
+			[Bindable]
+			public function get inexactBookSequence():Boolean{
+				return _inexactBookSequence;
+			}
+			public function set inexactBookSequence(value:Boolean):void{
+				_inexactBookSequence = value;
+				Context.setAttribute("inexactBookSequence", value);
+				if(initComplete){
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.inexactBookSequence = value;
+					so.flush();  
+				}
 			}
 
 
@@ -134,6 +151,7 @@
 			}
 			
 			private var startPopup:ModalPopUp;
+			private var initComplete:Boolean;
 			
 			private function init():void{
 				//lock screen
@@ -183,11 +201,13 @@
 					reversOrder=so.data.reversOrder;
 					extendedPrint=so.data.extendedPrint;
 					stopOnErr=so.data.stopOnErr;
+					inexactBookSequence=so.data.inexactBookSequence;
 					glueIP=so.data.glueIP;
 				}
 				
 				gluePort=8000;
 				
+				initComplete=true;
 				if(techPointObj && coms.length>0){
 					start();
 				}else{
@@ -390,6 +410,11 @@
 		</s:HGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Не контролировать последовательность книг:"/>
+			<s:CheckBox id="chbInexactBookSequence" selected="@{inexactBookSequence}"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
 		</s:HGroup>
@@ -418,6 +443,7 @@
 						   barcodeCtrlReader="{barcodeCtrlReader}"
 						   barcodeReader="{barcodeReader}" flap="{flap}" printer="{printer}" extendedPrint="{extendedPrint}"
 						   stopOnErr="{stopOnErr}"
+						   inexactBookSequence="{inexactBookSequence}"
 						   width="100%" height="100%"/>
 	</s:VGroup>
 	

@@ -723,6 +723,8 @@ package com.photodispatcher.context{
 
 			//glue_cmd
 			latchAttributeLists.addLatch(dict.getGlueCmdValueList(onFieldList),'glue_cmd');
+			//order program
+			latchAttributeLists.addLatch(dict.getOrderProgramValueList(onFieldList),'order_program');
 
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){

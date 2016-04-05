@@ -26,6 +26,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:int;
         private var _is_allow:Boolean;
         private var _is_horizontal:Boolean;
+        private var _order_program:int;
+        private var _order_program_name:String;
         private var _src_type:int;
         private var _src_type_name:String;
         private var _synonym:String;
@@ -82,6 +84,20 @@ package com.photodispatcher.model.mysql.entities {
             return _is_horizontal;
         }
 
+        public function set order_program(value:int):void {
+            _order_program = value;
+        }
+        public function get order_program():int {
+            return _order_program;
+        }
+
+        public function set order_program_name(value:String):void {
+            _order_program_name = value;
+        }
+        public function get order_program_name():String {
+            return _order_program_name;
+        }
+
         public function set src_type(value:int):void {
             _src_type = value;
         }
@@ -133,6 +149,8 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as int;
             _is_allow = input.readObject() as Boolean;
             _is_horizontal = input.readObject() as Boolean;
+            _order_program = input.readObject() as int;
+            _order_program_name = input.readObject() as String;
             _src_type = input.readObject() as int;
             _src_type_name = input.readObject() as String;
             _synonym = input.readObject() as String;
@@ -150,6 +168,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
             output.writeObject((_is_allow is IPropertyHolder) ? IPropertyHolder(_is_allow).object : _is_allow);
             output.writeObject((_is_horizontal is IPropertyHolder) ? IPropertyHolder(_is_horizontal).object : _is_horizontal);
+            output.writeObject((_order_program is IPropertyHolder) ? IPropertyHolder(_order_program).object : _order_program);
+            output.writeObject((_order_program_name is IPropertyHolder) ? IPropertyHolder(_order_program_name).object : _order_program_name);
             output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
             output.writeObject((_src_type_name is IPropertyHolder) ? IPropertyHolder(_src_type_name).object : _src_type_name);
             output.writeObject((_synonym is IPropertyHolder) ? IPropertyHolder(_synonym).object : _synonym);

@@ -61,6 +61,7 @@
 			public var gluePort:int;
 			
 			public var stopOnErr:Boolean;
+			public var inexactBookSequence:Boolean;
 			
 			[Bindable]
 			protected var glueDevice:GlueProxy;
@@ -212,12 +213,11 @@
 				}
 				
 				result= new TechRegisterGlue(printGroup,books,sheets);
+				result.inexactBookSequence=inexactBookSequence;
+				result.techPoint=techPoint;
+				result.flap=flap;
+				result.revers=Boolean(Context.getAttribute("reversOrder"));
 				
-				if(result){
-					result.techPoint=techPoint;
-					result.flap=flap;
-					result.revers=Boolean(Context.getAttribute("reversOrder"));
-				}
 				//stop listen old one
 				if(currRegister){
 					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterErr);

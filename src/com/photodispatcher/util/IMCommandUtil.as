@@ -139,6 +139,23 @@ package com.photodispatcher.util{
 			}
 		}
 
+		public static function drawMark(command:IMCommand, size:int, offset:String, color:String='black', gravity:String='NorthWest'):void{
+			if(!command || !size ) return;
+			if(!offset) offset='+0+0';
+			if(!color) color='black';
+			if(!gravity) gravity='NorthWest';
+
+			
+			command.add('(');
+				command.add('-size');
+				command.add(size.toString()+'x'+size.toString());
+				command.add('xc:'+color);
+			command.add(')');
+			command.add('-gravity'); command.add(gravity);
+			command.add('-geometry'); command.add(offset);
+			command.add('-composite');
+		}
+
 		public static function drawRectangle (command:IMCommand, left:int, top:int, width:int, height:int):void{
 			// -draw "rectangle 20,10 80,50"
 			command.add('-draw');

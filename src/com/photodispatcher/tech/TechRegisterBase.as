@@ -192,7 +192,9 @@ package com.photodispatcher.tech{
 		
 		
 		public function get isComplete():Boolean{
+			/* detect by registred
 			if(inexactBookSequence) return false;//can't detect
+			*/
 			if(detectFirstBook){
 				//check last book & last sheet 
 				var endSheet:int=0;

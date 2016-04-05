@@ -48,6 +48,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_tech_top:Boolean;
         private var _lab_type:int;
         private var _lab_type_name:String;
+        private var _mark_offset:String;
+        private var _mark_size:int;
         private var _notching:int;
         private var _page_hoffset:int;
         private var _page_len:int;
@@ -272,6 +274,20 @@ package com.photodispatcher.model.mysql.entities {
             return _lab_type_name;
         }
 
+        public function set mark_offset(value:String):void {
+            _mark_offset = value;
+        }
+        public function get mark_offset():String {
+            return _mark_offset;
+        }
+
+        public function set mark_size(value:int):void {
+            _mark_size = value;
+        }
+        public function get mark_size():int {
+            return _mark_size;
+        }
+
         public function set notching(value:int):void {
             _notching = value;
         }
@@ -443,6 +459,8 @@ package com.photodispatcher.model.mysql.entities {
             _is_tech_top = input.readObject() as Boolean;
             _lab_type = input.readObject() as int;
             _lab_type_name = input.readObject() as String;
+            _mark_offset = input.readObject() as String;
+            _mark_size = input.readObject() as int;
             _notching = input.readObject() as int;
             _page_hoffset = input.readObject() as int;
             _page_len = input.readObject() as int;
@@ -496,6 +514,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_is_tech_top is IPropertyHolder) ? IPropertyHolder(_is_tech_top).object : _is_tech_top);
             output.writeObject((_lab_type is IPropertyHolder) ? IPropertyHolder(_lab_type).object : _lab_type);
             output.writeObject((_lab_type_name is IPropertyHolder) ? IPropertyHolder(_lab_type_name).object : _lab_type_name);
+            output.writeObject((_mark_offset is IPropertyHolder) ? IPropertyHolder(_mark_offset).object : _mark_offset);
+            output.writeObject((_mark_size is IPropertyHolder) ? IPropertyHolder(_mark_size).object : _mark_size);
             output.writeObject((_notching is IPropertyHolder) ? IPropertyHolder(_notching).object : _notching);
             output.writeObject((_page_hoffset is IPropertyHolder) ? IPropertyHolder(_page_hoffset).object : _page_hoffset);
             output.writeObject((_page_len is IPropertyHolder) ? IPropertyHolder(_page_len).object : _page_len);

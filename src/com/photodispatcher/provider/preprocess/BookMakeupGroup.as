@@ -147,11 +147,13 @@ package com.photodispatcher.provider.preprocess{
 				//BLOCKCOVER
 				//align to left
 				command.add(file.file_name);
-				if(printGroup.bookTemplate.bar_size>0  && file.book_part==BookSynonym.BOOK_PART_COVER){
+				if(file.book_part==BookSynonym.BOOK_PART_COVER){
 					//draw cover barcode before crop
 					barcode=printGroup.bookBarcode(file);
 					if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
 				}
+				//draw mark before crop
+				IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
 				//crop
 				command.add('-gravity'); command.add('West');
 				command.add('-background'); command.add('white');
@@ -200,6 +202,11 @@ package com.photodispatcher.provider.preprocess{
 						IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
 					}
 				}
+			}
+			
+			//draw mark
+			if(printGroup.book_part!=BookSynonym.BOOK_PART_BLOCKCOVER){
+				IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
 			}
 			
 			//draw farme
