@@ -72,6 +72,21 @@
 			[Bindable]
 			protected var gluePort:int;
 			
+			protected var _stopOnComplite:Boolean;
+			[Bindable]
+			public function get stopOnComplite():Boolean{
+				return _stopOnComplite;
+			}
+			public function set stopOnComplite(value:Boolean):void{
+				_stopOnComplite = value;
+				Context.setAttribute("stopOnComplite", value);
+				if(initComplete){
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.stopOnComplite = value;
+					so.flush();
+				}
+			}
+			
 			protected var _stopOnErr:Boolean;
 			[Bindable]
 			public function get stopOnErr():Boolean{
@@ -202,6 +217,7 @@
 					extendedPrint=so.data.extendedPrint;
 					stopOnErr=so.data.stopOnErr;
 					inexactBookSequence=so.data.inexactBookSequence;
+					stopOnComplite=so.data.stopOnComplite;
 					glueIP=so.data.glueIP;
 				}
 				
@@ -415,6 +431,11 @@
 		</s:HGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Останавливать по окончании заказа:"/>
+			<s:CheckBox selected="@{stopOnComplite}"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
 		</s:HGroup>
@@ -444,6 +465,7 @@
 						   barcodeReader="{barcodeReader}" flap="{flap}" printer="{printer}" extendedPrint="{extendedPrint}"
 						   stopOnErr="{stopOnErr}"
 						   inexactBookSequence="{inexactBookSequence}"
+						   stopOnComplite="{stopOnComplite}"
 						   width="100%" height="100%"/>
 	</s:VGroup>
 	

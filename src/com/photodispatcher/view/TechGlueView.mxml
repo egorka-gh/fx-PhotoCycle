@@ -62,6 +62,8 @@
 			
 			public var stopOnErr:Boolean;
 			public var inexactBookSequence:Boolean;
+			public var stopOnComplite:Boolean;
+			
 			
 			[Bindable]
 			protected var glueDevice:GlueProxy;
@@ -267,7 +269,7 @@
 					if (currRegister.isComplete){
 						currRegister.flushData();
 						logToScreen('Группа печати "'+currRegister.printGroupId+'" завершена',false);
-						if(glueDevice.isStarted) glueDevice.run_Stop();
+						if(stopOnComplite && glueDevice.isStarted) glueDevice.run_Stop();
 					}
 				}else{
 					if(currRegister && !currRegister.finalise()) return;
