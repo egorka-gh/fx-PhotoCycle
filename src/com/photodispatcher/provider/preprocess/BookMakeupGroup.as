@@ -28,9 +28,12 @@ package com.photodispatcher.provider.preprocess{
 		public var order_id:String;
 		public var folder:String;
 		public var prtFolder:String;
+
+		public var sequences:Array;
+		protected var totalCommands:int;
+		//protected var commands:Array;
+		//public var finalCommands:Array;
 		
-		public var commands:Array;
-		public var finalCommands:Array;
 		public var err:int;
 		public var err_msg:String;
 
@@ -55,8 +58,10 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		public function createCommands():void{
-			commands=[];
-			finalCommands=[];
+			sequences=[];
+			totalCommands=0;
+			var commands:Array=[];
+			//finalCommands=[];
 
 			if(state==STATE_ERR) return;
 			if (printGroup.is_pdf) return;
@@ -106,6 +111,9 @@ package com.photodispatcher.provider.preprocess{
 				commands.push(command);
 			}
 			
+			totalCommands+=commands.length;
+			sequences.push(commands);
+			
 			//expand format by tech
 			if(printGroup.bookTemplate.tech_bar &&
 				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
@@ -122,7 +130,8 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		public function get hasCommands():Boolean{
-			return (commands && commands.length>0);// || (finalCommands && finalCommands.length>0); 
+			return totalCommands>0;
+			//return (commands && commands.length>0);// || (finalCommands && finalCommands.length>0); 
 		}
 
 		protected function createCommand(file:PrintGroupFile, folder:String, quality:String='100'):IMCommand{

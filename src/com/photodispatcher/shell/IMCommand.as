@@ -20,8 +20,13 @@ package com.photodispatcher.shell{
 			return 'montage';
 		}
 
-		public static function get IM_CMD_ALTPDF():String{
-			if (ProcessRunner.isWindows()) return 'jpeg2pdf.exe';
+		public static function get IM_CMD_JPG2PDF():String{
+			if (ProcessRunner.isWindows()) return 'bmpp.exe';
+			return '';
+		}
+
+		public static function get IM_CMD_PDF_TOOL():String{
+			if (ProcessRunner.isWindows()) return 'pdftk.exe';
 			return '';
 		}
 

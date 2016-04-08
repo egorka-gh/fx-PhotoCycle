@@ -26,8 +26,10 @@ package com.photodispatcher.provider.preprocess{
 			
 			var altPdf:Boolean=Context.getAttribute("altPDF");
 
-			commands=[];
-			finalCommands=[];
+			sequences=[];
+			var commands:Array=[];
+			totalCommands=0;
+			//finalCommands=[];
 			
 			if(state==STATE_ERR) return;
 			if (!printGroup.bookTemplate 
@@ -114,6 +116,9 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 			
+			totalCommands+=commands.length;
+			sequences.push(commands);
+			
 			//expand format by tech
 			if(printGroup.bookTemplate.tech_bar &&
 				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
@@ -122,6 +127,19 @@ package com.photodispatcher.provider.preprocess{
 				if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
 			}
 			if(reprintMode) printGroup.prints=prints;
+			
+			if(altPdf){
+				//convert jpg to pdf (one to one)
+				command=new IMCommand(IMCommand.IM_CMD_JPG2PDF);
+				command.folder=command2.folder;
+				//bmpp -l pdf.image -t jpeg  -o dct=on -o bpc=off -o interpolation=off -o resolution=chunk  D:\Buffer\lab\fudji\78985-2\cpy
+				//set params
+				IMCommandUtil.setJPG2PDFParams(command);
+				//set foler vs jpg
+				command.add(wrkFolder.nativePath);
+				//add to separate seq
+				sequences.push([command]);
+			}
 			
 			//create pdf commands
 			//split by limit
@@ -132,17 +150,19 @@ package com.photodispatcher.provider.preprocess{
 			
 			//apply alt revers
 			var revers:Boolean=printGroup.bookTemplate.getRevers(printGroup);
-			
+			commands=[];
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
 				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
 
 				if(altPdf){
-					command=new IMCommand(IMCommand.IM_CMD_ALTPDF);
+					command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
 					command.folder=command2.folder;
+					/*
 					//set out file
 					////jpeg2pdf.exe -o tst.pdf -p auto -m 0mm -z none -r none -k phcycle  *.jpg
 					command.add('-o'); command.add(outPath(pdfName));
 					IMCommandUtil.setPDFOutputParams(command);
+					*/
 				}else{
 					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
 					command.folder=command2.folder;
@@ -161,18 +181,24 @@ package com.photodispatcher.provider.preprocess{
 				}
 				
 				//finalize pdf command
-				if(!altPdf){
+				if(altPdf){
+					//pdftk *.pdf cat output combined.pdf
+					command.add('cat'); 
+					command.add('output');
+					command.add(outPath(pdfName));
+				}else{
 					IMCommandUtil.setPDFOutputParams(command,jpgQuality);
 					command.add(outPath(pdfName));
 				}
 				
-				finalCommands.push(command);
+				commands.push(command);
 				//add to printGroup.files
 				newFile= new PrintGroupFile();
 				newFile.file_name=pdfName;
 				newFile.prt_qty=1;
 				printGroup.addFile(newFile);
 			}
+			sequences.push(commands);
 
 		}
 

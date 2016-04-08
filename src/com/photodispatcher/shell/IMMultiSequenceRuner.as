@@ -14,6 +14,7 @@ package com.photodispatcher.shell{
 		private var threads:int;
 		private var totalCommands:int;
 		private var hasErr:Boolean=false;
+		private var parallel:Boolean=true;
 		
 		public var ignoreWarning:Boolean;
 
@@ -22,7 +23,8 @@ package com.photodispatcher.shell{
 			this.ignoreWarning=ignoreWarning;
 		}
 		
-		public function start(sequences:Array, threads:int=1):void{
+		public function start(sequences:Array, threads:int=1, parallel:Boolean=true):void{
+			this.parallel=parallel;
 			hasErr=false;
 			//this.sequences=sequences;
 			this.threads=threads;
@@ -57,7 +59,11 @@ package com.photodispatcher.shell{
 			
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0,totalCommands));
 			//start theads
-			for (var i:int=0; i<Math.min(threads,sequence.length); i++){
+			if(parallel){
+				for (var i:int=0; i<Math.min(threads,sequence.length); i++){
+					runNextSequence();
+				}
+			}else{
 				runNextSequence();
 			}
 		}
@@ -89,7 +95,11 @@ package com.photodispatcher.shell{
 			if(!runer) return;
 			runer.addEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
 			runer.addEventListener(ProgressEvent.PROGRESS, onCmdProgress);
-			runer.start();
+			if(parallel){
+				runer.start();
+			}else{
+				runer.start(null,threads);
+			}
 		}
 		private function onCmdComplite(e:IMRunerEvent):void{
 			var runer:IMSequenceRuner=e.target as IMSequenceRuner;

@@ -140,6 +140,8 @@ package com.photodispatcher.util{
 		}
 
 		public static function drawMark(command:IMCommand, size:int, offset:String, color:String='black', gravity:String='NorthWest'):void{
+			
+			//TODO use  convert 'xc:Salmon[100x100!]'  canvas_salmon.gif
 			if(!command || !size ) return;
 			if(!offset) offset='+0+0';
 			if(!color) color='black';
@@ -210,21 +212,21 @@ package com.photodispatcher.util{
 			command.add('-quality'); command.add(quality);
 		}
 
+		public static function setJPG2PDFParams(command:IMCommand):void{
+			command.add('-l'); command.add('pdf.image');
+			command.add('-t'); command.add('jpeg');
+			command.add('-o'); command.add('dct=on');
+			command.add('-o'); command.add('bpc=off');
+			command.add('-o'); command.add('interpolation=off');
+			command.add('-o'); command.add('resolution=chunk');
+		}
 
+		
 		public static function setPDFOutputParams(command:IMCommand, quality:String='100'):void{
-			if(command.executable==IMCommand.IM_CMD_ALTPDF){
-				//jpeg2pdf.exe -o tst.pdf -p auto -m 0mm -z none -r none -k phcycle  *.jpg
-				command.add('-p'); command.add('auto');
-				command.add('-m'); command.add('0mm');
-				command.add('-z'); command.add('none');
-				command.add('-r'); command.add('none');
-				command.add('-k'); command.add('phcycle');
-			}else{
-				command.add('-units'); command.add('PixelsPerInch');
-				command.add('-density'); command.add('300x300');
-				command.add('-quality'); command.add(quality);
-				command.add('-compress'); command.add('jpeg');
-			}
+			command.add('-units'); command.add('PixelsPerInch');
+			command.add('-density'); command.add('300x300');
+			command.add('-quality'); command.add(quality);
+			command.add('-compress'); command.add('jpeg');
 		}
 		
 		public static function expandImageV(command:IMCommand, amountMM:int, imageGravity:String='North'):void{
