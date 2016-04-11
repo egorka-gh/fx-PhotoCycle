@@ -139,20 +139,24 @@ package com.photodispatcher.util{
 			}
 		}
 
-		public static function drawMark(command:IMCommand, size:int, offset:String, color:String='black', gravity:String='NorthWest'):void{
+		public static function drawMark(command:IMCommand, size:int, offset:String, color:String='black', gravity:String='southeast'):void{
 			
 			//TODO use  convert 'xc:Salmon[100x100!]'  canvas_salmon.gif
 			if(!command || !size ) return;
 			if(!offset) offset='+0+0';
 			if(!color) color='black';
-			if(!gravity) gravity='NorthWest';
+			if(!gravity) gravity='southeast';
+			var sq:int=UnitUtil.mm2Pixels300(size);
 
-			
+			/*
 			command.add('(');
 				command.add('-size');
 				command.add(size.toString()+'x'+size.toString());
 				command.add('xc:'+color);
 			command.add(')');
+			*/
+			
+			command.add('xc:'+color+'['+sq.toString()+'x'+sq.toString()+'!]');
 			command.add('-gravity'); command.add(gravity);
 			command.add('-geometry'); command.add(offset);
 			command.add('-composite');

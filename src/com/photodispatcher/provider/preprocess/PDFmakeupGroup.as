@@ -40,8 +40,11 @@ package com.photodispatcher.provider.preprocess{
 			if(Context.config && Context.config.pdf_quality>60) jpgQuality=Context.config.pdf_quality.toString();
 			altPdf=Context.getAttribute("altPDF");
 			
-			commands=[];
-			finalCommands=[];
+			sequences=[];
+			totalCommands=0;
+			var commands:Array=[];
+			//finalCommands=[];
+			
 			if(state==STATE_ERR) return;
 			if (!printGroup.bookTemplate) return; 
 			if (!printGroup.is_pdf || printGroup.bookTemplate.is_sheet_ready) return;
@@ -205,12 +208,13 @@ package com.photodispatcher.provider.preprocess{
 					sh=sheets[i] as PdfSheet;
 					if(!reprintMode || sh.reprint){
 						command=sh.getCommand(pageSize,sheetSize,printGroup);
-						//draw mark
-						IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
 						//draw stair
 						drawSheetStair(command,sh,sheetSize, i);
 						//draw tech barcode
 						drawSheetTechBar(command, i);
+						//draw mark
+						IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
+
 						command.folder=folder;
 						//save file
 						IMCommandUtil.setOutputParams(command, altPdf?jpgQuality:'100');
@@ -233,29 +237,58 @@ package com.photodispatcher.provider.preprocess{
 					if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
 				}
 			}
+			
+			totalCommands+=commands.length;
+			sequences.push(commands);
+			
 			//finalize
 			if(reprintMode) printGroup.prints=prints;
 			
+			var idx:int;
+
+			if(altPdf){
+				//convert jpg to pdf (one to one)
+				command=new IMCommand(IMCommand.IM_CMD_JPG2PDF);
+				command.folder=command2.folder;
+				//bmpp -l pdf.image -t jpeg  -o dct=on -o bpc=off -o interpolation=off -o resolution=chunk  D:\Buffer\lab\fudji\78985-2\cpy
+				//set params
+				IMCommandUtil.setJPG2PDFParams(command);
+				//set foler vs jpg
+				command.add(wrkFolder.nativePath);
+				//add to separate seq
+				sequences.push([command]);
+				totalCommands+=1;
+
+				//change ext to pdf
+				var flName:String;
+				for (idx = 0; idx < command2.parameters.length; idx++){
+					flName=command2.parameters[idx];
+					flName=flName.substr(0,flName.length-TEMP_FILE_TYPE.length)+'.pdf';
+					command2.parameters[idx]=flName;
+				}
+			}
+			
 			//create pdf commands
 			//split by limit
-			var idx:int;
 			var pdfNum:int;
 			var pdfName:String;
 			var newFile:PrintGroupFile;
 			
 			//apply alt revers
 			var revers:Boolean=printGroup.bookTemplate.getRevers(printGroup);
-			
+			commands=[];
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
 				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
 
 				if(altPdf){
-					command=new IMCommand(IMCommand.IM_CMD_ALTPDF);
+					command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
 					command.folder=command2.folder;
+					/*
 					//set out file
 					////jpeg2pdf.exe -o tst.pdf -p auto -m 0mm -z none -r none -k phcycle  *.jpg
 					command.add('-o'); command.add(outPath(pdfName));
 					IMCommandUtil.setPDFOutputParams(command);
+					*/
 				}else{
 					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
 					command.folder=command2.folder;
@@ -274,19 +307,25 @@ package com.photodispatcher.provider.preprocess{
 				}
 				
 				//finalize pdf command
-				if(!altPdf){
+				if(altPdf){
+					//pdftk *.pdf cat output combined.pdf
+					command.add('cat'); 
+					command.add('output');
+					command.add(outPath(pdfName));
+				}else{
 					IMCommandUtil.setPDFOutputParams(command,jpgQuality);
 					command.add(outPath(pdfName));
 				}
 				
-				finalCommands.push(command);
+				commands.push(command);
 				//add to printGroup.files
 				newFile= new PrintGroupFile();
 				newFile.file_name=pdfName;
 				newFile.prt_qty=1;
 				printGroup.addFile(newFile);
 			}
-			
+			totalCommands+=commands.length;
+			sequences.push(commands);
 		}
 
 		private function createSheets(files:Array):Array{
@@ -555,9 +594,6 @@ package com.photodispatcher.provider.preprocess{
 				IMCommandUtil.drawNotching(command,printGroup.bookTemplate.notching,len,width,buttPix);
 			}
 
-			//draw mark
-			IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
-
 			var barcode:String;
 			//draw barcode
 			if(printGroup.bookTemplate.bar_size>0){
@@ -609,6 +645,9 @@ package com.photodispatcher.provider.preprocess{
 			if(printGroup.bookTemplate.fontv_size){
 				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
 			}
+
+			//draw mark
+			IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
 
 			IMCommandUtil.setOutputParams(command, altPdf?jpgQuality:'100');
 			return command;

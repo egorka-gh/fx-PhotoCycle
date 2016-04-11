@@ -161,8 +161,6 @@ package com.photodispatcher.provider.preprocess{
 					barcode=printGroup.bookBarcode(file);
 					if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
 				}
-				//draw mark before crop
-				IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
 				//crop
 				command.add('-gravity'); command.add('West');
 				command.add('-background'); command.add('white');
@@ -211,11 +209,6 @@ package com.photodispatcher.provider.preprocess{
 						IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
 					}
 				}
-			}
-			
-			//draw mark
-			if(printGroup.book_part!=BookSynonym.BOOK_PART_BLOCKCOVER){
-				IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
 			}
 			
 			//draw farme
@@ -299,6 +292,11 @@ package com.photodispatcher.provider.preprocess{
 			//vertical annotate
 			if(printGroup.bookTemplate.fontv_size){
 				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
+			}
+			
+			//draw mark
+			if(printGroup.book_part!=BookSynonym.BOOK_PART_BLOCKCOVER){
+				IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
 			}
 			
 			//complete

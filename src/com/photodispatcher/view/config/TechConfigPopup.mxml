@@ -113,10 +113,10 @@
 			</s:HGroup>
 		</s:FormItem>
 		<s:FormHeading label="Квадрат"/>
-		<s:FormItem label="Размер (pix):">
+		<s:FormItem label="Размер (мм):">
 			<s:NumericStepper minimum="0" maximum="1000" value="@{template.mark_size}"/>
 		</s:FormItem> 
-		<s:FormItem label="Смещение (pix):">
+		<s:FormItem label="Смещение от нижнего правого (pix):">
 			<itemRenderer:OffsetEditor id="tiMarkOffs" enabled="{Boolean(template.mark_size)}"
 									   data="{template.mark_offset}" 
 									   change="{template.mark_offset=tiMarkOffs.data}"/>

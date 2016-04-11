@@ -13,6 +13,8 @@ package com.photodispatcher.shell{
 		private var sequence:Array;
 		private var threads:int;
 		private var hasErr:Boolean=false;
+		private var forceStop:Boolean=false;
+		
 		
 		public var compliteCommands:int;
 
@@ -48,12 +50,18 @@ package com.photodispatcher.shell{
 			}
 		}
 		
+		public function stop():void{
+			forceStop=true;
+			IMRuner.stopAll();
+		}
+		
 		private function runNextCmd():void{
 			var cmd:IMCommand;
 			var command:IMCommand;
 			var minState:int= IMCommand.STATE_COMPLITE;
 			var complited:int=0;
 			if(hasErr) return;
+			if(forceStop) return;
 			//look not statrted
 			for each (cmd in sequence){
 				minState=Math.min(minState,cmd.state);
@@ -83,6 +91,8 @@ package com.photodispatcher.shell{
 		private function onCmdComplite(e:IMRunerEvent):void{
 			var im:IMRuner=e.target as IMRuner;
 			im.removeEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
+			if(forceStop) return;
+
 			if(e.hasError){
 				hasErr=true;
 				trace('IMSequenceRuner. Error: '+e.error+'\n command: '+(e.command?e.command.toString():''));

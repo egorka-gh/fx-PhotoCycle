@@ -10,6 +10,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.provider.fbook.makeup.FBookMakeupManager;
 	import com.photodispatcher.shell.IMCommand;
+	import com.photodispatcher.shell.IMMultiSequenceRuner;
 	import com.photodispatcher.shell.IMRuner;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -58,8 +59,20 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		public function stop():void{
-			IMRuner.stopAll();
 			forceStop=true;
+			if(sequencesRuner){
+				sequencesRuner.removeEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
+				sequencesRuner.removeEventListener(IMRunerEvent.IM_COMPLETED, onSequencesComplite);
+				sequencesRuner.stop();
+				sequencesRuner=null;
+			}
+			if(fbookBuilder){
+				fbookBuilder.removeEventListener(Event.COMPLETE,onFbComplite);
+				fbookBuilder.removeEventListener(ProgressEvent.PROGRESS,onResizeProgress);
+				fbookBuilder.stop();
+				fbookBuilder=null;
+			}
+			IMRuner.stopAll();
 		}
 		
 		public function run():void{
@@ -122,13 +135,17 @@ package com.photodispatcher.provider.preprocess{
 			//startPdfmakeup();
 		}
 		
-		private var pdfItems:Array=[];
-		private var commands:Array;
-		private var sequenceNum:int;
+		//private var pdfItems:Array=[];
+		//private var commands:Array;
+		//private var sequenceNum:int;
+		
+		private var sequencesRuner:IMMultiSequenceRuner;
 		
 		private function startPdfmakeup():void{
+			if(forceStop) return;
 			var pg:PrintGroup;
 			var mg:BookMakeupGroup;
+			var pdfItems:Array=[];
 			hasErr=false;
 			for each(pg in order.printGroups){
 				mg=null;
@@ -169,6 +186,25 @@ package com.photodispatcher.provider.preprocess{
 				return;
 			}
 			trace('PreprocessTask. Start book makeup threads order: '+order.id);
+
+			if (maxThreads<=0){
+				dispatchErr(OrderState.ERR_PREPROCESS,'IM не настроен или количество потоков 0.');
+				return;
+			}
+
+			var sequences:Array=[];
+			for each (mg in pdfItems){
+				if(mg){
+					sequences=sequences.concat(mg.sequences);
+				}
+			}
+			
+			sequencesRuner= new IMMultiSequenceRuner();
+			sequencesRuner.addEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
+			sequencesRuner.addEventListener(IMRunerEvent.IM_COMPLETED, onSequencesComplite);
+			sequencesRuner.start(sequences,maxThreads,false);
+
+			/*
 			//create prepare command list
 			sequenceNum=0;
 			var sequence:Array=[];
@@ -178,8 +214,34 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 			runCommands(sequence);
+			*/
 		}
 		
+		private function onCommandsProgress(evt:ProgressEvent):void{
+			if(forceStop) return;
+			reportProgress('Подготовка книг',evt.bytesLoaded,evt.bytesTotal);
+		}
+
+		private function onSequencesComplite(evt:IMRunerEvent):void{
+			if(sequencesRuner){
+				sequencesRuner.removeEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
+				sequencesRuner.removeEventListener(IMRunerEvent.IM_COMPLETED, onSequencesComplite);
+				sequencesRuner=null;
+			}
+			if(forceStop) return;
+			if(evt.hasError){
+				trace('PreprocessTask. Book makeup error, order '+order.id+', error: '+evt.error);
+				dispatchErr(OrderState.ERR_PREPROCESS,evt.error);
+				return;
+
+			}else{
+				trace('PreprocessTask. Book makeup complited, order '+order.id);
+				postProcess();
+				return;
+			}
+		}
+
+		/*
 		private function runCommands(sequence:Array):void{
 			if(forceStop) return;
 			if (maxThreads<=0){
@@ -192,7 +254,8 @@ package com.photodispatcher.provider.preprocess{
 				runNextCmd();
 			}
 		}
-		
+		*/
+		/*
 		private function runNextCmd():void{
 			var cmd:IMCommand;
 			var command:IMCommand;
@@ -262,6 +325,7 @@ package com.photodispatcher.provider.preprocess{
 			}
 			runNextCmd();
 		}
+		*/
 
 		private function checkCreateSubfolder(printGroup:PrintGroup, subDir:String, clean:Boolean=false):Boolean{
 			//check/create print sub dir

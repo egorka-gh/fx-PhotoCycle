@@ -86,7 +86,7 @@
 
 			public function setAltPDF(value:Boolean, silent:Boolean=false):Boolean{
 				if(value){
-					if(!imPath || !IMCommand.IM_CMD_ALTPDF){
+					if(!imPath || !IMCommand.IM_CMD_JPG2PDF || !IMCommand.IM_CMD_PDF_TOOL){
 						altPDF=false;
 						if(tg_altPdf) tg_altPdf.selected=false;
 						return false;
@@ -98,7 +98,14 @@
 						if(tg_altPdf) tg_altPdf.selected=false;
 						return false;
 					}
-					file=file.resolvePath(IMCommand.IM_CMD_ALTPDF);
+					file=file.resolvePath(IMCommand.IM_CMD_JPG2PDF);
+					if(!file.exists || file.isDirectory){
+						if(!silent) Alert.show("Файл не найден. " +file.nativePath);
+						altPDF=false;
+						if(tg_altPdf) tg_altPdf.selected=false;
+						return false;
+					}
+					file=file.parent.resolvePath(IMCommand.IM_CMD_PDF_TOOL);
 					if(!file.exists || file.isDirectory){
 						if(!silent) Alert.show("Файл не найден. " +file.nativePath);
 						altPDF=false;

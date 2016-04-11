@@ -144,17 +144,27 @@
 			private function setAltPDF(imPath:String, value:Boolean):void{
 				var result:Boolean=true;;
 				if(value){
-					if(!imPath || !IMCommand.IM_CMD_ALTPDF){
+					if(!imPath || !IMCommand.IM_CMD_JPG2PDF || !IMCommand.IM_CMD_PDF_TOOL){
 						result=false;
 					}
 					//check file exists
-					var file:File=new File(imPath);
-					if(!file.exists || !file.isDirectory){
-						result=false;
-					}
-					file=file.resolvePath(IMCommand.IM_CMD_ALTPDF);
-					if(!file.exists || file.isDirectory){
-						result=false;
+					if(result){
+						var file:File=new File(imPath);
+						if(!file.exists || !file.isDirectory){
+							result=false;
+						}
+						if(result){
+							file=file.resolvePath(IMCommand.IM_CMD_JPG2PDF);
+							if(!file.exists || file.isDirectory){
+								result=false;
+							}
+							if(result){
+								file=file.parent.resolvePath(IMCommand.IM_CMD_PDF_TOOL);
+								if(!file.exists || file.isDirectory){
+									result=false;
+								}
+							}
+						}
 					}
 				}
 				result = result && value;

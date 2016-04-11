@@ -40,6 +40,7 @@ package com.photodispatcher.provider.fbook.makeup{
 		private var maxThreads:int=0;
 		private var logStates:Boolean;
 		private var sourceDir:File;
+		private var forceStop:Boolean=false;
 
 		public function FBookMakeupManager(order:Order, sourceFolder:String, prtFolder:String, logStates:Boolean=true){
 			super(null);
@@ -49,6 +50,17 @@ package com.photodispatcher.provider.fbook.makeup{
 			this.logStates=logStates;
 		}
 
+		public function stop():void{
+			forceStop=true;
+			if(runner){
+				runner.removeEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
+				runner.removeEventListener(IMRunerEvent.IM_COMPLETED, onPagesComplite);
+				runner.stop();
+				runner=null;
+			}
+
+		}
+		
 		public function run():void{
 			errNum=0;
 			error='';
@@ -84,6 +96,7 @@ package com.photodispatcher.provider.fbook.makeup{
 		private var textBuilder:TextImageBuilder;
 		private function nextSuborder():void{
 			currSuborder=null;
+			if(forceStop) return;
 			reportProgress();
 			var so:SubOrder;
 			for each(so in order.suborders){
@@ -164,9 +177,11 @@ package com.photodispatcher.provider.fbook.makeup{
 		}
 		*/
 		
+		private var runner:IMMultiSequenceRuner;
 		private function buildScripts():void{
 			var outFolder:String=prtFolder+File.separator+order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+PrintGroup.SUBFOLDER_PRINT;
 			var dir:File;
+			if(forceStop) return;
 			//create print folder
 			try{
 				dir=new File(outFolder);
@@ -250,16 +265,18 @@ package com.photodispatcher.provider.fbook.makeup{
 				fs.close();
 			} catch(err:Error){}
 
-			var runner:IMMultiSequenceRuner= new IMMultiSequenceRuner(true);
+			runner= new IMMultiSequenceRuner(true);
 			runner.addEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
 			runner.addEventListener(IMRunerEvent.IM_COMPLETED, onPagesComplite);
 			runner.start(sequences,maxThreads);
 
 		}
 		private function onPagesComplite(evt:IMRunerEvent):void{
-			var runner:IMMultiSequenceRuner=evt.target as IMMultiSequenceRuner;
-			runner.removeEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
-			runner.removeEventListener(IMRunerEvent.IM_COMPLETED, onPagesComplite);
+			if(runner){
+				runner.removeEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
+				runner.removeEventListener(IMRunerEvent.IM_COMPLETED, onPagesComplite);
+			}
+			if(forceStop) return;
 			if(evt.hasError){
 				releaseWithErr(OrderState.ERR_PREPROCESS,evt.error);
 			}else{
@@ -267,9 +284,10 @@ package com.photodispatcher.provider.fbook.makeup{
 			}
 		}
 		private function onCommandsProgress(evt:ProgressEvent):void{
-			reportProgress('Подготовка книги',evt.bytesLoaded,evt.bytesTotal);
+			reportProgress('Сборка книги',evt.bytesLoaded,evt.bytesTotal);
 		}
 
+		/*
 		private function postProcess(printGroups:Array):void{
 			var pg:PrintGroup;
 			var mg:BookMakeupGroup;
@@ -327,6 +345,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				dispatchEvent(new Event(Event.COMPLETE));
 			}
 		}
+		*/
 		
 		private function releaseWithErr(err:int,errMsg:String):void{
 			if(err>=0) return;

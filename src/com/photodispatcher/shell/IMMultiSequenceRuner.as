@@ -15,7 +15,8 @@ package com.photodispatcher.shell{
 		private var totalCommands:int;
 		private var hasErr:Boolean=false;
 		private var parallel:Boolean=true;
-		
+		private var forceStop:Boolean=false;
+
 		public var ignoreWarning:Boolean;
 
 		public function IMMultiSequenceRuner(ignoreWarning:Boolean=false){
@@ -23,6 +24,20 @@ package com.photodispatcher.shell{
 			this.ignoreWarning=ignoreWarning;
 		}
 		
+		public function stop():void{
+			forceStop=true;
+			if(sequence){
+				var runer:IMSequenceRuner;
+				for each (runer in sequence){
+					if(runer && runer.state==IMCommand.STATE_STARTED){
+						runer.removeEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
+						runer.removeEventListener(ProgressEvent.PROGRESS, onCmdProgress);
+						runer.stop();
+					}
+				}
+			}
+		}
+
 		public function start(sequences:Array, threads:int=1, parallel:Boolean=true):void{
 			this.parallel=parallel;
 			hasErr=false;
@@ -72,6 +87,8 @@ package com.photodispatcher.shell{
 			var runer:IMSequenceRuner;
 			var startRuner:IMSequenceRuner;
 			var minState:int= IMCommand.STATE_COMPLITE;
+			if(forceStop) return;
+			
 			//var complited:int=0;
 			if(hasErr) return;
 			//look not statrted
@@ -105,6 +122,8 @@ package com.photodispatcher.shell{
 			var runer:IMSequenceRuner=e.target as IMSequenceRuner;
 			runer.removeEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
 			runer.removeEventListener(ProgressEvent.PROGRESS, onCmdProgress);
+			if(forceStop) return;
+
 			if(e.hasError){
 				hasErr=true;
 				trace('IMMultiSequenceRuner. Error: '+e.error+'\n command: '+(e.command?e.command.toString():''));
@@ -118,6 +137,7 @@ package com.photodispatcher.shell{
 		private function onCmdProgress(e:ProgressEvent):void{
 			var runer:IMSequenceRuner;
 			var complited:int=0;
+			
 			for each (runer in sequence){
 				complited+=runer.compliteCommands;
 			}

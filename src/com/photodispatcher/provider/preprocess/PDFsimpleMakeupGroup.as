@@ -139,6 +139,15 @@ package com.photodispatcher.provider.preprocess{
 				command.add(wrkFolder.nativePath);
 				//add to separate seq
 				sequences.push([command]);
+				totalCommands+=1;
+
+				//change ext to pdf
+				var flName:String;
+				for (idx = 0; idx < command2.parameters.length; idx++){
+					flName=command2.parameters[idx];
+					flName=flName.substr(0,flName.length-TEMP_FILE_TYPE.length)+'.pdf';
+					command2.parameters[idx]=flName;
+				}
 			}
 			
 			//create pdf commands
@@ -198,8 +207,8 @@ package com.photodispatcher.provider.preprocess{
 				newFile.prt_qty=1;
 				printGroup.addFile(newFile);
 			}
+			totalCommands+=commands.length;
 			sequences.push(commands);
-
 		}
 
 	}
