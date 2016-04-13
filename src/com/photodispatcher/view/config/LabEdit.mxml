@@ -128,8 +128,8 @@
 				<s:FormItem label="Hot folder NHF" enabled="{isNoritsu}">
 					<s:TextInput id="tiHotNsf" text="@{currentItem.hot_nfs}" change="{currentItem.changed=true}" width="200"/>
 				</s:FormItem> 
-				<s:FormItem label="Задержка копирования (сек)" >
-					<s:NumericStepper value="@{currentItem.post_delay}" minimum="0" maximum="6000" stepSize="10"
+				<s:FormItem label="Скорость обрабоки (килобайт/сек)" toolTip="Скорость с которой софт лабы обрабатывает файлы при постановке на печать">
+					<s:NumericStepper value="@{currentItem.post_delay}" minimum="0" maximum="104857600" stepSize="16"
 									  change="{currentItem.changed=true}"/>
 				</s:FormItem>
 				<s:FormItem label="Автопечать">
@@ -139,8 +139,9 @@
 					<s:NumericStepper value="@{currentItem.queue_limit}" minimum="0" maximum="240" stepSize="10"
 									  enabled="{currentItem.is_managed}" change="{currentItem.changed=true}"/>
 				</s:FormItem>
-				<s:FormItem label="Скорость обработки (файлов/мин)" toolTip="Количество файлов, которое обрабатывается софтом за 1 мин при постановке на печать">
-					<s:TextInput id="softSpeedInput" text="{currentItem.soft_speed}" restrict="0-9" change="{currentItem.soft_speed = parseInt(softSpeedInput.text); currentItem.changed=true}" />
+				<s:FormItem label="Реальная скорость печати (мм/сек)" toolTip="Расчитывается по выходу отпечатков их лабы">
+					<!--<s:TextInput id="softSpeedInput" text="{currentItem.soft_speed}" restrict="0-9" change="{currentItem.soft_speed = parseInt(softSpeedInput.text); currentItem.changed=true}" />-->
+					<s:TextInput id="softSpeedInput" text="{currentItem.soft_speed.toString()}" enabled="false" />
 				</s:FormItem>
 				<s:FormItem label="Активна">
 					<s:CheckBox id="chbOnline" selected="@{currentItem.is_active}" change="{currentItem.changed=true}"/>

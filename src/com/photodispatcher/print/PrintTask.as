@@ -567,11 +567,28 @@ package com.photodispatcher.print{
 		private function startCopyTimer():Boolean{
 			//complited or has no delay
 			if((lab.post_delay<=0) || (currCopyIdx >=printGrp.printFiles.length)) return false;
-			if(!copyTimer){
-				copyTimer= new Timer(lab.post_delay*1000,1);
-				copyTimer.addEventListener(TimerEvent.TIMER_COMPLETE,onCopyTimer);
+			if(!currCopyFile) return false;
+			
+			//get las copied file size 
+			var delay:Number;
+			try{
+				delay=currCopyFile.size;
+			}catch(error:Error){
+				return false;
 			}
-			copyTimer.reset();
+			if(!delay) return false;
+
+			// calc delay
+			delay=Math.round(delay/(1024*lab.post_delay));
+			if(delay<1)  return false;
+			
+			if(!copyTimer){
+				copyTimer= new Timer(delay*1000,1);
+				copyTimer.addEventListener(TimerEvent.TIMER_COMPLETE,onCopyTimer);
+			}else{
+				copyTimer.reset();
+				copyTimer.delay=delay*1000;
+			}
 			copyTimer.start();
 			return true;
 		}

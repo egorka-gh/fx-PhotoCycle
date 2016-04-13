@@ -25,6 +25,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.push(col);
 			col= new GridColumn('interlayer_name'); col.headerText='Прослойка'; col.editable=false; result.push(col);
 			col= new GridColumn('glue_cmd'); col.headerText='Команда склейки'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.push(col);
+			col= new GridColumn('add_layers'); col.headerText='Кол слоев книги'; result.push(col);
 			
 			return new ArrayList(result);
 		}

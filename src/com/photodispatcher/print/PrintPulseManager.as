@@ -475,7 +475,7 @@ package com.photodispatcher.print{
 							pgQueued=ArrayUtil.searchItem('id',lastMeter.print_group,printQueue) as PrintGroup;
 							if(pgQueued){
 								//если pgQueued не найдена - группа уже как минимум печатается, пост закончен и его учитывать не надо 
-								var delta:Number= (pgQueued.prints/lab.soft_speed)*60*1000; // скорость в файл/мин, переводим в мс
+								var delta:Number=0;//changed sence lab.soft_speed now real print speed mm/sek  (pgQueued.prints/lab.soft_speed)*60*1000; // скорость в файл/мин, переводим в мс
 								postMeter.start_time= new Date(postMeter.start_time.time+delta);
 								if(postMeter.isAfter(pulseCreateStopTime)) continue;
 							}

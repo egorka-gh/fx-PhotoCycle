@@ -144,6 +144,7 @@ package com.photodispatcher.util{
 			//TODO use  convert 'xc:Salmon[100x100!]'  canvas_salmon.gif
 			if(!command || !size ) return;
 			if(!offset) offset='+0+0';
+			if(offset=='++') offset='+0+0';
 			if(!color) color='black';
 			if(!gravity) gravity='southeast';
 			var sq:int=UnitUtil.mm2Pixels300(size);

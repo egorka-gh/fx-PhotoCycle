@@ -18,6 +18,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _add_layers:int;
         private var _book_synonym:int;
         private var _glue_cmd:int;
         private var _glue_cmd_name:String;
@@ -26,6 +27,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _interlayer_name:String;
         private var _paper:int;
         private var _paper_name:String;
+
+        public function set add_layers(value:int):void {
+            _add_layers = value;
+        }
+        public function get add_layers():int {
+            return _add_layers;
+        }
 
         public function set book_synonym(value:int):void {
             _book_synonym = value;
@@ -85,6 +93,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _add_layers = input.readObject() as int;
             _book_synonym = input.readObject() as int;
             _glue_cmd = input.readObject() as int;
             _glue_cmd_name = input.readObject() as String;
@@ -97,6 +106,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject((_add_layers is IPropertyHolder) ? IPropertyHolder(_add_layers).object : _add_layers);
             output.writeObject((_book_synonym is IPropertyHolder) ? IPropertyHolder(_book_synonym).object : _book_synonym);
             output.writeObject((_glue_cmd is IPropertyHolder) ? IPropertyHolder(_glue_cmd).object : _glue_cmd);
             output.writeObject((_glue_cmd_name is IPropertyHolder) ? IPropertyHolder(_glue_cmd_name).object : _glue_cmd_name);

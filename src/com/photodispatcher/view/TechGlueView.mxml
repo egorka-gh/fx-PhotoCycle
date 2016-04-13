@@ -614,11 +614,13 @@
 				//calc sheets
 				currSheetsNum=currPG.sheet_num;
 				
-				//TODO template book start/end or endpaper
 				
 				//interlayer
 				if(currInerlayer.sequenceMiddle) currSheetsNum=currSheetsNum+(currPG.sheet_num-1)*currInerlayer.sequenceMiddle.length;
-				
+
+				//template book start/end or endpaper
+				currSheetsNum+=currGlueCmd.add_layers;
+					
 				return true;
 			}
 

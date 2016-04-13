@@ -64,7 +64,7 @@
 			</s:HGroup>
 
 			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Задержка копирования (сек)" width="{lbLong.width}"/>
+				<s:Label text="Скорость обрабоки (кбайт/сек)" width="{lbLong.width}"/>
 				<s:TextInput  text="{lab.post_delay.toString()}"  editable="false" width="200"/>
 			</s:HGroup>
 
