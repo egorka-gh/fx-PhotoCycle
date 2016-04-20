@@ -59,11 +59,14 @@ package com.photodispatcher.print{
 				return false;
 			}
 			
+			refresh();
+			/*
 			if(lastRefresh==0 || (getTimer()-lastRefresh)>refreshInterval){
 				refresh();
 			}else{
 				fetchInternal();
 			}
+			*/
 			return true;
 		}
 		

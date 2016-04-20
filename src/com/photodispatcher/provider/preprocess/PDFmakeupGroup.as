@@ -522,7 +522,9 @@ package com.photodispatcher.provider.preprocess{
 			command.add('-size'); command.add(len.toString()+'x'+width.toString());
 			command.add('xc:white');
 			//annotate
-			IMCommandUtil.annotateImage(command,FONT_COVER_BACK,TEXT_UNDERCOLOR,printGroup.annotateText(file),TEXT_OFFSET);
+			var txt:String=printGroup.annotateText(file);
+			if(txt && printGroup.staffActivityCaption) txt=txt+' '+printGroup.staffActivityCaption;
+			IMCommandUtil.annotateImage(command,FONT_COVER_BACK,TEXT_UNDERCOLOR,txt,TEXT_OFFSET);
 			if(buttPix){
 				//-fill black  -draw "line 2775,907 2775,2907 line 1775,1907 3775,1907"
 				var xl:int=(len-buttPix)/2;
@@ -642,9 +644,8 @@ package com.photodispatcher.provider.preprocess{
 			}
 			
 			//vertical annotate
-			if(printGroup.bookTemplate.fontv_size){
-				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
-			}
+			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
+			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.reprint_size, printGroup.staffActivityCaption,printGroup.bookTemplate.reprint_offset,TEXT_UNDERCOLOR);  	
 
 			//draw mark
 			IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);
@@ -657,7 +658,9 @@ package com.photodispatcher.provider.preprocess{
 			if(!command || !file) return;
 			var strOff:String=printGroup.bookTemplate.font_offset;
 			if(!strOff) strOff=TEXT_OFFSET;
-			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,printGroup.annotateText(file), strOff);
+			var txt:String=printGroup.annotateText(file);
+			if(txt && printGroup.staffActivityCaption) txt=txt+' '+printGroup.staffActivityCaption;
+			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,txt, strOff);
 		}
 
 	}

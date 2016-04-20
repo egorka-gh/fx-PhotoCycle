@@ -56,6 +56,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _page_width:int;
         private var _paper:int;
         private var _paper_name:String;
+        private var _reprint_offset:String;
+        private var _reprint_size:int;
         private var _revers:Boolean;
         private var _sheet_len:int;
         private var _sheet_width:int;
@@ -330,6 +332,20 @@ package com.photodispatcher.model.mysql.entities {
             return _paper_name;
         }
 
+        public function set reprint_offset(value:String):void {
+            _reprint_offset = value;
+        }
+        public function get reprint_offset():String {
+            return _reprint_offset;
+        }
+
+        public function set reprint_size(value:int):void {
+            _reprint_size = value;
+        }
+        public function get reprint_size():int {
+            return _reprint_size;
+        }
+
         public function set revers(value:Boolean):void {
             _revers = value;
         }
@@ -467,6 +483,8 @@ package com.photodispatcher.model.mysql.entities {
             _page_width = input.readObject() as int;
             _paper = input.readObject() as int;
             _paper_name = input.readObject() as String;
+            _reprint_offset = input.readObject() as String;
+            _reprint_size = input.readObject() as int;
             _revers = input.readObject() as Boolean;
             _sheet_len = input.readObject() as int;
             _sheet_width = input.readObject() as int;
@@ -522,6 +540,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_page_width is IPropertyHolder) ? IPropertyHolder(_page_width).object : _page_width);
             output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
             output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
+            output.writeObject((_reprint_offset is IPropertyHolder) ? IPropertyHolder(_reprint_offset).object : _reprint_offset);
+            output.writeObject((_reprint_size is IPropertyHolder) ? IPropertyHolder(_reprint_size).object : _reprint_size);
             output.writeObject((_revers is IPropertyHolder) ? IPropertyHolder(_revers).object : _revers);
             output.writeObject((_sheet_len is IPropertyHolder) ? IPropertyHolder(_sheet_len).object : _sheet_len);
             output.writeObject((_sheet_width is IPropertyHolder) ? IPropertyHolder(_sheet_width).object : _sheet_width);

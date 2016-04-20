@@ -403,6 +403,8 @@ package com.photodispatcher.provider.fbook.makeup{
 			// convert image.png alpha.png -alpha off -compose copy_opacity -composite result.png
 			// convert b10394_p0_3_ui.png ( mask.png -negate ) -alpha off -compose copy_opacity -composite b10394_p0_3_fu.png
 			// convert ( mask.png -negate -write mpr:mask +delete )  b10394_p0_3_ui.png mpr:mask -alpha off -compose copy_opacity -composite b10394_p0_3_fu.png
+			
+			/*
 			result.add(file);
 			result.add(maskFile);
 			result.add('-alpha');
@@ -410,6 +412,22 @@ package com.photodispatcher.provider.fbook.makeup{
 			result.add('-compose');
 			result.add('copy_opacity');
 			result.add('-composite');
+			*/
+			//extract src mask and multiply vs maskFile then apply
+			// -alpha extract b1_p4_2_mask.jpg "-compose" "Multiply" "-composite" "mask.jpg"
+			result.add('(');
+ 				result.add(file);
+				result.add('-alpha'); result.add('extract');
+				result.add(maskFile);
+				result.add('-compose'); result.add('Multiply');
+				result.add('-composite');
+			result.add(')');
+			result.add(file);
+			result.add('+swap');
+			result.add('-alpha'); result.add('off');
+			result.add('-compose'); result.add('copy_opacity');
+			result.add('-composite');
+			
 			return result;
 		}
 		

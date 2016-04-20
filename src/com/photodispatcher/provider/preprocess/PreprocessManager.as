@@ -511,7 +511,7 @@ package com.photodispatcher.provider.preprocess{
 			
 
 			_isStarted=true;
-			autoLoadInterval=Context.getAttribute('syncInterval');
+			autoLoadInterval=2;//Context.getAttribute('syncInterval');
 			reLoad();
 		}
 		

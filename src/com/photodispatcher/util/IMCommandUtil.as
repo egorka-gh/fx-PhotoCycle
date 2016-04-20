@@ -64,6 +64,8 @@ package com.photodispatcher.util{
 				//calc points 4 density 300
 				var points:int=font_size*300/72;
 				command.add('(');
+				createLabel(command, points,text,undercolor);
+				/*
 				command.add('-strokewidth'); command.add('0');
 				command.add('-pointsize'); command.add(points.toString());
 				command.add('-undercolor'); command.add(undercolor);
@@ -74,11 +76,75 @@ package com.photodispatcher.util{
 				command.add('+repage');
 				command.add('-bordercolor'); command.add(undercolor);
 				command.add('-border'); command.add('10x3');
+				*/
 				command.add('-rotate'); command.add('-90');
 				command.add(')');
 				command.add('-gravity'); command.add(gravity);
 				command.add('-geometry'); command.add(offset);
 				command.add('-composite');
+		}
+
+		public static function annotateImageML(command:IMCommand,font_size:int, texts:Array, offset:String, rotate:Boolean, undercolor:String='white', gravity:String='southeast'):void{
+			if(!command || !texts || texts.length==0 || font_size<=0 || texts[0].toString().length==0) return;
+			if(!offset) offset='+0+0';
+			if(!undercolor) undercolor='white';
+			if(!gravity) gravity='southeast';
+			command.add('(');
+			createMultilineLabel(command,font_size,texts,undercolor);
+			if(rotate) command.add('-rotate'); command.add('-90');
+			command.add('+repage');
+			command.add(')');
+			command.add('-gravity'); command.add(gravity);
+			command.add('-geometry'); command.add(offset);
+			command.add('-composite');
+		}
+
+		private static function createMultilineLabel(command:IMCommand,font_size:int, texts:Array, undercolor:String='white'):void{
+			if(!command || !texts || texts.length==0 || font_size<=0) return;
+			var len:int=texts[0].toString().length;
+			if(len==0) return;
+			
+			if(!undercolor) undercolor='white';
+			//calc points 4 density 300
+			var points:int=font_size*300/72;
+			var points2:int=points/1.5;
+			command.add('-strokewidth'); command.add('0');
+			command.add('-pointsize'); command.add(points.toString());
+			command.add('-undercolor'); command.add(undercolor);
+			command.add('-fill'); command.add('black');
+			command.add('-bordercolor'); command.add(undercolor);
+			var text:String;
+			var append:Boolean;
+			for (var i:int = 0; i < texts.length; i++){
+				text=texts[i];
+				if(i==1){
+					command.add('-pointsize'); command.add(points2.toString());
+				}
+				if(text){
+					append=i>0;
+					text='label:'+text.substr(0,len);
+					command.add(text);
+					command.add('-trim');
+					command.add('+repage');
+					command.add('-border'); command.add('10x3');
+				}
+			}
+			if(append) command.add('-append');
+		}
+
+		private static function createLabel(command:IMCommand,points:int, text:String, undercolor:String='white'):void{
+			if(!command || !text || points<=0) return;
+			if(!undercolor) undercolor='white';
+			command.add('-strokewidth'); command.add('0');
+			command.add('-pointsize'); command.add(points.toString());
+			command.add('-undercolor'); command.add(undercolor);
+			command.add('-bordercolor'); command.add(undercolor);
+			command.add('-fill'); command.add('black');
+			var label:String='label:'+text;
+			command.add(label);
+			command.add('-trim');
+			command.add('+repage');
+			command.add('-border'); command.add('10x3');
 		}
 
 		public static function drawNotching(command:IMCommand,notching:int,length:int,width:int,buttPix:int=0):void{

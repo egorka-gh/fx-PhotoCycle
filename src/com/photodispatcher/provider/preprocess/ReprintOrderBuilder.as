@@ -249,12 +249,15 @@ package com.photodispatcher.provider.preprocess{
 						if(pg){
 							if(ritem.thech_unit==TechReject.UNIT_SHEET){
 								markFile(pg, ritem.book, ritem.sheet);
+								setActivity(pg,reject);
 							}else{
 								// UNIT_BOOK or UNIT_BLOCK or UNIT_COVER
 								markFile(pg, ritem.book);
+								setActivity(pg,reject);
 								if(ritem.thech_unit==TechReject.UNIT_BOOK){
 									pg=pgBypg(pg);
 									markFile(pg, ritem.book);
+									setActivity(pg,reject);
 								}
 							}
 						}
@@ -291,6 +294,17 @@ package com.photodispatcher.provider.preprocess{
 						if(sheet!=-1) break;
 					}
 				}
+			}
+		}
+		
+		private function setActivity(pg:PrintGroup, tr:TechReject):void{
+			if(!pg || !tr || (!tr.sa_type_name && !tr.sa_remark)) return;
+			if(pg.staffActivityCaption) return;
+			pg.staffActivityCaption='';
+			if(tr.sa_type_name) pg.staffActivityCaption=tr.sa_type_name;
+			if(tr.sa_remark){
+				if(pg.staffActivityCaption) pg.staffActivityCaption+=' ';
+				pg.staffActivityCaption+=tr.sa_remark;
 			}
 		}
 		

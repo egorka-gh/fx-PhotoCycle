@@ -290,9 +290,8 @@ package com.photodispatcher.provider.preprocess{
 			}
 			
 			//vertical annotate
-			if(printGroup.bookTemplate.fontv_size){
-				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
-			}
+			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
+			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.reprint_size, printGroup.staffActivityCaption,printGroup.bookTemplate.reprint_offset,TEXT_UNDERCOLOR);  	
 			
 			//draw mark
 			if(printGroup.book_part!=BookSynonym.BOOK_PART_BLOCKCOVER){
@@ -308,7 +307,9 @@ package com.photodispatcher.provider.preprocess{
 			if(!command || !file) return;
 			var offset:String=printGroup.bookTemplate.font_offset;
 			if(!offset) offset=TEXT_OFFSET;
-			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,printGroup.annotateText(file),offset,true);
+			var txt:String=printGroup.annotateText(file);
+			if(txt && printGroup.staffActivityCaption) txt=txt+' '+printGroup.staffActivityCaption;
+			IMCommandUtil.annotateImage(command,printGroup.bookTemplate.font_size,TEXT_UNDERCOLOR,txt,offset,true);
 		}
 
 	}
