@@ -400,6 +400,10 @@
 			*/
 
 			private function joinPackages():void{
+				if(source.type==SourceType.SRC_FBOOK){
+					Alert.show('Сайт '+source.name+' не поддерживает данную функцию.');
+					return;
+				}
 				webService.addEventListener(Event.COMPLETE,joinHandler);
 				try{
 					webService.joinMailPackages(joinIds);

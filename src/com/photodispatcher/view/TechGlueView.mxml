@@ -467,7 +467,7 @@
 					return;
 				}
 				
-				if(currRegister && !currRegister.isComplete){
+				if(currRegister && !currRegister.isComplete && !currRegister.isBookComplete){
 					logToScreen('---------- ШК управления отменен. Не закончена текуща песледовательность ----------',true);
 					return;
 				}
@@ -624,6 +624,13 @@
 				return true;
 			}
 
+			protected function btResetRegister_clickHandler(event:MouseEvent):void{
+				if(currRegister){
+					currRegister.flushData();
+					currRegister=null;
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -651,6 +658,7 @@
 			<s:Label text="Книг: {currRegister.books}"/>
 			<s:Label text="Листов: {currRegister.sheets}"/>
 			<s:Label text="Выполнено: {currRegister.registred.toString()}"/>
+			<s:Button id="btResetRegister" label="Сбросить" click="btResetRegister_clickHandler(event)"/>
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%" height="100%">
 			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>

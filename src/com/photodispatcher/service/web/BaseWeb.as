@@ -87,25 +87,25 @@ package com.photodispatcher.service.web{
 		}
 
 		public function get lastOrderId():String{
-			throw new Error("You need to override sync() in your concrete class");
+			throw new Error("You need to override lastOrderId() in your concrete class");
 		}
 		public function getOrder(order:Order):void{
 			throw new Error("You need to override getOrder() in your concrete class");
 		}
 		public function getMailPackage(packageId:int):void{
-			throw new Error("You need to override getOrder() in your concrete class");
+			throw new Error("You need to override getMailPackage() in your concrete class");
 		}
 		protected var joinIds:Array;
 		protected var joinResultId:int;
 		public function joinMailPackages(ids:Array):void{
-			throw new Error("You need to override getOrder() in your concrete class");
+			throw new Error("You need to override joinMailPackages() in your concrete class");
 		}
 
 		protected var packageId:int;
 		protected var packageState:int;
 		protected var forceState:Boolean;
 		public function setMailPackageState(id:int, state:int, force:Boolean):void{
-			throw new Error("You need to override getOrder() in your concrete class");
+			throw new Error("You need to override setMailPackageState() in your concrete class");
 		}
 		
 		protected function abort(errMsg:String):void{

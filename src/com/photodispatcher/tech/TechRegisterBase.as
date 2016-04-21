@@ -190,12 +190,17 @@ package com.photodispatcher.tech{
 			}
 		}
 		
+		public function get isBookComplete():Boolean{
+			var endSheet:int=0;
+			if(bookPart==BookSynonym.BOOK_PART_BLOCK) endSheet=revers?1:sheets;
+			return lastSheet==endSheet;
+		}
 		
 		public function get isComplete():Boolean{
 			/* detect by registred
 			if(inexactBookSequence) return false;//can't detect
 			*/
-			if(detectFirstBook){
+			if(detectFirstBook || inexactBookSequence){
 				//check last book & last sheet 
 				var endSheet:int=0;
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK) endSheet=revers?1:sheets;
