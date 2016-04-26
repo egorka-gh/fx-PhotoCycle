@@ -477,6 +477,8 @@ package com.photodispatcher.provider.preprocess{
 			_isStarted = value;
 		}
 
+		[Bindable]
+		public var imThreads:int;
 		
 		private function start():void{
 			if(_isStarted) return;
@@ -487,6 +489,8 @@ package com.photodispatcher.provider.preprocess{
 				progressCaption='Не настроен ImageMagick';
 				return;
 			}
+			
+			imThreads=Context.getAttribute('imThreads');
 			
 			var dstFolder:String=Context.getAttribute('workFolder');
 			if(!dstFolder){

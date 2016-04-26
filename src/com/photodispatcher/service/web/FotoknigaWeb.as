@@ -331,34 +331,6 @@ package com.photodispatcher.service.web{
 			//do nothing
 		}
 		
-		private function getErr(raw:Object):String{
-			errCodes=[];
-			var result:String='';
-			var key:*;
-			var obj:Object;
-			if (raw && raw.error){
-				if(raw.error is String){
-					result=raw.error;
-				}else{
-					for (key in raw.error){
-						if(raw.error[key] is String){
-							if(result) result+= '\n';
-							result+=raw.error[key];
-						}else{
-							obj=raw.error[key];
-							if(obj.hasOwnProperty('value')) errCodes.push(int(obj.value));
-							if(obj.hasOwnProperty('title')){
-								if(result) result+= '\n';
-								result+=obj.title as String;
-							}
-						}
-					}
-				}
-			}
-			if(!result) result='FotoknigaWeb Ошибка структуры данных';
-			return result;
-		}
-		
 		private function logSyncData(raw:Object):void{
 			if(!raw) return;
 			var syncData:String=raw as String;

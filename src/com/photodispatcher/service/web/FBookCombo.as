@@ -1,6 +1,7 @@
 package com.photodispatcher.service.web{
 	import com.akmeful.fotokniga.net.AuthService;
 	import com.photodispatcher.event.WebEvent;
+	import com.photodispatcher.factory.MailPackageBuilder;
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
@@ -41,6 +42,10 @@ package com.photodispatcher.service.web{
 		
 		public static const COMMAND_GET_ORDER_INFO:String='order';
 		//public static const PARAM_ORDER_ID:String='args[number]';
+		
+		public static const COMMAND_GET_PACKAGE_INFO:String='group';
+		public static const PARAM_PACKAGE_ID:String='args[number]';
+
 		
 		public function FBookCombo(source:Source){
 			super(source);
@@ -96,7 +101,18 @@ package com.photodispatcher.service.web{
 						trace('FBook web check project '+_getOrder.src_id+ ' sid:'+source.fbookSid);
 						client.getData( new InvokerUrl(baseUrl+URL_API),post);
 						break;
-					
+					case CMD_GET_PACKAGE:
+						startListen();
+						//ask mail gruop
+						post= new Object();
+						post[PARAM_KEY]=API_KEY;
+						post[PARAM_COMMAND]=COMMAND_GET_PACKAGE_INFO;
+						post[PARAM_PACKAGE_ID]=lastPackageId;
+						if(source.fbookSid) post.sid=source.fbookSid;
+						trace('FBook web load mail package '+lastPackageId.toString());
+						client.getData( new InvokerUrl(baseUrl+URL_API),post);
+						break;
+
 				}
 			} else {
 				abort('Ошибка подключения к '+source.fbookService.url);
@@ -212,12 +228,25 @@ package com.photodispatcher.service.web{
 		
 		private var wrongSidCount:int=0;
 		override protected function handleData(e:WebEvent):void{
+			
 			var result:Object=parseRaw(e.data);
+			/*
 			if(!result){
 				abort('Ошибка web: '+e.data);
 				source.fbookSid='';
 				return;
 			}
+			*/
+			if(!result || !result.hasOwnProperty('result') || !result.result || result.error){
+				if(!result){
+					abort('FotoknigaWeb Ошибка web: '+e.data);
+				}else{
+					abort(getErr(result));
+				}
+				return;
+			}
+
+			
 			//check sid
 			if(result.hasOwnProperty('sid') && result.sid!=source.fbookSid){
 				source.fbookSid='';
@@ -242,6 +271,7 @@ package com.photodispatcher.service.web{
 					//add to result
 					orderes=orderes.concat(a);
 					getData();
+					return;
 					break;
 				case CMD_CHECK_STATE:
 					if(!result.hasOwnProperty('result') || !result.result || !result.result.hasOwnProperty('status') || result.error){
@@ -274,19 +304,46 @@ package com.photodispatcher.service.web{
 						}
 					}
 					endGetOrder();
+					return;
 					break;
+				case CMD_GET_PACKAGE:
+					//parse package
+					lastPackage=MailPackageBuilder.build(source.id, result.result);
+					if(!lastPackage || lastPackage.id!=lastPackageId){
+						abort('FBook Ошибка загрузки MailPackage id: '+lastPackageId.toString());
+						return;
+					}
+					trace('FBook MailPackage loaded id: '+lastPackageId.toString());
+					break;
+
 			}
+			_hasError=false;
+			_errMesage='';
+			stopListen();
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
 		override protected function endGetOrder():void{
-			trace('FotoknigaWeb order loaded.');
+			trace('FBook order loaded.');
 			_hasError=false;
 			_errMesage='';
 			stopListen();
 			lastOrder=_getOrder;
-			trace('FotoknigaWeb loaded order id:'+lastOrder.src_id);
+			trace('FBook loaded order id:'+lastOrder.src_id);
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
+		override public function getMailPackage(packageId:int):void{
+			if(!source || !packageId){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			cmd=CMD_GET_PACKAGE;
+			lastPackageId=packageId;
+			_hasError=false;
+			_errMesage='';
+			login();
+		}
+
 	}
 }

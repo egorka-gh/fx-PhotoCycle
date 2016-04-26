@@ -38,6 +38,7 @@ package com.photodispatcher.provider.ftp{
 		public static const RESTART_TIMEOUT:int=10000;
 		public static const PRODUCTION_ERR_RESET_DELAY:int=1000*60*3;
 		public static const WEB_ERRORS_LIMIT:int=3;
+		public static const ORDERS_INPROCESS_LIMIT:int=5;
 		
 		protected var _isStarted:Boolean=false;
 		protected var forceStop:Boolean;
@@ -646,6 +647,14 @@ package com.photodispatcher.provider.ftp{
 		}
 
 		private function onDownloadManagerNeedOrder(event:ImageProviderEvent):void{
+			if(ORDERS_INPROCESS_LIMIT>0){
+				var inprocess:int=0;
+				if(downloadManager) inprocess+=downloadManager.queueLenth;
+				if(fbDownloadManager) inprocess+=fbDownloadManager.queueLenth;
+				if(webApplicant) inprocess++;
+				
+				if(inprocess>=ORDERS_INPROCESS_LIMIT) return;
+			}
 			checkQueue();
 		}
 

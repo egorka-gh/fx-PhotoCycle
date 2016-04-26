@@ -101,6 +101,16 @@ package com.photodispatcher.provider.preprocess{
 					pg.is_reprint=true;
 					pg.reprint_id=pg.id;
 					pg.id=lastOrder.id+'_'+pgIdx.toString();
+					
+					if(reprintActivity){
+						pg.staffActivityCaption='';
+						if(reprintActivity.sa_type_name) pg.staffActivityCaption=reprintActivity.sa_type_name;
+						if(reprintActivity.remark){
+							if(pg.staffActivityCaption) pg.staffActivityCaption+=' ';
+							pg.staffActivityCaption+=reprintActivity.remark;
+						}
+					}
+					
 					if(pg.is_pdf){
 						pdfPG.push(pg);
 					}else{

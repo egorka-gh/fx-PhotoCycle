@@ -60,6 +60,10 @@ package com.photodispatcher.provider.ftp{
 			return _isStarted;
 		}
 
+		public function get queueLenth():int{
+			return downloadOrders?downloadOrders.length:0;
+		}
+
 		public function start():Boolean{
 			//TODO reset state
 			

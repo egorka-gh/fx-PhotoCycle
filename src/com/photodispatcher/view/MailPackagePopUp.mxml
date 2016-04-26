@@ -23,6 +23,7 @@
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
+			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.printer.Printer;
 			import com.photodispatcher.service.web.BaseWeb;
 			import com.photodispatcher.service.web.FotoknigaWeb;
@@ -534,6 +535,9 @@
 			protected function dgProps_creationCompleteHandler(event:FlexEvent):void{
 				var gridMenu:GridContexMenu;
 				gridMenu= new GridContexMenu(dgProps); 
+				gridMenu.addItem('Отправлен', markSendCallBack);
+				gridMenu.addItem('');
+				gridMenu.addItem('');
 				gridMenu.addItem('Назначить полку',setSpaceCallBack);
 				gridMenu.addItem('Сменить полку',resetSpaceCallBack);
 			}
@@ -574,6 +578,27 @@
 					latch.removeEventListener(Event.COMPLETE,onresetSpaceCallBack);
 					if(latch.complite){
 						setSpaceCallBack(dgProps,0);
+					}
+				}
+			}
+
+			private function markSendCallBack(grid:DataGrid,param:int):void{
+				Alert.show('Заказ будет отмечен как отправлен. Продолжить?','',Alert.YES|Alert.NO, this, onAlertmarkSend);
+			}
+			private function onAlertmarkSend(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES){
+					var onItem:Order=dgProps.selectedItem as Order;
+					if(onItem){
+						onItem.state=OrderState.PACKAGE_SEND;
+						var ordService:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+						var latch:DbLatch= new DbLatch();
+						latch.addLatch(ordService.setState(onItem));
+						latch.start();
+						
+						//clear rack
+						latch= new DbLatch();
+						latch.addLatch(bdService.resetRackSpace(onItem.id));
+						latch.start();
 					}
 				}
 			}
