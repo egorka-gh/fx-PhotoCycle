@@ -38,6 +38,7 @@
 			public static const REGLISTLIMIT:int=100;
 			
 			public var extendedPrint:Boolean;
+			public var soundOffOnReprint:Boolean;
 			
 			public var techPoint:TechPoint;
 			private var _barcodeReader:ComReader;
@@ -278,6 +279,16 @@
 				cleanLog();
 			}
 			
+			private var sound:Sound;
+			
+			public function set alertSound(filepath:String):void{
+				if(!filepath) return;
+				var file:File= new File(filepath);
+				if(!file.exists) return;
+				sound= new Sound(new URLRequest(file.url));
+			}
+
+			
 			private function logToScreen(msg:String, isError:Boolean=false):void{
 				var color:String=isError?"'#990000'":"'#006600'";
 				var bold:String=isError?"fontWeight='bold'":'';
@@ -299,6 +310,15 @@
 					trace('TextFlow err, txt: '+logText);
 					trace(error.message);
 				}
+				
+				if(isError && sound ){
+					if(!currRegister || !soundOffOnReprint || PrintGroup.getIdxFromId(currRegister.printGroupId)<3){
+						try{
+							sound.play();
+						}catch(error:Error){}
+					}
+				}
+
 				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
 			}
 

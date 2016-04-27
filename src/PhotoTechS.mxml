@@ -75,6 +75,28 @@
 				Context.setAttribute("extendedPrint", value);
 			}
 
+			
+			protected var _alertSound:String;
+			[Bindable]
+			public function get alertSound():String{
+				return _alertSound;
+			}
+			public function set alertSound(value:String):void{
+				_alertSound = value;
+				Context.setAttribute("alertSound", value);
+			}
+
+			
+			protected var _soundOffOnReprint:Boolean;
+			[Bindable]
+			public function get soundOffOnReprint():Boolean{
+				return _soundOffOnReprint;
+			}
+			public function set soundOffOnReprint(value:Boolean):void{
+				_soundOffOnReprint = value;
+				Context.setAttribute("soundOffOnReprint", value);
+			}
+
 			private var _techPoint:int;
 			[Bindable]
 			protected function get techPointID():int{
@@ -161,6 +183,8 @@
 					techPointID=so.data.techPoint;
 					reversOrder=so.data.reversOrder;
 					extendedPrint=so.data.extendedPrint;
+					alertSound=so.data.alertSound;
+					soundOffOnReprint=so.data.soundOffOnReprint;
 				}
 				
 				if(techPointObj && coms.length>0){
@@ -291,6 +315,42 @@
 				FlexGlobals.topLevelApplication.exit();
 			}
 			
+			protected function btSoundFile_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,prtFolderSet);
+				file.browseForOpen('Выбирите файл звука (mp3)');
+			}
+			protected function prtFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,prtFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					alertSound=file.nativePath;;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.alertSound = alertSound;
+					so.flush();
+				}
+			}
+
+			protected function btSoundTest_clickHandler(event:MouseEvent):void{
+				if(!alertSound) return;
+				var file:File= new File(alertSound);
+				if(!file.exists) return;
+				var sound:Sound= new Sound(new URLRequest(file.url));
+				try{
+					sound.play();
+				}catch(error:Error){}
+			}
+			
+			protected function chkSoundOff_changeHandler(event:Event):void{
+				soundOffOnReprint=chkSoundOff.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.soundOffOnReprint = soundOffOnReprint;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -330,7 +390,19 @@
 			<s:Label text="Печатать подпись ШК:"/>
 			<s:CheckBox id="chbBarCaption" selected="{extendedPrint}"  change="chbBarCaption_changeHandler(event)"/>
 		</s:HGroup>
-		
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Звук ошибки:"/>
+			<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
+			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)" width="40"/>
+			<s:Button id="btSoundTest" label="►" click="btSoundTest_clickHandler(event)" width="40"/>
+		</s:HGroup>
+
+		<s:HGroup gap="2" verticalAlign="baseline" paddingLeft="80">
+			<s:CheckBox id="chkSoundOff" selected="{soundOffOnReprint}"  change="chkSoundOff_changeHandler(event)"/>
+			<s:Label text="Не орать если номер группы >2"/>
+		</s:HGroup>
+
 		<s:VGroup gap="5">
 			<s:HGroup gap="10">
 				<s:List id="comList" dataProvider="{coms}" height="100%"/>
@@ -347,7 +419,10 @@
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
 		<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" 
-							  barcodeReader="{barcodeReader}" flap="{flap}" printer="{printer}" extendedPrint="{extendedPrint}"
+							  barcodeReader="{barcodeReader}" flap="{flap}" 
+							  printer="{printer}" extendedPrint="{extendedPrint}"
+							  alertSound="{alertSound}"
+							  soundOffOnReprint="{soundOffOnReprint}"
 							  width="100%" height="100%"/>
 	</s:VGroup>
 	

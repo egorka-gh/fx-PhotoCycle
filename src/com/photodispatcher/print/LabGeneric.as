@@ -32,6 +32,7 @@ package com.photodispatcher.print{
 		
 		//papers
 		public static const PAPER_DEFAULT_MATT:int=11;
+		public static const PAPER_METALIC:int=12;
 		public static const PAPER_THERMO:int=36;
 		public static const PAPER_CANVAS:int=37;
 		

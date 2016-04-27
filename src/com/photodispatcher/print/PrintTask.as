@@ -484,7 +484,9 @@ package com.photodispatcher.print{
 			currCopyFile.addEventListener(IOErrorEvent.IO_ERROR,copyIOFault);
 			currCopyFile.addEventListener(SecurityErrorEvent.SECURITY_ERROR,copySecurityFault);
 			currCopyFile.copyToAsync(dstFile,true);
-			
+			if(printGrp.is_pdf){
+				StateLog.logByPGroup(printGrp.state, printGrp.id,'Копирую файл '+currCopyFile.name);
+			}
 			//add script section
 			var script:String;
 			script=fillScript(printBodyTemp01);
@@ -559,6 +561,9 @@ package com.photodispatcher.print{
 
 		
 		private function copyComplete(e:Event):void{
+			if(printGrp.is_pdf){
+				StateLog.logByPGroup(printGrp.state, printGrp.id,'Скопирован файл '+currCopyFile.name);
+			}
 			stopListen();
 			if(!startCopyTimer()) copyNext();
 		}

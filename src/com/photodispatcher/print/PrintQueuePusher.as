@@ -197,7 +197,7 @@ package com.photodispatcher.print{
 				for each(dev in setA){
 					lab = printManager.getLab(dev.lab);
 					//TODO hardcoded SourceType.LAB_FUJI for photo
-					if(lab && lab.src_type==SourceType.LAB_FUJI) setB.push(dev);
+					if(lab && (lab.src_type==SourceType.LAB_FUJI || (lab.src_type==SourceType.LAB_NORITSU && pg.paper==LabGeneric.PAPER_METALIC))) setB.push(dev);
 				}
 				if(setB.length>0){
 					setA=setB;

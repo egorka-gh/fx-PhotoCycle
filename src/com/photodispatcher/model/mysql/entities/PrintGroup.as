@@ -891,6 +891,15 @@ package com.photodispatcher.model.mysql.entities {
 			if(isNaN(tInt)) return '';
 			return result+'_'+tInt.toString();
 		}
+		
+		public static function getIdxFromId(id:String):int{
+			if(!id) return -1;
+			var arr:Array=id.split('_');
+			if(!arr || arr.length!=3) return -1;
+			var idx:Number= parseInt(arr[2],10);
+			if(isNaN(idx)) return -1; 
+			return int(idx);
+		}
 
 		public static function idFromBookBarcode(code:String):String{
 			if(!code || code.length<8) return '';
