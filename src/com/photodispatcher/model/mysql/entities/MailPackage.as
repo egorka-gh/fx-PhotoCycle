@@ -98,6 +98,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('min_ord_state_name'); col.headerText='Мин статус'; col.editable=false; col.width=100; result.addItem(col); 
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.editable=false; result.addItem(col);
+			col= new GridColumn('src_date'); col.headerText='Дата сайта'; col.formatter=fmt;  col.editable=false; result.addItem(col);
 			col= new GridColumn('orders_num'); col.headerText='Кол заказов'; col.editable=false; result.addItem(col); 
 			
 			return result;

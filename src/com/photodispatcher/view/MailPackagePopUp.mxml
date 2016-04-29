@@ -459,7 +459,7 @@
 			//protected function btSetSiteState_clickHandler(event:MouseEvent):void{
 			private function setSiteState():void{
 				if(!mailPackage || !mailPackage.id) return;
-				if(source.type==SourceType.SRC_FOTOKNIGA){
+				if(source.type==SourceType.SRC_FOTOKNIGA || source.type==SourceType.SRC_FBOOK){
 					//update site state
 					webService.addEventListener(Event.COMPLETE,setStateHandler);
 					try{

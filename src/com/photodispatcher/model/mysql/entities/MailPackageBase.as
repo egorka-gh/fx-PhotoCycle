@@ -36,6 +36,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _source:int;
         private var _source_code:String;
         private var _source_name:String;
+        private var _src_date:Date;
         private var _src_state:int;
         private var _src_state_name:String;
         private var _state:int;
@@ -161,6 +162,13 @@ package com.photodispatcher.model.mysql.entities {
             return _source_name;
         }
 
+        public function set src_date(value:Date):void {
+            _src_date = value;
+        }
+        public function get src_date():Date {
+            return _src_date;
+        }
+
         public function set src_state(value:int):void {
             _src_state = value;
         }
@@ -215,6 +223,7 @@ package com.photodispatcher.model.mysql.entities {
             _source = input.readObject() as int;
             _source_code = input.readObject() as String;
             _source_name = input.readObject() as String;
+            _src_date = input.readObject() as Date;
             _src_state = input.readObject() as int;
             _src_state_name = input.readObject() as String;
             _state = input.readObject() as int;
@@ -241,6 +250,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
             output.writeObject((_source_code is IPropertyHolder) ? IPropertyHolder(_source_code).object : _source_code);
             output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
+            output.writeObject((_src_date is IPropertyHolder) ? IPropertyHolder(_src_date).object : _src_date);
             output.writeObject((_src_state is IPropertyHolder) ? IPropertyHolder(_src_state).object : _src_state);
             output.writeObject((_src_state_name is IPropertyHolder) ? IPropertyHolder(_src_state_name).object : _src_state_name);
             output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);

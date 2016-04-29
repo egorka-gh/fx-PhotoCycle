@@ -46,6 +46,10 @@ package com.photodispatcher.service.web{
 		public static const COMMAND_GET_PACKAGE_INFO:String='group';
 		public static const PARAM_PACKAGE_ID:String='args[number]';
 
+		public static const COMMAND_SET_PACKAGE_STATE:String='group_new_status';
+		public static const PARAM_UPDATE_PACKAGE_ID:String='args[id]';
+		public static const PARAM_PACKAGE_STATUS:String='args[status]';
+		public static const PARAM_PACKAGE_FORCE_STATUS:String='args[ignore_balance]';
 		
 		public function FBookCombo(source:Source){
 			super(source);
@@ -110,6 +114,18 @@ package com.photodispatcher.service.web{
 						post[PARAM_PACKAGE_ID]=lastPackageId;
 						if(source.fbookSid) post.sid=source.fbookSid;
 						trace('FBook web load mail package '+lastPackageId.toString());
+						client.getData( new InvokerUrl(baseUrl+URL_API),post);
+						break;
+					case CMD_SET_PACKAGE_STATE:
+						startListen();
+						post= new Object();
+						post[PARAM_KEY]=API_KEY;
+						post[PARAM_COMMAND]=COMMAND_SET_PACKAGE_STATE;
+						post[PARAM_UPDATE_PACKAGE_ID]=packageId;
+						post[PARAM_PACKAGE_STATUS]=packageState;
+						if(forceState) post[PARAM_PACKAGE_FORCE_STATUS]=true;
+						if(source.fbookSid) post.sid=source.fbookSid;
+						trace('FBook web set package '+packageId.toString()+' state '+packageState.toString()+(forceState?' force':''));
 						client.getData( new InvokerUrl(baseUrl+URL_API),post);
 						break;
 
@@ -239,7 +255,7 @@ package com.photodispatcher.service.web{
 			*/
 			if(!result || !result.hasOwnProperty('result') || !result.result || result.error){
 				if(!result){
-					abort('FotoknigaWeb Ошибка web: '+e.data);
+					abort('Ошибка web: '+e.data);
 				}else{
 					abort(getErr(result));
 				}
@@ -315,6 +331,13 @@ package com.photodispatcher.service.web{
 					}
 					trace('FBook MailPackage loaded id: '+lastPackageId.toString());
 					break;
+				case CMD_SET_PACKAGE_STATE:
+					if(result.result!='OK'){
+						abort('Ошибка сайта при смене статуса группы '+packageId.toString());
+						return;
+					}
+					trace('FBook MailPackage state changed');
+					break;
 
 			}
 			_hasError=false;
@@ -342,6 +365,21 @@ package com.photodispatcher.service.web{
 			lastPackageId=packageId;
 			_hasError=false;
 			_errMesage='';
+			login();
+		}
+		
+		override public function setMailPackageState(id:int, state:int, force:Boolean):void{
+			if(!source){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			cmd=CMD_SET_PACKAGE_STATE;
+			packageId=id;
+			packageState=state;
+			forceState=force;
+			_hasError=false;
+			_errMesage='';
+			errCodes=[];
 			login();
 		}
 
