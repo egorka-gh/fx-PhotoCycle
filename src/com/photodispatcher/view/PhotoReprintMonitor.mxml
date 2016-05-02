@@ -50,6 +50,8 @@
 			public var order:Order;
 			[Bindable]
 			public var reject:TechReject;
+			
+			public var autoCreate:Boolean;
 
 			[Bindable]
 			private var labelWidth:int=100;
@@ -81,11 +83,11 @@
 			}
 
 			private function onError(event:BarCodeEvent):void{
-				log('Ошибка: '+event.error+'; ШК:'+event.barcode, true);
+				log('Ошибка: '+event.error+'; ШК:'+event.barcode, true, false);
 			}
 
 			private function onBarDisconnect(event:BarCodeEvent):void{
-				log('Отключен '+event.barcode, true);
+				log('Отключен '+event.barcode, true, false);
 			}
 			private function onReaderConnect(event:BarCodeEvent):void{
 				log('Сканер ШК подключен '+event.barcode);
@@ -130,7 +132,11 @@
 					applyBarData();
 					return;
 				}else if(reject && reject.items && reject.items.length>0){
+					//TODO auto build ??
 					Alert.show('Лист из другого заказа. Сформируйте или очистите текущую перепечатку.');
+					if(autoCreate){
+						playSound(_alertSound);
+					}
 					return;
 				}
 
@@ -143,19 +149,30 @@
 			}
 			
 
-			public function log(mesage:String, isErr:Boolean=false):void{
+			public function log(mesage:String, isErr:Boolean=false, soundOn:Boolean=true):void{
 				lbLog.text=mesage;
 				if(isErr){
+					if(soundOn){
+						playSound(_alertSound);
+					}
+
 					lbLog.setStyle('backgroundAlpha',0.5);
 				}else{
 					lbLog.setStyle('backgroundAlpha',0);
 				}
 			}
 
+			private function playSound(sound:Sound):void{
+				if(!sound) return;
+				try{
+					sound.play();
+				}catch(error:Error){}
+			}
+			
 			public function start():void{
 				if(!techPoint){
 					//TODO rise err or log in screen
-					log('Не задана технологическая точка',true);
+					log('Не задана технологическая точка',true, false);
 				}
 				if(barcodeReader) barcodeReader.start();
 			}
@@ -329,24 +346,24 @@
 				
 				if(pg.book_type==0) return;
 
-				var autoCreate:Boolean=false;
+				var autoAdd:Boolean=false;
 				if(autoUnit==TechReject.UNIT_NONE || autoUnit==TechReject.UNIT_SHEET){
 					setRejectUnit(TechReject.UNIT_SHEET);
-					autoCreate= autoUnit==TechReject.UNIT_SHEET;
+					autoAdd= autoUnit==TechReject.UNIT_SHEET;
 				}else{
 					if(autoUnit==TechReject.UNIT_BOOK){
 						setRejectUnit(TechReject.UNIT_BOOK);
-						autoCreate=true;
+						autoAdd=true;
 					}else{
 						if(pg.book_part==BookSynonym.BOOK_PART_BLOCK){
 							setRejectUnit(TechReject.UNIT_BLOCK);
-							autoCreate= autoUnit==TechReject.UNIT_BLOCK;
+							autoAdd= autoUnit==TechReject.UNIT_BLOCK;
 						}else if(pg.book_part==BookSynonym.BOOK_PART_COVER){
 							setRejectUnit(TechReject.UNIT_COVER);
-							autoCreate= autoUnit==TechReject.UNIT_COVER;
+							autoAdd= autoUnit==TechReject.UNIT_COVER;
 						}else if(pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
 							setRejectUnit(autoUnit);
-							autoCreate= true;
+							autoAdd= false;
 						}
 					}
 				}
@@ -354,7 +371,24 @@
 				//set barcode book & sheet
 				if(barBook) nsBook.value=barBook;
 				nsSheet.value=barSheet;
-				if(barBook && autoCreate) btAddItem_clickHandler(null);
+				
+				//auto add / create
+				if(barBook && autoAdd){
+					btAddItem_clickHandler(null);
+					if(autoCreate && staffActivityView){
+						if(!staffActivityView.createActivity()){
+							playSound(_alertSound);
+						}else{
+							createReject(true);
+						}
+					}
+				}else{
+					if(autoCreate){
+						Alert.show('Не верные параметры автогенерации.');
+						playSound(_alertSound);
+					}
+				}
+				
 			}
 			
 			private function filterPG(item:Object):Boolean{
@@ -454,6 +488,10 @@
 			}
 			
 			protected function staffActivityView_complitedHandler(event:Event):void{
+				createReject();
+			}
+			
+			protected function createReject(checkResult:Boolean=false):void{
 				if(!reject || reject.items.length==0) return;
 				reject.created=new Date();
 				reject.state_date=reject.created;
@@ -475,14 +513,27 @@
 				//save
 				//var svc:TechRejecService=Tide.getInstance().getContext().byType(TechRejecService,true) as TechRejecService;
 				var latch:DbLatch= new DbLatch();
-				//latch.addEventListener(Event.COMPLETE, onStaffATLoad);
+				if(checkResult) latch.addEventListener(Event.COMPLETE, on_createReject);
 				latch.addLatch(rejectService.create(reject));
 				latch.start();
-
+				
 				//reset
-				resetOrder();
+				if(!checkResult) resetOrder();
 			}
 			
+			private function on_createReject(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,on_createReject);
+					if(latch.complite){
+						resetOrder();
+						playSound(_okSound);
+					}else{
+						playSound(_alertSound);
+					}
+				}
+			}
+
 			protected function btOpenOrder_clickHandler(event:MouseEvent):void{
 				if(order && order.id){
 					var pop:OrderInfoPopup=new OrderInfoPopup();
@@ -543,6 +594,23 @@
 					ddAddUnit.selectedIndex=idx;
 				}
 			}
+			
+			private var _alertSound:Sound;
+			public function set alertSound(filepath:String):void{
+				if(!filepath) return;
+				var file:File= new File(filepath);
+				if(!file.exists) return;
+				_alertSound= new Sound(new URLRequest(file.url));
+			}
+
+			private var _okSound:Sound;
+			public function set okSound(filepath:String):void{
+				if(!filepath) return;
+				var file:File= new File(filepath);
+				if(!file.exists) return;
+				_okSound= new Sound(new URLRequest(file.url));
+			}
+
 			
 		]]>
 	</fx:Script>

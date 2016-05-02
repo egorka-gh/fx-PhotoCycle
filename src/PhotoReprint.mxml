@@ -73,6 +73,26 @@
 			}
 			*/
 			
+			protected var _alertSound:String;
+			[Bindable]
+			public function get alertSound():String{
+				return _alertSound;
+			}
+			public function set alertSound(value:String):void{
+				_alertSound = value;
+				Context.setAttribute("alertSound", value);
+			}
+
+			protected var _okSound:String;
+			[Bindable]
+			public function get okSound():String{
+				return _okSound;
+			}
+			public function set okSound(value:String):void{
+				_okSound = value;
+				Context.setAttribute("okSound", value);
+			}
+			
 			private var _techPoint:int;
 			[Bindable]
 			protected function get techPointID():int{
@@ -158,6 +178,10 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
 					techPointID=so.data.techPoint;
+					alertSound=so.data.alertSound;
+					okSound=so.data.okSound;
+					autoCreate=so.data.autoCreate;
+
 					//reversOrder=so.data.reversOrder;
 					//extendedPrint=so.data.extendedPrint;
 				}
@@ -271,6 +295,83 @@
 				FlexGlobals.topLevelApplication.exit();
 			}
 			
+			protected function btSoundFile_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,prtFolderSet);
+				file.browseForOpen('Выбирите файл звука (mp3)');
+			}
+			protected function prtFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,prtFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					alertSound=file.nativePath;;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.alertSound = alertSound;
+					so.flush();
+				}
+			}
+			
+			protected function btSoundTest_clickHandler(event:MouseEvent):void{
+				if(!alertSound) return;
+				var file:File= new File(alertSound);
+				if(!file.exists) return;
+				var sound:Sound= new Sound(new URLRequest(file.url));
+				try{
+					sound.play();
+				}catch(error:Error){}
+			}
+
+			
+			protected function btSoundOkFile_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,onSoundOkFileSet);
+				file.browseForOpen('Выбирите файл звука (mp3)');
+			}
+			protected function onSoundOkFileSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,onSoundOkFileSet);
+					//conf.wrk_path=fl.nativePath;
+					okSound=file.nativePath;;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.okSound = okSound;
+					so.flush();
+				}
+			}
+			
+			protected function btSoundOkTest_clickHandler(event:MouseEvent):void{
+				if(!okSound) return;
+				var file:File= new File(okSound);
+				if(!file.exists) return;
+				var sound:Sound= new Sound(new URLRequest(file.url));
+				try{
+					sound.play();
+				}catch(error:Error){}
+			}
+			
+			
+			protected var _autoCreate:Boolean;
+			[Bindable]
+			public function get autoCreate():Boolean{
+				return _autoCreate;
+			}
+			public function set autoCreate(value:Boolean):void{
+				_autoCreate = value;
+				Context.setAttribute("autoCreate", value);
+			}
+
+			protected function chkAutoCreate_changeHandler(event:Event):void{
+				autoCreate=chkAutoCreate.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.autoCreate = autoCreate;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -310,6 +411,26 @@
 			<s:Label text="Печатать подпись ШК:"/>
 			<s:CheckBox id="chbBarCaption" selected="{extendedPrint}"  change="chbBarCaption_changeHandler(event)"/>
 		</s:HGroup>-->
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Звук ошибки:"/>
+			<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
+			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)" width="40"/>
+			<s:Button id="btSoundTest" label="►" click="btSoundTest_clickHandler(event)" width="40"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Звук выполнено:"/>
+			<s:TextInput id="tiSoundOkFile" text="{okSound}" editable="false" width="400"/>
+			<s:Button id="btSoundOkFile" label="..." click="btSoundOkFile_clickHandler(event)" width="40"/>
+			<s:Button id="btSoundOkTest" label="►" click="btSoundOkTest_clickHandler(event)" width="40"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="2" verticalAlign="baseline">
+			<s:Label text="Автогенерация"/>
+			<s:CheckBox id="chkAutoCreate" selected="{autoCreate}"  change="chkAutoCreate_changeHandler(event)"/>
+		</s:HGroup>
+
 		
 		<s:VGroup gap="5">
 			<s:HGroup gap="10">
@@ -329,7 +450,11 @@
 		<!--<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" 
 							  barcodeReader="{barcodeReader}" flap="{flap}" printer="{printer}" extendedPrint="{extendedPrint}"
 							  width="100%" height="100%"/>-->
-		<view:PhotoReprintMonitor id="photoReprintMonitor" techPoint="{techPointObj}" barcodeReader="{barcodeReader}" width="100%" height="100%"/> 
+		<view:PhotoReprintMonitor id="photoReprintMonitor" techPoint="{techPointObj}" barcodeReader="{barcodeReader}"
+								  alertSound="{alertSound}"
+								  okSound="{okSound}"
+								  autoCreate="{autoCreate}"
+								  width="100%" height="100%"/> 
 	</s:VGroup>
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
