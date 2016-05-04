@@ -549,6 +549,7 @@ package com.photodispatcher.factory{
 										pgf.file_name=page.outFileName(1); //first & only one slice
 									}
 									pgf.page_num=page.sheetNum;
+									
 									pgf.caption=PrintGroupFile.CAPTION_BOOK_NUM_HOLDER+'-'+StrUtil.lPad(page.sheetNum.toString(),2);
 									pgf.book_num=proj.bookNumber;
 									pgf.prt_qty=1;
@@ -609,7 +610,8 @@ package com.photodispatcher.factory{
 					if(pgBody.files && pgBody.files.length>0){
 						pgBody.sub_id=so.sub_id;
 						pgBody.id=order.id+'_'+pgNum.toString();
-						pgBody.sheet_num=so.sheets_num; 
+						pgBody.sheet_num=so.sheets_num;
+						pgBody.pageNumber=so.sheets_num;
 						if(pgBody.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) pgBody.sheet_num+=1; //add cover
 						pgBody.prints=pgBody.book_num*pgBody.sheet_num;
 						if(!order.printGroups) order.printGroups=new ArrayCollection();

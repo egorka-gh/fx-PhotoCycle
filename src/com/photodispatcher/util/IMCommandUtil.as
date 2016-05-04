@@ -278,9 +278,9 @@ package com.photodispatcher.util{
 		}
 
 		public static function setOutputParams(command:IMCommand, quality:String='100'):void{
-			command.add('-units'); command.add('PixelsPerInch');
-			command.add('-density'); command.add('300x300');
 			command.add('-quality'); command.add(quality);
+			command.add('-density'); command.add('300x300');
+			command.add('-units'); command.add('PixelsPerInch');
 		}
 
 		public static function setJPG2PDFParams(command:IMCommand):void{

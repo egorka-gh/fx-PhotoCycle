@@ -696,7 +696,7 @@ package com.photodispatcher.provider.preprocess{
 		}
 		
 		private function saveOrder(order:Order):void{
-			var latch:DbLatch= new DbLatch();
+			var latch:DbLatch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onsaveOrder);
 			if(order.state<0){
 				//save error state
@@ -714,15 +714,27 @@ package com.photodispatcher.provider.preprocess{
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onsaveOrder);
 				var id:String= latch.lastTag;
-				if (latch.complite && id){
-					//set extra state
-					//if(!order || order.state!=OrderState.PRN_WAITE) return;
-					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
-					latch=new DbLatch();
-					//latch.addEventListener(Event.COMPLETE,onCompleteOrder);
-					//set PRN_WAITE extra state 
-					latch.addLatch(svc.extraStateFix(id, OrderState.PRN_WAITE, new Date()));
-					latch.start();
+				if(id){
+					if(latch.complite){
+						//set extra state
+						//if(!order || order.state!=OrderState.PRN_WAITE) return;
+						var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+						latch=new DbLatch();
+						//latch.addEventListener(Event.COMPLETE,onCompleteOrder);
+						//set PRN_WAITE extra state 
+						latch.addLatch(svc.extraStateFix(id, OrderState.PRN_WAITE, new Date()));
+						latch.start();
+					}else{
+						//dead lock 
+						//reset order
+						var o:Order=new Order();
+						o.id=id;
+						o.state=OrderState.PREPROCESS_WAITE;
+						latch=new DbLatch();
+						latch.addLatch(orderService.setState(o));
+						latch.start();
+						lastError='Заказ '+id+'. Ошибка записи (dead lock).';
+					}
 				}
 			}
 			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
