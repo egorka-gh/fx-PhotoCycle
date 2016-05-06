@@ -289,7 +289,8 @@ package com.photodispatcher.util{
 			command.add('-o'); command.add('dct=on');
 			command.add('-o'); command.add('bpc=off');
 			command.add('-o'); command.add('interpolation=off');
-			command.add('-o'); command.add('resolution=chunk');
+			//command.add('-o'); command.add('resolution=chunk');
+			command.add('-o'); command.add('resolution=300');
 		}
 
 		

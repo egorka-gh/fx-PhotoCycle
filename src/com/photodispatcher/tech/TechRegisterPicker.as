@@ -9,6 +9,7 @@ package com.photodispatcher.tech{
 		
 		public function TechRegisterPicker(printGroup:String, books:int, sheets:int){
 			super(printGroup, books, sheets);
+			_type=TYPE_PICKER;
 			logOk=false;
 			bookPart=BookSynonym.BOOK_PART_ANY;
 			lastSheet=-1;

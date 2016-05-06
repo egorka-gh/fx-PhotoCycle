@@ -264,7 +264,8 @@
 				var bookNum:int=int(barcode.substr(0,3));
 				var pageNum:int=int(barcode.substr(6,2));
 				
-				if(currRegister && currRegister.printGroupId==pgId){
+				if(currRegister && currRegister.checkPrintGroup(pgId)){
+					currRegister.printGroupId=pgId;
 					currRegister.register(bookNum,pageNum);
 					if (currRegister.isComplete){
 						currRegister.flushData();
@@ -291,7 +292,6 @@
 				if(regList.length> REGLISTLIMIT){
 					regList.source.length=REGLISTLIMIT;
 					regList.refresh();
-						
 				}
 			}
 			

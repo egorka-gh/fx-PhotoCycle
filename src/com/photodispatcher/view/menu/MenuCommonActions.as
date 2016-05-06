@@ -1,13 +1,16 @@
 package com.photodispatcher.view.menu{
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.view.OrderInfoPopup;
 	
 	import flash.events.Event;
+	import flash.filesystem.File;
 	
 	import org.granite.tide.Tide;
 
@@ -52,12 +55,34 @@ package com.photodispatcher.view.menu{
 			var latch:DbLatch=e.target as DbLatch;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onOrderClean);
+				var o:Object=latch.callContext;
+				var order:Order;
+				var oldState:int;
+				if(o){
+					order=o.order as Order;
+					oldState=o.oldState;
+				}
 				if(!latch.complite){
-					var o:Object=latch.callContext;
-					if(o){
-						var order:Order=o.order as Order;
-						var oldState:int=o.oldState;
+					if(order){
+						oldState=o.oldState;
 						if(order && oldState) order.state=oldState;
+					}
+				}else if(order && order.state==OrderState.FTP_WAITE){
+					//clean file system
+					var source:Source=Context.getSource(order.source);
+					if(source){
+						var path:String=source.getWrkFolder();
+						if(path){
+							var folder:File=new File(path);
+							if(folder.exists && folder.isDirectory){
+								folder=folder.resolvePath(order.ftp_folder);
+								if(folder.exists && folder.isDirectory){
+									try{
+										folder.deleteDirectory(true);
+									} catch(error:Error){}
+								}
+							}
+						}
 					}
 				}
 			}

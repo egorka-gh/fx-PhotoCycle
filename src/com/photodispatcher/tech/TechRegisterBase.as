@@ -2,8 +2,10 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.TechLog;
 	import com.photodispatcher.model.mysql.entities.TechPoint;
+	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.TechService;
 	import com.photodispatcher.service.barcode.ValveCom;
 	import com.photodispatcher.util.ArrayUtil;
@@ -24,11 +26,19 @@ package com.photodispatcher.tech{
 	public class TechRegisterBase extends EventDispatcher{
 		public static const ERROR_SEQUENCE:int=1;
 		public static const FLUSH_TIMER_INTERVAL:int=15*1000;//15sek
-		
+
+		public static const TYPE_COMMON:int=1;
+		public static const TYPE_FOLDING:int=2;
+		public static const TYPE_GLUE:int=3;
+		public static const TYPE_PICKER:int=4;
+		public static const TYPE_PRINT:int=5;
+
 
 		public var techPoint:TechPoint;
 		[Bindable]
 		public var printGroupId:String;
+		protected var printGroups:Array; 
+		
 		[Bindable]
 		public var books:int;
 		[Bindable]
@@ -49,6 +59,11 @@ package com.photodispatcher.tech{
 		
 		protected var logOk:Boolean;
 
+		protected var _type:int=TYPE_COMMON;
+		public function get type():int{
+			return _type;
+		}
+		
 		protected var _canInterrupt:Boolean=false;
 		public function get canInterrupt():Boolean{
 			return _canInterrupt;
@@ -103,8 +118,47 @@ package com.photodispatcher.tech{
 			logOk=true;
 			calcOnLog=false;
 			//complited=false;
+			
+			if(type==TYPE_PRINT || type==TYPE_PICKER) return;
+			//load printgroup & reprints
+			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			var latchR:DbLatch= new DbLatch(true);
+			latchR.addEventListener(Event.COMPLETE,onReprintsLoad);
+			latchR.addLatch(svc.loadReprintsByPG(printGroupId));
+			latchR.start();
+		}
+		protected function onReprintsLoad(e:Event):void{
+			printGroups=null;
+			var latch:DbLatch=e.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onReprintsLoad);
+				if(latch.complite && latch.lastDataArr.length>0){
+					printGroups=latch.lastDataArr;
+				}
+			}
 		}
 		
+		public function checkPrintGroup(pgId:String):Boolean{
+			if(!pgId || !printGroupId) return false;
+			if(pgId==printGroupId) return true;
+			if(!printGroups) return false;
+			var pg:PrintGroup;
+			for each(pg in printGroups){
+				if(pg.id==pgId) return true;
+			}
+			return false;
+		}
+
+		public function isReprint(pgId:String):Boolean{
+			if(!pgId) return false;
+			if(!printGroups) return PrintGroup.getIdxFromId(pgId)>2;
+			var pg:PrintGroup;
+			for each(pg in printGroups){
+				if(pg.id==pgId) return pg.is_reprint;
+			}
+			return false;
+		}
+
 		public function register(book:int,sheet:int):void{
 			if(bookPart==BookSynonym.BOOK_PART_ANY){
 				//first time, init

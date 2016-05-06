@@ -321,6 +321,7 @@ package com.photodispatcher.provider.ftp{
 							o.state=order.state;
 							o.state_date=order.state_date;
 							o.setErrLimit();
+							o.resume_load=false;
 							//del old from queue
 							toKill.push(order);
 						}else if(source.type==SourceType.SRC_FOTOKNIGA && Context.getProduction()!=Context.PRODUCTION_ANY && order.state==OrderState.CANCELED_PRODUCTION){

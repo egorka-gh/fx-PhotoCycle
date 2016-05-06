@@ -220,7 +220,8 @@
 				var bookNum:int=int(barcode.substr(0,3));
 				var pageNum:int=int(barcode.substr(6,2));
 				
-				if(currRegister && currRegister.printGroupId==pgId){
+				if(currRegister && currRegister.checkPrintGroup(pgId)){
+					currRegister.printGroupId=pgId;
 					currRegister.register(bookNum,pageNum);
 					if (currRegister.isComplete){
 						currRegister.flushData();
@@ -311,8 +312,9 @@
 					trace(error.message);
 				}
 				
-				if(isError && sound ){
-					if(!currRegister || !soundOffOnReprint || PrintGroup.getIdxFromId(currRegister.printGroupId)<3){
+				if(isError && sound){
+					//TODO
+					if(!currRegister || !soundOffOnReprint || !currRegister.isReprint(currRegister.printGroupId)){  //PrintGroup.getIdxFromId(currRegister.printGroupId)<3){
 						try{
 							sound.play();
 						}catch(error:Error){}

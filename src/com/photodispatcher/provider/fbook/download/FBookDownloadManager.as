@@ -301,7 +301,10 @@ package com.photodispatcher.provider.fbook.download{
 				if(order) dispatchEvent(new ImageProviderEvent(ImageProviderEvent.LOAD_FAULT_EVENT,order,'exceedErrLimit Flow bug'));
 			}
 			//start to load
-			if(!newOrder) newOrder=restartOrder;//start reseted at this iteration
+			if(!newOrder){
+				restartOrder.resume_load=false;
+				newOrder=restartOrder;//start reseted at this iteration
+			}
 			if(newOrder){
 				trace('FBookDownloadManager start dload order '+newOrder.id);
 				currentOrder=newOrder;
