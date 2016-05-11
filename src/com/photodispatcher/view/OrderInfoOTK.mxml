@@ -137,7 +137,7 @@
 					if(showOrder.proj_type!=0){
 						if (!pg.is_reprint && pg.book_type!=0){
 							if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) pgCover=pg;
-							if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) pgBlok=pg;
+							if(pg.book_part==BookSynonym.BOOK_PART_BLOCK || pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) pgBlok=pg;
 						}
 					}else{
 						if(pgId){

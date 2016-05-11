@@ -83,10 +83,10 @@
 				var block:PrintGroup;
 				for each(pg in order.printGroups){
 					if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) cover=pg;
-					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK) block=pg;
+					if(pg.book_part==BookSynonym.BOOK_PART_BLOCK || pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) block=pg;
 				}
 				if(!block){
-					Alert.show('Ошибка шаблона книи');
+					Alert.show('Ошибка шаблона книги');
 					return false;
 				}
 
@@ -119,18 +119,27 @@
 					for (var j:int = 0; j < block.sheet_num; j++){
 						item= new BookPreviewSheet();
 						item.rootDir=rootDir.nativePath+File.separator;
-						item.doublePage=doublePage;
-						item.sheet=j+1;
-						if(doublePage){
-							item.leftPage=(blockPages[i*block.sheet_num*2+j*2] as PrintGroupFile).file_name;
-							item.isCustomLeft=(blockPages[i*block.sheet_num*2+j*2] as PrintGroupFile).isCustom;
-							item.rightPage=(blockPages[i*block.sheet_num*2+1+j*2] as PrintGroupFile).file_name;
-							item.isCustomRight=(blockPages[i*block.sheet_num*2+1+j*2] as PrintGroupFile).isCustom;
-						}else{
+						if(block.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && (blockPages[i*block.sheet_num+j] as PrintGroupFile).book_part==BookSynonym.BOOK_PART_COVER){
+							//cover
+							item.sheet=0;
 							item.leftPage=(blockPages[i*block.sheet_num+j] as PrintGroupFile).file_name;
 							item.isCustomLeft=(blockPages[i*block.sheet_num+j] as PrintGroupFile).isCustom;
+							a[0]=item;
+						}else{
+							//sheet
+							item.doublePage=doublePage;
+							item.sheet=j+1;
+							if(doublePage){
+								item.leftPage=(blockPages[i*block.sheet_num*2+j*2] as PrintGroupFile).file_name;
+								item.isCustomLeft=(blockPages[i*block.sheet_num*2+j*2] as PrintGroupFile).isCustom;
+								item.rightPage=(blockPages[i*block.sheet_num*2+1+j*2] as PrintGroupFile).file_name;
+								item.isCustomRight=(blockPages[i*block.sheet_num*2+1+j*2] as PrintGroupFile).isCustom;
+							}else{
+								item.leftPage=(blockPages[i*block.sheet_num+j] as PrintGroupFile).file_name;
+								item.isCustomLeft=(blockPages[i*block.sheet_num+j] as PrintGroupFile).isCustom;
+							}
+							a.push(item);
 						}
-						a.push(item);
 					}
 					bookSheets.push(a);
 				}
