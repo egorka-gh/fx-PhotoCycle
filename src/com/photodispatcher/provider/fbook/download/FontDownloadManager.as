@@ -74,7 +74,7 @@ package com.photodispatcher.provider.fbook.download{
 		}
 		*/
 		
-		override public function loadPack(packName:String):ModuleLoader{
+		override public function loadPack(packName:String, version:String = null):ModuleLoader{
 			//if(loaders[packName]) return loaders[packName];
 			var ba:ByteArray=packBinarys[packName] as ByteArray;
 			if(!ba){

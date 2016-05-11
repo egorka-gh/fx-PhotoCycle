@@ -257,7 +257,12 @@ package com.photodispatcher.provider.ftp{
 			
 			order.state_date=new Date();
 			if(order.hasSuborders){
-				for each(var so:SubOrder in order.suborders) if(so.state<OrderState.CANCELED_SYNC) so.state=order.state;
+				for each(var so:SubOrder in order.suborders){
+					if(so.state<OrderState.CANCELED_SYNC) so.state=order.state;
+					//clear projs
+					//granite/tide/data/EntityManager  - JSONEncoder error
+					so.projects=null;
+				}
 			}
 			
 			writeOrders.push(order);
