@@ -329,7 +329,7 @@
 				if(dgBarCode) bar=dgBarCode.selectedItem as MailPackageBarcode;
 				if(!bar && mailPackage.barcodes && mailPackage.barcodes.length>0) bar=mailPackage.barcodes.getItemAt(0) as MailPackageBarcode;
 				if(!bar) return;
-				Printer.instance.printMPBarcode(mailPackage.id_name, bar.barcode);
+				Printer.instance.printMPBarcode(mailPackage.id_name, bar.barcode, bar.preorder_num);
 			}
 			
 			protected function dgPackages_creationCompleteHandler(event:FlexEvent):void{
@@ -352,9 +352,13 @@
 					var bar:MailPackageBarcode;
 					if(dgBarCode) bar=dgBarCode.selectedItem as MailPackageBarcode;
 					if(!bar && mailPackage.barcodes && mailPackage.barcodes.length>0) bar=mailPackage.barcodes.getItemAt(0) as MailPackageBarcode;
-					var code:String;
-					if(bar) code=bar.barcode;
-					Printer.instance.printDeliveryForm(mailPackage,form,code);
+					var code:String='';
+					var providerId:String='';
+					if(bar){
+						code=bar.barcode;
+						providerId=bar.preorder_num;
+					}
+					Printer.instance.printDeliveryForm(mailPackage,form,code,providerId);
 				}
 			}
 			

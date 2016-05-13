@@ -35,6 +35,7 @@
 			import com.photodispatcher.provider.ftp.DownloadManager;
 			import com.photodispatcher.provider.preprocess.PreprocessManager;
 			import com.photodispatcher.service.SyncService;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.NetUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -84,6 +85,8 @@
 			[Bindable]
 			private var productionName:String='Не назначено';
 			
+			private var messenger:MessengerGeneric;
+			
 			public function init():void{
 				sources=new ArrayCollection(Context.getSources());
 				productionName=Context.getProductionName();
@@ -93,6 +96,10 @@
 				
 				if(focusManager) focusManager.setFocus(focusHolder);
 				printManager=PrintQueueManager.instance;
+				if(!messenger){
+					messenger= new MessengerGeneric();
+					messenger.connect();
+				}
 			}
 
 			private function onKey(e:KeyboardEvent):void{
@@ -282,6 +289,16 @@
 				focusManager.setFocus(focusHolder);
 			}
 
+			protected function button1_clickHandler(event:MouseEvent):void{
+				var msg:String='hello from ';
+				if(helperMode){
+					msg+='helper';
+				}else{
+					msg+='cycle';
+				}
+				messenger.send(msg);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -373,6 +390,8 @@
 				
 				<s:Spacer height="15"/>
 				<s:Label text="Печать     Очередь: " fontWeight="bold"/>
+				<s:Spacer height="15"/>
+				<!--<s:Button label="messaga" click="button1_clickHandler(event)"/>-->
 
 			</s:VGroup>
 			

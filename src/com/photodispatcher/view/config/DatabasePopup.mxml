@@ -70,6 +70,7 @@
 				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
 				//Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
 				var spring:Spring = Spring.getInstance();
+				//spring.initApplication();
 				spring.addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: bdServerPort,contextRoot: "/PhCServer" });
 				//run hallo
 				Tide.getInstance().addComponents([HalloService]);

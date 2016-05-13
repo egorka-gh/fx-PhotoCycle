@@ -178,16 +178,20 @@ package com.photodispatcher.printer{
 			print(report);
 		}
 
-		public function printDeliveryForm(packege:MailPackage, form:DeliveryTypePrintForm, barcode:String=''):void{
+		public function printDeliveryForm(packege:MailPackage, form:DeliveryTypePrintForm, barcode:String='', providerId:String=''):void{
 			if(!packege || !form) return;
 			switch(form.report){
 				case 'mpBarcodeFrm':
+					/**/
 					if(packege.state<OrderState.PACKAGE_PACKED){
 						var s:String=OrderState.getStateName(OrderState.PACKAGE_PACKED);
 						Alert.show('Печать ШК разрешена в статусе не ниже '+s);
 					}else{
-						printMPBarcode(packege.id_name, barcode);
+						printMPBarcode(packege.id_name, barcode, providerId);
 					}
+					/**/
+					//4debug
+					//printMPBarcode(packege.id_name, barcode, providerId);
 					break;
 				/*
 				case 'frmATzaiava':
@@ -201,7 +205,7 @@ package com.photodispatcher.printer{
 			}
 		}
 		
-		public function printMPBarcode(idCaption:String, barcode:String):void{
+		public function printMPBarcode(idCaption:String, barcode:String, providerId:String):void{
 			if(!idCaption || !barcode) return;
 			
 			var report:Report=new Report();
@@ -211,6 +215,7 @@ package com.photodispatcher.printer{
 			report.parameters=[];
 			var param:Parameter;
 			param=new Parameter(); param.id='pgroup_hm'; param.valString=idCaption; report.parameters.push(param);
+			param=new Parameter(); param.id='pprovider_id'; param.valString=providerId; report.parameters.push(param);
 			param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode); report.parameters.push(param);
 			param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode; report.parameters.push(param);
 			print(report);

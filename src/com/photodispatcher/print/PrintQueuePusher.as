@@ -12,7 +12,12 @@ package com.photodispatcher.print{
 	import flash.events.Event;
 	import flash.utils.getTimer;
 	
+	import mx.collections.ISort;
+	
 	import org.granite.tide.Tide;
+	
+	import spark.collections.Sort;
+	import spark.collections.SortField;
 	
 	public class PrintQueuePusher extends PrintQueueGeneric{
 		public static const STRATEGY_BY_CHANEL:int=1;
@@ -33,7 +38,7 @@ package com.photodispatcher.print{
 		*/
 		
 		private var  strategyInternal:int=STRATEGY_BY_ALIAS;
-		private var queueLimit:int=100;
+		private var queueLimit:int=200;
 		private var refreshInterval:int=REFRESH_INTERVAL;
 		private var lastRefresh:int;
 
@@ -107,6 +112,11 @@ package com.photodispatcher.print{
 					if(idx>-1) queue.removeItemAt(idx);
 				}
 			}
+			//order like pdf queue
+			var sort:ISort = new Sort();
+			sort.fields = [new SortField("alias",false), new SortField("sheet_num",false,true), new SortField("book_part",false,true)];
+			queue.sort=sort;
+			queue.refresh();
 		}
 
 		protected function fetchInternal():void{

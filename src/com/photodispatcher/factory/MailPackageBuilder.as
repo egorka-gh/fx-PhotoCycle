@@ -104,6 +104,7 @@ package com.photodispatcher.factory{
 							bar.id=result.id;
 							bar.barcode=barObj.barcode;
 							bar.bar_type=MailPackageBarcode.TYPE_SITE;
+							if(barObj.hasOwnProperty('number')) bar.preorder_num=barObj.number;
 							barcodes.push(bar); 
 						}
 					}

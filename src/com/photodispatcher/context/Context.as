@@ -592,7 +592,10 @@ package com.photodispatcher.context{
 				var str:String;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				str=so.data.bdServer;
-				if(str) serverRootUrl='http://'+str+':8080/PhCServer';
+				var bdServerPort:String=so.data.bdServerPort;
+				if(!bdServerPort) bdServerPort='8080';
+
+				if(str) serverRootUrl='http://'+str+':'+bdServerPort+'/PhCServer';
 			}
 			return serverRootUrl;
 		}

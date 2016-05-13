@@ -20,6 +20,7 @@ package com.photodispatcher.model.mysql.entities {
 			
 			var col:GridColumn;
 			col= new GridColumn('barcode'); col.headerText='Штрихкод'; result.addItem(col);
+			col= new GridColumn('preorder_num'); col.headerText='Предзаказ'; result.addItem(col);
 			
 			return result;
 		}
@@ -27,5 +28,7 @@ package com.photodispatcher.model.mysql.entities {
         public function MailPackageBarcode() {
             super();
         }
+		
+		public var preorder_num:String='';
     }
 }
