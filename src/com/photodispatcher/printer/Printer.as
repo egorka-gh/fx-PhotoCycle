@@ -215,7 +215,7 @@ package com.photodispatcher.printer{
 			report.parameters=[];
 			var param:Parameter;
 			param=new Parameter(); param.id='pgroup_hm'; param.valString=idCaption; report.parameters.push(param);
-			param=new Parameter(); param.id='pprovider_id'; param.valString=providerId; report.parameters.push(param);
+			param=new Parameter(); param.id='pprovider_id'; param.valString=providerId?'K'+providerId:''; report.parameters.push(param);
 			param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode); report.parameters.push(param);
 			param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode; report.parameters.push(param);
 			print(report);

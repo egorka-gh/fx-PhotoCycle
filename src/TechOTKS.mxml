@@ -20,10 +20,12 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.ModalPopUp;
@@ -232,6 +234,14 @@
 					Alert.show('Не настроена тех точка ОТК');
 					return;
 				}
+				
+				//init messenger
+				Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_OTK);
+				Context.station.type_name='ОТК';
+				MessengerGeneric.connect();
+
+				
 				startBarReader();
 				/*
 				techMonitor.techPoint=techPointObj;
@@ -347,6 +357,7 @@
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				if(serialProxy) serialProxy.stop();
+				MessengerGeneric.disconnect();
 			}
 			
 			protected function button4_clickHandler(event:MouseEvent):void{

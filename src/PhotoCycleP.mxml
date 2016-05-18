@@ -20,9 +20,11 @@
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.HelloResponce;
 			import com.photodispatcher.model.mysql.entities.Roll;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.ContentFilterService;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.shell.IMCommand;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.shell.OORuner;
@@ -126,6 +128,7 @@
 			}
 			private function onPrintQueueManagerStop(e:Event):void{
 				PrintQueueManager.instance.removeEventListener("stopComplited", onPrintQueueManagerStop);
+				MessengerGeneric.disconnect();
 				FlexGlobals.topLevelApplication.exit();
 			}
 			
@@ -162,6 +165,13 @@
 			private var latchIM:AsyncLatch;
 			
 			private function fillContext():void{
+				
+				//init messenger
+				Context.station.name='Помошник';
+				Context.station.setType(CycleStation.TYPE_CYCLE_HELPER);
+				Context.station.type_name='CycleP';
+				MessengerGeneric.connect();
+				
 				//detect local setings
 				Context.setAttribute('imThreads',0);
 				var so:SharedObject = SharedObject.getLocal('appProps','/');

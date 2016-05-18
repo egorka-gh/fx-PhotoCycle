@@ -23,6 +23,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SubordersTemplate;
+	import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 	import com.photodispatcher.model.mysql.services.BookSynonymService;
 	import com.photodispatcher.model.mysql.services.ConfigService;
 	import com.photodispatcher.model.mysql.services.ContentFilterService;
@@ -52,6 +53,7 @@ package com.photodispatcher.context{
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.IList;
+	import mx.core.FlexGlobals;
 	import mx.rpc.AsyncToken;
 	import mx.utils.UIDUtil;
 	
@@ -471,6 +473,17 @@ package com.photodispatcher.context{
 			}
 			if(!_appID) _appID=UIDUtil.createUID();
 			return _appID;
+		}
+
+		private static var _station:CycleStation;
+		public static function get station():CycleStation{
+			if(!_station){
+				_station= new CycleStation;
+				_station.id=appID;
+				_station.name=FlexGlobals.topLevelApplication.name;
+				
+			}
+			return _station;
 		}
 
 		public static function get currentOSUser():String		{
