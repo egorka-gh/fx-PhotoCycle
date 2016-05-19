@@ -19,11 +19,13 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.AlertrPopup;
@@ -187,6 +189,11 @@
 					AlertrPopup.alertSound=alertSound;
 				}
 				
+				//init messenger
+				if(techPointObj) Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_JOIN);
+				MessengerGeneric.connect();
+
 				if(techPointObj && comInfoCover.num && comInfoBlock.num){
 					start();
 				}else{
@@ -238,6 +245,7 @@
 			}
 			
 			private function closeApp():void{
+				MessengerGeneric.disconnect();
 				stop(); 
 				FlexGlobals.topLevelApplication.exit();
 			}
@@ -251,7 +259,7 @@
 			}
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
-				//TODO flush data
+				MessengerGeneric.disconnect();
 				if(flap) flap.stop();
 				if(barcodeReaderCover) barcodeReaderCover.stop();
 				if(serialProxy) serialProxy.stop();

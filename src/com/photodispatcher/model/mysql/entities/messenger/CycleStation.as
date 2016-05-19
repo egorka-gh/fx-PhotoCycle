@@ -30,10 +30,14 @@ package com.photodispatcher.model.mysql.entities.messenger {
 		public static const TYPE_CYCLE:int=10;
 		public static const TYPE_HELPER:int=15;
 		public static const TYPE_LAB:int=20;
-		public static const TYPE_OTK:int=30;
-		public static const TYPE_REPRINT:int=40;
-		public static const TYPE_TECH:int=50;
-		public static const TYPE_GLUE:int=60;
+		public static const TYPE_OTK:int=25;
+		public static const TYPE_REPRINT:int=30;
+		public static const TYPE_TECH:int=35;
+		public static const TYPE_GLUE:int=40;
+		public static const TYPE_PICKER:int=45;
+		public static const TYPE_JOIN:int=50;
+		public static const TYPE_MONITOR:int=55;
+		public static const TYPE_SPY:int=60;
 
 		public static function getTypeName(type:int):String{
 			var result:String;
@@ -52,6 +56,8 @@ package com.photodispatcher.model.mysql.entities.messenger {
 					result='Теч'; break;
 				case TYPE_GLUE:
 					result='Склейка'; break;
+				case TYPE_PICKER:
+					result='Листоподборка'; break;
 				default:
 					result=type.toString(); break;
 					break;

@@ -21,6 +21,7 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.TechPickerService;
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
@@ -30,6 +31,7 @@
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveController;
 			import com.photodispatcher.service.barcode.ValveControllerEmulator;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.ModalPopUp;
@@ -246,6 +248,11 @@
 				startPopup.close();
 				startPopup=null;
 				
+				//init messenger
+				if(techPointObj) Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_PICKER,2);
+				MessengerGeneric.connect();
+				
 				currentState='config';
 			}
 			
@@ -281,6 +288,7 @@
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				//TODO flush data
+				MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 				if(techPickerView) techPickerView.stop();
 			}
@@ -540,7 +548,7 @@
 		<s:Button label="Настройки" includeIn="monitor" click="{stop()}"/>
 		<s:Button label="Шаблоны" includeIn="config" click="{showTemplates();}"/>
 		<s:Button label="Листоподборка" includeIn="config" click="{start()}"/>
-		<s:Button label="Закрыть" click="{stop(); FlexGlobals.topLevelApplication.exit();}"  excludeFrom="templates"/>
+		<s:Button label="Закрыть" click="{stop(); MessengerGeneric.disconnect(); FlexGlobals.topLevelApplication.exit();}"  excludeFrom="templates"/>
 		<s:Button label="Закрыть" click="{currentState='config';}"  includeIn="templates"/>
 	</s:HGroup>
 	

@@ -20,10 +20,12 @@
 			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.PasswPopup;
@@ -152,6 +154,11 @@
 					comReader= new ComInfo(); comReader.type=ComInfo.COM_TYPE_BARREADER;
 				}
 				
+				//init messenger
+				if(techPointObj) Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_MONITOR);
+				MessengerGeneric.connect();
+
 				checkCfgPass();
 				currentState='config';
 			}
@@ -313,10 +320,12 @@
 			}
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
+				MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 			}
 			
 			protected function button4_clickHandler(event:MouseEvent):void{
+				MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 				FlexGlobals.topLevelApplication.exit()
 			}
