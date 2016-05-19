@@ -6,10 +6,30 @@
  */
 
 package com.photodispatcher.model.mysql.entities.messenger {
+	import com.photodispatcher.context.Context;
+	import com.photodispatcher.service.messenger.MessengerGeneric;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.messenger.CycleMessage")]
     public class CycleMessage extends CycleMessageBase {
+
+		public static function createMessage(topic:String='', command:int=0):CycleMessage{
+			if(!topic) topic=MessengerGeneric.TOPIC_STATUS;
+			if(!command) command=MessengerGeneric.CMD_PING;
+			var msg:CycleMessage= new CycleMessage();
+			msg.sender=Context.station;
+			msg.recipient='*';
+			msg.topic=topic;
+			msg.command=command;
+			return msg;
+		}
+
+		public static function createStatusMessage(state:int, message:String=''):CycleMessage{
+			var msg:CycleMessage=createMessage(MessengerGeneric.TOPIC_STATUS,MessengerGeneric.CMD_STATUS);
+			msg.sender.state=state;
+			msg.message=message;
+			return msg;
+		}
 
         public function CycleMessage() {
             super();

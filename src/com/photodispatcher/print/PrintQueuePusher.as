@@ -38,7 +38,7 @@ package com.photodispatcher.print{
 		*/
 		
 		private var  strategyInternal:int=STRATEGY_BY_ALIAS;
-		private var queueLimit:int=200;
+		private var queueLimit:int=1000;
 		private var refreshInterval:int=REFRESH_INTERVAL;
 		private var lastRefresh:int;
 

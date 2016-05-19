@@ -24,6 +24,7 @@ package com.photodispatcher.model.mysql.entities.messenger {
         private var _message:String;
         private var _pgroup_info:PrintGroup;
         private var _recipient:String;
+        private var _result:int;
         private var _sender:CycleStation;
         private var _topic:String;
 
@@ -55,6 +56,13 @@ package com.photodispatcher.model.mysql.entities.messenger {
             return _recipient;
         }
 
+        public function set result(value:int):void {
+            _result = value;
+        }
+        public function get result():int {
+            return _result;
+        }
+
         public function set sender(value:CycleStation):void {
             _sender = value;
         }
@@ -75,6 +83,7 @@ package com.photodispatcher.model.mysql.entities.messenger {
             _message = input.readObject() as String;
             _pgroup_info = input.readObject() as PrintGroup;
             _recipient = input.readObject() as String;
+            _result = input.readObject() as int;
             _sender = input.readObject() as CycleStation;
             _topic = input.readObject() as String;
         }
@@ -85,6 +94,7 @@ package com.photodispatcher.model.mysql.entities.messenger {
             output.writeObject((_message is IPropertyHolder) ? IPropertyHolder(_message).object : _message);
             output.writeObject((_pgroup_info is IPropertyHolder) ? IPropertyHolder(_pgroup_info).object : _pgroup_info);
             output.writeObject((_recipient is IPropertyHolder) ? IPropertyHolder(_recipient).object : _recipient);
+            output.writeObject((_result is IPropertyHolder) ? IPropertyHolder(_result).object : _result);
             output.writeObject((_sender is IPropertyHolder) ? IPropertyHolder(_sender).object : _sender);
             output.writeObject((_topic is IPropertyHolder) ? IPropertyHolder(_topic).object : _topic);
         }

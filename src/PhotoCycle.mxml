@@ -20,6 +20,7 @@
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.BookSynonymGlue;
 			import com.photodispatcher.model.mysql.entities.HelloResponce;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleMessage;
 			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.HalloService;
 			import com.photodispatcher.print.PrintQueueManager;
@@ -112,6 +113,7 @@
 				}
 				if(cleaner) cleaner.stopSchedule(); 
 				currentState='config';
+				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_PAUSE,'Конфиг'));
 			}
 			
 			protected function button2_clickHandler(event:MouseEvent):void{
@@ -182,7 +184,7 @@
 				//init messenger
 				Context.station.name='Cycle';
 				Context.station.setType(CycleStation.TYPE_CYCLE);
-				Context.station.type_name='Cycle';
+				//Context.station.type_name='Cycle';
 				MessengerGeneric.connect();
 				
 				//detect local setings

@@ -33,7 +33,7 @@ package com.photodispatcher.service.messenger{
 		public static const TOPIC_PREPARATION:String='/preparation';
 
 		public static const CMD_PING:int=1;
-
+		public static const CMD_STATUS:int=2;
 		
 		[Bindable]
 		public static var stations:ArrayCollection=new ArrayCollection(); //CycleStation
@@ -163,17 +163,20 @@ package com.photodispatcher.service.messenger{
 			if(connected) sendPing();
 		}
 		private static function sendPing():void{
+			/*
 			var msg:CycleMessage= new CycleMessage();
 			msg.sender=Context.station;
 			msg.recipient='*';
 			msg.command=CMD_PING;
 			msg.topic=TOPIC_STATUS;
-			sendMessage(msg);
+			*/
+			sendMessage(CycleMessage.createMessage());
 		}
 		
 		
 		private static var forceDisconnect:Boolean;
 		public static function disconnect():void{
+			sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_OFF,'Выход'));
 			forceDisconnect=true;
 			//stop listen & destroy all
 			destroyProducer();
@@ -300,6 +303,10 @@ package com.photodispatcher.service.messenger{
 							stations.addItem(st);
 						}
 						st.lastPing=new Date();
+						if(msg.command==MessengerGeneric.CMD_STATUS){
+							st.state=msg.sender.state;
+							st.stateComment=msg.message;
+						}
 					}
 				}
 			}

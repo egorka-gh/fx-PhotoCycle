@@ -28,10 +28,36 @@ package com.photodispatcher.model.mysql.entities.messenger {
 		public static const SATE_ON:int=100;
 		
 		public static const TYPE_CYCLE:int=10;
-		public static const TYPE_CYCLE_HELPER:int=15;
-		public static const TYPE_CYCLE_LAB:int=20;
+		public static const TYPE_HELPER:int=15;
+		public static const TYPE_LAB:int=20;
 		public static const TYPE_OTK:int=30;
-		
+		public static const TYPE_REPRINT:int=40;
+		public static const TYPE_TECH:int=50;
+		public static const TYPE_GLUE:int=60;
+
+		public static function getTypeName(type:int):String{
+			var result:String;
+			switch(type){
+				case TYPE_CYCLE:
+					result='Cycle'; break;
+				case TYPE_HELPER:
+					result='CycleP'; break;
+				case TYPE_LAB:
+					result='Лаба'; break;
+				case TYPE_OTK:
+					result='ОТК'; break;
+				case TYPE_REPRINT:
+					result='Перепечатка'; break;
+				case TYPE_TECH:
+					result='Теч'; break;
+				case TYPE_GLUE:
+					result='Склейка'; break;
+				default:
+					result=type.toString(); break;
+					break;
+			}
+			return result;
+		}
 		
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
@@ -43,6 +69,7 @@ package com.photodispatcher.model.mysql.entities.messenger {
 			col= new GridColumn('name'); col.headerText='Наименование'; result.addItem(col); 
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateTimePattern='dd HH:mm:ss'; //fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;  
 			col= new GridColumn('lastPing'); col.headerText='Ping'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('stateComment'); col.headerText='Коментарий'; result.addItem(col); 
 			return result;
 		}
 
@@ -52,6 +79,8 @@ package com.photodispatcher.model.mysql.entities.messenger {
         }
 		
 		public var isOnLine:Boolean;
+
+		public var stateComment:String;
 		
 		private var _lastPing:Date;
 		public function get lastPing():Date{
@@ -60,7 +89,10 @@ package com.photodispatcher.model.mysql.entities.messenger {
 		public function set lastPing(value:Date):void{
 			_lastPing = value;
 			isOnLine=true;
-			if(state==SATE_OFF) state=SATE_ON;
+			if(state==SATE_OFF){
+				state=SATE_ON;
+				stateComment='';
+			}
 			startIdleTimer();
 		}
 		
@@ -69,7 +101,7 @@ package com.photodispatcher.model.mysql.entities.messenger {
 			if(timer){
 				timer.reset();
 			}else{
-				timer=new Timer(MessengerGeneric.PING_INTERVAL+2*60*1000,1);
+				timer=new Timer(MessengerGeneric.PING_INTERVAL+1*60*1000,1);
 				timer.addEventListener(TimerEvent.TIMER,onIdleTimer);
 			}
 			timer.start();
@@ -81,9 +113,12 @@ package com.photodispatcher.model.mysql.entities.messenger {
 
 		public function setType(value:int, subvalue:int=0):void{
 			//adds type to id
+			if(!this.type && value){
+				id=id+':t'+value;
+			}
 			this.type=value;
+			if(value) type_name=getTypeName(value);
 			subtype=subvalue;
-			id=id+':t'+value;
 		}
     }
 }

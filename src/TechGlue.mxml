@@ -19,12 +19,14 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.ModalPopUp;
@@ -223,6 +225,11 @@
 				
 				gluePort=8000;
 				
+				//init messenger
+				if(techPointObj) Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_GLUE);
+				MessengerGeneric.connect();
+
 				initComplete=true;
 				if(techPointObj && coms.length>0){
 					start();
@@ -316,6 +323,7 @@
 				//TODO flush data
 				//if(flap) flap.stop();
 				//if(barcodeReader) barcodeReader.stop();
+				MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 				if(techMonitor) techMonitor.stop();
 			}
@@ -370,6 +378,7 @@
 			}
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
+				MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 				if(techMonitor) techMonitor.stop();
 				FlexGlobals.topLevelApplication.exit();

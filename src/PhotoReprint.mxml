@@ -19,12 +19,14 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.ModalPopUp;
@@ -185,7 +187,12 @@
 					//reversOrder=so.data.reversOrder;
 					//extendedPrint=so.data.extendedPrint;
 				}
-				
+
+				//init messenger
+				if(techPointObj) Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_REPRINT);
+				MessengerGeneric.connect();
+
 				if(techPointObj && coms.length>0){
 					start();
 				}else{
@@ -236,6 +243,7 @@
 				//if(barcodeReader) barcodeReader.stop();
 				if(serialProxy) serialProxy.stop();
 				if(photoReprintMonitor) photoReprintMonitor.stop();
+				MessengerGeneric.disconnect();
 			}
 			
 			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
@@ -290,6 +298,7 @@
 			*/
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
+				MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 				if(photoReprintMonitor) photoReprintMonitor.stop();
 				FlexGlobals.topLevelApplication.exit();

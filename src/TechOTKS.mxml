@@ -20,6 +20,7 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleMessage;
 			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
@@ -190,6 +191,13 @@
 				
 				checkCfgPass();
 				currentState='config';
+				
+				//init messenger
+				if(techPointObj) Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_OTK);
+				//Context.station.type_name='ОТК';
+				MessengerGeneric.connect();
+
 			}
 			
 			
@@ -234,13 +242,8 @@
 					Alert.show('Не настроена тех точка ОТК');
 					return;
 				}
-				
-				//init messenger
-				Context.station.name=techPointObj.name;
-				Context.station.setType(CycleStation.TYPE_OTK);
-				Context.station.type_name='ОТК';
-				MessengerGeneric.connect();
 
+				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_ON,'ОТК'));
 				
 				startBarReader();
 				/*
@@ -279,6 +282,7 @@
 				serialProxy.stop();
 				cfgEnabled=false;
 				currentState='config';
+				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_PAUSE,'Конфиг'));
 			}
 			
 			protected function state1_enterStateHandler(event:FlexEvent):void{
@@ -362,6 +366,7 @@
 			
 			protected function button4_clickHandler(event:MouseEvent):void{
 				if(serialProxy) serialProxy.stop();
+				MessengerGeneric.disconnect();
 				FlexGlobals.topLevelApplication.exit()
 			}
 			
@@ -388,6 +393,7 @@
 			
 			protected function button5_clickHandler(event:MouseEvent):void{
 				startBarReader();
+				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_ON,'Упаковка'));
 				currentState='mail';
 			}
 			

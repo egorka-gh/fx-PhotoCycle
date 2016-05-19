@@ -27,6 +27,8 @@
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.StateLog;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleMessage;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
@@ -116,6 +118,7 @@
 				if(isRuning) return;
 				isRuning=true;
 				resync();
+				sendSateMessage();
 				//preprocessManager.isStarted=true;
 				//downloadManager.isStarted=true;
 			}
@@ -143,6 +146,7 @@
 					startServices=false;
 					preprocessManager.isStarted=true;
 					downloadManager.isStarted=true;
+					sendSateMessage();
 				}
 			}
 
@@ -163,6 +167,7 @@
 						//helper mode, sync disabled
 						preprocessManager.isStarted=true;
 						downloadManager.isStarted=true;
+						sendSateMessage();
 					}else{
 						//main cycle, start services after first sync
 						startSync();
@@ -171,6 +176,7 @@
 				}else{
 					downloadManager.reLoad();
 					preprocessManager.reLoad();
+					sendSateMessage();
 				}
 			}
 			
@@ -292,15 +298,24 @@
 				}
 				focusManager.setFocus(focusHolder);
 			}
-
-			protected function button1_clickHandler(event:MouseEvent):void{
-				var msg:String='hello from ';
-				if(helperMode){
-					msg+='helper';
+			
+			protected function btStop_clickHandler(event:MouseEvent):void{
+				stop();
+				sendSateMessage();
+			}
+			
+			protected function sendSateMessage():void{
+				var txt:String='';
+				var state:int=CycleStation.SATE_PAUSE;
+				if(isRuning) txt+=((txt?' ':'')+'Синхронизация');
+				if(downloadManager && downloadManager.isStarted) txt+=((txt?' ':'')+'Загрузка');
+				if(preprocessManager && preprocessManager.isStarted) txt+=((txt?' ':'')+'Подготовка');
+				if(txt){
+					state=CycleStation.SATE_ON;
 				}else{
-					msg+='cycle';
+					txt='Сервисы остановлены';
 				}
-				//messenger.send(msg);
+				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(state,txt));
 			}
 			
 		]]>
@@ -354,7 +369,7 @@
 					<s:Button id="btStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить синхронизацию" 
 							  click="{startSync()}" enabled="{!isRuning}"/>
 					<s:Button id="btStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить синхронизацию"
-							  click="{stop()}" enabled="{isRuning}"/>
+							  click="btStop_clickHandler(event)" enabled="{isRuning}"/>
 				</s:HGroup>
 				<s:Scroller width="220" height="100%">
 					<s:DataGroup dataProvider="{sources}" itemRenderer="com.photodispatcher.view.itemRenderer.SourceItemRenderer"
