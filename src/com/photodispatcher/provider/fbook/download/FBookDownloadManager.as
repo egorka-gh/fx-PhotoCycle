@@ -476,6 +476,7 @@ package com.photodispatcher.provider.fbook.download{
 				/*}*/
 
 				//check content filter
+				/*	
 				var cFilter:ContentFilter=Context.getAttribute('contentFilter') as ContentFilter;
 				var skip:Boolean=false;
 				if(cFilter && cFilter.id!=0){
@@ -492,6 +493,7 @@ package com.photodispatcher.provider.fbook.download{
 						return;
 					}
 				}
+				*/
 
 				//load project content
 				startContentLoader(workFolder);

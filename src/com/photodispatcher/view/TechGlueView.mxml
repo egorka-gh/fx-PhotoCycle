@@ -27,10 +27,11 @@
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.PrintGroupService;
 			import com.photodispatcher.model.mysql.services.TechPickerService;
-			import com.photodispatcher.service.GlueProxy;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.service.glue.GlueInfo;
+			import com.photodispatcher.service.glue.GlueProxy;
 			import com.photodispatcher.tech.TechRegisterBase;
 			import com.photodispatcher.tech.TechRegisterCommon;
 			import com.photodispatcher.tech.TechRegisterFolding;
@@ -287,6 +288,7 @@
 					barText=barcode+'\n';
 					regList= new ArrayCollection();
 					currRegister.register(bookNum,pageNum);
+					//TODO check glue settings
 				}
 				regList.addItemAt({log_date:new Date(), page: StrUtil.sheetName(bookNum,pageNum)},0);
 				if(regList.length> REGLISTLIMIT){
@@ -367,23 +369,10 @@
 				if(printer) printer.start();
 				if(flap) flap.start();
 				
-				//load picker config
 				var initLatch:DbLatch= new DbLatch();
 				initLatch.addEventListener(Event.COMPLETE, onInitLatch);
-				interlayerSet= new InterlayerSet();
-				endpaperSet= new EndpaperSet();
-				initLatch.join(interlayerSet.init(-1));
-				initLatch.join(endpaperSet.init(-1));
-
-				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE, onTeplatesLoad);
-				var svc:TechPickerService=Tide.getInstance().getContext().byType(TechPickerService,true) as TechPickerService;
-				latch.addLatch(svc.loadLayersets(Layerset.LAYERSET_TYPE_TEMPLATE, -1));
-				initLatch.join(latch);
-				latch.start();
-				
+				initLatch.join(GlueInfo.init());
 				initLatch.start();
-
 				
 				//start glue proxy
 				glueDevice=new GlueProxy();
@@ -397,14 +386,6 @@
 				latch.removeEventListener(Event.COMPLETE,onInitLatch);
 				if(!latch.complite){
 					logToScreen('Ошибка инициализации: '+latch.error,true);
-				}
-			}
-			private function onTeplatesLoad(evt:Event):void{
-				var latch:DbLatch= evt.target as DbLatch;
-				if(!latch) return;
-				latch.removeEventListener(Event.COMPLETE,onTeplatesLoad);
-				if(latch.complite){
-					templateSet=latch.lastDataArr;
 				}
 			}
 			
@@ -472,30 +453,35 @@
 					return;
 				}
 				
-				loadPgParams( pgId);
+				getGlueCommand(pgId);
 			}
 			
+			/*
 			[Bindable]
 			protected var currPG:PrintGroup;
 			[Bindable]
 			protected var currExtraInfo:OrderExtraInfo;
+			*/
 			[Bindable]
-			public var currInerlayer:Layerset;
-			public var interlayerSet:InterlayerSet;
-			[Bindable]
-			public var currTemplate:Layerset;
-			public var templateSet:Array;
-			[Bindable]
-			public var currEndPaper:Layerset;
-			public var endpaperSet:InterlayerSet;
-			[Bindable]
-			public var currSheetsNum:int;
-			
-			
-			[Bindable]
-			public var currGlueCmd:BookSynonymGlue; 
+			protected var currGlueInfo:GlueInfo;
+			//[Bindable]
+			//public var currInerlayer:Layerset;
+			//public var interlayerSet:InterlayerSet;
+			//[Bindable]
+			//public var currTemplate:Layerset;
+			//public var templateSet:Array;
+			//[Bindable]
+			//public var currEndPaper:Layerset;
+			//public var endpaperSet:InterlayerSet;
+			//[Bindable]
+			//public var currSheetsNum:int;
+			//[Bindable]
+			//public var currGlueCmd:BookSynonymGlue; 
 
-			protected function loadPgParams(pgId:String):void{
+			protected function getGlueCommand(pgId:String):void{
+				currGlueInfo= new GlueInfo(GlueInfo.MODE_GETCOMMAND);
+				currGlueInfo.addEventListener(Event.COMPLETE,onGlueInfo);
+				/*
 				if(!pgId) return;
 				currPG=null;
 				currExtraInfo=null;
@@ -517,7 +503,9 @@
 				latchR.start();
 				latch.join(latchR);
 				latch.start();
+				*/
 			}
+			/*
 			protected function onPgLoad(e:Event):void{
 				var latch:DbLatch=e.target as DbLatch;
 				if(latch){
@@ -544,15 +532,34 @@
 				}
 					
 			}
+			*/
 			
+			protected function onGlueInfo(e:Event):void{
+				if(currGlueInfo){
+					currGlueInfo.removeEventListener(Event.COMPLETE,onGlueInfo);
+					if(currGlueInfo.hasErr){
+						Alert.show(currGlueInfo.errMsg);
+						logToScreen('Ошибка: '+currGlueInfo.errMsg,true);
+					}else{
+						//set command 
+						if(glueDevice){
+							glueDevice.run_SetProduct(currGlueInfo.glueCommand.glue_cmd_name);
+							glueDevice.run_SetSheets(currGlueInfo.glueSheetsNum);
+						}
+					}
+				}
+			}
+			
+			/*
 			protected function detectGlueCmd():Boolean{
 				var hasErr:Boolean;
 				var msg:String;
-				if(!currPG){
+				
+				if(!currGlueInfo.printGroup){
 					hasErr=true;
 					msg='Не найдена группа печати';
 				}
-				if(!hasErr && !currExtraInfo){
+				if(!hasErr && !currGlueInfo.extraInfo){
 					hasErr=true;
 					msg='Нет доп информации по заказу';
 				}
@@ -565,46 +572,29 @@
 				//checkget interlayer
 				//check interlayer
 				if(!hasErr){ 
-					currInerlayer=interlayerSet.getBySynonym(currExtraInfo.interlayer);
+					currInerlayer=interlayerSet.getBySynonym(currGlueInfo.extraInfo.interlayer);
 					//if(currExtraInfo.interlayer && !currInerlayer){
 					if(!currInerlayer){
 						hasErr=true;
-						msg='Неопределен тип прослойки "'+currExtraInfo.interlayer+'"';
+						msg='Неопределен тип прослойки "'+currGlueInfo.extraInfo.interlayer+'"';
 					}
 				}
 				
 				var bs:BookSynonym;
 				if(!hasErr){
-					bs=BookSynonym.getBookSynonym(currPG);
+					bs=BookSynonym.getBookSynonymByPg(currGlueInfo.printGroup);
 					if(!bs){
 						hasErr=true;
-						msg='Неопределен шаблон книги для "'+currPG.alias+'"';
+						msg='Неопределен шаблон книги для "'+currGlueInfo.printGroup.alias+'"';
 					}else{
 						//detect glue command
-						currGlueCmd=bs.getGlueCmd(currPG.paper, currInerlayer.id);
+						currGlueCmd=bs.getGlueCmd(currGlueInfo.printGroup.paper, currInerlayer.id);
 						if(!currGlueCmd || !currGlueCmd.glue_cmd_name){
 							hasErr=true;
-							msg='Неопределена команда склейки "'+currPG.paper_name +'"-"'+currInerlayer.name+'"';
+							msg='Неопределена команда склейки "'+currGlueInfo.printGroup.paper_name +'"-"'+currInerlayer.name+'"';
 						}
 					}
 				}
-				
-				/*
-				if(!hasErr && templateSet){
-					for each (var ls:Layerset in templateSet){
-						if(ls.book_type==currPG.book_type){
-							currTemplate=ls;
-							break;
-						}
-					}
-					if(!currTemplate){
-						hasErr=true;
-						msg='Неопределен шаблон сборки для "'+currPG.alias+'"';
-					}
-				}
-				*/
-				
-
 				if(hasErr){
 					Alert.show(msg);
 					logToScreen('Ошибка: '+msg,true);
@@ -612,17 +602,18 @@
 				}
 				
 				//calc sheets
-				currSheetsNum=currPG.sheet_num;
+				currSheetsNum=currGlueInfo.printGroup.sheet_num;
 				
 				
 				//interlayer
-				if(currInerlayer.sequenceMiddle) currSheetsNum=currSheetsNum+(currPG.sheet_num-1)*currInerlayer.sequenceMiddle.length;
+				if(currInerlayer.sequenceMiddle) currSheetsNum=currSheetsNum+(currGlueInfo.printGroup.sheet_num-1)*currInerlayer.sequenceMiddle.length;
 
 				//template book start/end or endpaper
 				currSheetsNum+=currGlueCmd.add_layers;
 					
 				return true;
 			}
+			*/
 
 			protected function btResetRegister_clickHandler(event:MouseEvent):void{
 				if(currRegister){
@@ -639,10 +630,10 @@
 		<s:HGroup gap="5" width="100%" >
 			<s:Label text="Склейка"/>
 			<s:Spacer width="100%"/>
-			<s:Label text="Бумага: {currPG.paper_name}"/>
-			<s:Label text="Прослойка: {currExtraInfo.interlayer}/{currInerlayer.name}"/>
-			<s:Label text="Разворотов: {currPG.sheet_num}"/>
-			<s:Label text="Команда: {currGlueCmd.glue_cmd_name}"/>
+			<s:Label text="Бумага: {currGlueInfo.printGroup.paper_name}"/>
+			<s:Label text="Прослойка: {currGlueInfo.extraInfo.interlayer}/{currGlueInfo.inerlayer.name}"/>
+			<s:Label text="Разворотов: {currGlueInfo.printGroup.sheet_num}"/>
+			<s:Label text="Команда: {currGlueInfo.glueCommand.glue_cmd_name}"/>
 		</s:HGroup>
 		<s:HGroup gap="25" width="100%" paddingLeft="15" paddingRight="15"
 				  enabled="{glueDevice.isStarted}"

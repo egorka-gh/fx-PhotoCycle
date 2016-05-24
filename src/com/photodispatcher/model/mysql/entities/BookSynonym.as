@@ -6,6 +6,7 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.services.BookSynonymService;
@@ -114,7 +115,7 @@ package com.photodispatcher.model.mysql.entities {
 		 * @param sourceType
 		 * @return BookSynonym
 		 */		
-		public static function translatePath(path:String, sourceType:int=SourceType.SRC_FOTOKNIGA):BookSynonym{
+		private static function translatePath(path:String, sourceType:int=SourceType.SRC_FOTOKNIGA):BookSynonym{
 			if(!path) return null;
 			if(!synonymMap){
 				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
@@ -125,7 +126,7 @@ package com.photodispatcher.model.mysql.entities {
 			return map[path] as BookSynonym; 
 		}
 		
-		public static function translateAlias(alias:String):BookSynonym{
+		private static function translateAlias(alias:String):BookSynonym{
 			if(!alias) return null;
 			if(!aliasMap){
 				throw new Error('Ошибка инициализации BookSynonym.initSynonymMap',OrderState.ERR_APP_INIT);
@@ -134,8 +135,18 @@ package com.photodispatcher.model.mysql.entities {
 			return aliasMap[alias] as BookSynonym; 
 		}
 		
-		public static function getBookSynonym(pg:PrintGroup):BookSynonym{
+		public static function getBookSynonym(alias:String, sourceType:int=SourceType.SRC_FOTOKNIGA):BookSynonym{
+			var res:BookSynonym;
+			if(sourceType==SourceType.SRC_FBOOK) res=translateAlias(alias);
+			if(!res) res=translatePath(alias);
+			return res;
+		}
+		
+		public static function getBookSynonymByPg(pg:PrintGroup):BookSynonym{
 			if(!pg) return null;
+			var srcType:int=Context.getSourceType(PrintGroup.sourceIdFromId(pg.id));
+			return getBookSynonym(pg.alias,srcType);
+			/*
 			var alias:String;
 			if(!pg.sub_id){
 				//regular - get by path
@@ -149,12 +160,6 @@ package com.photodispatcher.model.mysql.entities {
 				if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
 				return bs;
 			}
-			/*
-			var alias:String;
-			if(!alias) return null;
-			var bs:BookSynonym=translateAlias(alias);
-			if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
-			return bs;
 			*/
 		}
 		

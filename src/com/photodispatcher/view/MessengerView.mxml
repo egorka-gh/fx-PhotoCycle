@@ -5,8 +5,14 @@
 		 minWidth="400" minHeight="300">
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.messenger.CycleMessage;
 			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
 			import com.photodispatcher.service.messenger.MessengerGeneric;
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_BROADCAST, MessengerGeneric.CMD_PING));
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -21,4 +27,6 @@
 				selectionMode="singleRow" locale="ru_RU"
 				dataProvider="{MessengerGeneric.stations}"
 				columns="{CycleStation.gridColumns()}"/>
+	
+	<s:Button label="Ping" click="button1_clickHandler(event)"/>
 </s:Group>

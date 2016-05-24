@@ -61,7 +61,8 @@ package com.photodispatcher.factory{
 					//get files
 					af=map[path] as Array;
 					//parse pg from path, exact synonym
-					bookSynonym=BookSynonym.translatePath(path,source.type);
+					//bookSynonym=BookSynonym.translatePath(path,source.type);
+					bookSynonym=BookSynonym.getBookSynonym(path,source.type);
 					//if(!bookSynonym && preview) bookSynonym=BookSynonym.translateAlias( Path(path,source.type);
 					if (bookSynonym){
 						//reset book_type 4 preview 
@@ -398,6 +399,7 @@ package com.photodispatcher.factory{
 			var slicePixels:Point;
 			var blockPixels:Point;
 			var bookSynonym:BookSynonym;
+			var sourceType:int=Context.getSourceType(order.source);
 			
 			var pgCover:PrintGroup;
 			var pgBody:PrintGroup;
@@ -426,10 +428,14 @@ package com.photodispatcher.factory{
 						so.prt_qty= so.prt_qty*bcp.getTemplate().formatPageCount;
 					}
 					
+					/*
 					//try to finde print alias (fbook type first)
 					bookSynonym=BookSynonym.translateAlias(proj.printAlias);
 					//maybe common alias look in pro synonyms 
-					if(!bookSynonym) bookSynonym=BookSynonym.translatePath(proj.printAlias,SourceType.SRC_FOTOKNIGA); 
+					if(!bookSynonym) bookSynonym=BookSynonym.translatePath(proj.printAlias,SourceType.SRC_FOTOKNIGA);
+					*/
+					bookSynonym=BookSynonym.getBookSynonym(proj.printAlias,sourceType);
+					
 					if(!bookSynonym){
 						//detect paper
 						var fv:FieldValue=FieldValue.translateWord(SourceType.SRC_FBOOK,proj.paperId,'paper');
@@ -656,6 +662,7 @@ package com.photodispatcher.factory{
 			if(!ppg) return false;
 			
 			//try get synonym
+			/*
 			try{
 				bookSynonym=BookSynonym.translatePath(pg.path,src.type);
 			} catch(error:Error){
@@ -675,7 +682,13 @@ package com.photodispatcher.factory{
 					}
 				}
 			}
+			*/
 
+			try{
+				bookSynonym=BookSynonym.getBookSynonym(pg.alias,src.type);
+			} catch(error:Error){
+				trace('buildPreview err: '+error.message);
+			}
 			var template:BookPgTemplate;
 			if(!bookSynonym){
 				//simple (not paged) pdf
@@ -683,6 +696,7 @@ package com.photodispatcher.factory{
 				template.is_pdf=false;
 				template.is_sheet_ready= true;
 			}
+
 			for each(pg in order.printGroups){
 				if(pg.book_type!=0){
 					//build book prview
@@ -747,10 +761,13 @@ package com.photodispatcher.factory{
 			//try get synonym
 			var bookSynonym:BookSynonym;
 			try{
+				/*
 				//try to finde print alias (fbook type first)
 				bookSynonym=BookSynonym.translateAlias(pg.alias);
 				//maybe common alias look in pro synonyms 
-				if(!bookSynonym) bookSynonym=BookSynonym.translatePath(pg.alias,src.type); 
+				if(!bookSynonym) bookSynonym=BookSynonym.translatePath(pg.alias,src.type);
+				*/
+				bookSynonym=BookSynonym.getBookSynonym(pg.alias,src.type);
 			} catch(error:Error){
 				trace('recreatePDFReprint err: '+error.message);
 				return false;

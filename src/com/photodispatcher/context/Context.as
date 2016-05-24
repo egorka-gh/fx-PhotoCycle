@@ -343,7 +343,8 @@ package com.photodispatcher.context{
 				TechPointService,
 				OrderService ,
 				TechRejecService,
-				StaffActivityService//+
+				StaffActivityService,
+				TechService//+
 			]);
 
 			//init static maps
@@ -485,6 +486,10 @@ package com.photodispatcher.context{
 			}
 			return _station;
 		}
+		public static function checkStationId(id:String):Boolean{
+			if(id=='*') return true;
+			return _station && _station.id==id;
+		}
 
 		public static function get currentOSUser():String		{
 			var userDir:String = File.userDirectory.nativePath;
@@ -532,6 +537,11 @@ package com.photodispatcher.context{
 			var src:Source=ArrayUtil.searchItem('code',code,arr) as Source;
 			return src?src.id:0;
 		}
+		public static function getSourceType(id:int):int{
+			var src:Source=getSource(id);
+			return src?src.type:0;
+		}
+
 		public static function initSourceLists():DbLatch{
 			var latch:DbLatch=new DbLatch();
 			//latch.debugName='initSourceLists';

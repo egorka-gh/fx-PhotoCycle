@@ -1,4 +1,4 @@
-package com.photodispatcher.service{
+package com.photodispatcher.service.glue{
 	
 	import com.photodispatcher.interfaces.ISimpleLogger;
 	import com.photodispatcher.model.mysql.AsyncLatch;

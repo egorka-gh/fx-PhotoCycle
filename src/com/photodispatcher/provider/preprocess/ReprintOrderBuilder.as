@@ -313,7 +313,15 @@ package com.photodispatcher.provider.preprocess{
 		protected function createReprint():void{
 			if(forceStop) return;
 			//clone order
-			if(logStates) StateLog.log(OrderState.PRN_REPRINT,lastOrder.id,'','Формирование перепечатки');
+			if(logStates){
+				var logStr:String='Формирование перепечатки';
+				var reject:TechReject=rejects.getItemAt(0) as TechReject;
+				if(reject){
+					if(reject.sa_type_name) logStr=logStr+' '+reject.sa_type_name;
+					if(reject.sa_remark) logStr=logStr+' '+reject.sa_remark;
+				}
+				StateLog.log(OrderState.PRN_REPRINT,lastOrder.id,'',logStr);
+			}
 			var o:Order= new Order();
 			o.id=lastOrder.id;
 			o.source=lastOrder.source;

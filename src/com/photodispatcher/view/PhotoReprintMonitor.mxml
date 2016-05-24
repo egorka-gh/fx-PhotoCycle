@@ -16,12 +16,14 @@
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.StaffActivityGroup;
 			import com.photodispatcher.model.mysql.entities.SubOrder;
+			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.entities.TechReject;
 			import com.photodispatcher.model.mysql.entities.TechRejectItem;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.TechRejecService;
+			import com.photodispatcher.model.mysql.services.TechService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
@@ -132,7 +134,6 @@
 					applyBarData();
 					return;
 				}else if(reject && reject.items && reject.items.length>0){
-					//TODO auto build ??
 					Alert.show('Лист из другого заказа. Сформируйте или очистите текущую перепечатку.');
 					if(autoCreate){
 						playSound(_alertSound);
@@ -268,6 +269,8 @@
 					log('Заказ '+order.id+'. Нет групп печати',true);
 					return;
 				}
+				
+				//TODO check order state, add sa_user_namne at reject to log in ReprintOrderBuilder.createReprint
 
 				ddSubOrder.enabled=order.hasSuborders;
 				order.printGroups.filterFunction=filterPG;
@@ -517,6 +520,21 @@
 				latch.addLatch(rejectService.create(reject));
 				latch.start();
 				
+				//log to data base
+				if(techPoint){
+					var tl:TechLog= new TechLog();
+					tl.log_date=new Date();
+					tl.setSheet(0,0);
+					tl.order_id=reject.order_id;
+					tl.src_id= techPoint.id;
+					latch=new DbLatch(true);
+					var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+					if(svc){
+						latch.addLatch(svc.log(tl));
+						latch.start();
+					}
+				}
+
 				//reset
 				if(!checkResult) resetOrder();
 			}

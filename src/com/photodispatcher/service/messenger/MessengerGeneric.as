@@ -1,5 +1,6 @@
 package com.photodispatcher.service.messenger{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.event.CycleMessageEvent;
 	import com.photodispatcher.interfaces.IMessageRecipient;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.messenger.CycleMessage;
@@ -23,8 +24,9 @@ package com.photodispatcher.service.messenger{
 	import org.granite.gravity.Consumer;
 	import org.granite.gravity.Producer;
 	import org.granite.gravity.channels.GravityChannel;
-	
-	public class MessengerGeneric implements IMessageRecipient{
+
+	[Event(name="cyclemessage", type="com.photodispatcher.event.CycleMessageEvent")]
+	public class MessengerGeneric extends EventDispatcher implements IMessageRecipient{
 		public static const PING_INTERVAL:int=5*60*1000;
 		public static const DESTINATION:String='cycle';
 		
@@ -48,17 +50,35 @@ package com.photodispatcher.service.messenger{
 			return false;
 		}
 		
+		private static var pingListener:MessengerGeneric;
 		private static var stationsListener:MessengerGeneric;
 		private static var isConnecting:Boolean;
-		public static function connect():void{
+		public static function connect(listenPing:Boolean=true):void{
 			if(!stationsListener){
 				stationsListener= new MessengerGeneric();
 				subscribe(TOPIC_STATUS,stationsListener);
+			}
+			if(!pingListener && listenPing){
+				pingListener= new MessengerGeneric();
+				pingListener.addEventListener(CycleMessageEvent.CYCLE_MESSAGE, onBroadcast);
+				subscribe(TOPIC_BROADCAST,pingListener);
 			}
 			if(isConnecting) return;
 			//producer.connected ??
 			if(producer) return;
 			createProducer();
+		}
+		private static function onBroadcast(event:CycleMessageEvent):void{
+			var reply:CycleMessage=CycleMessage.createMessage();
+			if(event.message.command==CMD_PING && isMessage4Me(event.message)){
+				sendPing();
+			}
+		}
+		
+		public static function isMessage4Me(message:CycleMessage):Boolean{
+			if(!message) return false;
+			if(message.recipient=='*') return true;
+			return Context.station && Context.station.id==message.recipient;
 		}
 
 		private static function createProducer(topic:String=TOPIC_STATUS):void{
@@ -303,7 +323,7 @@ package com.photodispatcher.service.messenger{
 							stations.addItem(st);
 						}
 						st.lastPing=new Date();
-						if(msg.command==MessengerGeneric.CMD_STATUS){
+						if(msg.command==CMD_STATUS){
 							st.state=msg.sender.state;
 							st.stateComment=msg.message;
 						}
@@ -340,7 +360,6 @@ package com.photodispatcher.service.messenger{
 			}
 		}
 		
-
 		private static var _channelUrl:String;
 		private static function get channelUrl():String{
 			if(!_channelUrl){
@@ -349,58 +368,15 @@ package com.photodispatcher.service.messenger{
 			}
 			return _channelUrl;
 		}
+
+		
+		public function MessengerGeneric():void{
+			super(null);
+		}
 		
 		public function getMessage(message:CycleMessage):void{
-			// dumy recipient to subscibe status topic (station list) 
+			dispatchEvent(new CycleMessageEvent(message));
 		}
 
-/*
-		protected var consumer:Consumer;
-		protected var producer:Producer;
-		
-		
-		public function connect():void{
-			var url:String=Context.getServerRootUrl();
-			if(!url) return;
-			
-			url=url+'/gravityamf/amf';
-			consumer = new Consumer();
-			consumer.destination = DESTINATION;
-			consumer.topic = "discussion";
-			consumer.channelSet=new ChannelSet();
-			consumer.channelSet.addChannel(new GravityChannel("gravityamf", url));
-			consumer.subscribe();
-			consumer.addEventListener(MessageEvent.MESSAGE, messageHandler);
-			
-			producer = new Producer();
-			producer.destination = DESTINATION;
-			producer.channelSet=new ChannelSet();
-			producer.channelSet.addChannel(new GravityChannel("gravityamf", url));
-			producer.topic = "discussion";	
-		}
-		
-		public function disconnect():void {
-			consumer.unsubscribe();
-			consumer.disconnect();
-			consumer = null;
-			
-			producer.disconnect();
-			producer = null;
-		}
-		
-		protected function messageHandler(event:MessageEvent):void {
-			var msg:AsyncMessage = event.message as AsyncMessage;
-			var o:Order= msg.body as Order;
-			Alert.show("Received message: " + o.id);
-		}
-		
-		public function send(message:String):void {
-			var msg:AsyncMessage = new AsyncMessage();
-			var o:Order= new Order();
-			o.id=message;
-			msg.body = o;
-			producer.send(msg);
-		}
-*/
 	}
 }

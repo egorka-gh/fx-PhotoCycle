@@ -91,7 +91,7 @@ package com.photodispatcher.print{
 			hasBackPrint=true;
 			
 			//check hasBackPrint
-			var bs:BookSynonym= BookSynonym.getBookSynonym(printGroup);
+			var bs:BookSynonym= BookSynonym.getBookSynonymByPg(printGroup);
 			if(bs) hasBackPrint=bs.has_backprint;
 			
 			printContext= new Object();
