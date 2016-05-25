@@ -2,6 +2,8 @@ package com.photodispatcher.model.mysql{
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
+	import flash.events.TimerEvent;
+	import flash.utils.Timer;
 	
 	import mx.controls.Alert;
 	
@@ -16,6 +18,7 @@ package com.photodispatcher.model.mysql{
 
 		public var debugName:String;
 		public var silent:Boolean=true;
+		public var lastTag:String;
 		
 		protected var thisComplite:Boolean=false;
 		protected var joint:Array;
@@ -25,6 +28,15 @@ package com.photodispatcher.model.mysql{
 			super(null);
 			this.silent=silent;
 			joint=[];
+		}
+		
+		protected var _timeout:int=0;
+		public function set timeout(value:int):void{
+			if(value>100){
+				_timeout=value;
+			}else{
+				_timeout=0;
+			}
 		}
 		
 		public function join(latch:AsyncLatch):void{
@@ -41,7 +53,25 @@ package com.photodispatcher.model.mysql{
 		
 		public function start():void{
 			started=true;
+			startTimer();
 			checkComplite();
+		}
+		
+		private var timer:Timer;
+		protected function startTimer():void{
+			if(_timeout<=0) return;
+			if(!timer){
+				timer= new Timer(_timeout,1);
+				timer.addEventListener(TimerEvent.TIMER_COMPLETE, onTimeOut);
+			}
+			timer.reset();
+			timer.start();
+		}
+		protected function stopTimer():void{
+			if(timer) timer.reset();
+		}
+		protected function onTimeOut(event:TimerEvent):void{
+			releaseError('Timeout');
 		}
 		
 		public function get isStarted():Boolean{
@@ -54,12 +84,14 @@ package com.photodispatcher.model.mysql{
 		}
 
 		public function reset():void{
+			stopTimer();
 			thisComplite=false;
 			started=false;
 			destroyJoint();
 		}
 
 		public function releaseError(err:String):void{
+			stopTimer();
 			complite=false;
 			hasError=true;
 			error=err;
@@ -89,6 +121,7 @@ package com.photodispatcher.model.mysql{
 		public function checkComplite():void{
 			if(!started) return;
 			if(hasError){
+				stopTimer();
 				started=false;
 				dispatchEvent(new Event(Event.COMPLETE));
 				if(!silent) showError();
@@ -96,6 +129,7 @@ package com.photodispatcher.model.mysql{
 			}
 			complite=isComplite();
 			if(complite){
+				stopTimer();
 				started=false;
 				if(debugName) trace('Latch '+debugName+' complited. state' +(hasError?'error':'complite'));
 				dispatchEvent(new Event(Event.COMPLETE));

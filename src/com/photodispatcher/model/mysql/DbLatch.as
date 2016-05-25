@@ -21,7 +21,6 @@ package com.photodispatcher.model.mysql
 		
 		//public var lastResult:SqlResult;
 		public var lastToken:AsyncToken;
-		public var lastTag:String;
 		
 		public var resultCode:int;
 		public var lastErrCode:int;

@@ -9,6 +9,7 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.GlueMessageEvent;
 			import com.photodispatcher.model.LayerAllocation;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
@@ -31,6 +32,7 @@
 			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.service.glue.GlueInfo;
+			import com.photodispatcher.service.glue.GlueMessage;
 			import com.photodispatcher.service.glue.GlueProxy;
 			import com.photodispatcher.tech.TechRegisterBase;
 			import com.photodispatcher.tech.TechRegisterCommon;
@@ -378,6 +380,7 @@
 				glueDevice=new GlueProxy();
 				glueDevice.loger=this;
 				glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
+				glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
 				glueDevice.start(glueIP,gluePort);
 			}
 			private function onInitLatch(evt:Event):void{
@@ -548,6 +551,17 @@
 						}
 					}
 				}
+			}
+			
+			private function onGlueMessage(event:GlueMessageEvent):void{
+				var msg:GlueMessage=event.message;
+				if(!msg || !msg.command) return;
+				switch(msg.command){
+					case GlueProxy.CMD_GET_PRODUCT:
+						break;
+					default:
+						break;
+				}	
 			}
 			
 			/*

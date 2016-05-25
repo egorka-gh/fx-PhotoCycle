@@ -1,5 +1,6 @@
 package com.photodispatcher.service.glue{
 	
+	import com.photodispatcher.event.GlueMessageEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
 	import com.photodispatcher.model.mysql.AsyncLatch;
 	
@@ -16,8 +17,11 @@ package com.photodispatcher.service.glue{
 	[Event(name="close", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	[Event(name="complete", type="flash.events.Event")]
+	[Event(name="gluemessage", type="com.photodispatcher.event.GlueMessageEvent")]
 	
 	public class GlueProxy extends EventDispatcher{
+		
+		public static const RESPONCE_TIMEOUT:int=2000;
 		
 		public static const ERR_CONNECT:int=1;
 		public static const ERR_SEND:int=2;
@@ -33,6 +37,12 @@ package com.photodispatcher.service.glue{
 		public static const CMD_STOP_AFTER_JOB:String='Stop after Job'; //???
 		public static const CMD_SET_SHEETS:String='Sheets per Book,';
 		public static const CMD_SET_PRODUCT:String='Select Product,';
+		
+		public static const CMD_GET_STATUS:String='GetStatus';
+		public static const CMD_GET_PRODUCT:String='GetProduct';
+		public static const CMD_GET_MESSAGE:String='GetMessage';
+		public static const CMD_GET_BUTTONS:String='GetButtons';
+		
 
 		public function GlueProxy(){
 			super(null);
@@ -62,13 +72,13 @@ package com.photodispatcher.service.glue{
 		}
 		
 		public function run_Start():void{
-			cmd_stack.push(CMD_START);
+			cmd_stack.push(new GlueCmd(CMD_START));
 			run_next();
 		}
 
 		public function run_Stop():void{
 			cmd_stack=[];
-			cmd_stack.push(CMD_STOP);
+			cmd_stack.push(new GlueCmd(CMD_STOP));
 			run_next();
 		}
 		
@@ -77,7 +87,7 @@ package com.photodispatcher.service.glue{
 				riseErr(ERR_SEND,'Не верное количество разворотов: '+sheets.toString());
 				return;
 			}
-			cmd_stack.push(CMD_SET_SHEETS+sheets.toString());
+			cmd_stack.push(new GlueCmd(CMD_SET_SHEETS+sheets.toString()));
 			run_next();
 		}
 
@@ -86,12 +96,19 @@ package com.photodispatcher.service.glue{
 				riseErr(ERR_SEND,'Пустое название продукта');
 				return;
 			}
-			cmd_stack.push(CMD_SET_PRODUCT+product);
+			cmd_stack.push(new GlueCmd(CMD_SET_PRODUCT+product));
 			run_next();
 		}
 
+		public function run_GetProduct():void{
+			cmd_stack.push(new GlueCmd(CMD_GET_PRODUCT,true));
+			run_next();
+		}
+		
+		
 		protected function run_next():void{
 			if(aclLatch && aclLatch.isStarted) return;
+			currCommand=null;
 			if(!isStarted) return;
 
 			if(!cmd_stack || cmd_stack.length==0){
@@ -103,13 +120,18 @@ package com.photodispatcher.service.glue{
 				riseErr(ERR_SEND,'Нет подключения');
 				return;
 			}
-			currCommand=cmd_stack.shift();
-			//TODO time out ????
+			var cmd:GlueCmd=cmd_stack.shift() as GlueCmd;
+			if(!cmd){
+				run_next();
+				return;
+			}
+			currCommand=cmd;
+			msgBuffer='';
 			try{
 				startAclLatch();
-				socket.writeUTFBytes(currCommand);
+				socket.writeUTFBytes(currCommand.command);
 				socket.flush();
-				log('Отправлено: '+currCommand);
+				log('Отправлено: '+currCommand.command);
 			}catch(err:Error){
 				aclLatch.reset();
 				riseErr(ERR_SEND,'Ошибка отправки: '+err.message);
@@ -185,31 +207,52 @@ package com.photodispatcher.service.glue{
 
 		
 		private var aclLatch:AsyncLatch;
-		private var currCommand:String;
+		private var currCommand:GlueCmd;
 		
 		private function startAclLatch():void{
 			if(!isStarted) return;
 			
 			if(!aclLatch){
 				aclLatch=new AsyncLatch(true);
+				aclLatch.timeout=RESPONCE_TIMEOUT;
 				aclLatch.addEventListener(Event.COMPLETE, onAcl);
 			}
 			aclLatch.reset();
 			aclLatch.start();
 		}
 		private function onAcl(evt:Event):void{
+			if(aclLatch.hasError){
+				aclLatch.reset();
+				riseErr(ERR_CMD,'Ошибка выполнения команды: "'+currCommand.command+'"; отклик: '+aclLatch.error);
+				currCommand=null;
+			}
 			run_next();
 		}
 		
+		private var msgBuffer:String;
+		
 		private function onSocketData( event:ProgressEvent ):void{
+			if(!currCommand) return;
+			if(!aclLatch || !aclLatch.isStarted) return;
+
 			var res:String=socket.readUTFBytes(socket.bytesAvailable);
 			res=res.replace('\n','');
-			if(aclLatch && aclLatch.isStarted){
+			if(!currCommand.hasResponce){
+				//waite simple acl
 				if(res==MSG_ACL){
 					aclLatch.release();
 				}else{
 					aclLatch.reset();
-					riseErr(ERR_CMD,'Ошибка выполнения команды: "'+currCommand+'"; отклик:'+res);
+					riseErr(ERR_CMD,'Ошибка выполнения команды: "'+currCommand.command+'"; отклик:'+res);
+				}
+			}else{
+				//waite message
+				msgBuffer+=res;
+				if(msgBuffer.substr(-2)== GlueMessage.MSG_CCH_END){
+					//complited
+					//parse rise complited
+					dispatchEvent(new GlueMessageEvent(GlueMessage.parse(msgBuffer,currCommand)));
+					aclLatch.release();
 				}
 			}
 		}
