@@ -21,7 +21,7 @@ package com.photodispatcher.service.glue{
 	
 	public class GlueProxy extends EventDispatcher{
 		
-		public static const RESPONCE_TIMEOUT:int=2000;
+		public static const RESPONCE_TIMEOUT:int=5000;
 		
 		public static const ERR_CONNECT:int=1;
 		public static const ERR_SEND:int=2;
@@ -47,6 +47,18 @@ package com.photodispatcher.service.glue{
 		public function GlueProxy(){
 			super(null);
 		}
+		
+		//device vars
+		[Bindable]
+		public var devProduct:String='-';
+		[Bindable]
+		public var devGLM:String='-';
+		[Bindable]
+		public var devGBT:String='-';
+		[Bindable]
+		public var devBookPages:String='-';
+		
+		
 		
 		public var loger:ISimpleLogger;
 		
@@ -100,16 +112,31 @@ package com.photodispatcher.service.glue{
 			run_next();
 		}
 
-		public function run_GetProduct():void{
-			cmd_stack.push(new GlueCmd(CMD_GET_PRODUCT,true));
+		public function run_GetProduct(createLatch:Boolean=false):AsyncLatch{
+			devProduct='?';
+			devGBT=='?';
+			devGLM=='?';
+			var latch:AsyncLatch;
+			if(createLatch) latch=new AsyncLatch(true);
+			cmd_stack.push(new GlueCmd(CMD_GET_PRODUCT,true,latch));
 			run_next();
+			return latch;
 		}
 		
+		public function run_GetStatus(createLatch:Boolean=false):AsyncLatch{
+			devBookPages='?';
+			var latch:AsyncLatch;
+			if(createLatch) latch=new AsyncLatch(true);
+			cmd_stack.push(new GlueCmd(CMD_GET_STATUS,true,latch));
+			run_next();
+			return latch;
+		}
 		
 		protected function run_next():void{
 			if(aclLatch && aclLatch.isStarted) return;
-			currCommand=null;
 			if(!isStarted) return;
+
+			currCommand=null;
 
 			if(!cmd_stack || cmd_stack.length==0){
 				dispatchEvent(new Event(Event.COMPLETE));
@@ -218,12 +245,18 @@ package com.photodispatcher.service.glue{
 				aclLatch.addEventListener(Event.COMPLETE, onAcl);
 			}
 			aclLatch.reset();
+			if(currCommand && currCommand.latch){
+				currCommand.latch.join(aclLatch);
+				currCommand.latch.start();
+				currCommand.latch.release();
+			}
 			aclLatch.start();
 		}
 		private function onAcl(evt:Event):void{
 			if(aclLatch.hasError){
-				aclLatch.reset();
+				aclLatch.stop();
 				riseErr(ERR_CMD,'Ошибка выполнения команды: "'+currCommand.command+'"; отклик: '+aclLatch.error);
+				aclLatch.reset();
 				currCommand=null;
 			}
 			run_next();
@@ -232,29 +265,53 @@ package com.photodispatcher.service.glue{
 		private var msgBuffer:String;
 		
 		private function onSocketData( event:ProgressEvent ):void{
-			if(!currCommand) return;
-			if(!aclLatch || !aclLatch.isStarted) return;
+			if(!currCommand){
+				log('onSocketData no currCommand');
+				return;
+			}
+			if(!aclLatch || !aclLatch.isStarted){
+				log('onSocketData aclLatch not started');
+				return;
+			}
 
 			var res:String=socket.readUTFBytes(socket.bytesAvailable);
 			res=res.replace('\n','');
+			log('currCommand cmd:'+currCommand.command+'; hasResponce:'+currCommand.hasResponce+'; responce:'+res);
 			if(!currCommand.hasResponce){
 				//waite simple acl
 				if(res==MSG_ACL){
 					aclLatch.release();
 				}else{
-					aclLatch.reset();
+					aclLatch.stop();
 					riseErr(ERR_CMD,'Ошибка выполнения команды: "'+currCommand.command+'"; отклик:'+res);
+					aclLatch.reset();
 				}
 			}else{
 				//waite message
 				msgBuffer+=res;
 				if(msgBuffer.substr(-2)== GlueMessage.MSG_CCH_END){
 					//complited
-					//parse rise complited
-					dispatchEvent(new GlueMessageEvent(GlueMessage.parse(msgBuffer,currCommand)));
+					checkMessage(GlueMessage.parse(msgBuffer,currCommand));
 					aclLatch.release();
 				}
 			}
+		}
+		
+		protected function checkMessage(message:GlueMessage):void{
+			if(!message || !message.command) return;
+			switch(message.command){
+				case GlueProxy.CMD_GET_PRODUCT:
+					devProduct=message.getBlockItemValue(GlueMessage.BLOCK_KEY_PRODUCT, GlueMessage.ITEM_KEY_TEXT);
+					devGBT=message.getBlockItemValue(GlueMessage.BLOCK_KEY_GBT, GlueMessage.ITEM_KEY_TEXT);
+					devGLM=message.getBlockItemValue(GlueMessage.BLOCK_KEY_GLM, GlueMessage.ITEM_KEY_TEXT);
+					break;
+				case GlueProxy.CMD_GET_STATUS:
+					devBookPages=message.getBlockItemValue(GlueMessage.BLOCK_KEY_PAGESBOOK, GlueMessage.ITEM_KEY_TEXT);
+					break;
+				default:
+					break;
+			}	
+			dispatchEvent(new GlueMessageEvent(message));
 		}
 
 		protected function log(msg:String):void{

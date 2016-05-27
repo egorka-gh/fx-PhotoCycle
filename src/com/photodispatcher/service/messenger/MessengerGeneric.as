@@ -83,7 +83,12 @@ package com.photodispatcher.service.messenger{
 
 		private static function createProducer(topic:String=TOPIC_STATUS):void{
 			if(!channelUrl) return;
+			
+			//trun off messaging 
+			return;
+			
 			isConnecting=true;
+			trace('Messenger Producer create');
 
 			destroyProducer();
 			producer= new Producer();
@@ -122,7 +127,7 @@ package com.photodispatcher.service.messenger{
 		}
 		private static function onProducerChannelFault(event:ChannelFaultEvent):void{
 			if(forceDisconnect) return;
-			trace('ProducerChannelFault '+ event.faultString);
+			trace('ProducerChannelFault '+ event.faultDetail);
 			//destroy & reconnect
 			destroyProducer();
 			destroyConsumers();
@@ -153,6 +158,7 @@ package com.photodispatcher.service.messenger{
 		
 		private static var timer:Timer; 
 		private static function reconnect():void{
+			trace('Messenger Producer reconnect statrt timer');
 			if(timer){
 				timer.reset();
 				timer.removeEventListener(TimerEvent.TIMER, onReconnectTimer);
@@ -196,27 +202,19 @@ package com.photodispatcher.service.messenger{
 		
 		private static var forceDisconnect:Boolean;
 		public static function disconnect():void{
-			sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_OFF,'Выход'));
+			if(connected) sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_OFF,'Выход'));
 			forceDisconnect=true;
 			//stop listen & destroy all
 			destroyProducer();
-			
 			recipientMap=null;
 			destroyConsumers();
-			/*
-			var topic:String;
-			var topics:Array=[];
-			for (topic in consumerMap) topics.push(topic);
-			for each(topic in topics) destroyConsumer(consumerMap[topic] as Consumer);
-			consumerMap=null;
-			*/
-			
 			forceDisconnect=false;
 		}
 
 		
 		public static function sendMessage(message:CycleMessage):void{
 			if(!message || !message.topic) return;
+			trace('Messenger producer send message topic:'+message.topic);
 			if(!producer || (!connected && !(isConnecting && message.topic==TOPIC_STATUS))) return;
 
 			var msg:AsyncMessage = new AsyncMessage();
@@ -266,6 +264,8 @@ package com.photodispatcher.service.messenger{
 		}
 		private static function createConsumer(topic:String):Consumer{
 			if(!connected || !topic || !channelUrl) return null;
+			trace('Messenger Consumer create topic:'+topic);
+
 			var consumer:Consumer= new Consumer();
 			consumer.destination = DESTINATION;
 			consumer.topic = topic;
@@ -304,18 +304,22 @@ package com.photodispatcher.service.messenger{
 		}
 		private static function onConsumerMessage(event:MessageEvent):void{
 			if(forceDisconnect) return;
+			trace('Messenger Consumer get message');
 			var consumer:Consumer=event.target as Consumer;
 			if(consumer && consumer.topic){
+				trace('Messenger Consumer message topic:'+consumer.topic);
 				//notify recipients 
 				var recipients:Array;
 				if(recipientMap) recipients=recipientMap[consumer.topic] as Array;
 				var msg:CycleMessage=event.message.body as CycleMessage;
 				if(msg){
+					trace('Messenger Consumer message notify recipients');
 					if(recipients){
 						var recipient:IMessageRecipient;
 						for each(recipient in recipients) recipient.getMessage(msg);
 					}
 					//refresh station
+					trace('Messenger Consumer message refresh station');
 					if(msg.sender){
 						var st:CycleStation=getStation(msg.sender.id);
 						if(!st){
@@ -330,6 +334,7 @@ package com.photodispatcher.service.messenger{
 					}
 				}
 			}
+			trace('Messenger Consumer message processed');
 		}
 		
 		private static function getStation(id:String):CycleStation{
@@ -363,7 +368,7 @@ package com.photodispatcher.service.messenger{
 		private static var _channelUrl:String;
 		private static function get channelUrl():String{
 			if(!_channelUrl){
-				_channelUrl=Context.getServerRootUrl();
+				_channelUrl=Context.getServerRootUrl();//Context.getChatRootUrl();
 				if(_channelUrl) _channelUrl=_channelUrl+'/gravityamf/amf';
 			}
 			return _channelUrl;

@@ -1,4 +1,5 @@
 package com.photodispatcher.service.glue{
+	import com.photodispatcher.interfaces.ISimpleLogger;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.BookSynonymGlue;
@@ -76,7 +77,13 @@ package com.photodispatcher.service.glue{
 		
 		public var glueCommand:BookSynonymGlue;
 		public var glueSheetsNum:int;
-		
+
+		public var loger:ISimpleLogger;
+
+		protected function log(msg:String):void{
+			if(loger) loger.log(msg);
+		}
+
 		public function load(pgId:String):DbLatch{
 			printGroupId=pgId;
 			var latch:DbLatch= new DbLatch();
@@ -85,7 +92,7 @@ package com.photodispatcher.service.glue{
 				latch.start();
 				return latch;
 			}
-			
+			log('GlueInfo start load '+pgId);
 			hasErr=false;
 			glueSheetsNum=0;
 			glueCommand=null;
@@ -111,6 +118,7 @@ package com.photodispatcher.service.glue{
 		}
 		protected function onPgLoad(e:Event):void{
 			var latch:DbLatch=e.target as DbLatch;
+			log('GlueInfo printGroup loaded');
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onPgLoad);
 				if(latch.complite){
@@ -120,12 +128,14 @@ package com.photodispatcher.service.glue{
 		}
 		protected function onOrderFinde(e:Event):void{
 			var latch:DbLatch=e.target as DbLatch;
+			log('GlueInfo ExtraInfo loaded');
 			var ei:OrderExtraInfo;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onOrderFinde);
 				extraInfo=latch.lastDataItem as OrderExtraInfo;
 			}
 			checkResult();
+			log('GlueInfo complite');
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 

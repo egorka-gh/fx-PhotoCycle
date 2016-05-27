@@ -10,6 +10,7 @@ package com.photodispatcher.model.mysql{
 	import spark.formatters.DateTimeFormatter;
 	
 	[Event(name="complete", type="flash.events.Event")]
+	[Event(name="cancel", type="flash.events.Event")]
 	public class AsyncLatch extends EventDispatcher{
 		public var complite:Boolean=false;
 		public var hasError:Boolean=false;
@@ -49,6 +50,7 @@ package com.photodispatcher.model.mysql{
 			latch.silent=true;
 			joint.push(latch);
 			latch.addEventListener(Event.COMPLETE,onJoinComplite);
+			latch.addEventListener(Event.CANCEL,onJoinCancel);
 		}
 		
 		public function start():void{
@@ -83,11 +85,22 @@ package com.photodispatcher.model.mysql{
 			checkComplite();
 		}
 
+		public function stop():void{
+			stopTimer();
+			started=false;
+		}
+
 		public function reset():void{
 			stopTimer();
-			thisComplite=false;
 			started=false;
+			lastTag='';
+			callContext=null;
+			thisComplite=false;
+			complite=false;
+			hasError=false;
+			error='';
 			destroyJoint();
+			dispatchEvent(new Event(Event.CANCEL));
 		}
 
 		public function releaseError(err:String):void{
@@ -144,6 +157,7 @@ package com.photodispatcher.model.mysql{
 			var latch:AsyncLatch=event.target as AsyncLatch;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onJoinComplite);
+				latch.removeEventListener(Event.COMPLETE,onJoinCancel);
 				if(joint){
 					var idx:int=joint.indexOf(latch);
 					if(idx!=-1) joint.splice(idx,1);
@@ -155,6 +169,18 @@ package com.photodispatcher.model.mysql{
 				}
 			}
 		}
+		protected function onJoinCancel(event:Event):void{
+			var latch:AsyncLatch=event.target as AsyncLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onJoinComplite);
+				latch.removeEventListener(Event.COMPLETE,onJoinCancel);
+				if(joint){
+					var idx:int=joint.indexOf(latch);
+					if(idx!=-1) joint.splice(idx,1);
+				}
+				checkComplite();
+			}
+		}
 		
 		protected function destroyJoint():void{
 			if(joint && joint.length>0){
@@ -162,6 +188,7 @@ package com.photodispatcher.model.mysql{
 				for each(latch in joint){
 					latch.destroyJoint();
 					latch.removeEventListener(Event.COMPLETE,onJoinComplite);
+					latch.removeEventListener(Event.COMPLETE,onJoinCancel);
 				}
 				joint=null;
 			}

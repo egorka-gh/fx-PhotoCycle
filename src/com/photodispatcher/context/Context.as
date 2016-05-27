@@ -623,6 +623,20 @@ package com.photodispatcher.context{
 			return serverRootUrl;
 		}
 
+		private static var chatRootUrl:String;
+		public static function getChatRootUrl():String{
+			if(!chatRootUrl){
+				var str:String;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				str=so.data.bdServer;
+				var bdServerPort:String=so.data.bdServerPort;
+				if(!bdServerPort) bdServerPort='8080';
+				
+				if(str) chatRootUrl='http://'+str+':'+bdServerPort+'/PhChat';
+			}
+			return chatRootUrl;
+		}
+
 		private static var latchAttributeLists:DbLatch;
 		public static function initAttributeLists():DbLatch{
 			latchAttributeLists= new DbLatch();

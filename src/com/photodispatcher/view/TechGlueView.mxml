@@ -290,7 +290,8 @@
 					barText=barcode+'\n';
 					regList= new ArrayCollection();
 					currRegister.register(bookNum,pageNum);
-					//TODO check glue settings
+					//check glue settings
+					getPGGlueInfo(pgId);
 				}
 				regList.addItemAt({log_date:new Date(), page: StrUtil.sheetName(bookNum,pageNum)},0);
 				if(regList.length> REGLISTLIMIT){
@@ -380,7 +381,7 @@
 				glueDevice=new GlueProxy();
 				glueDevice.loger=this;
 				glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
-				glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+				//glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
 				glueDevice.start(glueIP,gluePort);
 			}
 			private function onInitLatch(evt:Event):void{
@@ -482,8 +483,12 @@
 			//public var currGlueCmd:BookSynonymGlue; 
 
 			protected function getGlueCommand(pgId:String):void{
+				if(!pgId) return;
+				log('Проверка по ШК управления '+pgId);
 				currGlueInfo= new GlueInfo(GlueInfo.MODE_GETCOMMAND);
+				//currGlueInfo.loger=this;
 				currGlueInfo.addEventListener(Event.COMPLETE,onGlueInfo);
+				currGlueInfo.load(pgId);
 				/*
 				if(!pgId) return;
 				currPG=null;
@@ -542,7 +547,7 @@
 					currGlueInfo.removeEventListener(Event.COMPLETE,onGlueInfo);
 					if(currGlueInfo.hasErr){
 						Alert.show(currGlueInfo.errMsg);
-						logToScreen('Ошибка: '+currGlueInfo.errMsg,true);
+						logToScreen('Ошибка проверки: '+currGlueInfo.errMsg,true);
 					}else{
 						//set command 
 						if(glueDevice){
@@ -553,17 +558,41 @@
 				}
 			}
 			
-			private function onGlueMessage(event:GlueMessageEvent):void{
-				var msg:GlueMessage=event.message;
-				if(!msg || !msg.command) return;
-				switch(msg.command){
-					case GlueProxy.CMD_GET_PRODUCT:
-						break;
-					default:
-						break;
-				}	
+			[Bindable]
+			protected var currPGGlueInfo:GlueInfo;
+			protected function getPGGlueInfo(pgId:String):void{
+				if(!pgId || !glueDevice || !glueDevice.isStarted) return;
+				log('Проверка заказа '+pgId);
+				currPGGlueInfo= new GlueInfo(GlueInfo.MODE_CHECK);
+				currPGGlueInfo.addEventListener(Event.COMPLETE,onPGGlueInfo);
+				var latch:DbLatch=currPGGlueInfo.load(pgId);
+				latch.join(glueDevice.run_GetProduct(true));
+				latch.join(glueDevice.run_GetStatus(true));
 			}
-			
+			protected function onPGGlueInfo(e:Event):void{
+				if(currPGGlueInfo){
+					currPGGlueInfo.removeEventListener(Event.COMPLETE,onPGGlueInfo);
+					if(currPGGlueInfo.hasErr){
+						logToScreen('Ошибка проверки: '+currPGGlueInfo.errMsg,true);
+					}else{
+						//check command
+						log('Для заказа '+currPGGlueInfo.printGroupId+' команда:'+currPGGlueInfo.glueCommand.glue_cmd_name+' листов:'+currPGGlueInfo.glueSheetsNum.toString());
+						if(glueDevice && currRegister){
+							var fstop:Boolean=false;
+							if(glueDevice.devProduct!=currPGGlueInfo.glueCommand.glue_cmd_name){
+								fstop=true;
+								logToScreen('Не верная команда для '+currRegister.printGroupId+'. Склейка:'+glueDevice.devProduct+'. Заказ:'+currPGGlueInfo.glueCommand.glue_cmd_name,true);
+							}
+							if(glueDevice.devBookPages!=currPGGlueInfo.glueSheetsNum.toString()){
+								fstop=true;
+								logToScreen('Не верное кол листов для '+currRegister.printGroupId+'. Склейка:'+glueDevice.devBookPages+'. Заказ:'+currPGGlueInfo.glueSheetsNum.toString(),true);
+							}
+							if(fstop && glueDevice.isStarted) glueDevice.run_Stop();
+						}
+					}
+				}
+			}
+
 			/*
 			protected function detectGlueCmd():Boolean{
 				var hasErr:Boolean;
@@ -636,6 +665,20 @@
 				}
 			}
 			
+			protected function btRefreshGlue_clickHandler(event:MouseEvent):void{
+				if(glueDevice && glueDevice.isStarted){
+					glueDevice.run_GetProduct();
+					glueDevice.run_GetStatus();
+				}
+			}
+			
+			/*
+			protected function btDebug_clickHandler(event:MouseEvent):void{
+				if(!tiDebug.text) return;
+				getGlueCommand(tiDebug.text);
+			}
+			*/
+			
 		]]>
 	</fx:Script>
 	
@@ -649,12 +692,33 @@
 			<s:Label text="Разворотов: {currGlueInfo.printGroup.sheet_num}"/>
 			<s:Label text="Команда: {currGlueInfo.glueCommand.glue_cmd_name}"/>
 		</s:HGroup>
-		<s:HGroup gap="25" width="100%" paddingLeft="15" paddingRight="15"
-				  enabled="{glueDevice.isStarted}"
-				  horizontalAlign="center" fontSize="20">
-			<s:Button id="btGlueStart" label="Старт" height="50" click="{glueDevice.run_Start()}"/>
-			<s:Button id="btGluePause" label="Пауза" height="50" enabled="false"/>
-			<s:Button id="btGlueStop" label="Стоп" height="50" click="{glueDevice.run_Stop()}"/>
+		<s:HGroup id="gDevice" gap="10" width="100%">
+			<s:HGroup id="gDeviceCTRL" gap="25" paddingLeft="15" paddingRight="5"
+					  enabled="{glueDevice.isStarted}"
+					  horizontalAlign="center" verticalAlign="top" 
+					  fontSize="20">
+				<s:Button id="btGlueStart" label="Старт" height="50" click="{glueDevice.run_Start()}"/>
+				<s:Button id="btGluePause" label="Пауза" height="50" enabled="false"/>
+				<s:Button id="btGlueStop" label="Стоп" height="50" click="{glueDevice.run_Stop()}"/>
+				<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:Scroller width="100%" height="50">
+				<s:VGroup gap="5" width="100%">
+					<!--<s:HGroup gap="5" verticalAlign="baseline">
+						<s:TextInput id="tiDebug"/>
+						<s:Button id="btDebug" click="btDebug_clickHandler(event)"/>
+					</s:HGroup>-->
+					<s:HGroup gap="5" verticalAlign="baseline">
+						<s:Label text="Product: {glueDevice.devProduct}"/>
+						<s:Label text="Pages per Book: {glueDevice.devBookPages}"/>
+					</s:HGroup>
+					<s:HGroup gap="5">
+						<s:Label text="GLM: {glueDevice.devGLM}"/>
+						<s:Label text="GBT: {glueDevice.devGBT}"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:Scroller>
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%" >
 			<s:Label text="Порядок: {currRegister.revers?'Обратный':'Прямой'}"/>

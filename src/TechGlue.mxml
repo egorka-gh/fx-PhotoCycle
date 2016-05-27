@@ -27,6 +27,7 @@
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.service.messenger.MessengerGeneric;
+			import com.photodispatcher.service.tide.DataObserver;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.ModalPopUp;
@@ -41,6 +42,8 @@
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
 			import spark.events.TextOperationEvent;
+			
+			private var useMessenger:Boolean=true;
 			
 			[Bindable]
 			private var techPionts:ArrayCollection;
@@ -228,7 +231,11 @@
 				//init messenger
 				if(techPointObj) Context.station.name=techPointObj.name;
 				Context.station.setType(CycleStation.TYPE_GLUE);
-				MessengerGeneric.connect();
+				
+				//Tide.getInstance().addComponent("cycle", DataObserver);
+				//Tide.getInstance().getContext().cycle.subscribe();
+				
+				if(useMessenger) MessengerGeneric.connect();
 
 				initComplete=true;
 				if(techPointObj && coms.length>0){
@@ -323,7 +330,7 @@
 				//TODO flush data
 				//if(flap) flap.stop();
 				//if(barcodeReader) barcodeReader.stop();
-				MessengerGeneric.disconnect();
+				if(useMessenger) MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 				if(techMonitor) techMonitor.stop();
 			}
@@ -378,7 +385,7 @@
 			}
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
-				MessengerGeneric.disconnect();
+				if(useMessenger) MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 				if(techMonitor) techMonitor.stop();
 				FlexGlobals.topLevelApplication.exit();
