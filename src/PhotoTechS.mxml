@@ -47,7 +47,9 @@
 			private var coms:ArrayCollection= new ArrayCollection;
 			
 			[Bindable]
-			private var barcodeReader:ComReader;
+			private var barcodeReaders:Array; //ComReader
+			//private var barcodeReader:ComReader;
+			
 			[Bindable]
 			private var flap:ValveCom; 
 			[Bindable]
@@ -207,19 +209,47 @@
 					currentState='config';
 					return;
 				}
+
 				serialProxy.start(coms.source);
 				if(!serialProxy.isStarted){
 					currentState='config';
 					return;
 				}
 
-				currentState='monitor';
-				//create barcode reader
-				if(barcodeReader){
-					barcodeReader.stop();
-					barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
-					barcodeReader=null;
+				var readersProxy:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
+				if(!readersProxy || readersProxy.length==0){
+					Alert.show('Приложение не настроено');
+					serialProxy.stop();
+					currentState='config';
+					return;
 				}
+
+				currentState='monitor';
+				var reader:ComReader;
+				//stop old?
+				if(barcodeReaders){
+					for each(reader in barcodeReaders){
+						if(reader){
+							reader.stop();
+							reader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+						}
+						
+					}
+				}
+				barcodeReaders=null;
+				var newReades:Array=[];
+				var pr:Socket2Com;
+				for each(pr in readersProxy){
+					if(pr){
+						reader= new ComReader();
+						reader.comPort=pr;
+						reader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+						newReades.push(reader);
+					}
+				}
+				barcodeReaders=newReades;
+				//create barcode readers
+				/*
 				var pr:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
 				if(pr){
 					barcodeReader= new ComReader();
@@ -227,6 +257,7 @@
 					barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
 					//barcodeReader.start();
 				}
+				*/
 				
 				//create printer
 				pr=serialProxy.getProxy(ComInfo.COM_TYPE_EBS6kCONTROLLER);
@@ -278,8 +309,9 @@
 			}
 			
 			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
-				if(flap) flap.stop();
-				if(barcodeReader) barcodeReader.stop();
+				//if(flap) flap.stop();
+				var reader:ComReader=event.target as ComReader;
+				if(reader) reader.stop();
 				serialProxy.stop();
 				var bar:String=event.barcode;
 				bar = bar.replace(String.fromCharCode(13),'[LF]');
@@ -428,7 +460,7 @@
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
 		<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" 
-							  barcodeReader="{barcodeReader}" flap="{flap}" 
+							  barcodeReaders="{barcodeReaders}" flap="{flap}" 
 							  printer="{printer}" extendedPrint="{extendedPrint}"
 							  alertSound="{alertSound}"
 							  soundOffOnReprint="{soundOffOnReprint}"

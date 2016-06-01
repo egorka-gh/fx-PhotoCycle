@@ -41,6 +41,39 @@
 			public var soundOffOnReprint:Boolean;
 			
 			public var techPoint:TechPoint;
+			
+			private var _barcodeReaders:Array;
+			public function get barcodeReaders():Array{
+				return _barcodeReaders;
+			}
+			public function set barcodeReaders(value:Array):void{
+				var reader:ComReader;
+				//stop old
+				if(_barcodeReaders){
+					for each(reader in _barcodeReaders){
+						if(reader){
+							reader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+							reader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+							reader.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+							reader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+						}
+					}
+				}
+				//start new
+				_barcodeReaders = value;
+				if(_barcodeReaders){
+					for each(reader in _barcodeReaders){
+						if(reader){
+							reader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+							reader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+							reader.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+							reader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+						}
+					}
+				}
+			}
+
+			/*
 			private var _barcodeReader:ComReader;
 			public function get barcodeReader():ComReader{
 				return _barcodeReader;
@@ -60,6 +93,7 @@
 					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
 				}
 			}
+			*/
 
 			private var _flap:ValveCom;
 			[Bindable]
@@ -202,13 +236,16 @@
 
 			[Bindable]
 			private var currRegister:TechRegisterBase;
+			private var currBarcode:String='';
 			
 			private function onBarCode(event:BarCodeEvent):void{
 				var barcode:String=event.barcode;
+				barText=barcode+'\n';
+				if(barcode==currBarcode) return; //doublescan or more then 1 barreader
+				currBarcode=barcode;
 				print(barcode);
 				//parce barcode
 				var pgId:String;
-				barText=barcode+'\n';
 				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 				if(!pgId){
 					//TODO rise err
@@ -338,7 +375,15 @@
 				}
 				regList=new ArrayCollection();
 				createGridColumns();
-				if(barcodeReader) barcodeReader.start();
+				
+				var reader:ComReader;
+				if(barcodeReaders){
+					for each(reader in barcodeReaders){
+						if(reader) reader.start();
+					}
+				}
+				//if(barcodeReader) barcodeReader.start();
+				
 				if(printer) printer.start();
 				if(flap) flap.start();
 			}
@@ -361,7 +406,15 @@
 					currRegister.removeEventListener(Event.COMPLETE,onRegisterComplite);
 				}
 				currRegister=null;
-				if(barcodeReader) barcodeReader.stop();
+
+				var reader:ComReader;
+				if(barcodeReaders){
+					for each(reader in barcodeReaders){
+						if(reader) reader.stop();
+					}
+				}
+				//if(barcodeReader) barcodeReader.stop();
+				
 				if(printer) printer.stop();
 				if(flap) flap.stop();
 			}
