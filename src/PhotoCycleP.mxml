@@ -42,7 +42,7 @@
 			import org.granite.tide.Tide;
 			import org.granite.tide.events.TideFaultEvent;
 			import org.granite.tide.events.TideResultEvent;
-			import org.granite.tide.service.DefaultServiceInitializer;
+			import org.granite.tide.service.SimpleServerApp;
 			import org.granite.tide.spring.Spring;
 			
 			import spark.events.PopUpEvent;
@@ -67,11 +67,14 @@
 				}
 			}
 			
+			/*
 			private function initApp_ms():void{
 				pingBdServer();
 			}
+			*/
 
 			private var startPopup:ModalPopUp;
+			/*
 			private function pingBdServer():void{
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var bdServer:String=so.data.bdServer;
@@ -85,8 +88,9 @@
 				startPopup.open(null);
 
 				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
-				Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
-				
+				//Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
+				Spring.getInstance().mainServerSession.serverApp = new SimpleServerApp("/@projectNameLowerCase@", false, bdServer, "8080");
+
 				//run hallo
 				Tide.getInstance().addComponents([HalloService]);
 				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;
@@ -100,6 +104,7 @@
 			private function onPingServerFault(event:TideFaultEvent):void {
 				startPopup.label='Ошибка подключения к БД:' + event.fault.faultCode+'; ' +event.fault.faultDetail+'; ' +event.fault.faultString;
 			}
+			*/
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if(vMonitor){

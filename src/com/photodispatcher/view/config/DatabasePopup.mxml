@@ -18,7 +18,8 @@
 			import org.granite.tide.Tide;
 			import org.granite.tide.events.TideFaultEvent;
 			import org.granite.tide.events.TideResultEvent;
-			import org.granite.tide.service.DefaultServiceInitializer;
+			//import org.granite.tide.service.DefaultServiceInitializer;
+			import org.granite.tide.service.SimpleServerApp;
 			import org.granite.tide.spring.Spring;
 			
 			import spark.events.PopUpEvent;
@@ -71,7 +72,9 @@
 				//Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
 				var spring:Spring = Spring.getInstance();
 				//spring.initApplication();
-				spring.addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: bdServerPort,contextRoot: "/PhCServer" });
+				//spring.addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: bdServerPort,contextRoot: "/PhCServer" });
+				Spring.getInstance().mainServerSession.serverApp = new SimpleServerApp("/PhCServer", false, bdServer, bdServerPort);
+
 				//run hallo
 				Tide.getInstance().addComponents([HalloService]);
 				var hallosvc:HalloService=Tide.getInstance().getContext().byType(HalloService,true) as HalloService;

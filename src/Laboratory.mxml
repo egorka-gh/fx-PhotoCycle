@@ -32,7 +32,6 @@
 			import org.granite.tide.Tide;
 			import org.granite.tide.events.TideFaultEvent;
 			import org.granite.tide.events.TideResultEvent;
-			import org.granite.tide.service.DefaultServiceInitializer;
 			import org.granite.tide.spring.Spring;
 			
 			import spark.events.IndexChangeEvent;
