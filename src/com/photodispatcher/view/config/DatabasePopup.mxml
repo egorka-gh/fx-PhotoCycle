@@ -71,6 +71,7 @@
 				//Tide.getInstance().getContext().serviceInitializer = new DefaultServiceInitializer('http://localhost:8080/PhCServer'); // http://myserver:8080/BigzzInfo ?
 				//Spring.getInstance().addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: "8080" ,contextRoot: "/PhCServer" });
 				var spring:Spring = Spring.getInstance();
+				spring.initApplication(false);
 				//spring.initApplication();
 				//spring.addComponentWithFactory("serviceInitializer",DefaultServiceInitializer,{ serverName:bdServer, serverPort: bdServerPort,contextRoot: "/PhCServer" });
 				Spring.getInstance().mainServerSession.serverApp = new SimpleServerApp("/PhCServer", false, bdServer, bdServerPort);
