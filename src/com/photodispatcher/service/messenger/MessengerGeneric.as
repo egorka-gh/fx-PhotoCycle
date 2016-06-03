@@ -85,7 +85,7 @@ package com.photodispatcher.service.messenger{
 			if(!channelUrl) return;
 			
 			//trun off messaging 
-			return;
+			//return;
 			
 			isConnecting=true;
 			trace('Messenger Producer create');

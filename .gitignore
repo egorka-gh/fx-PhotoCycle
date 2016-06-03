@@ -2,11 +2,11 @@
 /.project
 bin-debug/
 libs/
-data/
-doc/
 /[source path] src
 /.flexProperties
 work-folder
 orders-folder
 labs
 /bin-release-temp
+/doc
+

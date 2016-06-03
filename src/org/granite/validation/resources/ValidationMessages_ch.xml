@@ -36,17 +36,20 @@
 
 -->
 <properties>
-	<entry key="javax.validation.constraints.AssertFalse.message">一定是�?�的</entry>
-	<entry key="javax.validation.constraints.AssertTrue.message">一定是真的</entry>
-	<entry key="javax.validation.constraints.DecimalMax.message">一定�?于等于{value}</entry>
-	<entry key="javax.validation.constraints.DecimalMin.message">一定大于等于{value}</entry>
-	<entry key="javax.validation.constraints.Digits.message">数值超出范围 (&lt;{integer} digits&gt;.&lt;{fraction} digits&gt;)</entry>
-	<entry key="javax.validation.constraints.Future.message">一定在将�?�</entry>
-	<entry key="javax.validation.constraints.Max.message">一定�?于等于{value}</entry>
-	<entry key="javax.validation.constraints.Min.message">一定大于等于{value}</entry>
-	<entry key="javax.validation.constraints.NotNull.message">�?�能�?为NULL</entry>
-	<entry key="javax.validation.constraints.Null.message">一定为NULL</entry>
-	<entry key="javax.validation.constraints.Past.message">一定在过去</entry>
-	<entry key="javax.validation.constraints.Pattern.message">必须匹�? "{regexp}"</entry>
-	<entry key="javax.validation.constraints.Size.message">size 必须在 {min} 和 {max} 之间</entry>
+Description	Resource	Path	Location	Type
+<!-- Invalid byte 2 of 3-byte UTF-8 sequence.	ValidationMessages_ch.xml	/PhCServer/[source path] src/org/granite/validation/resources	line 39	XML Problem -->
+<!-- replaced _ch vs eng  -->
+	<entry key="javax.validation.constraints.AssertFalse.message">must be false</entry>
+	<entry key="javax.validation.constraints.AssertTrue.message">must be true</entry>
+	<entry key="javax.validation.constraints.DecimalMax.message">must be less than or equal to {value}</entry>
+	<entry key="javax.validation.constraints.DecimalMin.message">must be greater than or equal to {value}</entry>
+	<entry key="javax.validation.constraints.Digits.message">numeric value out of bounds (&lt;{integer} digits&gt;.&lt;{fraction} digits&gt; expected)</entry>
+	<entry key="javax.validation.constraints.Future.message">must be in the future</entry>
+	<entry key="javax.validation.constraints.Max.message">must be less than or equal to {value}</entry>
+	<entry key="javax.validation.constraints.Min.message">must be greater than or equal to {value}</entry>
+	<entry key="javax.validation.constraints.NotNull.message">may not be null</entry>
+	<entry key="javax.validation.constraints.Null.message">must be null</entry>
+	<entry key="javax.validation.constraints.Past.message">must be in the past</entry>
+	<entry key="javax.validation.constraints.Pattern.message">must match "{regexp}"</entry>
+	<entry key="javax.validation.constraints.Size.message">size must be between {min} and {max}</entry>
 </properties>
