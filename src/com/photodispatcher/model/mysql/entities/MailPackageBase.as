@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class MailPackageBase extends AbstractEntity {
@@ -233,29 +232,29 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_barcodes is IPropertyHolder) ? IPropertyHolder(_barcodes).object : _barcodes);
-            output.writeObject((_client_id is IPropertyHolder) ? IPropertyHolder(_client_id).object : _client_id);
-            output.writeObject((_delivery_id is IPropertyHolder) ? IPropertyHolder(_delivery_id).object : _delivery_id);
-            output.writeObject((_delivery_name is IPropertyHolder) ? IPropertyHolder(_delivery_name).object : _delivery_name);
-            output.writeObject((_execution_date is IPropertyHolder) ? IPropertyHolder(_execution_date).object : _execution_date);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_id_name is IPropertyHolder) ? IPropertyHolder(_id_name).object : _id_name);
-            output.writeObject((_mail_service is IPropertyHolder) ? IPropertyHolder(_mail_service).object : _mail_service);
-            output.writeObject((_messages is IPropertyHolder) ? IPropertyHolder(_messages).object : _messages);
-            output.writeObject((_min_ord_state is IPropertyHolder) ? IPropertyHolder(_min_ord_state).object : _min_ord_state);
-            output.writeObject((_min_ord_state_name is IPropertyHolder) ? IPropertyHolder(_min_ord_state_name).object : _min_ord_state_name);
-            output.writeObject((_orders is IPropertyHolder) ? IPropertyHolder(_orders).object : _orders);
-            output.writeObject((_orders_num is IPropertyHolder) ? IPropertyHolder(_orders_num).object : _orders_num);
-            output.writeObject((_properties is IPropertyHolder) ? IPropertyHolder(_properties).object : _properties);
-            output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
-            output.writeObject((_source_code is IPropertyHolder) ? IPropertyHolder(_source_code).object : _source_code);
-            output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
-            output.writeObject((_src_date is IPropertyHolder) ? IPropertyHolder(_src_date).object : _src_date);
-            output.writeObject((_src_state is IPropertyHolder) ? IPropertyHolder(_src_state).object : _src_state);
-            output.writeObject((_src_state_name is IPropertyHolder) ? IPropertyHolder(_src_state_name).object : _src_state_name);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
+            output.writeObject(_barcodes);
+            output.writeObject(_client_id);
+            output.writeObject(_delivery_id);
+            output.writeObject(_delivery_name);
+            output.writeObject(_execution_date);
+            output.writeObject(_id);
+            output.writeObject(_id_name);
+            output.writeObject(_mail_service);
+            output.writeObject(_messages);
+            output.writeObject(_min_ord_state);
+            output.writeObject(_min_ord_state_name);
+            output.writeObject(_orders);
+            output.writeObject(_orders_num);
+            output.writeObject(_properties);
+            output.writeObject(_source);
+            output.writeObject(_source_code);
+            output.writeObject(_source_name);
+            output.writeObject(_src_date);
+            output.writeObject(_src_state);
+            output.writeObject(_src_state_name);
+            output.writeObject(_state);
+            output.writeObject(_state_date);
+            output.writeObject(_state_name);
         }
     }
 }

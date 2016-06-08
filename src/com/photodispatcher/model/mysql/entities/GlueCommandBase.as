@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class GlueCommandBase extends AbstractEntity {
@@ -43,8 +42,8 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_cmd is IPropertyHolder) ? IPropertyHolder(_cmd).object : _cmd);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
+            output.writeObject(_cmd);
+            output.writeObject(_id);
         }
     }
 }

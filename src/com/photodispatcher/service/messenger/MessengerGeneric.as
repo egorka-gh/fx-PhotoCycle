@@ -24,6 +24,8 @@ package com.photodispatcher.service.messenger{
 	import org.granite.gravity.Consumer;
 	import org.granite.gravity.Producer;
 	import org.granite.gravity.channels.GravityChannel;
+	import org.granite.tide.service.ChannelType;
+	import org.granite.tide.spring.Spring;
 
 	[Event(name="cyclemessage", type="com.photodispatcher.event.CycleMessageEvent")]
 	public class MessengerGeneric extends EventDispatcher implements IMessageRecipient{
@@ -82,7 +84,7 @@ package com.photodispatcher.service.messenger{
 		}
 
 		private static function createProducer(topic:String=TOPIC_STATUS):void{
-			if(!channelUrl) return;
+			//if(!channelUrl) return;
 			
 			//trun off messaging 
 			//return;
@@ -91,15 +93,18 @@ package com.photodispatcher.service.messenger{
 			trace('Messenger Producer create');
 
 			destroyProducer();
-			producer= new Producer();
+			producer=Spring.getInstance().mainServerSession.getProducer(DESTINATION,topic,ChannelType.LONG_POLLING);
+			//producer= new Producer();
 			producer.addEventListener(ChannelEvent.CONNECT, onProducerConnect);
 			producer.addEventListener(ChannelEvent.DISCONNECT, onProducerDisconnect);
 			producer.addEventListener(ChannelFaultEvent.FAULT, onProducerChannelFault);
 			producer.addEventListener(MessageFaultEvent.FAULT, onProducerMessageFault);
+			/*
 			producer.destination = DESTINATION;
 			producer.channelSet=new ChannelSet();
 			producer.channelSet.addChannel(new GravityChannel("gravityamf", channelUrl));
 			producer.topic = topic;
+			*/
 			sendPing();
 		}
 		private static function onProducerConnect(event:ChannelEvent):void{
@@ -263,15 +268,18 @@ package com.photodispatcher.service.messenger{
 			}
 		}
 		private static function createConsumer(topic:String):Consumer{
-			if(!connected || !topic || !channelUrl) return null;
+			//if(!connected || !topic || !channelUrl) return null;
+			if(!connected || !topic) return null;
 			trace('Messenger Consumer create topic:'+topic);
 
+			/*
 			var consumer:Consumer= new Consumer();
 			consumer.destination = DESTINATION;
 			consumer.topic = topic;
 			consumer.channelSet=new ChannelSet();
 			consumer.channelSet.addChannel(new GravityChannel("gravityamf", channelUrl));
-
+			*/
+			var consumer:Consumer=Spring.getInstance().mainServerSession.getConsumer(DESTINATION,topic,ChannelType.LONG_POLLING);
 			consumer.addEventListener(ChannelEvent.DISCONNECT,onConsumerDisconnect);
 			consumer.addEventListener(ChannelFaultEvent.FAULT,onConsumerChannelFault);
 			consumer.addEventListener(MessageFaultEvent.FAULT,onConsumerFault);
@@ -365,6 +373,7 @@ package com.photodispatcher.service.messenger{
 			}
 		}
 		
+		/*
 		private static var _channelUrl:String;
 		private static function get channelUrl():String{
 			if(!_channelUrl){
@@ -373,6 +382,7 @@ package com.photodispatcher.service.messenger{
 			}
 			return _channelUrl;
 		}
+		*/
 
 		
 		public function MessengerGeneric():void{

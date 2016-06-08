@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class OrderTempBase extends AbstractEntity {
@@ -151,20 +150,20 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_clientId is IPropertyHolder) ? IPropertyHolder(_clientId).object : _clientId);
-            output.writeObject((_data_ts is IPropertyHolder) ? IPropertyHolder(_data_ts).object : _data_ts);
-            output.writeObject((_fotos_num is IPropertyHolder) ? IPropertyHolder(_fotos_num).object : _fotos_num);
-            output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
-            output.writeObject((_groupId is IPropertyHolder) ? IPropertyHolder(_groupId).object : _groupId);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_preload is IPropertyHolder) ? IPropertyHolder(_is_preload).object : _is_preload);
-            output.writeObject((_local_folder is IPropertyHolder) ? IPropertyHolder(_local_folder).object : _local_folder);
-            output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
-            output.writeObject((_src_date is IPropertyHolder) ? IPropertyHolder(_src_date).object : _src_date);
-            output.writeObject((_src_id is IPropertyHolder) ? IPropertyHolder(_src_id).object : _src_id);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_sync is IPropertyHolder) ? IPropertyHolder(_sync).object : _sync);
+            output.writeObject(_clientId);
+            output.writeObject(_data_ts);
+            output.writeObject(_fotos_num);
+            output.writeObject(_ftp_folder);
+            output.writeObject(_groupId);
+            output.writeObject(_id);
+            output.writeObject(_is_preload);
+            output.writeObject(_local_folder);
+            output.writeObject(_source);
+            output.writeObject(_src_date);
+            output.writeObject(_src_id);
+            output.writeObject(_state);
+            output.writeObject(_state_date);
+            output.writeObject(_sync);
         }
     }
 }

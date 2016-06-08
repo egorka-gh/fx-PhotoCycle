@@ -11,7 +11,6 @@ package com.photodispatcher.model.mysql.entities.messenger {
     import com.photodispatcher.model.mysql.entities.PrintGroup;
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class CycleMessageBase extends AbstractEntity {
@@ -90,13 +89,13 @@ package com.photodispatcher.model.mysql.entities.messenger {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_command is IPropertyHolder) ? IPropertyHolder(_command).object : _command);
-            output.writeObject((_message is IPropertyHolder) ? IPropertyHolder(_message).object : _message);
-            output.writeObject((_pgroup_info is IPropertyHolder) ? IPropertyHolder(_pgroup_info).object : _pgroup_info);
-            output.writeObject((_recipient is IPropertyHolder) ? IPropertyHolder(_recipient).object : _recipient);
-            output.writeObject((_result is IPropertyHolder) ? IPropertyHolder(_result).object : _result);
-            output.writeObject((_sender is IPropertyHolder) ? IPropertyHolder(_sender).object : _sender);
-            output.writeObject((_topic is IPropertyHolder) ? IPropertyHolder(_topic).object : _topic);
+            output.writeObject(_command);
+            output.writeObject(_message);
+            output.writeObject(_pgroup_info);
+            output.writeObject(_recipient);
+            output.writeObject(_result);
+            output.writeObject(_sender);
+            output.writeObject(_topic);
         }
     }
 }

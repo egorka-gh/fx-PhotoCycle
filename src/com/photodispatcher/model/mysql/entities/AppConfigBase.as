@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class AppConfigBase extends AbstractEntity {
@@ -142,19 +141,19 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_cfg_pwd is IPropertyHolder) ? IPropertyHolder(_cfg_pwd).object : _cfg_pwd);
-            output.writeObject((_clean_fs is IPropertyHolder) ? IPropertyHolder(_clean_fs).object : _clean_fs);
-            output.writeObject((_clean_fs_days is IPropertyHolder) ? IPropertyHolder(_clean_fs_days).object : _clean_fs_days);
-            output.writeObject((_clean_fs_hour is IPropertyHolder) ? IPropertyHolder(_clean_fs_hour).object : _clean_fs_hour);
-            output.writeObject((_clean_fs_limit is IPropertyHolder) ? IPropertyHolder(_clean_fs_limit).object : _clean_fs_limit);
-            output.writeObject((_clean_fs_state is IPropertyHolder) ? IPropertyHolder(_clean_fs_state).object : _clean_fs_state);
-            output.writeObject((_clean_nr_days is IPropertyHolder) ? IPropertyHolder(_clean_nr_days).object : _clean_nr_days);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_pdf_quality is IPropertyHolder) ? IPropertyHolder(_pdf_quality).object : _pdf_quality);
-            output.writeObject((_print_revers is IPropertyHolder) ? IPropertyHolder(_print_revers).object : _print_revers);
-            output.writeObject((_print_rotate is IPropertyHolder) ? IPropertyHolder(_print_rotate).object : _print_rotate);
-            output.writeObject((_production is IPropertyHolder) ? IPropertyHolder(_production).object : _production);
-            output.writeObject((_production_name is IPropertyHolder) ? IPropertyHolder(_production_name).object : _production_name);
+            output.writeObject(_cfg_pwd);
+            output.writeObject(_clean_fs);
+            output.writeObject(_clean_fs_days);
+            output.writeObject(_clean_fs_hour);
+            output.writeObject(_clean_fs_limit);
+            output.writeObject(_clean_fs_state);
+            output.writeObject(_clean_nr_days);
+            output.writeObject(_id);
+            output.writeObject(_pdf_quality);
+            output.writeObject(_print_revers);
+            output.writeObject(_print_rotate);
+            output.writeObject(_production);
+            output.writeObject(_production_name);
         }
     }
 }

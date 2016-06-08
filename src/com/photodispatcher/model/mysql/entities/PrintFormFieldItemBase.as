@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class PrintFormFieldItemBase extends AbstractEntity {
@@ -115,16 +114,16 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_attr_type is IPropertyHolder) ? IPropertyHolder(_attr_type).object : _attr_type);
-            output.writeObject((_child_field is IPropertyHolder) ? IPropertyHolder(_child_field).object : _child_field);
-            output.writeObject((_delemiter is IPropertyHolder) ? IPropertyHolder(_delemiter).object : _delemiter);
-            output.writeObject((_form_field is IPropertyHolder) ? IPropertyHolder(_form_field).object : _form_field);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_field is IPropertyHolder) ? IPropertyHolder(_is_field).object : _is_field);
-            output.writeObject((_prefix is IPropertyHolder) ? IPropertyHolder(_prefix).object : _prefix);
-            output.writeObject((_property is IPropertyHolder) ? IPropertyHolder(_property).object : _property);
-            output.writeObject((_sequence is IPropertyHolder) ? IPropertyHolder(_sequence).object : _sequence);
-            output.writeObject((_sufix is IPropertyHolder) ? IPropertyHolder(_sufix).object : _sufix);
+            output.writeObject(_attr_type);
+            output.writeObject(_child_field);
+            output.writeObject(_delemiter);
+            output.writeObject(_form_field);
+            output.writeObject(_id);
+            output.writeObject(_is_field);
+            output.writeObject(_prefix);
+            output.writeObject(_property);
+            output.writeObject(_sequence);
+            output.writeObject(_sufix);
         }
     }
 }

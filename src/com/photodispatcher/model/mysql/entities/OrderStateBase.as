@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class OrderStateBase extends AbstractEntity {
@@ -79,12 +78,12 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_book_part is IPropertyHolder) ? IPropertyHolder(_book_part).object : _book_part);
-            output.writeObject((_extra is IPropertyHolder) ? IPropertyHolder(_extra).object : _extra);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_runtime is IPropertyHolder) ? IPropertyHolder(_runtime).object : _runtime);
-            output.writeObject((_tech is IPropertyHolder) ? IPropertyHolder(_tech).object : _tech);
+            output.writeObject(_book_part);
+            output.writeObject(_extra);
+            output.writeObject(_id);
+            output.writeObject(_name);
+            output.writeObject(_runtime);
+            output.writeObject(_tech);
         }
     }
 }

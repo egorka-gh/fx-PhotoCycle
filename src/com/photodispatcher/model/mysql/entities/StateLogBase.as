@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class StateLogBase extends AbstractEntity {
@@ -97,14 +96,14 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_comment is IPropertyHolder) ? IPropertyHolder(_comment).object : _comment);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
-            output.writeObject((_pg_id is IPropertyHolder) ? IPropertyHolder(_pg_id).object : _pg_id);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
-            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
+            output.writeObject(_comment);
+            output.writeObject(_id);
+            output.writeObject(_order_id);
+            output.writeObject(_pg_id);
+            output.writeObject(_state);
+            output.writeObject(_state_date);
+            output.writeObject(_state_name);
+            output.writeObject(_sub_id);
         }
     }
 }

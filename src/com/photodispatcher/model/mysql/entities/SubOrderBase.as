@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class SubOrderBase extends AbstractEntity {
@@ -178,23 +177,23 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_alias is IPropertyHolder) ? IPropertyHolder(_alias).object : _alias);
-            output.writeObject((_books_done is IPropertyHolder) ? IPropertyHolder(_books_done).object : _books_done);
-            output.writeObject((_color_corr is IPropertyHolder) ? IPropertyHolder(_color_corr).object : _color_corr);
-            output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);
-            output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
-            output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
-            output.writeObject((_proj_type is IPropertyHolder) ? IPropertyHolder(_proj_type).object : _proj_type);
-            output.writeObject((_proj_type_name is IPropertyHolder) ? IPropertyHolder(_proj_type_name).object : _proj_type_name);
-            output.writeObject((_prt_qty is IPropertyHolder) ? IPropertyHolder(_prt_qty).object : _prt_qty);
-            output.writeObject((_source_code is IPropertyHolder) ? IPropertyHolder(_source_code).object : _source_code);
-            output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
-            output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
-            output.writeObject((_src_type_name is IPropertyHolder) ? IPropertyHolder(_src_type_name).object : _src_type_name);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
-            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
+            output.writeObject(_alias);
+            output.writeObject(_books_done);
+            output.writeObject(_color_corr);
+            output.writeObject(_extraInfo);
+            output.writeObject(_ftp_folder);
+            output.writeObject(_order_id);
+            output.writeObject(_proj_type);
+            output.writeObject(_proj_type_name);
+            output.writeObject(_prt_qty);
+            output.writeObject(_source_code);
+            output.writeObject(_source_name);
+            output.writeObject(_src_type);
+            output.writeObject(_src_type_name);
+            output.writeObject(_state);
+            output.writeObject(_state_date);
+            output.writeObject(_state_name);
+            output.writeObject(_sub_id);
         }
     }
 }

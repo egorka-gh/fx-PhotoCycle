@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import flash.utils.IExternalizable;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class AbstractEntityBase implements IExternalizable {
@@ -32,7 +31,7 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         public function writeExternal(output:IDataOutput):void {
-            output.writeObject((_persistState is IPropertyHolder) ? IPropertyHolder(_persistState).object : _persistState);
+            output.writeObject(_persistState);
         }
     }
 }

@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class AttrJsonMapBase extends AbstractEntity {
@@ -88,13 +87,13 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_attr_type is IPropertyHolder) ? IPropertyHolder(_attr_type).object : _attr_type);
-            output.writeObject((_field is IPropertyHolder) ? IPropertyHolder(_field).object : _field);
-            output.writeObject((_field_name is IPropertyHolder) ? IPropertyHolder(_field_name).object : _field_name);
-            output.writeObject((_json_key is IPropertyHolder) ? IPropertyHolder(_json_key).object : _json_key);
-            output.writeObject((_list is IPropertyHolder) ? IPropertyHolder(_list).object : _list);
-            output.writeObject((_persist is IPropertyHolder) ? IPropertyHolder(_persist).object : _persist);
-            output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
+            output.writeObject(_attr_type);
+            output.writeObject(_field);
+            output.writeObject(_field_name);
+            output.writeObject(_json_key);
+            output.writeObject(_list);
+            output.writeObject(_persist);
+            output.writeObject(_src_type);
         }
     }
 }

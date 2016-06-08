@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LabTimetableBase extends AbstractEntity {
@@ -79,12 +78,12 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_day_id is IPropertyHolder) ? IPropertyHolder(_day_id).object : _day_id);
-            output.writeObject((_day_id_name is IPropertyHolder) ? IPropertyHolder(_day_id_name).object : _day_id_name);
-            output.writeObject((_is_online is IPropertyHolder) ? IPropertyHolder(_is_online).object : _is_online);
-            output.writeObject((_lab_device is IPropertyHolder) ? IPropertyHolder(_lab_device).object : _lab_device);
-            output.writeObject((_time_from is IPropertyHolder) ? IPropertyHolder(_time_from).object : _time_from);
-            output.writeObject((_time_to is IPropertyHolder) ? IPropertyHolder(_time_to).object : _time_to);
+            output.writeObject(_day_id);
+            output.writeObject(_day_id_name);
+            output.writeObject(_is_online);
+            output.writeObject(_lab_device);
+            output.writeObject(_time_from);
+            output.writeObject(_time_to);
         }
     }
 }

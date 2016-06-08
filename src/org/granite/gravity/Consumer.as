@@ -126,7 +126,7 @@ package org.granite.gravity {
             internalSend(message);
         }
 
-        public function reply(msg:IMessage, reply:AsyncMessage) {
+        public function reply(msg:IMessage, reply:AsyncMessage):void {
             reply.destination = msg.destination;
             reply.clientId = msg.clientId;
             reply.correlationId = msg.messageId;

@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class StaffActivityTypeBase extends AbstractEntity {
@@ -61,10 +60,10 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_sa_group is IPropertyHolder) ? IPropertyHolder(_sa_group).object : _sa_group);
-            output.writeObject((_sa_group_name is IPropertyHolder) ? IPropertyHolder(_sa_group_name).object : _sa_group_name);
+            output.writeObject(_id);
+            output.writeObject(_name);
+            output.writeObject(_sa_group);
+            output.writeObject(_sa_group_name);
         }
     }
 }

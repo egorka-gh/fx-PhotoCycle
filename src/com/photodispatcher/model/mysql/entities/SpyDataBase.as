@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class SpyDataBase extends AbstractEntity {
@@ -160,21 +159,21 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_alias is IPropertyHolder) ? IPropertyHolder(_alias).object : _alias);
-            output.writeObject((_book_part is IPropertyHolder) ? IPropertyHolder(_book_part).object : _book_part);
-            output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
-            output.writeObject((_bp_name is IPropertyHolder) ? IPropertyHolder(_bp_name).object : _bp_name);
-            output.writeObject((_bt_name is IPropertyHolder) ? IPropertyHolder(_bt_name).object : _bt_name);
-            output.writeObject((_delay is IPropertyHolder) ? IPropertyHolder(_delay).object : _delay);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_lastDate is IPropertyHolder) ? IPropertyHolder(_lastDate).object : _lastDate);
-            output.writeObject((_op_name is IPropertyHolder) ? IPropertyHolder(_op_name).object : _op_name);
-            output.writeObject((_reset is IPropertyHolder) ? IPropertyHolder(_reset).object : _reset);
-            output.writeObject((_resetDate is IPropertyHolder) ? IPropertyHolder(_resetDate).object : _resetDate);
-            output.writeObject((_start_date is IPropertyHolder) ? IPropertyHolder(_start_date).object : _start_date);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
+            output.writeObject(_alias);
+            output.writeObject(_book_part);
+            output.writeObject(_book_type);
+            output.writeObject(_bp_name);
+            output.writeObject(_bt_name);
+            output.writeObject(_delay);
+            output.writeObject(_id);
+            output.writeObject(_lastDate);
+            output.writeObject(_op_name);
+            output.writeObject(_reset);
+            output.writeObject(_resetDate);
+            output.writeObject(_start_date);
+            output.writeObject(_state);
+            output.writeObject(_state_date);
+            output.writeObject(_sub_id);
         }
     }
 }

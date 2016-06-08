@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class TechRejectPGBase extends AbstractEntity {
@@ -61,10 +60,10 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_pg_dst is IPropertyHolder) ? IPropertyHolder(_pg_dst).object : _pg_dst);
-            output.writeObject((_pg_src is IPropertyHolder) ? IPropertyHolder(_pg_src).object : _pg_src);
-            output.writeObject((_tech_reject is IPropertyHolder) ? IPropertyHolder(_tech_reject).object : _tech_reject);
+            output.writeObject(_id);
+            output.writeObject(_pg_dst);
+            output.writeObject(_pg_src);
+            output.writeObject(_tech_reject);
         }
     }
 }

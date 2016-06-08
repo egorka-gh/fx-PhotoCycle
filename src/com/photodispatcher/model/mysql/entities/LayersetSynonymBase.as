@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LayersetSynonymBase extends AbstractEntity {
@@ -52,9 +51,9 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_item_id is IPropertyHolder) ? IPropertyHolder(_item_id).object : _item_id);
-            output.writeObject((_synonym is IPropertyHolder) ? IPropertyHolder(_synonym).object : _synonym);
+            output.writeObject(_id);
+            output.writeObject(_item_id);
+            output.writeObject(_synonym);
         }
     }
 }

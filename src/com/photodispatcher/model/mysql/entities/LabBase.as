@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LabBase extends AbstractEntity {
@@ -145,20 +144,20 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_devices is IPropertyHolder) ? IPropertyHolder(_devices).object : _devices);
-            output.writeObject((_hot is IPropertyHolder) ? IPropertyHolder(_hot).object : _hot);
-            output.writeObject((_hot_nfs is IPropertyHolder) ? IPropertyHolder(_hot_nfs).object : _hot_nfs);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_isSelected is IPropertyHolder) ? IPropertyHolder(_isSelected).object : _isSelected);
-            output.writeObject((_is_active is IPropertyHolder) ? IPropertyHolder(_is_active).object : _is_active);
-            output.writeObject((_is_managed is IPropertyHolder) ? IPropertyHolder(_is_managed).object : _is_managed);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_post_delay is IPropertyHolder) ? IPropertyHolder(_post_delay).object : _post_delay);
-            output.writeObject((_profiles is IPropertyHolder) ? IPropertyHolder(_profiles).object : _profiles);
-            output.writeObject((_queue_limit is IPropertyHolder) ? IPropertyHolder(_queue_limit).object : _queue_limit);
-            output.writeObject((_soft_speed is IPropertyHolder) ? IPropertyHolder(_soft_speed).object : _soft_speed);
-            output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
-            output.writeObject((_src_type_name is IPropertyHolder) ? IPropertyHolder(_src_type_name).object : _src_type_name);
+            output.writeObject(_devices);
+            output.writeObject(_hot);
+            output.writeObject(_hot_nfs);
+            output.writeObject(_id);
+            output.writeObject(_isSelected);
+            output.writeObject(_is_active);
+            output.writeObject(_is_managed);
+            output.writeObject(_name);
+            output.writeObject(_post_delay);
+            output.writeObject(_profiles);
+            output.writeObject(_queue_limit);
+            output.writeObject(_soft_speed);
+            output.writeObject(_src_type);
+            output.writeObject(_src_type_name);
         }
     }
 }

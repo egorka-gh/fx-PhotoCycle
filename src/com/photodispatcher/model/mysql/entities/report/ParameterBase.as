@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities.report {
     import com.photodispatcher.model.mysql.entities.AbstractEntity;
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class ParameterBase extends AbstractEntity {
@@ -98,14 +97,14 @@ package com.photodispatcher.model.mysql.entities.report {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
-            output.writeObject((_valDate is IPropertyHolder) ? IPropertyHolder(_valDate).object : _valDate);
-            output.writeObject((_valFrom is IPropertyHolder) ? IPropertyHolder(_valFrom).object : _valFrom);
-            output.writeObject((_valInt is IPropertyHolder) ? IPropertyHolder(_valInt).object : _valInt);
-            output.writeObject((_valString is IPropertyHolder) ? IPropertyHolder(_valString).object : _valString);
-            output.writeObject((_valTo is IPropertyHolder) ? IPropertyHolder(_valTo).object : _valTo);
+            output.writeObject(_id);
+            output.writeObject(_name);
+            output.writeObject(_src_type);
+            output.writeObject(_valDate);
+            output.writeObject(_valFrom);
+            output.writeObject(_valInt);
+            output.writeObject(_valString);
+            output.writeObject(_valTo);
         }
     }
 }

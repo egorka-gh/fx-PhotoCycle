@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LabStopLogBase extends AbstractEntity {
@@ -133,18 +132,18 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_device_name is IPropertyHolder) ? IPropertyHolder(_device_name).object : _device_name);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
-            output.writeObject((_lab_device is IPropertyHolder) ? IPropertyHolder(_lab_device).object : _lab_device);
-            output.writeObject((_lab_name is IPropertyHolder) ? IPropertyHolder(_lab_name).object : _lab_name);
-            output.writeObject((_lab_stop_type is IPropertyHolder) ? IPropertyHolder(_lab_stop_type).object : _lab_stop_type);
-            output.writeObject((_lab_stop_type_name is IPropertyHolder) ? IPropertyHolder(_lab_stop_type_name).object : _lab_stop_type_name);
-            output.writeObject((_log_comment is IPropertyHolder) ? IPropertyHolder(_log_comment).object : _log_comment);
-            output.writeObject((_time_created is IPropertyHolder) ? IPropertyHolder(_time_created).object : _time_created);
-            output.writeObject((_time_from is IPropertyHolder) ? IPropertyHolder(_time_from).object : _time_from);
-            output.writeObject((_time_to is IPropertyHolder) ? IPropertyHolder(_time_to).object : _time_to);
-            output.writeObject((_time_updated is IPropertyHolder) ? IPropertyHolder(_time_updated).object : _time_updated);
+            output.writeObject(_device_name);
+            output.writeObject(_id);
+            output.writeObject(_lab);
+            output.writeObject(_lab_device);
+            output.writeObject(_lab_name);
+            output.writeObject(_lab_stop_type);
+            output.writeObject(_lab_stop_type_name);
+            output.writeObject(_log_comment);
+            output.writeObject(_time_created);
+            output.writeObject(_time_from);
+            output.writeObject(_time_to);
+            output.writeObject(_time_updated);
         }
     }
 }

@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LabMeterBase extends AbstractEntity {
@@ -142,19 +141,19 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_amt is IPropertyHolder) ? IPropertyHolder(_amt).object : _amt);
-            output.writeObject((_device_name is IPropertyHolder) ? IPropertyHolder(_device_name).object : _device_name);
-            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
-            output.writeObject((_lab_device is IPropertyHolder) ? IPropertyHolder(_lab_device).object : _lab_device);
-            output.writeObject((_lab_name is IPropertyHolder) ? IPropertyHolder(_lab_name).object : _lab_name);
-            output.writeObject((_last_time is IPropertyHolder) ? IPropertyHolder(_last_time).object : _last_time);
-            output.writeObject((_meter_type is IPropertyHolder) ? IPropertyHolder(_meter_type).object : _meter_type);
-            output.writeObject((_print_group is IPropertyHolder) ? IPropertyHolder(_print_group).object : _print_group);
-            output.writeObject((_server_time is IPropertyHolder) ? IPropertyHolder(_server_time).object : _server_time);
-            output.writeObject((_start_time is IPropertyHolder) ? IPropertyHolder(_start_time).object : _start_time);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
-            output.writeObject((_type_name is IPropertyHolder) ? IPropertyHolder(_type_name).object : _type_name);
+            output.writeObject(_amt);
+            output.writeObject(_device_name);
+            output.writeObject(_lab);
+            output.writeObject(_lab_device);
+            output.writeObject(_lab_name);
+            output.writeObject(_last_time);
+            output.writeObject(_meter_type);
+            output.writeObject(_print_group);
+            output.writeObject(_server_time);
+            output.writeObject(_start_time);
+            output.writeObject(_state);
+            output.writeObject(_state_name);
+            output.writeObject(_type_name);
         }
     }
 }

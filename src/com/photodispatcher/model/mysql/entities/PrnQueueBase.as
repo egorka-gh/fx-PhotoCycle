@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class PrnQueueBase extends AbstractEntity {
@@ -161,21 +160,21 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_complited is IPropertyHolder) ? IPropertyHolder(_complited).object : _complited);
-            output.writeObject((_created is IPropertyHolder) ? IPropertyHolder(_created).object : _created);
-            output.writeObject((_has_sub is IPropertyHolder) ? IPropertyHolder(_has_sub).object : _has_sub);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_active is IPropertyHolder) ? IPropertyHolder(_is_active).object : _is_active);
-            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
-            output.writeObject((_lab_name is IPropertyHolder) ? IPropertyHolder(_lab_name).object : _lab_name);
-            output.writeObject((_label is IPropertyHolder) ? IPropertyHolder(_label).object : _label);
-            output.writeObject((_printGroups is IPropertyHolder) ? IPropertyHolder(_printGroups).object : _printGroups);
-            output.writeObject((_priority is IPropertyHolder) ? IPropertyHolder(_priority).object : _priority);
-            output.writeObject((_started is IPropertyHolder) ? IPropertyHolder(_started).object : _started);
-            output.writeObject((_strategy is IPropertyHolder) ? IPropertyHolder(_strategy).object : _strategy);
-            output.writeObject((_strategy_type is IPropertyHolder) ? IPropertyHolder(_strategy_type).object : _strategy_type);
-            output.writeObject((_strategy_type_name is IPropertyHolder) ? IPropertyHolder(_strategy_type_name).object : _strategy_type_name);
-            output.writeObject((_sub_queue is IPropertyHolder) ? IPropertyHolder(_sub_queue).object : _sub_queue);
+            output.writeObject(_complited);
+            output.writeObject(_created);
+            output.writeObject(_has_sub);
+            output.writeObject(_id);
+            output.writeObject(_is_active);
+            output.writeObject(_lab);
+            output.writeObject(_lab_name);
+            output.writeObject(_label);
+            output.writeObject(_printGroups);
+            output.writeObject(_priority);
+            output.writeObject(_started);
+            output.writeObject(_strategy);
+            output.writeObject(_strategy_type);
+            output.writeObject(_strategy_type_name);
+            output.writeObject(_sub_queue);
         }
     }
 }

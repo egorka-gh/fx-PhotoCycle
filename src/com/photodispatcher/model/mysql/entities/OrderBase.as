@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class OrderBase extends AbstractEntity {
@@ -296,36 +295,36 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_clean_fs is IPropertyHolder) ? IPropertyHolder(_clean_fs).object : _clean_fs);
-            output.writeObject((_clientId is IPropertyHolder) ? IPropertyHolder(_clientId).object : _clientId);
-            output.writeObject((_data_ts is IPropertyHolder) ? IPropertyHolder(_data_ts).object : _data_ts);
-            output.writeObject((_extraInfo is IPropertyHolder) ? IPropertyHolder(_extraInfo).object : _extraInfo);
-            output.writeObject((_extraState is IPropertyHolder) ? IPropertyHolder(_extraState).object : _extraState);
-            output.writeObject((_extraStateProlong is IPropertyHolder) ? IPropertyHolder(_extraStateProlong).object : _extraStateProlong);
-            output.writeObject((_forward_state is IPropertyHolder) ? IPropertyHolder(_forward_state).object : _forward_state);
-            output.writeObject((_fotos_num is IPropertyHolder) ? IPropertyHolder(_fotos_num).object : _fotos_num);
-            output.writeObject((_ftp_folder is IPropertyHolder) ? IPropertyHolder(_ftp_folder).object : _ftp_folder);
-            output.writeObject((_groupId is IPropertyHolder) ? IPropertyHolder(_groupId).object : _groupId);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_preload is IPropertyHolder) ? IPropertyHolder(_is_preload).object : _is_preload);
-            output.writeObject((_local_folder is IPropertyHolder) ? IPropertyHolder(_local_folder).object : _local_folder);
-            output.writeObject((_printGroups is IPropertyHolder) ? IPropertyHolder(_printGroups).object : _printGroups);
-            output.writeObject((_production is IPropertyHolder) ? IPropertyHolder(_production).object : _production);
-            output.writeObject((_production_name is IPropertyHolder) ? IPropertyHolder(_production_name).object : _production_name);
-            output.writeObject((_resume_load is IPropertyHolder) ? IPropertyHolder(_resume_load).object : _resume_load);
-            output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
-            output.writeObject((_source_code is IPropertyHolder) ? IPropertyHolder(_source_code).object : _source_code);
-            output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
-            output.writeObject((_src_date is IPropertyHolder) ? IPropertyHolder(_src_date).object : _src_date);
-            output.writeObject((_src_id is IPropertyHolder) ? IPropertyHolder(_src_id).object : _src_id);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_stateLog is IPropertyHolder) ? IPropertyHolder(_stateLog).object : _stateLog);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
-            output.writeObject((_suborders is IPropertyHolder) ? IPropertyHolder(_suborders).object : _suborders);
-            output.writeObject((_sync is IPropertyHolder) ? IPropertyHolder(_sync).object : _sync);
-            output.writeObject((_tag is IPropertyHolder) ? IPropertyHolder(_tag).object : _tag);
-            output.writeObject((_techLog is IPropertyHolder) ? IPropertyHolder(_techLog).object : _techLog);
+            output.writeObject(_clean_fs);
+            output.writeObject(_clientId);
+            output.writeObject(_data_ts);
+            output.writeObject(_extraInfo);
+            output.writeObject(_extraState);
+            output.writeObject(_extraStateProlong);
+            output.writeObject(_forward_state);
+            output.writeObject(_fotos_num);
+            output.writeObject(_ftp_folder);
+            output.writeObject(_groupId);
+            output.writeObject(_id);
+            output.writeObject(_is_preload);
+            output.writeObject(_local_folder);
+            output.writeObject(_printGroups);
+            output.writeObject(_production);
+            output.writeObject(_production_name);
+            output.writeObject(_resume_load);
+            output.writeObject(_source);
+            output.writeObject(_source_code);
+            output.writeObject(_source_name);
+            output.writeObject(_src_date);
+            output.writeObject(_src_id);
+            output.writeObject(_state);
+            output.writeObject(_stateLog);
+            output.writeObject(_state_date);
+            output.writeObject(_state_name);
+            output.writeObject(_suborders);
+            output.writeObject(_sync);
+            output.writeObject(_tag);
+            output.writeObject(_techLog);
         }
     }
 }

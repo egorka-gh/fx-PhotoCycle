@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LayerSequenceBase extends AbstractEntity {
@@ -70,11 +69,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_layer_group is IPropertyHolder) ? IPropertyHolder(_layer_group).object : _layer_group);
-            output.writeObject((_layerset is IPropertyHolder) ? IPropertyHolder(_layerset).object : _layerset);
-            output.writeObject((_seqlayer is IPropertyHolder) ? IPropertyHolder(_seqlayer).object : _seqlayer);
-            output.writeObject((_seqlayer_name is IPropertyHolder) ? IPropertyHolder(_seqlayer_name).object : _seqlayer_name);
-            output.writeObject((_seqorder is IPropertyHolder) ? IPropertyHolder(_seqorder).object : _seqorder);
+            output.writeObject(_layer_group);
+            output.writeObject(_layerset);
+            output.writeObject(_seqlayer);
+            output.writeObject(_seqlayer_name);
+            output.writeObject(_seqorder);
         }
     }
 }

@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class PrintGroupBase extends AbstractEntity {
@@ -377,45 +376,45 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_alias is IPropertyHolder) ? IPropertyHolder(_alias).object : _alias);
-            output.writeObject((_book_num is IPropertyHolder) ? IPropertyHolder(_book_num).object : _book_num);
-            output.writeObject((_book_part is IPropertyHolder) ? IPropertyHolder(_book_part).object : _book_part);
-            output.writeObject((_book_part_name is IPropertyHolder) ? IPropertyHolder(_book_part_name).object : _book_part_name);
-            output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
-            output.writeObject((_book_type_name is IPropertyHolder) ? IPropertyHolder(_book_type_name).object : _book_type_name);
-            output.writeObject((_butt is IPropertyHolder) ? IPropertyHolder(_butt).object : _butt);
-            output.writeObject((_correction is IPropertyHolder) ? IPropertyHolder(_correction).object : _correction);
-            output.writeObject((_correction_name is IPropertyHolder) ? IPropertyHolder(_correction_name).object : _correction_name);
-            output.writeObject((_cutting is IPropertyHolder) ? IPropertyHolder(_cutting).object : _cutting);
-            output.writeObject((_cutting_name is IPropertyHolder) ? IPropertyHolder(_cutting_name).object : _cutting_name);
-            output.writeObject((_destination is IPropertyHolder) ? IPropertyHolder(_destination).object : _destination);
-            output.writeObject((_file_num is IPropertyHolder) ? IPropertyHolder(_file_num).object : _file_num);
-            output.writeObject((_files is IPropertyHolder) ? IPropertyHolder(_files).object : _files);
-            output.writeObject((_frame is IPropertyHolder) ? IPropertyHolder(_frame).object : _frame);
-            output.writeObject((_frame_name is IPropertyHolder) ? IPropertyHolder(_frame_name).object : _frame_name);
-            output.writeObject((_height is IPropertyHolder) ? IPropertyHolder(_height).object : _height);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_duplex is IPropertyHolder) ? IPropertyHolder(_is_duplex).object : _is_duplex);
-            output.writeObject((_is_pdf is IPropertyHolder) ? IPropertyHolder(_is_pdf).object : _is_pdf);
-            output.writeObject((_is_reprint is IPropertyHolder) ? IPropertyHolder(_is_reprint).object : _is_reprint);
-            output.writeObject((_lab_name is IPropertyHolder) ? IPropertyHolder(_lab_name).object : _lab_name);
-            output.writeObject((_order_folder is IPropertyHolder) ? IPropertyHolder(_order_folder).object : _order_folder);
-            output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
-            output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
-            output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
-            output.writeObject((_path is IPropertyHolder) ? IPropertyHolder(_path).object : _path);
-            output.writeObject((_prints is IPropertyHolder) ? IPropertyHolder(_prints).object : _prints);
-            output.writeObject((_prints_done is IPropertyHolder) ? IPropertyHolder(_prints_done).object : _prints_done);
-            output.writeObject((_prn_queue is IPropertyHolder) ? IPropertyHolder(_prn_queue).object : _prn_queue);
-            output.writeObject((_reprint_id is IPropertyHolder) ? IPropertyHolder(_reprint_id).object : _reprint_id);
-            output.writeObject((_sheet_num is IPropertyHolder) ? IPropertyHolder(_sheet_num).object : _sheet_num);
-            output.writeObject((_source_id is IPropertyHolder) ? IPropertyHolder(_source_id).object : _source_id);
-            output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
-            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
-            output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
+            output.writeObject(_alias);
+            output.writeObject(_book_num);
+            output.writeObject(_book_part);
+            output.writeObject(_book_part_name);
+            output.writeObject(_book_type);
+            output.writeObject(_book_type_name);
+            output.writeObject(_butt);
+            output.writeObject(_correction);
+            output.writeObject(_correction_name);
+            output.writeObject(_cutting);
+            output.writeObject(_cutting_name);
+            output.writeObject(_destination);
+            output.writeObject(_file_num);
+            output.writeObject(_files);
+            output.writeObject(_frame);
+            output.writeObject(_frame_name);
+            output.writeObject(_height);
+            output.writeObject(_id);
+            output.writeObject(_is_duplex);
+            output.writeObject(_is_pdf);
+            output.writeObject(_is_reprint);
+            output.writeObject(_lab_name);
+            output.writeObject(_order_folder);
+            output.writeObject(_order_id);
+            output.writeObject(_paper);
+            output.writeObject(_paper_name);
+            output.writeObject(_path);
+            output.writeObject(_prints);
+            output.writeObject(_prints_done);
+            output.writeObject(_prn_queue);
+            output.writeObject(_reprint_id);
+            output.writeObject(_sheet_num);
+            output.writeObject(_source_id);
+            output.writeObject(_source_name);
+            output.writeObject(_state);
+            output.writeObject(_state_date);
+            output.writeObject(_state_name);
+            output.writeObject(_sub_id);
+            output.writeObject(_width);
         }
     }
 }

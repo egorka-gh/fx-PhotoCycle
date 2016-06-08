@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class SubordersTemplateBase extends AbstractEntity {
@@ -61,10 +60,10 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_folder is IPropertyHolder) ? IPropertyHolder(_folder).object : _folder);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
-            output.writeObject((_sub_src_type is IPropertyHolder) ? IPropertyHolder(_sub_src_type).object : _sub_src_type);
+            output.writeObject(_folder);
+            output.writeObject(_id);
+            output.writeObject(_src_type);
+            output.writeObject(_sub_src_type);
         }
     }
 }

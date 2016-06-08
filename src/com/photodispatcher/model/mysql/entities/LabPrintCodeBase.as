@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LabPrintCodeBase extends AbstractEntity {
@@ -178,23 +177,23 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_correction is IPropertyHolder) ? IPropertyHolder(_correction).object : _correction);
-            output.writeObject((_correction_name is IPropertyHolder) ? IPropertyHolder(_correction_name).object : _correction_name);
-            output.writeObject((_cutting is IPropertyHolder) ? IPropertyHolder(_cutting).object : _cutting);
-            output.writeObject((_cutting_name is IPropertyHolder) ? IPropertyHolder(_cutting_name).object : _cutting_name);
-            output.writeObject((_frame is IPropertyHolder) ? IPropertyHolder(_frame).object : _frame);
-            output.writeObject((_frame_name is IPropertyHolder) ? IPropertyHolder(_frame_name).object : _frame_name);
-            output.writeObject((_height is IPropertyHolder) ? IPropertyHolder(_height).object : _height);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_duplex is IPropertyHolder) ? IPropertyHolder(_is_duplex).object : _is_duplex);
-            output.writeObject((_is_pdf is IPropertyHolder) ? IPropertyHolder(_is_pdf).object : _is_pdf);
-            output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
-            output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
-            output.writeObject((_prt_code is IPropertyHolder) ? IPropertyHolder(_prt_code).object : _prt_code);
-            output.writeObject((_roll is IPropertyHolder) ? IPropertyHolder(_roll).object : _roll);
-            output.writeObject((_src_id is IPropertyHolder) ? IPropertyHolder(_src_id).object : _src_id);
-            output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
-            output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
+            output.writeObject(_correction);
+            output.writeObject(_correction_name);
+            output.writeObject(_cutting);
+            output.writeObject(_cutting_name);
+            output.writeObject(_frame);
+            output.writeObject(_frame_name);
+            output.writeObject(_height);
+            output.writeObject(_id);
+            output.writeObject(_is_duplex);
+            output.writeObject(_is_pdf);
+            output.writeObject(_paper);
+            output.writeObject(_paper_name);
+            output.writeObject(_prt_code);
+            output.writeObject(_roll);
+            output.writeObject(_src_id);
+            output.writeObject(_src_type);
+            output.writeObject(_width);
         }
     }
 }

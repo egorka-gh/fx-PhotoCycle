@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LabDeviceBase extends AbstractEntity {
@@ -107,15 +106,15 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_rolls is IPropertyHolder) ? IPropertyHolder(_rolls).object : _rolls);
-            output.writeObject((_speed1 is IPropertyHolder) ? IPropertyHolder(_speed1).object : _speed1);
-            output.writeObject((_speed2 is IPropertyHolder) ? IPropertyHolder(_speed2).object : _speed2);
-            output.writeObject((_tech_point is IPropertyHolder) ? IPropertyHolder(_tech_point).object : _tech_point);
-            output.writeObject((_tech_point_name is IPropertyHolder) ? IPropertyHolder(_tech_point_name).object : _tech_point_name);
-            output.writeObject((_timetable is IPropertyHolder) ? IPropertyHolder(_timetable).object : _timetable);
+            output.writeObject(_id);
+            output.writeObject(_lab);
+            output.writeObject(_name);
+            output.writeObject(_rolls);
+            output.writeObject(_speed1);
+            output.writeObject(_speed2);
+            output.writeObject(_tech_point);
+            output.writeObject(_tech_point_name);
+            output.writeObject(_timetable);
         }
     }
 }

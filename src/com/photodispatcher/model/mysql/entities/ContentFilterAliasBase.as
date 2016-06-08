@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class ContentFilterAliasBase extends AbstractEntity {
@@ -61,10 +60,10 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_alias is IPropertyHolder) ? IPropertyHolder(_alias).object : _alias);
-            output.writeObject((_alias_name is IPropertyHolder) ? IPropertyHolder(_alias_name).object : _alias_name);
-            output.writeObject((_allow is IPropertyHolder) ? IPropertyHolder(_allow).object : _allow);
-            output.writeObject((_filter is IPropertyHolder) ? IPropertyHolder(_filter).object : _filter);
+            output.writeObject(_alias);
+            output.writeObject(_alias_name);
+            output.writeObject(_allow);
+            output.writeObject(_filter);
         }
     }
 }

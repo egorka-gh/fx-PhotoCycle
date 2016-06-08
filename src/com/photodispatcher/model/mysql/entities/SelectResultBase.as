@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class SelectResultBase extends SqlResult {
@@ -35,7 +34,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_data is IPropertyHolder) ? IPropertyHolder(_data).object : _data);
+            output.writeObject(_data);
         }
     }
 }

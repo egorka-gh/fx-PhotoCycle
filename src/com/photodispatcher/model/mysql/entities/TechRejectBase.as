@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class TechRejectBase extends AbstractEntity {
@@ -179,23 +178,23 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_activity is IPropertyHolder) ? IPropertyHolder(_activity).object : _activity);
-            output.writeObject((_activityObj is IPropertyHolder) ? IPropertyHolder(_activityObj).object : _activityObj);
-            output.writeObject((_book is IPropertyHolder) ? IPropertyHolder(_book).object : _book);
-            output.writeObject((_created is IPropertyHolder) ? IPropertyHolder(_created).object : _created);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_items is IPropertyHolder) ? IPropertyHolder(_items).object : _items);
-            output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
-            output.writeObject((_pgroups is IPropertyHolder) ? IPropertyHolder(_pgroups).object : _pgroups);
-            output.writeObject((_reject_unit is IPropertyHolder) ? IPropertyHolder(_reject_unit).object : _reject_unit);
-            output.writeObject((_reject_unit_name is IPropertyHolder) ? IPropertyHolder(_reject_unit_name).object : _reject_unit_name);
-            output.writeObject((_sa_remark is IPropertyHolder) ? IPropertyHolder(_sa_remark).object : _sa_remark);
-            output.writeObject((_sa_type_name is IPropertyHolder) ? IPropertyHolder(_sa_type_name).object : _sa_type_name);
-            output.writeObject((_staff_name is IPropertyHolder) ? IPropertyHolder(_staff_name).object : _staff_name);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
-            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
+            output.writeObject(_activity);
+            output.writeObject(_activityObj);
+            output.writeObject(_book);
+            output.writeObject(_created);
+            output.writeObject(_id);
+            output.writeObject(_items);
+            output.writeObject(_order_id);
+            output.writeObject(_pgroups);
+            output.writeObject(_reject_unit);
+            output.writeObject(_reject_unit_name);
+            output.writeObject(_sa_remark);
+            output.writeObject(_sa_type_name);
+            output.writeObject(_staff_name);
+            output.writeObject(_state);
+            output.writeObject(_state_date);
+            output.writeObject(_state_name);
+            output.writeObject(_sub_id);
         }
     }
 }

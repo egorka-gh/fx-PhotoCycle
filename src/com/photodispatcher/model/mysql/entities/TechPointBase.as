@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class TechPointBase extends AbstractEntity {
@@ -70,11 +69,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_tech_book_part is IPropertyHolder) ? IPropertyHolder(_tech_book_part).object : _tech_book_part);
-            output.writeObject((_tech_type is IPropertyHolder) ? IPropertyHolder(_tech_type).object : _tech_type);
-            output.writeObject((_tech_type_name is IPropertyHolder) ? IPropertyHolder(_tech_type_name).object : _tech_type_name);
+            output.writeObject(_id);
+            output.writeObject(_name);
+            output.writeObject(_tech_book_part);
+            output.writeObject(_tech_type);
+            output.writeObject(_tech_type_name);
         }
     }
 }

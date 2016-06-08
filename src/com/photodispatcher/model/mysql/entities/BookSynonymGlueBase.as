@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class BookSynonymGlueBase extends AbstractEntity {
@@ -106,15 +105,15 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_add_layers is IPropertyHolder) ? IPropertyHolder(_add_layers).object : _add_layers);
-            output.writeObject((_book_synonym is IPropertyHolder) ? IPropertyHolder(_book_synonym).object : _book_synonym);
-            output.writeObject((_glue_cmd is IPropertyHolder) ? IPropertyHolder(_glue_cmd).object : _glue_cmd);
-            output.writeObject((_glue_cmd_name is IPropertyHolder) ? IPropertyHolder(_glue_cmd_name).object : _glue_cmd_name);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_interlayer is IPropertyHolder) ? IPropertyHolder(_interlayer).object : _interlayer);
-            output.writeObject((_interlayer_name is IPropertyHolder) ? IPropertyHolder(_interlayer_name).object : _interlayer_name);
-            output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
-            output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
+            output.writeObject(_add_layers);
+            output.writeObject(_book_synonym);
+            output.writeObject(_glue_cmd);
+            output.writeObject(_glue_cmd_name);
+            output.writeObject(_id);
+            output.writeObject(_interlayer);
+            output.writeObject(_interlayer_name);
+            output.writeObject(_paper);
+            output.writeObject(_paper_name);
         }
     }
 }

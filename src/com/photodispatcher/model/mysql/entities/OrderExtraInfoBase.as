@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class OrderExtraInfoBase extends AbstractEntity {
@@ -233,29 +232,29 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_bookThickness is IPropertyHolder) ? IPropertyHolder(_bookThickness).object : _bookThickness);
-            output.writeObject((_book_part is IPropertyHolder) ? IPropertyHolder(_book_part).object : _book_part);
-            output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
-            output.writeObject((_books is IPropertyHolder) ? IPropertyHolder(_books).object : _books);
-            output.writeObject((_calcAlias is IPropertyHolder) ? IPropertyHolder(_calcAlias).object : _calcAlias);
-            output.writeObject((_calcTitle is IPropertyHolder) ? IPropertyHolder(_calcTitle).object : _calcTitle);
-            output.writeObject((_calc_type is IPropertyHolder) ? IPropertyHolder(_calc_type).object : _calc_type);
-            output.writeObject((_corner_type is IPropertyHolder) ? IPropertyHolder(_corner_type).object : _corner_type);
-            output.writeObject((_cover is IPropertyHolder) ? IPropertyHolder(_cover).object : _cover);
-            output.writeObject((_coverMaterial is IPropertyHolder) ? IPropertyHolder(_coverMaterial).object : _coverMaterial);
-            output.writeObject((_dateIn is IPropertyHolder) ? IPropertyHolder(_dateIn).object : _dateIn);
-            output.writeObject((_dateOut is IPropertyHolder) ? IPropertyHolder(_dateOut).object : _dateOut);
-            output.writeObject((_endpaper is IPropertyHolder) ? IPropertyHolder(_endpaper).object : _endpaper);
-            output.writeObject((_format is IPropertyHolder) ? IPropertyHolder(_format).object : _format);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_interlayer is IPropertyHolder) ? IPropertyHolder(_interlayer).object : _interlayer);
-            output.writeObject((_kaptal is IPropertyHolder) ? IPropertyHolder(_kaptal).object : _kaptal);
-            output.writeObject((_messagesLog is IPropertyHolder) ? IPropertyHolder(_messagesLog).object : _messagesLog);
-            output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
-            output.writeObject((_remark is IPropertyHolder) ? IPropertyHolder(_remark).object : _remark);
-            output.writeObject((_sheets is IPropertyHolder) ? IPropertyHolder(_sheets).object : _sheets);
-            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
-            output.writeObject((_weight is IPropertyHolder) ? IPropertyHolder(_weight).object : _weight);
+            output.writeObject(_bookThickness);
+            output.writeObject(_book_part);
+            output.writeObject(_book_type);
+            output.writeObject(_books);
+            output.writeObject(_calcAlias);
+            output.writeObject(_calcTitle);
+            output.writeObject(_calc_type);
+            output.writeObject(_corner_type);
+            output.writeObject(_cover);
+            output.writeObject(_coverMaterial);
+            output.writeObject(_dateIn);
+            output.writeObject(_dateOut);
+            output.writeObject(_endpaper);
+            output.writeObject(_format);
+            output.writeObject(_id);
+            output.writeObject(_interlayer);
+            output.writeObject(_kaptal);
+            output.writeObject(_messagesLog);
+            output.writeObject(_paper);
+            output.writeObject(_remark);
+            output.writeObject(_sheets);
+            output.writeObject(_sub_id);
+            output.writeObject(_weight);
         }
     }
 }

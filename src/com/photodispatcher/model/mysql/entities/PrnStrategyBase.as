@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class PrnStrategyBase extends AbstractEntity {
@@ -205,26 +204,26 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_active is IPropertyHolder) ? IPropertyHolder(_is_active).object : _is_active);
-            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
-            output.writeObject((_lab_name is IPropertyHolder) ? IPropertyHolder(_lab_name).object : _lab_name);
-            output.writeObject((_last_start is IPropertyHolder) ? IPropertyHolder(_last_start).object : _last_start);
-            output.writeObject((_limit_done is IPropertyHolder) ? IPropertyHolder(_limit_done).object : _limit_done);
-            output.writeObject((_limit_type is IPropertyHolder) ? IPropertyHolder(_limit_type).object : _limit_type);
-            output.writeObject((_limit_type_name is IPropertyHolder) ? IPropertyHolder(_limit_type_name).object : _limit_type_name);
-            output.writeObject((_limit_val is IPropertyHolder) ? IPropertyHolder(_limit_val).object : _limit_val);
-            output.writeObject((_order_type is IPropertyHolder) ? IPropertyHolder(_order_type).object : _order_type);
-            output.writeObject((_order_type_name is IPropertyHolder) ? IPropertyHolder(_order_type_name).object : _order_type_name);
-            output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
-            output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
-            output.writeObject((_priority is IPropertyHolder) ? IPropertyHolder(_priority).object : _priority);
-            output.writeObject((_refresh_interval is IPropertyHolder) ? IPropertyHolder(_refresh_interval).object : _refresh_interval);
-            output.writeObject((_strategy_type is IPropertyHolder) ? IPropertyHolder(_strategy_type).object : _strategy_type);
-            output.writeObject((_strategy_type_name is IPropertyHolder) ? IPropertyHolder(_strategy_type_name).object : _strategy_type_name);
-            output.writeObject((_time_end is IPropertyHolder) ? IPropertyHolder(_time_end).object : _time_end);
-            output.writeObject((_time_start is IPropertyHolder) ? IPropertyHolder(_time_start).object : _time_start);
-            output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
+            output.writeObject(_id);
+            output.writeObject(_is_active);
+            output.writeObject(_lab);
+            output.writeObject(_lab_name);
+            output.writeObject(_last_start);
+            output.writeObject(_limit_done);
+            output.writeObject(_limit_type);
+            output.writeObject(_limit_type_name);
+            output.writeObject(_limit_val);
+            output.writeObject(_order_type);
+            output.writeObject(_order_type_name);
+            output.writeObject(_paper);
+            output.writeObject(_paper_name);
+            output.writeObject(_priority);
+            output.writeObject(_refresh_interval);
+            output.writeObject(_strategy_type);
+            output.writeObject(_strategy_type_name);
+            output.writeObject(_time_end);
+            output.writeObject(_time_start);
+            output.writeObject(_width);
         }
     }
 }

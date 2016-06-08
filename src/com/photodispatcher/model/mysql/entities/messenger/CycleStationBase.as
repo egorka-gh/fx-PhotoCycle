@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities.messenger {
     import com.photodispatcher.model.mysql.entities.AbstractEntity;
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class CycleStationBase extends AbstractEntity {
@@ -80,12 +79,12 @@ package com.photodispatcher.model.mysql.entities.messenger {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_subtype is IPropertyHolder) ? IPropertyHolder(_subtype).object : _subtype);
-            output.writeObject((_type is IPropertyHolder) ? IPropertyHolder(_type).object : _type);
-            output.writeObject((_type_name is IPropertyHolder) ? IPropertyHolder(_type_name).object : _type_name);
+            output.writeObject(_id);
+            output.writeObject(_name);
+            output.writeObject(_state);
+            output.writeObject(_subtype);
+            output.writeObject(_type);
+            output.writeObject(_type_name);
         }
     }
 }

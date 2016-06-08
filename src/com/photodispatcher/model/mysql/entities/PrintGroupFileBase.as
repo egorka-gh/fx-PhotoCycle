@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class PrintGroupFileBase extends AbstractEntity {
@@ -160,21 +159,21 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_book_num is IPropertyHolder) ? IPropertyHolder(_book_num).object : _book_num);
-            output.writeObject((_book_part is IPropertyHolder) ? IPropertyHolder(_book_part).object : _book_part);
-            output.writeObject((_book_part_name is IPropertyHolder) ? IPropertyHolder(_book_part_name).object : _book_part_name);
-            output.writeObject((_caption is IPropertyHolder) ? IPropertyHolder(_caption).object : _caption);
-            output.writeObject((_file_name is IPropertyHolder) ? IPropertyHolder(_file_name).object : _file_name);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_page_num is IPropertyHolder) ? IPropertyHolder(_page_num).object : _page_num);
-            output.writeObject((_path is IPropertyHolder) ? IPropertyHolder(_path).object : _path);
-            output.writeObject((_print_group is IPropertyHolder) ? IPropertyHolder(_print_group).object : _print_group);
-            output.writeObject((_prt_qty is IPropertyHolder) ? IPropertyHolder(_prt_qty).object : _prt_qty);
-            output.writeObject((_tech_date is IPropertyHolder) ? IPropertyHolder(_tech_date).object : _tech_date);
-            output.writeObject((_tech_point is IPropertyHolder) ? IPropertyHolder(_tech_point).object : _tech_point);
-            output.writeObject((_tech_point_name is IPropertyHolder) ? IPropertyHolder(_tech_point_name).object : _tech_point_name);
-            output.writeObject((_tech_state is IPropertyHolder) ? IPropertyHolder(_tech_state).object : _tech_state);
-            output.writeObject((_tech_state_name is IPropertyHolder) ? IPropertyHolder(_tech_state_name).object : _tech_state_name);
+            output.writeObject(_book_num);
+            output.writeObject(_book_part);
+            output.writeObject(_book_part_name);
+            output.writeObject(_caption);
+            output.writeObject(_file_name);
+            output.writeObject(_id);
+            output.writeObject(_page_num);
+            output.writeObject(_path);
+            output.writeObject(_print_group);
+            output.writeObject(_prt_qty);
+            output.writeObject(_tech_date);
+            output.writeObject(_tech_point);
+            output.writeObject(_tech_point_name);
+            output.writeObject(_tech_state);
+            output.writeObject(_tech_state_name);
         }
     }
 }

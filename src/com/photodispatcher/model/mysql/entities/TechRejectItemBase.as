@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class TechRejectItemBase extends AbstractEntity {
@@ -97,14 +96,14 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_book is IPropertyHolder) ? IPropertyHolder(_book).object : _book);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_pg_src is IPropertyHolder) ? IPropertyHolder(_pg_src).object : _pg_src);
-            output.writeObject((_qty is IPropertyHolder) ? IPropertyHolder(_qty).object : _qty);
-            output.writeObject((_sheet is IPropertyHolder) ? IPropertyHolder(_sheet).object : _sheet);
-            output.writeObject((_tech_reject is IPropertyHolder) ? IPropertyHolder(_tech_reject).object : _tech_reject);
-            output.writeObject((_thech_unit is IPropertyHolder) ? IPropertyHolder(_thech_unit).object : _thech_unit);
-            output.writeObject((_thech_unit_name is IPropertyHolder) ? IPropertyHolder(_thech_unit_name).object : _thech_unit_name);
+            output.writeObject(_book);
+            output.writeObject(_id);
+            output.writeObject(_pg_src);
+            output.writeObject(_qty);
+            output.writeObject(_sheet);
+            output.writeObject(_tech_reject);
+            output.writeObject(_thech_unit);
+            output.writeObject(_thech_unit_name);
         }
     }
 }

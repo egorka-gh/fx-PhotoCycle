@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LayersetBase extends AbstractEntity {
@@ -161,21 +160,21 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
-            output.writeObject((_book_type_name is IPropertyHolder) ? IPropertyHolder(_book_type_name).object : _book_type_name);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_book_check_off is IPropertyHolder) ? IPropertyHolder(_is_book_check_off).object : _is_book_check_off);
-            output.writeObject((_is_epaper_check_off is IPropertyHolder) ? IPropertyHolder(_is_epaper_check_off).object : _is_epaper_check_off);
-            output.writeObject((_is_passover is IPropertyHolder) ? IPropertyHolder(_is_passover).object : _is_passover);
-            output.writeObject((_is_pdf is IPropertyHolder) ? IPropertyHolder(_is_pdf).object : _is_pdf);
-            output.writeObject((_layerset_group is IPropertyHolder) ? IPropertyHolder(_layerset_group).object : _layerset_group);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_sequenceEnd is IPropertyHolder) ? IPropertyHolder(_sequenceEnd).object : _sequenceEnd);
-            output.writeObject((_sequenceMiddle is IPropertyHolder) ? IPropertyHolder(_sequenceMiddle).object : _sequenceMiddle);
-            output.writeObject((_sequenceStart is IPropertyHolder) ? IPropertyHolder(_sequenceStart).object : _sequenceStart);
-            output.writeObject((_subset_type is IPropertyHolder) ? IPropertyHolder(_subset_type).object : _subset_type);
-            output.writeObject((_synonyms is IPropertyHolder) ? IPropertyHolder(_synonyms).object : _synonyms);
-            output.writeObject((_usesEndPaper is IPropertyHolder) ? IPropertyHolder(_usesEndPaper).object : _usesEndPaper);
+            output.writeObject(_book_type);
+            output.writeObject(_book_type_name);
+            output.writeObject(_id);
+            output.writeObject(_is_book_check_off);
+            output.writeObject(_is_epaper_check_off);
+            output.writeObject(_is_passover);
+            output.writeObject(_is_pdf);
+            output.writeObject(_layerset_group);
+            output.writeObject(_name);
+            output.writeObject(_sequenceEnd);
+            output.writeObject(_sequenceMiddle);
+            output.writeObject(_sequenceStart);
+            output.writeObject(_subset_type);
+            output.writeObject(_synonyms);
+            output.writeObject(_usesEndPaper);
         }
     }
 }

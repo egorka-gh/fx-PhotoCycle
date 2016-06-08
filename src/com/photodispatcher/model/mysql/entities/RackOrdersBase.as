@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class RackOrdersBase extends AbstractEntity {
@@ -97,14 +96,14 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_group_id is IPropertyHolder) ? IPropertyHolder(_group_id).object : _group_id);
-            output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
-            output.writeObject((_rack is IPropertyHolder) ? IPropertyHolder(_rack).object : _rack);
-            output.writeObject((_rack_name is IPropertyHolder) ? IPropertyHolder(_rack_name).object : _rack_name);
-            output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
-            output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
-            output.writeObject((_space is IPropertyHolder) ? IPropertyHolder(_space).object : _space);
-            output.writeObject((_space_name is IPropertyHolder) ? IPropertyHolder(_space_name).object : _space_name);
+            output.writeObject(_group_id);
+            output.writeObject(_order_id);
+            output.writeObject(_rack);
+            output.writeObject(_rack_name);
+            output.writeObject(_source);
+            output.writeObject(_source_name);
+            output.writeObject(_space);
+            output.writeObject(_space_name);
         }
     }
 }

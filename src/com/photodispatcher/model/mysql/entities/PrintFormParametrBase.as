@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class PrintFormParametrBase extends AbstractEntity {
@@ -61,10 +60,10 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_form is IPropertyHolder) ? IPropertyHolder(_form).object : _form);
-            output.writeObject((_form_field is IPropertyHolder) ? IPropertyHolder(_form_field).object : _form_field);
-            output.writeObject((_parametr is IPropertyHolder) ? IPropertyHolder(_parametr).object : _parametr);
-            output.writeObject((_simplex is IPropertyHolder) ? IPropertyHolder(_simplex).object : _simplex);
+            output.writeObject(_form);
+            output.writeObject(_form_field);
+            output.writeObject(_parametr);
+            output.writeObject(_simplex);
         }
     }
 }

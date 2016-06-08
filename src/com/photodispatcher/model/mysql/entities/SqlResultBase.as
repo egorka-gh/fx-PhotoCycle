@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import flash.utils.IExternalizable;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class SqlResultBase implements IExternalizable {
@@ -68,11 +67,11 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         public function writeExternal(output:IDataOutput):void {
-            output.writeObject((_complete is IPropertyHolder) ? IPropertyHolder(_complete).object : _complete);
-            output.writeObject((_errCode is IPropertyHolder) ? IPropertyHolder(_errCode).object : _errCode);
-            output.writeObject((_errMesage is IPropertyHolder) ? IPropertyHolder(_errMesage).object : _errMesage);
-            output.writeObject((_resultCode is IPropertyHolder) ? IPropertyHolder(_resultCode).object : _resultCode);
-            output.writeObject((_sql is IPropertyHolder) ? IPropertyHolder(_sql).object : _sql);
+            output.writeObject(_complete);
+            output.writeObject(_errCode);
+            output.writeObject(_errMesage);
+            output.writeObject(_resultCode);
+            output.writeObject(_sql);
         }
     }
 }

@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class StaffActivityBase extends AbstractEntity {
@@ -124,17 +123,17 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_log_date is IPropertyHolder) ? IPropertyHolder(_log_date).object : _log_date);
-            output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
-            output.writeObject((_pg_id is IPropertyHolder) ? IPropertyHolder(_pg_id).object : _pg_id);
-            output.writeObject((_remark is IPropertyHolder) ? IPropertyHolder(_remark).object : _remark);
-            output.writeObject((_sa_group is IPropertyHolder) ? IPropertyHolder(_sa_group).object : _sa_group);
-            output.writeObject((_sa_group_name is IPropertyHolder) ? IPropertyHolder(_sa_group_name).object : _sa_group_name);
-            output.writeObject((_sa_type is IPropertyHolder) ? IPropertyHolder(_sa_type).object : _sa_type);
-            output.writeObject((_sa_type_name is IPropertyHolder) ? IPropertyHolder(_sa_type_name).object : _sa_type_name);
-            output.writeObject((_staff is IPropertyHolder) ? IPropertyHolder(_staff).object : _staff);
-            output.writeObject((_staff_name is IPropertyHolder) ? IPropertyHolder(_staff_name).object : _staff_name);
+            output.writeObject(_id);
+            output.writeObject(_log_date);
+            output.writeObject(_order_id);
+            output.writeObject(_pg_id);
+            output.writeObject(_remark);
+            output.writeObject(_sa_group);
+            output.writeObject(_sa_group_name);
+            output.writeObject(_sa_type);
+            output.writeObject(_sa_type_name);
+            output.writeObject(_staff);
+            output.writeObject(_staff_name);
         }
     }
 }

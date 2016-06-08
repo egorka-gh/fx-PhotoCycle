@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class OrderExtraStateBase extends AbstractEntity {
@@ -142,19 +141,19 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_books is IPropertyHolder) ? IPropertyHolder(_books).object : _books);
-            output.writeObject((_books_done is IPropertyHolder) ? IPropertyHolder(_books_done).object : _books_done);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_reported is IPropertyHolder) ? IPropertyHolder(_reported).object : _reported);
-            output.writeObject((_start_date is IPropertyHolder) ? IPropertyHolder(_start_date).object : _start_date);
-            output.writeObject((_start_date2 is IPropertyHolder) ? IPropertyHolder(_start_date2).object : _start_date2);
-            output.writeObject((_state is IPropertyHolder) ? IPropertyHolder(_state).object : _state);
-            output.writeObject((_state2 is IPropertyHolder) ? IPropertyHolder(_state2).object : _state2);
-            output.writeObject((_state_date is IPropertyHolder) ? IPropertyHolder(_state_date).object : _state_date);
-            output.writeObject((_state_date2 is IPropertyHolder) ? IPropertyHolder(_state_date2).object : _state_date2);
-            output.writeObject((_state_name is IPropertyHolder) ? IPropertyHolder(_state_name).object : _state_name);
-            output.writeObject((_state_name2 is IPropertyHolder) ? IPropertyHolder(_state_name2).object : _state_name2);
-            output.writeObject((_sub_id is IPropertyHolder) ? IPropertyHolder(_sub_id).object : _sub_id);
+            output.writeObject(_books);
+            output.writeObject(_books_done);
+            output.writeObject(_id);
+            output.writeObject(_reported);
+            output.writeObject(_start_date);
+            output.writeObject(_start_date2);
+            output.writeObject(_state);
+            output.writeObject(_state2);
+            output.writeObject(_state_date);
+            output.writeObject(_state_date2);
+            output.writeObject(_state_name);
+            output.writeObject(_state_name2);
+            output.writeObject(_sub_id);
         }
     }
 }

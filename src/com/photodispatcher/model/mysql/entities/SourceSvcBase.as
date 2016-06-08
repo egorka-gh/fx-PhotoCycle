@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class SourceSvcBase extends AbstractEntity {
@@ -97,14 +96,14 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_connections is IPropertyHolder) ? IPropertyHolder(_connections).object : _connections);
-            output.writeObject((_loc_type is IPropertyHolder) ? IPropertyHolder(_loc_type).object : _loc_type);
-            output.writeObject((_pass is IPropertyHolder) ? IPropertyHolder(_pass).object : _pass);
-            output.writeObject((_src_id is IPropertyHolder) ? IPropertyHolder(_src_id).object : _src_id);
-            output.writeObject((_srvc_id is IPropertyHolder) ? IPropertyHolder(_srvc_id).object : _srvc_id);
-            output.writeObject((_type_name is IPropertyHolder) ? IPropertyHolder(_type_name).object : _type_name);
-            output.writeObject((_url is IPropertyHolder) ? IPropertyHolder(_url).object : _url);
-            output.writeObject((_user is IPropertyHolder) ? IPropertyHolder(_user).object : _user);
+            output.writeObject(_connections);
+            output.writeObject(_loc_type);
+            output.writeObject(_pass);
+            output.writeObject(_src_id);
+            output.writeObject(_srvc_id);
+            output.writeObject(_type_name);
+            output.writeObject(_url);
+            output.writeObject(_user);
         }
     }
 }

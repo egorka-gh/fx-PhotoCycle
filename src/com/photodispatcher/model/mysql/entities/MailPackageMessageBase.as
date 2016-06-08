@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class MailPackageMessageBase extends AbstractEntity {
@@ -70,11 +69,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_log_key is IPropertyHolder) ? IPropertyHolder(_log_key).object : _log_key);
-            output.writeObject((_log_user is IPropertyHolder) ? IPropertyHolder(_log_user).object : _log_user);
-            output.writeObject((_message is IPropertyHolder) ? IPropertyHolder(_message).object : _message);
-            output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
+            output.writeObject(_id);
+            output.writeObject(_log_key);
+            output.writeObject(_log_user);
+            output.writeObject(_message);
+            output.writeObject(_source);
         }
     }
 }

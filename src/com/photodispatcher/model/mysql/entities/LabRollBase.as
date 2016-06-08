@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LabRollBase extends AbstractEntity {
@@ -124,17 +123,17 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_is_online is IPropertyHolder) ? IPropertyHolder(_is_online).object : _is_online);
-            output.writeObject((_is_used is IPropertyHolder) ? IPropertyHolder(_is_used).object : _is_used);
-            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
-            output.writeObject((_lab_device is IPropertyHolder) ? IPropertyHolder(_lab_device).object : _lab_device);
-            output.writeObject((_len is IPropertyHolder) ? IPropertyHolder(_len).object : _len);
-            output.writeObject((_len_std is IPropertyHolder) ? IPropertyHolder(_len_std).object : _len_std);
-            output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
-            output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
-            output.writeObject((_printQueueLen is IPropertyHolder) ? IPropertyHolder(_printQueueLen).object : _printQueueLen);
-            output.writeObject((_printQueueTime is IPropertyHolder) ? IPropertyHolder(_printQueueTime).object : _printQueueTime);
-            output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
+            output.writeObject(_is_online);
+            output.writeObject(_is_used);
+            output.writeObject(_lab);
+            output.writeObject(_lab_device);
+            output.writeObject(_len);
+            output.writeObject(_len_std);
+            output.writeObject(_paper);
+            output.writeObject(_paper_name);
+            output.writeObject(_printQueueLen);
+            output.writeObject(_printQueueTime);
+            output.writeObject(_width);
         }
     }
 }

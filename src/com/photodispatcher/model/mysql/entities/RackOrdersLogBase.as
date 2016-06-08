@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class RackOrdersLogBase extends AbstractEntity {
@@ -70,11 +69,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_event_time is IPropertyHolder) ? IPropertyHolder(_event_time).object : _event_time);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_order_id is IPropertyHolder) ? IPropertyHolder(_order_id).object : _order_id);
-            output.writeObject((_rack_name is IPropertyHolder) ? IPropertyHolder(_rack_name).object : _rack_name);
-            output.writeObject((_rowId is IPropertyHolder) ? IPropertyHolder(_rowId).object : _rowId);
+            output.writeObject(_event_time);
+            output.writeObject(_name);
+            output.writeObject(_order_id);
+            output.writeObject(_rack_name);
+            output.writeObject(_rowId);
         }
     }
 }

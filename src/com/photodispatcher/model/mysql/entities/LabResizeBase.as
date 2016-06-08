@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class LabResizeBase extends AbstractEntity {
@@ -52,9 +51,9 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_pixels is IPropertyHolder) ? IPropertyHolder(_pixels).object : _pixels);
-            output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
+            output.writeObject(_id);
+            output.writeObject(_pixels);
+            output.writeObject(_width);
         }
     }
 }

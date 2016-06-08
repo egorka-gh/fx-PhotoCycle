@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class RackSpaceBase extends AbstractEntity {
@@ -134,18 +133,18 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_empty is IPropertyHolder) ? IPropertyHolder(_empty).object : _empty);
-            output.writeObject((_height is IPropertyHolder) ? IPropertyHolder(_height).object : _height);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_orders is IPropertyHolder) ? IPropertyHolder(_orders).object : _orders);
-            output.writeObject((_rack is IPropertyHolder) ? IPropertyHolder(_rack).object : _rack);
-            output.writeObject((_rack_name is IPropertyHolder) ? IPropertyHolder(_rack_name).object : _rack_name);
-            output.writeObject((_rack_type_name is IPropertyHolder) ? IPropertyHolder(_rack_type_name).object : _rack_type_name);
-            output.writeObject((_rating is IPropertyHolder) ? IPropertyHolder(_rating).object : _rating);
-            output.writeObject((_unused_weight is IPropertyHolder) ? IPropertyHolder(_unused_weight).object : _unused_weight);
-            output.writeObject((_weight is IPropertyHolder) ? IPropertyHolder(_weight).object : _weight);
-            output.writeObject((_width is IPropertyHolder) ? IPropertyHolder(_width).object : _width);
+            output.writeObject(_empty);
+            output.writeObject(_height);
+            output.writeObject(_id);
+            output.writeObject(_name);
+            output.writeObject(_orders);
+            output.writeObject(_rack);
+            output.writeObject(_rack_name);
+            output.writeObject(_rack_type_name);
+            output.writeObject(_rating);
+            output.writeObject(_unused_weight);
+            output.writeObject(_weight);
+            output.writeObject(_width);
         }
     }
 }

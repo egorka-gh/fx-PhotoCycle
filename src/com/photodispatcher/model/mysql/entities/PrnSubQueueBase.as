@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class PrnSubQueueBase extends AbstractEntity {
@@ -79,12 +78,12 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_complited is IPropertyHolder) ? IPropertyHolder(_complited).object : _complited);
-            output.writeObject((_is_active is IPropertyHolder) ? IPropertyHolder(_is_active).object : _is_active);
-            output.writeObject((_lab is IPropertyHolder) ? IPropertyHolder(_lab).object : _lab);
-            output.writeObject((_prn_queue is IPropertyHolder) ? IPropertyHolder(_prn_queue).object : _prn_queue);
-            output.writeObject((_started is IPropertyHolder) ? IPropertyHolder(_started).object : _started);
-            output.writeObject((_sub_queue is IPropertyHolder) ? IPropertyHolder(_sub_queue).object : _sub_queue);
+            output.writeObject(_complited);
+            output.writeObject(_is_active);
+            output.writeObject(_lab);
+            output.writeObject(_prn_queue);
+            output.writeObject(_started);
+            output.writeObject(_sub_queue);
         }
     }
 }

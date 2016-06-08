@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities.report {
     import com.photodispatcher.model.mysql.entities.AbstractEntity;
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class ReportBase extends AbstractEntity {
@@ -89,13 +88,13 @@ package com.photodispatcher.model.mysql.entities.report {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_group is IPropertyHolder) ? IPropertyHolder(_group).object : _group);
-            output.writeObject((_group_name is IPropertyHolder) ? IPropertyHolder(_group_name).object : _group_name);
-            output.writeObject((_hidden is IPropertyHolder) ? IPropertyHolder(_hidden).object : _hidden);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_name is IPropertyHolder) ? IPropertyHolder(_name).object : _name);
-            output.writeObject((_parameters is IPropertyHolder) ? IPropertyHolder(_parameters).object : _parameters);
-            output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
+            output.writeObject(_group);
+            output.writeObject(_group_name);
+            output.writeObject(_hidden);
+            output.writeObject(_id);
+            output.writeObject(_name);
+            output.writeObject(_parameters);
+            output.writeObject(_src_type);
         }
     }
 }

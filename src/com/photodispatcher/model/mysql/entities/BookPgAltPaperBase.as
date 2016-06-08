@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class BookPgAltPaperBase extends AbstractEntity {
@@ -106,15 +105,15 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_interlayer is IPropertyHolder) ? IPropertyHolder(_interlayer).object : _interlayer);
-            output.writeObject((_interlayer_name is IPropertyHolder) ? IPropertyHolder(_interlayer_name).object : _interlayer_name);
-            output.writeObject((_paper is IPropertyHolder) ? IPropertyHolder(_paper).object : _paper);
-            output.writeObject((_paper_name is IPropertyHolder) ? IPropertyHolder(_paper_name).object : _paper_name);
-            output.writeObject((_revers is IPropertyHolder) ? IPropertyHolder(_revers).object : _revers);
-            output.writeObject((_sh_from is IPropertyHolder) ? IPropertyHolder(_sh_from).object : _sh_from);
-            output.writeObject((_sh_to is IPropertyHolder) ? IPropertyHolder(_sh_to).object : _sh_to);
-            output.writeObject((_template is IPropertyHolder) ? IPropertyHolder(_template).object : _template);
+            output.writeObject(_id);
+            output.writeObject(_interlayer);
+            output.writeObject(_interlayer_name);
+            output.writeObject(_paper);
+            output.writeObject(_paper_name);
+            output.writeObject(_revers);
+            output.writeObject(_sh_from);
+            output.writeObject(_sh_to);
+            output.writeObject(_template);
         }
     }
 }

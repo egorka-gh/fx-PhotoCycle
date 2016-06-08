@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities.report {
     import com.photodispatcher.model.mysql.entities.AbstractEntity;
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class ReportResultBase extends AbstractEntity {
@@ -71,11 +70,11 @@ package com.photodispatcher.model.mysql.entities.report {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_error is IPropertyHolder) ? IPropertyHolder(_error).object : _error);
-            output.writeObject((_hasError is IPropertyHolder) ? IPropertyHolder(_hasError).object : _hasError);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_messageId is IPropertyHolder) ? IPropertyHolder(_messageId).object : _messageId);
-            output.writeObject((_url is IPropertyHolder) ? IPropertyHolder(_url).object : _url);
+            output.writeObject(_error);
+            output.writeObject(_hasError);
+            output.writeObject(_id);
+            output.writeObject(_messageId);
+            output.writeObject(_url);
         }
     }
 }

@@ -9,7 +9,6 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class DeliveryTypeDictionaryBase extends AbstractEntity {
@@ -70,11 +69,11 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_delivery_type is IPropertyHolder) ? IPropertyHolder(_delivery_type).object : _delivery_type);
-            output.writeObject((_delivery_type_name is IPropertyHolder) ? IPropertyHolder(_delivery_type_name).object : _delivery_type_name);
-            output.writeObject((_site_id is IPropertyHolder) ? IPropertyHolder(_site_id).object : _site_id);
-            output.writeObject((_source is IPropertyHolder) ? IPropertyHolder(_source).object : _source);
-            output.writeObject((_source_name is IPropertyHolder) ? IPropertyHolder(_source_name).object : _source_name);
+            output.writeObject(_delivery_type);
+            output.writeObject(_delivery_type_name);
+            output.writeObject(_site_id);
+            output.writeObject(_source);
+            output.writeObject(_source_name);
         }
     }
 }

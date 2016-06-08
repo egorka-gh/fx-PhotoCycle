@@ -10,7 +10,6 @@ package com.photodispatcher.model.mysql.entities {
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
     import mx.collections.ListCollectionView;
-    import org.granite.tide.IPropertyHolder;
 
     [Bindable]
     public class BookSynonymBase extends AbstractEntity {
@@ -161,21 +160,21 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
-            output.writeObject((_book_type is IPropertyHolder) ? IPropertyHolder(_book_type).object : _book_type);
-            output.writeObject((_book_type_name is IPropertyHolder) ? IPropertyHolder(_book_type_name).object : _book_type_name);
-            output.writeObject((_glueCommands is IPropertyHolder) ? IPropertyHolder(_glueCommands).object : _glueCommands);
-            output.writeObject((_has_backprint is IPropertyHolder) ? IPropertyHolder(_has_backprint).object : _has_backprint);
-            output.writeObject((_id is IPropertyHolder) ? IPropertyHolder(_id).object : _id);
-            output.writeObject((_is_allow is IPropertyHolder) ? IPropertyHolder(_is_allow).object : _is_allow);
-            output.writeObject((_is_horizontal is IPropertyHolder) ? IPropertyHolder(_is_horizontal).object : _is_horizontal);
-            output.writeObject((_order_program is IPropertyHolder) ? IPropertyHolder(_order_program).object : _order_program);
-            output.writeObject((_order_program_name is IPropertyHolder) ? IPropertyHolder(_order_program_name).object : _order_program_name);
-            output.writeObject((_src_type is IPropertyHolder) ? IPropertyHolder(_src_type).object : _src_type);
-            output.writeObject((_src_type_name is IPropertyHolder) ? IPropertyHolder(_src_type_name).object : _src_type_name);
-            output.writeObject((_synonym is IPropertyHolder) ? IPropertyHolder(_synonym).object : _synonym);
-            output.writeObject((_synonym_type is IPropertyHolder) ? IPropertyHolder(_synonym_type).object : _synonym_type);
-            output.writeObject((_synonym_type_name is IPropertyHolder) ? IPropertyHolder(_synonym_type_name).object : _synonym_type_name);
-            output.writeObject((_templates is IPropertyHolder) ? IPropertyHolder(_templates).object : _templates);
+            output.writeObject(_book_type);
+            output.writeObject(_book_type_name);
+            output.writeObject(_glueCommands);
+            output.writeObject(_has_backprint);
+            output.writeObject(_id);
+            output.writeObject(_is_allow);
+            output.writeObject(_is_horizontal);
+            output.writeObject(_order_program);
+            output.writeObject(_order_program_name);
+            output.writeObject(_src_type);
+            output.writeObject(_src_type_name);
+            output.writeObject(_synonym);
+            output.writeObject(_synonym_type);
+            output.writeObject(_synonym_type_name);
+            output.writeObject(_templates);
         }
     }
 }
