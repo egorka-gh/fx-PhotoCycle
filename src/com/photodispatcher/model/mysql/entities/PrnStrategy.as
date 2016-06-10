@@ -27,6 +27,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const STRATEGY_PUSHER:int = 0;
 		public static const STRATEGY_BYROLL:int = 1;
 		public static const STRATEGY_BYPARTPDF:int = 2;
+		public static const STRATEGY_BYPART:int = 3;
 		
 		
 		public static function gridColumns():ArrayList{

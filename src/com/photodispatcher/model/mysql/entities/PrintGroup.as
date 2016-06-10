@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
 	
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
+	import spark.formatters.NumberFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrintGroup")]
@@ -147,6 +148,31 @@ package com.photodispatcher.model.mysql.entities {
 			return new ArrayList(result);
 		}
 
+		public static function printQueueStrategyColumns(strategy:int):ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			var fmt:NumberFormatter=new NumberFormatter();
+			fmt.fractionalDigits=1;
+			
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
+			
+			if(strategy==PrnStrategy.STRATEGY_BYPART){
+				col= new GridColumn('alias'); col.headerText='Алиас'; result.push(col);
+				col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
+				col= new GridColumn('sheet_num'); col.headerText='Разворотов'; result.push(col);
+			}
+						
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.editable=false; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; col.editable=false; result.push(col);
+
+			col= new GridColumn('prints'); col.headerText='Листов'; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длинна (мм)'; result.push(col);
+			
+			col= new GridColumn('printQueueTime'); col.headerText='Время (мин)'; col.formatter=fmt; result.push(col);
+
+			return new ArrayList(result);
+		}
+
 		public static function reprintGridColumns():ArrayList{
 			var result:Array= [];
 			var col:GridColumn;
@@ -195,6 +221,7 @@ package com.photodispatcher.model.mysql.entities {
 		 * used in PrintManager 
 		 */
 		public var isAutoPrint:Boolean=false;
+		public var printQueueTime:Number=0;
 		
 		/**
 		 * runtime

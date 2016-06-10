@@ -2,7 +2,7 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
-		 creationComplete="{init()}" xmlns:view="com.photodispatcher.view.*">
+		 xmlns:view="com.photodispatcher.view.*">
 	
 	<fx:Script>
 		<![CDATA[
@@ -12,37 +12,19 @@
 			import spark.events.IndexChangeEvent;
 			
 			[Bindable]
-			private var printManager:PrintQueueManager;
+			public var currLab:LabGeneric;
 			
-			private function init():void{
-				printManager= PrintQueueManager.instance;
-			}
-
-			protected function lstLabs_changeHandler(event:IndexChangeEvent):void{
-				labInfo.lab=lstLabs.selectedItem as LabGeneric;
-			}
-
 			protected function btRefreshLab_clickHandler(event:MouseEvent):void{
-				printManager.refreshLabs();
+				PrintQueueManager.instance.refreshLabs();
 			}
 
 		]]>
 	</fx:Script>
-	<s:HGroup gap="10" width="100%" height="100%">
-		<s:VGroup gap="5" width="200" height="100%">
-			<s:HGroup gap="10" verticalAlign="middle" width="100%">
-				<s:Label text="Лаборатории"/>
-				<s:Spacer width="100%"/>
-				<s:Button id="btRefreshLab" icon="assets/icon-refresh.gif" click="btRefreshLab_clickHandler(event)"
-						  cornerRadius="4" width="22" height="22" baseline="4"/>
-				
-			</s:HGroup>
-			<s:List id="lstLabs" width="100%" height="100%"
-					dataProvider="{printManager.labs}" useVirtualLayout="false"
-					itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRenderer"
-					change="lstLabs_changeHandler(event)"/>
-		</s:VGroup>
-		<view:LabInfo id="labInfo" isPopup="false" width="100%" height="100%"/>
-			
-	</s:HGroup>
+	<s:VGroup gap="5" width="100%" height="100%">
+		<s:Button id="btRefreshLab" icon="assets/icon-refresh.gif" click="btRefreshLab_clickHandler(event)"
+				  cornerRadius="4" width="22" height="22" baseline="4"/>
+		<view:LabInfo id="labInfo" isPopup="false"
+					  lab="{currLab}"
+					  width="100%" height="100%"/>
+	</s:VGroup>
 </s:Group>

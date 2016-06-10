@@ -33,7 +33,16 @@
 			
 			[Bindable]
 			private var pgList:ArrayCollection=new ArrayCollection();
-		
+
+			private var _currLab:LabGeneric;
+			[Bindable]
+			public function get currLab():LabGeneric{
+				return _currLab;
+			}
+			public function set currLab(value:LabGeneric):void{
+				_currLab = value;
+				refresh();
+			}
 
 			[Bindable]
 			private var printManager:PrintQueueManager;
@@ -43,11 +52,10 @@
 					printManager=PrintQueueManager.instance;
 					//printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
 				}
-				if(printManager && printManager.labs && printManager.labs.length>0) lstLabs.selectedItem=printManager.labs.getItemAt(0);
 			}
 
 			public function refresh():void{
-				if(!printManager || !printManager.labs || printManager.labs.length==0) return;
+				if(!currLab) return;
 				
 				var svc2:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 				var latch2:DbLatch=new DbLatch();
@@ -70,15 +78,8 @@
 			private function filterPGList(item:Object):Boolean {
 				var pg:PrintGroup=item as PrintGroup;
 				if(!pg) return false;
-				if(!printManager || !printManager.labs || printManager.labs.length==0 || !lstLabs) return false;
-				
-				var l:LabGeneric=lstLabs.selectedItem as LabGeneric;
-				if(!l){
-					l=printManager.labs.getItemAt(0) as LabGeneric;
-					if(l) lstLabs.selectedItem=l;
-				}
-				if(!l) return false;
-				if(pg.destination!=l.id) return false;
+				if(!currLab) return false;
+				if(pg.destination!=currLab.id) return false;
 				return true;
 			}
 
@@ -86,10 +87,6 @@
 				pgList.refresh();
 			}
 
-			protected function lstLab_changeHandler(event:IndexChangeEvent):void{
-				refresh();
-			}
-			
 			private var gridMenu:GridContexMenu;
 			protected function dgPGroups_creationCompleteHandler(event:FlexEvent):void{
 				gridMenu= new GridContexMenu(dgPGroups,[GridContexMenu.SHOW_ORDER, GridContexMenu.CANCEL_PRINT_STATE]);
@@ -116,32 +113,19 @@
 	</fx:Script>
 	
 	<fx:Declarations>
-		<s:ArrayCollection id="acLabRolls" source="{lstLabs.selectedItem.printQueue.rolls}"/>	
+		<!--<s:ArrayCollection id="acLabRolls" source="{lstLabs.selectedItem.printQueue.rolls}"/>-->	
 	</fx:Declarations>
 	
-	<s:HGroup gap="10" width="100%" height="100%">
-		<s:VGroup gap="5" width="150" height="100%">
-			<s:Label text="Лаборатории" />
-			<s:List id="lstLabs" dataProvider="{printManager.labs}" contentBackgroundAlpha="0" borderAlpha="0" 
-					itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRendererShort" 
-					width="100%"
-					change="{lstLab_changeHandler(event)}">
-				<s:layout>
-					<s:VerticalLayout gap="0" requestedRowCount="{printManager.labs.length}"/>
-				</s:layout>
-			</s:List>
-		</s:VGroup>
-		<s:VGroup gap="5" width="100%" height="100%">
-			<s:HGroup width="100%">
-				<s:Label text="Группы печати"/>
-				<s:Spacer width="100%"/>
-				<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
-						  cornerRadius="4" width="22" height="22" baseline="4"/>
-			</s:HGroup>
-			<s:DataGrid id="dgPGroups" selectionMode="multipleRows" width="100%" height="100%"
-						creationComplete="dgPGroups_creationCompleteHandler(event)"
-						dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns(true)}"/>
-		</s:VGroup>
-	</s:HGroup>
+	<s:VGroup gap="5" width="100%" height="100%">
+		<s:HGroup width="100%">
+			<s:Label text="Группы печати"/>
+			<s:Spacer width="100%"/>
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<s:DataGrid id="dgPGroups" selectionMode="multipleRows" width="100%" height="100%"
+					creationComplete="dgPGroups_creationCompleteHandler(event)"
+					dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.gridColumns(true)}"/>
+	</s:VGroup>
 	
 </s:Group>

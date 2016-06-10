@@ -755,6 +755,8 @@ package com.photodispatcher.context{
 			latchAttributeLists.addLatch(dict.getStopTypeValueList(onFieldList),'lab_stop_type');
 			//print strategy_type
 			latchAttributeLists.addLatch(dict.getPrnStrategyValueList(onFieldList),'strategy_type');
+			//print strategy_type manual
+			latchAttributeLists.addLatch(dict.getPrnStrategyManualValueList(onFieldList),'strategy_type_manual');
 
 			//reject_unit
 			latchAttributeLists.addLatch(dict.getRejectUnitValueList(onFieldList),'reject_unit');

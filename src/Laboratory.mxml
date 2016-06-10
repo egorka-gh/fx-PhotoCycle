@@ -53,12 +53,11 @@
 			private function initApp():void{
 				bdPopup= new DatabasePopup();
 				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
-				bdPopup.chekConnect();//SQLMode.UPDATE,false);
+				bdPopup.chekConnect();
 			}
 			private function bdPopClose(e:PopUpEvent):void{
 				if(e.commit){
 					//connected
-					//fillContext();
 					initApp_ms();
 				}else{
 					//no connection
@@ -81,26 +80,13 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var workFolder:String;
 				var prtPath:String;
-				//var serverIP:String;
 				if (so.size>0){
 					workFolder = so.data.workFolder;
 					prtPath = so.data.prtPath;
-					//serverIP=so.data.serverIP;
 				}
-				//if(!workFolder) workFolder=appConf.wrk_path; //backward compatibility
 				Context.setAttribute('workFolder',workFolder);
 				if(!prtPath) prtPath=workFolder;
 				Context.setAttribute('prtPath',prtPath);
-				
-				/*				
-				Context.initSourceLists();
-				//init static maps 
-				//TODO REFACTOR !!!
-				OrderState.initStateMap();
-				Roll.initItemsMap();
-				
-				fillLabList();
-				*/
 
 				//lock screen
 				startPopup= new ModalPopUp();
@@ -128,10 +114,6 @@
 					labList=latch.lastDataAC;
 				}
 				if(!labList) return;
-				/*
-				var lDAO:LabDAO= new LabDAO;
-				labList=lDAO.findAll();
-				*/
 				
 				//detect lab ids
 				var oId:Object;

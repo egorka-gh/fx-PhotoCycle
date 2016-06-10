@@ -9,11 +9,18 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.print.LabGeneric;
+			import com.photodispatcher.print.PrintQueueManager;
 			
+			import spark.events.IndexChangeEvent;
 			
+			[Bindable]
+			private var printManager:PrintQueueManager;
+
 			public function init():void{
 				focusManager.setFocus(focusHolder);
 				Context.initAttributeLists();
+				printManager= PrintQueueManager.instance;
 			}
 			
 			private function onKey(e:KeyboardEvent):void{
@@ -24,7 +31,7 @@
 				}
 			}
 
-			private function detectState():void{
+			/* private function detectState():void{
 				switch(tbView.selectedIndex){
 					case 0:
 						currentState='labs';
@@ -46,12 +53,19 @@
 						break;
 				}
 				focusManager.setFocus(focusHolder);
-			}
+			} */
 
+			[Bindable]
+			private var currLab:LabGeneric;
+			
+			protected function lstLabs_changeHandler(event:IndexChangeEvent):void{
+				currLab=lstLabs.selectedItem as LabGeneric;
+			}
+			
 		]]>
 	</fx:Script>
 	
-	<s:states>
+	<!--<s:states>
 		<s:State name="labs"/>
 		<s:State name="labStops"/>
 		<s:State name="printQueue"/>
@@ -59,26 +73,62 @@
 		<s:State name="print"/>
 		<s:State name="ready"/>
 	</s:states>
-
+-->
 	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
-	
-	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
-		<mx:ArrayCollection>
-			<fx:String>Лаборатория</fx:String> 
-			<fx:String>Стопы</fx:String> 
-			<fx:String>Ожидают печать</fx:String> 
-			<fx:String>Постановка на печать</fx:String> 
-			<fx:String>Печать</fx:String> 
-			<fx:String>Напечатаны</fx:String> 
-		</mx:ArrayCollection>
-	</s:TabBar>
-	
-	<s:Group top="30" left="10" right="10" bottom="10">
-		<view:LabLabsState  width="100%" height="100%" includeIn="labs"/>
-		<view:LabStopMonitor width="100%" height="100%" includeIn="labStops"/>
-		<view:LabQueueMonitor width="100%" height="100%" includeIn="printQueue"/>
-		<view:LabPostMonitor width="100%" height="100%" includeIn="printPost"/>
-		<view:LabPrintMonitor width="100%" height="100%" includeIn="print"/>
-		<view:LabPrinted width="100%" height="100%" includeIn="ready"/>
-	</s:Group>
+	<s:HGroup gap="10" top="10" left="10" right="10" bottom="10">
+
+		<s:List id="lstLabs" width="150" height="100%"
+				dataProvider="{printManager.labs}" useVirtualLayout="false"
+				itemRenderer="com.photodispatcher.view.itemRenderer.LabItemRenderer"
+				change="lstLabs_changeHandler(event)"/>
+
+		<s:VGroup width="100%" height="100%" gap="5">
+			
+			<s:Label text="{currLab.name}" fontSize="16" fontWeight="bold" width="100%"/>
+			
+			<!--<s:TabBar id="tbView" height="20" change="{detectState()}">
+				<mx:ArrayCollection>
+					<fx:String>Лаборатория</fx:String> 
+					<fx:String>Стопы</fx:String> 
+					<fx:String>Ожидают печать</fx:String> 
+					<fx:String>Постановка на печать</fx:String> 
+					<fx:String>Печать</fx:String> 
+					<fx:String>Напечатаны</fx:String> 
+				</mx:ArrayCollection>
+			</s:TabBar>-->
+			
+			<s:TabBar id="tbView"  dataProvider="{vsSubInfo}"/>
+			<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+				<s:NavigatorContent label="Лаборатория" backgroundAlpha="0" width="100%" height="100%">
+					<view:LabLabsState currLab="{currLab}"  width="100%" height="100%"/>
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent label="Ожидают печать" backgroundAlpha="0" width="100%" height="100%">
+					<view:LabQueueMonitor currLab="{currLab}" width="100%" height="100%" />
+				</s:NavigatorContent>
+
+				<s:NavigatorContent label="Постановка на печать" backgroundAlpha="0" width="100%" height="100%">
+					<view:LabPostMonitor currLab="{currLab}" width="100%" height="100%" />
+				</s:NavigatorContent>
+
+				<s:NavigatorContent label="Очереди" backgroundAlpha="0" width="100%" height="100%">
+					<!--<view:LabLabsState currLab="{currLab}"  width="100%" height="100%"/>-->
+				</s:NavigatorContent>
+
+				<s:NavigatorContent label="Печать" backgroundAlpha="0" width="100%" height="100%">
+					<view:LabPrintMonitor width="100%" height="100%" />
+				</s:NavigatorContent>
+
+				<s:NavigatorContent label="Напечатаны" backgroundAlpha="0" width="100%" height="100%">
+					<!--<view:LabPrinted width="100%" height="100%" />-->
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent label="Стопы" backgroundAlpha="0" width="100%" height="100%">
+					<!--<view:LabStopMonitor width="100%" height="100%" />-->
+				</s:NavigatorContent>
+				
+			</mx:ViewStack>
+			
+		</s:VGroup>
+	</s:HGroup>
 </s:Group>
