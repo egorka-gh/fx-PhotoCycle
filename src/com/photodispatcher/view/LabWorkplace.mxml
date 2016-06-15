@@ -112,7 +112,7 @@
 				</s:NavigatorContent>
 
 				<s:NavigatorContent label="Очереди" backgroundAlpha="0" width="100%" height="100%">
-					<!--<view:LabLabsState currLab="{currLab}"  width="100%" height="100%"/>-->
+					<view:LabQueuesView currLab="{currLab}" width="100%" height="100%" />
 				</s:NavigatorContent>
 
 				<s:NavigatorContent label="Печать" backgroundAlpha="0" width="100%" height="100%">

@@ -22,12 +22,14 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
+	import com.photodispatcher.model.mysql.entities.messenger.CycleMessage;
 	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.printer.Printer;
+	import com.photodispatcher.service.messenger.MessengerGeneric;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.view.ModalPopUp;
@@ -341,6 +343,7 @@ package com.photodispatcher.print{
 				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF){
 					if(item.is_active && item.isTimeToStart()){
 						//start strategy
+						/*
 						var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 						sublatch= new DbLatch();
 						//latch.addEventListener(Event.COMPLETE,onStrategyLoad);
@@ -348,6 +351,7 @@ package com.photodispatcher.print{
 						sublatch.start();
 						if(!startlatch) startlatch=new DbLatch();
 						startlatch.join(sublatch);
+						*/
 					}
 				}else if(item.strategy_type==PrnStrategy.STRATEGY_PUSHER){
 					if(!prnPusher){
@@ -1468,6 +1472,64 @@ package com.photodispatcher.print{
 		}
 		public function clearLog():void{
 			logText='';
+		}
+
+		
+		public function deletePrnQueue(queueId:int):DbLatch{
+			if(!queueId) return null;
+			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onDeleteQueue);
+			latch.addLatch(svc.deleteQueue(queueId));
+			latch.start();
+			return latch;
+		}
+		private function onDeleteQueue(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onDeleteQueue);
+				trace('DeleteQueue result:'+latch.resultCode);
+			}
+			//send refresh
+			MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_PRNQUEUE,MessengerGeneric.CMD_PRNQUEUE_REFRESH));
+		}
+
+		private var createPrnQueueParams:PrintGroup;
+		public function createPrnQueue(params:PrintGroup):DbLatch{
+			if(!params || !params.prn_queue || !params.destination) return null;
+			createPrnQueueParams=params;
+			//get soft lock
+			var latch:DbLatch=OrderService.getPrnQueueLock();
+			latch.addEventListener(Event.COMPLETE,onPrnQueueLock);
+			latch.start();
+			return latch;
+		}
+		private function onPrnQueueLock(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			latch.removeEventListener(Event.COMPLETE,onPrnQueueLock);
+			if(!createPrnQueueParams) return;
+			if(latch.resultCode>0){
+				//ok
+				var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+				latch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onCreateQueue);
+				latch.addLatch(svc.createQueue(createPrnQueueParams.prn_queue, createPrnQueueParams.destination,createPrnQueueParams));
+				latch.start();
+			}else{
+				//already locked
+			}
+		}
+		private function onCreateQueue(evt:Event):void{
+			createPrnQueueParams=null;
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onCreateQueue);
+				trace('CreateQueue result:'+latch.resultCode);
+			}
+			//unlock
+			OrderService.releasePrnQueueLock();
+			//send refresh
+			MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_PRNQUEUE,MessengerGeneric.CMD_PRNQUEUE_REFRESH));
 		}
 
 		

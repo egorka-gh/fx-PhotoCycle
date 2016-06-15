@@ -63,6 +63,7 @@
 				if(e.commit){
 					//connected
 					//initApp_ms();
+					MessengerGeneric.connect();
 					fillContext();
 					//if(vMonitor) vMonitor.start();
 				}else{
@@ -191,7 +192,6 @@
 				Context.station.name='Cycle';
 				Context.station.setType(CycleStation.TYPE_CYCLE);
 				//Context.station.type_name='Cycle';
-				MessengerGeneric.connect();
 				
 				//detect local setings
 				Context.setAttribute('imThreads',0);

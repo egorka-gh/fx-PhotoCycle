@@ -2,6 +2,7 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.IMessageRecipient"
 		 creationComplete="{init()}">
 	
 	<fx:Script>
@@ -17,10 +18,13 @@
 			import com.photodispatcher.model.mysql.entities.PrnStrategy;
 			import com.photodispatcher.model.mysql.entities.Roll;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleMessage;
 			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.model.mysql.services.PrintGroupService;
+			import com.photodispatcher.model.mysql.services.PrnStrategyService;
 			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -49,16 +53,20 @@
 			private var queueList:ArrayCollection=new ArrayCollection();
 			[Bindable]
 			private var pgList:ArrayCollection=new ArrayCollection();
+			
+			[Bindable]
+			private var enableAdd:Boolean;
 		
 			[Bindable]
 			private var printManager:PrintQueueManager;
 			
-			public function init():void{
+			protected function init():void{
 				if(!printManager){
 					printManager=PrintQueueManager.instance;
 					//printManager.addEventListener(PrintEvent.MANAGER_ERROR_EVENT, onManagerError);
 				}
 				/* if(printManager && printManager.labs && printManager.labs.length>0) lstLabs.selectedItem=printManager.labs.getItemAt(0); */
+				MessengerGeneric.subscribe(MessengerGeneric.TOPIC_PRNQUEUE,this);
 				ddStrategy.dataProvider=Context.getAttribute('strategy_type_manualValueList') as ArrayCollection;
 			}
 
@@ -98,6 +106,8 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onLoadQueueByLab);
 					if(!latch.complite) return;
+					enableAdd=true;
+					startEnableTimer();
 					queueList=latch.lastDataAC;
 					if(queueList && queueList.length>0){
 						dgRolls.selectedItem=queueList.getItemAt(0);
@@ -111,6 +121,19 @@
 					}
 					applyFilter();
 				}
+			}
+			
+			private var enableTimer:Timer;
+			private function startEnableTimer():void{
+				if(!enableTimer){
+					enableTimer= new Timer(2*60*1000,1);
+					enableTimer.addEventListener(TimerEvent.TIMER,onEnableTimer);
+				}
+				enableTimer.reset();
+				enableTimer.start();
+			}
+			private function onEnableTimer(evt:TimerEvent):void{
+				enableAdd=false;
 			}
 			
 			private function filterPGList(item:Object):Boolean {
@@ -158,6 +181,33 @@
 				}
 			}
 			
+			protected function btCreateQueue_clickHandler(event:MouseEvent):void{
+				if(!currLab || strategyType==0 ) return;
+				var params:PrintGroup=dgRolls.selectedItem as PrintGroup;
+				if(!params) return;
+				params.prn_queue=strategyType;
+				params.destination=currLab.id;
+				params.book_type= tgBooksOnly.selected?1:0;
+				var latch:DbLatch=printManager.createPrnQueue(params);
+				latch.addEventListener(Event.COMPLETE,onPrnQueueLock);
+			}
+			private function onPrnQueueLock(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				latch.removeEventListener(Event.COMPLETE,onPrnQueueLock);
+				if(latch.resultCode>0){
+					//ok
+				}else{
+					//already locked
+					Alert.show('Создание очередей блокированно. Попробуйте позже.');
+				}
+			}
+
+			public function getMessage(message:CycleMessage):void{
+				if(message){
+					if(message.command==MessengerGeneric.CMD_PRNQUEUE_REFRESH) refresh();
+				}
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -176,13 +226,19 @@
 			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
 					  cornerRadius="4" width="22" height="22" baseline="4"/>
 		</s:HGroup>
-		<s:HGroup gap="10" width="100%" height="100%" verticalAlign="middle">
+		<s:HGroup gap="10" width="100%" height="100%">
 			<s:DataGrid id="dgRolls" width="100%" height="100%"
 						dataProvider="{queueList}" 
 						columns="{PrintGroup.printQueueStrategyColumns(strategyType)}"
 						selectionMode="singleRow" locale="ru_RU"
 						selectionChange="dgRolls_selectionChangeHandler(event)"/>
-			<s:Button id="btCreateQueue" label="Печать" enabled="false"/>
+			<s:VGroup height="100%" verticalAlign="middle">
+				<s:Button icon="assets/icon-refresh.gif" click="{refresh()}"
+						  visible="{!enableAdd &amp;&amp; strategyType!=0 &amp;&amp; currLab}"
+						  cornerRadius="4" width="100%" height="22" baseline="4"/>
+				<s:Button id="btCreateQueue" label="Печать" enabled="{enableAdd}"
+						  click="btCreateQueue_clickHandler(event)"/>
+			</s:VGroup>
 		</s:HGroup>
 		
 		<s:Spacer height="5"/>

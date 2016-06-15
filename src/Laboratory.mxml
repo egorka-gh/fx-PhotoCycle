@@ -21,6 +21,7 @@
 			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.print.LabGeneric;
 			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
@@ -67,6 +68,7 @@
 			}
 			
 			private function initApp_ms():void{
+				MessengerGeneric.connect();
 				fillContext();
 			}
 			

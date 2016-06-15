@@ -35,9 +35,12 @@ package com.photodispatcher.service.messenger{
 		public static const TOPIC_BROADCAST:String='/broadcast';
 		public static const TOPIC_STATUS:String='/status';
 		public static const TOPIC_PREPARATION:String='/preparation';
+		public static const TOPIC_PRNQUEUE:String='/prnqueue';
 
 		public static const CMD_PING:int=1;
 		public static const CMD_STATUS:int=2;
+		
+		public static const CMD_PRNQUEUE_REFRESH:int=3;
 		
 		[Bindable]
 		public static var stations:ArrayCollection=new ArrayCollection(); //CycleStation

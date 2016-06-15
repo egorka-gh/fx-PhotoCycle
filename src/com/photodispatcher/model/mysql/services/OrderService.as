@@ -137,6 +137,14 @@ package com.photodispatcher.model.mysql.services {
 			return releaseLock('load:'+orderid);
 		}
 
+		public static function getPrnQueueLock():DbLatch{
+			return getLock('prnQueue');
+		}
+		
+		public static function releasePrnQueueLock():DbLatch{
+			return releaseLock('prnQueue');
+		}
+
     }
     
 }
