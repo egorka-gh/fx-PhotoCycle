@@ -19,7 +19,7 @@
 
 			public function init():void{
 				focusManager.setFocus(focusHolder);
-				Context.initAttributeLists();
+				//Context.initAttributeLists();
 				printManager= PrintQueueManager.instance;
 			}
 			

@@ -2,7 +2,7 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx" 
-		 minWidth="400" minHeight="300">
+		 minWidth="400" minHeight="300" xmlns:view="com.photodispatcher.view.*">
 	
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
@@ -101,11 +101,14 @@
 							dataProvider="{printManager.strategiesAC}" locale="ru_RU"
 							columns="{PrnStrategy.gridColumns()}"/>
 				<s:HGroup gap="10">
-					<s:Button id="addStrategy" label="+" click="addStrategy_clickHandler(event)"/>
+					<s:Button id="addStrategy" label="+" click="addStrategy_clickHandler(event)" enabled="false"/>
 					<s:Button id="btSaveStrategy" label="Сохранить" click="btSaveStrategy_clickHandler(event)"/>
-					<s:Button id="btStartStrategy" label="Создать очереди" click="btStartStrategy_clickHandler(event)"/>
+					<!--<s:Button id="btStartStrategy" label="Создать очереди" click="btStartStrategy_clickHandler(event)"/>-->
 				</s:HGroup>
 			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="Лабы" backgroundAlpha="0" width="100%" height="100%">
+			<view:LabWorkplace  width="100%" height="100%"/>
 		</s:NavigatorContent>
 		<s:NavigatorContent label="Очереди" backgroundAlpha="0" width="100%" height="100%">
 			<s:VGroup gap="5" width="100%" height="100%">

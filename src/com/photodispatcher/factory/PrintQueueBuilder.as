@@ -13,6 +13,8 @@ package com.photodispatcher.factory{
 			// if(!prnQueue)
 			switch(prnQueue.strategy_type){
 				case PrnStrategy.STRATEGY_BYPARTPDF:
+				case PrnStrategy.STRATEGY_BYPART:
+				case PrnStrategy.STRATEGY_BYROLL:
 					return new PrintQueuePartPDF(printManager,prnQueue);
 					break;
 				default:

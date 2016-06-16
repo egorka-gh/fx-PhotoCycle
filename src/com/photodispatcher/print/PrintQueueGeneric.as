@@ -75,6 +75,10 @@ package com.photodispatcher.print{
 			return isActive() && canLockLab && lab!=0 && prnQueue.lab!=0 && prnQueue.lab==lab;
 		}
 
+		public function isStarted():Boolean{
+			return isActive() && prnQueue.started!=null;
+		}
+
 		/*
 		* 
 		*очередь не контролирует длинну очереди девайса на печать

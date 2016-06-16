@@ -53,13 +53,16 @@ package com.photodispatcher.print{
 						lab=null;
 					}
 				}
+				/*
 				if(lab){
 					//start prnQueue
 					var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 					var latch:DbLatch= new DbLatch();
 					latch.addLatch(svcs.startQueue(prnQueue.id, prnQueue.sub_queue, lab.id));
 					latch.start();
+					prnQueue.started=new Date();
 				}
+				*/
 			}else{
 				for each(dev in readyDevices){
 					if(dev.lab==prnQueue.lab){
@@ -73,6 +76,23 @@ package com.photodispatcher.print{
 				compliteFetch();
 				return false;
 			}
+			
+			if(!isStarted()){
+				//try to start queue
+				if(printManager.getLabStartedQueue(lab.id)==null){
+					//start prnQueue
+					var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+					var latch:DbLatch= new DbLatch();
+					latch.addLatch(svcs.startQueue(prnQueue.id, prnQueue.sub_queue, lab.id));
+					latch.start();
+					prnQueue.started=new Date();
+				}else{
+					//can't start
+					compliteFetch();
+					return false;
+				}
+			}
+			//started queue - proceed
 			
 			//TODO complite or proceed???
 			/*

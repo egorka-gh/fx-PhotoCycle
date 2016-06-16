@@ -5,6 +5,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.factory.LabBuilder;
 	import com.photodispatcher.factory.PrintQueueBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
+	import com.photodispatcher.interfaces.IMessageRecipient;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.AbstractEntity;
 	import com.photodispatcher.model.mysql.entities.Lab;
@@ -53,7 +54,7 @@ package com.photodispatcher.print{
 	
 	[Event(name="managerError", type="com.photodispatcher.event.PrintEvent")]
 	[Event(name="stopComplited", type="flash.events.Event")]
-	public class PrintQueueManager extends EventDispatcher{
+	public class PrintQueueManager extends EventDispatcher implements IMessageRecipient{
 		public static const DEV_COMP_QUEUE_LEN:int=1000;
 		public static const STRATEGY_REFRESH_INTERVAL:int = 10*60*1000;
 
@@ -88,8 +89,20 @@ package com.photodispatcher.print{
 		}
 
 
+		private var _isAutoPrintManager:Boolean=false;
 		[Bindable]
-		public var isAutoPrintManager:Boolean=false;
+		public function get isAutoPrintManager():Boolean{
+			return _isAutoPrintManager;
+		}
+		public function set isAutoPrintManager(value:Boolean):void{
+			_isAutoPrintManager = value;
+			if(_isAutoPrintManager){
+				MessengerGeneric.subscribe(MessengerGeneric.TOPIC_PRNQUEUE,this);
+			}else{
+				MessengerGeneric.unsubscribe(MessengerGeneric.TOPIC_PRNQUEUE,this);
+			}
+		}
+
 
 		//print queue (printgroups)
 		private var queue:Array;
@@ -368,7 +381,7 @@ package com.photodispatcher.print{
 								prnPusher.prnQueue.is_active=false;
 								prnPusher.queue=null;
 							}
-						}else if(item.isTimeToStart()){
+						}else if(item.isTimeToStart() && !item.isTimeToStop()){
 							prnPusher.prnQueue.is_active=true;
 							prnPusher.prnQueue.started=new Date();
 						}
@@ -502,6 +515,15 @@ package com.photodispatcher.print{
 				if(pq.isLabLocked(lab)) return true;
 			}
 			return false;
+		}
+
+		public function getLabStartedQueue(lab:int):PrintQueueGeneric{
+			if(!prnQueuesAC) return null;
+			var pq:PrintQueueGeneric;
+			for each(pq in prnQueuesAC){
+				if(pq.isLabLocked(lab) && pq.isStarted()) return pq;
+			}
+			return null;
 		}
 		
 		public function isPgLocked(pgId:String, priority:int):Boolean{
@@ -1532,6 +1554,13 @@ package com.photodispatcher.print{
 			MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_PRNQUEUE,MessengerGeneric.CMD_PRNQUEUE_REFRESH));
 		}
 
+		
+		public function getMessage(message:CycleMessage):void{
+			if(!isAutoPrintManager) return;
+			if(message){
+				if(message.command==MessengerGeneric.CMD_PRNQUEUE_REFRESH) loadPrnQueues();
+			}
+		}
 		
 	}
 }
