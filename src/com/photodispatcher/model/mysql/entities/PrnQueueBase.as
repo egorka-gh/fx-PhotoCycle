@@ -23,6 +23,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _has_sub:Boolean;
         private var _id:int;
         private var _is_active:Boolean;
+        private var _is_reprint:Boolean;
         private var _lab:int;
         private var _lab_name:String;
         private var _label:String;
@@ -67,6 +68,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get is_active():Boolean {
             return _is_active;
+        }
+
+        public function set is_reprint(value:Boolean):void {
+            _is_reprint = value;
+        }
+        public function get is_reprint():Boolean {
+            return _is_reprint;
         }
 
         public function set lab(value:int):void {
@@ -146,6 +154,7 @@ package com.photodispatcher.model.mysql.entities {
             _has_sub = input.readObject() as Boolean;
             _id = input.readObject() as int;
             _is_active = input.readObject() as Boolean;
+            _is_reprint = input.readObject() as Boolean;
             _lab = input.readObject() as int;
             _lab_name = input.readObject() as String;
             _label = input.readObject() as String;
@@ -165,6 +174,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_has_sub);
             output.writeObject(_id);
             output.writeObject(_is_active);
+            output.writeObject(_is_reprint);
             output.writeObject(_lab);
             output.writeObject(_lab_name);
             output.writeObject(_label);

@@ -6,6 +6,8 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import com.photodispatcher.util.GridUtil;
+	
 	import flash.globalization.DateTimeStyle;
 	
 	import mx.collections.ArrayList;
@@ -25,7 +27,8 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('label'); col.headerText='Наименование'; result.push(col);
 			col= new GridColumn('sub_queue'); col.headerText='№'; col.width=50; result.push(col);
 			//			col= new GridColumn('is_active'); col.headerText='Активна'; col.width=50; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
-			col= new GridColumn('is_active'); col.headerText='Активна'; col.width=50; result.push(col);
+			col= new GridColumn('is_active'); col.headerText='Активна'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
 			col= new GridColumn('priority'); col.headerText='Приоритет'; col.width=50; result.push(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT;
 			col= new GridColumn('created'); col.headerText='Создана'; col.formatter=fmt;  col.width=100; result.push(col);
