@@ -129,16 +129,16 @@ package com.photodispatcher.service.messenger{
 			if(forceDisconnect) return;
 			trace('ProducerDisconnect');
 			//destroy & reconnect
-			destroyProducer();
 			destroyConsumers();
+			destroyProducer();
 			reconnect();
 		}
 		private static function onProducerChannelFault(event:ChannelFaultEvent):void{
 			if(forceDisconnect) return;
 			trace('ProducerChannelFault '+ event.faultDetail);
 			//destroy & reconnect
-			destroyProducer();
 			destroyConsumers();
+			destroyProducer();
 			reconnect();
 		}
 		private static function onProducerMessageFault(event:MessageFaultEvent):void{
@@ -148,14 +148,14 @@ package com.photodispatcher.service.messenger{
 				Alert.show(event.faultString +'. '+event.message);
 			}else{
 				//destroy & reconnect
-				destroyProducer();
 				destroyConsumers();
+				destroyProducer();
 				reconnect();
 			}
 		}
 		private static function destroyProducer():void{
 			if(producer){
-				if(producer.connected) producer.disconnect();
+				//if(producer.connected) producer.disconnect();
 				producer.removeEventListener(ChannelEvent.CONNECT, onProducerConnect);
 				producer.removeEventListener(ChannelEvent.DISCONNECT, onProducerDisconnect);
 				producer.removeEventListener(ChannelFaultEvent.FAULT, onProducerChannelFault);
@@ -213,9 +213,9 @@ package com.photodispatcher.service.messenger{
 			if(connected) sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_OFF,'Выход'));
 			forceDisconnect=true;
 			//stop listen & destroy all
-			destroyProducer();
 			recipientMap=null;
 			destroyConsumers();
+			destroyProducer();
 			forceDisconnect=false;
 		}
 
@@ -371,7 +371,7 @@ package com.photodispatcher.service.messenger{
 				}
 				if(consumer.connected){
 					consumer.unsubscribe();
-					consumer.disconnect();
+					//consumer.disconnect();
 				}
 			}
 		}

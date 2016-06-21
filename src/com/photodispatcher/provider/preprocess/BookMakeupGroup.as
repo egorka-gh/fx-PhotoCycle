@@ -61,7 +61,7 @@ package com.photodispatcher.provider.preprocess{
 			sequences=[];
 			totalCommands=0;
 			var commands:Array=[];
-			//finalCommands=[];
+			printGroup.sheets_per_file=1;
 
 			if(state==STATE_ERR) return;
 			if (printGroup.is_pdf) return;
@@ -76,7 +76,8 @@ package com.photodispatcher.provider.preprocess{
 			var newFile:PrintGroupFile;
 			var command:IMCommand;
 			var outName:String;
-			
+			var prints:int=0;
+
 			files=printGroup.bookFiles;
 			if(!files || files.length==0){
 				state=STATE_ERR;
@@ -100,16 +101,20 @@ package com.photodispatcher.provider.preprocess{
 					err_msg='Не верный состав книги. Не определен файл №'+(i+1).toString();
 					return;
 				}
-				command=createCommand(it,folder);
-				//save
-				outName= PrintGroup.SUBFOLDER_PRINT+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
-				newFile=it.clone();
-				newFile.file_name=outName;
-				printGroup.addFile(newFile);
-				//if(folder!=prtFolder) outName=prtFolder+File.separator+outName;
-				command.add(outPath(outName));
-				commands.push(command);
+				if(!reprintMode || it.reprint){
+					command=createCommand(it,folder);
+					//save
+					outName= PrintGroup.SUBFOLDER_PRINT+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
+					newFile=it.clone();
+					newFile.file_name=outName;
+					printGroup.addFile(newFile);
+					//if(folder!=prtFolder) outName=prtFolder+File.separator+outName;
+					command.add(outPath(outName));
+					commands.push(command);
+					prints++;
+				}
 			}
+			if(reprintMode) printGroup.prints=prints;
 			
 			totalCommands+=commands.length;
 			sequences.push(commands);

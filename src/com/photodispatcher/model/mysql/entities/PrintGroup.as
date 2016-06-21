@@ -153,8 +153,10 @@ package com.photodispatcher.model.mysql.entities {
 			var col:GridColumn;
 			var fmt:NumberFormatter=new NumberFormatter();
 			fmt.fractionalDigits=1;
+			var dFmt:DateTimeFormatter=new DateTimeFormatter(); dFmt.dateStyle=dFmt.timeStyle=DateTimeStyle.SHORT; 
 			
 			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
+			col= new GridColumn('state_date'); col.headerText='Дата гп'; col.formatter=dFmt;  col.width=110; result.push(col);
 			
 			if(strategy==PrnStrategy.STRATEGY_BYPART){
 				col= new GridColumn('alias'); col.headerText='Алиас'; result.push(col);

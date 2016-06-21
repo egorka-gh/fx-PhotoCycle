@@ -157,11 +157,12 @@ package com.photodispatcher.provider.preprocess{
 						}else{
 							mg=new PDFsimpleMakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
 						}
-						mg.reprintMode=reprintMode;
-					}else if(!reprintMode){
+						//mg.reprintMode=reprintMode;
+					}else{
 						mg=new BookMakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
 					}
 					if(mg){
+						mg.reprintMode=reprintMode;
 						try{
 							mg.createCommands();
 						}catch(err:Error) {

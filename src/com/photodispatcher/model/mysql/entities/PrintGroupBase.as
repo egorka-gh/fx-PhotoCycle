@@ -37,8 +37,10 @@ package com.photodispatcher.model.mysql.entities {
         private var _height:int;
         private var _id:String;
         private var _is_duplex:Boolean;
+        private var _is_finalizeprint:Boolean;
         private var _is_pdf:Boolean;
         private var _is_reprint:Boolean;
+        private var _is_revers:Boolean;
         private var _lab_name:String;
         private var _order_folder:String;
         private var _order_id:String;
@@ -50,6 +52,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _prn_queue:int;
         private var _reprint_id:String;
         private var _sheet_num:int;
+        private var _sheets_per_file:int;
         private var _source_id:int;
         private var _source_name:String;
         private var _state:int;
@@ -191,6 +194,13 @@ package com.photodispatcher.model.mysql.entities {
             return _is_duplex;
         }
 
+        public function set is_finalizeprint(value:Boolean):void {
+            _is_finalizeprint = value;
+        }
+        public function get is_finalizeprint():Boolean {
+            return _is_finalizeprint;
+        }
+
         public function set is_pdf(value:Boolean):void {
             _is_pdf = value;
         }
@@ -203,6 +213,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get is_reprint():Boolean {
             return _is_reprint;
+        }
+
+        public function set is_revers(value:Boolean):void {
+            _is_revers = value;
+        }
+        public function get is_revers():Boolean {
+            return _is_revers;
         }
 
         public function set lab_name(value:String):void {
@@ -282,6 +299,13 @@ package com.photodispatcher.model.mysql.entities {
             return _sheet_num;
         }
 
+        public function set sheets_per_file(value:int):void {
+            _sheets_per_file = value;
+        }
+        public function get sheets_per_file():int {
+            return _sheets_per_file;
+        }
+
         public function set source_id(value:int):void {
             _source_id = value;
         }
@@ -352,8 +376,10 @@ package com.photodispatcher.model.mysql.entities {
             _height = input.readObject() as int;
             _id = input.readObject() as String;
             _is_duplex = input.readObject() as Boolean;
+            _is_finalizeprint = input.readObject() as Boolean;
             _is_pdf = input.readObject() as Boolean;
             _is_reprint = input.readObject() as Boolean;
+            _is_revers = input.readObject() as Boolean;
             _lab_name = input.readObject() as String;
             _order_folder = input.readObject() as String;
             _order_id = input.readObject() as String;
@@ -365,6 +391,7 @@ package com.photodispatcher.model.mysql.entities {
             _prn_queue = input.readObject() as int;
             _reprint_id = input.readObject() as String;
             _sheet_num = input.readObject() as int;
+            _sheets_per_file = input.readObject() as int;
             _source_id = input.readObject() as int;
             _source_name = input.readObject() as String;
             _state = input.readObject() as int;
@@ -395,8 +422,10 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_height);
             output.writeObject(_id);
             output.writeObject(_is_duplex);
+            output.writeObject(_is_finalizeprint);
             output.writeObject(_is_pdf);
             output.writeObject(_is_reprint);
+            output.writeObject(_is_revers);
             output.writeObject(_lab_name);
             output.writeObject(_order_folder);
             output.writeObject(_order_id);
@@ -408,6 +437,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_prn_queue);
             output.writeObject(_reprint_id);
             output.writeObject(_sheet_num);
+            output.writeObject(_sheets_per_file);
             output.writeObject(_source_id);
             output.writeObject(_source_name);
             output.writeObject(_state);

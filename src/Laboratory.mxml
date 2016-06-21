@@ -171,6 +171,7 @@
 			
 			protected function button3_clickHandler(event:MouseEvent):void{
 				MessengerGeneric.disconnect();
+				
 				FlexGlobals.topLevelApplication.exit();
 			}
 

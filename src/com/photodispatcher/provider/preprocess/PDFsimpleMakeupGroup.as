@@ -159,6 +159,9 @@ package com.photodispatcher.provider.preprocess{
 			
 			//apply alt revers
 			var revers:Boolean=printGroup.bookTemplate.getRevers(printGroup);
+			printGroup.is_revers=revers;
+			printGroup.sheets_per_file=pageLimit;
+			
 			commands=[];
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
 				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';

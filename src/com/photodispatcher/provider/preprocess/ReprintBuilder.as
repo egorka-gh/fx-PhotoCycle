@@ -3,6 +3,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.event.OrderBuildProgressEvent;
 	import com.photodispatcher.event.OrderPreprocessEvent;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
@@ -111,9 +112,12 @@ package com.photodispatcher.provider.preprocess{
 						}
 					}
 					
-					if(pg.is_pdf){
+					//if(pg.is_pdf){
+					if(pg.book_type==BookSynonym.BOOK_TYPE_BOOK || pg.book_type==BookSynonym.BOOK_TYPE_JOURNAL || pg.book_type==BookSynonym.BOOK_TYPE_LEATHER){
+						//books
 						pdfPG.push(pg);
 					}else{
+						//reprint photo & other
 						pg.state=OrderState.PRN_WAITE;
 						//get files
 						files=pg.files;
@@ -131,6 +135,7 @@ package com.photodispatcher.provider.preprocess{
 						pg.sheet_num=pg.files.length;
 						//simplePG.push(pg);
 					}
+					
 				}
 			}
 
@@ -140,7 +145,7 @@ package com.photodispatcher.provider.preprocess{
 				return;
 			}
 
-			//build pdfs
+			//build reprints
 			preprocessTask=new PreprocessTask(lastOrder,source.getWrkFolder(),source.getPrtFolder(),true,true);
 			preprocessTask.addEventListener(OrderPreprocessEvent.ORDER_PREPROCESSED_EVENT, onOrderResize);
 			preprocessTask.addEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);

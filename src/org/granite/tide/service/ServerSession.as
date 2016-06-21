@@ -43,7 +43,6 @@ package org.granite.tide.service {
     import mx.logging.Log;
     import mx.messaging.Channel;
     import mx.messaging.ChannelSet;
-    import mx.messaging.ChannelSet;
     import mx.messaging.events.ChannelFaultEvent;
     import mx.messaging.events.MessageEvent;
     import mx.messaging.messages.ErrorMessage;
