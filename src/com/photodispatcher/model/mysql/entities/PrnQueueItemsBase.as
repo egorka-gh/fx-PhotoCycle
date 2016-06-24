@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
 
         private var _print_group:String;
         private var _prn_queue:int;
+        private var _seq:int;
         private var _sub_queue:int;
 
         public function set print_group(value:String):void {
@@ -35,6 +36,13 @@ package com.photodispatcher.model.mysql.entities {
             return _prn_queue;
         }
 
+        public function set seq(value:int):void {
+            _seq = value;
+        }
+        public function get seq():int {
+            return _seq;
+        }
+
         public function set sub_queue(value:int):void {
             _sub_queue = value;
         }
@@ -46,6 +54,7 @@ package com.photodispatcher.model.mysql.entities {
             super.readExternal(input);
             _print_group = input.readObject() as String;
             _prn_queue = input.readObject() as int;
+            _seq = input.readObject() as int;
             _sub_queue = input.readObject() as int;
         }
 
@@ -53,6 +62,7 @@ package com.photodispatcher.model.mysql.entities {
             super.writeExternal(output);
             output.writeObject(_print_group);
             output.writeObject(_prn_queue);
+            output.writeObject(_seq);
             output.writeObject(_sub_queue);
         }
     }

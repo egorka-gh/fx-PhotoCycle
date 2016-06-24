@@ -37,11 +37,12 @@ package com.photodispatcher.model.mysql.entities {
         private var _height:int;
         private var _id:String;
         private var _is_duplex:Boolean;
-        private var _is_finalizeprint:Boolean;
         private var _is_pdf:Boolean;
         private var _is_reprint:Boolean;
         private var _is_revers:Boolean;
         private var _lab_name:String;
+        private var _max_sheet:int;
+        private var _min_sheet:int;
         private var _order_folder:String;
         private var _order_id:String;
         private var _paper:int;
@@ -194,13 +195,6 @@ package com.photodispatcher.model.mysql.entities {
             return _is_duplex;
         }
 
-        public function set is_finalizeprint(value:Boolean):void {
-            _is_finalizeprint = value;
-        }
-        public function get is_finalizeprint():Boolean {
-            return _is_finalizeprint;
-        }
-
         public function set is_pdf(value:Boolean):void {
             _is_pdf = value;
         }
@@ -227,6 +221,20 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get lab_name():String {
             return _lab_name;
+        }
+
+        public function set max_sheet(value:int):void {
+            _max_sheet = value;
+        }
+        public function get max_sheet():int {
+            return _max_sheet;
+        }
+
+        public function set min_sheet(value:int):void {
+            _min_sheet = value;
+        }
+        public function get min_sheet():int {
+            return _min_sheet;
         }
 
         public function set order_folder(value:String):void {
@@ -376,11 +384,12 @@ package com.photodispatcher.model.mysql.entities {
             _height = input.readObject() as int;
             _id = input.readObject() as String;
             _is_duplex = input.readObject() as Boolean;
-            _is_finalizeprint = input.readObject() as Boolean;
             _is_pdf = input.readObject() as Boolean;
             _is_reprint = input.readObject() as Boolean;
             _is_revers = input.readObject() as Boolean;
             _lab_name = input.readObject() as String;
+            _max_sheet = input.readObject() as int;
+            _min_sheet = input.readObject() as int;
             _order_folder = input.readObject() as String;
             _order_id = input.readObject() as String;
             _paper = input.readObject() as int;
@@ -422,11 +431,12 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_height);
             output.writeObject(_id);
             output.writeObject(_is_duplex);
-            output.writeObject(_is_finalizeprint);
             output.writeObject(_is_pdf);
             output.writeObject(_is_reprint);
             output.writeObject(_is_revers);
             output.writeObject(_lab_name);
+            output.writeObject(_max_sheet);
+            output.writeObject(_min_sheet);
             output.writeObject(_order_folder);
             output.writeObject(_order_id);
             output.writeObject(_paper);

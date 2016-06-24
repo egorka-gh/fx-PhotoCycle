@@ -32,7 +32,7 @@
 			import spark.events.IndexChangeEvent;
 			
 			[Bindable]
-			private var pgList:ArrayCollection=new ArrayCollection();
+			private var pgList:ArrayCollection;
 
 			private var _currLab:LabGeneric;
 			[Bindable]
@@ -41,11 +41,21 @@
 			}
 			public function set currLab(value:LabGeneric):void{
 				_currLab = value;
+				/*if(_currLab){
+					debugStr='Lab id:'+_currLab.id;
+				}else{
+					debugStr='Lab null';
+				}*/
 				refresh();
 			}
 
 			[Bindable]
 			private var printManager:PrintQueueManager;
+			
+			/*
+			[Bindable]
+			private var debugStr:String;
+			*/
 			
 			public function init():void{
 				if(!printManager){
@@ -56,11 +66,16 @@
 
 			public function refresh():void{
 				if(!currLab) return;
-				
+				//debugStr='refresh';
+				if(dgPGroups) dgPGroups.selectedItem=null;
+				pgList=null;
 				var svc2:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
 				var latch2:DbLatch=new DbLatch();
 				latch2.addEventListener(Event.COMPLETE,onLoadPgs);
-				latch2.addLatch(svc2.loadByState(OrderState.PRN_QUEUE,OrderState.PRN_PRINT));
+				
+				//latch2.addLatch(svc2.loadByState(OrderState.PRN_QUEUE,OrderState.PRN_PRINT+1));
+				latch2.addLatch(svc2.loadInPrintPost(new ArrayCollection([currLab.id])));
+				
 				latch2.start();
 
 			}
@@ -69,6 +84,7 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onLoadPgs);
 					if(!latch.complite) return;
+					//debugStr='refresh complited '+(currLab?currLab.id.toString():'no lab');
 					pgList=latch.lastDataAC;
 					pgList.filterFunction=filterPGList;
 				}
@@ -84,7 +100,7 @@
 			}
 
 			private function applyFilter():void{
-				pgList.refresh();
+				if(pgList) pgList.refresh();
 			}
 
 			private var gridMenu:GridContexMenu;
@@ -119,6 +135,8 @@
 	<s:VGroup gap="5" width="100%" height="100%">
 		<s:HGroup width="100%">
 			<s:Label text="Группы печати"/>
+			<!--<s:Spacer width="10"/>
+			<s:Label text="{debugStr}"/>-->
 			<s:Spacer width="100%"/>
 			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
 					  cornerRadius="4" width="22" height="22" baseline="4"/>

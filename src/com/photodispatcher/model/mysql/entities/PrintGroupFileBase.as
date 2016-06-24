@@ -26,6 +26,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _page_num:int;
         private var _path:String;
         private var _print_group:String;
+        private var _printed:Boolean;
         private var _prt_qty:int;
         private var _tech_date:String;
         private var _tech_point:int;
@@ -96,6 +97,13 @@ package com.photodispatcher.model.mysql.entities {
             return _print_group;
         }
 
+        public function set printed(value:Boolean):void {
+            _printed = value;
+        }
+        public function get printed():Boolean {
+            return _printed;
+        }
+
         public function set prt_qty(value:int):void {
             _prt_qty = value;
         }
@@ -149,6 +157,7 @@ package com.photodispatcher.model.mysql.entities {
             _page_num = input.readObject() as int;
             _path = input.readObject() as String;
             _print_group = input.readObject() as String;
+            _printed = input.readObject() as Boolean;
             _prt_qty = input.readObject() as int;
             _tech_date = input.readObject() as String;
             _tech_point = input.readObject() as int;
@@ -168,6 +177,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_page_num);
             output.writeObject(_path);
             output.writeObject(_print_group);
+            output.writeObject(_printed);
             output.writeObject(_prt_qty);
             output.writeObject(_tech_date);
             output.writeObject(_tech_point);

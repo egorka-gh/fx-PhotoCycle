@@ -60,7 +60,8 @@
 		
 			public function refresh():void{
 				if(!currLab) return;
-
+				if(dgQueueComplited) dgQueueComplited.selectedItem=null;
+				
 				queueList=null;
 
 				var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
