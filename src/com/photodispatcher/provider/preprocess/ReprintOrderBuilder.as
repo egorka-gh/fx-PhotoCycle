@@ -4,6 +4,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.event.OrderBuildProgressEvent;
 	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
@@ -86,11 +87,14 @@ package com.photodispatcher.provider.preprocess{
 				return;
 			}
 			//var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			
+			lastOrder.printGroups=null;
 			var latch:DbLatch=new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onOrderLoad);
 			latch.addLatch(orderService.loadOrderFull(orderId));
 			latch.start();
 			
+			rejects=null;
 			var rlatch:DbLatch=new DbLatch();
 			rlatch.addEventListener(Event.COMPLETE,onRejectsLoad);
 			rlatch.addLatch(rejectService.loadByOrder(orderId,OrderState.REPRINT_WAITE));
@@ -136,7 +140,7 @@ package com.photodispatcher.provider.preprocess{
 				releaseComplite();
 				return;
 			}
-			if(!lastOrder.printGroups || lastOrder.printGroups.length==0){
+			if(!lastOrder || !lastOrder.printGroups || lastOrder.printGroups.length==0){
 				if(logStates) StateLog.log(lastOrder.state,lastOrder.id,'','Нет групп печати (1)');
 				releaseComplite();
 				return;
@@ -213,7 +217,8 @@ package com.photodispatcher.provider.preprocess{
 				if(pg && !pg.is_reprint && pg.files && pg.files.length>0){
 					newPg=pg.clone();
 					newPg.id=pg.id;
-					if(newPg.is_pdf){
+					//if(newPg.is_pdf){
+					if(pg.book_type==BookSynonym.BOOK_TYPE_BOOK || pg.book_type==BookSynonym.BOOK_TYPE_JOURNAL || pg.book_type==BookSynonym.BOOK_TYPE_LEATHER){
 						//recreate files
 						if(!builder.recreateFromFilesystem(lastOrder,newPg)){
 							releaseWithError(OrderState.ERR_FILE_SYSTEM,'Ошибка заполнения группы печати '+pg.id);
@@ -222,15 +227,22 @@ package com.photodispatcher.provider.preprocess{
 						pgPath=orderWrkPath+File.separator+newPg.path;
 						//extend path
 						for each(pgf in newPg.files){
-							if(pgf) pgf.fullPath=pgPath+File.separator+pgf.file_name;
+							if(pgf) pgf.fullPath=pgPath+File.separator+pgf.file_name;//not needed
 						}
 					}else{
+						/*
+						newPg.bookTemplate=BookSynonym.getTemplateByPg(pg);
+						if(!newPg.bookTemplate){
+							releaseWithError(OrderState.ERR_PREPROCESS,'Не определен шаблон для '+ pg.id);
+							return false;
+						}
+						*/
 						pgPath=orderPath+File.separator+newPg.path;
 						//clone files
 						for each(pgf in pg.files){
 							if(pgf){
 								newPgf=pgf.clone();
-								if(pgPath) newPgf.fullPath=pgPath+File.separator+pgf.file_name;
+								if(pgPath) newPgf.fullPath=pgPath+File.separator+pgf.file_name;//not needed
 								newPg.addFile(newPgf);
 							}
 						}

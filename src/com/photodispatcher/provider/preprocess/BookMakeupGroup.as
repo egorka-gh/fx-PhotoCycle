@@ -105,6 +105,9 @@ package com.photodispatcher.provider.preprocess{
 					command=createCommand(it,folder);
 					//save
 					outName= PrintGroup.SUBFOLDER_PRINT+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
+					if(reprintMode){
+						outName= PrintGroup.SUBFOLDER_PRINT+File.separator+'r'+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
+					}
 					newFile=it.clone();
 					newFile.file_name=outName;
 					printGroup.addFile(newFile);

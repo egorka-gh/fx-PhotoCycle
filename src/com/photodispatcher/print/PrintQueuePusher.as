@@ -129,9 +129,11 @@ package com.photodispatcher.print{
 			var devCandidat:LabDevice;
 			var pg:PrintGroup;
 			var dev:LabDevice;
+			var lab:LabGeneric;
 			var readyDevices:Array = [];
 			for each(dev in devs){
-				if(!printManager.isLabLocked(dev.lab)){
+				lab = printManager.getLab(dev.lab);
+				if(lab && lab.pusher_enabled && !printManager.isLabLocked(dev.lab)){
 					readyDevices.push(dev);
 				}
 			}

@@ -135,6 +135,9 @@
 				<s:FormItem label="Автопечать">
 					<s:CheckBox selected="@{currentItem.is_managed}" change="{currentItem.changed=true}"/>
 				</s:FormItem> 
+				<s:FormItem label="Пихалка" >
+					<s:CheckBox selected="@{currentItem.pusher_enabled}" change="{currentItem.changed=true}"/>
+				</s:FormItem>
 				<s:FormItem label="Очередь печати (мин)" >
 					<s:NumericStepper value="@{currentItem.queue_limit}" minimum="0" maximum="240" stepSize="10"
 									  enabled="{currentItem.is_managed}" change="{currentItem.changed=true}"/>

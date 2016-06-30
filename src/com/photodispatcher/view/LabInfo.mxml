@@ -74,6 +74,11 @@
 			</s:HGroup>
 
 			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Пихалка" width="{lbLong.width}"/>
+				<s:CheckBox selected="@{lab.pusher_enabled}" enabled="false" change="{lab.changed=true}"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline">
 				<s:Label id="lbLong" text="Ограничение очереди (мин)"/>
 				<s:TextInput text="{lab.queue_limit.toString()}"  editable="false" width="200"/>
 			</s:HGroup>

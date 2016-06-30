@@ -322,8 +322,8 @@
 	</fx:Script>
 	
 	<fx:Declarations>
-		<ftp:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true"/>
-		<preprocess:PreprocessManager id="preprocessManager" autoLoad="true"/>
+		<ftp:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true" />
+		<preprocess:PreprocessManager id="preprocessManager" autoLoad="true" />
 	</fx:Declarations>
 	
 	<s:states>
@@ -384,9 +384,9 @@
 				<s:Label text="Загрузка     Производство: {productionName}" fontWeight="bold"/>
 				<s:HGroup gap="10">
 					<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить загрузку" 
-							  enabled="{!downloadManager.isStarted}" click="{downloadManager.isStarted=true}"/>
+							  enabled="{!downloadManager.isStarted}" click="{downloadManager.isStarted=true; sendSateMessage();}"/>
 					<s:Button id="btFtpStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить загрузку"
-							  click="{downloadManager.isStarted=false}"/>
+							  click="{downloadManager.isStarted=false; sendSateMessage();}"/>
 				</s:HGroup>
 				<s:Scroller width="100%" height="100%">
 					<s:DataGroup width="100%" height="100%" dataProvider="{downloadManager.servicesList}" 
@@ -404,9 +404,9 @@
 				<s:Label text="Подготовка     Очередь: {preprocessManager.queue.length}" fontWeight="bold"/>
 				<s:HGroup gap="10">
 					<s:Button id="btBuilderStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить подготовку" 
-							  enabled="{!preprocessManager.isStarted}" click="{preprocessManager.isStarted=true}"/>
+							  enabled="{!preprocessManager.isStarted}" click="{preprocessManager.isStarted=true; sendSateMessage();}"/>
 					<s:Button id="btBuilderStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить подготовку"
-							  enabled="{preprocessManager.isStarted}" click="{preprocessManager.isStarted=false}"/>
+							  enabled="{preprocessManager.isStarted}" click="{preprocessManager.isStarted=false; sendSateMessage();}"/>
 				</s:HGroup>
 				
 				<s:Spacer height="15"/>

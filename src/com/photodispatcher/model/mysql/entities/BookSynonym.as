@@ -162,7 +162,16 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			*/
 		}
-		
+
+		public static function getTemplateByPg(pg:PrintGroup):BookPgTemplate{
+			if(!pg) return null;
+			var alias:BookSynonym = getBookSynonymByPg(pg);
+			var pgTemplate:BookPgTemplate;
+			if(alias) pgTemplate= alias.getBookPgTemplateByPart(pg.book_part);
+
+			return pgTemplate;
+		}
+
 		public static function guess(paper:int,coverSize:Point,blockSise:Point,sliceSise:Point):BookSynonym{
 			if(!paper || !blockSise) return null;
 			if(!synonymMap){

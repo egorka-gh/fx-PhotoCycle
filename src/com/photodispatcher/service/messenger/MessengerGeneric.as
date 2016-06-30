@@ -92,16 +92,18 @@ package com.photodispatcher.service.messenger{
 			//trun off messaging 
 			//return;
 			
-			isConnecting=true;
+			//isConnecting=true;
 			trace('Messenger Producer create');
-
-			destroyProducer();
-			producer=Spring.getInstance().mainServerSession.getProducer(DESTINATION,topic,ChannelType.LONG_POLLING);
-			//producer= new Producer();
-			producer.addEventListener(ChannelEvent.CONNECT, onProducerConnect);
-			producer.addEventListener(ChannelEvent.DISCONNECT, onProducerDisconnect);
-			producer.addEventListener(ChannelFaultEvent.FAULT, onProducerChannelFault);
-			producer.addEventListener(MessageFaultEvent.FAULT, onProducerMessageFault);
+			
+			if(!producer){
+				//destroyProducer();
+				producer=Spring.getInstance().mainServerSession.getProducer(DESTINATION,topic,ChannelType.LONG_POLLING);
+				//producer= new Producer();
+				producer.addEventListener(ChannelEvent.CONNECT, onProducerConnect);
+				producer.addEventListener(ChannelEvent.DISCONNECT, onProducerDisconnect);
+				producer.addEventListener(ChannelFaultEvent.FAULT, onProducerChannelFault);
+				producer.addEventListener(MessageFaultEvent.FAULT, onProducerMessageFault);
+			}
 			/*
 			producer.destination = DESTINATION;
 			producer.channelSet=new ChannelSet();
@@ -111,6 +113,7 @@ package com.photodispatcher.service.messenger{
 			sendPing();
 		}
 		private static function onProducerConnect(event:ChannelEvent):void{
+			trace('ProducerConnect');
 			isConnecting=false;
 			//TODO resubscribe recipients
 			var topic:String;
@@ -131,7 +134,7 @@ package com.photodispatcher.service.messenger{
 			//destroy & reconnect
 			destroyConsumers();
 			destroyProducer();
-			reconnect();
+			//reconnect();
 		}
 		private static function onProducerChannelFault(event:ChannelFaultEvent):void{
 			if(forceDisconnect) return;
@@ -139,7 +142,7 @@ package com.photodispatcher.service.messenger{
 			//destroy & reconnect
 			destroyConsumers();
 			destroyProducer();
-			reconnect();
+			//reconnect();
 		}
 		private static function onProducerMessageFault(event:MessageFaultEvent):void{
 			if(forceDisconnect) return;
@@ -150,10 +153,11 @@ package com.photodispatcher.service.messenger{
 				//destroy & reconnect
 				destroyConsumers();
 				destroyProducer();
-				reconnect();
+				//reconnect();
 			}
 		}
 		private static function destroyProducer():void{
+			/*
 			if(producer){
 				//if(producer.connected) producer.disconnect();
 				producer.removeEventListener(ChannelEvent.CONNECT, onProducerConnect);
@@ -162,11 +166,14 @@ package com.photodispatcher.service.messenger{
 				producer.removeEventListener(MessageFaultEvent.FAULT, onProducerMessageFault);
 				producer=null;
 			}
+			*/
 		}
 		
+		/*
 		private static var timer:Timer; 
 		private static function reconnect():void{
 			trace('Messenger Producer reconnect statrt timer');
+			return;
 			if(timer){
 				timer.reset();
 				timer.removeEventListener(TimerEvent.TIMER, onReconnectTimer);
@@ -182,6 +189,7 @@ package com.photodispatcher.service.messenger{
 			}
 			createProducer();
 		}
+		*/
 
 		private static var pingTimer:Timer; 
 		private static function startPingTimer():void{
@@ -353,6 +361,7 @@ package com.photodispatcher.service.messenger{
 		}
 		
 		private static function destroyConsumers():void{
+			if(!consumerMap) return;
 			var topic:String;
 			var topics:Array=[];
 			for (topic in consumerMap) topics.push(topic);

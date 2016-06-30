@@ -8,7 +8,9 @@
 package com.photodispatcher.model.mysql.services {
 
     import com.photodispatcher.model.mysql.entities.DmlResult;
+    import com.photodispatcher.model.mysql.entities.PrintGroup;
     import com.photodispatcher.model.mysql.entities.SelectResult;
+    import com.photodispatcher.model.mysql.entities.SqlResult;
     import flash.utils.flash_proxy;
     import mx.collections.ListCollectionView;
     import mx.rpc.AsyncToken;
@@ -142,6 +144,28 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadReady4Print", arg0, arg1, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadReady4Print", arg0, arg1) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function printComplite(arg0:PrintGroup, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("printComplite", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("printComplite", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("printComplite", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function printComplitePrepare(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("printComplitePrepare", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("printComplitePrepare", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("printComplitePrepare", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }

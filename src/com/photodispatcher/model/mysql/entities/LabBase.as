@@ -28,6 +28,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _name:String;
         private var _post_delay:Number;
         private var _profiles:ListCollectionView;
+        private var _pusher_enabled:Boolean;
         private var _queue_limit:int;
         private var _soft_speed:Number;
         private var _src_type:int;
@@ -96,6 +97,13 @@ package com.photodispatcher.model.mysql.entities {
             return _profiles;
         }
 
+        public function set pusher_enabled(value:Boolean):void {
+            _pusher_enabled = value;
+        }
+        public function get pusher_enabled():Boolean {
+            return _pusher_enabled;
+        }
+
         public function set queue_limit(value:int):void {
             _queue_limit = value;
         }
@@ -136,6 +144,7 @@ package com.photodispatcher.model.mysql.entities {
             _name = input.readObject() as String;
             _post_delay = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _profiles = input.readObject() as ListCollectionView;
+            _pusher_enabled = input.readObject() as Boolean;
             _queue_limit = input.readObject() as int;
             _soft_speed = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _src_type = input.readObject() as int;
@@ -154,6 +163,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_name);
             output.writeObject(_post_delay);
             output.writeObject(_profiles);
+            output.writeObject(_pusher_enabled);
             output.writeObject(_queue_limit);
             output.writeObject(_soft_speed);
             output.writeObject(_src_type);

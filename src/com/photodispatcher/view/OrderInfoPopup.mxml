@@ -12,6 +12,7 @@
 			import com.photodispatcher.event.OrderBuildProgressEvent;
 			import com.photodispatcher.factory.PrintGroupBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 			import com.photodispatcher.model.mysql.entities.OrderExtraMessage;
@@ -295,7 +296,8 @@
 					if(pg && !pg.is_reprint && pg.files && pg.files.length>0){
 						newPg=pg.clone();
 						newPg.id=pg.id;
-						if(newPg.is_pdf){
+						//if(newPg.is_pdf){
+						if(pg.book_type==BookSynonym.BOOK_TYPE_BOOK || pg.book_type==BookSynonym.BOOK_TYPE_JOURNAL || pg.book_type==BookSynonym.BOOK_TYPE_LEATHER){
 							//recreate files
 							if(!builder.recreateFromFilesystem(order,newPg)) continue;
 							pgPath=orderWrkPath+File.separator+newPg.path;
@@ -304,6 +306,7 @@
 								if(pgf) pgf.fullPath=pgPath+File.separator+pgf.file_name;
 							}
 						}else{
+
 							pgPath=orderPath+File.separator+newPg.path;
 							//clone files
 							for each(pgf in pg.files){

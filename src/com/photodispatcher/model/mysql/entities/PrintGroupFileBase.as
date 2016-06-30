@@ -25,6 +25,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _id:int;
         private var _page_num:int;
         private var _path:String;
+        private var _print_forvard:Boolean;
         private var _print_group:String;
         private var _printed:Boolean;
         private var _prt_qty:int;
@@ -88,6 +89,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get path():String {
             return _path;
+        }
+
+        public function set print_forvard(value:Boolean):void {
+            _print_forvard = value;
+        }
+        public function get print_forvard():Boolean {
+            return _print_forvard;
         }
 
         public function set print_group(value:String):void {
@@ -156,6 +164,7 @@ package com.photodispatcher.model.mysql.entities {
             _id = input.readObject() as int;
             _page_num = input.readObject() as int;
             _path = input.readObject() as String;
+            _print_forvard = input.readObject() as Boolean;
             _print_group = input.readObject() as String;
             _printed = input.readObject() as Boolean;
             _prt_qty = input.readObject() as int;
@@ -176,6 +185,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_id);
             output.writeObject(_page_num);
             output.writeObject(_path);
+            output.writeObject(_print_forvard);
             output.writeObject(_print_group);
             output.writeObject(_printed);
             output.writeObject(_prt_qty);
