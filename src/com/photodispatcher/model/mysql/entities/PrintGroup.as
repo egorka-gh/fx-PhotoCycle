@@ -476,14 +476,17 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		/**
-		 *
-		 * load PrintGroupFiles, create copies (if required)
-		 * dumy method
+		 *removes printed files
 		 *
 		 */
 		public function preparePrint():void{
 			if(!files) return;
-			_printFiles=files.toArray().concat();
+			//_printFiles=files.toArray().concat();
+			_printFiles=[];
+			var pgf:PrintGroupFile;
+			for each (pgf in files){
+				if(pgf && !pgf.printed) _printFiles.push(pgf);
+			}
 		}
 		
 		public function get bookFiles():Array{

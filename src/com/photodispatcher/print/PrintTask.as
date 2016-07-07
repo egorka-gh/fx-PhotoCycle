@@ -339,6 +339,11 @@ package com.photodispatcher.print{
 				dispatchErr('Ошибка чтения');
 				return;
 			}
+			if(printGrp.printFiles.length==0){
+				printGrp.state=OrderState.ERR_READ_LOCK;
+				dispatchErr('Нет файлов для печати');
+				return;
+			}
 			if(currCopyIdx >=printGrp.printFiles.length){
 				//complited
 				if(copyTimer){

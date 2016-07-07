@@ -24,7 +24,7 @@ package com.photodispatcher.provider.preprocess{
 			super(null);
 		}
 		
-		public function catFrom(startPage:int){
+		public function catFrom(startPage:int):void{
 			if(startPage<=0){
 				hasError=true;
 				err_msg='Не верная стартовая страница ' +startPage.toString();
@@ -44,7 +44,7 @@ package com.photodispatcher.provider.preprocess{
 
 		}
 
-		public function catTo(endPage:int){
+		public function catTo(endPage:int):void{
 			if(endPage<=0){
 				hasError=true;
 				err_msg='Не верная страница ' +endPage.toString();
@@ -88,7 +88,10 @@ package com.photodispatcher.provider.preprocess{
 				return;
 			}
 			
-			var dstName:String=file.name+'C';
+			var ext:String=file.extension;
+			var dstName:String=file.name;//+'C'
+			if(ext) dstName=dstName.substr(0,dstName.length-ext.length-1);
+			dstName=dstName+'C';
 			var idx:int=0;
 			var dir:File=file.parent;
 			wrkDir=dir.nativePath;

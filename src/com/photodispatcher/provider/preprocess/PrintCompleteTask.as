@@ -20,6 +20,8 @@ package com.photodispatcher.provider.preprocess{
 	public class PrintCompleteTask extends EventDispatcher{
 		
 		private var printGroup:PrintGroup;
+		private var source:Source;
+		
 		public var hasError:Boolean;
 		public var err_msg:String;
 		
@@ -122,7 +124,7 @@ package com.photodispatcher.provider.preprocess{
 					page=printGroup.max_sheet;
 				}
 				//calc page 
-				page=Math.floor(page/100)*printGroup.sheet_num + page % 100;
+				page=(Math.floor(page/100)-1)*printGroup.sheet_num + page % 100;
 				if(printGroup.is_revers) page=printGroup.prints-page+1;
 				
 				var fileIdx:int=Math.floor(page/printGroup.sheets_per_file);
@@ -171,7 +173,7 @@ package com.photodispatcher.provider.preprocess{
 					return;
 				}
 				
-				var source:Source=Context.getSource(printGroup.source_id);
+				source=Context.getSource(printGroup.source_id);
 				if(!source){
 					hasError=true;
 					err_msg='Internal error. Null source.';
@@ -195,8 +197,12 @@ package com.photodispatcher.provider.preprocess{
 					dispatchEvent(new Event(Event.COMPLETE));
 					return;
 				}
-				var pgf:PrintGroupFile= new PrintGroupFile();;
-				pgf.file_name=pdfTask.resultFileName;
+				var pgf:PrintGroupFile= new PrintGroupFile();
+				var relativePath:String=pdfTask.resultFileName;
+				var pgPath:String=source.getPrtFolder()+File.separator+printGroup.order_folder+File.separator+printGroup.path+File.separator;
+				relativePath=relativePath.substring(pgPath.length);
+				
+				pgf.file_name=relativePath;
 				pgf.print_group=printGroup.id;
 				pgf.prt_qty=1;
 				pgf.print_forvard=true;

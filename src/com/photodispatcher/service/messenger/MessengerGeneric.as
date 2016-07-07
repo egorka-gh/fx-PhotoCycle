@@ -72,9 +72,9 @@ package com.photodispatcher.service.messenger{
 			//producer.connected ??
 			if(producer) return;
 			createProducer();
+			startPingTimer();
 		}
 		private static function onBroadcast(event:CycleMessageEvent):void{
-			var reply:CycleMessage=CycleMessage.createMessage();
 			if(event.message.command==CMD_PING && isMessage4Me(event.message)){
 				sendPing();
 			}
@@ -126,7 +126,6 @@ package com.photodispatcher.service.messenger{
 					if(consumer) consumerMap[topic]=consumer;
 				}
 			}
-			startPingTimer();
 		}
 		private static function onProducerDisconnect(event:ChannelEvent):void{
 			if(forceDisconnect) return;
@@ -169,7 +168,6 @@ package com.photodispatcher.service.messenger{
 			*/
 		}
 		
-		/*
 		private static var timer:Timer; 
 		private static function reconnect():void{
 			trace('Messenger Producer reconnect statrt timer');
@@ -189,7 +187,6 @@ package com.photodispatcher.service.messenger{
 			}
 			createProducer();
 		}
-		*/
 
 		private static var pingTimer:Timer; 
 		private static function startPingTimer():void{
@@ -202,7 +199,7 @@ package com.photodispatcher.service.messenger{
 			pingTimer.start();
 		}
 		private static function onPingTimer(e:TimerEvent):void{
-			if(connected) sendPing();
+			sendPing();
 		}
 		private static function sendPing():void{
 			/*
@@ -231,7 +228,11 @@ package com.photodispatcher.service.messenger{
 		public static function sendMessage(message:CycleMessage):void{
 			if(!message || !message.topic) return;
 			trace('Messenger producer send message topic:'+message.topic);
-			if(!producer || (!connected && !(isConnecting && message.topic==TOPIC_STATUS))) return;
+			//if(!producer || (!connected && !(isConnecting && message.topic==TOPIC_STATUS))) return;
+			if(!producer){
+				trace('No producer, send canceled')
+				return;
+			}
 
 			var msg:AsyncMessage = new AsyncMessage();
 			msg.body = message;

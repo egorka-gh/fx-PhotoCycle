@@ -18,6 +18,7 @@
 			import com.photodispatcher.model.mysql.services.LabService;
 			import com.photodispatcher.model.mysql.services.PrintGroupService;
 			import com.photodispatcher.print.PrintQueueManager;
+			import com.photodispatcher.provider.preprocess.PrintCompleteTask;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -119,7 +120,8 @@
 				latch.addEventListener(Event.COMPLETE,onLoadPgs);
 				if(currentState=='inPrint'){
 					//a=pgDao.findAllInPrint();
-					latch.addLatch(svc.loadByOrderState(OrderState.PRN_POST,OrderState.PRN_COMPLETE));
+					//latch.addLatch(svc.loadByOrderState(OrderState.PRN_POST,OrderState.PRN_COMPLETE));
+					latch.addLatch(svc.loadByState(OrderState.PRN_WAITE+1,OrderState.PRN_COMPLETE));
 					latch.start();
 
 				}else{
@@ -187,6 +189,7 @@
 				if(!full) return;
 				gridMenu.addItem('Отменить печать',cancelPrintCallBack);
 				gridMenu.addItem('Напечатан',setPrintedCallBack);
+				gridMenu.addItem('Допечатка',completePrintCallBack);
 				gridMenu.addItem('Эмулировать печать', emulatePrintingCallBack);
 			}
 
@@ -207,7 +210,35 @@
 					PrintQueueManager.instance.cancelPost(a);
 				}
 			}
-			
+
+			private var pcTask:PrintCompleteTask;
+			private function completePrintCallBack(grid:DataGrid,param:int):void{
+				if (pcTask){
+					Alert.show('Не завершена предыдущая операция. Повторите позже.');
+					return;
+				}
+				var a:Array=[];
+				var pg:PrintGroup=grid.selectedItem as PrintGroup;
+				if(!pg) return;
+				if(pg.state!=OrderState.PRN_INPRINT){
+					Alert.show('Не верный статус. Нужен "Печатается"');
+					return;
+				}
+				pcTask= new PrintCompleteTask(pg);
+				pcTask.addEventListener(Event.COMPLETE, onPrintCompleteTask);
+				pcTask.run();
+			}
+			private function onPrintCompleteTask(e:Event):void{
+				if(!pcTask) return;
+				pcTask.removeEventListener(Event.COMPLETE, onPrintCompleteTask);
+				if(pcTask.hasError){
+					Alert.show(pcTask.err_msg);
+				}else{
+					Alert.show('Допечатка подготовлена');
+				}
+				pcTask=null
+			}
+
 			private function setPrintedCallBack(grid:DataGrid,param:int):void{
 				var a:Array=[];
 				var pg:PrintGroup;
