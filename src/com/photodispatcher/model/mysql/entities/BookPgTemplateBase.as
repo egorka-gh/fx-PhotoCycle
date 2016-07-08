@@ -55,6 +55,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _page_width:int;
         private var _paper:int;
         private var _paper_name:String;
+        private var _queue_offset:String;
+        private var _queue_size:int;
         private var _reprint_offset:String;
         private var _reprint_size:int;
         private var _revers:Boolean;
@@ -331,6 +333,20 @@ package com.photodispatcher.model.mysql.entities {
             return _paper_name;
         }
 
+        public function set queue_offset(value:String):void {
+            _queue_offset = value;
+        }
+        public function get queue_offset():String {
+            return _queue_offset;
+        }
+
+        public function set queue_size(value:int):void {
+            _queue_size = value;
+        }
+        public function get queue_size():int {
+            return _queue_size;
+        }
+
         public function set reprint_offset(value:String):void {
             _reprint_offset = value;
         }
@@ -482,6 +498,8 @@ package com.photodispatcher.model.mysql.entities {
             _page_width = input.readObject() as int;
             _paper = input.readObject() as int;
             _paper_name = input.readObject() as String;
+            _queue_offset = input.readObject() as String;
+            _queue_size = input.readObject() as int;
             _reprint_offset = input.readObject() as String;
             _reprint_size = input.readObject() as int;
             _revers = input.readObject() as Boolean;
@@ -539,6 +557,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_page_width);
             output.writeObject(_paper);
             output.writeObject(_paper_name);
+            output.writeObject(_queue_offset);
+            output.writeObject(_queue_size);
             output.writeObject(_reprint_offset);
             output.writeObject(_reprint_size);
             output.writeObject(_revers);

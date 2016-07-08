@@ -26,7 +26,10 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_reprint:Boolean;
         private var _lab:int;
         private var _lab_name:String;
+        private var _lab_type:int;
+        private var _lab_type_name:String;
         private var _label:String;
+        private var _pg_date:Date;
         private var _printGroups:ListCollectionView;
         private var _priority:int;
         private var _started:Date;
@@ -91,11 +94,32 @@ package com.photodispatcher.model.mysql.entities {
             return _lab_name;
         }
 
+        public function set lab_type(value:int):void {
+            _lab_type = value;
+        }
+        public function get lab_type():int {
+            return _lab_type;
+        }
+
+        public function set lab_type_name(value:String):void {
+            _lab_type_name = value;
+        }
+        public function get lab_type_name():String {
+            return _lab_type_name;
+        }
+
         public function set label(value:String):void {
             _label = value;
         }
         public function get label():String {
             return _label;
+        }
+
+        public function set pg_date(value:Date):void {
+            _pg_date = value;
+        }
+        public function get pg_date():Date {
+            return _pg_date;
         }
 
         public function set printGroups(value:ListCollectionView):void {
@@ -157,7 +181,10 @@ package com.photodispatcher.model.mysql.entities {
             _is_reprint = input.readObject() as Boolean;
             _lab = input.readObject() as int;
             _lab_name = input.readObject() as String;
+            _lab_type = input.readObject() as int;
+            _lab_type_name = input.readObject() as String;
             _label = input.readObject() as String;
+            _pg_date = input.readObject() as Date;
             _printGroups = input.readObject() as ListCollectionView;
             _priority = input.readObject() as int;
             _started = input.readObject() as Date;
@@ -177,7 +204,10 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_is_reprint);
             output.writeObject(_lab);
             output.writeObject(_lab_name);
+            output.writeObject(_lab_type);
+            output.writeObject(_lab_type_name);
             output.writeObject(_label);
+            output.writeObject(_pg_date);
             output.writeObject(_printGroups);
             output.writeObject(_priority);
             output.writeObject(_started);

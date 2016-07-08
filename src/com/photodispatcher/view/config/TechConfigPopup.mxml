@@ -122,6 +122,16 @@
 									   data="{template.reprint_offset}" 
 									   change="{template.reprint_offset=tiReprintOffs.data}"/>
 		</s:FormItem> 
+
+		<s:FormHeading label="Партия"/>
+		<s:FormItem label="Размер шрифта:">
+			<s:NumericStepper minimum="0" maximum="200" value="@{template.queue_size}"/>
+		</s:FormItem> 
+		<s:FormItem label="Смещение от нижнего правого (pix):">
+			<itemRenderer:OffsetEditor id="tiQueueOffs" enabled="{Boolean(template.queue_size)}"
+									   data="{template.queue_offset}" 
+									   change="{template.queue_offset=tiQueueOffs.data}"/>
+		</s:FormItem> 
 		
 		<s:FormHeading label="Квадрат"/>
 		<s:FormItem label="Размер (мм):">

@@ -16,6 +16,10 @@ package com.photodispatcher.model.mysql.entities {
 	
 	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
+	import mx.collections.IList;
+	
+	import org.granite.reflect.Field;
+	import org.granite.reflect.Type;
 	
 	import spark.components.gridClasses.GridColumn;
 	import spark.formatters.DateTimeFormatter;
@@ -286,7 +290,7 @@ package com.photodispatcher.model.mysql.entities {
 			file_num=files.length;
 		}
 
-		public function key(srcType:int=SourceType.LAB_NORITSU,fullness:int=0):String{
+		public function key(srcType:int=0,fullness:int=0):String{
 			var sizeKey:String;
 			switch(fullness){
 				case 1:
@@ -329,8 +333,24 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		public function clone():PrintGroup{
-			var res:PrintGroup=new PrintGroup();
+			var result:PrintGroup=new PrintGroup();
 			
+			var type:Type= Type.forClass(PrintGroup);
+			var props:Array=type.properties;
+			if(!props || props.length==0) return result;
+			var prop:Field;
+			for each(prop in props){
+				//exclude childs
+				if(this[prop.name] && !(this[prop.name] is IList)) result[prop.name]=this[prop.name];
+			}
+			result.id='';
+			result.files=null;
+			result._bookFiles=null;
+			result._printFiles=null;
+			result._pageNum=0;
+			result._pageStart=0;
+
+			/*
 			res.order_id=order_id;
 			res.sub_id=sub_id;
 			
@@ -362,7 +382,8 @@ package com.photodispatcher.model.mysql.entities {
 			
 			res.is_pdf=is_pdf;
 			res.is_duplex=is_duplex;
-			return res;
+			*/
+			return result;
 		}
 
 		public function toRaw():Object{

@@ -162,7 +162,7 @@ package com.photodispatcher.provider.preprocess{
 						mg=new BookMakeupGroup(pg,order.id, orderFolder+File.separator+order.ftp_folder, prtFolder+File.separator+order.ftp_folder);
 					}
 					if(mg){
-						mg.reprintMode=reprintMode;
+						if(reprintMode) mg.buildMode=BookMakeupGroup.MODE_REPRINT;
 						try{
 							mg.createCommands();
 						}catch(err:Error) {

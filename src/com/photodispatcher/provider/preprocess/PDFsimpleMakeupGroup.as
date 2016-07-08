@@ -99,7 +99,7 @@ package com.photodispatcher.provider.preprocess{
 					err_msg='Не верный состав книги. Не определен файл №'+(i+1).toString();
 					return;
 				}
-				if(!reprintMode || it.reprint){
+				if(buildMode==MODE_BUILD || (buildMode==MODE_REPRINT && it.reprint)){
 					if(altPdf){
 						command=createCommand(it,folder,jpgQuality);
 					}else{
@@ -126,7 +126,7 @@ package com.photodispatcher.provider.preprocess{
 					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
 				if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
 			}
-			if(reprintMode) printGroup.prints=prints;
+			if(buildMode==MODE_REPRINT) printGroup.prints=prints;
 			
 			if(altPdf){
 				//convert jpg to pdf (one to one)

@@ -14,6 +14,11 @@ package com.photodispatcher.provider.preprocess{
 	import flash.geom.Rectangle;
 
 	public class BookMakeupGroup{
+		public static const MODE_BUILD:int=0;
+		public static const MODE_REPRINT:int=1;
+		public static const MODE_QUEUE_START:int=2;
+		public static const MODE_QUEUE_END:int=3;
+
 		public static const TEXT_LEFT_OFFSET_PIX:int=500;
 		public static const TEXT_TOP_OFFSET_PIX:int=0;
 		public static const TEXT_OFFSET:String='+'+TEXT_LEFT_OFFSET_PIX.toString()+'+'+TEXT_TOP_OFFSET_PIX.toString();
@@ -39,7 +44,8 @@ package com.photodispatcher.provider.preprocess{
 
 		public var state:int=STATE_WAITE;
 		
-		public var reprintMode:Boolean=false;
+		//public var reprintMode:Boolean=false;
+		public var buildMode:int=MODE_BUILD;
 		
 		protected var jpgQuality:String='100';
 		
@@ -86,14 +92,54 @@ package com.photodispatcher.provider.preprocess{
 				return;
 			}
 
-			printGroup.resetFiles();
-			trace('BookMakeupGroup:'+printGroup.id+
-				'; booktype-'+printGroup.book_type.toString()+
-				'; part-'+printGroup.book_part.toString()+
-				'; heigh-'+printGroup.height.toString()+
-				'; sheet_len-'+printGroup.bookTemplate.sheet_len.toString());
-			//prepare sheets
-			for (i=0; i<files.length; i++){
+			if(buildMode==MODE_BUILD || buildMode==MODE_REPRINT){
+				printGroup.resetFiles();
+				trace('BookMakeupGroup:'+printGroup.id+
+					'; booktype-'+printGroup.book_type.toString()+
+					'; part-'+printGroup.book_part.toString()+
+					'; heigh-'+printGroup.height.toString()+
+					'; sheet_len-'+printGroup.bookTemplate.sheet_len.toString());
+				//prepare sheets
+				for (i=0; i<files.length; i++){
+					it=files[i] as PrintGroupFile;
+					if(!it){
+						state=STATE_ERR;
+						err=OrderState.ERR_PREPROCESS;
+						err_msg='Не верный состав книги. Не определен файл №'+(i+1).toString();
+						return;
+					}
+					if(buildMode==MODE_BUILD || (buildMode==MODE_REPRINT && it.reprint)){
+						command=createCommand(it,folder);
+						//save
+						outName= PrintGroup.SUBFOLDER_PRINT+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
+						if(buildMode==MODE_REPRINT){
+							outName= PrintGroup.SUBFOLDER_PRINT+File.separator+'r'+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
+						}
+						newFile=it.clone();
+						newFile.file_name=outName;
+						printGroup.addFile(newFile);
+						//if(folder!=prtFolder) outName=prtFolder+File.separator+outName;
+						command.add(outPath(outName));
+						commands.push(command);
+						prints++;
+					}
+				}
+				if(buildMode==MODE_REPRINT) printGroup.prints=prints;
+				//expand format by tech
+				if(printGroup.bookTemplate.tech_bar &&
+					(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+						printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+						printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
+					if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
+				}
+			}else if(buildMode==MODE_QUEUE_START || buildMode==MODE_QUEUE_END){
+				//print batch mark
+				//detect file
+				if((buildMode==MODE_QUEUE_START && !printGroup.is_revers) || (buildMode==MODE_QUEUE_END && printGroup.is_revers)){
+					i=0;
+				}else if((buildMode==MODE_QUEUE_START && printGroup.is_revers)  || (buildMode==MODE_QUEUE_END && !printGroup.is_revers)){
+					i=files.length-1;
+				}
 				it=files[i] as PrintGroupFile;
 				if(!it){
 					state=STATE_ERR;
@@ -101,34 +147,20 @@ package com.photodispatcher.provider.preprocess{
 					err_msg='Не верный состав книги. Не определен файл №'+(i+1).toString();
 					return;
 				}
-				if(!reprintMode || it.reprint){
-					command=createCommand(it,folder);
-					//save
-					outName= PrintGroup.SUBFOLDER_PRINT+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
-					if(reprintMode){
-						outName= PrintGroup.SUBFOLDER_PRINT+File.separator+'r'+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
-					}
-					newFile=it.clone();
-					newFile.file_name=outName;
-					printGroup.addFile(newFile);
-					//if(folder!=prtFolder) outName=prtFolder+File.separator+outName;
-					command.add(outPath(outName));
-					commands.push(command);
-					prints++;
+				command=createCommand(it,folder);
+				//save
+				outName= PrintGroup.SUBFOLDER_PRINT+File.separator+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
+				if(printGroup.is_reprint){
+					outName= PrintGroup.SUBFOLDER_PRINT+File.separator+'r'+StrUtil.lPad(it.book_num.toString(),3)+'-'+StrUtil.lPad(it.page_num.toString(),2)+'.jpg';
 				}
+				command.add(outPath(outName));
+				commands.push(command);
+				
 			}
-			if(reprintMode) printGroup.prints=prints;
 			
 			totalCommands+=commands.length;
 			sequences.push(commands);
 			
-			//expand format by tech
-			if(printGroup.bookTemplate.tech_bar &&
-				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
-					printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
-					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
-				if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
-			}
 		}
 		
 		protected function outPath(path:String):String{
@@ -300,7 +332,9 @@ package com.photodispatcher.provider.preprocess{
 			//vertical annotate
 			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
 			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.reprint_size, printGroup.staffActivityCaption,printGroup.bookTemplate.reprint_offset,TEXT_UNDERCOLOR);  	
-			
+			if(printGroup.prn_queue && (buildMode==MODE_QUEUE_START || buildMode==MODE_QUEUE_END)){
+				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Партия:'+printGroup.prn_queue.toString(),printGroup.bookTemplate.queue_offset,TEXT_UNDERCOLOR);  	
+			}
 			//draw mark
 			if(printGroup.book_part!=BookSynonym.BOOK_PART_BLOCKCOVER){
 				IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);

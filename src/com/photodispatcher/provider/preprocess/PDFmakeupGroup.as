@@ -126,7 +126,7 @@ package com.photodispatcher.provider.preprocess{
 						sh=new PdfSheet();
 						sh.leftPage=files[1+i*3];
 						sh.rightPage=files[2+i*3];
-						if(!reprintMode || it.reprint || sh.reprint){
+						if(buildMode==MODE_BUILD || (buildMode==MODE_REPRINT && (it.reprint || sh.reprint))){
 							//crop & annotate cover
 							command=createCoverCommand(it,folder);
 							//save
@@ -166,7 +166,7 @@ package com.photodispatcher.provider.preprocess{
 							err_msg='Не определен файл обложки книга №'+(i+1).toString();
 							return;
 						}
-						if(!reprintMode || it.reprint){
+						if(buildMode==MODE_BUILD || (buildMode==MODE_REPRINT && it.reprint)){
 							command=createCoverCommand(it,folder);
 							//save
 							outName=FILENAME_COVER+(i+1).toString()+TEMP_FILE_TYPE;
@@ -206,7 +206,7 @@ package com.photodispatcher.provider.preprocess{
 				for (i=0;i<sheets.length;i++){
 					//process sheet
 					sh=sheets[i] as PdfSheet;
-					if(!reprintMode || sh.reprint){
+					if(buildMode==MODE_BUILD || (buildMode==MODE_REPRINT && sh.reprint)){
 						command=sh.getCommand(pageSize,sheetSize,printGroup);
 						//draw stair
 						drawSheetStair(command,sh,sheetSize, i);
@@ -242,7 +242,7 @@ package com.photodispatcher.provider.preprocess{
 			sequences.push(commands);
 			
 			//finalize
-			if(reprintMode) printGroup.prints=prints;
+			if(buildMode==MODE_REPRINT) printGroup.prints=prints;
 			
 			var idx:int;
 
@@ -386,7 +386,8 @@ package com.photodispatcher.provider.preprocess{
 					sh=result[i] as PdfSheet;
 					sh.swapPages();
 					//mark reprint 4 duplex
-					if(reprintMode && printGroup.is_duplex){
+					if(buildMode==MODE_REPRINT && printGroup.is_duplex){
+						//херпойми
 						(result[i+1] as PdfSheet).reprint=sh.reprint;
 						sh.reprint=(result[i+1] as PdfSheet).reprint;
 					}
