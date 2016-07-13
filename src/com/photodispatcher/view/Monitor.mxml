@@ -8,11 +8,12 @@
 		 xmlns:remote="com.photodispatcher.view.remote.*"
 		 xmlns:preprocess="com.photodispatcher.provider.preprocess.*"
 		 xmlns:ftp="com.photodispatcher.provider.ftp.*"
+		 implements="com.photodispatcher.interfaces.IMessageRecipient"
 		 creationComplete="{init()}"
 		 keyDown="onKey(event)">
 	
 	<fx:Declarations>
-		<services:ChatServerService id="chatServer" />
+		<!--<services:ChatServerService id="chatServer" />-->
 	</fx:Declarations>
 	
 	<fx:Script>
@@ -97,13 +98,24 @@
 				
 				if(focusManager) focusManager.setFocus(focusHolder);
 				printManager=PrintQueueManager.instance;
-				/*
-				if(!messenger){
-					messenger= new MessengerGeneric();
-					messenger.connect();
-				}
-				*/
+
+				MessengerGeneric.subscribe(MessengerGeneric.TOPIC_PREPARATION,this);
 			}
+			
+			public function getMessage(message:CycleMessage):void{
+				if(!helperMode) return;
+				if(message){
+					if(!MessengerGeneric.isMessage4Me(message)) return;
+					if(message.command==MessengerGeneric.CMD_PREPARATION_STOP){
+						stop();
+					}else if(message.command==MessengerGeneric.CMD_PREPARATION_START){
+						if(!preprocessManager.isStarted) preprocessManager.isStarted=true;
+						if(!downloadManager.isStarted) downloadManager.isStarted=true;
+						sendSateMessage();
+					}
+				}
+			}
+
 
 			private function onKey(e:KeyboardEvent):void{
 				if(e.ctrlKey && e.keyCode==70){
@@ -184,6 +196,7 @@
 				stopSync();
 				preprocessManager.isStarted=false;
 				downloadManager.isStarted=false;
+				sendSateMessage();
 			}
 
 			
@@ -301,7 +314,6 @@
 			
 			protected function btStop_clickHandler(event:MouseEvent):void{
 				stop();
-				sendSateMessage();
 			}
 			
 			protected function sendSateMessage():void{

@@ -109,11 +109,13 @@ package com.photodispatcher.printer{
 				if(reportPrinter && reportPrinter.enabled){
 					var prn:String=curReport.printer;
 					if(!prn) prn=Context.getAttribute('printer');
+					var prnStr:String=prn;
+					if(!prnStr) prnStr='default';
 					if(curReport.logOn){
 						if(curReport.logPrintGroupId){
-							StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,curReport.name+' отправлен на принтер '+prn);
+							StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,curReport.name+' отправлен на принтер '+prnStr);
 						}else if(curReport.logOrderId){
-							StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'',curReport.name+' отправлен на принтер '+prn);
+							StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'',curReport.name+' отправлен на принтер '+prnStr);
 						}
 					}
 					reportPrinter.print(curReport.result.url, prn);

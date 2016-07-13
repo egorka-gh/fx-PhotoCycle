@@ -30,6 +30,11 @@ package com.photodispatcher.shell{
 			return '';
 		}
 
+		public static function get IM_CMD_PDF2JPG():String{
+			if (ProcessRunner.isWindows()) return 'pdfimages.exe';
+			return '';
+		}
+
 		public static const STATE_WAITE:int=0;
 		public static const STATE_STARTED:int=1;
 		public static const STATE_COMPLITE:int=2;

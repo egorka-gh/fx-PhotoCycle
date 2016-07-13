@@ -5,6 +5,11 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrnQueue;
 	import com.photodispatcher.model.mysql.services.PrnStrategyService;
+	import com.photodispatcher.provider.preprocess.QueueMarkTask;
+	
+	import flash.events.Event;
+	
+	import mx.controls.Alert;
 	
 	import org.granite.tide.Tide;
 	
@@ -77,12 +82,15 @@ package com.photodispatcher.print{
 				return false;
 			}
 			
+			var isStarting:Boolean;
 			if(!isStarted()){
 				//try to start queue
 				if(printManager.getLabStartedQueue(lab.id)==null){
 					//start prnQueue
+					isStarting=true;
 					var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 					var latch:DbLatch= new DbLatch();
+					latch.addEventListener(Event.COMPLETE,onstartQueue);
 					latch.addLatch(svcs.startQueue(prnQueue.id, prnQueue.sub_queue, lab.id));
 					latch.start();
 					prnQueue.started=new Date();
@@ -114,10 +122,24 @@ package com.photodispatcher.print{
 				pgCandidat.destinationLab=lab;
 				pgFetched.push(pgCandidat);
 			}
-			compliteFetch();
+			if(!isStarting) compliteFetch();
 			return true;
 		}
 		
+		private function onstartQueue(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onstartQueue);
+			if(latch.complite){
+				markQueue();
+			}else{
+				prnQueue.started=null;
+				//reset fetch
+				pgFetched=[];
+				compliteFetch();
+			}
+		}
+
 		protected function nextPG():PrintGroup{
 			var pgCandidat:PrintGroup;
 			if(queue){
@@ -132,6 +154,45 @@ package com.photodispatcher.print{
 			}
 			return pgCandidat;
 		}
+
+		private function markQueue():void{
+			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onLoadMark);
+			latch.addLatch(svc.getQueueMarkPGs(prnQueue.id));
+			latch.start();
+		}
+
+		private function onLoadMark(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoadMark);
+				if(latch.complite && latch.lastDataArr.length>0){
+					//mark queue
+					var pgStart:PrintGroup=latch.lastDataArr[0] as PrintGroup;
+					var pgEnd:PrintGroup;
+					if(latch.lastDataArr.length>1) pgEnd=latch.lastDataArr[1] as PrintGroup;
+					var qmTask:QueueMarkTask= new QueueMarkTask(pgStart, pgEnd);
+					qmTask.addEventListener(Event.COMPLETE, onqmTask);
+					qmTask.run();
+				}else if(isFetching){
+					//reset fetch
+					pgFetched=[];
+					compliteFetch();
+				}
+			}
+		}
+		private function onqmTask(evt:Event):void{
+			var qmTask:QueueMarkTask=evt.target as QueueMarkTask;
+			if(qmTask){
+				qmTask.removeEventListener(Event.COMPLETE, onqmTask);
+				if(qmTask.hasError){
+					Alert.show('Ошибка маркировки партии '+qmTask.error);
+				}
+			}
+			if(isFetching) compliteFetch();
+		}
+
 		
 	}
 }

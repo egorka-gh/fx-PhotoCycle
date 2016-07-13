@@ -16,8 +16,8 @@ package com.photodispatcher.provider.preprocess{
 	public class BookMakeupGroup{
 		public static const MODE_BUILD:int=0;
 		public static const MODE_REPRINT:int=1;
-		public static const MODE_QUEUE_START:int=2;
-		public static const MODE_QUEUE_END:int=3;
+		//public static const MODE_QUEUE_START:int=2;
+		//public static const MODE_QUEUE_END:int=3;
 
 		public static const TEXT_LEFT_OFFSET_PIX:int=500;
 		public static const TEXT_TOP_OFFSET_PIX:int=0;
@@ -132,7 +132,9 @@ package com.photodispatcher.provider.preprocess{
 						printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER)){
 					if(printGroup.bookTemplate.tech_add) printGroup.height+=printGroup.bookTemplate.tech_add;
 				}
-			}else if(buildMode==MODE_QUEUE_START || buildMode==MODE_QUEUE_END){
+			}
+			/*
+			else if(buildMode==MODE_QUEUE_START || buildMode==MODE_QUEUE_END){
 				//print batch mark
 				//detect file
 				if((buildMode==MODE_QUEUE_START && !printGroup.is_revers) || (buildMode==MODE_QUEUE_END && printGroup.is_revers)){
@@ -155,8 +157,8 @@ package com.photodispatcher.provider.preprocess{
 				}
 				command.add(outPath(outName));
 				commands.push(command);
-				
 			}
+			*/
 			
 			totalCommands+=commands.length;
 			sequences.push(commands);
@@ -331,10 +333,12 @@ package com.photodispatcher.provider.preprocess{
 			
 			//vertical annotate
 			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.fontv_size, printGroup.annotateText(file),printGroup.bookTemplate.fontv_offset,TEXT_UNDERCOLOR);  	
-			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.reprint_size, printGroup.staffActivityCaption,printGroup.bookTemplate.reprint_offset,TEXT_UNDERCOLOR);  	
+			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.reprint_size, printGroup.staffActivityCaption,printGroup.bookTemplate.reprint_offset,TEXT_UNDERCOLOR);
+			/*
 			if(printGroup.prn_queue && (buildMode==MODE_QUEUE_START || buildMode==MODE_QUEUE_END)){
 				IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Партия:'+printGroup.prn_queue.toString(),printGroup.bookTemplate.queue_offset,TEXT_UNDERCOLOR);  	
 			}
+			*/
 			//draw mark
 			if(printGroup.book_part!=BookSynonym.BOOK_PART_BLOCKCOVER){
 				IMCommandUtil.drawMark(command,printGroup.bookTemplate.mark_size,printGroup.bookTemplate.mark_offset);

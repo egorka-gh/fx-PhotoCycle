@@ -132,7 +132,7 @@
 				IMRuner.stopAll();
 				if(vMonitor){
 					vMonitor.stop();
-					if(vMonitor.chatServer) vMonitor.chatServer.close();
+					//if(vMonitor.chatServer) vMonitor.chatServer.close();
 				}
 			}
 

@@ -30,6 +30,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.printer.Printer;
+	import com.photodispatcher.provider.preprocess.QueueMarkTask;
 	import com.photodispatcher.service.messenger.MessengerGeneric;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
@@ -47,6 +48,7 @@ package com.photodispatcher.print{
 	import flash.utils.flash_proxy;
 	
 	import mx.collections.ArrayCollection;
+	import mx.controls.Alert;
 	
 	import org.granite.tide.Tide;
 	
@@ -1547,13 +1549,38 @@ package com.photodispatcher.print{
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onCreateQueue);
 				trace('CreateQueue result:'+latch.resultCode);
+				if(latch.complite && latch.resultCode!=0){
+					//send refresh
+					MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_PRNQUEUE,MessengerGeneric.CMD_PRNQUEUE_REFRESH));
+				}
+				/*
+				if(latch.complite && latch.resultCode!=0 && latch.lastDataArr.length>0){
+					//mark queue
+					var pgStart:PrintGroup=latch.lastDataArr[0] as PrintGroup;
+					var pgEnd:PrintGroup;
+					if(latch.lastDataArr.length>1) pgEnd=latch.lastDataArr[1] as PrintGroup;
+					var qmTask:QueueMarkTask= new QueueMarkTask(pgStart, pgEnd);
+					qmTask.addEventListener(Event.COMPLETE, onqmTask);
+					qmTask.run();
+				}
+				*/
 			}
 			//unlock
 			OrderService.releasePrnQueueLock();
+		}
+		/*
+		private function onqmTask(evt:Event):void{
+			var qmTask:QueueMarkTask=evt.target as QueueMarkTask;
+			if(qmTask){
+				qmTask.removeEventListener(Event.COMPLETE, onqmTask);
+				if(qmTask.hasError){
+					Alert.show('Ошибка маркировки партии '+qmTask.error);
+				}
+			}
 			//send refresh
 			MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_PRNQUEUE,MessengerGeneric.CMD_PRNQUEUE_REFRESH));
 		}
-
+		*/
 		
 		public function getMessage(message:CycleMessage):void{
 			if(!isAutoPrintManager) return;

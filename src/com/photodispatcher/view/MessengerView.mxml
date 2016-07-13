@@ -13,6 +13,22 @@
 				MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_BROADCAST, MessengerGeneric.CMD_PING));
 			}
 			
+			protected function btHelperStop_clickHandler(event:MouseEvent):void{
+				var st:CycleStation=dgStation.selectedItem as CycleStation;
+				if(!st || st.type!=CycleStation.TYPE_HELPER) return; 
+				var msg:CycleMessage= CycleMessage.createMessage(MessengerGeneric.TOPIC_PREPARATION, MessengerGeneric.CMD_PREPARATION_STOP);
+				msg.recipient=st.id;
+				MessengerGeneric.sendMessage(msg);
+			}
+			
+			protected function btHelperStart_clickHandler(event:MouseEvent):void{
+				var st:CycleStation=dgStation.selectedItem as CycleStation;
+				if(!st || st.type!=CycleStation.TYPE_HELPER) return; 
+				var msg:CycleMessage= CycleMessage.createMessage(MessengerGeneric.TOPIC_PREPARATION, MessengerGeneric.CMD_PREPARATION_START);
+				msg.recipient=st.id;
+				MessengerGeneric.sendMessage(msg);
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -27,6 +43,9 @@
 				selectionMode="singleRow" locale="ru_RU"
 				dataProvider="{MessengerGeneric.stations}"
 				columns="{CycleStation.gridColumns()}"/>
-	
-	<s:Button label="Ping" click="button1_clickHandler(event)"/>
+	<s:HGroup gap="10">
+		<s:Button label="Ping" click="button1_clickHandler(event)"/>
+		<s:Button id="btHelperStop" label="Stop" click="btHelperStop_clickHandler(event)"/>
+		<s:Button id="btHelperStart" label="Start" click="btHelperStart_clickHandler(event)"/>
+	</s:HGroup>
 </s:Group>

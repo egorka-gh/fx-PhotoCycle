@@ -41,6 +41,9 @@ package com.photodispatcher.service.messenger{
 		public static const CMD_STATUS:int=2;
 		
 		public static const CMD_PRNQUEUE_REFRESH:int=3;
+
+		public static const CMD_PREPARATION_START:int=4;
+		public static const CMD_PREPARATION_STOP:int=5;
 		
 		[Bindable]
 		public static var stations:ArrayCollection=new ArrayCollection(); //CycleStation
