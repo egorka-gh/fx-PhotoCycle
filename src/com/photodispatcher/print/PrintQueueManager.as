@@ -30,6 +30,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.printer.Printer;
+	import com.photodispatcher.provider.preprocess.PrintCompleteTask;
 	import com.photodispatcher.provider.preprocess.QueueMarkTask;
 	import com.photodispatcher.service.messenger.MessengerGeneric;
 	import com.photodispatcher.service.web.BaseWeb;
@@ -1516,6 +1517,48 @@ package com.photodispatcher.print{
 			}
 			//send refresh
 			MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_PRNQUEUE,MessengerGeneric.CMD_PRNQUEUE_REFRESH));
+		}
+		
+		/**
+		 *отцепляет запущенную (started) очередь от лабы
+		 * находит текущую группу печати и делает допечатку
+		 *  
+		 **/
+		public function releasePrnQueue(queueId:int, subId:int):void{
+			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			var latch:DbLatch=new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onLoadeQueue);
+			latch.addLatch(svc.loadQueue(queueId,subId));
+			latch.start();
+		}
+		private function onLoadeQueue(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			latch.removeEventListener(Event.COMPLETE,onLoadeQueue);
+			if(!latch.complite || !latch.lastDataArr || latch.lastDataArr.length==0) return;
+			var pq:PrnQueue=latch.lastDataArr[0] as PrnQueue;
+			if(!pq) return;
+			if(pq.complited || !pq.started) return;
+			//detect last printed pg
+			var toComplite:PrintGroup;
+			for each(var pg:PrintGroup in pq.printGroups){
+				if(pg.state==OrderState.PRN_INPRINT) toComplite=pg;
+			}
+			
+			if(toComplite){
+				var pcTask:PrintCompleteTask= new PrintCompleteTask(toComplite);
+				pcTask.addEventListener(Event.COMPLETE, onPrintCompleteTask);
+				pcTask.run();
+			}
+		}
+		private function onPrintCompleteTask(e:Event):void{
+			var pcTask:PrintCompleteTask=e.target as PrintCompleteTask; 
+			if(!pcTask) return;
+			pcTask.removeEventListener(Event.COMPLETE, onPrintCompleteTask);
+			if(pcTask.hasError){
+				Alert.show(pcTask.err_msg);
+			}else{
+				//Alert.show('Допечатка подготовлена');
+			}
 		}
 
 		private var createPrnQueueParams:PrintGroup;
