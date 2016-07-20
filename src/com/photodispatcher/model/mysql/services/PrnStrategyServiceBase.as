@@ -59,6 +59,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function createQueueBatch(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("createQueueBatch", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("createQueueBatch", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("createQueueBatch", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function deleteQueue(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("deleteQueue", arg0, resultHandler, faultHandler) as AsyncToken;
@@ -66,6 +77,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("deleteQueue", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("deleteQueue", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function deleteStartTimetable(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("deleteStartTimetable", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("deleteStartTimetable", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("deleteStartTimetable", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
@@ -114,6 +136,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function loadStartTimetable(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadStartTimetable", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadStartTimetable", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadStartTimetable") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadStrategies(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadStrategies", resultHandler, faultHandler) as AsyncToken;
@@ -121,6 +154,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("loadStrategies", resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("loadStrategies") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function persistStartTimetable(arg0:ListCollectionView, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("persistStartTimetable", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("persistStartTimetable", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("persistStartTimetable", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

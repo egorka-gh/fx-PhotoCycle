@@ -8,7 +8,6 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
-	import com.photodispatcher.view.itemRenderer.BooleanGridRenderer;
 	import com.photodispatcher.view.itemRenderer.CBoxGridItemEditor;
 	import com.photodispatcher.view.itemRenderer.TimeGridEditor;
 	
@@ -21,37 +20,30 @@ package com.photodispatcher.model.mysql.entities {
 	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
-    [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrnStrategy")]
-    public class PrnStrategy extends PrnStrategyBase {
+    [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrnQueueTimetable")]
+    public class PrnQueueTimetable extends PrnQueueTimetableBase {
 
-		public static const STRATEGY_PUSHER:int = 0;
-		public static const STRATEGY_BYROLL:int = 1;
-		public static const STRATEGY_BYPARTPDF:int = 2;
-		public static const STRATEGY_BYPART:int = 3;
-		
-		
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
 			col= new GridColumn('is_active'); col.headerText='Активна ';  col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=60; result.addItem(col);
-			col= new GridColumn('strategy_type'); col.headerText='Тип'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); col.editable=false; result.addItem(col);
-			col= new GridColumn('priority'); col.headerText='Приоритет'; result.addItem(col);
+			col= new GridColumn('lab_type'); col.headerText='Тип лабы'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			col= new GridColumn('strategy_type'); col.headerText='Стратегия'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateTimePattern='HH:mm'; fmt.useUTC=false;
 			col= new GridColumn('time_start'); col.headerText='Время запуска'; col.formatter=fmt; col.itemEditor=new ClassFactory(TimeGridEditor); col.width=100; result.addItem(col);
-			col= new GridColumn('time_end'); col.headerText='Время остановки'; col.formatter=fmt; col.itemEditor=new ClassFactory(TimeGridEditor); col.width=100; result.addItem(col);
 			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('last_start'); col.headerText='Последний запуск'; col.formatter=fmt; col.editable=false;  result.addItem(col);
-
+			
 			return result;
 		}
-
 		
-        public function PrnStrategy() {
+        public function PrnQueueTimetable() {
             super();
         }
 		
 		public function isTimeToStart():Boolean{
 			if(!time_start || !is_active || (time_start.hours==0 && time_start.minutes==0)) return false;
+			if(lab_type==0 || strategy_type==0) return false; 
 			var now:Date = new Date;
 			var currDay:Date = new Date(now.fullYear,now.month,now.date);
 			var start:Date= new Date(time_start.time);
@@ -59,15 +51,5 @@ package com.photodispatcher.model.mysql.entities {
 			return (now.time>=start.time && (!last_start || last_start.time<currDay.time));
 		}
 
-		public function isTimeToStop():Boolean{
-			if(!time_end || (time_end.hours==0 && time_end.minutes==0)) return false;
-			var now:Date = new Date;
-			var currDay:Date = new Date(now.fullYear,now.month,now.date);
-			var stop:Date= new Date(time_end.time);
-			stop.date=1; stop.fullYear=now.fullYear; stop.month=now.month; stop.date=now.date;
-			return now.time>=stop.time;
-			
-		}
-		
     }
 }

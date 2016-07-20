@@ -84,7 +84,9 @@
 			
 			private function filterQueueList(item:Object):Boolean {
 				var it:PrnQueue=item as PrnQueue;
-				if(!it || !currLab || it.lab!=currLab.id) return false;
+				if(!it || !currLab) return false;
+				//check lab or lab type when lab not set
+				if(it.lab!=currLab.id && !(it.lab==0 && it.lab_type==currLab.src_type)) return false;
 				return true;
 			}
 			

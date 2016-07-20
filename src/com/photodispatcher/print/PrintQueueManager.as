@@ -19,6 +19,7 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrnQueue;
+	import com.photodispatcher.model.mysql.entities.PrnQueueTimetable;
 	import com.photodispatcher.model.mysql.entities.PrnStrategy;
 	import com.photodispatcher.model.mysql.entities.SourceProperty;
 	import com.photodispatcher.model.mysql.entities.SourceType;
@@ -75,7 +76,10 @@ package com.photodispatcher.print{
 		public var labMetersAC:ArrayCollection;
 
 		[Bindable]
-		public var strategiesAC:ArrayCollection;
+		public var timetableAC:ArrayCollection;
+		//public var strategiesAC:ArrayCollection;
+		[Bindable]
+		public var strategyPusherAC:ArrayCollection;
 		
 		[Bindable]
 		public var prnQueuesAC:ArrayCollection;
@@ -265,7 +269,9 @@ package com.photodispatcher.print{
 			latch.start();
 			
 			//load strategies && PrnQueues
-			loadStrategy();
+			loadPusherStrategy();
+			loadStartTimetable();
+			loadPrnQueues();
 			
 			startTimer();
 		}
@@ -308,7 +314,7 @@ package com.photodispatcher.print{
 			
 		}
 		
-		
+		/*
 		public function startStrategyBYPARTPDF():void{
 			if(!initCompleted || ! strategiesAC) return;
 			if(!isAutoPrintManager) return;
@@ -336,6 +342,81 @@ package com.photodispatcher.print{
 			
 			startTimer();
 		}
+		*/
+		
+		public function runStartTimetable(items:ArrayCollection):void{
+			if(!items || items.length==0){
+				startTimer();
+				return;
+			}
+			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onCreateQueues);
+			latch.addLatch(svcs.createQueueBatch(items));
+			latch.start();
+		}
+		
+		private function checkStartTimetable():void{
+			if(!timetableAC){
+				startTimer();
+				return;
+			}
+			var it:PrnQueueTimetable;
+			var items:ArrayCollection=new ArrayCollection();
+			for each(it in timetableAC){
+				if(it.isTimeToStart()){
+					it.booksonly=true;
+					items.addItem(it);
+				}
+			}
+			runStartTimetable(items);
+		}
+		private function onCreateQueues(evt:Event):void{
+			var reloadQueues:Boolean;
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onCreateQueues);
+				if(latch.complite){
+					reloadQueues=latch.resultCode>0;
+				}
+			}
+			if(reloadQueues){
+				//loadPrnQueues();
+				MessengerGeneric.sendMessage(CycleMessage.createMessage(MessengerGeneric.TOPIC_PRNQUEUE,MessengerGeneric.CMD_PRNQUEUE_REFRESH));
+			}
+			loadStartTimetable();
+			startTimer();
+		}
+
+		public function checkPusher():void{
+			if(!strategyPusherAC || strategyPusherAC.length==0) return;
+			var item:PrnStrategy=strategyPusherAC.getItemAt(0) as PrnStrategy;
+			if(item.strategy_type==PrnStrategy.STRATEGY_PUSHER){
+				if(!prnPusher){
+					prnPusher=new PrintQueuePusher(this,null);
+					prnPusher.prnQueue.priority=item.priority;
+					prnPusher.prnQueue.strategy_type=item.strategy_type;
+					prnPusher.prnQueue.strategy_type_name=item.strategy_type_name;
+				}
+				if(item.is_active){
+					//stop/start  pusher
+					if(prnPusher.isActive()){
+						if(item.isTimeToStop()){
+							//stop pusher
+							prnPusher.prnQueue.is_active=false;
+							prnPusher.queue=null;
+						}
+					}else if(item.isTimeToStart() && !item.isTimeToStop()){
+						prnPusher.prnQueue.is_active=true;
+						prnPusher.prnQueue.started=new Date();
+					}
+				}else{
+					//stop pusher
+					prnPusher.prnQueue.is_active=false;
+					prnPusher.queue=null;
+				}
+			}
+		}
 		
 		private var timer:Timer;
 		
@@ -350,87 +431,65 @@ package com.photodispatcher.print{
 			timer.start();
 		}
 		private function onTimer(event:TimerEvent):void{
-			if(!initCompleted || ! strategiesAC) return;
+			if(!initCompleted) return;
 			if(!isAutoPrintManager) return;
 			var startlatch:DbLatch;
 			var sublatch:DbLatch;
 
-			for each(var item:PrnStrategy in strategiesAC){
-				if(item.strategy_type==PrnStrategy.STRATEGY_BYPARTPDF){
-					if(item.is_active && item.isTimeToStart()){
-						//start strategy
-						/*
-						var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
-						sublatch= new DbLatch();
-						//latch.addEventListener(Event.COMPLETE,onStrategyLoad);
-						sublatch.addLatch(svcs.startStrategy2(item.id));
-						sublatch.start();
-						if(!startlatch) startlatch=new DbLatch();
-						startlatch.join(sublatch);
-						*/
-					}
-				}else if(item.strategy_type==PrnStrategy.STRATEGY_PUSHER){
-					if(!prnPusher){
-						prnPusher=new PrintQueuePusher(this,null);
-						prnPusher.prnQueue.priority=item.priority;
-						prnPusher.prnQueue.strategy_type=item.strategy_type;
-						prnPusher.prnQueue.strategy_type_name=item.strategy_type_name;
-					}
-					if(item.is_active){
-						//stop/start  pusher
-						if(prnPusher.isActive()){
-							if(item.isTimeToStop()){
-								//stop pusher
-								prnPusher.prnQueue.is_active=false;
-								prnPusher.queue=null;
-							}
-						}else if(item.isTimeToStart() && !item.isTimeToStop()){
-							prnPusher.prnQueue.is_active=true;
-							prnPusher.prnQueue.started=new Date();
-						}
-					}else{
-						//stop pusher
-						prnPusher.prnQueue.is_active=false;
-						prnPusher.queue=null;
-					}
-				}
-			}
-			if(startlatch){
-				startlatch.addEventListener(Event.COMPLETE,onstartStrategy);
-				startlatch.start();
-			}else{
-				//refresh PrnQueues
-				loadPrnQueues();
-			}
-			startTimer();
+			checkPusher();
+			checkStartTimetable();
 		}
 		
+		/*
 		private function onstartStrategy(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(!latch) return;
 			latch.removeEventListener(Event.COMPLETE,onstartStrategy);
 			loadPrnQueues();
 		}
+		*/
 
-		private function loadStrategy():DbLatch{
+
+		private function loadStartTimetable():void{
+			if(!isAutoPrintManager) return;
+			timetableAC=null;
+			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			var latch:DbLatch= new DbLatch();
+			latch.addEventListener(Event.COMPLETE,onTimetableLoad);
+			latch.addLatch(svcs.loadStartTimetable());
+			latch.start();
+		}
+		private function onTimetableLoad(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onStrategyLoad);
+			if(!latch.complite) return;
+			timetableAC=latch.lastDataAC;
+		}
+
+		
+		private function loadPusherStrategy():void{
+			if(!isAutoPrintManager) return;
+			strategyPusherAC=new ArrayCollection();
 			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onStrategyLoad);
 			latch.addLatch(svcs.loadStrategies());
 			latch.start();
-			return latch;
 		}
 		private function onStrategyLoad(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(!latch) return;
 			latch.removeEventListener(Event.COMPLETE,onStrategyLoad);
 			if(!latch.complite) return;
-			strategiesAC=latch.lastDataAC;
-			//create pusher
-			if(!strategiesAC) return;
+			
+			//strategiesAC=latch.lastDataAC;
+			//if(!strategiesAC) return;
 
-			for each(var st:PrnStrategy in strategiesAC){
+			//create pusher
+			for each(var st:PrnStrategy in latch.lastDataArr){
 				if(st.strategy_type==PrnStrategy.STRATEGY_PUSHER){
+					strategyPusherAC.addItem(st);
 					prnPusher=new PrintQueuePusher(this,null);
 					//prnPusher.prnQueue.is_active=st.is_active && st.isTimeToStart();
 					prnPusher.prnQueue.priority=st.priority;
@@ -439,16 +498,18 @@ package com.photodispatcher.print{
 					break;
 				}
 			}
-			loadPrnQueues();
+			checkPusher();
 		}
+		
+		
 
-		public function loadPrnQueues():DbLatch{
+		public function loadPrnQueues():void{
+			if(!isAutoPrintManager) return;
 			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onloadPrnQueues);
 			latch.addLatch(svcs.loadQueues());
 			latch.start();
-			return latch;
 		}
 		private function onloadPrnQueues(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;

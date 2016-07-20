@@ -39,7 +39,7 @@
 		<s:VerticalLayout gap="5"/>
 	</s:layout>
 
-	<s:DataGrid id="dgStation" width="50%" height="50%"
+	<s:DataGrid id="dgStation" width="70%" height="100%"
 				selectionMode="singleRow" locale="ru_RU"
 				dataProvider="{MessengerGeneric.stations}"
 				columns="{CycleStation.gridColumns()}"/>
