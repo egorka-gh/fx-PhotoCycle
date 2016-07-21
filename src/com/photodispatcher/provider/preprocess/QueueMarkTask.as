@@ -160,6 +160,10 @@ package com.photodispatcher.provider.preprocess{
 				return;
 			}
 			if(printGroup.is_pdf){
+				if(printGroup.sheets_per_file<=0){
+					dispatchErr("Не определено количество листов в пдф "+printGroup.id);
+					return;
+				}
 				//create temp folder
 				wrkDir=wrkDir.resolvePath(TEMP_FOLDER);
 				try{
@@ -223,6 +227,16 @@ package com.photodispatcher.provider.preprocess{
 
 			//pack to pdf
 			if(printGroup.is_pdf){
+				//detect if  only one page in original pdf
+				var hasOnePage:Boolean=printGroup.prints==1 || printGroup.sheets_per_file==1;
+				if(!hasOnePage){
+					if(!isStart){
+						var pagesInLastFile:int=printGroup.prints % printGroup.sheets_per_file;
+						if(pagesInLastFile==0) pagesInLastFile=printGroup.sheets_per_file;
+						hasOnePage=pagesInLastFile==1;
+					}
+				}
+				
 				//pack to pdf page
 				command=new IMCommand(IMCommand.IM_CMD_JPG2PDF);
 				command.folder=wrkDir.nativePath;
@@ -233,33 +247,40 @@ package com.photodispatcher.provider.preprocess{
 				commands.push(command);
 				
 				//replace page
-				//remove old page
-				command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
-				command.folder=wrkPath;
-				command.add(wrkPath+File.separator+pgf.file_name);
-				command.add('cat');
-				if(isStart){
-					command.add('2-end');
-				}else{
-					//4 last page
-					//pdftk 2.pdf cat 1-r2 output 1.pdf
-					command.add('1-r2');
+				if(!hasOnePage){
+					//remove old page
+					command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
+					command.folder=wrkPath;
+					command.add(wrkPath+File.separator+pgf.file_name);
+					command.add('cat');
+					if(isStart){
+						command.add('2-end');
+					}else{
+						//4 last page
+						//pdftk 2.pdf cat 1-r2 output 1.pdf
+						command.add('1-r2');
+					}
+					command.add('output');
+					command.add(wrkDir.nativePath+File.separator+'cat.pdf');
+					commands.push(command);
 				}
-				command.add('output');
-				command.add(wrkDir.nativePath+File.separator+'cat.pdf');
-				commands.push(command);
 				
 				//join
 				command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
 				command.folder=wrkDir.nativePath;
-				if(isStart){
-					//add first
+				if(hasOnePage){
+					//add only new page
 					command.add('img-0000.pdf');//new page
-					command.add('cat.pdf');//cat pdf
 				}else{
-					//add last
-					command.add('cat.pdf');//cat pdf
-					command.add('img-0000.pdf');//new page
+					if(isStart){
+						//add first
+						command.add('img-0000.pdf');//new page
+						command.add('cat.pdf');//cat pdf
+					}else{
+						//add last
+						command.add('cat.pdf');//cat pdf
+						command.add('img-0000.pdf');//new page
+					}
 				}
 				command.add('cat');
 				command.add('output');
