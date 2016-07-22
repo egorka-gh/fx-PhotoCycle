@@ -135,6 +135,11 @@ package com.photodispatcher.tech{
 				if(latch.complite && latch.lastDataArr.length>0){
 					printGroups=latch.lastDataArr;
 				}
+				if(printGroups && printGroups.length>0){
+					//detect bookpart
+					var pg:PrintGroup=printGroups[0] as PrintGroup;
+					if(pg) bookPart=pg.book_part;
+				}
 			}
 		}
 		
@@ -163,25 +168,59 @@ package com.photodispatcher.tech{
 			if(bookPart==BookSynonym.BOOK_PART_ANY){
 				//first time, init
 				if(sheet==0){
-					bookPart=BookSynonym.BOOK_PART_COVER;
+					if(sheets>1){
+						//can be blockcover in revers order
+						bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
+						logMsg('Наверное БлокОбложка');
+					}else{
+						bookPart=BookSynonym.BOOK_PART_COVER;
+					}
 				}else{
 					bookPart=BookSynonym.BOOK_PART_BLOCK;
+					//can be blockcover 
 				}
 				if(!strictSequence && !lastBook){
 					//detect order
 					if(!revers){
-						if(book==books && ((bookPart==BookSynonym.BOOK_PART_COVER && sheet==0) || (bookPart==BookSynonym.BOOK_PART_BLOCK && sheet==sheets))){
+						if(book==books && 
+							((bookPart==BookSynonym.BOOK_PART_COVER && sheet==0) || 
+							 (bookPart==BookSynonym.BOOK_PART_BLOCKCOVER && sheet==0) ||	
+							 (bookPart==BookSynonym.BOOK_PART_BLOCK && sheet==sheets))){
 							logMsg('Переключение на обратный порядок');
 							revers=true;
 						}
 					}else{
-						if(book==1 && ((bookPart==BookSynonym.BOOK_PART_COVER && sheet==0) || (bookPart==BookSynonym.BOOK_PART_BLOCK && sheet==1))){
+						if(book==1 && 
+							((bookPart==BookSynonym.BOOK_PART_COVER && sheet==0) ||
+							 (bookPart==BookSynonym.BOOK_PART_BLOCKCOVER && sheet==1) ||
+						 	 (bookPart==BookSynonym.BOOK_PART_BLOCK && sheet==1))){
 							logMsg('Переключение на прямой порядок');
 							revers=false;
 						}
 					}
 				}
+				if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER && revers) lastSheet=1;
 			}
+			
+			if(registred==1){
+				//second pass - can deted blockcover in revers
+				if(bookPart==BookSynonym.BOOK_PART_COVER && lastSheet==0 && lastBook==book && sheet==sheets-1){
+					//blockcover in revers order
+					bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
+					revers=true;
+					logMsg('Наверное БлокОбложка');
+				}
+			}
+			if(registred==sheets-1){
+				//penult pass - can detect blockcover normal order
+				if(bookPart==BookSynonym.BOOK_PART_BLOCK && lastSheet==sheets-1 && lastBook==book && sheet==0){
+					//blockcover in normal order
+					bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
+					revers=false;
+					logMsg('Наверное БлокОбложка');
+				}
+			}
+			
 			if(!checkSequece(book,sheet) && strictSequence) return;
 			
 			//fix data
@@ -273,6 +312,12 @@ package com.photodispatcher.tech{
 			if(!lastBook) return revers?books:1;
 			if(bookPart==BookSynonym.BOOK_PART_COVER){
 				return revers?(lastBook-1):(lastBook+1);
+			}else if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
+				if(revers){
+					return lastSheet==1?(lastBook-1):lastBook;
+				}else{
+					return lastSheet==0?(lastBook+1):lastBook;
+				}
 			}else{
 				if(revers){
 					return lastSheet==1?(lastBook-1):lastBook;
@@ -284,6 +329,25 @@ package com.photodispatcher.tech{
 		protected function get dueSheet():int{
 			if(bookPart==BookSynonym.BOOK_PART_COVER){
 				return 0;
+			}else if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
+				//if(!lastSheet) return revers?0:1;
+				if(revers){
+					if(lastSheet==1){
+						return 0;
+					}else if(lastSheet==0){
+						return sheets-1;
+					}else{
+						return lastSheet-1;
+					}
+				}else{
+					if(lastSheet==sheets-1){
+						return 0;
+					}else if(lastSheet==0){
+						return 1;
+					}else{
+						return lastSheet+1;
+					}
+				}
 			}else{
 				if(!lastSheet) return revers?sheets:1;
 				if(revers){
@@ -333,7 +397,11 @@ package com.photodispatcher.tech{
 			}
 			if(inexactBookSequence){
 				var firstSheet:int=0;
-				if(bookPart==BookSynonym.BOOK_PART_BLOCK) firstSheet=revers?sheets:1;
+				if(bookPart==BookSynonym.BOOK_PART_BLOCK){
+					firstSheet=revers?sheets:1;
+				}else if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
+					firstSheet=revers?0:1;
+				}
 				if(dueSheet==firstSheet) dBook=book;
 			}else if(detectFirstBook){
 				dBook=book;

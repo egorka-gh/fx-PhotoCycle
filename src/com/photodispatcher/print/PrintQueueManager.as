@@ -50,10 +50,13 @@ package com.photodispatcher.print{
 	import flash.utils.flash_proxy;
 	
 	import mx.collections.ArrayCollection;
+	import mx.collections.ISort;
 	import mx.controls.Alert;
 	
 	import org.granite.tide.Tide;
 	
+	import spark.collections.Sort;
+	import spark.collections.SortField;
 	import spark.formatters.DateTimeFormatter;
 	
 	[Event(name="managerError", type="com.photodispatcher.event.PrintEvent")]
@@ -525,10 +528,17 @@ package com.photodispatcher.print{
 						pqg.removeEventListener(Event.COMPLETE, onPrintQueueFetch);
 					}
 				}
-
+				
+				var ac:ArrayCollection=latch.lastDataAC;
+				//sort
+				var sort:ISort = new Sort();
+				sort.fields = [new SortField("is_reprint",true,true), new SortField("priority",true,true)]; //, new SortField("created",false,true)
+				ac.sort=sort;
+				ac.refresh();
+				//fill
 				prnQueuesAC=new ArrayCollection();
-				var pq:PrnQueue;
-				for each(pq in latch.lastDataAC){
+				var pq:PrnQueue; 
+				for each(pq in ac){
 					pqg=PrintQueueBuilder.build(this, pq);
 					if(pqg) prnQueuesAC.addItem(pqg);
 				}
@@ -538,6 +548,7 @@ package com.photodispatcher.print{
 				for each(pqg in prnQueuesAC){
 					pqg.addEventListener(Event.COMPLETE, onPrintQueueFetch);
 				}
+
 				
 				//prnQueuesAC.refresh();
 				//prnQueuesAC=latch.lastDataAC;
