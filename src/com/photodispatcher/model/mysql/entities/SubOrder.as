@@ -9,6 +9,9 @@ package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.model.PageData;
 	
+	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
 	import flash.globalization.DateTimeStyle;
 	
 	import mx.collections.ArrayList;
@@ -27,24 +30,45 @@ package com.photodispatcher.model.mysql.entities {
 		public  var projects:Array=[];
 		public  var native_type:int=-1;
 		
+		/*
 		private var _log:String;
 		public function get log():String{
 			return _log;
 		} 
+		*/
+		public var workFolder:File;
 		public function set log(value:String):void{
+			if(!workFolder) return;
+			var logTxt:String;
 			var dt:Date= new Date();
 			var df:DateFormatter = new DateFormatter();
 			df.formatString='DD.MM.YY J:NN:SS';
+			/*
 			if(_log){
 				_log=_log +'\n'+ df.format(dt)+': '+value;
 			}else{
 				_log =df.format(dt)+': '+value;
 			}
+			*/
+			logTxt=df.format(dt)+': '+value+String.fromCharCode(13, 10);
+			
+			//write log
+			logTxt=logTxt.replace(/\n/g,String.fromCharCode(13, 10));
+			var file:File=workFolder.resolvePath('log.txt');
+			var fs:FileStream = new FileStream();
+			try{
+				fs = new FileStream();
+				fs.open(file, FileMode.APPEND);
+				fs.writeUTFBytes(logTxt);
+				fs.close();
+			} catch(err:Error){}
+
 		}
+		/*
 		public function resetlog():void{
 			_log ='';
 		}
-
+		*/
 		
 		public function SubOrder(){
 			super();

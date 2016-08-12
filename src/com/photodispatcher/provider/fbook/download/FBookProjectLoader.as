@@ -25,7 +25,7 @@ package com.photodispatcher.provider.fbook.download{
 
 	[Event(name="complete", type="flash.events.Event")]
 	public class FBookProjectLoader extends Library	{
-		public static const FETCH_TIMEOUT:int = 20000;
+		public static const FETCH_TIMEOUT:int = 30000;
 
 		public var lastFetchedProject:FBookProject;
 		public var lastFetchedType:int;

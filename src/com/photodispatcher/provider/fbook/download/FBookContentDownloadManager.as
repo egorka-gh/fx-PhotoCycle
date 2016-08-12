@@ -104,7 +104,7 @@ package com.photodispatcher.provider.fbook.download{
 			}else{
 				loader= new BulkLoader(loaderId,service.connections);
 			}
-			subOrder.resetlog();
+			//subOrder.resetlog();
 			subOrder.log='Prepare download.';
 			var proj:FBookProject;
 			var pageNum:int=0;
@@ -388,6 +388,7 @@ package com.photodispatcher.provider.fbook.download{
 				return;
 			}
 			this.workFolder=workFolder;
+			subOrder.workFolder=workFolder;
 			_hasFatalError=false;
 			prepare();
 			//subOrder.resetlog();
@@ -721,6 +722,7 @@ package com.photodispatcher.provider.fbook.download{
 			bytesLoaded=0;
 			
 			//write log
+			/*
 			var logTxt:String=subOrder.log;
 			logTxt=logTxt.replace(/\n/g,String.fromCharCode(13, 10));
 			var file:File=workFolder.resolvePath('log.txt');
@@ -732,6 +734,7 @@ package com.photodispatcher.provider.fbook.download{
 				fs.close();
 			} catch(err:Error){}
 			subOrder.resetlog();
+			*/
 
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0, 0));
 			dispatchEvent(new Event(Event.COMPLETE));

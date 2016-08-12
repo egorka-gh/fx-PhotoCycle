@@ -140,6 +140,7 @@ package com.photodispatcher.provider.ftp{
 		
 		public function download(order:Order):void{
 			if(order) trace('FTPDownloadManager added order '+order.id);
+			if(order.state==OrderState.FTP_FORWARD) order.ftpForwarded=true;
 			if(order){
 				downloadOrders.push(order);
 			}
@@ -214,7 +215,7 @@ package com.photodispatcher.provider.ftp{
 		protected function reSyncFilter(element:*, index:int, arr:Array):Boolean {
 			var o:Order=element as Order;
 			//return o!=null && o.state==syncState;
-			return o!=null && source && o.source==source.id && (o.state==OrderState.FTP_WAITE || o.state==OrderState.FTP_CAPTURED);
+			return o!=null && source && o.source==source.id && (o.state==OrderState.FTP_WAITE || o.state==OrderState.FTP_FORWARD || o.state==OrderState.FTP_CAPTURED);
 		}
 		/**
 		 * 

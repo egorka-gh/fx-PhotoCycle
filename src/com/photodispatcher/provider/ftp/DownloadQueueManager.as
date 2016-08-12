@@ -360,6 +360,7 @@ package com.photodispatcher.provider.ftp{
 			//add new to queue
 			for each (order in syncMap){
 				if(order){
+					order.ftpForwarded=order.state==OrderState.FTP_FORWARD;
 					queue.push(order);
 				}
 			}
@@ -377,7 +378,7 @@ package com.photodispatcher.provider.ftp{
 			var o:Order=element as Order;
 			//return o!=null && o.state==syncState;
 			//return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state<0);
-			return o!=null && source && o.source==source.id && o.state==OrderState.FTP_WAITE;
+			return o!=null && source && o.source==source.id && (o.state==OrderState.FTP_WAITE || o.state==OrderState.FTP_FORWARD);
 			//return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state==OrderState.FTP_CAPTURED);
 		}
 		private function arrayToMap(arr:Array):Object{
@@ -571,7 +572,7 @@ package com.photodispatcher.provider.ftp{
 				var latch:DbLatch= new DbLatch(true);
 				var orderService:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				latch.addEventListener(Event.COMPLETE,oncaptureState);
-				latch.addLatch(orderService.captureState(webApplicant.id, OrderState.FTP_WAITE, OrderState.FTP_CAPTURED, Context.appID),webApplicant.id);
+				latch.addLatch(orderService.captureState(webApplicant.id, webApplicant.ftpForwarded ? OrderState.FTP_FORWARD : OrderState.FTP_WAITE, OrderState.FTP_CAPTURED, Context.appID),webApplicant.id);
 				latch.start();
 				/*
 				//remove from queue

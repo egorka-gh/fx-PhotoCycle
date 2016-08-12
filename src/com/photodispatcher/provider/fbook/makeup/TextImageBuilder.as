@@ -55,7 +55,6 @@ package com.photodispatcher.provider.fbook.makeup{
 		private var errText:String;
 		private var textItems:Array;
 		private var rendered:int;
-		private var filesSaved:int=0;
 		private var rendererHolder:Group;
 
 		//public function TextImageBuilder(book:FBookProject,renderContainer:Group=null){
@@ -208,12 +207,11 @@ package com.photodispatcher.provider.fbook.makeup{
 		
 		private function startRender():void{
 			rendered=0;
-			filesSaved=0;
 			if (!textItems || textItems.length==0){
 				dispatchEvent(new Event(Event.COMPLETE));
 				return;
 			}
-			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,filesSaved, textItems.length));
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,rendered, textItems.length));
 			renderNext();
 		}
 
@@ -222,21 +220,61 @@ package com.photodispatcher.provider.fbook.makeup{
 		private function renderNext():void{
 			renderContainer.removeAllElements();
 			currentBookText=textItems[rendered] as CanvasText;
+			if(!currentBookText){
+				suborder.log='Draw text bitmap error: null text';
+				errNum=OrderState.ERR_PREPROCESS;
+				errText = 'Draw text bitmap error: null text';
+				destroyRender();
+				dispatchEvent(new Event(Event.COMPLETE));
+				return;
+			}
 			
 			//add top offset 4 Й & gorizontal offset 4 italic (=fontsize)
 			currentBookText.x=currentBookText.getStyle('fontSize');;
 			currentBookText.y=currentBookText.getStyle('fontSize');
-			
+			suborder.log='Render text "'+currentBookText.text+'".';
+
 			renderContainer.addEventListener(FlexEvent.UPDATE_COMPLETE,textRenderHandler);
 			renderContainer.addElement(currentBookText);
 		}
 		
 		private function textRenderHandler(event:FlexEvent):void{
 			renderContainer.removeEventListener(FlexEvent.UPDATE_COMPLETE,textRenderHandler);
-			rendered++;
+			
 			var bd:BitmapData= new BitmapData(renderContainer.contentWidth+currentBookText.getStyle('fontSize'), renderContainer.contentHeight,true,0x00ffffff);
 			try{
 				bd.draw(renderContainer);
+
+				//save in sequence
+				var encoder:PNGEncoder= new PNGEncoder();
+				var imgByteArr:ByteArray = encoder.encode(bd);
+				var file:File= workFolder.resolvePath(currentBookText.fileName); 
+				suborder.log='Save text bitmap. File:'+file.nativePath;
+				var fs:FileStream = new FileStream();
+				fs.open(file, FileMode.WRITE);
+				fs.writeBytes(imgByteArr);
+				fs.close();
+				
+				//release mem
+				encoder=null;
+				bd.dispose();
+				bd=null;
+				imgByteArr.clear();
+				imgByteArr=null;
+				fs=null;
+				currentBookText.clearForCache(); // release CanvasText's memory?
+				textItems[rendered]=null; // remove CanvasText's reference,  garbage collector will clean it any way
+				
+				rendered++;
+				if(rendered == textItems.length){
+					suborder.log='All texts rendered.';
+					destroyRender();
+					dispatchEvent(new Event(Event.COMPLETE));
+					dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0,0));
+				}else{
+					dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,rendered, textItems.length));
+					renderNext();
+				}
 			}catch (e:Error){
 				suborder.log='Draw text bitmap error:'+e.message;
 				errNum=OrderState.ERR_PREPROCESS;
@@ -245,52 +283,6 @@ package com.photodispatcher.provider.fbook.makeup{
 				dispatchEvent(new Event(Event.COMPLETE));
 				return;
 			}
-			var encoder:PNGEncoder= new PNGEncoder();
-			var imgByteArr:ByteArray = encoder.encode(bd);
-			var file:File= workFolder.resolvePath(currentBookText.fileName); 
-			suborder.log='Save text bitmap "'+currentBookText.text+'". File:'+file.nativePath;
-			var fs:FileStream = new FileStream();
-			fs.addEventListener(Event.CLOSE,fileSaved);
-			fs.addEventListener(IOErrorEvent.IO_ERROR,fileSaveError);
-			fs.openAsync(file, FileMode.WRITE);
-			fs.writeBytes(imgByteArr);
-			fs.close();
-			
-			if(rendered == textItems.length){
-				suborder.log='All texts rendered.';
-			}else{
-				renderNext();
-			}
-			
-		}
-		
-		private function fileSaved(event:Event):void{
-			var fs:FileStream= (event.target as FileStream);
-			fs.removeEventListener(Event.CLOSE,fileSaved);
-			fs.removeEventListener(IOErrorEvent.IO_ERROR,fileSaveError);
-			filesSaved++;
-			if(filesSaved==textItems.length){
-				//complited
-				suborder.log='All text bitmaps saved.';
-				destroyRender();
-				dispatchEvent(new Event(Event.COMPLETE));
-				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0,0));
-			}else{
-				dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,filesSaved, textItems.length));
-			}
-		}
-		
-		private function fileSaveError(event:IOErrorEvent):void{
-			var fs:FileStream= (event.target as FileStream);
-			fs.removeEventListener(Event.CLOSE,fileSaved);
-			fs.removeEventListener(IOErrorEvent.IO_ERROR,fileSaveError);
-			filesSaved++;
-			trace (event); 	
-			suborder.log='Save text bitmap error:'+event.text;
-			errNum=OrderState.ERR_FILE_SYSTEM;
-			errText = event.text;
-			destroyRender();
-			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
 	}

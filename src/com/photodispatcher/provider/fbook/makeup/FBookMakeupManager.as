@@ -130,7 +130,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				return;
 			}
 			currSuborder.state=OrderState.PREPROCESS_PDF;
-			currSuborder.resetlog();
+			//currSuborder.resetlog();
 			if(currSuborder.isMultibook){
 				//numerate books
 				var project:FBookProject;
@@ -203,8 +203,10 @@ package com.photodispatcher.provider.fbook.makeup{
 			var pages:Array;
 			var p:PageData;
 			var sequences:Array=[];
-			var txt:String=currSuborder.log+'\n';
-			currSuborder.resetlog();
+			//var txt:String=currSuborder.log+'\n';
+			//currSuborder.resetlog();
+			dir=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
+			currSuborder.workFolder=dir;
 			for each (var obj:Object in currSuborder.projects){
 				project=obj as FBookProject;
 				if(project){
@@ -217,7 +219,7 @@ package com.photodispatcher.provider.fbook.makeup{
 					var file:File;
 					var fs:FileStream;
 					var msl:IMMsl;
-					dir=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
+					//dir=sourceDir.resolvePath(order.ftp_folder+File.separator+currSuborder.ftp_folder+File.separator+FBookProject.SUBDIR_WRK);
 					for each (p in pages){
 						if(p){
 							//save msl script
@@ -238,15 +240,15 @@ package com.photodispatcher.provider.fbook.makeup{
 					}
 					
 					//add sripts 2 sequences
-					txt=txt+'-----------------------------------'+'\n';
-					txt=txt+'Project id:'+project.id +' scripts'+'\n';
+					currSuborder.log='-----------------------------------';
+					currSuborder.log='Project id:'+project.id +' scripts';
 					var cmd:IMCommand;
 					for each (p in pages){
-						txt=txt+'Page #'+p.pageNum.toString()+'\n';
+						currSuborder.log='Page #'+p.pageNum.toString();
 						//set commands work folder
 						for each(cmd in p.rootLayer.commands){
 							cmd.folder=dir.nativePath;
-							txt=txt+cmd.toString()+'\n';
+							currSuborder.log=cmd.toString();
 						}
 						sequences.push(p.rootLayer.commands);
 					}
@@ -254,6 +256,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				}
 			}
 
+			/*
 			//save log
 			txt=txt.replace(/\n/g,String.fromCharCode(13, 10));
 			file=dir.resolvePath('log.txt');
@@ -264,6 +267,7 @@ package com.photodispatcher.provider.fbook.makeup{
 				fs.writeUTFBytes(txt);
 				fs.close();
 			} catch(err:Error){}
+			*/
 
 			runner= new IMMultiSequenceRuner(true);
 			runner.addEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
