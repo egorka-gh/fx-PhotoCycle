@@ -299,7 +299,7 @@ package com.photodispatcher.tech{
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK) endSheet=revers?1:sheets;
 				if(lastBook==books && lastSheet==endSheet) return true;
 			}
-			if(bookPart==BookSynonym.BOOK_PART_BLOCK && registred==books*sheets){
+			if((bookPart==BookSynonym.BOOK_PART_BLOCK || bookPart==BookSynonym.BOOK_PART_BLOCKCOVER) && registred==books*sheets){
 				return true;
 			}
 			if(bookPart==BookSynonym.BOOK_PART_COVER && registred==books){//one cover per book

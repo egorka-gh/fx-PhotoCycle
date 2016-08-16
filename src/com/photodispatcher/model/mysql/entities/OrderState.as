@@ -48,8 +48,10 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FTP_GET_PROJECT:int=108; //22.05.13
 		public static const FTP_LIST:int=109;
 		public static const FTP_LOAD:int=110;
-		public static const FTP_DEPLOY:int=111;//04.04.2013
-		public static const FTP_REMOTE:int=112;//04.04.2013
+		public static const FTP_WAITE_CHECK:int=114;
+		public static const FTP_HECK:int=115;
+		//public static const FTP_DEPLOY:int=111;//04.04.2013
+		//public static const FTP_REMOTE:int=112;//04.04.2013
 		
 		public static const FTP_INCOMPLITE:int=120;
 		public static const FTP_COMPLETE:int=130;
