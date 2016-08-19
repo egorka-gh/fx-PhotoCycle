@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:view="com.photodispatcher.view.*"
+		 xmlns:views="com.jxl.chatserver.views.*" 
+		 xmlns:services="com.jxl.chatserver.mvcs.services.*" 
+		 xmlns:remote="com.photodispatcher.view.remote.*"
+		 xmlns:preprocess="com.photodispatcher.provider.preprocess.*"
+		 xmlns:ftp="com.photodispatcher.provider.ftp.*"
+		 creationComplete="{init()}"
+		 keyDown="onKey(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.akmeful.util.ArrayUtil;
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.StateLog;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.service.SyncLoaderService;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+
+			public static const REFRESH_INTERVAL:int=10;//min
+			public static const FORCE_START_INTERVAL:int=10;//min
+
+			[Bindable]
+			private var isRuning:Boolean=false;
+			[Bindable]
+			private var sources:ArrayCollection;
+
+			[Bindable]
+			public var helperMode:Boolean=false;
+
+			private var syncService:SyncLoaderService;
+			
+			//[Bindable]
+			//private var ordersErrLimitList:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var logList:ArrayCollection= new ArrayCollection();
+			
+			private var timer:Timer;
+			private var ordersQueueGridMenu:GridContexMenu;
+			private var ordersWriteQueueGridMenu:GridContexMenu;
+			private var ordersErrLimitGridMenu:GridContexMenu;
+			private var logGridMenu:GridContexMenu;
+
+			[Bindable]
+			private var stopLogList:IList;
+			
+			[Bindable]
+			private var productionName:String='Не назначено';
+			
+			
+			public function init():void{
+				sources=new ArrayCollection(Context.getSources());
+				productionName=Context.getProductionName();
+				
+				syncService= new SyncLoaderService();
+				syncService.sources=sources.source;
+				
+				if(focusManager) focusManager.setFocus(focusHolder);
+			}
+			
+
+			private function onKey(e:KeyboardEvent):void{
+				if(e.ctrlKey && e.keyCode==70){
+					//order lookup
+					var pop:OrderSearchPopup=new OrderSearchPopup();
+					pop.open(null);
+				}
+			}
+			
+			private function startSync():void{
+				productionName=Context.getProductionName();
+				if(isRuning) return;
+				isRuning=true;
+				resync();
+			}
+			private function onTimer(e:TimerEvent):void{
+				resync();
+			}
+			private function resync():void{
+				if(timer) timer.stop();
+				syncService.addEventListener(Event.COMPLETE,resyncCompleted);
+				syncService.sync();
+			}
+			private function resyncCompleted(e:Event):void{
+				syncService.removeEventListener(Event.COMPLETE,resyncCompleted);
+				trace('resyncCompleted');
+				
+				if(!timer){
+					var interval:int=Context.getAttribute('syncInterval');
+					if(!interval) interval=REFRESH_INTERVAL;
+					timer=new Timer(interval*60*1000,0);
+					timer.addEventListener(TimerEvent.TIMER,onTimer);
+				}
+				timer.start();
+				
+				if(startServices){
+					startServices=false;
+					//downloadManager.isStarted=true;
+				}
+			}
+
+			private function stopSync():void{
+				if(timer){
+					timer.stop();
+					timer.removeEventListener(TimerEvent.TIMER,onTimer);
+					timer=null;
+				}
+				isRuning=false;
+			}
+
+			
+			private var startServices:Boolean;
+			public function start():void{
+				if(!Context.getAttribute('manualStart')){
+						startSync();
+						startServices=true;
+				}else{
+					//downloadManager.reLoad();
+				}
+			}
+			
+			public function stop():void{
+				stopSync();
+				//downloadManager.isStarted=false;
+			}
+
+			
+			protected function btStop_clickHandler(event:MouseEvent):void{
+				stop();
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!--<ftp:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true" />-->
+	</fx:Declarations>
+
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
+
+	<s:VGroup gap="5" top="30" left="10" right="10" bottom="10">
+		<s:TabBar id="tbView"  dataProvider="{vsSubInfo}"/>
+		<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+			<s:NavigatorContent label="Состояние" backgroundAlpha="0" width="100%" height="100%">
+				<s:HGroup id="gState" gap="10" top="0" left="0" right="0" bottom="0">
+					<s:VGroup gap="10" height="100%"  enabled="{!helperMode}">
+						<s:Label text="Web синхронизация" fontWeight="bold"/>
+						<s:HGroup gap="10">
+							<s:Button id="btStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить синхронизацию" 
+									  click="{startSync()}" enabled="{!isRuning}"/>
+							<s:Button id="btStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить синхронизацию"
+									  click="btStop_clickHandler(event)" enabled="{isRuning}"/>
+						</s:HGroup>
+						<s:Scroller width="220" height="100%">
+							<s:DataGroup dataProvider="{sources}" itemRenderer="com.photodispatcher.view.itemRenderer.SourceItemRenderer"
+										 width="220">
+								<s:layout>
+									<s:VerticalLayout gap="0"/>
+								</s:layout>
+							</s:DataGroup>
+						</s:Scroller>
+					</s:VGroup>
+					<s:VGroup gap="10" width="510" height="100%">
+						<s:Label text="Загрузка     Производство: {productionName}" fontWeight="bold"/>
+						<s:HGroup gap="10">
+							<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить загрузку"/>
+							<s:Button id="btFtpStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить загрузку"/>
+						</s:HGroup>
+						<s:Scroller width="100%" height="100%">
+							<s:DataGroup width="100%" height="100%"  
+										 itemRenderer="com.photodispatcher.view.itemRenderer.QueueManagerRenderer">
+								<s:layout>
+									<s:VerticalLayout gap="0"/>
+								</s:layout>
+							</s:DataGroup>
+						</s:Scroller>
+					</s:VGroup>
+					
+					<s:Spacer width="10"/>
+					<s:VGroup gap="5" height="100%">
+						<s:Label text="Проверка Очередь: " fontWeight="bold"/>
+						<s:HGroup gap="10">
+							<s:Button id="btBuilderStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить подготовку"/>
+							<s:Button id="btBuilderStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить подготовку"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:HGroup>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+	</s:VGroup>
+	
+</s:Group>

@@ -25,6 +25,9 @@
 			[Bindable]
 			private var deliveryTDAC:ArrayCollection;
 			
+			[Bindable]
+			public var hideDelivery:Boolean=false;
+			
 			private var _currentItem:Source;
 			[Bindable]
 			public function get currentItem():Source{
@@ -35,18 +38,14 @@
 				typeListIdx=-1;
 				if(_currentItem){
 					_currentItem.edit();
-					currentState=(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE)?'source':'lab';
-					//var stDao:SourceTypeDAO=new SourceTypeDAO();
-					//typeList=stDao.findAll(_currentItem.loc_type);
+					if(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE){
+						currentState=hideDelivery?'noDelivery':'source';
+					}else{
+						currentState='lab';
+					}
 					typeList=Context.getAttribute('src_typeValueList') as ArrayCollection;
 					typeListIdx=ArrayUtil.searchItemIdx('value',_currentItem.type,typeList.toArray());
-					/*
-					webService=_currentItem.webService;
-					ftpService=_currentItem.ftpService;
-					fbookService=_currentItem.fbookService;
-					hotFolder=_currentItem.hotFolder;
-					*/
-					if(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE){
+					if(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE && !hideDelivery){
 						//load delivery type dict
 						var latch:DbLatch= new DbLatch();
 						var service:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
@@ -72,16 +71,6 @@
 			private var typeList:IList;
 			[Bindable]
 			private var typeListIdx:int;
-			/*
-			[Bindable]
-			private var webService:SourceSvc;
-			[Bindable]
-			private var ftpService:SourceSvc;
-			[Bindable]
-			private var fbookService:SourceSvc;
-			[Bindable]
-			private var hotFolder:SourceSvc;
-			*/
 
 			protected function ddType_changeHandler(event:IndexChangeEvent):void{
 				if(currentItem && ddType.selectedItem){
@@ -91,8 +80,6 @@
 			}
 			
 			protected function tiCod_changeHandler(event:TextOperationEvent):void{
-				//var newCode:String=tiCod.text;
-				//if(!newCode) newCode='';
 				if(currentItem.code.length>1) currentItem.code=currentItem.code.charAt(0);
 				currentItem.changed=true
 			}
@@ -114,7 +101,8 @@
 	</fx:Script>
 
 	<s:states>
-		<s:State name="source"/>
+		<s:State name="sourceFull" stateGroups="source"/>
+		<s:State name="noDelivery" stateGroups="source"/>
 		<s:State name="lab"/>
 	</s:states>
 	<s:VGroup width="100%" height="100%" gap="5">
@@ -149,13 +137,13 @@
 			</s:FormItem> 
 		</s:Form>
 
-		<s:Label text="Типы доставки"/>
-		<config:ItemsGrid id="gDeliveryTD" editable="true" 
+		<s:Label text="Типы доставки" includeIn="sourceFull"/>
+		<config:ItemsGrid id="gDeliveryTD" editable="true"  includeIn="sourceFull"
 						  currentData="{deliveryTDAC}"
 						  currentColumns="{DeliveryTypeDictionary.gridColumns()}"
 						  width="600"
 						  height="100%"/>
-		<s:HGroup width="600" horizontalAlign="right">
+		<s:HGroup width="600" horizontalAlign="right" includeIn="sourceFull">
 			<s:Button id="btSaveDeliveryTD" label="Сохранить" click="btSaveDeliveryTD_clickHandler(event)"/>
 		</s:HGroup>
 		

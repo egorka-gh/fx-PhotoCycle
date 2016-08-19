@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="group1_creationCompleteHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.IMRunerEvent;
+			import com.photodispatcher.model.mysql.entities.AppConfig;
+			import com.photodispatcher.shell.IMCommand;
+			import com.photodispatcher.shell.IMRuner;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.PasswPopup;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.events.PopUpEvent;
+			import spark.events.TextOperationEvent;
+			
+			[Bindable]
+			private var workFolder:String;
+			[Bindable]
+			private var prtPath:String;
+			[Bindable]
+			private var imPath:String;
+			[Bindable]
+			private var imRespond:String;
+			[Bindable]
+			private var imThreads:int=0;
+			[Bindable]
+			private var imPathValid:Boolean=false;
+			[Bindable]
+			private var serverIP:String;
+			[Bindable]
+			private var bdServer:String;
+			[Bindable]
+			private var manualStart:Boolean=false;
+			
+			[Bindable]
+			private var syncInterval:int;
+
+			[Bindable]
+			private var config:AppConfig;
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void{
+				
+				imPath=Context.getAttribute('imPath');
+				workFolder=Context.getAttribute('workFolder');
+				config=Context.config;
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					imThreads=so.data.imThreads;
+					serverIP=so.data.serverIP;
+					bdServer=so.data.bdServer;
+				}
+
+				if(!imThreads || imThreads<0) imThreads=0;
+				pingIM();
+				
+				manualStart=so.data.manualStart;
+				syncInterval=so.data.syncInterval;
+				if(!syncInterval) syncInterval=10;
+				
+			}
+			
+			private function pingIM():void{
+				if(imPath){
+					var f:File=File.applicationStorageDirectory;
+					//var im:IMRuner= new IMRuner(imPath,Context.getAttribute('workFolder'));
+					var im:IMRuner= new IMRuner(imPath,f.nativePath);
+					im.addEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+					im.ping(imPath);
+				}
+			}
+			private function onImPing(e:IMRunerEvent):void{
+				var im:IMRuner=e.target as IMRuner;
+				im.removeEventListener(IMRunerEvent.IM_COMPLETED, onImPing);
+				imPathValid=!e.hasError;
+				imRespond=e.error;
+			}
+
+			protected function btWrkFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var sPath:String='';
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,wrkFolderSet);
+				file.browseForDirectory('Выбирите рабочую папку');
+			}
+			protected function wrkFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,wrkFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					workFolder=file.nativePath;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.workFolder = workFolder;
+					so.flush();  
+					Context.setAttribute("workFolder", workFolder);
+				}
+			}
+			
+			protected function btIMFolder_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,imFolderSet);
+				file.browseForDirectory('Выбирите папку ImageMagick');
+			}
+			protected function imFolderSet(event:Event):void{
+				imPathValid=false;
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,imFolderSet);
+					imPath=file.nativePath;
+
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.imPath = file.nativePath;
+					so.flush();  
+					Context.setAttribute("imPath", imPath);
+
+					if(imPath) pingIM();
+				}
+			}
+			
+			protected function tiIMThreads_changeHandler(event:TextOperationEvent):void{
+				imThreads=int(tiIMThreads.text);
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imThreads = imThreads;
+				so.flush();  
+				Context.setAttribute("imThreads", imThreads);
+			}
+			
+			private static function leadingZero(value:Number):String{
+				return StrUtil.lPad(value.toString(),2);
+			}
+
+			protected function tiServerIP_changeHandler(event:TextOperationEvent):void{
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.serverIP = serverIP;
+				so.flush();  
+				Context.setAttribute("serverIP", serverIP);
+			}
+				
+			protected function btSetPass_clickHandler(event:MouseEvent):void{
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPass);
+				passPop.show('',true);
+			}
+			protected function onCfgPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(!passPop) return;
+				passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					var newPass:String=passPop.pass;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.configPass = newPass;
+					so.flush();  
+					Context.setAttribute('configPass', newPass);
+				}
+			}
+
+			protected function btOffPass_clickHandler(event:MouseEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.configPass = '';
+				so.flush();  
+				Context.setAttribute('configPass', '');
+			}
+			
+			protected function reconnectBdServer():void{
+				if(bdServer){
+					Alert.show('Перезапустите программу для подключения к серверу "'+bdServer+'"','Подключение к серверу',4,null,onReconnectBdServerAlert);
+				}else{
+					Alert.show('Не указан сервер базыданных');
+				}
+			}
+			
+			private function onReconnectBdServerAlert(e:CloseEvent):void{
+				FlexGlobals.topLevelApplication.exit();
+			}
+			
+			protected function tiBdServer_enterHandler(event:FlexEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				bdServer=tiBdServer.text;
+				so.data.bdServer = bdServer;
+				so.flush();  
+				reconnectBdServer();
+			}
+			
+			protected function tiSyncInterval_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				syncInterval=int(tiSyncInterval.text);
+				if(syncInterval>0){
+					Context.setAttribute('syncInterval', syncInterval);
+					so.data.syncInterval = syncInterval;
+					so.flush();  
+				}
+			}
+			
+			protected function tiIMFolder_enterHandler(event:FlexEvent):void{
+				imPathValid=false;
+				imPath=tiIMFolder.text;
+				//if(!imPath) return
+				//save last selection
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imPath = imPath;
+				so.flush();  
+				Context.setAttribute("imPath", imPath);
+				
+				if(imPath) pingIM();
+			}
+			
+			protected function tg_manualStart_changeHandler(event:Event):void{
+				manualStart=tg_manualStart.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.manualStart = manualStart;
+				so.flush();  
+				Context.setAttribute('manualStart', manualStart);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup>
+		<s:Form>
+			<s:layout>
+				<s:FormLayout gap="-9"/>
+			</s:layout>
+
+			<s:FormItem label="Сервер базы данных">
+					<s:TextInput id="tiBdServer" text="{bdServer}" width="300" enter="tiBdServer_enterHandler(event)"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Рабочая папка">
+				<mx:HBox>
+					<!--<s:TextInput id="tiWrkFolder" text="{conf.wrk_path}" editable="false" width="400"/>-->
+					<s:TextInput id="tiWrkFolder" text="{workFolder}" editable="false" width="400"/>
+					<s:Button id="btWrkFolder" label="..." click="btWrkFolder_clickHandler(event)"/>
+				</mx:HBox>
+			</s:FormItem> 
+
+			<s:FormItem label="Временная папка">
+				<!--<mx:HBox>
+					<s:TextInput id="tiPrtFolder" text="{prtPath}" editable="false" width="400"/>
+					<s:Button id="btPrtFolder" label="..." click="btPrtFolder_clickHandler(event)"/>
+				</mx:HBox>-->
+			</s:FormItem> 
+			
+			<s:FormItem label="Интервал синхронизации (мин)">
+				<s:TextInput id="tiSyncInterval" text="{syncInterval}"
+							 restrict="0123456789"
+							 change="tiSyncInterval_changeHandler(event)"
+							 width="50"/>
+			</s:FormItem> 
+
+			<s:FormItem label="Ручной запуск сервисов">
+				<s:CheckBox id="tg_manualStart" selected="{manualStart}" change="tg_manualStart_changeHandler(event)"/>
+			</s:FormItem>
+
+			<s:FormItem label="Папка ImageMagick">
+				<s:VGroup gap="3">
+					<s:VGroup gap="3">
+						<s:HGroup gap="5">
+							<s:TextInput id="tiIMFolder" text="{imPath}" width="400" color="{imPathValid?0:0xff0000}" enter="tiIMFolder_enterHandler(event)"/>
+							<s:Button id="btIMFolder" label="..." click="btIMFolder_clickHandler(event)"/>
+						</s:HGroup>
+						<s:Label text="{imRespond}" color="{imPathValid?0:0xff0000}"/>
+					</s:VGroup>
+					<s:HGroup gap="5" verticalAlign="baseline">
+						<s:Label text="Кол потоков"/>
+						<s:TextInput id="tiIMThreads" text="{imThreads.toString()}" restrict="0123456789" width="50" enabled="{imPathValid}"
+									 change="tiIMThreads_changeHandler(event)"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:FormItem> 
+
+
+			<s:FormItem label="Защита конфигурации">
+				<s:HGroup gap="10">
+					<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
+					<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+				</s:HGroup>
+			</s:FormItem> 
+
+		</s:Form>
+		<s:HGroup gap="10" horizontalAlign="right" width="100%" paddingRight="10">
+			<s:Button id="btSaveConfig" label="Сохранить" click="{Context.saveConfig()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

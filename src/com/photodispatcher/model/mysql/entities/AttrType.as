@@ -16,5 +16,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FAMILY_SUBORDER:int=4;
 		public static const FAMILY_MAILPACKAGE:int=5;
 		public static const FAMILY_MAILPACKAGE_PROP:int=6;
+		public static const FAMILY_ORDERLOAD:int=7;
+		public static const FAMILY_ORDERLOAD_FILES:int=8;
     }
 }

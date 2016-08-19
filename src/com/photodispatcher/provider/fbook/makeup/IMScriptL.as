@@ -209,6 +209,7 @@ package com.photodispatcher.provider.fbook.makeup{
 		
 		private function postprocess():void{
 			function commplitePage():void{
+				//TODO move to regular (not local subfunction), AS3 bug mem leak possible 
 				if(!cmd) return;
 				var newPageData:PageData =new PageData(_book, sheetNum,outFolder,sheetNum+1);//pages starts from 1 (0- 4 book cover only)
 				cmd.add('-tile');cmd.add(cols.toString()+'x'+rows.toString());

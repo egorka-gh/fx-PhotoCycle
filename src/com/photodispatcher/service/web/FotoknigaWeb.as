@@ -2,8 +2,11 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.MailPackageBuilder;
 	import com.photodispatcher.factory.OrderBuilder;
+	import com.photodispatcher.factory.OrderLoadBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
+	import com.photodispatcher.model.mysql.entities.OrderLoad;
+	import com.photodispatcher.model.mysql.entities.OrderTemp;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
@@ -17,6 +20,7 @@ package com.photodispatcher.service.web{
 	import flash.filesystem.FileStream;
 	import flash.globalization.DateTimeStyle;
 	
+	import mx.collections.ArrayCollection;
 	import mx.rpc.AsyncResponder;
 	import mx.rpc.AsyncToken;
 	import mx.rpc.events.FaultEvent;
@@ -44,10 +48,20 @@ package com.photodispatcher.service.web{
 		public static const ORDER_STATE_RECEIVED:int=60;
 		public static const ORDER_STATE_ARCHIVED:int=100;
 
+		public static const LOADER_ORDER_STATE_NONE:int=0;
+		public static const LOADER_ORDER_STATE_READY:int=10;
+		public static const LOADER_ORDER_STATE_COPY:int=20;
+		public static const LOADER_ORDER_STATE_ERROR:int=25;
+		public static const LOADER_ORDER_STATE_DONE:int=30;
+
 		public static const URL_API:String='api.php';
 		public static const API_KEY:String='sp0oULbDnJfk7AjBNtVG';
 
+		public static const URL_API_NEW:String='api/';
+		
 		public static const PARAM_KEY:String='appkey';
+		public static const PARAM_ACTION:String='action';
+		
 		public static const PARAM_COMMAND:String='cmd';
 		//public static const PARAM_PARAMETRS:String='args';
 
@@ -85,7 +99,12 @@ package com.photodispatcher.service.web{
 		public static const PARAM_UPDATE_PACKAGE_ID:String='args[id]';
 		public static const PARAM_PACKAGE_STATUS:String='args[status]';
 		public static const PARAM_PACKAGE_FORCE_STATUS:String='args[ignore_balance]';
-
+		
+		public static const ACTION_GET_LOADER_ORDERS:String='fk:get_ready_orders';
+		public static const ACTION_GET_LOADER_ORDER:String='fk:get_order_files';
+		public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status';
+		
+		
 		public function FotoknigaWeb(source:Source){
 			super(source);
 		}
@@ -94,7 +113,7 @@ package com.photodispatcher.service.web{
 		private var is_preload:Boolean;
 		private var nextState:int=-1;
 		private var auth:FBookAuthService;
-		
+		private var is_newAPI:Boolean=false;
 		
 		private function login():void{
 			if(!source.fbookService || !source.fbookService.url){
@@ -136,6 +155,40 @@ package com.photodispatcher.service.web{
 						//getData();
 						startSync();
 						break;
+					case CMD_SYNC_LDR:
+						orderes=[];
+						startListen();
+						//ask loader orders 4 sync
+						post= new Object();
+						post[PARAM_KEY]=appKey;
+						post[PARAM_ACTION]=ACTION_GET_LOADER_ORDERS;
+						trace('FotoknigaWeb web sync orders 4 load; action:'+ACTION_GET_LOADER_ORDERS);
+						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
+						break;
+					case CMD_GET_ORDER_LDR:
+						orderes=[];
+						startListen();
+						//ask loader order by id
+						post= new Object();
+						post[PARAM_KEY]=appKey;
+						post[PARAM_ACTION]=ACTION_GET_LOADER_ORDER;
+						post['id']=int(lastOrder.src_id);
+						trace('FotoknigaWeb web get order 4 load; action:'+ACTION_GET_LOADER_ORDER);
+						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
+						break;
+					case CMD_SET_ORDER_LDR_STATE:
+						startListen();
+						//set loader order state
+						post= new Object();
+						post[PARAM_KEY]=appKey;
+						post[PARAM_ACTION]=ACTION_SET_LOADER_ORDER_STATE;
+						post['id']=int(lastOrder.src_id);
+						post['status']=lastOrder.src_state;
+						post['info']=lastOrder.src_state_comment;
+						trace('FotoknigaWeb set state order 4 load; action:'+ACTION_SET_LOADER_ORDER_STATE);
+						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
+						break;
+					
 					case CMD_CHECK_STATE:
 						orderes=[];
 						startListen();
@@ -189,10 +242,27 @@ package com.photodispatcher.service.web{
 		private function login_FaultHandler(event:FaultEvent, token:AsyncToken):void {
 			abort('Ошибка подключения к '+source.fbookService.url+': '+event.fault.faultString);
 		}
-
+		
+		override public function syncLoad():void{
+			if(!source || source.type!=SourceType.SRC_FOTOKNIGA){
+				abort('Не верная иннициализация синхронизации');
+				return;
+			}
+			if(!appKey){
+				abort('Не назначен appKey для web сервиса');
+				return;
+			}
+			cmd=CMD_SYNC_LDR;
+			_hasError=false;
+			_errMesage='';
+			is_newAPI=true;
+			login();
+		}
+		
 		
 
 		override public function sync():void{
+			is_newAPI=false;
 			if(!source || source.type!=SourceType.SRC_FOTOKNIGA){
 				abort('Не верная иннициализация синхронизации');
 				return;
@@ -202,8 +272,9 @@ package com.photodispatcher.service.web{
 			_errMesage='';
 			login();
 		}
-
+		
 		private function startSync():void{
+			is_newAPI=false;
 			var post:Object;
 			post= new Object();
 			post[PARAM_KEY]=API_KEY;
@@ -211,46 +282,6 @@ package com.photodispatcher.service.web{
 			var states:Array=PARAM_STATUS_PRELOAD_VALUES.concat();
 			states.push(PARAM_STATUS_ORDERED_VALUE);
 			post[PARAM_STATUSES]=states;
-			if(source.fbookSid) post.sid=source.fbookSid;
-			client.getData( new InvokerUrl(baseUrl+URL_API),post);
-		}
-
-
-		private function getDataUnused():void{
-			var post:Object;
-			if(!is_preload){
-				//complited
-				//endSync();
-				//list ftp
-				listFtp();
-				return;
-			}
-			is_preload=nextState==-1;
-			post= new Object();
-			post[PARAM_KEY]=API_KEY;
-			post[PARAM_COMMAND]=COMMAND_LIST_ORDERS;
-			if(is_preload){
-				//preload states
-				post[PARAM_STATUSES]=PARAM_STATUS_PRELOAD_VALUES;
-				nextState=PARAM_STATUS_ORDERED_VALUE;
-			}else{
-				//main state
-				post[PARAM_STATUS]=PARAM_STATUS_ORDERED_VALUE;
-			}
-			/*
-			is_preload=preloadStates.length>0;
-			if(is_preload){
-				fetchState=preloadStates.shift();
-			}else{
-				fetchState=PARAM_STATUS_ORDERED_VALUE;
-			}
-			//ask orders
-			post= new Object();
-			post[PARAM_KEY]=API_KEY;
-			post[PARAM_COMMAND]=COMMAND_LIST_ORDERS;
-			post[PARAM_STATUS]=fetchState;
-			*/
-			
 			if(source.fbookSid) post.sid=source.fbookSid;
 			client.getData( new InvokerUrl(baseUrl+URL_API),post);
 		}
@@ -285,6 +316,33 @@ package com.photodispatcher.service.web{
 			}
 			endSync();
 		}
+
+		override public function getLoaderOrder(order:Order):void{
+			if(!source || source.type!=SourceType.SRC_FOTOKNIGA || !order || !int(order.src_id)){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			is_newAPI=true;
+			lastOrder=order;
+			cmd=CMD_GET_ORDER_LDR;
+			_hasError=false;
+			_errMesage='';
+			login();
+		}
+
+		override public function setLoaderOrderState(order:Order):void{
+			if(!source || source.type!=SourceType.SRC_FOTOKNIGA || !order || !int(order.src_id)){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			is_newAPI=true;
+			lastOrder=order;
+			cmd=CMD_SET_ORDER_LDR_STATE;
+			_hasError=false;
+			_errMesage='';
+			login();
+		}
+
 		
 		//private var _getOrder:Order;
 		override public function get lastOrderId():String{
@@ -299,6 +357,7 @@ package com.photodispatcher.service.web{
 			}
 		}
 		override public function getOrder(order:Order):void{
+			is_newAPI=false;
 			lastOrder=order;
 			//DO NOT KILL used in print check web state 
 			if(order && !order.src_id && order.id){
@@ -357,23 +416,36 @@ package com.photodispatcher.service.web{
 		override protected function handleData(e:WebEvent):void{
 			var result:Object;
 			result=parseRaw(e.data);
-			if(!result || !result.hasOwnProperty('result') || !result.result || result.error){
-				if(!result){
-					abort('FotoknigaWeb Ошибка web: '+e.data);
-				}else{
-					abort(getErr(result));
+			//check 4 err
+			if(is_newAPI){
+				if(!result || result.error){
+					if(!result){
+						abort('FotoknigaWeb Ошибка web: '+e.data);
+					}else{
+						abort(result.error);
+					}
+					return;
 				}
-				return;
+			}else{
+				if(!result || !result.hasOwnProperty('result') || !result.result || result.error){
+					if(!result){
+						abort('FotoknigaWeb Ошибка web: '+e.data);
+					}else{
+						abort(getErr(result));
+					}
+					return;
+				}
 			}
+			
+			var a:Array;
 			switch (cmd){
 				case CMD_SYNC:
-					//logSyncData(e.data);
 					if(!(result.result is Array)){
 						abort('FotoknigaWeb Ошибка структуры данных');
 						return;
 					}
 					//set preload mark
-					var a:Array=result.result;
+					a=result.result;
 					var it:Object;
 					//for each(it in a) it.is_preload=is_preload?1:0;
 					for each(it in a){
@@ -382,10 +454,46 @@ package com.photodispatcher.service.web{
 					}
 					//add to result
 					orderes=orderes.concat(a);
-					//getData();
 					listFtp();
 					return;
 					break;
+				case CMD_SYNC_LDR:
+					//parse ids
+					var key:String;
+					var ot:OrderTemp;
+					var src_id:int;
+					for(key in result){
+						src_id=int(result[key]);
+						if(src_id){
+							ot=new OrderTemp();
+							ot.source=source.id;
+							ot.src_id=src_id.toString();
+							ot.id=source.id.toString()+'_'+src_id.toString();
+							orderes.push(ot);
+						}
+					}
+					//complited
+					break;
+				case CMD_GET_ORDER_LDR:
+					//parse order
+					var ol:OrderLoad=OrderLoadBuilder.build(source,result);
+					if(ol){
+						//set result
+						lastOrder.ftp_folder=ol.ftp_folder;
+						lastOrder.fotos_num=ol.fotos_num;
+						lastOrder.files=ol.files as ArrayCollection;
+					}else{
+						abort('FotoknigaWeb Ошибка структуры данных');
+						return;
+					}
+					endGetOrder();
+					return;
+					break;
+				case CMD_SET_ORDER_LDR_STATE:
+					//complited
+					return;
+					break;
+
 				case CMD_CHECK_STATE:
 					if(!result.result.hasOwnProperty('status')){
 						abort('FotoknigaWeb Ошибка структуры данных');
@@ -451,6 +559,7 @@ package com.photodispatcher.service.web{
 		}
 		
 		override protected function endGetOrder():void{
+			is_newAPI=false;
 			trace('FotoknigaWeb order loaded.');
 			_hasError=false;
 			_errMesage='';
@@ -461,6 +570,7 @@ package com.photodispatcher.service.web{
 		}
 		
 		override public function getMailPackage(packageId:int):void{
+			is_newAPI=false;
 			if(!source || !packageId){
 				abort('Не верная иннициализация команды');
 				return;
@@ -473,6 +583,7 @@ package com.photodispatcher.service.web{
 		}
 		
 		override public function joinMailPackages(ids:Array):void{
+			is_newAPI=false;
 			if(!source || !ids || ids.length==0){
 				abort('Не верная иннициализация команды');
 				return;
@@ -486,6 +597,7 @@ package com.photodispatcher.service.web{
 		}
 		
 		override public function setMailPackageState(id:int, state:int, force:Boolean):void{
+			is_newAPI=false;
 			if(!source){
 				abort('Не верная иннициализация команды');
 				return;

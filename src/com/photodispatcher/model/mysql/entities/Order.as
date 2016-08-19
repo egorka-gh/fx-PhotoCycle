@@ -64,8 +64,11 @@ package com.photodispatcher.model.mysql.entities {
 		 */
 		public var otkSubid:String;
 		
-		//remote source state (4 check if canceled) runtime
+		//remote source state (4 check if canceled or set remote state) runtime
 		public var src_state:String;
+		//remote source state comment (4 set remote state) runtime
+		public var src_state_comment:String;
+		
 		/**
 		 * runtime 
 		 */
@@ -94,6 +97,12 @@ package com.photodispatcher.model.mysql.entities {
 		 */
 		public var fileStructure:Dictionary;
 		
+		/**
+		 * runtime
+		 * orderLoad.files  (OrderFiles)
+		 */
+		public var files:ArrayCollection;
+		
 		public function get isFileStructureOk():Boolean{
 			if(!fileStructure) return false;
 			for (var key:String in fileStructure){
@@ -121,6 +130,14 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		public function setErrLimit():void{
 			errCount=ERROR_COUNTER_LIMIT;
+		}
+		
+		private var savedState:int;
+		public function saveState():void{
+			if(state>0) savedState=state;
+		}
+		public function restoreState():void{
+			if(savedState>0) state=savedState;
 		}
 		
 		override public function set state(value:int):void{

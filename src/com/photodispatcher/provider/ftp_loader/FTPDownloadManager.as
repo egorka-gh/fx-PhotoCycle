@@ -1,18 +1,15 @@
-package com.photodispatcher.provider.ftp{
+package com.photodispatcher.provider.ftp_loader{
 	import com.photodispatcher.event.ConnectionsProgressEvent;
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.LoadProgressEvent;
-	import com.photodispatcher.factory.PrintGroupBuilder;
-	import com.photodispatcher.factory.SuborderBuilder;
-	import com.photodispatcher.model.mysql.entities.AliasForward;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
-	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceSvc;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
-	import com.photodispatcher.model.mysql.entities.SubOrder;
+	import com.photodispatcher.provider.ftp.FTPConnectionManager;
+	import com.photodispatcher.provider.ftp.FtpTask;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -399,6 +396,7 @@ package com.photodispatcher.provider.ftp{
 			var rootFolder:String;
 			if(source.type==SourceType.SRC_FBOOK){
 				//reset suborders state
+				/*
 				var so:SubOrder;
 				if(order.hasSuborders){
 					for each(so in order.suborders){
@@ -412,6 +410,7 @@ package com.photodispatcher.provider.ftp{
 						}
 					}
 				}
+				*/
 			}else{
 				rootFolder=order.ftp_folder;
 			}
@@ -431,6 +430,7 @@ package com.photodispatcher.provider.ftp{
 			var rootFolder:String;
 			if(source.type==SourceType.SRC_FBOOK){
 				//reset suborders state
+				/*
 				var so:SubOrder;
 				if(listApplicant.hasSuborders){
 					for each(so in listApplicant.suborders){
@@ -441,6 +441,7 @@ package com.photodispatcher.provider.ftp{
 						}
 					}
 				}
+				*/
 			}
 			if(!rootFolder) return false;
 			if(DEBUG_TRACE) trace('FTPDownloadManager start list '+rootFolder);
@@ -486,6 +487,7 @@ package com.photodispatcher.provider.ftp{
 				trace('FTPDownloadManager empty ftp folder '+orderId);
 				//check FOTOKNIGA forward state
 				if(source.type==SourceType.SRC_FOTOKNIGA && cnn.folders){
+					/*
 					for each(var folderName:String in cnn.folders){
 						frwState=AliasForward.forvardState(folderName);
 						if(frwState>0){
@@ -497,6 +499,7 @@ package com.photodispatcher.provider.ftp{
 							return;
 						}
 					}
+					*/
 				}
 				order.state=OrderState.ERR_FTP;
 				if(order.exceedErrLimit){
@@ -528,6 +531,7 @@ package com.photodispatcher.provider.ftp{
 			//list complited - remove photo suborders 
 			if(source.type==SourceType.SRC_FBOOK) order.removePhotoSuborder();
 
+			/*
 			if(source.type==SourceType.SRC_PROFOTO){
 				//buid suborders (book folder) 
 				try{
@@ -541,6 +545,7 @@ package com.photodispatcher.provider.ftp{
 					return;
 				}
 			}
+			*/
 			if(source.type==SourceType.SRC_FBOOK){
 				//can has more then 1 relations.txt, rename
 				var i:int=0;

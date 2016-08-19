@@ -17,6 +17,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _appkey:String;
         private var _connections:int;
         private var _loc_type:int;
         private var _pass:String;
@@ -25,6 +26,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _type_name:String;
         private var _url:String;
         private var _user:String;
+
+        public function set appkey(value:String):void {
+            _appkey = value;
+        }
+        public function get appkey():String {
+            return _appkey;
+        }
 
         public function set connections(value:int):void {
             _connections = value;
@@ -84,6 +92,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _appkey = input.readObject() as String;
             _connections = input.readObject() as int;
             _loc_type = input.readObject() as int;
             _pass = input.readObject() as String;
@@ -96,6 +105,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject(_appkey);
             output.writeObject(_connections);
             output.writeObject(_loc_type);
             output.writeObject(_pass);

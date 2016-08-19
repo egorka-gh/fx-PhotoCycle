@@ -41,6 +41,7 @@ package com.photodispatcher.model.mysql.entities {
 		//public static const FTP_RELOAD:int=95;
 		public static const FTP_WAITE:int=100;
 		public static const FTP_FORWARD:int=101;
+		public static const FTP_WAITE_AFTER_ERROR:int=102;
 		public static const FTP_WEB_CHECK:int=103;
 		public static const FTP_WEB_OK:int=104;
 		public static const FTP_CAPTURED:int=105;

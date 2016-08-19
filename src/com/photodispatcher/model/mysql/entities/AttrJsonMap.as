@@ -24,6 +24,8 @@ package com.photodispatcher.model.mysql.entities {
 		private static var soMap:Object; 
 		private static var mpMap:Object; 
 		private static var mppMap:Object; 
+		private static var olMap:Object; 
+		private static var olfMap:Object; 
 		
 		public static function initJsonMap():DbLatch{
 			var service:DictionaryService=Tide.getInstance().getContext().byType(DictionaryService,true) as DictionaryService;
@@ -58,7 +60,19 @@ package com.photodispatcher.model.mysql.entities {
 			mppLatch.addLatch(service.getOrderJsonAttr(AttrType.FAMILY_MAILPACKAGE_PROP),'mailpackage_prop');
 			mppLatch.start();
 			latch.join(mppLatch);
-			
+
+			var olLatch:DbLatch= new DbLatch();
+			olLatch.addEventListener(Event.COMPLETE, onLoad);
+			olLatch.addLatch(service.getOrderJsonAttr(AttrType.FAMILY_ORDERLOAD),'order_load');
+			olLatch.start();
+			latch.join(olLatch);
+
+			var olfLatch:DbLatch= new DbLatch();
+			olfLatch.addEventListener(Event.COMPLETE, onLoad);
+			olfLatch.addLatch(service.getOrderJsonAttr(AttrType.FAMILY_ORDERLOAD_FILES),'order_load_file');
+			olfLatch.start();
+			latch.join(olfLatch);
+
 			latch.start();
 			return latch;
 		}
@@ -91,6 +105,10 @@ package com.photodispatcher.model.mysql.entities {
 						mpMap=newMap;
 					}else if(latch.lastToken.tag=='mailpackage_prop'){
 						mppMap=newMap;
+					}else if(latch.lastToken.tag=='order_load'){
+						olMap=newMap;
+					}else if(latch.lastToken.tag=='order_load_file'){
+						olfMap=newMap;
 					}
 				}
 			}
@@ -134,6 +152,22 @@ package com.photodispatcher.model.mysql.entities {
 				return;
 			}
 			return mppMap[sourceType.toString()] as Array;
+		}
+
+		public static function getOrderLoadJson(sourceType:int=0):Array{
+			if(!olMap){
+				throw new Error('Ошибка инициализации AttrJsonMap.initJsonMap',OrderState.ERR_APP_INIT);
+				return;
+			}
+			return olMap[sourceType.toString()] as Array;
+		}
+
+		public static function getOrderLoadFilesJson(sourceType:int=0):Array{
+			if(!olfMap){
+				throw new Error('Ошибка инициализации AttrJsonMap.initJsonMap',OrderState.ERR_APP_INIT);
+				return;
+			}
+			return olfMap[sourceType.toString()] as Array;
 		}
 
     }
