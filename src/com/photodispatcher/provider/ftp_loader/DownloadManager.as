@@ -233,6 +233,7 @@ package com.photodispatcher.provider.ftp_loader{
 		
 		private function onOrderLoaded(e:ImageProviderEvent):void{ 
 			saveOrder(e.order);
+			//TODO push to file check service 
 		}
 
 		private function saveOrder(order:Order):void{
@@ -249,7 +250,7 @@ package com.photodispatcher.provider.ftp_loader{
 			writeOrders.push(order);
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onOrderSave);
-			latch.addLatch(bdService.save(OrderLoad.fromOrder(order),order.id);
+			latch.addLatch(bdService.save(OrderLoad.fromOrder(order)),order.id);
 			latch.start();
 		}
 		private function onOrderSave(evt:Event):void{

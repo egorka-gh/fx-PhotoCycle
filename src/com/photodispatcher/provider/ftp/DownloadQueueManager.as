@@ -733,8 +733,8 @@ package com.photodispatcher.provider.ftp{
 			if(order){
 				unCaptureOrder(order.id);
 				if(order.state>=0){
-					order.state=OrderState.ERR_FTP;
-					StateLog.log(OrderState.ERR_FTP,order.id,'',event.error);
+					order.state=OrderState.ERR_LOAD;
+					StateLog.log(OrderState.ERR_LOAD,order.id,'',event.error);
 				}
 				order.setErrLimit();
 				resetOrder(order);

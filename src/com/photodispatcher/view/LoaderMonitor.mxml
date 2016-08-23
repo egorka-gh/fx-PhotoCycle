@@ -7,9 +7,8 @@
 		 xmlns:services="com.jxl.chatserver.mvcs.services.*" 
 		 xmlns:remote="com.photodispatcher.view.remote.*"
 		 xmlns:preprocess="com.photodispatcher.provider.preprocess.*"
-		 xmlns:ftp="com.photodispatcher.provider.ftp.*"
 		 creationComplete="{init()}"
-		 keyDown="onKey(event)">
+		 keyDown="onKey(event)" xmlns:ns="com.photodispatcher.provider.ftp_loader.*">
 	
 	<fx:Script>
 		<![CDATA[
@@ -58,13 +57,9 @@
 			[Bindable]
 			private var stopLogList:IList;
 			
-			[Bindable]
-			private var productionName:String='Не назначено';
-			
 			
 			public function init():void{
 				sources=new ArrayCollection(Context.getSources());
-				productionName=Context.getProductionName();
 				
 				syncService= new SyncLoaderService();
 				syncService.sources=sources.source;
@@ -82,7 +77,6 @@
 			}
 			
 			private function startSync():void{
-				productionName=Context.getProductionName();
 				if(isRuning) return;
 				isRuning=true;
 				resync();
@@ -109,7 +103,7 @@
 				
 				if(startServices){
 					startServices=false;
-					//downloadManager.isStarted=true;
+					downloadManager.isStarted=true;
 				}
 			}
 
@@ -129,13 +123,13 @@
 						startSync();
 						startServices=true;
 				}else{
-					//downloadManager.reLoad();
+					downloadManager.reLoad();
 				}
 			}
 			
 			public function stop():void{
 				stopSync();
-				//downloadManager.isStarted=false;
+				downloadManager.isStarted=false;
 			}
 
 			
@@ -148,6 +142,7 @@
 	
 	<fx:Declarations>
 		<!--<ftp:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true" />-->
+		<ns:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true" />
 	</fx:Declarations>
 
 	<s:Rect top="0" left="0" right="0" bottom="0">
@@ -181,14 +176,16 @@
 						</s:Scroller>
 					</s:VGroup>
 					<s:VGroup gap="10" width="510" height="100%">
-						<s:Label text="Загрузка     Производство: {productionName}" fontWeight="bold"/>
+						<s:Label text="Загрузка" fontWeight="bold"/>
 						<s:HGroup gap="10">
-							<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить загрузку"/>
-							<s:Button id="btFtpStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить загрузку"/>
+							<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить загрузку" 
+									  enabled="{!downloadManager.isStarted}" click="{downloadManager.isStarted=true}"/>
+							<s:Button id="btFtpStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить загрузку"
+									  click="{downloadManager.isStarted=false}"/>
 						</s:HGroup>
 						<s:Scroller width="100%" height="100%">
-							<s:DataGroup width="100%" height="100%"  
-										 itemRenderer="com.photodispatcher.view.itemRenderer.QueueManagerRenderer">
+							<s:DataGroup width="100%" height="100%" dataProvider="{downloadManager.servicesList}" 
+										 itemRenderer="com.photodispatcher.view.itemRenderer.QueueManagerLoaderRenderer">
 								<s:layout>
 									<s:VerticalLayout gap="0"/>
 								</s:layout>

@@ -24,7 +24,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_PRINT_LAB_FOLDER_NOT_FOUND:int=-302;
 		public static const ERR_READ_LOCK:int=-309;
 		public static const ERR_WRITE_LOCK:int=-310;
-		public static const ERR_FTP:int=-311;
+		public static const ERR_LOAD:int=-311;
 		public static const ERR_WEB:int=-312;
 		public static const ERR_FILE_SYSTEM:int=-314;
 		public static const ERR_PREPROCESS:int=-315;
@@ -36,7 +36,9 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_LOCK_FAULT:int=-321;
 		public static const ERR_WRONG_STATE:int=-322;
 		public static const ERR_REPRINT:int=-323;
-		
+
+		public static const ERR_FTP:int=-325;
+
 		//flow state
 		//public static const FTP_RELOAD:int=95;
 		public static const FTP_WAITE:int=100;

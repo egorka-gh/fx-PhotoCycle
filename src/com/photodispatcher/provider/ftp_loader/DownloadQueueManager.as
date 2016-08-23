@@ -4,15 +4,18 @@ package com.photodispatcher.provider.ftp_loader{
 	import com.photodispatcher.event.ImageProviderEvent;
 	import com.photodispatcher.event.LoadProgressEvent;
 	import com.photodispatcher.factory.WebServiceBuilder;
+	import com.photodispatcher.model.mysql.AsyncLatch;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderFile;
+	import com.photodispatcher.model.mysql.entities.OrderLoad;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderLoadService;
 	import com.photodispatcher.service.web.BaseWeb;
+	import com.photodispatcher.service.web.FTPList;
 	import com.photodispatcher.service.web.FotoknigaWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.StrUtil;
@@ -29,6 +32,8 @@ package com.photodispatcher.provider.ftp_loader{
 	
 	import org.granite.tide.Tide;
 	
+	import pl.maliboo.ftp.FTPFile;
+	
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	[Event(name="orderLoaded", type="com.photodispatcher.event.ImageProviderEvent")]
 	[Event(name="flowError", type="com.photodispatcher.event.ImageProviderEvent")]
@@ -39,7 +44,6 @@ package com.photodispatcher.provider.ftp_loader{
 		public static const WEB_ERRORS_LIMIT:int=3;
 		public static const ORDERS_INPROCESS_LIMIT:int=5;
 		
-		protected var _isStarted:Boolean=false;
 		protected var forceStop:Boolean;
 		
 		protected var _source:Source;
@@ -66,6 +70,7 @@ package com.photodispatcher.provider.ftp_loader{
 			if(source && source.ftpService) connectionsLimit=source.ftpService.connections;
 		}
 		
+		protected var _isStarted:Boolean=false;
 		[Bindable(event="isStartedChange")]
 		public function get isStarted():Boolean{
 			return _isStarted;
@@ -113,11 +118,13 @@ package com.photodispatcher.provider.ftp_loader{
 				flowError('Ошибка инициализации');
 				return;
 			}
+			/*
 			//check config production
 			if(source.type==SourceType.SRC_FOTOKNIGA && Context.getProduction()==0){
 				flowError('Не назначено производство');
 				return;
 			}
+			*/
 			//detect lockal folder
 			var dstFolder:String=Context.getAttribute('workFolder');
 			if(!dstFolder){
@@ -143,11 +150,8 @@ package com.photodispatcher.provider.ftp_loader{
 			for each(var order:Order in queue){
 				//TODO check refactor
 				if(order){
-					if(order.state==OrderState.FTP_WEB_CHECK || order.state==OrderState.FTP_WEB_OK){
-						resetOrderState(order);
-					}
-					//reset errors
-					if(order.state<0 && order.state!=OrderState.ERR_WRITE_LOCK){
+					//reset 
+					if(order.state<OrderState.FTP_INCOMPLITE){
 						resetOrder(order);
 						resetOrderState(order);
 					}
@@ -165,6 +169,7 @@ package com.photodispatcher.provider.ftp_loader{
 				//listen
 				downloadManager.addEventListener(ImageProviderEvent.FETCH_NEXT_EVENT,onDownloadManagerNeedOrder);
 				//downloadManager.addEventListener(ImageProviderEvent.FLOW_ERROR_EVENT,onDownloadManagerFlowError);
+				downloadManager.addEventListener(ImageProviderEvent.FILE_LOADED_EVENT,onDownloadManagerLoadFile);
 				downloadManager.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onDownloadManagerLoad);
 				downloadManager.addEventListener(ImageProviderEvent.LOAD_FAULT_EVENT,onDownloadFault);
 				downloadManager.addEventListener(ProgressEvent.PROGRESS,onLoadProgress);
@@ -181,6 +186,7 @@ package com.photodispatcher.provider.ftp_loader{
 			if(downloadManager){
 				downloadManager.removeEventListener(ImageProviderEvent.FETCH_NEXT_EVENT,onDownloadManagerNeedOrder);
 				//downloadManager.removeEventListener(ImageProviderEvent.FLOW_ERROR_EVENT,onDownloadManagerFlowError);
+				downloadManager.removeEventListener(ImageProviderEvent.FILE_LOADED_EVENT,onDownloadManagerLoadFile);
 				downloadManager.removeEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onDownloadManagerLoad);
 				downloadManager.removeEventListener(ImageProviderEvent.LOAD_FAULT_EVENT,onDownloadFault);
 				downloadManager.removeEventListener(ProgressEvent.PROGRESS,onLoadProgress);
@@ -214,21 +220,11 @@ package com.photodispatcher.provider.ftp_loader{
 				}
 			}
 			
-			//uncapture stoped orders
-			if(stopedOrders.length>0){
-				/*
-				var latch:DbLatch= new DbLatch(true);
-				var orderService:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				//latch.addEventListener(Event.COMPLETE,oncaptureState);
-				latch.addLatch(orderService.setStateBatch(new ArrayCollection(stopedOrders)));
-				latch.start();
-				*/
-			}
-			
 			//reset runtime states
 			for each(order in queue){
 				if(order){
-					if(order.state==OrderState.FTP_WEB_CHECK || order.state==OrderState.FTP_WEB_OK){
+					if(order.state<OrderState.FTP_INCOMPLITE){
+						resetOrder(order);
 						resetOrderState(order);
 					}
 				}
@@ -241,10 +237,8 @@ package com.photodispatcher.provider.ftp_loader{
 
 		public function reSync(orders:Array):void{
 			trace('QueueManager reSync '+(source.ftpService?source.ftpService.url:source.name));
-			//empty responce from DAO?
 			if(!orders) return;
 			
-			//TODO ??????
 			if(webTimer) webTimer.stop();
 			webErrCounter=0;
 			
@@ -281,9 +275,6 @@ package com.photodispatcher.provider.ftp_loader{
 							o.resume_load=false;
 							//del old from queue
 							toKill.push(order);
-						}else if(source.type==SourceType.SRC_FOTOKNIGA && Context.getProduction()!=Context.PRODUCTION_ANY && order.state==OrderState.CANCELED_PRODUCTION){
-							//del from queue, recheck production
-							toKill.push(order);
 						}else{
 							//replace
 							toReplace.push(order);
@@ -298,11 +289,8 @@ package com.photodispatcher.provider.ftp_loader{
 			//remove
 			for each (order in toKill){
 				if(order){
+					if(webApplicant && webApplicant.id==order.id) webApplicant=null;
 					removeOrder(order);
-					/*
-					idx=ArrayUtil.searchItemIdx('id',order.id,queue);
-					if(idx!=-1) queue.splice(idx,1);
-					*/
 				}
 			}
 			//replace
@@ -335,7 +323,7 @@ package com.photodispatcher.provider.ftp_loader{
 			var o:Order=element as Order;
 			//return o!=null && o.state==syncState;
 			//return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state<0);
-			return o!=null && source && o.source==source.id && (o.state==OrderState.FTP_WAITE || o.state==OrderState.FTP_FORWARD);
+			return o!=null && source && o.source==source.id && o.state>=OrderState.FTP_WAITE && o.state<=OrderState.FTP_CAPTURED;
 			//return o!=null && source && o.source==source.id && (o.state==OrderState.WAITE_FTP || o.state==OrderState.FTP_CAPTURED);
 		}
 		private function arrayToMap(arr:Array):Object{
@@ -359,7 +347,7 @@ package com.photodispatcher.provider.ftp_loader{
 				if(ord && !ord.exceedErrLimit){
 					if(ord.state>0){
 						//fetch
-						if(ord.state==OrderState.FTP_WAITE || ord.state==OrderState.FTP_WAITE_AFTER_ERROR){
+						if(ord.state>=OrderState.FTP_WAITE && ord.state<=OrderState.FTP_CAPTURED){
 							if(!newOrder) newOrder=ord;
 						}
 					}else{
@@ -382,13 +370,16 @@ package com.photodispatcher.provider.ftp_loader{
 				webApplicant.saveState();
 
 				//load from site
-				trace('QueueManager.checkWebState '+webApplicant.ftp_folder);
+				trace('QueueManager getOrder '+webApplicant.id);
 				webApplicant.state=OrderState.FTP_WEB_CHECK;
+				StateLog.log(OrderState.FTP_WEB_CHECK,webApplicant.id);
 				var webService:BaseWeb=WebServiceBuilder.build(source);
 				webService.addEventListener(Event.COMPLETE,getOrderWeb);
 				webService.getLoaderOrder(webApplicant);
 			}
 		}
+		
+		//private var webStatelatch:AsyncLatch;
 		
 		private function getOrderWeb(e:Event):void{
 			var pw:BaseWeb=e.target as BaseWeb;
@@ -399,12 +390,15 @@ package com.photodispatcher.provider.ftp_loader{
 				checkQueue();
 				return;
 			}
+
+			trace('getOrder complited: '+webApplicant.id);
 			
 			if(pw.hasError){
-				trace('getOrderHandle web check order err: '+pw.errMesage);
+				trace('getOrder web order err: '+pw.errMesage);
 				webErrCounter++;
 				webApplicant.state=OrderState.ERR_WEB;
-				StateLog.log(OrderState.ERR_WEB,webApplicant.id,'','Ошибка проверки на сайте: '+pw.errMesage);
+				StateLog.log(OrderState.ERR_WEB,webApplicant.id,'','Ошибка на сайте: '+pw.errMesage);
+				removeOrder(webApplicant);
 				webApplicant=null;
 				//to prevent cycle web check when network error or offline
 				if(webErrCounter>WEB_ERRORS_LIMIT){
@@ -414,72 +408,45 @@ package com.photodispatcher.provider.ftp_loader{
 				}
 				return;
 			}
+			
 			webErrCounter=0;
+			var ord:Order;
+			var latch:DbLatch;
+			
 			var err:String=chekSiteFiles(webApplicant.files);
 			if(err){
+				trace('getOrder web order err: '+err);
 				StateLog.log(OrderState.ERR_GET_PROJECT,webApplicant.id,'',err);
 				webApplicant.state=OrderState.FTP_INCOMPLITE;
+				webApplicant.src_state=OrderLoad.REMOTE_STATE_ERROR.toString();
 				webApplicant.files=null;
 
 				//set site error state
-				var ord:Order=new Order();
+				/*
+				ord=new Order();
 				ord.id=webApplicant.id;
 				ord.src_id=webApplicant.src_id;
-				ord.src_state=FotoknigaWeb.LOADER_ORDER_STATE_ERROR.toString();
+				ord.src_state=OrderLoad.REMOTE_STATE_ERROR;
 				ord.src_state_comment=err;
 				pw.addEventListener(Event.COMPLETE,setOrderStateWeb);
 				pw.setLoaderOrderState(ord);
+				*/
+				setOrderStateWeb(webApplicant,OrderLoad.REMOTE_STATE_ERROR,err,pw);
 
 				//save in bd
-				var latch:DbLatch= new DbLatch(true);
-				latch.addLatch(bdService.save(webApplicant));
+				latch= new DbLatch(true);
+				latch.addLatch(bdService.save(OrderLoad.fromOrder(webApplicant)));
 				latch.start();
+				removeOrder(webApplicant);
 				webApplicant=null;
-				checkQueue();
+				checkQueueLate();
 				return;
 			}
 			
-			refactor -------------------------------------------------------
-			if(pw.isValidLastOrder(true)){
-				//open cnn & get files list
-				trace('QueueManager.getOrderHandle; web check Ok; push to download manager '+webApplicant.ftp_folder);
-				webApplicant.state=OrderState.FTP_WEB_OK;
-				if(!webApplicant.ftp_folder) webApplicant.ftp_folder=webApplicant.id;
-
-				//fill extra info ???
-				if(pw.getLastOrder().extraInfo) webApplicant.extraInfo=pw.getLastOrder().extraInfo;
-
-				//capture for load
-				trace('QueueManager.getOrderHandle: captureState order '+webApplicant.id);
-				webApplicant.state=OrderState.FTP_CAPTURED;
-				var latch:DbLatch= new DbLatch(true);
-				/*
-				var orderService:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				latch.addEventListener(Event.COMPLETE,oncaptureState);
-				latch.addLatch(orderService.captureState(webApplicant.id, webApplicant.ftpForwarded ? OrderState.FTP_FORWARD : OrderState.FTP_WAITE, OrderState.FTP_CAPTURED, Context.appID),webApplicant.id);
-				latch.start();
-				*/
-				return;
-			}else{
-				//mark as canceled
-				trace('QueueManager.getOrderHandle; web check fault; order canceled '+webApplicant.ftp_folder);
-				webApplicant.state=OrderState.CANCELED_SYNC;
-				flowError('Заказ отменен: '+webApplicant.id);
-				webApplicant=null;
-				checkQueue();
-				return;
-			}
+			//set site copy state, set bd state FTP_CAPTURED  
+			setOrderStateWeb(webApplicant,OrderLoad.REMOTE_STATE_COPY,'',pw);
+			
 		}
-		private function setOrderStateWeb(e:Event):void{
-			var pw:BaseWeb=e.target as BaseWeb;
-			pw.removeEventListener(Event.COMPLETE,setOrderStateWeb);
-			if(pw.hasError && pw.lastOrderId){
-				trace('setOrderStateWeb web err: '+pw.errMesage);
-				StateLog.log(OrderState.ERR_WEB,pw.lastOrderId,'','Ошибка сайта: '+pw.errMesage);
-				return;
-			}
-		}
-
 		private function chekSiteFiles(files:ArrayCollection):String{
 			var err:String='';
 			if(!files || files.length==0){
@@ -502,41 +469,120 @@ package com.photodispatcher.provider.ftp_loader{
 				}
 				if(err) err='Не уникальное имя файла: '+err;
 			}
+			return err;
 		}
-		
-		private function oncaptureState(evt:Event):void{
-			var latch:DbLatch= evt.target as DbLatch;
-			if(!latch) return;
-			latch.removeEventListener(Event.COMPLETE,oncaptureState);
 
-			if(!webApplicant || !isStarted || forceStop) return;
-			var startOrder:Order=webApplicant;
-			webApplicant=null;
+		private function setOrderStateWeb(order:Order, remoteState:int, comment:String='', webService:BaseWeb=null):void{
+			if(!order) return;
+			if(!webService) webService=WebServiceBuilder.build(source);
+			var ord:Order=new Order();
+			ord.id=order.id;
+			ord.src_id=order.src_id;
+			ord.src_state=remoteState.toString();
+			ord.errStateComment=comment;
+			webService.addEventListener(Event.COMPLETE,onSetOrderStateWeb);
+			webService.setLoaderOrderState(ord);
+		}
 
-			if (latch.complite && latch.resultCode==OrderState.FTP_CAPTURED){
-				//download
-				StateLog.log(startOrder.state, startOrder.id,'','Получена жесткая блокировка ' + Context.appID);
-				startDownload(startOrder);
+		private function onSetOrderStateWeb(e:Event):void{
+			var pw:BaseWeb=e.target as BaseWeb;
+			pw.removeEventListener(Event.COMPLETE,onSetOrderStateWeb);
+
+			if(pw.hasError){
+				webErrCounter++;
+				trace('setOrderStateWeb web err: '+pw.errMesage);
+				//if(webStatelatch && webStatelatch.isStarted) webStatelatch.releaseError('Ошибка сайта: '+pw.errMesage);
+				if(pw.lastOrderId) StateLog.log(OrderState.ERR_WEB,pw.lastOrderId,'','Ошибка сайта: '+pw.errMesage);
+				if(webApplicant && webApplicant.id==pw.lastOrderId){
+					webApplicant.state=OrderState.ERR_WEB;
+					webApplicant=null;
+					//checkQueueLate();
+				}
 			}else{
-				trace('QueueManager.captureState: db error '+latch.lastError);
-				lastError='Заказ: '+startOrder.id+' блокирован другим процессом '+latch.lastError;
-				//StateLog.log(OrderState.ERR_LOCK_FAULT, startOrder.id,'','hard lock');
-				startOrder.state= OrderState.ERR_LOCK_FAULT;
-				checkQueue();
+				if(webApplicant && webApplicant.id==pw.lastOrderId){
+					webApplicant.state=OrderState.FTP_CAPTURED;
+					webApplicant.src_state=OrderLoad.REMOTE_STATE_COPY.toString();
+					var latch:DbLatch= new DbLatch(true);
+					latch.addEventListener(Event.COMPLETE, onOrderMerged);
+					latch.addLatch(bdService.merge(OrderLoad.fromOrder(webApplicant)));
+					latch.start();
+					if(!isStarted || forceStop) webApplicant=null;
+				}
 			}
 		}
 
-		protected function unCaptureOrder(orderId:String):void{
-			if(!orderId) return;
-			var o:Order= new Order();
-			o.id=orderId;
-			o.state=OrderState.FTP_WAITE;
-			var latch:DbLatch= new DbLatch(true);
-			/*
-			var orderService:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-			latch.addLatch(orderService.setState(o));
-			latch.start();
-			*/
+		private function onOrderMerged(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(!latch) return;
+			latch.removeEventListener(Event.COMPLETE,onOrderMerged);
+			if(!webApplicant || !isStarted || forceStop) return;
+			//get merged files
+			if(latch.lastDataItem as OrderLoad) webApplicant.files=(latch.lastDataItem as OrderLoad).files as ArrayCollection;
+			//list ftp 
+			trace('Start list ' +webApplicant.id);
+			webApplicant.state=OrderState.FTP_LIST;
+			StateLog.log(OrderState.FTP_LIST,webApplicant.id);
+			var ftpList:FTPList= new FTPList(source);
+			ftpList.addEventListener(Event.COMPLETE, onFtpList);
+			ftpList.list(webApplicant.ftp_folder);
+		}
+		
+		private function onFtpList(evt:Event):void{
+			var ftp:FTPList=evt.target as FTPList;
+			var listing:Array;
+			if(!ftp) return;
+			ftp.removeEventListener(Event.COMPLETE, onFtpList);
+			if(!webApplicant || !isStarted || forceStop) return;
+
+			if(ftp.hasError){
+				webApplicant.state=OrderState.ERR_LOAD;
+				StateLog.log(OrderState.ERR_LOAD,webApplicant.id, '', ftp.errMesage);
+				webApplicant=null;
+				checkQueueLate();
+				return;
+			}
+			listing=ftp.listing;
+			//check listing
+			var err:String='';
+			var chkErr:Boolean=false;
+			if(!webApplicant.files || !listing || listing.length!=webApplicant.files.length){
+				chkErr=true;
+				err='Не соответствие количества файлов';
+			}else{
+				var of:OrderFile;
+				var ftpfile:FTPFile;
+				var idx:int;
+				for each(of in webApplicant.files){
+					of.state=OrderState.FTP_WAITE;
+					idx=ArrayUtil.searchItemIdx('name',of.file_name,listing);
+					if(idx==-1){
+						chkErr=true;
+						if(err) err=err+',';
+						err=err+of.file_name;
+						of.state=OrderState.ERR_GET_PROJECT;
+					}
+				}
+				if(chkErr) err='Нет файла на фтп '+err;
+			}
+			if(chkErr){
+				StateLog.log(OrderState.ERR_GET_PROJECT,webApplicant.id, '', err);
+				webApplicant.state=OrderState.FTP_INCOMPLITE;
+				webApplicant.src_state=OrderLoad.REMOTE_STATE_ERROR.toString();
+				setOrderStateWeb(webApplicant,OrderLoad.REMOTE_STATE_ERROR,err);
+				var latch:DbLatch= new DbLatch(true);
+				latch.addLatch(bdService.merge(OrderLoad.fromOrder(webApplicant)));
+				latch.start();
+				removeOrder(webApplicant);
+				webApplicant=null;
+				checkQueueLate();
+				return;
+			}
+			//start download
+			webApplicant.ftpQueue=listing;
+			webApplicant.state=OrderState.FTP_LOAD;
+			StateLog.log(OrderState.FTP_LOAD,webApplicant.id);
+			startDownload(webApplicant);
+			webApplicant=null;
 		}
 
 		
@@ -563,71 +609,37 @@ package com.photodispatcher.provider.ftp_loader{
 			if(ORDERS_INPROCESS_LIMIT>0){
 				var inprocess:int=0;
 				if(downloadManager) inprocess+=downloadManager.queueLenth;
-				//if(fbDownloadManager) inprocess+=fbDownloadManager.queueLenth;
 				if(webApplicant) inprocess++;
 				
 				if(inprocess>=ORDERS_INPROCESS_LIMIT) return;
 			}
 			checkQueue();
 		}
-
-		private function onDownloadManagerLoad(event:ImageProviderEvent):void{
-			//parse suborders
-			var order:Order=event.order;
-			/*
-			var err:String=SuborderBuilder.buildFromFileSystem(source,order);
-			if(err){
-				if(order){
-					order.state=OrderState.ERR_FILE_SYSTEM;
-					StateLog.log(order.state,order.id,'',err);
-					order.setErrLimit();
-					resetOrder(order);
-					queue.push(order);
-					dispatchEvent(new Event('queueLenthChange'));
-				}
-			}else{
-				//complited
-				//save to filesystem
-				var state:int=OrderBuilder.saveToFilesystem(order);
-				if(state<0){
-					//some error
-					order.state=state;
-					StateLog.log(state,order.id,'','Ошибка сохранеия в рабочую папку (OrderBuilder.saveToFilesystem)');
-					resetOrder(order);
-					queue.push(order);
-					return;
-				}
-				dispatchEvent(event.clone());
-			}
-		*/
+		
+		private function onDownloadManagerLoadFile(event:ImageProviderEvent):void{
+			//TODO save file state
 		}
-
-		private function onFBDownloadManagerLoad(event:ImageProviderEvent):void{
-			//complited
-			var order:Order=event.order;
-			//save to filesystem
+		
+		private function onDownloadManagerLoad(event:ImageProviderEvent):void{
 			/*
-			var state:int=OrderBuilder.saveToFilesystem(order);
-			if(state<0){
-				//some error
-				order.state=state;
-				StateLog.log(state,order.id,'','Ошибка сохранеия в рабочую папку (OrderBuilder.saveToFilesystem)');
-				resetOrder(order);
-				queue.push(order);
-				return;
-			}
-			dispatchEvent(event.clone());
+			var order:Order=event.order;
+			if(order) return;
+			//save to database
+			var latch:DbLatch= new DbLatch(true);
+			latch.addLatch(bdService.save(OrderLoad.fromOrder(order)));
+			latch.start();
 			*/
+
+			dispatchEvent(event.clone());
 		}
 
 		protected function onDownloadFault(event:ImageProviderEvent):void{
 			//some fatal error
 			var order:Order=event.order;
 			if(order){
-				unCaptureOrder(order.id);
 				if(order.state>=0){
-					order.state=OrderState.ERR_FTP;
-					StateLog.log(OrderState.ERR_FTP,order.id,'',event.error);
+					order.state=OrderState.ERR_LOAD;
+					StateLog.log(OrderState.ERR_LOAD,order.id,'',event.error);
 				}
 				order.setErrLimit();
 				resetOrder(order);

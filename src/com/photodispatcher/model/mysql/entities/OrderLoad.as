@@ -15,6 +15,12 @@ package com.photodispatcher.model.mysql.entities {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.OrderLoad")]
     public class OrderLoad extends OrderLoadBase {
 
+		public static const REMOTE_STATE_NONE:int=0;
+		public static const REMOTE_STATE_READY:int=10;
+		public static const REMOTE_STATE_COPY:int=20;
+		public static const REMOTE_STATE_ERROR:int=25;
+		public static const REMOTE_STATE_DONE:int=30;
+
 		public static function toOrder(srcObj:OrderLoad):Order{
 			var res:Order=new Order();
 			var type:Type=Type.forClass(OrderLoad);
@@ -45,7 +51,7 @@ package com.photodispatcher.model.mysql.entities {
         }
 		
 		//remote source fields runtime
-		public var src_state:String;
+		//public var src_state:String;
 		public var filled:Boolean;
 		public var canChangeRemoteState:Boolean;
 		

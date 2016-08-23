@@ -66,8 +66,8 @@ package com.photodispatcher.model.mysql.entities {
 		
 		//remote source state (4 check if canceled or set remote state) runtime
 		public var src_state:String;
-		//remote source state comment (4 set remote state) runtime
-		public var src_state_comment:String;
+		//err state comment runtime
+		public var errStateComment:String;
 		
 		/**
 		 * runtime 

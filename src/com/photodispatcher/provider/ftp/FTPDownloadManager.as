@@ -374,7 +374,7 @@ package com.photodispatcher.provider.ftp{
 						checkDownload();
 					}else{
 						if(DEBUG_TRACE) trace('FTPDownloadManager empty order nothing to list & no suborders');
-						order.state=OrderState.ERR_FTP;
+						order.state=OrderState.ERR_LOAD;
 						order.setErrLimit();
 					}
 				}
@@ -498,9 +498,9 @@ package com.photodispatcher.provider.ftp{
 						}
 					}
 				}
-				order.state=OrderState.ERR_FTP;
+				order.state=OrderState.ERR_LOAD;
 				if(order.exceedErrLimit){
-					StateLog.log(OrderState.ERR_FTP,order.id,'','Пустой список файлов.');
+					StateLog.log(OrderState.ERR_LOAD,order.id,'','Пустой список файлов.');
 					if(!order.hasSuborders || order.hasPhotoSuborder){
 						//remove from download (double err)
 						idx=downloadOrders.indexOf(order);
@@ -660,9 +660,9 @@ package com.photodispatcher.provider.ftp{
 			listApplicant=null;
 			stopListen(cnn);
 			if(order){	
-				order.state=OrderState.ERR_FTP;
+				order.state=OrderState.ERR_LOAD;
 				order.resetErrCounter();//not fatal
-				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_FTP,order.id,'','Ошибка FTP LIST Disconnected '+order.ftp_folder);
+				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_LOAD,order.id,'','Ошибка FTP LIST Disconnected '+order.ftp_folder);
 			}
 			connectionManager.reconnect(cnn);
 		}
@@ -685,9 +685,9 @@ package com.photodispatcher.provider.ftp{
 				return;
 			}
 			
-			order.state=OrderState.ERR_FTP;
+			order.state=OrderState.ERR_LOAD;
 			order.resetErrCounter();//not fatal
-			if(DEBUG_TRACE) StateLog.log(OrderState.ERR_FTP,order.id,'','Ошибка FTP LIST "'+order.ftp_folder+'": ' + (e.error?e.error.message:''));
+			if(DEBUG_TRACE) StateLog.log(OrderState.ERR_LOAD,order.id,'','Ошибка FTP LIST "'+order.ftp_folder+'": ' + (e.error?e.error.message:''));
 			connectionManager.reconnect(cnn);
 		}
 
@@ -705,7 +705,7 @@ package com.photodispatcher.provider.ftp{
 			if(cnn){
 				if(DEBUG_TRACE) trace('FTPDownloadManager download fault '+ cnn.downloadFile.fullPath);
 				stopListen(cnn);
-				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_FTP,cnn.orderId,'','Ошибка загрузки "'+cnn.downloadFile.name+'": '+(e.error?e.error.message:''));
+				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_LOAD,cnn.orderId,'','Ошибка загрузки "'+cnn.downloadFile.name+'": '+(e.error?e.error.message:''));
 			}
 			//reuseConnection(cnn);
 			connectionManager.reconnect(cnn);
@@ -717,7 +717,7 @@ package com.photodispatcher.provider.ftp{
 			if(cnn){
 				cnn.downloadFile.loadState=FTPFile.LOAD_ERR;
 				if(DEBUG_TRACE) trace('FTPDownloadManager download Disconnected '+ cnn.downloadFile.fullPath);
-				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_FTP,cnn.orderId,'','Ошибка загрузки Disconnected '+cnn.downloadFile.name);
+				if(DEBUG_TRACE) StateLog.log(OrderState.ERR_LOAD,cnn.orderId,'','Ошибка загрузки Disconnected '+cnn.downloadFile.name);
 				connectionManager.reconnect(cnn);
 			}
 		}

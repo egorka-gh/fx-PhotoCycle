@@ -28,6 +28,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _source_code:String;
         private var _source_name:String;
         private var _src_id:String;
+        private var _src_state:int;
         private var _state:int;
         private var _stateLog:ListCollectionView;
         private var _state_date:Date;
@@ -105,6 +106,13 @@ package com.photodispatcher.model.mysql.entities {
             return _src_id;
         }
 
+        public function set src_state(value:int):void {
+            _src_state = value;
+        }
+        public function get src_state():int {
+            return _src_state;
+        }
+
         public function set state(value:int):void {
             _state = value;
         }
@@ -159,6 +167,7 @@ package com.photodispatcher.model.mysql.entities {
             _source_code = input.readObject() as String;
             _source_name = input.readObject() as String;
             _src_id = input.readObject() as String;
+            _src_state = input.readObject() as int;
             _state = input.readObject() as int;
             _stateLog = input.readObject() as ListCollectionView;
             _state_date = input.readObject() as Date;
@@ -179,6 +188,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_source_code);
             output.writeObject(_source_name);
             output.writeObject(_src_id);
+            output.writeObject(_src_state);
             output.writeObject(_state);
             output.writeObject(_stateLog);
             output.writeObject(_state_date);

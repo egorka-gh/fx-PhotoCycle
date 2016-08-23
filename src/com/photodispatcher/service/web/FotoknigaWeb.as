@@ -48,12 +48,6 @@ package com.photodispatcher.service.web{
 		public static const ORDER_STATE_RECEIVED:int=60;
 		public static const ORDER_STATE_ARCHIVED:int=100;
 
-		public static const LOADER_ORDER_STATE_NONE:int=0;
-		public static const LOADER_ORDER_STATE_READY:int=10;
-		public static const LOADER_ORDER_STATE_COPY:int=20;
-		public static const LOADER_ORDER_STATE_ERROR:int=25;
-		public static const LOADER_ORDER_STATE_DONE:int=30;
-
 		public static const URL_API:String='api.php';
 		public static const API_KEY:String='sp0oULbDnJfk7AjBNtVG';
 
@@ -173,10 +167,16 @@ package com.photodispatcher.service.web{
 						post[PARAM_KEY]=appKey;
 						post[PARAM_ACTION]=ACTION_GET_LOADER_ORDER;
 						post['id']=int(lastOrder.src_id);
-						trace('FotoknigaWeb web get order 4 load; action:'+ACTION_GET_LOADER_ORDER);
+						trace('FotoknigaWeb web get order 4 load; action:'+ACTION_GET_LOADER_ORDER+'; id:'+lastOrder.src_id);
 						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
 						break;
 					case CMD_SET_ORDER_LDR_STATE:
+						//4debug
+						_hasError=false;
+						_errMesage='';
+						dispatchEvent(new Event(Event.COMPLETE));
+
+						/*
 						startListen();
 						//set loader order state
 						post= new Object();
@@ -184,9 +184,10 @@ package com.photodispatcher.service.web{
 						post[PARAM_ACTION]=ACTION_SET_LOADER_ORDER_STATE;
 						post['id']=int(lastOrder.src_id);
 						post['status']=lastOrder.src_state;
-						post['info']=lastOrder.src_state_comment;
+						post['info']=lastOrder.errStateComment;
 						trace('FotoknigaWeb set state order 4 load; action:'+ACTION_SET_LOADER_ORDER_STATE);
 						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
+						*/
 						break;
 					
 					case CMD_CHECK_STATE:
@@ -479,7 +480,9 @@ package com.photodispatcher.service.web{
 					var ol:OrderLoad=OrderLoadBuilder.build(source,result);
 					if(ol){
 						//set result
-						lastOrder.ftp_folder=ol.ftp_folder;
+						var str:String=ol.ftp_folder;
+						if(str && str.substr(0,7)=='orders/') str=str.substr(7);
+						lastOrder.ftp_folder=str;//ol.ftp_folder;
 						lastOrder.fotos_num=ol.fotos_num;
 						lastOrder.files=ol.files as ArrayCollection;
 					}else{
@@ -491,7 +494,6 @@ package com.photodispatcher.service.web{
 					break;
 				case CMD_SET_ORDER_LDR_STATE:
 					//complited
-					return;
 					break;
 
 				case CMD_CHECK_STATE:

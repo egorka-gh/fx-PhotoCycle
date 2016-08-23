@@ -537,8 +537,8 @@ package com.photodispatcher.provider.fbook.download{
 			if(contentLoader.hasFatalError()){
 				//TODO check auth??
 				source.fbookSid='';
-				currentSubOrder.state=OrderState.ERR_FTP;
-				currentOrder.state=OrderState.ERR_FTP;
+				currentSubOrder.state=OrderState.ERR_LOAD;
+				currentOrder.state=OrderState.ERR_LOAD;
 				StateLog.log(currentOrder.state,currentOrder.id,currentSubOrder.sub_id,'Ошибка загрузки подзаказа ' +currentSubOrder.sub_id+' :'+contentLoader.errorText);
 				releaseWithError(currentOrder,'Подзаказ ' +currentSubOrder.sub_id+': '+contentLoader.errorText);
 				checkQueue();
