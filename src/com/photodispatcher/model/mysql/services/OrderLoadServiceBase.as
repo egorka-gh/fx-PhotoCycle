@@ -7,6 +7,7 @@
 
 package com.photodispatcher.model.mysql.services {
 
+    import com.photodispatcher.model.mysql.entities.OrderFile;
     import com.photodispatcher.model.mysql.entities.OrderLoad;
     import com.photodispatcher.model.mysql.entities.SelectResult;
     import com.photodispatcher.model.mysql.entities.SqlResult;
@@ -88,6 +89,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("save", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("save", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function saveFile(arg0:OrderFile, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("saveFile", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("saveFile", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("saveFile", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

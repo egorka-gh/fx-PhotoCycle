@@ -17,11 +17,11 @@ package com.photodispatcher.shell{
 		private var parallel:Boolean=true;
 		private var forceStop:Boolean=false;
 
-		public var ignoreWarning:Boolean;
+		public var ignoreErrors:Boolean;
 
-		public function IMMultiSequenceRuner(ignoreWarning:Boolean=false){
+		public function IMMultiSequenceRuner(ignoreErrors:Boolean=false){
 			super(null);
-			this.ignoreWarning=ignoreWarning;
+			this.ignoreErrors=ignoreErrors;
 		}
 		
 		public function stop():void{
@@ -62,7 +62,7 @@ package com.photodispatcher.shell{
 			for each(seq in sequences){
 				if(seq && seq.length>0){
 					totalCommands+=seq.length;
-					runer= new IMSequenceRuner(seq,ignoreWarning);
+					runer= new IMSequenceRuner(seq);//,ignoreErrors);
 					sequence.push(runer);
 				}
 			}

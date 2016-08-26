@@ -22,6 +22,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _hash_remote:String;
         private var _order_id:String;
         private var _previous_state:int;
+        private var _previous_state_name:String;
         private var _size:int;
         private var _state:int;
         private var _state_date:Date;
@@ -62,6 +63,13 @@ package com.photodispatcher.model.mysql.entities {
             return _previous_state;
         }
 
+        public function set previous_state_name(value:String):void {
+            _previous_state_name = value;
+        }
+        public function get previous_state_name():String {
+            return _previous_state_name;
+        }
+
         public function set size(value:int):void {
             _size = value;
         }
@@ -97,6 +105,7 @@ package com.photodispatcher.model.mysql.entities {
             _hash_remote = input.readObject() as String;
             _order_id = input.readObject() as String;
             _previous_state = input.readObject() as int;
+            _previous_state_name = input.readObject() as String;
             _size = input.readObject() as int;
             _state = input.readObject() as int;
             _state_date = input.readObject() as Date;
@@ -110,6 +119,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_hash_remote);
             output.writeObject(_order_id);
             output.writeObject(_previous_state);
+            output.writeObject(_previous_state_name);
             output.writeObject(_size);
             output.writeObject(_state);
             output.writeObject(_state_date);

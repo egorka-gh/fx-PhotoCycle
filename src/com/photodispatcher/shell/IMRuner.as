@@ -213,7 +213,11 @@ package  com.photodispatcher.shell{
 					hasError=true;
 				}
 			}
-			if(!hasError) command.state=IMCommand.STATE_COMPLITE;
+			if(!hasError){
+				command.state=IMCommand.STATE_COMPLITE;
+			}else{
+				command.error=errorResponse;
+			}
 			dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,command,hasError,errorResponse));
 		}
 		

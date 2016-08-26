@@ -9,6 +9,7 @@ package com.photodispatcher.provider.ftp_loader{
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderLoadService;
+	import com.photodispatcher.provider.check.CheckManager;
 	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -38,6 +39,8 @@ package com.photodispatcher.provider.ftp_loader{
 		[Bindable]
 		public var lastLoadTime:Date;
 
+		private var checker:CheckManager;
+		
 		private var writeOrders:Array=[];
 
 		private function get bdService():OrderLoadService{
@@ -156,6 +159,11 @@ package com.photodispatcher.provider.ftp_loader{
 			for each(f in services){
 				if(f) f.start();
 			}
+			if(!checker){
+				checker=new CheckManager();
+				//TODO listen
+			}
+			checker.isStarted=true;
 			reLoad();
 		}
 		
@@ -168,6 +176,7 @@ package com.photodispatcher.provider.ftp_loader{
 			for each(f in services){
 				if(f) f.stop();
 			}
+			if(checker) checker.isStarted=false;
 			writeOrders=[];
 		}
 		
@@ -233,7 +242,8 @@ package com.photodispatcher.provider.ftp_loader{
 		
 		private function onOrderLoaded(e:ImageProviderEvent):void{ 
 			saveOrder(e.order);
-			//TODO push to file check service 
+			//push to file check service 
+			checker.check(e.order);
 		}
 
 		private function saveOrder(order:Order):void{

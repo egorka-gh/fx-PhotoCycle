@@ -7,7 +7,6 @@ package com.photodispatcher.provider.ftp_loader{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceSvc;
-	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.provider.ftp.FTPConnectionManager;
 	import com.photodispatcher.provider.ftp.FtpTask;
@@ -143,9 +142,12 @@ package com.photodispatcher.provider.ftp_loader{
 		public function download(order:Order):void{
 			if(order){
 				trace('FTPDownloadManager added order '+order.id);
-				if(order.state==OrderState.FTP_FORWARD) order.ftpForwarded=true;
-				downloadOrders.push(order);
-				prepareDownload(order);
+				//check if already in queue
+				var idx:int=ArrayUtil.searchItemIdx('id',order.id,downloadOrders);
+				if(idx==-1){
+					downloadOrders.push(order);
+					prepareDownload(order);
+				}
 			}
 			checkDownload();
 			checkQueue();
@@ -164,7 +166,7 @@ package com.photodispatcher.provider.ftp_loader{
 			}
 			if(need>=avail){
 				//stop
-				Alert('Не достаточно места для загрузки заказа. '+localFolder);
+				//Alert('Не достаточно места для загрузки заказа. '+localFolder);
 				StateLog.log(OrderState.ERR_FILE_SYSTEM,order.id,'','Не достаточно места для загрузки заказа.'); 
 				order.state=OrderState.ERR_FILE_SYSTEM;
 				order.errStateComment='Не достаточно места для загрузки заказа.';
@@ -185,16 +187,18 @@ package com.photodispatcher.provider.ftp_loader{
 				//checkDownload();
 				return;
 			}
-			
-			//check loaded files
+
+			//link order file && ftp file
 			var of:OrderFile;
 			var lf:File;
 			if(order.files){
 				for each(of in order.files){
+					ff=ArrayUtil.searchItem('name',of.file_name, order.ftpQueue) as FTPFile;
+					//if(ff) ff.data=of;
+					//check loaded files
 					lf=file.resolvePath(of.file_name);
 					if(lf.exists){
-						if(of.state==OrderState.FTP_COMPLETE){
-							ff=ArrayUtil.searchItem('name',of.file_name, order.ftpQueue) as FTPFile;
+						if(of.state>=OrderState.FTP_WAITE_CHECK){
 							if(ff) ff.loadState=FTPFile.LOAD_COMPLETE;
 						}else{
 							try{

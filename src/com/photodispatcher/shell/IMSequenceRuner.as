@@ -20,12 +20,12 @@ package com.photodispatcher.shell{
 
 		public var state:int=IMCommand.STATE_WAITE;
 
-		public var ignoreWarning:Boolean;
+		public var ignoreErrors:Boolean;
 
-		public function IMSequenceRuner(sequence:Array=null, ignoreWarning:Boolean=false){
+		public function IMSequenceRuner(sequence:Array=null, ignoreErrors:Boolean=false){
 			super(null);
 			this.sequence=sequence;
-			this.ignoreWarning=ignoreWarning;
+			this.ignoreErrors=ignoreErrors;
 		}
 		
 		public function start(sequence:Array=null, threads:int=1):void{
@@ -60,7 +60,7 @@ package com.photodispatcher.shell{
 			var command:IMCommand;
 			var minState:int= IMCommand.STATE_COMPLITE;
 			var complited:int=0;
-			if(hasErr) return;
+			if(!ignoreErrors && hasErr) return;
 			if(forceStop) return;
 			//look not statrted
 			for each (cmd in sequence){
@@ -69,22 +69,26 @@ package com.photodispatcher.shell{
 					if(!command) command=cmd;
 					//break;
 				}
-				if(cmd.state==IMCommand.STATE_COMPLITE) complited++;
+				if(cmd.state==IMCommand.STATE_COMPLITE || (ignoreErrors && cmd.state==IMCommand.STATE_ERR)) complited++;
 			}
 			compliteCommands=complited;
 			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,complited,sequence.length));
 			//check comleted
 			if(!command && minState>=IMCommand.STATE_COMPLITE){
 				//complite
-				state=IMCommand.STATE_COMPLITE;
-				dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED));
+				if(hasErr){
+					state=IMCommand.STATE_ERR;
+				}else{
+					state=IMCommand.STATE_COMPLITE;
+				}
+				dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED, null,hasErr));
 				return;
 			}
 			runCmd(command);
 		}
 		private function runCmd(command:IMCommand):void{
 			if(!command) return;
-			var im:IMRuner=new IMRuner(Context.getAttribute('imPath'),command.folder, ignoreWarning);
+			var im:IMRuner=new IMRuner(Context.getAttribute('imPath'),command.folder);
 			im.addEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
 			im.start(command);
 		}
@@ -96,9 +100,11 @@ package com.photodispatcher.shell{
 			if(e.hasError){
 				hasErr=true;
 				trace('IMSequenceRuner. Error: '+e.error+'\n command: '+(e.command?e.command.toString():''));
-				state=IMCommand.STATE_ERR;
-				IMRuner.stopAll();
-				dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,e.command,true,e.error));
+				if(!ignoreErrors){
+					state=IMCommand.STATE_ERR;
+					IMRuner.stopAll();
+					dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,e.command,true,e.error));
+				}
 				return;
 			}
 			runNextCmd();

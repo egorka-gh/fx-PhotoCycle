@@ -20,6 +20,7 @@ package pl.maliboo.ftp{
 		public var tag:String;
 		public var moveTo:String;
 		public var renameTo:String;
+		public var data:*;
 		
 		private var _loadState:int=LOAD_WAIT;
 		private var _errCount:int=0;
