@@ -1,11 +1,15 @@
 package com.photodispatcher.provider.check{
 	import com.photodispatcher.context.Context;
+	import com.photodispatcher.event.ImageProviderEvent;
+	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderLoad;
 	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderLoadService;
+	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -17,6 +21,7 @@ package com.photodispatcher.provider.check{
 	
 	import org.granite.tide.Tide;
 	
+	[Event(name="orderLoaded", type="com.photodispatcher.event.ImageProviderEvent")]
 	public class CheckManager extends EventDispatcher{
 		
 		[Bindable]
@@ -52,7 +57,7 @@ package com.photodispatcher.provider.check{
 		
 		private function start():void{
 			if(_isStarted) return;
-			
+			lastError='';
 			//perfom checks
 			//check IM & wrk folders
 			if(!Context.getAttribute('imPath') || ! Context.getAttribute('imThreads')){
@@ -117,7 +122,7 @@ package com.photodispatcher.provider.check{
 		public function CheckManager(){
 			super(null);
 			queue= new ArrayCollection();
-			//TODO init checkers
+			//init checkers
 			md5Checker= new MD5Checker();
 			md5Checker.addEventListener(Event.COMPLETE, onMD5Complite);
 			imChecker=new IMChecker();
@@ -125,6 +130,53 @@ package com.photodispatcher.provider.check{
 			
 		}
 		
+		public function sync(orders:Array):void{
+			if(!_isStarted) return;
+			if(!orders) return;
+
+			lastError='';
+
+			var toKill:Array=[];
+			//var toAdd:Array=[];
+			var idx:int;
+			var order:Order;
+			
+			//search to remove or replace
+			for each(order in queue.source){
+				idx=ArrayUtil.searchItemIdx('id',order.id,orders);
+				if(idx!=-1){
+					//replace
+					orders[idx]=order;
+				}else{
+					if(order.state<=OrderState.FTP_CHECK){
+						toKill.push(order.id);
+					}else{
+						//in process?
+						orders.push(order);
+					}
+				}
+			}
+			
+			if(toKill.length>0){
+				for each(var id:String in toKill) removeOrder(id);
+			}
+
+			//search to add
+			var syncOrders:Array=orders.filter(reSyncFilter);
+			for each(order in syncOrders){
+				idx=ArrayUtil.searchItemIdx('id',order.id,queue.source);
+				if(idx==-1) queue.addItem(order);
+			}
+			
+			queue.refresh();
+			
+			startNext();
+		}
+		private function reSyncFilter(element:*, index:int, arr:Array):Boolean {
+			var o:Order=element as Order;
+			return o!=null && o.state>=OrderState.FTP_WAITE_CHECK && o.state<=OrderState.FTP_CHECK;
+		}
+
 		public function check(order:Order):void{
 			if(order && (order.state==OrderState.FTP_WAITE_CHECK || order.state==OrderState.FTP_CHECK)){
 				trace('CheckManager added order '+order.id);
@@ -149,8 +201,8 @@ package com.photodispatcher.provider.check{
 						if(!order.files || order.files.length==0){
 							loadFromBD(order);
 						}else{
+							order.saveState();
 							md5Checker.check(order);
-							order=null;
 						}
 						break;
 					}
@@ -164,8 +216,8 @@ package com.photodispatcher.provider.check{
 						if(!order.files || order.files.length==0){
 							loadFromBD(order);
 						}else{
+							order.saveState();
 							imChecker.check(order);
-							order=null;
 						}
 						break;
 					}
@@ -175,6 +227,7 @@ package com.photodispatcher.provider.check{
 		
 		private function loadFromBD(order:Order):void{
 			if(!order) return;
+			order.saveState();
 			order.state=OrderState.FTP_GET_PROJECT;
 			var latch:DbLatch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE, onloadFromBD);
@@ -182,7 +235,7 @@ package com.photodispatcher.provider.check{
 			latch.start();
 		}
 		private function onloadFromBD(evt:Event):void{
-			var latch:DbLatch=evt as DbLatch;
+			var latch:DbLatch=evt.target as DbLatch;
 			var result:OrderLoad;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE, onloadFromBD);
@@ -195,6 +248,7 @@ package com.photodispatcher.provider.check{
 				if(!order) return;
 				order.files=result.files as ArrayCollection;
 				if(!order.files || order.files.length==0){
+					lastError='Ошибка загрузки '+order.id;
 					order.state=OrderState.ERR_GET_PROJECT;
 					removeOrder(order.id);
 					return;
@@ -211,6 +265,7 @@ package com.photodispatcher.provider.check{
 					if(md5Checker.currentOrder.state==OrderState.ERR_CHECK_MD5){
 						//save in bd
 						//send to reload
+						lastError='Ошибка MD5 '+md5Checker.currentOrder.id+'; '+md5Checker.error;
 						StateLog.log(OrderState.ERR_CHECK_MD5,md5Checker.currentOrder.id,'',md5Checker.error);
 						md5Checker.currentOrder.state=OrderState.FTP_WAITE;
 						md5Checker.currentOrder.saveState();
@@ -234,11 +289,69 @@ package com.photodispatcher.provider.check{
 			//TODO implement
 			var latch:DbLatch;
 			if(imChecker.hasError){
-				//update on site
-				//then save in bd
-				//then remove
+				lastError='Ошибка IM '+imChecker.currentOrder.id+'; '+imChecker.error;
+				if(imChecker.currentOrder.state==OrderState.FTP_INCOMPLITE){
+					//update on site
+					//then save in bd
+					//then remove
+					setOrderStateWeb(imChecker.currentOrder,OrderLoad.REMOTE_STATE_ERROR,imChecker.error);
+				}else{
+					/*
+					if(imChecker.currentOrder.state<0 && !imChecker.currentOrder.exceedErrLimit){
+						//reset & save?
+						imChecker.currentOrder.state=OrderState.FTP_CHECK;
+						imChecker.currentOrder.saveState();
+						latch= new DbLatch(true);
+						latch.addLatch(bdService.save(OrderLoad.fromOrder(imChecker.currentOrder)));
+						latch.start();
+					}
+					*/
+					removeOrder(imChecker.currentOrder.id);
+				}
 			}else{
-				//same exept remote state on site
+				//same exept remote state done on site
+				setOrderStateWeb(imChecker.currentOrder,OrderLoad.REMOTE_STATE_DONE);
+			}
+		}
+
+		private function setOrderStateWeb(order:Order, remoteState:int, comment:String=''):void{
+			if(!order) return;
+			var source:Source=Context.getSource(order.source);
+			var webService:BaseWeb=WebServiceBuilder.build(source);
+			var ord:Order=new Order();
+			ord.id=order.id;
+			ord.src_id=order.src_id;
+			ord.src_state=remoteState.toString();
+			ord.errStateComment=comment;
+			webService.addEventListener(Event.COMPLETE,onSetOrderStateWeb);
+			webService.setLoaderOrderState(ord);
+		}
+		
+		private function onSetOrderStateWeb(e:Event):void{
+			var pw:BaseWeb=e.target as BaseWeb;
+			pw.removeEventListener(Event.COMPLETE,onSetOrderStateWeb);
+			//finde order 4 save
+			var order:Order;
+			if(pw.lastOrderId){
+				order=ArrayUtil.searchItem('id',pw.lastOrderId,queue.source) as Order;
+			}
+			//remove anyway
+			removeOrder(pw.lastOrderId);
+			if(pw.hasError){
+				trace('setOrderStateWeb web err: '+pw.errMesage);
+				lastError='Ошибка сайта: '+pw.errMesage;
+				if(pw.lastOrderId) StateLog.log(OrderState.ERR_WEB,pw.lastOrderId,'','Ошибка сайта: '+pw.errMesage);
+				//web err, can't save
+			}else{
+				if(order){
+					//save
+					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
+					/*
+					var latch:DbLatch= new DbLatch(true);
+					latch.addLatch(bdService.save(OrderLoad.fromOrder(order)));
+					latch.start();
+					*/
+				}
 			}
 		}
 

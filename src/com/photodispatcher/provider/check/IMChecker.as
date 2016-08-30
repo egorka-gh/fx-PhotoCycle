@@ -135,6 +135,9 @@ package com.photodispatcher.provider.check{
 				runner.removeEventListener(ProgressEvent.PROGRESS, onProgress); 
 				runner.removeEventListener(IMRunerEvent.IM_COMPLETED, onComplete);
 			}
+			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS,false,false,0,0));
+			progressCaption='IM';
+
 			if(!currOrder || !isBusy) return;//stop
 
 			var of:OrderFile;

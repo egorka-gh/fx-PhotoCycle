@@ -35,11 +35,17 @@ package com.photodispatcher.provider.ftp_loader{
 	public class DownloadManager extends EventDispatcher{
 
 		[Bindable]
-		public  var queue:Array;
+		public  var queue:ArrayCollection;
 		[Bindable]
 		public var lastLoadTime:Date;
+		
+		[Bindable('dataChange')]
+		public function get queueLength():int{
+			return queue?queue.length:0;
+		}
 
-		private var checker:CheckManager;
+		[Bindable]
+		public var checker:CheckManager;
 		
 		private var writeOrders:Array=[];
 
@@ -91,7 +97,10 @@ package com.photodispatcher.provider.ftp_loader{
 		
 		public function DownloadManager(){
 			super(null);
-			queue=[];
+			queue=new ArrayCollection();
+			checker=new CheckManager();
+			//listen
+			checker.addEventListener(ImageProviderEvent.ORDER_LOADED_EVENT, onCheckerComplite)
 		}
 		
 		private var timer:Timer;
@@ -159,10 +168,6 @@ package com.photodispatcher.provider.ftp_loader{
 			for each(f in services){
 				if(f) f.start();
 			}
-			if(!checker){
-				checker=new CheckManager();
-				//TODO listen
-			}
 			checker.isStarted=true;
 			reLoad();
 		}
@@ -198,12 +203,12 @@ package com.photodispatcher.provider.ftp_loader{
 				if(autoLoad) startTimer();
 				return;
 			}
-			queue=latch.lastDataArr;
-			if(!queue){
+			var arr:Array =latch.lastDataArr;
+			if(!arr){
 				if(autoLoad) startTimer();
 				return;
 			}
-			resync(queue);
+			resync(arr);
 			startTimer();
 			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
 		}
@@ -231,6 +236,10 @@ package com.photodispatcher.provider.ftp_loader{
 				}
 			}
 			
+			//TODO resync error orders
+
+			checker.sync(orders);
+
 			var f:DownloadQueueManager;
 			if(services){
 				//resync services
@@ -238,6 +247,8 @@ package com.photodispatcher.provider.ftp_loader{
 					if(f) f.reSync(orders);
 				}
 			}
+			
+			queue=new ArrayCollection(orders);
 		}
 		
 		private function onOrderLoaded(e:ImageProviderEvent):void{ 
@@ -246,6 +257,11 @@ package com.photodispatcher.provider.ftp_loader{
 			checker.check(e.order);
 		}
 
+		private function onCheckerComplite(e:ImageProviderEvent):void{ 
+			saveOrder(e.order);
+		}
+
+		
 		private function saveOrder(order:Order):void{
 			if(!order) return;
 			/* set order state ?
@@ -256,8 +272,14 @@ package com.photodispatcher.provider.ftp_loader{
 			trace('Save order '+order.id+' State:'+order.state.toString());
 			
 			order.state_date=new Date();
+
+			var idx:int=ArrayUtil.searchItemIdx('id',order.id,writeOrders);
+			if(idx!=-1){
+				writeOrders[idx]=order;
+			}else{
+				writeOrders.push(order);
+			}
 			
-			writeOrders.push(order);
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onOrderSave);
 			latch.addLatch(bdService.save(OrderLoad.fromOrder(order)),order.id);

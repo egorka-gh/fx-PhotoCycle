@@ -318,6 +318,10 @@ package com.photodispatcher.provider.ftp_loader{
 			//cnn.removeEventListener(ProgressEvent.PROGRESS, onProgress);
 		}
 		
+		public function get needOrder():Boolean{
+			return connectionManager.canConnect() && hasTask()==-1; 
+		}
+		
 		private function checkQueue():void{
 			if(!isStarted || forceStop) return;
 

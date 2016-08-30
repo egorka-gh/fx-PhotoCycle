@@ -6,10 +6,16 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import flash.globalization.DateTimeStyle;
+	
 	import mx.collections.ArrayCollection;
+	import mx.collections.ArrayList;
 	
 	import org.granite.reflect.Field;
 	import org.granite.reflect.Type;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.OrderLoad")]
@@ -20,6 +26,22 @@ package com.photodispatcher.model.mysql.entities {
 		public static const REMOTE_STATE_COPY:int=20;
 		public static const REMOTE_STATE_ERROR:int=25;
 		public static const REMOTE_STATE_DONE:int=30;
+
+		
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn= new GridColumn('source_name');
+			col.headerText='Источник'; result.addItem(col);
+			col= new GridColumn('id'); result.addItem(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col); 
+			var fmt:DateTimeFormatter; 
+			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('ftp_folder'); col.headerText='Папка'; result.addItem(col);
+			col= new GridColumn('fotos_num'); col.headerText='Файлов'; result.addItem(col);
+			return result;
+		}
 
 		public static function toOrder(srcObj:OrderLoad):Order{
 			var res:Order=new Order();

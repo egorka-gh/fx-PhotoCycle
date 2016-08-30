@@ -54,7 +54,9 @@ package com.photodispatcher.provider.ftp_loader{
 		/*
 		*orders Queue
 		*/
-		protected var queue:Array=[];
+		//protected var queue:Array=[];
+		public var queue:ArrayCollection;
+		
 		protected var localFolder:String;
 		
 		private var downloadManager:FTPDownloadManager;
@@ -65,6 +67,7 @@ package com.photodispatcher.provider.ftp_loader{
 		
 		public function DownloadQueueManager(source:Source=null){
 			super(null);
+			queue=new ArrayCollection();
 			_source=source;
 			if(this.source) sourceCaption=this.source.name;
 			if(source && source.ftpService) connectionsLimit=source.ftpService.connections;
@@ -147,7 +150,7 @@ package com.photodispatcher.provider.ftp_loader{
 			localFolder=file.nativePath;
 			
 			//reset runtime states
-			for each(var order:Order in queue){
+			for each(var order:Order in queue.source){
 				//TODO check refactor
 				if(order){
 					//reset 
@@ -216,12 +219,13 @@ package com.photodispatcher.provider.ftp_loader{
 				if(order){
 					resetOrder(order);
 					resetOrderState(order);	
-					queue.unshift(order);
+					//queue.unshift(order);
+					queue.addItem(order);
 				}
 			}
 			
 			//reset runtime states
-			for each(order in queue){
+			for each(order in queue.source){
 				if(order){
 					if(order.state<OrderState.FTP_INCOMPLITE){
 						resetOrder(order);
@@ -249,7 +253,7 @@ package com.photodispatcher.provider.ftp_loader{
 			if(syncOrders.length==0){
 				//nothig to process
 				//clear queue
-				queue=[];
+				queue=new ArrayCollection();
 				dispatchEvent(new Event('queueLenthChange'));
 				return;
 			}
@@ -261,7 +265,7 @@ package com.photodispatcher.provider.ftp_loader{
 			var idx:int;
 			var order:Order;
 			//check queue
-			for each (order in queue){
+			for each (order in queue.source){
 				if(order){
 					if (syncMap[order.id]){
 						//some bug vs ftp list, may be wrong order data
@@ -306,7 +310,8 @@ package com.photodispatcher.provider.ftp_loader{
 			for each (order in syncMap){
 				if(order){
 					order.ftpForwarded=order.state==OrderState.FTP_FORWARD;
-					queue.push(order);
+					//queue.push(order);
+					queue.addItem(order);
 				}
 			}
 			
@@ -343,12 +348,17 @@ package com.photodispatcher.provider.ftp_loader{
 			var newOrder:Order;
 			var ord:Order;
 			//chek queue
-			for each (ord in queue){
+			for each (ord in queue.source){
 				if(ord && !ord.exceedErrLimit){
 					if(ord.state>0){
 						//fetch
 						if(ord.state>=OrderState.FTP_WAITE && ord.state<=OrderState.FTP_CAPTURED){
-							if(!newOrder) newOrder=ord;
+							if(ord.state==OrderState.FTP_CAPTURED && (!ord.files || ord.files.length==0)){
+								//fill vs files
+								loadFromBD(ord);
+							}else if(!newOrder){
+								newOrder=ord;
+							}
 						}
 					}else if(ord.state!=OrderState.ERR_CHECK_MD5){
 						//reset error
@@ -358,9 +368,6 @@ package com.photodispatcher.provider.ftp_loader{
 			}
 			return newOrder;
 		}
-		
-		//TODO posible bug when call new cmd and last cmd still incomplited
-		//private var webService:BaseWeb;
 		
 		private function checkQueue():void{
 			if(webApplicant || !isStarted || forceStop) return;
@@ -379,12 +386,43 @@ package com.photodispatcher.provider.ftp_loader{
 					webService.getLoaderOrder(webApplicant);
 				}else if(webApplicant.state==OrderState.FTP_CAPTURED){
 					//already locked 4 load push to loader
-					//TODO implement
-					//load from bd and push to loader
+					startList();
 				}
 			}
 		}
 		
+		private function loadFromBD(order:Order):void{
+			if(!order) return;
+			order.saveState();
+			order.state=OrderState.FTP_GET_PROJECT;
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE, onloadFromBD);
+			latch.addLatch(bdService.loadById(order.id),order.id);
+			latch.start();
+		}
+		private function onloadFromBD(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			var result:OrderLoad;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE, onloadFromBD);
+				var order:Order=ArrayUtil.searchItem('id',latch.lastTag,queue.source) as Order;
+				if(latch.complite) result=latch.lastDataItem as OrderLoad;
+				if(!result){
+					removeOrder(order);
+					return;
+				}
+				if(!order) return;
+				order.files=result.files as ArrayCollection;
+				if(!order.files || order.files.length==0){
+					order.state=OrderState.ERR_GET_PROJECT;
+					removeOrder(order);
+					return;
+				}
+				order.restoreState();
+				if(downloadManager.queueLenth==0) checkQueue();
+			}
+		}
+
 		//private var webStatelatch:AsyncLatch;
 		
 		private function getOrderWeb(e:Event):void{
@@ -532,7 +570,13 @@ package com.photodispatcher.provider.ftp_loader{
 			//get merged files
 			if(latch.lastDataItem as OrderLoad) webApplicant.files=(latch.lastDataItem as OrderLoad).files as ArrayCollection;
 			//list ftp 
+			startList();
+		}
+		
+		private function startList():void{
+			if(!webApplicant || !isStarted || forceStop) return;
 			trace('Start list ' +webApplicant.id);
+			downloadCaption='Список файлов ' +webApplicant.id;
 			webApplicant.state=OrderState.FTP_LIST;
 			StateLog.log(OrderState.FTP_LIST,webApplicant.id);
 			var ftpList:FTPList= new FTPList(source);
@@ -549,6 +593,7 @@ package com.photodispatcher.provider.ftp_loader{
 
 			if(ftp.hasError){
 				webApplicant.state=OrderState.ERR_LOAD;
+				trace('List error' +webApplicant.id+'; '+ftp.errMesage);
 				StateLog.log(OrderState.ERR_LOAD,webApplicant.id, '', ftp.errMesage);
 				webApplicant=null;
 				checkQueueLate();
@@ -579,6 +624,7 @@ package com.photodispatcher.provider.ftp_loader{
 				if(chkErr) err='Нет файла на фтп '+err;
 			}
 			if(chkErr){
+				trace('List error' +webApplicant.id+'; '+err);
 				StateLog.log(OrderState.ERR_GET_PROJECT,webApplicant.id, '', err);
 				webApplicant.state=OrderState.FTP_INCOMPLITE;
 				webApplicant.src_state=OrderLoad.REMOTE_STATE_ERROR.toString();
@@ -616,7 +662,7 @@ package com.photodispatcher.provider.ftp_loader{
 			webTimer.start();
 		}
 		private function onWebTimer(evt:Event):void{
-			checkQueue();
+			if(downloadManager.needOrder) checkQueue();
 		}
 
 		private function onDownloadManagerNeedOrder(event:ImageProviderEvent):void{
@@ -685,14 +731,16 @@ package com.photodispatcher.provider.ftp_loader{
 			var result:Order;
 			var idx:int;
 			if(pop){
-				idx=ArrayUtil.searchItemIdx('id', orderId, queue);
+				var arr:Array=queue.source;
+				idx=ArrayUtil.searchItemIdx('id', orderId, arr);
 				if(idx!=-1){
-					var o:Object=queue.splice(idx,1)[0];
+					var o:Object=arr.splice(idx,1)[0];
 					result=o as Order;
+					queue.refresh();
 				}
 				dispatchEvent(new Event('queueLenthChange'));
 			}else{
-				result=ArrayUtil.searchItem('id', orderId, queue) as Order;
+				result=ArrayUtil.searchItem('id', orderId, queue.source) as Order;
 			}
 			
 			return result;
@@ -700,8 +748,12 @@ package com.photodispatcher.provider.ftp_loader{
 
 		protected function removeOrder(order:Order):void{
 			if(!order || !queue) return;
-			var idx:int=queue.indexOf(order);
-			if(idx!=-1) queue.splice(idx,1);
+			//var idx:int=queue.indexOf(order);
+			var arr:Array=queue.source;
+			var idx:int=ArrayUtil.searchItemIdx('id', order.id, arr);
+			if(idx!=-1) arr.splice(idx,1);
+			queue.refresh();
+			dispatchEvent(new Event('queueLenthChange'));
 		}
 
 		protected function onFlowErr(evt:ImageProviderEvent):void{

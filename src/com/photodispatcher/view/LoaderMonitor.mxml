@@ -8,7 +8,7 @@
 		 xmlns:remote="com.photodispatcher.view.remote.*"
 		 xmlns:preprocess="com.photodispatcher.provider.preprocess.*"
 		 creationComplete="{init()}"
-		 keyDown="onKey(event)" xmlns:ns="com.photodispatcher.provider.ftp_loader.*">
+		 keyDown="onKey(event)" xmlns:ns="com.photodispatcher.provider.ftp_loader.*" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
 	
 	<fx:Script>
 		<![CDATA[
@@ -143,6 +143,7 @@
 	<fx:Declarations>
 		<!--<ftp:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true" />-->
 		<ns:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true" />
+		<s:DateTimeFormatter id="fmtDate" dateTimePattern="HH:mm"/>
 	</fx:Declarations>
 
 	<s:Rect top="0" left="0" right="0" bottom="0">
@@ -176,7 +177,7 @@
 						</s:Scroller>
 					</s:VGroup>
 					<s:VGroup gap="10" width="510" height="100%">
-						<s:Label text="Загрузка" fontWeight="bold"/>
+						<s:Label text="Загрузка. Очередь: {downloadManager.queueLength} ({fmtDate.format(downloadManager.lastLoadTime)})" fontWeight="bold"/>
 						<s:HGroup gap="10">
 							<s:Button id="btFtpStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить загрузку" 
 									  enabled="{!downloadManager.isStarted}" click="{downloadManager.isStarted=true}"/>
@@ -194,14 +195,46 @@
 					</s:VGroup>
 					
 					<s:Spacer width="10"/>
-					<s:VGroup gap="5" height="100%">
-						<s:Label text="Проверка Очередь: " fontWeight="bold"/>
-						<s:HGroup gap="10">
+					<s:VGroup gap="5" width="200" height="100%">
+						<s:HGroup gap="5" width="100%">
+							<s:Label text="Проверка" fontWeight="bold"/>
+							<s:Label text="Очередь: {downloadManager.checker.queue.length}" fontWeight="bold" width="100%" maxDisplayedLines="1"/>
+						</s:HGroup>
+						<s:Label text="{downloadManager.checker.lastError}" fontWeight="bold" height="30" width="100%" maxDisplayedLines="2"/>
+						<!--<s:HGroup gap="10">
 							<s:Button id="btBuilderStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить подготовку"/>
 							<s:Button id="btBuilderStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить подготовку"/>
-						</s:HGroup>
+						</s:HGroup>-->
+						<itemRenderer:CheckerRenderer data="{downloadManager.checker.md5Checker}"/>
+						<itemRenderer:CheckerRenderer data="{downloadManager.checker.imChecker}"/>
 					</s:VGroup>
 				</s:HGroup>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Заказы" backgroundAlpha="0" width="100%" height="100%">
+				<s:VGroup gap="5" top="0" left="0" right="0" bottom="0">
+					<s:TabBar id="tbViewOrders"  dataProvider="{vsOrders}"/>
+					<mx:ViewStack id="vsOrders" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+						<s:NavigatorContent label="В работе" backgroundAlpha="0" width="100%" height="100%">
+							<view:OrderLoadListView items="{downloadManager.queue}"
+													width="100%" height="100%"/>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Загрузка" backgroundAlpha="0" width="100%" height="100%">
+							<s:HGroup gap="10" width="100%" height="100%">
+								<s:List id="lstLoadManagers" dataProvider="{downloadManager.servicesList}" labelField="sourceCaption"
+										height="100%"/>
+								<view:OrderLoadListView items="{lstLoadManagers.selectedItem.queue}"
+														width="100%" height="100%"/>
+							</s:HGroup>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Проверка" backgroundAlpha="0" width="100%" height="100%">
+							<view:OrderLoadListView items="{downloadManager.checker.queue}"
+													width="100%" height="100%"/>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Загружены" backgroundAlpha="0" width="100%" height="100%">
+							
+						</s:NavigatorContent>
+					</mx:ViewStack>
+				</s:VGroup>
 			</s:NavigatorContent>
 		</mx:ViewStack>
 	</s:VGroup>

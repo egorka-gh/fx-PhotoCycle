@@ -6,10 +6,34 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import flash.globalization.DateTimeStyle;
+	
+	import mx.collections.ArrayList;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.OrderFile")]
     public class OrderFile extends OrderFileBase {
+
+		public static function gridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			
+			col= new GridColumn('file_name'); col.headerText='имя'; result.addItem(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col); 
+			var fmt:DateTimeFormatter; 
+			fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('size'); col.headerText='Размер'; result.addItem(col);
+			col= new GridColumn('hash_remote'); col.headerText='MD5'; result.addItem(col);
+			//hash_local
+			//previous_state
+			//previous_state_name
+			return result;
+		}
 
         public function OrderFile() {
             super();
