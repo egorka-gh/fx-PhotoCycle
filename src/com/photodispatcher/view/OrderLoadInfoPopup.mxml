@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx"
+						   focusEnabled="true"
+						   width="1240" height="700">
+
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.OrderFile;
+			import com.photodispatcher.model.mysql.entities.OrderLoad;
+			import com.photodispatcher.model.mysql.entities.StateLog;
+			import com.photodispatcher.model.mysql.services.OrderLoadService;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.managers.PopUpManager;
+			
+			import org.granite.tide.Tide;
+
+			[Bindable]
+			private var order:OrderLoad;
+			[Bindable]
+			private var fileList:ArrayCollection;
+			[Bindable]
+			private var logList:ArrayCollection;
+
+			private var orderId:String;
+			public function show(orderId:String):void{
+				this.orderId=orderId;
+				refresh(orderId);
+			}
+
+			private function refresh(orderId:String):void{
+				order=null;
+				if(!orderId){
+					return;
+				}else{
+					var svc:OrderLoadService=Tide.getInstance().getContext().byType(OrderLoadService,true) as OrderLoadService;
+					var latch:DbLatch= new DbLatch();
+					latch.addEventListener(Event.COMPLETE,onOrderLoad);
+					latch.addLatch(svc.loadFull(orderId));
+					latch.start();
+				}
+			}
+			private function onOrderLoad(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
+					if(!latch.complite) return;
+					order=latch.lastDataItem as OrderLoad;
+					
+					var aa:Array;
+					if(order){
+						fileList=order.files as ArrayCollection;
+						logList=order.stateLog as ArrayCollection;
+					}
+				}
+				if(order){
+					this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+					this.width=FlexGlobals.topLevelApplication.width-50;
+					this.height=FlexGlobals.topLevelApplication.height-100;
+					PopUpManager.centerPopUp(this);
+				}else{
+					Alert.show('Заказ "'+orderId+'" не найден');
+				}
+			}
+		
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:DateTimeFormatter id="dtFormater" dateTimePattern="dd.MM.yyyy HH:mm"/>
+	</fx:Declarations>
+
+	<s:Rect radiusX="6" top="0" left="0" right="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#444444" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:VGroup gap="5" top="10" left="10" right="10" bottom="10" horizontalAlign="right">
+		<s:HGroup gap="10" width="100%" height="100%">
+			<s:Group width="300" height="100%">
+				<s:Rect top="0" left="0" right="0" bottom="0"
+						radiusX="4">
+					<s:fill>
+						<s:SolidColor color="#cccccc"/>
+					</s:fill>
+					<s:stroke>
+						<s:SolidColorStroke color="0" weight="1"/>
+					</s:stroke>
+				</s:Rect>
+				<s:Form id="frmOrder" backgroundAlpha="0" top="0" left="0" right="0" bottom="20">
+					<s:layout>
+						<s:FormLayout gap="-12"/>
+					</s:layout>
+					
+					<s:FormItem label="ID">
+						<s:TextInput id="tiID" text="{order.id}" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Id источника">
+						<s:TextInput id="tiSourceId" text="{order.source_code?order.source_code:''}{order.src_id}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Источник">
+						<s:TextInput id="tiSource" text="{order.source_name}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Статус">
+						<s:TextInput id="tiState" text="{order.state_name}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Дата статуса">
+						<s:TextInput id="tiStateDate" text="{dtFormater.format(order.state_date)}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="FTP папка">
+						<s:TextInput id="tiFtpFolder" text="{order.ftp_folder}" editable="false" width="150"/>
+					</s:FormItem> 
+					<s:FormItem label="Кол файлов">
+						<s:TextInput id="tiFotosNum" text="{order.fotos_num.toString()}" editable="false" width="150"/>
+					</s:FormItem> 
+				</s:Form>
+				<s:VGroup gap="10" width="100%" bottom="0" paddingBottom="10" paddingRight="10" paddingLeft="10">
+					<s:HGroup gap="10" verticalAlign="baseline" width="100%"  horizontalAlign="right">
+						<s:Button label="Перезагрузить" enabled="false"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:Group>
+			<s:VGroup id="gDet" gap="0" width="100%" height="100%">
+				<s:TabBar id="tbView" width="100%" dataProvider="{vsSubInfo}"/>
+				<s:Group width="100%" height="100%">
+					<s:Rect top="0" left="0" right="0" bottom="0"
+							topLeftRadiusX="0" topRightRadiusX="0" bottomLeftRadiusX="4" bottomRightRadiusX="4">
+						<s:fill>
+							<s:SolidColor color="#cccccc"/>
+						</s:fill>
+						<s:stroke>
+							<s:SolidColorStroke color="0" weight="1"/>
+						</s:stroke>
+					</s:Rect>
+					<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+						<s:NavigatorContent id="ncPrintGroups" label="Файлы" backgroundAlpha="0" width="100%" height="100%">
+							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
+								<s:DataGrid id="dgFiles" selectionMode="singleRow" width="100%" height="100%" editable="true"
+											dataProvider="{fileList}" locale="ru_RU" columns="{OrderFile.gridColumns()}"/>
+							</s:HGroup>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Лог" width="100%" height="100%">
+							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
+								<s:DataGrid id="dgLog" selectionMode="singleRow" width="100%" height="100%" editable="true"
+											dataProvider="{logList}" locale="ru_RU" columns="{StateLog.gridColumnsLoader()}"/>
+							</s:HGroup>
+						</s:NavigatorContent>
+
+					</mx:ViewStack>
+				</s:Group>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup gap="10">
+			<s:Button id="btLookup" label="Закрыть" click="{close()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

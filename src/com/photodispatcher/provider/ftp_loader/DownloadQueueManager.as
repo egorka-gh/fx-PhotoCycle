@@ -575,7 +575,7 @@ package com.photodispatcher.provider.ftp_loader{
 		
 		private function startList():void{
 			if(!webApplicant || !isStarted || forceStop) return;
-			trace('Start list ' +webApplicant.id);
+			trace('Start list ' +webApplicant.id+' '+webApplicant.ftp_folder);
 			downloadCaption='Список файлов ' +webApplicant.id;
 			webApplicant.state=OrderState.FTP_LIST;
 			StateLog.log(OrderState.FTP_LIST,webApplicant.id);
@@ -593,7 +593,7 @@ package com.photodispatcher.provider.ftp_loader{
 
 			if(ftp.hasError){
 				webApplicant.state=OrderState.ERR_LOAD;
-				trace('List error' +webApplicant.id+'; '+ftp.errMesage);
+				trace('List error ' +webApplicant.id+'; '+ftp.errMesage);
 				StateLog.log(OrderState.ERR_LOAD,webApplicant.id, '', ftp.errMesage);
 				webApplicant=null;
 				checkQueueLate();
@@ -603,7 +603,7 @@ package com.photodispatcher.provider.ftp_loader{
 			//check listing
 			var err:String='';
 			var chkErr:Boolean=false;
-			if(!webApplicant.files || !listing || listing.length!=webApplicant.files.length){
+			if(!webApplicant.files || !listing || listing.length<webApplicant.files.length){
 				chkErr=true;
 				err='Не соответствие количества файлов';
 			}else{
@@ -624,7 +624,7 @@ package com.photodispatcher.provider.ftp_loader{
 				if(chkErr) err='Нет файла на фтп '+err;
 			}
 			if(chkErr){
-				trace('List error' +webApplicant.id+'; '+err);
+				trace('List error ' +webApplicant.id+'; '+err);
 				StateLog.log(OrderState.ERR_GET_PROJECT,webApplicant.id, '', err);
 				webApplicant.state=OrderState.FTP_INCOMPLITE;
 				webApplicant.src_state=OrderLoad.REMOTE_STATE_ERROR.toString();

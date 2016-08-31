@@ -16,9 +16,11 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderLoad;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.StateLog;
+			import com.photodispatcher.model.mysql.services.OrderLoadService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.service.SyncLoaderService;
 			import com.photodispatcher.view.menu.GridContexMenu;
@@ -71,7 +73,7 @@
 			private function onKey(e:KeyboardEvent):void{
 				if(e.ctrlKey && e.keyCode==70){
 					//order lookup
-					var pop:OrderSearchPopup=new OrderSearchPopup();
+					var pop:OrderLoadSearchPopup=new OrderLoadSearchPopup();
 					pop.open(null);
 				}
 			}
@@ -135,6 +137,48 @@
 			
 			protected function btStop_clickHandler(event:MouseEvent):void{
 				stop();
+			}
+			
+			private function get bdService():OrderLoadService{
+				return Tide.getInstance().getContext().byType(OrderLoadService,true) as OrderLoadService;
+			}
+			
+			[Bindable]
+			private var loadCompliteAC:ArrayCollection;
+			[Bindable]
+			private var loadInCompliteAC:ArrayCollection;
+
+			protected function btRefreshInComplite_clickHandler(event:MouseEvent):void{
+				var latch:DbLatch= new DbLatch(true);
+				latch.addEventListener(Event.COMPLETE,onloadIncomplite);
+				latch.addLatch(bdService.loadByState(OrderState.FTP_INCOMPLITE, OrderState.FTP_INCOMPLITE+1));
+				latch.start();
+			}
+			private function onloadIncomplite(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadIncomplite);
+					if(latch.complite){
+						loadInCompliteAC=latch.lastDataAC;
+					}
+				}
+			}
+
+			
+			protected function btRefreshComplite_clickHandler(event:MouseEvent):void{
+				var latch:DbLatch= new DbLatch(true);
+				latch.addEventListener(Event.COMPLETE,onloadcomplite);
+				latch.addLatch(bdService.loadByState(OrderState.FTP_COMPLETE, OrderState.FTP_COMPLETE+1));
+				latch.start();
+			}
+			private function onloadcomplite(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadcomplite);
+					if(latch.complite){
+						loadCompliteAC=latch.lastDataAC;
+					}
+				}
 			}
 			
 		]]>
@@ -230,8 +274,27 @@
 							<view:OrderLoadListView items="{downloadManager.checker.queue}"
 													width="100%" height="100%"/>
 						</s:NavigatorContent>
+						<s:NavigatorContent label="Ошибка загрузки" backgroundAlpha="0" width="100%" height="100%">
+							<s:VGroup gap="5" width="100%" height="100%">
+								<s:Button id="btRefreshInComplite" icon="assets/icon-refresh.gif" click="btRefreshInComplite_clickHandler(event)" 
+										  cornerRadius="4" width="22" height="22" baseline="4"/>
+								<s:DataGrid id="dgInComplite"
+											columns="{OrderLoad.gridColumns()}"
+											dataProvider="{loadInCompliteAC}"
+											selectionMode="singleRow"  locale="ru_RU"
+											width="100%" height="100%"/>
+							</s:VGroup>
+						</s:NavigatorContent>
 						<s:NavigatorContent label="Загружены" backgroundAlpha="0" width="100%" height="100%">
-							
+							<s:VGroup gap="5" width="100%" height="100%">
+								<s:Button id="btRefreshComplite" icon="assets/icon-refresh.gif" click="btRefreshComplite_clickHandler(event)" 
+										  cornerRadius="4" width="22" height="22" baseline="4"/>
+								<s:DataGrid id="dgComplite"
+											columns="{OrderLoad.gridColumns()}"
+											dataProvider="{loadCompliteAC}"
+											selectionMode="singleRow"  locale="ru_RU"
+											width="100%" height="100%"/>
+							</s:VGroup>
 						</s:NavigatorContent>
 					</mx:ViewStack>
 				</s:VGroup>

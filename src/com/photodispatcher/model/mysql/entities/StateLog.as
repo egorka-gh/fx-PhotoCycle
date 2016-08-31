@@ -38,7 +38,18 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('comment'); col.headerText='Комментарий'; result.push(col); 
 			return new ArrayList(result);
 		}
-		
+
+		public static function gridColumnsLoader():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата'; col.formatter=fmt;  col.width=110; result.push(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=100; result.push(col); 
+			col= new GridColumn('comment'); col.headerText='Комментарий'; result.push(col); 
+			return new ArrayList(result);
+		}
+
 		public static function logByPGroup(state:int, pgId:String, comment:String):void{
 			var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 			if(!svc) return;

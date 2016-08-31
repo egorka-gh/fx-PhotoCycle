@@ -90,33 +90,13 @@ package com.photodispatcher.provider.check{
 			_isStarted=false;
 			md5Checker.stop();
 			imChecker.stop();
-			/*
-			if(currOrder){
-				reprintBuilder.stop();
-				if(!currOrder.tag){
-					if(currOrder.state < OrderState.PREPROCESS_CAPTURED){
-						currOrder.state=OrderState.PREPROCESS_WAITE;
-					}else{
-						orderBuilder.stop();
-						//unlock
-						currOrder.state=OrderState.PREPROCESS_WAITE;
-						var latch:DbLatch= new DbLatch(true);
-						//latch.addEventListener(Event.COMPLETE,onOrderSave);
-						latch.addLatch(orderService.setState(currOrder));
-						latch.start();
-					}
-				}else if(currOrder.tag==Order.TAG_REPRINT){
-					currOrder.state=OrderState.REPRINT_WAITE;
-				}
-				currOrder=null;
-			}
-			*/
 			//reset states
 			for each (var order:Order in queue.source){
 				if(order){
 					if(order.state>OrderState.FTP_WAITE_CHECK) order.restoreState();
 				}
 			}
+			//DON'T reset queue, setOrderStateWeb can be in process 
 		}
 
 		public function CheckManager(){
@@ -148,7 +128,7 @@ package com.photodispatcher.provider.check{
 					//replace
 					orders[idx]=order;
 				}else{
-					if(order.state<=OrderState.FTP_CHECK){
+					if(order.state<=OrderState.FTP_CHECK && !md5Checker.isAtCheck(order.id) && !imChecker.isAtCheck(order.id)){
 						toKill.push(order.id);
 					}else{
 						//in process?
@@ -212,7 +192,7 @@ package com.photodispatcher.provider.check{
 			//start IM checker
 			if(!imChecker.isBusy){
 				for each(order in queue.source){
-					if(order.state==OrderState.FTP_CHECK && (!md5Checker.isBusy || !md5Checker.currentOrder || order.id!=md5Checker.currentOrder.id)){
+					if(order.state==OrderState.FTP_CHECK && !md5Checker.isAtCheck(order.id)){
 						if(!order.files || order.files.length==0){
 							loadFromBD(order);
 						}else{
@@ -312,6 +292,7 @@ package com.photodispatcher.provider.check{
 				//same exept remote state done on site
 				setOrderStateWeb(imChecker.currentOrder,OrderLoad.REMOTE_STATE_DONE);
 			}
+			startNext();
 		}
 
 		private function setOrderStateWeb(order:Order, remoteState:int, comment:String=''):void{

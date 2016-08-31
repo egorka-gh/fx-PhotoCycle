@@ -41,6 +41,10 @@ package com.photodispatcher.provider.check{
 			_isBusy=false;
 		}
 		
+		public function isAtCheck(orderId:String):Boolean{
+			return isBusy && currOrder && currOrder.id==orderId;
+		}
+		
 		/*
 		*reset between iterrations
 		*/

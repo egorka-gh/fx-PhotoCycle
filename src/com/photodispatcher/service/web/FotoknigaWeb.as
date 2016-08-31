@@ -174,20 +174,22 @@ package com.photodispatcher.service.web{
 						//4debug
 						_hasError=false;
 						_errMesage='';
+						
+						/* 4 debug
 						dispatchEvent(new Event(Event.COMPLETE));
-
-						/*
+						break;
+						*/
+						
 						startListen();
 						//set loader order state
 						post= new Object();
 						post[PARAM_KEY]=appKey;
 						post[PARAM_ACTION]=ACTION_SET_LOADER_ORDER_STATE;
 						post['id']=int(lastOrder.src_id);
-						post['status']=lastOrder.src_state;
+						post['status']=int(lastOrder.src_state);
 						post['info']=lastOrder.errStateComment;
-						trace('FotoknigaWeb set state order 4 load; action:'+ACTION_SET_LOADER_ORDER_STATE);
+						trace('FotoknigaWeb set state order 4 load; action:'+ACTION_SET_LOADER_ORDER_STATE+', '+lastOrder.src_id+', '+lastOrder.src_state);
 						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
-						*/
 						break;
 					
 					case CMD_CHECK_STATE:
@@ -332,7 +334,7 @@ package com.photodispatcher.service.web{
 		}
 
 		override public function setLoaderOrderState(order:Order):void{
-			if(!source || source.type!=SourceType.SRC_FOTOKNIGA || !order || !int(order.src_id)){
+			if(!source || source.type!=SourceType.SRC_FOTOKNIGA || !order || !int(order.src_id) || !int(order.src_state)){
 				abort('Не верная иннициализация команды');
 				return;
 			}
