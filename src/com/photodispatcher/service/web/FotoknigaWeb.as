@@ -187,7 +187,7 @@ package com.photodispatcher.service.web{
 						post[PARAM_ACTION]=ACTION_SET_LOADER_ORDER_STATE;
 						post['id']=int(lastOrder.src_id);
 						post['status']=int(lastOrder.src_state);
-						post['info']=lastOrder.errStateComment;
+						post['info']=lastOrder.errStateComment?lastOrder.errStateComment:'';
 						trace('FotoknigaWeb set state order 4 load; action:'+ACTION_SET_LOADER_ORDER_STATE+', '+lastOrder.src_id+', '+lastOrder.src_state);
 						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
 						break;
