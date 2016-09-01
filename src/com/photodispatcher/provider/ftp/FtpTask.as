@@ -48,10 +48,13 @@ package com.photodispatcher.provider.ftp{
 		private var bytesLoaded:int;
 		private var bytesTotal:int;
 		private var filesNum:int;
+		private var ftpConnectImeout:int=CONNECT_TIMEOUT;
 
 		public function FtpTask(source:Source){
 			super(null);
 			this.source=source;
+			if(Context.getAttribute('ftpConnectImeout')) ftpConnectImeout=Context.getAttribute('ftpConnectImeout')*1000;
+			if(ftpConnectImeout<CONNECT_TIMEOUT) ftpConnectImeout=CONNECT_TIMEOUT;
 		}
 		
 		public function get isConnected():Boolean{
@@ -102,7 +105,7 @@ package com.photodispatcher.provider.ftp{
 			// 4 debug if (!ftpListener) ftpListener = new ConsoleListener(ftpClient);
 			ftpClient.workingDirectory="/";
 			//connect timeout
-			startIdleTimer(CONNECT_TIMEOUT);
+			startIdleTimer(ftpConnectImeout);
 			//run ftp sess
 			ftpClient.connect(source.ftpService.url, FTP_PORT);
 			trace('FtpTask: attempt to connect '+source.ftpService.url);
@@ -143,7 +146,7 @@ package com.photodispatcher.provider.ftp{
 			trace('FtpTask: connected, attempt to login '+source.ftpService.url);
 			stopIdleTimer();
 			//login timeout
-			startIdleTimer(CONNECT_TIMEOUT);
+			startIdleTimer(ftpConnectImeout);
 			ftpClient.removeEventListener(FTPEvent.CONNECTED, handleConnected);
 			ftpClient.addEventListener(FTPEvent.LOGGED, handleLogged);
 			if(source && source.ftpService && source.ftpService.user){ 

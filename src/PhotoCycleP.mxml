@@ -188,6 +188,7 @@
 				var serverIP:String;
 				var configPass:String;
 				var syncInterval:int=10;
+				var ftpConnectImeout:int=15;
 				var ticketPass:String;
 
 				//var cFilterId:int;
@@ -214,6 +215,9 @@
 				
 				Context.setAttribute('syncInterval',syncInterval);
 				
+				if(so.data.ftpConnectImeout) ftpConnectImeout=so.data.ftpConnectImeout;
+				Context.setAttribute('ftpConnectImeout',ftpConnectImeout);
+
 				Context.setAttribute('configPass',configPass);
 				Context.setAttribute('ticketPass',ticketPass);
 				Context.setAttribute('workFolder',workFolder);
