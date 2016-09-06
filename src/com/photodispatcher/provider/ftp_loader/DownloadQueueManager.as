@@ -407,7 +407,7 @@ package com.photodispatcher.provider.ftp_loader{
 				latch.removeEventListener(Event.COMPLETE, onloadFromBD);
 				var order:Order=ArrayUtil.searchItem('id',latch.lastTag,queue.source) as Order;
 				if(latch.complite) result=latch.lastDataItem as OrderLoad;
-				if(!result){
+				if(!result || result.state!=OrderState.FTP_CAPTURED){
 					removeOrder(order);
 					return;
 				}
@@ -480,7 +480,7 @@ package com.photodispatcher.provider.ftp_loader{
 
 				//save in bd
 				latch= new DbLatch(true);
-				latch.addLatch(bdService.save(OrderLoad.fromOrder(webApplicant)));
+				latch.addLatch(bdService.save(OrderLoad.fromOrder(webApplicant),0));
 				latch.start();
 				removeOrder(webApplicant);
 				webApplicant=null;
@@ -550,7 +550,7 @@ package com.photodispatcher.provider.ftp_loader{
 					webApplicant.src_state=OrderLoad.REMOTE_STATE_COPY.toString();
 					var latch:DbLatch= new DbLatch(true);
 					latch.addEventListener(Event.COMPLETE, onOrderMerged);
-					latch.addLatch(bdService.merge(OrderLoad.fromOrder(webApplicant)));
+					latch.addLatch(bdService.merge(OrderLoad.fromOrder(webApplicant),0));
 					latch.start();
 					if(!isStarted || forceStop) webApplicant=null;
 				}
@@ -630,7 +630,8 @@ package com.photodispatcher.provider.ftp_loader{
 				webApplicant.src_state=OrderLoad.REMOTE_STATE_ERROR.toString();
 				setOrderStateWeb(webApplicant,OrderLoad.REMOTE_STATE_ERROR,err);
 				var latch:DbLatch= new DbLatch(true);
-				latch.addLatch(bdService.merge(OrderLoad.fromOrder(webApplicant)));
+				latch.addEventListener(Event.COMPLETE,onSave);
+				latch.addLatch(bdService.merge(OrderLoad.fromOrder(webApplicant),OrderState.FTP_CAPTURED),webApplicant.id);
 				latch.start();
 				removeOrder(webApplicant);
 				webApplicant=null;
@@ -645,6 +646,17 @@ package com.photodispatcher.provider.ftp_loader{
 			webApplicant=null;
 		}
 
+		private function onSave(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE, onSave);
+				if(!latch.complite){
+					if(latch.lastErrCode==OrderState.ERR_WRONG_STATE && latch.lastTag){
+						StateLog.log(OrderState.ERR_WRONG_STATE,latch.lastTag,'',latch.lastError);
+					}
+				}
+			}
+		}
 		
 		private function startDownload(order:Order):void{
 			//remove from queue

@@ -77,7 +77,9 @@
 					for each(var o:Order in  loader.queue){
 						if(o && o.exceedErrLimit) errs.push(o);
 					}
-					errsAC.source=errs;
+					//errsAC.source=errs;
+					//errsAC.refresh();
+					errsAC=new ArrayCollection(errs);
 				}
 				
 				//load permanent errs
@@ -94,9 +96,10 @@
 					if(latch.complite){
 						var errs:Array=latch.lastDataArr;
 						if(errs && errs.length>0){
-							errs=errs.concat(errsAC.source);
-							errsAC.source=errs;
-							errsAC.refresh();
+							if(errsAC) errs=errs.concat(errsAC.source);
+							//errsAC.source=errs;
+							//errsAC.refresh();
+							errsAC=new ArrayCollection(errs);
 						}
 					}
 				}

@@ -98,7 +98,6 @@ package com.photodispatcher.service.web{
 		public static const ACTION_GET_LOADER_ORDER:String='fk:get_order_files';
 		public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status';
 		
-		
 		public function FotoknigaWeb(source:Source){
 			super(source);
 		}
@@ -172,10 +171,9 @@ package com.photodispatcher.service.web{
 						break;
 					case CMD_SET_ORDER_LDR_STATE:
 						//4debug
+						/* 4 debug
 						_hasError=false;
 						_errMesage='';
-						
-						/* 4 debug
 						dispatchEvent(new Event(Event.COMPLETE));
 						break;
 						*/
@@ -187,7 +185,9 @@ package com.photodispatcher.service.web{
 						post[PARAM_ACTION]=ACTION_SET_LOADER_ORDER_STATE;
 						post['id']=int(lastOrder.src_id);
 						post['status']=int(lastOrder.src_state);
-						post['info']=lastOrder.errStateComment?lastOrder.errStateComment:'';
+						if(lastOrder.errStateComment){
+							post['info']=lastOrder.errStateComment;
+						}
 						trace('FotoknigaWeb set state order 4 load; action:'+ACTION_SET_LOADER_ORDER_STATE+', '+lastOrder.src_id+', '+lastOrder.src_state);
 						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
 						break;
@@ -421,14 +421,16 @@ package com.photodispatcher.service.web{
 			result=parseRaw(e.data);
 			//check 4 err
 			if(is_newAPI){
-				if(!result || result.error){
-					if(!result){
-						abort('FotoknigaWeb Ошибка web: '+e.data);
-					}else{
-						abort(result.error);
+				//if(result!='OK'){
+					if(!result || result.hasOwnProperty('error')){
+						if(!result){
+							abort('FotoknigaWeb Ошибка web: '+e.data);
+						}else{
+							abort(result.error);
+						}
+						return;
 					}
-					return;
-				}
+				//}
 			}else{
 				if(!result || !result.hasOwnProperty('result') || !result.result || result.error){
 					if(!result){

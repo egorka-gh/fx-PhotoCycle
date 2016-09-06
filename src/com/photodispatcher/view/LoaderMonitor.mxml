@@ -181,6 +181,22 @@
 				}
 			}
 			
+			protected function btOpenErr_clickHandler(event:MouseEvent):void{
+				var item:Order=dgInComplite.selectedItem as Order;
+				if(item){
+					var pop:OrderLoadInfoPopup=new OrderLoadInfoPopup();
+					pop.show(item.id);
+				}
+			}
+			
+			protected function btOpenLoaded_clickHandler(event:MouseEvent):void{
+				var item:Order=dgComplite.selectedItem as Order;
+				if(item){
+					var pop:OrderLoadInfoPopup=new OrderLoadInfoPopup();
+					pop.show(item.id);
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -276,8 +292,12 @@
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Ошибка загрузки" backgroundAlpha="0" width="100%" height="100%">
 							<s:VGroup gap="5" width="100%" height="100%">
-								<s:Button id="btRefreshInComplite" icon="assets/icon-refresh.gif" click="btRefreshInComplite_clickHandler(event)" 
-										  cornerRadius="4" width="22" height="22" baseline="4"/>
+								<s:HGroup gap="10" width="100%">
+									<s:Button id="btRefreshInComplite" icon="assets/icon-refresh.gif" click="btRefreshInComplite_clickHandler(event)" 
+											  cornerRadius="4" width="22" height="22" baseline="4"/>
+									<s:Spacer width="100%" />
+									<s:Button id="btOpenErr" label="Открыть" click="btOpenErr_clickHandler(event)"/>
+								</s:HGroup> 
 								<s:DataGrid id="dgInComplite"
 											columns="{OrderLoad.gridColumns()}"
 											dataProvider="{loadInCompliteAC}"
@@ -287,8 +307,12 @@
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Загружены" backgroundAlpha="0" width="100%" height="100%">
 							<s:VGroup gap="5" width="100%" height="100%">
-								<s:Button id="btRefreshComplite" icon="assets/icon-refresh.gif" click="btRefreshComplite_clickHandler(event)" 
-										  cornerRadius="4" width="22" height="22" baseline="4"/>
+								<s:HGroup gap="10" width="100%">
+									<s:Button id="btRefreshComplite" icon="assets/icon-refresh.gif" click="btRefreshComplite_clickHandler(event)" 
+											  cornerRadius="4" width="22" height="22" baseline="4"/>
+									<s:Spacer width="100%"/>
+									<s:Button id="btOpenLoaded" label="Открыть" click="btOpenLoaded_clickHandler(event)"/>
+								</s:HGroup>
 								<s:DataGrid id="dgComplite"
 											columns="{OrderLoad.gridColumns()}"
 											dataProvider="{loadCompliteAC}"

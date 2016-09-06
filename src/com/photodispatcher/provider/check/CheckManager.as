@@ -220,7 +220,7 @@ package com.photodispatcher.provider.check{
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE, onloadFromBD);
 				if(latch.complite) result=latch.lastDataItem as OrderLoad;
-				if(!result){
+				if(!result || (result.state!=OrderState.FTP_WAITE_CHECK && result.state!=OrderState.FTP_CHECK)){
 					removeOrder(latch.lastTag);
 					return;
 				}
@@ -250,7 +250,7 @@ package com.photodispatcher.provider.check{
 						md5Checker.currentOrder.state=OrderState.FTP_WAITE;
 						md5Checker.currentOrder.saveState();
 						latch= new DbLatch(true);
-						latch.addLatch(bdService.save(OrderLoad.fromOrder(md5Checker.currentOrder)));
+						latch.addLatch(bdService.save(OrderLoad.fromOrder(md5Checker.currentOrder),0));
 						latch.start();
 					}
 					removeOrder(md5Checker.currentOrder.id);
@@ -259,12 +259,25 @@ package com.photodispatcher.provider.check{
 				//save in bd
 				md5Checker.currentOrder.saveState();
 				latch= new DbLatch(true);
-				latch.addLatch(bdService.save(OrderLoad.fromOrder(md5Checker.currentOrder)));
+				latch.addEventListener(Event.COMPLETE,onSave);
+				latch.addLatch(bdService.save(OrderLoad.fromOrder(md5Checker.currentOrder),OrderState.FTP_WAITE_CHECK),md5Checker.currentOrder.id);
 				latch.start();
 			}
 			startNext();
 		}
 
+		private function onSave(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE, onSave);
+				if(!latch.complite){
+					if(latch.lastErrCode==OrderState.ERR_WRONG_STATE && latch.lastTag){
+						StateLog.log(OrderState.ERR_WRONG_STATE,latch.lastTag,'',latch.lastError);
+					}
+				}
+			}
+		}
+		
 		private function onImComplite(evt:Event):void{
 			//TODO implement
 			var latch:DbLatch;

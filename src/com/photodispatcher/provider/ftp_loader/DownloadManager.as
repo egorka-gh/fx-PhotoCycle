@@ -7,6 +7,7 @@ package com.photodispatcher.provider.ftp_loader{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderLoadService;
 	import com.photodispatcher.provider.check.CheckManager;
@@ -252,17 +253,17 @@ package com.photodispatcher.provider.ftp_loader{
 		}
 		
 		private function onOrderLoaded(e:ImageProviderEvent):void{ 
-			saveOrder(e.order);
+			saveOrder(e.order, OrderState.FTP_CAPTURED);
 			//push to file check service 
 			checker.check(e.order);
 		}
 
 		private function onCheckerComplite(e:ImageProviderEvent):void{ 
-			saveOrder(e.order);
+			saveOrder(e.order, OrderState.FTP_CHECK);
 		}
 
 		
-		private function saveOrder(order:Order):void{
+		private function saveOrder(order:Order, fromState:int):void{
 			if(!order) return;
 			/* set order state ?
 			if(order.state<OrderState.CANCELED_SYNC){
@@ -282,20 +283,24 @@ package com.photodispatcher.provider.ftp_loader{
 			
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onOrderSave);
-			latch.addLatch(bdService.save(OrderLoad.fromOrder(order)),order.id);
+			latch.addLatch(bdService.save(OrderLoad.fromOrder(order),fromState),order.id);
 			latch.start();
 		}
 		private function onOrderSave(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onOrderSave);
+				var id:String= latch.lastTag;
 				if(latch.complite){
-					var id:String= latch.lastTag;
 					if(id){
 						var idx:int=ArrayUtil.searchItemIdx('id',id,writeOrders);
 						if(idx!=-1) writeOrders.splice(idx,1);
 					}
-					if(writeOrders.length>0) saveOrder(writeOrders[0] as Order);	
+					//if(writeOrders.length>0) saveOrder(writeOrders[0] as Order);	
+				}else{
+					if(latch.lastErrCode==OrderState.ERR_WRONG_STATE && id){
+						StateLog.log(OrderState.ERR_WRONG_STATE,id,'',latch.lastError);
+					}
 				}
 			}
 		}
