@@ -353,11 +353,13 @@ package com.photodispatcher.provider.ftp_loader{
 					if(ord.state>0){
 						//fetch
 						if(ord.state>=OrderState.FTP_WAITE && ord.state<=OrderState.FTP_CAPTURED){
+							//resetOrderState(newOrder) if not FTP_WAITE or FTP_CAPTURED
+							if(ord && ord.state!=OrderState.FTP_WAITE && ord.state!=OrderState.FTP_CAPTURED) resetOrderState(ord);
 							if(ord.state==OrderState.FTP_CAPTURED && (!ord.files || ord.files.length==0)){
 								//fill vs files
 								loadFromBD(ord);
-							}else if(!newOrder){
-								newOrder=ord;
+							}else{
+								if(!newOrder) newOrder=ord;
 							}
 						}
 					}else if(ord.state!=OrderState.ERR_CHECK_MD5){
@@ -373,20 +375,26 @@ package com.photodispatcher.provider.ftp_loader{
 			if(webApplicant || !isStarted || forceStop) return;
 			var newOrder:Order=fetch();
 			if(newOrder){
-				webApplicant=newOrder;
-				webApplicant.saveState();
-
-				if(webApplicant.state==OrderState.FTP_WAITE){
-					//load from site
-					trace('QueueManager web getOrder '+webApplicant.id);
-					webApplicant.state=OrderState.FTP_WEB_CHECK;
-					StateLog.log(OrderState.FTP_WEB_CHECK,webApplicant.id);
-					var webService:BaseWeb=WebServiceBuilder.build(source);
-					webService.addEventListener(Event.COMPLETE,getOrderWeb);
-					webService.getLoaderOrder(webApplicant);
-				}else if(webApplicant.state==OrderState.FTP_CAPTURED){
-					//already locked 4 load push to loader
-					startList();
+				if(newOrder.state==OrderState.FTP_WAITE || newOrder.state==OrderState.FTP_CAPTURED){
+					webApplicant=newOrder;
+					webApplicant.saveState();
+					if(webApplicant.state==OrderState.FTP_WAITE){
+						//load from site
+						trace('QueueManager web getOrder '+webApplicant.id);
+						webApplicant.state=OrderState.FTP_WEB_CHECK;
+						StateLog.log(OrderState.FTP_WEB_CHECK,webApplicant.id);
+						var webService:BaseWeb=WebServiceBuilder.build(source);
+						webService.addEventListener(Event.COMPLETE,getOrderWeb);
+						webService.getLoaderOrder(webApplicant);
+					}else if(webApplicant.state==OrderState.FTP_CAPTURED){
+						//already locked 4 load push to loader
+						startList();
+					}
+				}else{
+					//her poime
+					//wrong state remove, must never happend
+					StateLog.log(OrderState.ERR_WRONG_STATE,newOrder.id,'','DownloadQueueManager.checkQueue state='+newOrder.state.toString());
+					removeOrder(newOrder);
 				}
 			}
 		}
