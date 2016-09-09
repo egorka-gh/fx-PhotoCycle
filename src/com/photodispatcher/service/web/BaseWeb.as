@@ -28,6 +28,10 @@ package com.photodispatcher.service.web{
 		protected static const CMD_GET_PACKAGE:int=4;
 		protected static const CMD_JOIN_PACKAGE:int=5;
 		protected static const CMD_SET_PACKAGE_STATE:int=6;
+		
+		protected static const CMD_SYNC_LDR:int=7;
+		protected static const CMD_GET_ORDER_LDR:int=8;
+		protected static const CMD_SET_ORDER_LDR_STATE:int=9;
 
 		public var isRunning:Boolean=false;
 
@@ -75,17 +79,31 @@ package com.photodispatcher.service.web{
 		
 		protected var client:WebClient;
 		protected var baseUrl:String;
+		protected var appKey:String;
 
 		public function BaseWeb(source:Source){
 			super(null);
 			this.source=source;
-			if(source && source.webService) baseUrl=source.webService.url;
+			if(source && source.webService){
+				baseUrl=source.webService.url;
+				appKey=source.webService.appkey;
+			}
 		}
 
 		public function sync():void{
 			throw new Error("You need to override sync() in your concrete class");
 		}
 
+		public function syncLoad():void{
+			throw new Error("You need to override syncLoad() in your concrete class");
+		}
+		public function getLoaderOrder(order:Order):void{
+			throw new Error("You need to override syncLoad() in your concrete class");
+		}
+		public function setLoaderOrderState(order:Order):void{
+			throw new Error("You need to override setLoaderOrderState() in your concrete class");
+		}
+		
 		public function get lastOrderId():String{
 			throw new Error("You need to override lastOrderId() in your concrete class");
 		}

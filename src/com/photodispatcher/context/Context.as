@@ -31,6 +31,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.LabResizeService;
 	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.MailPackageService;
+	import com.photodispatcher.model.mysql.services.OrderLoadService;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.OrderStateService;
 	import com.photodispatcher.model.mysql.services.PrintGroupService;
@@ -143,6 +144,33 @@ package com.photodispatcher.context{
 			latch.addEventListener(Event.COMPLETE,oninitTechOTK);
 
 			//latch.start();//start at caller?
+			return latch;
+		}
+
+		public static function initPhotoLoader():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initPhotoLoader';
+			//register services
+			
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				OrderStateService,
+				OrderLoadService,
+				ConfigService//+
+			]);
+			
+			//fill from config
+			//Context.fillFromConfig();
+			
+			//init static maps
+			latch.join(Context.loadConfig());
+			latch.join(Context.initSourceLists());
+			latch.join(Context.initAttributeLists());
+			latch.join(OrderState.initStateMap());
+			latch.join(FieldValue.initSynonymMap());
+			latch.join(AttrJsonMap.initJsonMap());
+			
 			return latch;
 		}
 
@@ -507,7 +535,6 @@ package com.photodispatcher.context{
 		private static var sourcesMap:Dictionary;
 		
 		public static function setSources(value:Array):void{
-			if(sourcesArr && sourcesArr.length>0) return;
 			sourcesArr=value;
 			sourcesMap=new Dictionary();
 			if(value){

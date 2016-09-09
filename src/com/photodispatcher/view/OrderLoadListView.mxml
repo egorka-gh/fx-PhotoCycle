@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 minWidth="400" minHeight="300">
+	
+	<!--<fx:Metadata>
+		[Event(name="reloadData", type="flash.events.Event")]
+	</fx:Metadata>-->
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderFile;
+			import com.photodispatcher.model.mysql.entities.OrderLoad;
+			
+			import mx.collections.ArrayCollection;
+			import mx.events.CollectionEvent;
+			
+			import spark.events.GridSelectionEvent;
+			
+			[Bindable]
+			private var files:ArrayCollection;
+
+			[Bindable]
+			public var showRefreshButton:Boolean=false;
+			
+			private var _items:ArrayCollection;
+			[Bindable]
+			public function get items():ArrayCollection{
+				return _items;
+			}
+			public function set items(value:ArrayCollection):void{
+				if(_items){
+					_items.removeEventListener(CollectionEvent.COLLECTION_CHANGE, onItemsChange);
+				}
+				_items = value;
+				if(_items){
+					_items.addEventListener(CollectionEvent.COLLECTION_CHANGE, onItemsChange);
+					_items.filterFunction=filterOrdersList;
+				}
+				if(dgOrdes) dgOrdes.clearSelection();
+				if(dgFiles) dgFiles.clearSelection();
+				files=null;
+			}
+			
+			private function onItemsChange(evt:CollectionEvent):void{
+				dgOrdes_selectionChangeHandler(null);
+			}
+			
+			public function get selectedItem():Order{
+				return dgOrdes.selectedItem as Order;
+			}
+			
+			protected function dgOrdes_selectionChangeHandler(event:GridSelectionEvent):void{
+				if(dgFiles) dgFiles.selectedIndex=-1;
+				var item:Order=dgOrdes.selectedItem as Order;
+				if(item && item.files){
+					files=item.files; 
+				}else{
+					files=null;
+				}
+			}
+			
+			private function applyOrdersFilter():void{
+				_items.refresh();
+				if(dgOrdes) dgOrdes.clearSelection();
+				files=null;
+			}
+
+			private function filterOrdersList(item:Object):Boolean {
+				var o:Order=item as Order;
+				if(!o) return false;
+				if(tiOrderFilter && tiOrderFilter.text && o.id.indexOf(tiOrderFilter.text)==-1) return false;
+				return true;
+			}
+
+			
+/* 			protected function btRefresh_clickHandler(event:MouseEvent):void{
+				dispatchEvent(new Event('reloadData'));
+			}
+ */			
+			
+			protected function btOpen_clickHandler(event:MouseEvent):void{
+				var item:Order=dgOrdes.selectedItem as Order;
+				if(item){
+					var pop:OrderLoadInfoPopup=new OrderLoadInfoPopup();
+					pop.show(item.id);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout gap="0"/>
+	</s:layout>
+	
+	<s:Label text="Заказы"/>
+	<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+		<s:Label text="Фильтрация" fontWeight="bold"/>
+		<s:Spacer width="5"/>
+		<s:Label text="ID"/>
+		<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>
+
+		<!--<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="btRefresh_clickHandler(event)" 
+				  visible="{showRefreshButton}" includeInLayout="{showRefreshButton}"
+				  cornerRadius="4" width="22" height="22" baseline="4"/>-->
+	</s:HGroup>
+	<s:Spacer height="5"/>
+	<s:HGroup gap="5" width="100%" height="50%">
+		<s:DataGrid id="dgOrdes"
+					columns="{OrderLoad.gridColumns()}"
+					dataProvider="{items}"
+					selectionMode="singleRow"  locale="ru_RU"
+					selectionChange="dgOrdes_selectionChangeHandler(event)"
+					width="100%" height="100%"/>
+		<s:VGroup gap="10" height="100%">
+			<s:Button id="btOpen" label="Открыть" click="btOpen_clickHandler(event)"/>
+		</s:VGroup>
+	</s:HGroup>
+
+	<s:Spacer height="10"/>
+	<s:Label text="Файлы"/>
+	<s:DataGrid id="dgFiles" 
+				columns="{OrderFile.gridColumns()}"
+				dataProvider="{files}"
+				selectionMode="singleRow"  locale="ru_RU"
+				width="100%" height="50%"/>
+	
+</s:Group>

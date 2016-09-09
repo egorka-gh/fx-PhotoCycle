@@ -34,6 +34,9 @@
 		<s:Label text.service="Url:" text.lab="Папка"/>
 		<s:TextInput id="tiUrl" includeIn="service,lab" text="@{data.url}" change="{data.changed=true}" width="200"/>
 		<s:Spacer width="5" includeIn="service"/>
+		<s:Label text.service="Appkey:"/>
+		<s:TextInput  id="tiAppkey" includeIn="service" text="@{data.appkey}" change="{data.changed=true}" width="200"/>
+		<s:Spacer width="5" includeIn="service"/>
 		<s:Label text="Пользователь:" includeIn="service"/>
 		<s:TextInput id="tiUser" text="@{data.user}" change="{data.changed=true}" includeIn="service"/>
 		<s:Spacer width="5" includeIn="service"/>

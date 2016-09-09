@@ -58,6 +58,9 @@
     <application path="PhotoCorrector.mxml">
       <airExcludes/>
     </application>
+    <application path="PhotoLoader.mxml">
+      <airExcludes/>
+    </application>
   </applications>
   <modules/>
   <buildCSSFiles/>

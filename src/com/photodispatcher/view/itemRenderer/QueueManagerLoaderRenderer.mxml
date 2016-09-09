@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false"
+				width="100%" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.provider.ftp_loader.DownloadQueueManager;
+
+			[Bindable]
+			private var service:DownloadQueueManager;
+			
+			override public function get data():Object{
+				return super.data;
+			}
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				service= value as DownloadQueueManager;
+				/* if(!service){
+					enabled=false;
+				}else{
+					enabled=true;
+				} */
+			}
+			
+			protected function btStart_clickHandler(event:MouseEvent):void{
+				if(service){
+					if (service.isStarted){
+						service.stop();
+					}else{
+						service.start();
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+
+	<s:Rect radiusX="3" top="1" left="0" right="0" bottom="1">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+
+	<s:VGroup id="gContent" gap="5" top="10" left="10" right="10" bottom="10">
+		<s:HGroup width="100%" gap="7" >
+			<s:Label text="{service?service.sourceCaption:'Загрузка ожидание'}" fontWeight="bold"/>
+			<s:Label text="{service.lastError}" width="100%" textAlign="right" color="#ff0000" maxDisplayedLines="1"/>
+			<s:Label text="Скорость: {service.speed.toString()}Kb/s"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="middle" width="100%">
+			
+			<!--<s:Image source="{service.isStarted?'assets/ftp.png':'assets/pause.png'}" width="24" height="24"/>-->
+			<s:Button id="btStart"
+					  buttonMode="true"
+					  skinClass="com.photodispatcher.view.skins.IconButtonSkin"
+					  icon="{(service &amp;&amp; service.isStarted)?'assets/ftp.png':'assets/pause.png'}" click="btStart_clickHandler(event)"
+					  width="28" height="28"/>
+			
+			<s:Label text="Заказов в очереди: {service.queueLenth}" />
+			<s:Label text="Ftp подключений: {service.connectionsActive}/{service.connectionsLimit}({service.connectionsFree},{service.connectionsPending})"/>
+		</s:HGroup>
+		<s:Label text="{service.downloadCaption}" maxDisplayedLines="2" width="100%"/>
+		<mx:ProgressBar mode="event" source="{service}" width="100%"
+						labelPlacement="left" fontWeight="normal" label="Загрузка файлов %1/%2"/>
+	</s:VGroup>
+	
+</s:ItemRenderer>

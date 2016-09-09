@@ -35,10 +35,16 @@ package com.photodispatcher.service.web{
 		
 		private var ftp:FtpTask;
 		private var attempt:int;
-		public function list():void{
+		private var folder:String;
+		public function list(folder:String=''):void{
 			if(!source || !source.ftpService){
 				abort('FTPList: Не верные параметры запуска');
 				return;
+			}
+			if(!folder){
+				this.folder='';
+			}else{
+				this.folder=folder;
 			}
 			attempt=0;
 			startList();
@@ -87,7 +93,7 @@ package com.photodispatcher.service.web{
 		private function onLogged(e:FTPEvent):void{
 			trace('FTPList: login complited '+source.ftpService.url);
 			ftp.addEventListener(FTPEvent.SCAN_DIR,onList);
-			ftp.listFolder();
+			ftp.listFolder(folder);
 		}
 
 		private function onList(e:FTPEvent):void{

@@ -42,6 +42,8 @@ package com.photodispatcher.shell{
 
 		public var state:int=STATE_WAITE;
 		public var folder:String;
+		public var sourceObject:*;
+		public var error:String;
 
 		[Bindable]
 		public var profileCaption:String;

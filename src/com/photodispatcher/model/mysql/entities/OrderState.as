@@ -24,7 +24,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_PRINT_LAB_FOLDER_NOT_FOUND:int=-302;
 		public static const ERR_READ_LOCK:int=-309;
 		public static const ERR_WRITE_LOCK:int=-310;
-		public static const ERR_FTP:int=-311;
+		public static const ERR_LOAD:int=-311;
 		public static const ERR_WEB:int=-312;
 		public static const ERR_FILE_SYSTEM:int=-314;
 		public static const ERR_PREPROCESS:int=-315;
@@ -36,11 +36,17 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_LOCK_FAULT:int=-321;
 		public static const ERR_WRONG_STATE:int=-322;
 		public static const ERR_REPRINT:int=-323;
-		
+
+		public static const ERR_FTP:int=-325;
+		public static const ERR_CHECK:int=-326;
+		public static const ERR_CHECK_MD5:int=-327;
+		public static const ERR_CHECK_IM:int=-328;
+
 		//flow state
 		//public static const FTP_RELOAD:int=95;
 		public static const FTP_WAITE:int=100;
 		public static const FTP_FORWARD:int=101;
+		public static const FTP_WAITE_AFTER_ERROR:int=102;
 		public static const FTP_WEB_CHECK:int=103;
 		public static const FTP_WEB_OK:int=104;
 		public static const FTP_CAPTURED:int=105;
@@ -49,7 +55,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FTP_LIST:int=109;
 		public static const FTP_LOAD:int=110;
 		public static const FTP_WAITE_CHECK:int=114;
-		public static const FTP_HECK:int=115;
+		public static const FTP_CHECK:int=115;
 		//public static const FTP_DEPLOY:int=111;//04.04.2013
 		//public static const FTP_REMOTE:int=112;//04.04.2013
 		

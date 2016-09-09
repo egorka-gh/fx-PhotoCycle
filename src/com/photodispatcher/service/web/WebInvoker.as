@@ -18,15 +18,15 @@ package com.photodispatcher.service.web{
 
 		//virtual methods
 		protected function responseHandler(evt:WebEvent):void{
-			throw new Error("FTPInvoker virtual method");
+			throw new Error("WebInvoker virtual method");
 		}
 		
 		protected function startSequence():void{
-			throw new Error("FTPInvoker virtual method");
+			throw new Error("WebInvoker virtual method");
 		}
 		
 		protected function cleanUp ():void{	
-			throw new Error("FTPInvoker virtual method");
+			throw new Error("WebInvoker virtual method");
 		}
 		
 		final internal function execute ():void{

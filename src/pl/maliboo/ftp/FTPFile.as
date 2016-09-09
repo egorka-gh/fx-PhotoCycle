@@ -20,7 +20,25 @@ package pl.maliboo.ftp{
 		public var tag:String;
 		public var moveTo:String;
 		public var renameTo:String;
-		public var loadState:int=LOAD_WAIT;
+		public var data:*;
+		
+		private var _loadState:int=LOAD_WAIT;
+		private var _errCount:int=0;
+		
+		public function get loadState():int{
+			return _loadState;
+		}
+		public function set loadState(value:int):void{
+			if(value<0) _errCount++;
+			_loadState = value;
+		}
+		public function get errCount():int{
+			return _errCount;
+		}
+		public function resetErrCount():void{
+			_errCount=0;
+		}
+
 		
 		public function FTPFile (name:String="",
 								path:String="", 

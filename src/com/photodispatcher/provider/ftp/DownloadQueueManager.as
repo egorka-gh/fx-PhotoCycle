@@ -394,6 +394,7 @@ package com.photodispatcher.provider.ftp{
 			return map;
 		}
 
+		/*
 		public function fetchNext():Order{
 			var order:Order=fetch(true);
 			if (!order) return null;
@@ -411,6 +412,7 @@ package com.photodispatcher.provider.ftp{
 			dispatchEvent(new Event('queueLenthChange'));
 			if(isStarted && downloadManager && !downloadManager.isRunning) checkQueue();
 		}
+		*/
 
 		protected function fetch(forceReset:Boolean=false):Order{
 			var newOrder:Order;
@@ -443,6 +445,7 @@ package com.photodispatcher.provider.ftp{
 			return newOrder;
 		}
 		
+		//TODO posible bug when call new cmd and last cmd still incomplited
 		private var webService:BaseWeb;
 		
 		private function checkQueue():void{
@@ -730,8 +733,8 @@ package com.photodispatcher.provider.ftp{
 			if(order){
 				unCaptureOrder(order.id);
 				if(order.state>=0){
-					order.state=OrderState.ERR_FTP;
-					StateLog.log(OrderState.ERR_FTP,order.id,'',event.error);
+					order.state=OrderState.ERR_LOAD;
+					StateLog.log(OrderState.ERR_LOAD,order.id,'',event.error);
 				}
 				order.setErrLimit();
 				resetOrder(order);

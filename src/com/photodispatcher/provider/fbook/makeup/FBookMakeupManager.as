@@ -269,7 +269,7 @@ package com.photodispatcher.provider.fbook.makeup{
 			} catch(err:Error){}
 			*/
 
-			runner= new IMMultiSequenceRuner(true);
+			runner= new IMMultiSequenceRuner();
 			runner.addEventListener(ProgressEvent.PROGRESS, onCommandsProgress);
 			runner.addEventListener(IMRunerEvent.IM_COMPLETED, onPagesComplite);
 			runner.start(sequences,maxThreads);

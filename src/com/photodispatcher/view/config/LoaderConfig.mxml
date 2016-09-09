@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:config="com.photodispatcher.view.config.*"
+		 creationComplete="{init()}"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.AsyncSQLEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.AbstractEntity;
+			import com.photodispatcher.model.mysql.entities.DmlResult;
+			import com.photodispatcher.model.mysql.entities.SelectResult;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.services.SourceService;
+			
+			import flash.utils.getTimer;
+			
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.rpc.AsyncResponder;
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.ResultEvent;
+			
+			import org.granite.tide.Tide;
+
+			[Bindable]
+			private var currentList:ArrayCollection;
+			[Bindable]
+			private var currentColumns:IList;
+			[Bindable]
+			private var currentItem:Source;
+			[Bindable]
+			private var gridEditable:Boolean=false;
+			
+			
+			private function init():void{
+			}
+
+			private function detectState():void{
+				var latch:DbLatch
+				currentItem=null;
+				gridEditable=false;
+				switch(tbView.selectedIndex){
+					case 0:
+						currentState='common';
+						break;
+					case 1:
+						currentState='sourceList';
+						currentColumns=Source.gridColumns();
+						currentList=null;
+						var svc:SourceService=Tide.getInstance().getContext().byType(SourceService,true) as SourceService;
+						latch=new DbLatch(false);
+						latch.addEventListener(Event.COMPLETE, onNewCurrentList);
+						latch.addLatch(svc.loadAll(Source.LOCATION_TYPE_SOURCE));
+						latch.start();
+						break;
+					
+				}
+			}
+			private function onNewCurrentList(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onNewCurrentList);
+					if(latch.complite) currentList=latch.lastDataAC;
+				}
+			}
+			
+			protected function btEdit_clickHandler(event:MouseEvent):void{
+				if(currentState=='sourceList'){
+					currentItem=itemsGrid.currentItem as Source;
+					if(!currentItem) return;
+					currentState='source';
+				}
+			}
+
+			protected function btAdd_clickHandler(event:MouseEvent):void{
+				if(currentState=='sourceList'){
+					var newItem:Source=new Source();
+					newItem.loc_type=Source.LOCATION_TYPE_SOURCE;
+					currentState='source';
+					currentItem=newItem;
+				}
+			}
+			
+			protected function btSave_clickHandler(event:MouseEvent):void{
+					if(!currentItem) return;
+					if(!currentItem.loaded && !currentItem.type){
+						Alert.show('Не указан тип');
+						return;
+					}
+					if((!currentItem.loaded) || currentItem.changed 
+						|| currentItem.webService.changed || currentItem.ftpService.changed || currentItem.fbookService.changed || currentItem.hotFolder.changed){
+						var svc:SourceService=Tide.getInstance().getContext().byType(SourceService,true) as SourceService;
+						var latch:DbLatch= new DbLatch(false);
+						var tk:AsyncToken=svc.persist(currentItem as Source);
+						if(!currentItem.loaded){
+							var id:int=getTimer();
+							currentItem.id=id;
+							tk.add=true;
+							tk.tag=id;
+						}else{
+							tk.add=false;
+							tk.tag=currentItem.id;
+						}
+						latch.addLatch(tk);
+						latch.addEventListener(Event.COMPLETE, onSourceSave);
+						latch.start();
+						//TODO lock interface
+					}
+			}
+			private function onSourceSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSourceSave);
+					if(latch.complite){
+						var tag:int=latch.lastToken.tag;
+						if(tag && currentItem && currentItem.id==tag){
+							if(latch.lastToken.add){
+								currentItem=latch.lastDMLItem as Source;
+								if(currentItem){
+									currentItem.edit();
+									currentList.addItem(currentItem);
+								}
+							}else{
+								//reset changed
+								currentItem.loaded=true;
+								currentItem.fbookService.loaded=true;
+								currentItem.ftpService.loaded=true;
+								currentItem.hotFolder.loaded=true;
+								currentItem.webService.loaded=true;
+								detectState();
+							}
+						}
+					}
+				}
+			}
+
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<s:states>
+		<s:State name="common"/>
+		<s:State name="sourceList" stateGroups="list"/>
+		<s:State name="source" stateGroups="edit"/>
+	</s:states>
+
+	<s:VGroup gap="10" width="100%" height="100%" paddingBottom="20">
+		<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
+			<mx:ArrayCollection>
+				<fx:String>Общие настройки</fx:String> 
+				<fx:String>Источники</fx:String> 
+			</mx:ArrayCollection>
+		</s:TabBar>
+		<config:LoaderCommonConfig  includeIn="common" width="100%" height="100%"/>
+
+		<config:ItemsGrid id="itemsGrid" includeIn="list" editable="{gridEditable}"
+						  currentData="{currentList}" currentColumns="{currentColumns}" 
+						  width="100%" height="100%"/>
+		<config:SourceEdit id="sourceEdit" includeIn="edit" hideDelivery="true" currentItem="{currentItem}" 
+						   width="100%" height="100%"/>
+		<s:HGroup gap="10" includeIn="list, edit" 
+				  verticalAlign="baseline" width="100%" horizontalAlign="left">
+			<!--TODO implement DELETE-->
+			<s:Button id="btEdit" label="Изменить" includeIn="list" enabled="{itemsGrid.currentItem}" click="btEdit_clickHandler(event)"/>
+			<s:Button id="btAdd" label="Добавить" includeIn="list" click="btAdd_clickHandler(event)"/>
+			<s:Button id="btSave" label="Сохранить" includeIn="edit" click="btSave_clickHandler(event)"/>
+			<s:Button id="btCancel" label="Отмена" includeIn="edit" click="{detectState()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>
