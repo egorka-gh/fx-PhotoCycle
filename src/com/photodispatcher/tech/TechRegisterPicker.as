@@ -13,6 +13,7 @@ package com.photodispatcher.tech{
 			logOk=false;
 			bookPart=BookSynonym.BOOK_PART_ANY;
 			lastSheet=-1;
+			_strictSequence=true;
 		}
 		
 		override public function get strictSequence():Boolean{

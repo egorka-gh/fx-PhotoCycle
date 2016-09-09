@@ -207,8 +207,8 @@ package com.photodispatcher.tech{
 				if(bookPart==BookSynonym.BOOK_PART_COVER && lastSheet==0 && lastBook==book && sheet==sheets-1){
 					//blockcover in revers order
 					bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
-					revers=true;
-					logMsg('Наверное БлокОбложка');
+					if(!strictSequence) revers=true;
+					logMsg('Наверное БлокОбложка в обратном порядке');
 				}
 			}
 			if(registred==sheets-1){
@@ -216,8 +216,8 @@ package com.photodispatcher.tech{
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK && lastSheet==sheets-1 && lastBook==book && sheet==0){
 					//blockcover in normal order
 					bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
-					revers=false;
-					logMsg('Наверное БлокОбложка');
+					if(!strictSequence) revers=false;
+					logMsg('Наверное БлокОбложка в прямом порядке');
 				}
 			}
 			

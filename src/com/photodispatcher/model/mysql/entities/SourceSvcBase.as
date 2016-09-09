@@ -21,6 +21,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _connections:int;
         private var _loc_type:int;
         private var _pass:String;
+        private var _priority:int;
         private var _src_id:int;
         private var _srvc_id:int;
         private var _type_name:String;
@@ -53,6 +54,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get pass():String {
             return _pass;
+        }
+
+        public function set priority(value:int):void {
+            _priority = value;
+        }
+        public function get priority():int {
+            return _priority;
         }
 
         public function set src_id(value:int):void {
@@ -96,6 +104,7 @@ package com.photodispatcher.model.mysql.entities {
             _connections = input.readObject() as int;
             _loc_type = input.readObject() as int;
             _pass = input.readObject() as String;
+            _priority = input.readObject() as int;
             _src_id = input.readObject() as int;
             _srvc_id = input.readObject() as int;
             _type_name = input.readObject() as String;
@@ -109,6 +118,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_connections);
             output.writeObject(_loc_type);
             output.writeObject(_pass);
+            output.writeObject(_priority);
             output.writeObject(_src_id);
             output.writeObject(_srvc_id);
             output.writeObject(_type_name);

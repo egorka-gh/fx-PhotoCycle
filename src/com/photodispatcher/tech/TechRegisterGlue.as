@@ -6,7 +6,7 @@ package com.photodispatcher.tech
 			super(printGroup, books, sheets);
 			_type=TYPE_GLUE;
 			logOk=false;
-			_strictSequence=false;
+			_strictSequence=true;
 		}
 	}
 }

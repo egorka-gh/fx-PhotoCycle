@@ -58,6 +58,12 @@ package com.photodispatcher.model.mysql.entities {
 			return result;
 		}
 
+		/*
+		runtime
+		available ftp sources 4 order  
+		site send appKeys array (command order)   
+		*/
+		public var ftpAppKeys:Array;
 		
 		/**
 		 * runtime subid 4 otk
@@ -148,6 +154,7 @@ package com.photodispatcher.model.mysql.entities {
 				value!=OrderState.ERR_READ_LOCK && 
 				value!=OrderState.ERR_WRITE_LOCK && 
 				value!=OrderState.ERR_LOCK_FAULT && 
+				value!=OrderState.ERR_FTP_NOT_READY && 
 				//_state!=OrderState.ERR_FILE_SYSTEM &&
 				//_state!=OrderState.ERR_FTP &&
 				value!=OrderState.ERR_WEB){

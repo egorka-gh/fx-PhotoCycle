@@ -9,6 +9,7 @@ package com.photodispatcher.model.mysql.entities {
 
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
+    import mx.collections.ListCollectionView;
 
     [Bindable]
     public class SourceBase extends AbstractEntity {
@@ -20,6 +21,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _code:String;
         private var _fbookService:SourceSvc;
         private var _ftpService:SourceSvc;
+        private var _ftpServices:ListCollectionView;
         private var _hotFolder:SourceSvc;
         private var _id:int;
         private var _loc_type:int;
@@ -51,6 +53,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get ftpService():SourceSvc {
             return _ftpService;
+        }
+
+        public function set ftpServices(value:ListCollectionView):void {
+            _ftpServices = value;
+        }
+        public function get ftpServices():ListCollectionView {
+            return _ftpServices;
         }
 
         public function set hotFolder(value:SourceSvc):void {
@@ -135,6 +144,7 @@ package com.photodispatcher.model.mysql.entities {
             _code = input.readObject() as String;
             _fbookService = input.readObject() as SourceSvc;
             _ftpService = input.readObject() as SourceSvc;
+            _ftpServices = input.readObject() as ListCollectionView;
             _hotFolder = input.readObject() as SourceSvc;
             _id = input.readObject() as int;
             _loc_type = input.readObject() as int;
@@ -153,6 +163,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_code);
             output.writeObject(_fbookService);
             output.writeObject(_ftpService);
+            output.writeObject(_ftpServices);
             output.writeObject(_hotFolder);
             output.writeObject(_id);
             output.writeObject(_loc_type);

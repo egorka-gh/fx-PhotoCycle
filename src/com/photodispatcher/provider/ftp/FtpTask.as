@@ -1,4 +1,5 @@
 package com.photodispatcher.provider.ftp{
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;

@@ -41,6 +41,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const ERR_CHECK:int=-326;
 		public static const ERR_CHECK_MD5:int=-327;
 		public static const ERR_CHECK_IM:int=-328;
+		public static const ERR_FTP_NOT_READY:int=-329;
 
 		//flow state
 		//public static const FTP_RELOAD:int=95;

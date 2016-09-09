@@ -62,6 +62,12 @@ package com.photodispatcher.provider.ftp{
 		public function get queueLenth():int{
 			return downloadOrders?downloadOrders.length:0;
 		}
+		
+		public function get appKey():String{
+			var result:String;
+			if(ftpService) result=ftpService.appkey;
+			return result;
+		}
 
 		public function start():Boolean{
 			//TODO reset state
@@ -324,6 +330,7 @@ package com.photodispatcher.provider.ftp{
 			var order:Order;
 			var ftpFile:FTPFile;
 			var downloadApplicant:FTPFile;
+			var errApplicant:FTPFile;
 			for each(order in downloadOrders){
 				if(order){
 					//reset states
@@ -337,15 +344,24 @@ package com.photodispatcher.provider.ftp{
 								if(ftpFile.loadState==FTPFile.LOAD_WAIT || ftpFile.loadState==FTPFile.LOAD_ERR){
 									if(ftpFile.loadState==FTPFile.LOAD_ERR){
 										//TODO add err counter & errLimit check
-										trace('ftp download err, restart');
-										ftpFile.loadState=FTPFile.LOAD_WAIT;
+										//trace('ftp download err, restart');
+										//ftpFile.loadState=FTPFile.LOAD_WAIT;
+										if(!errApplicant) errApplicant=ftpFile;
+									}else{
+										downloadApplicant=ftpFile;
+										break;
 									}
-									downloadApplicant=ftpFile;
-									downloadApplicant.tag=order.id;
-									if(source.type==SourceType.SRC_FBOOK) downloadApplicant.moveTo=order.ftp_folder;
-									break;
 								}
 							}
+						}
+						if(!downloadApplicant && errApplicant){
+							errApplicant.loadState=FTPFile.LOAD_WAIT;
+							downloadApplicant=errApplicant;
+						}
+						if(downloadApplicant){
+							downloadApplicant.tag=order.id;
+							if(source.type==SourceType.SRC_FBOOK) downloadApplicant.moveTo=order.ftp_folder;
+							break;
 						}
 					}
 				}

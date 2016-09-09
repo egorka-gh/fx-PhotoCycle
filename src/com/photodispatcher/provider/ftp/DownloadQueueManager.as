@@ -12,6 +12,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
+	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
 	import com.photodispatcher.service.web.BaseWeb;
@@ -394,26 +395,6 @@ package com.photodispatcher.provider.ftp{
 			return map;
 		}
 
-		/*
-		public function fetchNext():Order{
-			var order:Order=fetch(true);
-			if (!order) return null;
-			//remove from queue
-			removeOrder(order);
-			dispatchEvent(new Event('queueLenthChange'));
-			return order;
-		}
-
-		public function unFetch(order:Order):void{
-			if (!order) return;
-			//resetOrderState(order);
-			resetOrder(order);
-			queue.unshift(order);
-			dispatchEvent(new Event('queueLenthChange'));
-			if(isStarted && downloadManager && !downloadManager.isRunning) checkQueue();
-		}
-		*/
-
 		protected function fetch(forceReset:Boolean=false):Order{
 			var newOrder:Order;
 			var ord:Order;
@@ -421,13 +402,13 @@ package com.photodispatcher.provider.ftp{
 			for each (ord in queue){
 				if(ord && !ord.exceedErrLimit){
 					if((forceReset) && ord.state<0 && ord.state!=OrderState.ERR_WRITE_LOCK) resetOrderState(ord);
-					if(ord.state==OrderState.ERR_PRODUCTION_NOT_SET || ord.state==OrderState.ERR_LOCK_FAULT){
+					if(ord.state==OrderState.ERR_PRODUCTION_NOT_SET || 
+						ord.state==OrderState.ERR_LOCK_FAULT || 
+						ord.state==OrderState.ERR_FTP_NOT_READY){
 						var dt:Date= new Date();
 						if((dt.time-ord.state_date.time)>PRODUCTION_ERR_RESET_DELAY)  resetOrderState(ord);
 					}
 					if(ord.state>0){
-						//if(ord.state==OrderState.FTP_WEB_CHECK) ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
-						//if(ord.state==OrderState.FTP_WEB_OK && ord.id!=listOrderId) ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
 						if(ord.state==OrderState.FTP_WAITE || ord.state==OrderState.FTP_FORWARD){
 							if(!newOrder){
 								newOrder=ord;
@@ -435,9 +416,11 @@ package com.photodispatcher.provider.ftp{
 								newOrder=ord;
 							}
 						}
-					}else if(ord.state!=OrderState.ERR_WRITE_LOCK && ord.state!=OrderState.ERR_PRODUCTION_NOT_SET && ord.state!=OrderState.ERR_LOCK_FAULT){
+					}else if(ord.state!=OrderState.ERR_WRITE_LOCK && 
+						ord.state!=OrderState.ERR_PRODUCTION_NOT_SET && 
+						ord.state!=OrderState.ERR_LOCK_FAULT &&
+						ord.state!=OrderState.ERR_FTP_NOT_READY){
 						//reset error
-						//ord.state=ord.ftpForwarded?OrderState.FTP_FORWARD:OrderState.WAITE_FTP;
 						resetOrderState(ord);
 					}
 				}
@@ -454,13 +437,6 @@ package com.photodispatcher.provider.ftp{
 			if(newOrder && !webApplicant){
 				webApplicant=newOrder;
 				getLock();
-				/*
-				webApplicant.state=OrderState.FTP_WEB_CHECK;
-				if(!webService) webService=WebServiceBuilder.build(source);
-				//var w:BaseWeb= WebServiceBuilder.build(source);
-				webService.addEventListener(Event.COMPLETE,getOrderHandle);
-				webService.getOrder(newOrder);
-				*/
 			}
 		}
 		
@@ -503,15 +479,10 @@ package com.photodispatcher.provider.ftp{
 			webService.getOrder(webApplicant);
 		}
 		
-		
 		private function getOrderHandle(e:Event):void{
 			var pw:BaseWeb=e.target as BaseWeb;
 			pw.removeEventListener(Event.COMPLETE,getOrderHandle);
 			if(!webApplicant) return;
-			/*
-			var startOrder:Order=getOrderById(webApplicant.id);
-			webApplicant=null;
-			*/
 
 			if(!webApplicant || webApplicant.state!=OrderState.FTP_WEB_CHECK){
 				//removed from queue or some else
@@ -543,8 +514,8 @@ package com.photodispatcher.provider.ftp{
 					if(webApplicant.production==Context.PRODUCTION_NOT_SET){
 						trace('QueueManager.getOrderHandle; order production not set '+webApplicant.id);
 						webApplicant.state=OrderState.ERR_PRODUCTION_NOT_SET;
+						releaseLock(webApplicant.id);
 						webApplicant=null;
-						//releaseLock(startOrder);
 						checkQueue();
 						return;
 					}
@@ -559,6 +530,35 @@ package com.photodispatcher.provider.ftp{
 						//releaseLock(startOrder);
 						checkQueue();
 						return;
+					}
+					//check ftp source
+					//TODO how to check stateforward by folder
+					//TODO FBOOK && Fotokniga vs online project
+					if(webApplicant.hasSuborders && (source.type==SourceType.SRC_FOTOKNIGA || !webApplicant.hasPhotoSuborder)){
+						//send to fbloader
+						for each(var so:SubOrder in webApplicant.suborders) so.state=OrderState.FTP_WAITE_SUBORDER;
+						webApplicant.state=OrderState.FTP_COMPLETE;
+						removeOrder(webApplicant);
+						var startOrder:Order=webApplicant;
+						webApplicant=null;
+						startFBDownload(startOrder);
+						checkQueue();
+						return;
+					}
+					if(pw.getLastOrder().ftpAppKeys){
+						//new site, vs multy ftp services
+						//check appKey
+						var arr:Array=pw.getLastOrder().ftpAppKeys;
+						var idx:int=-1;
+						if(arr.length>0 && downloadManager.appKey) idx=arr.indexOf(downloadManager.appKey);
+						if(idx==-1){
+							webApplicant.state=OrderState.ERR_FTP_NOT_READY;
+							StateLog.log(webApplicant.state, webApplicant.id);
+							releaseLock(webApplicant.id);
+							webApplicant=null;
+							checkQueue();
+							return;
+						}
 					}
 				}
 				//open cnn & get files list
@@ -683,6 +683,8 @@ package com.photodispatcher.provider.ftp{
 					dispatchEvent(new Event('queueLenthChange'));
 				}
 			}else if(order.hasSuborders){
+				startFBDownload(order);
+				/*
 				if(!fbDownloadManager){
 					//dispatchEvent(event.clone());
 					//fbookservice not configured
@@ -695,6 +697,7 @@ package com.photodispatcher.provider.ftp{
 				}else{
 					fbDownloadManager.download(order);
 				}
+				*/
 			}else{
 				//complited
 				//save to filesystem
@@ -708,6 +711,21 @@ package com.photodispatcher.provider.ftp{
 					return;
 				}
 				dispatchEvent(event.clone());
+			}
+		}
+		
+		private function startFBDownload(order:Order):void{
+			if(!fbDownloadManager){
+				//dispatchEvent(event.clone());
+				//fbookservice not configured
+				trace('QueueManager.onDownloadManagerLoad; fbook service not configured; order id '+order.id);
+				order.state=OrderState.ERR_GET_PROJECT;
+				StateLog.log(OrderState.ERR_GET_PROJECT,order.id,'','Сервис Fbook не настроен');
+				order.setErrLimit();
+				resetOrder(order);
+				queue.push(order);
+			}else{
+				fbDownloadManager.download(order);
 			}
 		}
 
