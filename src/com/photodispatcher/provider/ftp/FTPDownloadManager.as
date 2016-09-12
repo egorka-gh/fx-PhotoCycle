@@ -500,6 +500,8 @@ package com.photodispatcher.provider.ftp{
 			var frwState:int=0;
 			if(!order.isFileStructureOk){
 				trace('FTPDownloadManager empty ftp folder '+orderId);
+				/* turned off
+				* now perfom check by calcAlias in extraInfo
 				//check FOTOKNIGA forward state
 				if(source.type==SourceType.SRC_FOTOKNIGA && cnn.folders){
 					for each(var folderName:String in cnn.folders){
@@ -514,6 +516,7 @@ package com.photodispatcher.provider.ftp{
 						}
 					}
 				}
+				*/
 				order.state=OrderState.ERR_LOAD;
 				if(order.exceedErrLimit){
 					StateLog.log(OrderState.ERR_LOAD,order.id,'','Пустой список файлов.');
@@ -524,6 +527,7 @@ package com.photodispatcher.provider.ftp{
 						dispatchEvent(new ImageProviderEvent(ImageProviderEvent.LOAD_FAULT_EVENT,order,'Пустой список файлов'));
 					}else{
 						//fbook order run suborders load
+						//now must never happend, see DownloadQueueManager.oncaptureState  
 						order.resetErrCounter();
 						order.state=OrderState.FTP_LOAD;
 						checkDownload();

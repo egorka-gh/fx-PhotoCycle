@@ -35,16 +35,18 @@
 		<s:TextInput id="tiUrl" includeIn="service,lab" text="@{data.url}" change="{data.changed=true}" width="200"/>
 		<s:Spacer width="5" includeIn="service"/>
 		<s:Label text.service="Appkey:"/>
-		<s:TextInput  id="tiAppkey" includeIn="service" text="@{data.appkey}" change="{data.changed=true}" width="200"/>
+		<s:TextInput  id="tiAppkey" includeIn="service" text="@{data.appkey}" change="{data.changed=true}" width="230"/>
 		<s:Spacer width="5" includeIn="service"/>
 		<s:Label text="Пользователь:" includeIn="service"/>
-		<s:TextInput id="tiUser" text="@{data.user}" change="{data.changed=true}" includeIn="service"/>
+		<s:TextInput id="tiUser" text="@{data.user}" change="{data.changed=true}" includeIn="service" width="130"/>
 		<s:Spacer width="5" includeIn="service"/>
 		<s:Label text="Пароль:" includeIn="service"/>
-		<s:TextInput id="tiPass" text="@{data.pass}" change="{data.changed=true}" includeIn="service"/>
+		<s:TextInput id="tiPass" text="@{data.pass}" change="{data.changed=true}" includeIn="service" width="130"/>
 		<s:Spacer width="5" includeIn="service"/>
 		<s:Label text="Подключений:" includeIn="service"/>
-		<s:TextInput id="tiCnn" text="{data.connections}" restrict="0-9" change="{data.connections=int(tiCnn.text); data.changed=true;}" includeIn="service"/>
+		<s:TextInput id="tiCnn" text="{data.connections}" restrict="0-9" change="{data.connections=int(tiCnn.text); data.changed=true;}"
+					 width="30"
+					 includeIn="service"/>
 	</s:HGroup>
 </s:Group>
 

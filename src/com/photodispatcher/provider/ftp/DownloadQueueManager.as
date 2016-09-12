@@ -7,6 +7,7 @@ package com.photodispatcher.provider.ftp{
 	import com.photodispatcher.factory.SuborderBuilder;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.AliasForward;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.Source;
@@ -433,6 +434,16 @@ package com.photodispatcher.provider.ftp{
 		
 		private function checkQueue():void{
 			if(webApplicant || !isStarted || forceStop) return;
+			
+			//check queue limit
+			if(ORDERS_INPROCESS_LIMIT>0){
+				var inprocess:int=0;
+				if(downloadManager) inprocess+=downloadManager.queueLenth;
+				if(fbDownloadManager) inprocess+=fbDownloadManager.queueLenth;
+				if(webApplicant) inprocess++;
+				if(inprocess>=ORDERS_INPROCESS_LIMIT) return;
+			}
+			
 			var newOrder:Order=fetch();
 			if(newOrder && !webApplicant){
 				webApplicant=newOrder;
@@ -531,27 +542,38 @@ package com.photodispatcher.provider.ftp{
 						checkQueue();
 						return;
 					}
-					//check ftp source
-					//TODO how to check stateforward by folder
-					//TODO FBOOK && Fotokniga vs online project
-					if(webApplicant.hasSuborders && (source.type==SourceType.SRC_FOTOKNIGA || !webApplicant.hasPhotoSuborder)){
-						//send to fbloader
-						for each(var so:SubOrder in webApplicant.suborders) so.state=OrderState.FTP_WAITE_SUBORDER;
-						webApplicant.state=OrderState.FTP_COMPLETE;
-						removeOrder(webApplicant);
-						var startOrder:Order=webApplicant;
-						webApplicant=null;
-						startFBDownload(startOrder);
-						checkQueue();
-						return;
+					
+					var startOrder:Order;
+					//TODO how to check stateforward 4 fbook
+					//check FOTOKNIGA forward state
+					//if(source.type==SourceType.SRC_FOTOKNIGA
+					if(webApplicant.extraInfo){
+						var frwState:int=AliasForward.forvardState(webApplicant.extraInfo.calcAlias);
+						if(frwState>0){
+							trace('QueueManager.getOrderHandle; forward order '+webApplicant.id +' to state '+frwState.toString());
+							startOrder=webApplicant;
+							removeOrder(webApplicant);
+							webApplicant=null;
+							startOrder.forward_state=frwState;
+							startOrder.resetErrCounter();
+							startOrder.state=OrderState.FTP_COMPLETE;
+							StateLog.log(startOrder.state,startOrder.id,'',''); 
+							dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,startOrder));
+							checkQueue();
+							return;
+						}
+
 					}
-					if(pw.getLastOrder().ftpAppKeys){
+					
+					//check ftp source
+					if(!isPureFB(webApplicant) && pw.getLastOrder().ftpAppKeys){
 						//new site, vs multy ftp services
 						//check appKey
 						var arr:Array=pw.getLastOrder().ftpAppKeys;
 						var idx:int=-1;
 						if(arr.length>0 && downloadManager.appKey) idx=arr.indexOf(downloadManager.appKey);
 						if(idx==-1){
+							trace('QueueManager.getOrderHandle; ftp not ready '+webApplicant.id +'; need appKey '+downloadManager.appKey);
 							webApplicant.state=OrderState.ERR_FTP_NOT_READY;
 							StateLog.log(webApplicant.state, webApplicant.id);
 							releaseLock(webApplicant.id);
@@ -559,6 +581,7 @@ package com.photodispatcher.provider.ftp{
 							checkQueue();
 							return;
 						}
+						trace('QueueManager.getOrderHandle; ftp ready, can load '+webApplicant.id +'; appKey '+downloadManager.appKey);
 					}
 				}
 				//open cnn & get files list
@@ -596,6 +619,11 @@ package com.photodispatcher.provider.ftp{
 			}
 		}
 		
+		private function isPureFB(order:Order):Boolean{
+			//check if has only fbook projects
+			return order.hasSuborders && (source.type==SourceType.SRC_FOTOKNIGA || !order.hasPhotoSuborder);
+		}
+		
 		private function oncaptureState(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(!latch) return;
@@ -609,7 +637,20 @@ package com.photodispatcher.provider.ftp{
 			if (latch.complite && latch.resultCode==OrderState.FTP_CAPTURED){
 				//download
 				StateLog.log(startOrder.state, startOrder.id,'','Получена жесткая блокировка ' + Context.appID);
-				startDownload(startOrder);
+				
+				//check if has no ftp files
+				//FBOOK && Fotokniga vs online project
+				if(isPureFB(startOrder)){
+					//send to fbloader
+					trace('QueueManager.captureState: PureFB '+startOrder.id);
+					startOrder.state=OrderState.FTP_COMPLETE;
+					removeOrder(startOrder);
+					startFBDownload(startOrder);
+					checkQueue(); //???
+					return;
+				}else{ 
+					startDownload(startOrder);
+				}
 			}else{
 				trace('QueueManager.captureState: db error '+latch.lastError);
 				lastError='Заказ: '+startOrder.id+' блокирован другим процессом '+latch.lastError;
@@ -652,6 +693,7 @@ package com.photodispatcher.provider.ftp{
 		}
 
 		private function onDownloadManagerNeedOrder(event:ImageProviderEvent):void{
+			/*
 			if(ORDERS_INPROCESS_LIMIT>0){
 				var inprocess:int=0;
 				if(downloadManager) inprocess+=downloadManager.queueLenth;
@@ -660,9 +702,10 @@ package com.photodispatcher.provider.ftp{
 				
 				if(inprocess>=ORDERS_INPROCESS_LIMIT) return;
 			}
+			*/
 			checkQueue();
 		}
-
+		
 		/*
 		private function onDownloadManagerFlowError(event:ImageProviderEvent):void{
 			flowError(event.error);
@@ -793,7 +836,8 @@ package com.photodispatcher.provider.ftp{
 
 		protected function removeOrder(order:Order):void{
 			if(!order || !queue) return;
-			var idx:int=queue.indexOf(order);
+			//var idx:int=queue.indexOf(order);
+			var idx:int=ArrayUtil.searchItemIdx('id',order.id,queue);
 			if(idx!=-1) queue.splice(idx,1);
 		}
 

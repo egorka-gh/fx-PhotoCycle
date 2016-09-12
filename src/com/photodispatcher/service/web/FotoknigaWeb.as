@@ -519,6 +519,7 @@ package com.photodispatcher.service.web{
 								lastOrder.extraInfo=to.extraInfo;
 							}
 							lastOrder.production=to.production;
+							lastOrder.ftpAppKeys=to.ftpAppKeys;
 							if(to.fotos_num>0) lastOrder.fotos_num=to.fotos_num;
 							if(to.hasSuborders){
 								lastOrder.resetSuborders();

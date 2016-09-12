@@ -60,6 +60,7 @@ package com.photodispatcher.model.mysql.entities {
 				throw new Error('Ошибка инициализации AliasForward.initMap',OrderState.ERR_APP_INIT);
 				return;
 			}
+			if(!alias) return 0;
 			if(!map.hasOwnProperty(alias)) return 0;
 			return map[alias];
 		}

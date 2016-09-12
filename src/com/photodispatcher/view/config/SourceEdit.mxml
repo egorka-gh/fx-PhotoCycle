@@ -39,7 +39,7 @@
 				if(_currentItem){
 					_currentItem.edit();
 					if(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE){
-						currentState=hideDelivery?'noDelivery':'source';
+						currentState=hideDelivery?'noDelivery':'sourceFull';
 					}else{
 						currentState='lab';
 					}
