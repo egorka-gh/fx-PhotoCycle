@@ -354,7 +354,7 @@ package com.photodispatcher.provider.ftp_loader{
 						//fetch
 						if(ord.state>=OrderState.FTP_WAITE && ord.state<=OrderState.FTP_CAPTURED){
 							//resetOrderState(newOrder) if not FTP_WAITE or FTP_CAPTURED
-							if(ord && ord.state!=OrderState.FTP_WAITE && ord.state!=OrderState.FTP_CAPTURED) resetOrderState(ord);
+							if(ord && ord.state!=OrderState.FTP_WAITE && ord.state!=OrderState.FTP_WAITE_AFTER_ERROR && ord.state!=OrderState.FTP_CAPTURED) resetOrderState(ord);
 							if(ord.state==OrderState.FTP_CAPTURED && (!ord.files || ord.files.length==0)){
 								//fill vs files
 								loadFromBD(ord);
@@ -375,10 +375,10 @@ package com.photodispatcher.provider.ftp_loader{
 			if(webApplicant || !isStarted || forceStop) return;
 			var newOrder:Order=fetch();
 			if(newOrder){
-				if(newOrder.state==OrderState.FTP_WAITE || newOrder.state==OrderState.FTP_CAPTURED){
+				if(newOrder.state==OrderState.FTP_WAITE || newOrder.state==OrderState.FTP_WAITE_AFTER_ERROR || newOrder.state==OrderState.FTP_CAPTURED){
 					webApplicant=newOrder;
 					webApplicant.saveState();
-					if(webApplicant.state==OrderState.FTP_WAITE){
+					if(webApplicant.state==OrderState.FTP_WAITE || newOrder.state==OrderState.FTP_WAITE_AFTER_ERROR){
 						//load from site
 						trace('QueueManager web getOrder '+webApplicant.id);
 						webApplicant.state=OrderState.FTP_WEB_CHECK;

@@ -37,7 +37,7 @@ package com.photodispatcher.provider.ftp{
 	[Event(name="flowError", type="com.photodispatcher.event.ImageProviderEvent")]
 	[Event(name="loadFault", type="com.photodispatcher.event.ImageProviderEvent")]
 	public class DownloadQueueManager extends EventDispatcher{
-		public static const RESTART_TIMEOUT:int=10000;
+		public static const RESTART_TIMEOUT:int=30000;
 		public static const PRODUCTION_ERR_RESET_DELAY:int=1000*60*3;
 		public static const WEB_ERRORS_LIMIT:int=3;
 		public static const ORDERS_INPROCESS_LIMIT:int=5;
