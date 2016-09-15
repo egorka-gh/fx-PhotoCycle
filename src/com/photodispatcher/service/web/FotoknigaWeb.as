@@ -95,8 +95,11 @@ package com.photodispatcher.service.web{
 		public static const PARAM_PACKAGE_FORCE_STATUS:String='args[ignore_balance]';
 		
 		public static const ACTION_GET_LOADER_ORDERS:String='fk:get_ready_orders';
-		public static const ACTION_GET_LOADER_ORDER:String='fk:get_order_files';
-		public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status';
+		//public static const ACTION_GET_LOADER_ORDER:String='fk:get_order_files';
+		public static const ACTION_GET_LOADER_ORDER:String='fk:get_order_files_by_number';
+		//public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status';
+		//public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status';
+		public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status_by_number';
 		
 		public function FotoknigaWeb(source:Source){
 			super(source);
@@ -165,7 +168,8 @@ package com.photodispatcher.service.web{
 						post= new Object();
 						post[PARAM_KEY]=appKey;
 						post[PARAM_ACTION]=ACTION_GET_LOADER_ORDER;
-						post['id']=int(lastOrder.src_id);
+						//post['id']=int(lastOrder.src_id);
+						post['number']=int(lastOrder.src_id);
 						trace('FotoknigaWeb web get order 4 load; action:'+ACTION_GET_LOADER_ORDER+'; id:'+lastOrder.src_id);
 						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
 						break;
@@ -183,7 +187,7 @@ package com.photodispatcher.service.web{
 						post= new Object();
 						post[PARAM_KEY]=appKey;
 						post[PARAM_ACTION]=ACTION_SET_LOADER_ORDER_STATE;
-						post['id']=int(lastOrder.src_id);
+						post['number']=int(lastOrder.src_id);
 						post['status']=int(lastOrder.src_state);
 						if(lastOrder.errStateComment){
 							post['info']=lastOrder.errStateComment;

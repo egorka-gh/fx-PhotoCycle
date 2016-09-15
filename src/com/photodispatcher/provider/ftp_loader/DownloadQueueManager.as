@@ -292,10 +292,14 @@ package com.photodispatcher.provider.ftp_loader{
 			}
 			//remove
 			for each (order in toKill){
+				var arr:Array=queue.source;
 				if(order){
 					if(webApplicant && webApplicant.id==order.id) webApplicant=null;
-					removeOrder(order);
+					idx=ArrayUtil.searchItemIdx('id', order.id, arr);
+					if(idx!=-1) arr.splice(idx,1);
+					//removeOrder(order);
 				}
+				queue= new ArrayCollection(arr);
 			}
 			//replace
 			for each (order in toReplace){
@@ -381,6 +385,7 @@ package com.photodispatcher.provider.ftp_loader{
 					if(webApplicant.state==OrderState.FTP_WAITE || newOrder.state==OrderState.FTP_WAITE_AFTER_ERROR){
 						//load from site
 						trace('QueueManager web getOrder '+webApplicant.id);
+						downloadCaption='Загрузка с сайта ' +webApplicant.id;
 						webApplicant.state=OrderState.FTP_WEB_CHECK;
 						StateLog.log(OrderState.FTP_WEB_CHECK,webApplicant.id);
 						var webService:BaseWeb=WebServiceBuilder.build(source);
@@ -449,6 +454,7 @@ package com.photodispatcher.provider.ftp_loader{
 				trace('getOrder web order err: '+pw.errMesage);
 				webErrCounter++;
 				webApplicant.state=OrderState.ERR_WEB;
+				lastError='Ошибка сайта '+webApplicant.id+' :'+pw.errMesage;
 				StateLog.log(OrderState.ERR_WEB,webApplicant.id,'','Ошибка на сайте: '+pw.errMesage);
 				removeOrder(webApplicant);
 				webApplicant=null;
@@ -528,6 +534,7 @@ package com.photodispatcher.provider.ftp_loader{
 		private function setOrderStateWeb(order:Order, remoteState:int, comment:String='', webService:BaseWeb=null):void{
 			if(!order) return;
 			if(!webService) webService=WebServiceBuilder.build(source);
+			downloadCaption='Смена статуса на сайте ' +order.id +' = '+remoteState.toString();
 			var ord:Order=new Order();
 			ord.id=order.id;
 			ord.src_id=order.src_id;
@@ -545,7 +552,10 @@ package com.photodispatcher.provider.ftp_loader{
 				webErrCounter++;
 				trace('setOrderStateWeb web err: '+pw.errMesage);
 				//if(webStatelatch && webStatelatch.isStarted) webStatelatch.releaseError('Ошибка сайта: '+pw.errMesage);
-				if(pw.lastOrderId) StateLog.log(OrderState.ERR_WEB,pw.lastOrderId,'','Ошибка сайта: '+pw.errMesage);
+				if(pw.lastOrderId){
+					lastError='Ошибка сайта '+pw.lastOrderId+' :'+pw.errMesage;
+					StateLog.log(OrderState.ERR_WEB,pw.lastOrderId,'','Ошибка сайта: '+pw.errMesage);
+				}
 				if(webApplicant && webApplicant.id==pw.lastOrderId){
 					webApplicant.state=OrderState.ERR_WEB;
 					webApplicant=null;
@@ -669,6 +679,7 @@ package com.photodispatcher.provider.ftp_loader{
 		private function startDownload(order:Order):void{
 			//remove from queue
 			//removeOrder(order);
+			downloadCaption='Старт загрузки ' +order.id;
 			downloadManager.download(order);
 		}
 		
@@ -715,7 +726,7 @@ package com.photodispatcher.provider.ftp_loader{
 			removeOrder(order);
 
 			dispatchEvent(event.clone());
-			dispatchEvent(new Event('queueLenthChange'));
+			//dispatchEvent(new Event('queueLenthChange'));
 		}
 
 		protected function onDownloadFault(event:ImageProviderEvent):void{
@@ -726,10 +737,11 @@ package com.photodispatcher.provider.ftp_loader{
 					order.state=OrderState.ERR_LOAD;
 					StateLog.log(OrderState.ERR_LOAD,order.id,'',event.error);
 				}
+				//????
 				order.setErrLimit();
 				resetOrder(order);
 				//queue.push(order);
-				dispatchEvent(new Event('queueLenthChange'));
+				//dispatchEvent(new Event('queueLenthChange'));
 			}
 
 		}
@@ -747,6 +759,7 @@ package com.photodispatcher.provider.ftp_loader{
 			order.restoreState();
 		}
 
+		/*
 		protected function getOrderById(orderId:String, pop:Boolean=false):Order{
 			var result:Order;
 			var idx:int;
@@ -765,6 +778,7 @@ package com.photodispatcher.provider.ftp_loader{
 			
 			return result;
 		}
+		*/
 
 		protected function removeOrder(order:Order):void{
 			if(!order || !queue) return;
@@ -772,7 +786,8 @@ package com.photodispatcher.provider.ftp_loader{
 			var arr:Array=queue.source;
 			var idx:int=ArrayUtil.searchItemIdx('id', order.id, arr);
 			if(idx!=-1) arr.splice(idx,1);
-			queue.refresh();
+			//queue.refresh();
+			queue= new ArrayCollection(arr);
 			dispatchEvent(new Event('queueLenthChange'));
 		}
 

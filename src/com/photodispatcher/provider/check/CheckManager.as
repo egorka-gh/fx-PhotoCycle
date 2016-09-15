@@ -138,7 +138,13 @@ package com.photodispatcher.provider.check{
 			}
 			
 			if(toKill.length>0){
-				for each(var id:String in toKill) removeOrder(id);
+				var arr:Array=queue.source;
+				for each(var id:String in toKill){
+					idx=ArrayUtil.searchItemIdx('id',id,arr);
+					if(idx!=-1) arr.splice(idx,1);
+					//removeOrder(id);
+				}
+				queue=new ArrayCollection(arr);
 			}
 
 			//search to add
@@ -350,12 +356,12 @@ package com.photodispatcher.provider.check{
 		}
 
 		protected function removeOrder(id:String):void{
-			if(!id || !queue) return;
+			if(!id || !queue ) return;
 			var arr:Array=queue.source;
 			var idx:int=ArrayUtil.searchItemIdx('id',id,arr);
 			if(idx!=-1) arr.splice(idx,1);
-			//queue= new ArrayCollection(arr);
-			queue.refresh();
+			queue= new ArrayCollection(arr);
+			//queue.refresh();
 		}
 
 		private function get bdService():OrderLoadService{
