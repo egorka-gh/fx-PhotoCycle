@@ -64,6 +64,12 @@ package com.photodispatcher.model.mysql.entities {
 		site send appKeys array (command order)   
 		*/
 		public var ftpAppKeys:Array;
+		/*
+		runtime
+		can change remote state (site state)
+		holder for 'allow_to_change_status'  
+		*/
+		public var canChangeRemoteState:Boolean=true;
 		
 		/**
 		 * runtime subid 4 otk

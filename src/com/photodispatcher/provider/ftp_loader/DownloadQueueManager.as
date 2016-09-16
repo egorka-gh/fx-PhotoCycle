@@ -389,7 +389,7 @@ package com.photodispatcher.provider.ftp_loader{
 						webApplicant.state=OrderState.FTP_WEB_CHECK;
 						StateLog.log(OrderState.FTP_WEB_CHECK,webApplicant.id);
 						var webService:BaseWeb=WebServiceBuilder.build(source);
-						webService.addEventListener(Event.COMPLETE,getOrderWeb);
+						webService.addEventListener(Event.COMPLETE,onGetOrderWeb);
 						webService.getLoaderOrder(webApplicant);
 					}else if(webApplicant.state==OrderState.FTP_CAPTURED){
 						//already locked 4 load push to loader
@@ -438,9 +438,9 @@ package com.photodispatcher.provider.ftp_loader{
 
 		//private var webStatelatch:AsyncLatch;
 		
-		private function getOrderWeb(e:Event):void{
+		private function onGetOrderWeb(e:Event):void{
 			var pw:BaseWeb=e.target as BaseWeb;
-			pw.removeEventListener(Event.COMPLETE,getOrderWeb);
+			pw.removeEventListener(Event.COMPLETE,onGetOrderWeb);
 			if(!webApplicant || webApplicant.state!=OrderState.FTP_WEB_CHECK){
 				//removed from queue or some else
 				//check next or stop
@@ -470,6 +470,18 @@ package com.photodispatcher.provider.ftp_loader{
 			webErrCounter=0;
 			var ord:Order;
 			var latch:DbLatch;
+			
+			//check if not locked
+			if(!webApplicant.canChangeRemoteState){
+				//can't change site state
+				webApplicant.state=OrderState.ERR_WEB;
+				lastError='Запрет смены статуса на сайте '+webApplicant.id;
+				StateLog.log(OrderState.ERR_WEB,webApplicant.id,'','Запрет смены статуса на сайте '+webApplicant.id);
+				removeOrder(webApplicant);
+				webApplicant=null;
+				checkQueue();
+				return;
+			}
 			
 			var err:String=chekSiteFiles(webApplicant.files);
 			if(err){
@@ -594,6 +606,14 @@ package com.photodispatcher.provider.ftp_loader{
 		private function startList():void{
 			if(!webApplicant || !isStarted || forceStop) return;
 			trace('Start list ' +webApplicant.id+' '+webApplicant.ftp_folder);
+			if(!webApplicant.ftp_folder){
+				webApplicant.state=OrderState.ERR_LOAD;
+				trace('empty ftp_folder '+webApplicant.id);
+				StateLog.log(OrderState.ERR_LOAD,webApplicant.id, '', 'Папка заказа не определена');
+				webApplicant=null;
+				checkQueueLate();
+				return;
+			}
 			downloadCaption='Список файлов ' +webApplicant.id;
 			webApplicant.state=OrderState.FTP_LIST;
 			StateLog.log(OrderState.FTP_LIST,webApplicant.id);
@@ -616,6 +636,8 @@ package com.photodispatcher.provider.ftp_loader{
 				webApplicant=null;
 				checkQueueLate();
 				return;
+			}else{
+				StateLog.log(webApplicant.state,webApplicant.id, '', 'FTP list complite');
 			}
 			listing=ftp.listing;
 			//check listing
@@ -659,7 +681,7 @@ package com.photodispatcher.provider.ftp_loader{
 			//start download
 			webApplicant.ftpQueue=listing;
 			webApplicant.state=OrderState.FTP_LOAD;
-			StateLog.log(OrderState.FTP_LOAD,webApplicant.id);
+			//StateLog.log(OrderState.FTP_LOAD,webApplicant.id);
 			startDownload(webApplicant);
 			webApplicant=null;
 		}

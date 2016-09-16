@@ -39,7 +39,7 @@ package com.photodispatcher.factory{
 					if(order.hasOwnProperty(ajm.field)){
 						//params array
 						val=JsonUtil.getRawVal(ajm.json_key, raw);
-						if(val){
+						if(val!=null){
 							if(ajm.field.indexOf('date')!=-1){
 								//convert date
 								d=JsonUtil.parseDate(val.toString());

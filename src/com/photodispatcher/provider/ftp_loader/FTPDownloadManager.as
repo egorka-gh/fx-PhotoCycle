@@ -145,8 +145,17 @@ package com.photodispatcher.provider.ftp_loader{
 				//check if already in queue
 				var idx:int=ArrayUtil.searchItemIdx('id',order.id,downloadOrders);
 				if(idx==-1){
-					downloadOrders.push(order);
 					prepareDownload(order);
+					if(order.isFtpQueueComplete){
+						StateLog.log(OrderState.FTP_LOAD,order.id,'','Уже загружен или нет файлов'); 
+						order.state=OrderState.FTP_WAITE_CHECK;
+						order.resetErrCounter();
+						dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
+						return;
+					}else{
+						StateLog.log(OrderState.FTP_LOAD,order.id,'','Старт загрузки'); 
+					}
+					downloadOrders.push(order);
 				}
 			}
 			checkDownload();
@@ -213,9 +222,8 @@ package com.photodispatcher.provider.ftp_loader{
 			//order.local_folder=file.parent.nativePath; //?parent
 			order.state=OrderState.FTP_LOAD;
 			order.resetErrCounter();
-			trace('FTPDownloadManager start download order '+order.ftp_folder+', ftpQueue:'+order.ftpQueue.length.toString());
 			if(order.ftpQueue && order.ftpQueue.length>0){
-				StateLog.log(OrderState.FTP_LOAD,order.id,'','Старт загрузки'); 
+				trace('FTPDownloadManager start download order '+order.ftp_folder+', ftpQueue:'+order.ftpQueue.length.toString());
 				//loadProgress();
 			}else{
 				trace('FTPDownloadManager empty order '+order.ftp_folder);

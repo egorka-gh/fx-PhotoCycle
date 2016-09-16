@@ -8,11 +8,17 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.factory.WebServiceBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderFile;
 			import com.photodispatcher.model.mysql.entities.OrderLoad;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.StateLog;
 			import com.photodispatcher.model.mysql.services.OrderLoadService;
+			import com.photodispatcher.service.web.BaseWeb;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
@@ -34,15 +40,19 @@
 				refresh(orderId);
 			}
 
+			private function get bdService():OrderLoadService{
+				return Tide.getInstance().getContext().byType(OrderLoadService,true) as OrderLoadService;
+			}
+
 			private function refresh(orderId:String):void{
 				order=null;
 				if(!orderId){
 					return;
 				}else{
-					var svc:OrderLoadService=Tide.getInstance().getContext().byType(OrderLoadService,true) as OrderLoadService;
+					//var svc:OrderLoadService=Tide.getInstance().getContext().byType(OrderLoadService,true) as OrderLoadService;
 					var latch:DbLatch= new DbLatch();
 					latch.addEventListener(Event.COMPLETE,onOrderLoad);
-					latch.addLatch(svc.loadFull(orderId));
+					latch.addLatch(bdService.loadFull(orderId));
 					latch.start();
 				}
 			}
@@ -69,6 +79,60 @@
 				}
 			}
 		
+			protected function btReload_clickHandler(event:MouseEvent):void{
+				if(!order) return;
+				order.state= OrderState.FTP_CAPTURED;
+				var latch:DbLatch= new DbLatch();
+				//latch.addEventListener(Event.COMPLETE,onOrderLoad);
+				latch.addLatch(bdService.save(order,0));
+				latch.start();
+			}
+			
+			protected function btResetBd_clickHandler(event:MouseEvent):void{
+				if(!order) return;
+				order.state= OrderState.FTP_WAITE_AFTER_ERROR;
+				var latch:DbLatch= new DbLatch();
+				//latch.addEventListener(Event.COMPLETE,onOrderLoad);
+				latch.addLatch(bdService.save(order,0));
+				latch.start();
+			}
+			
+			
+			protected function btResetSite_clickHandler(event:MouseEvent):void{
+				if(!order) return;
+				var source:Source=Context.getSource(order.source);
+				if(!source){
+					Alert.show('Не определен источник');
+					return;
+				}
+				var webService:BaseWeb=WebServiceBuilder.build(source);
+				var ord:Order=new Order();
+				ord.id=order.id;
+				ord.src_id=order.src_id;
+				ord.src_state=OrderLoad.REMOTE_STATE_READY.toString();
+				webService.addEventListener(Event.COMPLETE,onSetOrderStateWeb);
+				webService.setLoaderOrderState(ord);
+			}
+			private function onSetOrderStateWeb(e:Event):void{
+				var pw:BaseWeb=e.target as BaseWeb;
+				pw.removeEventListener(Event.COMPLETE,onSetOrderStateWeb);
+				
+				if(pw.hasError){
+					Alert.show(pw.errMesage);
+				}else{
+					Alert.show('Выполнено');
+				}
+			}
+			
+			protected function btCancel_clickHandler(event:MouseEvent):void{
+				if(!order) return;
+				order.state= OrderState.CANCELED;
+				var latch:DbLatch= new DbLatch();
+				//latch.addEventListener(Event.COMPLETE,onOrderLoad);
+				latch.addLatch(bdService.save(order,0));
+				latch.start();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -125,9 +189,12 @@
 					</s:FormItem> 
 				</s:Form>
 				<s:VGroup gap="10" width="100%" bottom="0" paddingBottom="10" paddingRight="10" paddingLeft="10">
-					<s:HGroup gap="10" verticalAlign="baseline" width="100%"  horizontalAlign="right">
-						<s:Button label="Перезагрузить" enabled="false"/>
-					</s:HGroup>
+					<!--<s:HGroup gap="10" verticalAlign="baseline" width="100%"  horizontalAlign="right">-->
+					<s:Button id="btResetSite" label="Сбросить на сайте" click="btResetSite_clickHandler(event)"/>
+					<s:Button id="btResetBd" label="Сбросить в базе" click="btResetBd_clickHandler(event)"/>
+					<s:Button id="btReload" label="Перезагрузить" click="btReload_clickHandler(event)"/>
+					<s:Button id="btCancel" label="Отменить" click="btCancel_clickHandler(event)"/>
+					<!--</s:HGroup>-->
 				</s:VGroup>
 			</s:Group>
 			<s:VGroup id="gDet" gap="0" width="100%" height="100%">

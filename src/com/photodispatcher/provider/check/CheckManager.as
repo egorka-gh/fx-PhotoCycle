@@ -307,9 +307,13 @@ package com.photodispatcher.provider.check{
 					*/
 					removeOrder(imChecker.currentOrder.id);
 				}
-			}else{
+			}else if(imChecker.currentOrder.state==OrderState.FTP_COMPLETE){
 				//same exept remote state done on site
 				setOrderStateWeb(imChecker.currentOrder,OrderLoad.REMOTE_STATE_DONE);
+			}else{
+				//her poime
+				removeOrder(imChecker.currentOrder.id);
+				return;
 			}
 			startNext();
 		}

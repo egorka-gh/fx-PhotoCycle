@@ -97,17 +97,17 @@ package com.photodispatcher.provider.check{
 				return;
 			}
 			currOrderFile=orderFiles.shift() as OrderFile;
-			while(!currOrderFile || 
+			if(!currOrderFile || 
 					!currOrderFile.hash_remote || //no site hash 
 					(currOrderFile.state>OrderState.FTP_WAITE_CHECK && currOrderFile.hash_local && currOrderFile.hash_local==currOrderFile.hash_remote)){ //hash ok
 				if(currOrderFile && !currOrderFile.hash_remote){
 					StateLog.log(OrderState.ERR_CHECK_MD5,currOrder.id,'','Не указан MD5 '+currOrderFile.file_name);
 					trace('Не указан MD5 '+currOrderFile.file_name);
-					currOrderFile=null;
 				}
 				checkNext();
+				return;
 			}
-			if(!currOrderFile || !currOrderFile.hash_remote) return;
+			//if(!currOrderFile || !currOrderFile.hash_remote) return;
 			currOrderFile.state=OrderState.FTP_CHECK;
 			progressCaption=progressCaption+':'+ currOrderFile.file_name; 
 			//load file

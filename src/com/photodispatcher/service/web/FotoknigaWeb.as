@@ -331,6 +331,7 @@ package com.photodispatcher.service.web{
 			}
 			is_newAPI=true;
 			lastOrder=order;
+			lastOrder.canChangeRemoteState=true;
 			cmd=CMD_GET_ORDER_LDR;
 			_hasError=false;
 			_errMesage='';
@@ -493,6 +494,7 @@ package com.photodispatcher.service.web{
 						lastOrder.ftp_folder=str;//ol.ftp_folder;
 						lastOrder.fotos_num=ol.fotos_num;
 						lastOrder.files=ol.files as ArrayCollection;
+						lastOrder.canChangeRemoteState=ol.canChangeRemoteState;
 					}else{
 						abort('FotoknigaWeb Ошибка структуры данных');
 						return;

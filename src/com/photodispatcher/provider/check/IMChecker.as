@@ -99,6 +99,8 @@ package com.photodispatcher.provider.check{
 			createCommands();
 			if(commands.length==0){
 				//complited
+				currOrder.state=OrderState.FTP_COMPLETE;
+				currOrder.saveState();
 				_isBusy=false;
 				dispatchEvent(new Event(Event.COMPLETE));
 				return;

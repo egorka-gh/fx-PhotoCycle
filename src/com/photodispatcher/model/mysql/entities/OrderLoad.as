@@ -75,7 +75,7 @@ package com.photodispatcher.model.mysql.entities {
 		//remote source fields runtime
 		//public var src_state:String;
 		public var filled:Boolean;
-		public var canChangeRemoteState:Boolean;
+		public var canChangeRemoteState:Boolean=true;
 		
 		public function addFile(file:OrderFile):void{
 			if(!files) files= new ArrayCollection;
