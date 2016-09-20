@@ -256,6 +256,7 @@ package com.photodispatcher.provider.check{
 						md5Checker.currentOrder.state=OrderState.FTP_WAITE;
 						md5Checker.currentOrder.saveState();
 						latch= new DbLatch(true);
+						latch.addEventListener(Event.COMPLETE,onSave);
 						latch.addLatch(bdService.save(OrderLoad.fromOrder(md5Checker.currentOrder),0));
 						latch.start();
 					}
@@ -269,7 +270,6 @@ package com.photodispatcher.provider.check{
 				latch.addLatch(bdService.save(OrderLoad.fromOrder(md5Checker.currentOrder),OrderState.FTP_WAITE_CHECK),md5Checker.currentOrder.id);
 				latch.start();
 			}
-			startNext();
 		}
 
 		private function onSave(evt:Event):void{
@@ -282,6 +282,7 @@ package com.photodispatcher.provider.check{
 					}
 				}
 			}
+			startNext();
 		}
 		
 		private function onImComplite(evt:Event):void{

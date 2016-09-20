@@ -6,6 +6,7 @@ package com.photodispatcher.provider.ftp_loader{
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.AsyncLatch;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.AliasForward;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderFile;
 	import com.photodispatcher.model.mysql.entities.OrderLoad;
@@ -483,6 +484,15 @@ package com.photodispatcher.provider.ftp_loader{
 				return;
 			}
 			
+			if(!webApplicant.files || webApplicant.files.length==0){
+				// 'Пустой список файлов'
+				//check if order forwarded
+				//get order info
+				pw.addEventListener(Event.COMPLETE,onGetOrderInfo);
+				pw.getOrder(webApplicant);
+				return;
+			}
+			
 			var err:String=chekSiteFiles(webApplicant.files);
 			if(err){
 				trace('getOrder web order err: '+err);
@@ -491,19 +501,7 @@ package com.photodispatcher.provider.ftp_loader{
 				webApplicant.saveState();
 				webApplicant.src_state=OrderLoad.REMOTE_STATE_ERROR.toString();
 				webApplicant.files=null;
-
-				//set site error state
-				/*
-				ord=new Order();
-				ord.id=webApplicant.id;
-				ord.src_id=webApplicant.src_id;
-				ord.src_state=OrderLoad.REMOTE_STATE_ERROR;
-				ord.src_state_comment=err;
-				pw.addEventListener(Event.COMPLETE,setOrderStateWeb);
-				pw.setLoaderOrderState(ord);
-				*/
 				setOrderStateWeb(webApplicant,OrderLoad.REMOTE_STATE_ERROR,err,pw);
-
 				//save in bd
 				latch= new DbLatch(true);
 				latch.addLatch(bdService.save(OrderLoad.fromOrder(webApplicant),0));
@@ -521,7 +519,7 @@ package com.photodispatcher.provider.ftp_loader{
 		private function chekSiteFiles(files:ArrayCollection):String{
 			var err:String='';
 			if(!files || files.length==0){
-				return 'Пустой список файлов';
+				return 'Пустой список файлов (косяк)';
 			}else{
 				var map:Object=new Object;
 				var of:OrderFile;
@@ -541,6 +539,58 @@ package com.photodispatcher.provider.ftp_loader{
 				if(err) err='Не уникальное имя файла: '+err;
 			}
 			return err;
+		}
+		
+		private function onGetOrderInfo(e:Event):void{
+			var pw:BaseWeb=e.target as BaseWeb;
+			pw.removeEventListener(Event.COMPLETE,onGetOrderInfo);
+			if(!webApplicant || webApplicant.state!=OrderState.FTP_WEB_CHECK) return;
+			if(pw.hasError){
+				trace('onGetOrderInfo web order err: '+pw.errMesage);
+				webErrCounter++;
+				webApplicant.state=OrderState.ERR_WEB;
+				lastError='Ошибка сайта '+webApplicant.id+' :'+pw.errMesage;
+				StateLog.log(OrderState.ERR_WEB,webApplicant.id,'','Ошибка на сайте: '+pw.errMesage);
+				removeOrder(webApplicant);
+				webApplicant=null;
+				//to prevent cycle web check when network error or offline
+				if(webErrCounter>WEB_ERRORS_LIMIT){
+					flowError('Ошибка web: '+pw.errMesage);
+				}
+				checkQueueLate();
+				return;
+			}
+			webErrCounter=0;
+			var siteState:int=OrderLoad.REMOTE_STATE_NONE;
+			var err:String='';
+			if(webApplicant.extraInfo){
+				var frwState:int=AliasForward.forvardState(webApplicant.extraInfo.calcAlias);
+				if(frwState>0){
+					trace('onGetOrderInfo; forward order '+webApplicant.id +' to state '+frwState.toString());
+					webApplicant.state=OrderState.FTP_COMPLETE;
+					siteState=OrderLoad.REMOTE_STATE_DONE;
+					StateLog.log(OrderState.FTP_COMPLETE,webApplicant.id,'','calc_alias: '+webApplicant.extraInfo.calcAlias +' ('+frwState.toString()+')');
+				}
+			}
+			if(siteState!=OrderLoad.REMOTE_STATE_DONE){
+				siteState=OrderLoad.REMOTE_STATE_ERROR;
+				webApplicant.state=OrderState.FTP_INCOMPLITE;
+				err='Пустой список файлов на сайте';
+				trace('onGetOrderInfo web order err: Пустой список файлов');
+				StateLog.log(OrderState.ERR_GET_PROJECT,webApplicant.id,'',err);
+			}
+			
+			webApplicant.saveState();
+			webApplicant.src_state=siteState.toString();
+			webApplicant.files=null;
+			setOrderStateWeb(webApplicant,siteState,err,pw);
+			//save in bd
+			var latch:DbLatch= new DbLatch(true);
+			latch.addLatch(bdService.save(OrderLoad.fromOrder(webApplicant),0));
+			latch.start();
+			removeOrder(webApplicant);
+			webApplicant=null;
+			checkQueue();
 		}
 
 		private function setOrderStateWeb(order:Order, remoteState:int, comment:String='', webService:BaseWeb=null):void{
@@ -574,7 +624,7 @@ package com.photodispatcher.provider.ftp_loader{
 					//checkQueueLate();
 				}
 			}else{
-				if(webApplicant && webApplicant.id==pw.lastOrderId){
+				if(webApplicant && webApplicant.id==pw.lastOrderId && webApplicant.state==OrderState.FTP_WEB_CHECK){
 					webApplicant.state=OrderState.FTP_CAPTURED;
 					webApplicant.saveState();
 					webApplicant.src_state=OrderLoad.REMOTE_STATE_COPY.toString();

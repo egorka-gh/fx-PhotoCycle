@@ -170,6 +170,7 @@ package com.photodispatcher.context{
 			latch.join(OrderState.initStateMap());
 			latch.join(FieldValue.initSynonymMap());
 			latch.join(AttrJsonMap.initJsonMap());
+			latch.join(AliasForward.initMap());
 			
 			return latch;
 		}
