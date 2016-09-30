@@ -8,6 +8,7 @@
 package com.photodispatcher.model.mysql.entities {
 	import flash.globalization.DateTimeStyle;
 	
+	import mx.collections.ArrayCollection;
 	import mx.collections.ArrayList;
 	
 	import spark.components.gridClasses.GridColumn;
@@ -41,6 +42,24 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('sa_remark'); col.headerText='Примечание'; result.addItem(col);
 			
 			return result;
+		}
+		
+		public function addPrintgroupLink(srcPg:String,dstPg:String):void{
+			var it:TechRejectPG;
+			if(!srcPg || !dstPg) return;
+			if(!pgroups){
+				pgroups=new ArrayCollection();
+			}else{
+				//check if exists
+				for each(it in pgroups){
+					if(it.pg_src==srcPg && it.pg_dst==dstPg) return;
+				}
+			}
+			it= new TechRejectPG();
+			it.tech_reject=this.id;
+			it.pg_src=srcPg;
+			it.pg_dst=dstPg;
+			pgroups.addItem(it);
 		}
 
     }

@@ -658,7 +658,7 @@
 
 			<s:FormItem label="Кол-во страниц в PDF файле">
 				<s:NumericStepper id="nsPdfPageLimit" value="@{pdfPageLimit}" 
-								  minimum="0" maximum="200" snapInterval="10" width="50" change="nsPdfPageLimit_changeHandler(event)"/>
+								  minimum="0" maximum="10000" snapInterval="10" width="50" change="nsPdfPageLimit_changeHandler(event)"/>
 			</s:FormItem> 
 
 			<s:FormItem label="Реверсная печать">

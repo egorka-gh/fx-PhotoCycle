@@ -94,6 +94,7 @@
 				var configPass:String;
 				var ticketPass:String;
 				var syncInterval:int=10;
+				var ftpConnectImeout:int=15;
 				//var cFilterId:int;
 				if (so.size>0){
 					workFolder = so.data.workFolder;
@@ -105,6 +106,8 @@
 					//cFilterId=so.data.cFilterId;
 					if(so.data.syncInterval) syncInterval=so.data.syncInterval;
 					Context.setAttribute('printRotated',Boolean(so.data.printRotated));
+					if(so.data.ftpConnectImeout) ftpConnectImeout=so.data.ftpConnectImeout;
+					Context.setAttribute('ftpConnectImeout',ftpConnectImeout);
 				}
 				
 				Context.setAttribute('syncInterval',syncInterval);
@@ -116,6 +119,7 @@
 				Context.setAttribute('prtPath',prtPath);
 				Context.setAttribute('serverIP',serverIP);
 				Context.setAttribute('imPath',imPath);
+
 
 				Context.setAttribute('manualStart', so.data.manualStart);
 

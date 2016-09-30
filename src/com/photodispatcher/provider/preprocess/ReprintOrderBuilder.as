@@ -15,6 +15,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.TechRejectItem;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.TechRejecService;
+	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
 	import flash.events.ProgressEvent;
@@ -54,6 +55,7 @@ package com.photodispatcher.provider.preprocess{
 		
 		override protected function releaseWithError(error:int, msg:String):void{
 			//restore rejects state (uncapture)
+			//TODO cancel?
 			setRejectsState(OrderState.REPRINT_WAITE);
 			rejects=null;
 			super.releaseWithError(error, msg);
@@ -291,7 +293,7 @@ package com.photodispatcher.provider.preprocess{
 			if(!pg) return null;
 			var p:PrintGroup;
 			for each(p in srcPGs){
-				if(pg!=p && pg.sub_id==p.sub_id) return p;
+				if(pg.id!=p.id && pg.sub_id==p.sub_id) return p;
 			}
 			return null;
 		}
@@ -370,25 +372,56 @@ package com.photodispatcher.provider.preprocess{
 				builder.removeEventListener(OrderBuildEvent.ORDER_PREPROCESSED_EVENT, onOrderPreprocessed);
 				builder.removeEventListener(ProgressEvent.PROGRESS, onPreprocessProgress);
 			}
+			var newPGroups:Array;
+			if(builder.lastOrder && builder.lastOrder.printGroups) newPGroups=builder.lastOrder.printGroups.toArray();
 			builder=null;
-			if(forceStop) return;
+			//if(forceStop) return;
+			
 			if(evt.err<0){
 				//completed vs error
-				releaseWithError(evt.err,evt.err_msg);
+				if(!forceStop) releaseWithError(evt.err,evt.err_msg);
 			}else{
+				//add generated pgs to rejects
+				
 				//finalise reprints
-				setRejectsState(OrderState.PRN_REPRINT);
-				releaseComplite();
+				setRejectsState(OrderState.PRN_REPRINT,newPGroups);
+				if(!forceStop) releaseComplite();
 			}
 			dispatchEvent(new OrderBuildProgressEvent());
 		}
 		
-		private function setRejectsState(state:int):void{
+		private function setRejectsState(state:int, newPGroups:Array=null):void{
 			if(!rejects || rejects.length==0) return;
 			for each(var reject:TechReject in rejects){
 				var dt:Date=new Date();
 				reject.state=state;
 				reject.state_date= dt;
+				//create printgroup links 
+				if(newPGroups && newPGroups.length>0 && reject.items){
+					reject.pgroups=null;
+					for each(var ritem:TechRejectItem in reject.items){
+						var pgReprint:PrintGroup=ArrayUtil.searchItem('reprint_id',ritem.pg_src,newPGroups) as PrintGroup;
+						if(pgReprint){
+							reject.addPrintgroupLink(ritem.pg_src,pgReprint.id);
+							if(ritem.thech_unit==TechReject.UNIT_BOOK && pgReprint.book_part!=BookSynonym.BOOK_PART_BLOCKCOVER){
+								//finde related cover or block
+								var p:PrintGroup;
+								var srcPgId:String;
+								for each(p in srcPGs){
+									if(p.book_part!=pgReprint.book_part && pgReprint.sub_id==p.sub_id){
+										srcPgId=p.id;
+										break;
+									}
+								}
+								if(srcPgId){
+									pgReprint=ArrayUtil.searchItem('reprint_id',srcPgId,newPGroups) as PrintGroup;
+									if(pgReprint) reject.addPrintgroupLink(srcPgId,pgReprint.id);
+								}
+
+							}
+						}
+					}
+				}
 			}
 			var latch:DbLatch= new DbLatch();
 			//latch.addEventListener(Event.COMPLETE,oncaptureState);

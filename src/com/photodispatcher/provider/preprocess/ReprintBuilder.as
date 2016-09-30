@@ -80,7 +80,8 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 
-			if((arrPG.length==0)){	
+			if((arrPG.length==0)){
+				lastOrder.printGroups=null;
 				releaseComplite();
 				return;
 			}

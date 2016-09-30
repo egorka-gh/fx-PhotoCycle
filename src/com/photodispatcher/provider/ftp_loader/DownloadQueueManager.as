@@ -269,6 +269,7 @@ package com.photodispatcher.provider.ftp_loader{
 			for each (order in queue.source){
 				if(order){
 					if (syncMap[order.id]){
+						/*
 						//some bug vs ftp list, may be wrong order data
 						var o:Order;
 						if(order.state<0 && order.exceedErrLimit) o=syncMap[order.id] as Order;
@@ -278,7 +279,10 @@ package com.photodispatcher.provider.ftp_loader{
 							o.state_date=order.state_date;
 							o.setErrLimit();
 							o.resume_load=false;
-							//del old from queue
+							*/
+						if(order.state<0 && order.exceedErrLimit){
+							//remove vs err limit
+							//if in syncMap -  wlbe added and restarted 
 							toKill.push(order);
 						}else{
 							//replace
@@ -721,7 +725,7 @@ package com.photodispatcher.provider.ftp_loader{
 				setOrderStateWeb(webApplicant,OrderLoad.REMOTE_STATE_ERROR,err);
 				var latch:DbLatch= new DbLatch(true);
 				latch.addEventListener(Event.COMPLETE,onSave);
-				latch.addLatch(bdService.merge(OrderLoad.fromOrder(webApplicant),OrderState.FTP_CAPTURED),webApplicant.id);
+				latch.addLatch(bdService.save(OrderLoad.fromOrder(webApplicant),0),webApplicant.id);
 				latch.start();
 				removeOrder(webApplicant);
 				webApplicant=null;

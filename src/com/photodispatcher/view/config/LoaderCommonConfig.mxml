@@ -45,6 +45,8 @@
 			
 			[Bindable]
 			private var syncInterval:int;
+			[Bindable]
+			private var ftpConnectImeout:int;
 
 			[Bindable]
 			private var config:AppConfig;
@@ -68,7 +70,9 @@
 				manualStart=so.data.manualStart;
 				syncInterval=so.data.syncInterval;
 				if(!syncInterval) syncInterval=10;
-				
+				ftpConnectImeout=so.data.ftpConnectImeout;
+				if(!ftpConnectImeout) ftpConnectImeout=15;
+
 			}
 			
 			private function pingIM():void{
@@ -228,6 +232,14 @@
 				Context.setAttribute('manualStart', manualStart);
 			}
 			
+			protected function nsftpConnectImeout_changeHandler(event:Event):void{
+				if(ftpConnectImeout<15) ftpConnectImeout=15;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.ftpConnectImeout = ftpConnectImeout;
+				so.flush();  
+				Context.setAttribute('ftpConnectImeout', ftpConnectImeout);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -264,7 +276,12 @@
 			</s:FormItem> 
 
 			<s:FormItem label="Ручной запуск сервисов">
-				<s:CheckBox id="tg_manualStart" selected="{manualStart}" change="tg_manualStart_changeHandler(event)"/>
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:CheckBox id="tg_manualStart" selected="{manualStart}" change="tg_manualStart_changeHandler(event)"/>
+					<s:Spacer width="5"/>
+					<s:Label text="Таймаут подключения FTP (сек)"/>
+					<s:NumericStepper id="nsftpConnectImeout" value="@{ftpConnectImeout}" minimum="15" maximum="90" change="nsftpConnectImeout_changeHandler(event)"/>	
+				</s:HGroup>
 			</s:FormItem>
 
 			<s:FormItem label="Папка ImageMagick">
