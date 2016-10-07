@@ -259,19 +259,22 @@ package com.photodispatcher.provider.preprocess{
 			for each(var reject:TechReject in rejects){
 				if(reject.items){
 					for each(var ritem:TechRejectItem in reject.items){
-						var pg:PrintGroup=pgById(ritem.pg_src);
+						var pg:PrintGroup=pgById(ritem.pg_src); 
 						if(pg){
 							if(ritem.thech_unit==TechReject.UNIT_SHEET){
 								markFile(pg, ritem.book, ritem.sheet);
 								setActivity(pg,reject);
+								pg.addReject(ritem.book, ritem.sheet, ritem.thech_unit, reject.activity);
 							}else{
 								// UNIT_BOOK or UNIT_BLOCK or UNIT_COVER
 								markFile(pg, ritem.book);
 								setActivity(pg,reject);
+								pg.addReject(ritem.book, -1, ritem.thech_unit, reject.activity);
 								if(ritem.thech_unit==TechReject.UNIT_BOOK){
 									pg=pgBypg(pg);
 									markFile(pg, ritem.book);
 									setActivity(pg,reject);
+									if(pg) pg.addReject(ritem.book, -1, ritem.thech_unit, reject.activity);
 								}
 							}
 						}
@@ -396,6 +399,9 @@ package com.photodispatcher.provider.preprocess{
 				var dt:Date=new Date();
 				reject.state=state;
 				reject.state_date= dt;
+				
+				//unused info
+				//actual reject info stored in PrintGroupReject 
 				//create printgroup links 
 				if(newPGroups && newPGroups.length>0 && reject.items){
 					reject.pgroups=null;
@@ -422,6 +428,7 @@ package com.photodispatcher.provider.preprocess{
 						}
 					}
 				}
+				
 			}
 			var latch:DbLatch= new DbLatch();
 			//latch.addEventListener(Event.COMPLETE,oncaptureState);

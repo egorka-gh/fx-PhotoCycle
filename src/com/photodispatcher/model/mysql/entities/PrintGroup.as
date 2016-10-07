@@ -290,6 +290,58 @@ package com.photodispatcher.model.mysql.entities {
 			file_num=files.length;
 		}
 
+		public function addReject(book:int, sheet:int, unit:int, activity:int):void{
+			if(book<1) return;
+			var oldItem:PrintGroupReject;
+			var i:int;
+			var added:Boolean;
+			var compact:Boolean;
+			var newItem:PrintGroupReject=new PrintGroupReject();
+			newItem.print_group=this.id;
+			newItem.book=book;
+			newItem.sheet=sheet;
+			newItem.activity=activity;
+			newItem.thech_unit=unit;
+			if(!rejects){
+				rejects=new ArrayCollection();
+				rejects.addItem(newItem);
+			}else{
+				//check if already added as single sheet or in block 
+				for (i = 0; i < rejects.length; i++){
+					oldItem=rejects.getItemAt(i) as PrintGroupReject;
+					if(!oldItem){
+						rejects.setItemAt(null,i);
+						compact=true;
+						continue;
+					}
+					if(oldItem.book==newItem.book){
+						if(newItem.sheet==-1){
+							//all sheets in block  
+							if(oldItem.sheet==-1){
+								added=true;
+								break;
+							}else{
+								//remove added vs single sheet 
+								rejects.setItemAt(null,i);
+								compact=true;
+							}
+						}else if(oldItem.sheet==newItem.sheet){
+							added=true;
+							break;
+						}
+					}
+				}
+				if(compact){
+					var newRejects:ArrayCollection= new ArrayCollection();
+					for each(oldItem in rejects){
+						if(oldItem) newRejects.addItem(oldItem);
+					}
+					rejects=newRejects;
+				}
+				if(!added) rejects.addItem(newItem);
+			}
+		}
+
 		public function key(srcType:int=0,fullness:int=0):String{
 			var sizeKey:String;
 			switch(fullness){

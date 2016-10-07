@@ -86,7 +86,7 @@ package com.photodispatcher.tech{
 			result=dBook==book && dSheet==sheet;
 			if(!result){
 				if(canInterrupt && flap) flap.setOff();
-				if(logSequenceErr){
+				if(logError){
 					logSequeceErr('Не верная последовательность: '+ StrUtil.sheetName(book,sheet)+' вместо '+ StrUtil.sheetName(dBook,dSheet));
 				}else{
 					if(lastBook==book && lastSheet==sheet){

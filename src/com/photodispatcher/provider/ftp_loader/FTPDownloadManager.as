@@ -151,6 +151,7 @@ package com.photodispatcher.provider.ftp_loader{
 						order.state=OrderState.FTP_WAITE_CHECK;
 						order.resetErrCounter();
 						dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
+						checkQueue();
 						return;
 					}else{
 						StateLog.log(OrderState.FTP_LOAD,order.id,'','Старт загрузки'); 

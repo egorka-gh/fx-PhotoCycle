@@ -3,8 +3,10 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrintGroupReject;
 	import com.photodispatcher.model.mysql.entities.TechLog;
 	import com.photodispatcher.model.mysql.entities.TechPoint;
+	import com.photodispatcher.model.mysql.entities.TechReject;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.model.mysql.services.TechService;
 	import com.photodispatcher.service.barcode.ValveCom;
@@ -37,7 +39,9 @@ package com.photodispatcher.tech{
 		public var techPoint:TechPoint;
 		[Bindable]
 		public var printGroupId:String;
+		protected var printGroup:PrintGroup; 
 		protected var printGroups:Array; 
+		protected var rejects:Array; 
 		
 		[Bindable]
 		public var books:int;
@@ -56,6 +60,7 @@ package com.photodispatcher.tech{
 		protected var lastSheet:int;
 		[Bindable]
 		public var registred:int;
+		protected var rejectedCount:int=0;
 		
 		protected var logOk:Boolean;
 
@@ -75,7 +80,7 @@ package com.photodispatcher.tech{
 		}
 
 		protected var _logSequenceErr:Boolean=true;
-		public function get logSequenceErr():Boolean{
+		public function get logError():Boolean{
 			return _logSequenceErr;
 		}
 		
@@ -126,6 +131,12 @@ package com.photodispatcher.tech{
 			latchR.addEventListener(Event.COMPLETE,onReprintsLoad);
 			latchR.addLatch(svc.loadReprintsByPG(printGroupId));
 			latchR.start();
+			//load rejects
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onRejectsLoad);
+			latch.addLatch(svc.loadRejects4PG(printGroupId));
+			latch.join(latchR);
+			latch.start();
 		}
 		protected function onReprintsLoad(e:Event):void{
 			printGroups=null;
@@ -137,8 +148,41 @@ package com.photodispatcher.tech{
 				}
 				if(printGroups && printGroups.length>0){
 					//detect bookpart
-					var pg:PrintGroup=printGroups[0] as PrintGroup;
-					if(pg) bookPart=pg.book_part;
+					//var pg:PrintGroup=printGroups[0] as PrintGroup;
+					//if(pg) bookPart=pg.book_part;
+					printGroup=ArrayUtil.searchItem('id',printGroupId,printGroups) as PrintGroup;
+					if(printGroup){
+						bookPart=printGroup.book_part;
+					}else{
+						//hz
+						var pg:PrintGroup=printGroups[0] as PrintGroup;
+						if(pg) bookPart=pg.book_part;
+					}
+				}
+			}
+		}
+		protected function onRejectsLoad(e:Event):void{
+			rejects=null;
+			rejectedCount=0;
+			var latch:DbLatch=e.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onRejectsLoad);
+				if(latch.complite && latch.lastDataArr.length>0){
+					rejects=latch.lastDataArr;
+				}
+			}
+			if(rejects){
+				//count rejected sheets, used in isCompleted  
+				for each(var item:PrintGroupReject in rejects){
+					if(item){
+						if(item.thech_unit==TechReject.UNIT_BLOCK 
+							|| item.thech_unit==TechReject.UNIT_BOOK
+							|| item.thech_unit==TechReject.UNIT_COVER){
+							rejectedCount+=sheets;
+						}else{
+							rejectedCount++;
+						}
+					}
 				}
 			}
 		}
@@ -162,6 +206,17 @@ package com.photodispatcher.tech{
 				if(pg.id==pgId) return pg.is_reprint;
 			}
 			return false;
+		}
+		
+		public function getReject(book:int,sheet:int):PrintGroupReject{
+			if(printGroup && printGroup.is_reprint) return null;
+			if(!rejects || rejects.length==0) return null;
+			for each(var item:PrintGroupReject in rejects){
+				if(item && item.book==book && (item.sheet==-1 || item.sheet==sheet)){
+					return item;
+				}
+			}
+			return null;
 		}
 
 		public function register(book:int,sheet:int):void{
@@ -244,14 +299,20 @@ package com.photodispatcher.tech{
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
+		protected function isRegistred(book:int,sheet:int):Boolean{
+			if(book<=0 || sheet<0) return false;
+			if(!regArray || regArray[book-1]==undefined || regArray[book-1][sheet]==undefined) return false;
+			return true;
+		}
+		
 		protected  var flushTimer:Timer;
 		
 		protected function startFlushTimer():void{
 			if(calcOnLog) return;
 			if(!flushTimer){
 				flushTimer= new Timer(FLUSH_TIMER_INTERVAL,1);
+				flushTimer.addEventListener(TimerEvent.TIMER, onFlushTimer);
 			}
-			flushTimer.addEventListener(TimerEvent.TIMER, onFlushTimer);
 			flushTimer.reset();
 			flushTimer.start();
 		}
@@ -299,10 +360,10 @@ package com.photodispatcher.tech{
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK) endSheet=revers?1:sheets;
 				if(lastBook==books && lastSheet==endSheet) return true;
 			}
-			if((bookPart==BookSynonym.BOOK_PART_BLOCK || bookPart==BookSynonym.BOOK_PART_BLOCKCOVER) && registred==books*sheets){
+			if((bookPart==BookSynonym.BOOK_PART_BLOCK || bookPart==BookSynonym.BOOK_PART_BLOCKCOVER) && (registred+rejectedCount)==books*sheets){
 				return true;
 			}
-			if(bookPart==BookSynonym.BOOK_PART_COVER && registred==books){//one cover per book
+			if(bookPart==BookSynonym.BOOK_PART_COVER && (registred+rejectedCount)==books){//one cover per book
 				return true;
 			}
 			return false;
@@ -390,6 +451,8 @@ package com.photodispatcher.tech{
 			var dBook:int=dueBook;
 			var dSheet:int=dueSheet;
 			var result:Boolean;
+			var reject:PrintGroupReject= getReject(book,sheet);
+			if(reject && !isRegistred(book,sheet) && rejectedCount>0) rejectedCount--;
 			if(isComplete){
 				if(canInterrupt && flap) flap.setOff();
 				logSequeceErr('Должен быть следующий заказ: '+ StrUtil.sheetName(book,sheet)+' при завершенной последовательности.' );
@@ -409,9 +472,47 @@ package com.photodispatcher.tech{
 			}
 			
 			result=dBook==book && dSheet==sheet;
+			//check if rejected
+			if(result && printGroup && printGroup.is_pdf && !printGroup.is_reprint && reject){
+				logSequeceErr('Не убран брак '+reject.thech_unit_name+' '+ StrUtil.sheetName(book,sheet));
+			}
+			
+			if(!result){
+				//TODO check if book,sheet is after reject?
+				reject=getReject(dBook,dSheet);
+				if(reject){
+					//skip reject and recheck
+					if(reject.thech_unit==TechReject.UNIT_SHEET || reject.thech_unit==TechReject.UNIT_COVER){
+						//skip one sheet
+						logMsg('Пропуск брака '+reject.thech_unit_name+' '+ StrUtil.sheetName(dBook,dSheet));
+						lastBook=dBook;
+						lastSheet=dSheet;
+					}else{
+						//skip book
+						lastBook=dBook;
+						//align at the end sheet 
+						//cover 
+						lastSheet=0;
+						if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
+							lastSheet=revers?1:0;
+						}else if(bookPart==BookSynonym.BOOK_PART_BLOCK){
+							lastSheet=revers?1:sheets;
+						}
+						logMsg('Пропуск брака '+reject.thech_unit_name+' до '+ StrUtil.sheetName(lastBook,lastSheet));
+					}
+					//prevent posible recursive bug
+					if(lastBook<=0 || lastBook>books){
+						//out of book sequence
+						logSequeceErr('Ошибка пропуска брака '+ StrUtil.sheetName(lastBook,lastSheet));
+						return false;
+					}
+					
+					return checkSequece(book,sheet);
+				}
+			}
 			if(!result){
 				if(canInterrupt && flap) flap.setOff();
-				if(logSequenceErr){
+				if(logError){
 					logSequeceErr('Не верная последовательность: '+ StrUtil.sheetName(book,sheet)+' вместо '+ StrUtil.sheetName(dBook,dSheet));
 				}else{
 					if(lastBook==book && lastSheet==sheet){
