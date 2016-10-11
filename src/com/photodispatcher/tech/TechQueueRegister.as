@@ -8,6 +8,8 @@ package com.photodispatcher.tech{
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	
+	import mx.collections.ArrayCollection;
+	
 	import org.granite.tide.Tide;
 	
 	[Event(name="complete", type="flash.events.Event")]
@@ -15,13 +17,36 @@ package com.photodispatcher.tech{
 	public class TechQueueRegister extends EventDispatcher{
 		
 		private var pgQueue:Array;
-		private var queue:Array;
 		private var queueMap:Object;
-		private var queueId:int;
-		private var currIdx:int;
-		private var currPgId:String;
 		private var isLoading:Boolean;
 		private var isStarted:Boolean;
+
+		private var _queue:Array;
+		private function get queue():Array{
+			return _queue;
+		}
+		private function set queue(value:Array):void{
+			_queue = value;
+			if(_queue){
+				queueAC=new ArrayCollection(_queue);
+			}else{
+				queueAC=null;
+			}
+		}
+		
+		protected var regArray:Array;
+		
+		public var revers:Boolean=false;
+		public var loadRejects:Boolean=false;
+		[Bindable]
+		public var queueId:int;
+		[Bindable]
+		public var queueAC:ArrayCollection;
+		[Bindable]
+		public var currIdx:int;
+		[Bindable]
+		public var registred:int;
+
 		
 		public function TechQueueRegister(){
 			super(null);
@@ -34,16 +59,21 @@ package com.photodispatcher.tech{
 			queueMap=null;
 		}
 
-		public function get currentQueueIndex():int{
-			return currIdx+1;
+		private function indexCaption(idx:int):String{
+			return (idx+1).toString();
 		}
-
+		private function pgCaption(idx:int):String{
+			if(!queue || idx<0 || idx>=queue.length) return '-';
+			var pg:PrintGroup=queue[idx] as PrintGroup;
+			if(pg) return pg.id;
+			return '-';
+		}
 		
 		public function register(pgId:String):void{
 			isStarted=true;
 			if(!pgId) return;
 			//is in check
-			if(currPgId==pgId) return;
+			//if(currPgId==pgId) return;
 			//is in check queue
 			if(pgQueue.length>0){
 				var idx:int=pgQueue.indexOf(pgId);
@@ -64,6 +94,23 @@ package com.photodispatcher.tech{
 			queueMap=null;
 		}
 		
+		protected function get dueIndex():int{
+			if(!queue) return -1;
+			if(currIdx==-1){
+				//start queue
+				if(revers) return queue.length-1;
+				return 0;
+			}
+			var idx:int=currIdx;
+			if(revers){
+				idx--;
+			}else{
+				idx++;
+			}
+			if(idx<0 || idx>=queue.length) idx=-1;
+			return idx;
+		}
+		
 		private function checkNext():void{
 			if(isLoading) return;
 			if(!queue){
@@ -71,14 +118,36 @@ package com.photodispatcher.tech{
 				return;
 			}
 				
-			if(currIdx==-1){
-				//starting
+			var idx:int;
+			var currId:String;
+			
+			while(pgQueue.length>0){
+				currId=pgQueue[0];
+				if(!queueMap.hasOwnProperty(currId)){
+					//check if queue complited
+					//TODO check by registred, index can be wrong (wrong seq)
+					if(registred<queue.length){
+						logErr('Партия '+queueId.toString() +' не завершена: '+registred.toString() +' из '+queue.length.toString());
+					}
+					break;
+				}
+				idx=queueMap[currId];
+				//check index
+				//TODO check if currentQueueIndex out of Queue lenght 
+				if(idx!=dueIndex){
+					logErr('Ошибка последовательности в партии: '+queueId.toString()+'. '+ indexCaption(idx)+' вместо '+indexCaption(dueIndex));
+					logMsg(currId+' вместо '+pgCaption(dueIndex));
+				}
+				//register
+				if(regArray[idx] == undefined){
+					registred++;
+					regArray[idx]=new Date();
+				}
+				currIdx=idx;
+				pgQueue.shift();
 			}
-		}
-
-		private function isQueueComplete():Boolean{
-			//TODO implement
-			return false;
+			
+			if(pgQueue.length>0) loadQueue(); 
 		}
 
 		private function loadQueue():void{
@@ -90,10 +159,13 @@ package com.photodispatcher.tech{
 			currIdx=-1;
 			queueMap=null;
 			queueId=0;
+			regArray=null;
+			registred=0;
+			
 			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latchR:DbLatch= new DbLatch(true);
 			latchR.addEventListener(Event.COMPLETE,onloadQueue);
-			latchR.addLatch(svc.loadQueueItemsByPG(pgId),pgId);
+			latchR.addLatch(svc.loadQueueItemsByPG(pgId, loadRejects),pgId);
 			latchR.start();
 		}
 		protected function onloadQueue(e:Event):void{
@@ -125,6 +197,8 @@ package com.photodispatcher.tech{
 				checkNext();
 				return;
 			}
+			//init regArray
+			regArray=new Array(queue.length);
 			//build map
 			var pg:PrintGroup=queue[0] as PrintGroup;
 			queueId=pg.prn_queue;
@@ -137,16 +211,6 @@ package com.photodispatcher.tech{
 			isLoading=false;
 			checkNext();
 			
-			///remove
-			var idx:int=ArrayUtil.searchItemIdx('id',currPgId, queue);
-			if(idx==-1){
-				logErr('Ошибка определения партии для : '+currPgId+'.');
-				return;
-			}
-			currIdx=idx;
-			if(idx!=0){
-				logErr('Ошибка последовательности в партии: '+currPgId+'. '+currIdx.toString()+' вместо 1.');
-			}
 		}
 
 		protected function logErr(msg:String):void{

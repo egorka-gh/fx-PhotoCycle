@@ -45,6 +45,7 @@ package com.photodispatcher.print{
 	import flash.events.TimerEvent;
 	import flash.filesystem.File;
 	import flash.globalization.DateTimeStyle;
+	import flash.net.SharedObject;
 	import flash.utils.Dictionary;
 	import flash.utils.Timer;
 	import flash.utils.flash_proxy;
@@ -163,6 +164,8 @@ package com.photodispatcher.print{
 			} else {
 				throw new Exception(Exception.SINGLETON);
 			}
+			var so:SharedObject = SharedObject.getLocal('appProps','/');
+			_includeReprintInPrnQueue=so.data.reprintInPrnQueue;
 		}
 		
 		
@@ -347,15 +350,31 @@ package com.photodispatcher.print{
 		}
 		*/
 		
+		private var _includeReprintInPrnQueue:Boolean;
+		[Bindable]
+		public function get includeReprintInPrnQueue():Boolean{
+			return _includeReprintInPrnQueue;
+		}
+		public function set includeReprintInPrnQueue(value:Boolean):void{
+			_includeReprintInPrnQueue = value;
+			var so:SharedObject = SharedObject.getLocal('appProps','/');
+			so.data.reprintInPrnQueue = value;
+			so.flush();
+		}
+
+		
 		public function runStartTimetable(items:ArrayCollection):void{
 			if(!items || items.length==0){
 				startTimer();
 				return;
 			}
+			var reprintMode:int=0;
+			if(includeReprintInPrnQueue) reprintMode=-1;
+			
 			var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latch:DbLatch= new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onCreateQueues);
-			latch.addLatch(svcs.createQueueBatch(items));
+			latch.addLatch(svcs.createQueueBatch(items, reprintMode));
 			latch.start();
 		}
 		

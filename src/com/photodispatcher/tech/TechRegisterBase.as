@@ -37,8 +37,19 @@ package com.photodispatcher.tech{
 
 
 		public var techPoint:TechPoint;
+
+		private var _printGroupId:String;
 		[Bindable]
-		public var printGroupId:String;
+		public function get printGroupId():String{
+			return _printGroupId;
+		}
+		public function set printGroupId(value:String):void{
+			var flush:Boolean= _printGroupId && _printGroupId!=value; 
+			_printGroupId = value;
+			if(flush) flushData();
+		}
+
+		
 		protected var printGroup:PrintGroup; 
 		protected var printGroups:Array; 
 		protected var rejects:Array; 
@@ -526,10 +537,15 @@ package com.photodispatcher.tech{
 		}
 		
 		protected function logSequeceErr(msg:String):void{
-			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,'Заказ: '+printGroupId+'. '+msg,ERROR_SEQUENCE));
+			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,'Заказ: '+currPgCaption+'. '+msg,ERROR_SEQUENCE));
 		}
 		protected function logMsg(msg:String):void{
-			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,'Заказ: '+printGroupId+'. '+msg,0));
+			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,'Заказ: '+currPgCaption+'. '+msg,0));
+		}
+		
+		protected function get currPgCaption():String{
+			if(printGroup) return printGroup.id;
+			return printGroupId;
 		}
 		
 		protected function get sheetsPerBook():int{
