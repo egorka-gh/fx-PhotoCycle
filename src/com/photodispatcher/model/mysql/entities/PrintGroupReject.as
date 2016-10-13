@@ -10,6 +10,10 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.PrintGroupReject")]
     public class PrintGroupReject extends PrintGroupRejectBase {
+		/*
+		 * Reject is in check sequence (4 TechRegister)
+		*/
+		public var isDisabled:Boolean;
 
         public function PrintGroupReject() {
             super();

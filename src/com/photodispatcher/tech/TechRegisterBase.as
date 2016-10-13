@@ -45,8 +45,8 @@ package com.photodispatcher.tech{
 		}
 		public function set printGroupId(value:String):void{
 			var flush:Boolean= _printGroupId && _printGroupId!=value; 
-			_printGroupId = value;
 			if(flush) flushData();
+			_printGroupId = value;
 		}
 
 		
@@ -183,8 +183,21 @@ package com.photodispatcher.tech{
 				}
 			}
 			if(rejects){
+				//compact
+				var pg:PrintGroup=printGroup; 
+				if(!pg){
+					pg=new PrintGroup();
+					pg.id=printGroupId;
+				}
+				pg.rejects=null;
+				var item:PrintGroupReject;
+				for each(item in rejects){
+					pg.addReject(item.book, item.sheet, item.thech_unit, item.activity);
+				}
+				rejects=pg.rejects.toArray();
+				
 				//count rejected sheets, used in isCompleted  
-				for each(var item:PrintGroupReject in rejects){
+				for each(item in rejects){
 					if(item){
 						if(item.thech_unit==TechReject.UNIT_BLOCK 
 							|| item.thech_unit==TechReject.UNIT_BOOK
@@ -223,7 +236,7 @@ package com.photodispatcher.tech{
 			if(printGroup && printGroup.is_reprint) return null;
 			if(!rejects || rejects.length==0) return null;
 			for each(var item:PrintGroupReject in rejects){
-				if(item && item.book==book && (item.sheet==-1 || item.sheet==sheet)){
+				if(item && !item.isDisabled && item.book==book && (item.sheet==-1 || item.sheet==sheet)){
 					return item;
 				}
 			}
@@ -462,8 +475,8 @@ package com.photodispatcher.tech{
 			var dBook:int=dueBook;
 			var dSheet:int=dueSheet;
 			var result:Boolean;
-			var reject:PrintGroupReject= getReject(book,sheet);
-			if(reject && !isRegistred(book,sheet) && rejectedCount>0) rejectedCount--;
+			var reject:PrintGroupReject=disableReject(book,sheet);
+			//if(reject && !isRegistred(book,sheet) && rejectedCount>0) rejectedCount--;
 			if(isComplete){
 				if(canInterrupt && flap) flap.setOff();
 				logSequeceErr('Должен быть следующий заказ: '+ StrUtil.sheetName(book,sheet)+' при завершенной последовательности.' );
@@ -484,8 +497,12 @@ package com.photodispatcher.tech{
 			
 			result=dBook==book && dSheet==sheet;
 			//check if rejected
-			if(result && printGroup && printGroup.is_pdf && !printGroup.is_reprint && reject){
-				logSequeceErr('Не убран брак '+reject.thech_unit_name+' '+ StrUtil.sheetName(book,sheet));
+			if(result && printGroup && !printGroup.is_reprint && reject){
+				if(printGroup.is_pdf ){
+					logMsg('Не убран брак '+reject.thech_unit_name+' '+ StrUtil.sheetName(book,sheet));
+				}else{
+					logMsg('Вставлен брак '+reject.thech_unit_name+' '+ StrUtil.sheetName(book,sheet));
+				}
 			}
 			
 			if(!result){
@@ -534,6 +551,19 @@ package com.photodispatcher.tech{
 				hasWrongSequence=true;
 			}
 			return result;
+		}
+		
+		protected function disableReject(book:int,sheet:int):PrintGroupReject{
+			var reject:PrintGroupReject= getReject(book,sheet);
+			if(!reject) return null;
+			if(reject.thech_unit==TechReject.UNIT_BLOCK 
+				|| reject.thech_unit==TechReject.UNIT_BOOK
+				|| reject.thech_unit==TechReject.UNIT_COVER){
+				rejectedCount-=sheets;
+			}else{
+				rejectedCount--;
+			}
+			return reject;
 		}
 		
 		protected function logSequeceErr(msg:String):void{

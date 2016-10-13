@@ -31,7 +31,12 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PDF_FILENAME_COVERS:String='oblogka';
 		public static const PDF_FILENAME_SHEETS:String='blok';
 		public static const SUBFOLDER_PRINT:String='print';
-		
+
+		public static const CHECK_STATUS_NONE:int=0;
+		public static const CHECK_STATUS_ERR:int=-1;
+		public static const CHECK_STATUS_IN_CHECK:int=10;
+		public static const CHECK_STATUS_OK:int=100;
+
 		public static function sourceIdFromId(pgId:String):int{
 			var arr:Array;
 			if(!pgId) return 0;
@@ -198,6 +203,8 @@ package com.photodispatcher.model.mysql.entities {
 			return new ArrayList(result);
 		}
 
+		
+		public var checkStatus:int=0;
 		
 		public var bookTemplate:BookPgTemplate;
 		//public var butt:int=0;

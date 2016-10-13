@@ -1,6 +1,7 @@
 package com.photodispatcher.tech{
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.model.mysql.entities.PrnQueue;
 	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -19,13 +20,13 @@ package com.photodispatcher.tech{
 		private var pgQueue:Array;
 		private var queueMap:Object;
 		private var isLoading:Boolean;
-		private var isStarted:Boolean;
 
+		/*
 		private var _queue:Array;
-		private function get queue():Array{
+		private function get queueArr():Array{
 			return _queue;
 		}
-		private function set queue(value:Array):void{
+		private function set queueArr(value:Array):void{
 			_queue = value;
 			if(_queue){
 				queueAC=new ArrayCollection(_queue);
@@ -33,13 +34,20 @@ package com.photodispatcher.tech{
 				queueAC=null;
 			}
 		}
+		*/
 		
 		protected var regArray:Array;
 		
 		public var revers:Boolean=false;
 		public var loadRejects:Boolean=false;
 		[Bindable]
-		public var queueId:int;
+		public var isStarted:Boolean;
+		[Bindable]
+		public var queue:PrnQueue;
+		public function get queueId():int{
+			if(!queue) return 0;
+			return queue.id;
+		}
 		[Bindable]
 		public var queueAC:ArrayCollection;
 		[Bindable]
@@ -55,7 +63,7 @@ package com.photodispatcher.tech{
 			
 			currIdx=-1;
 			isLoading=false;
-			queueId=0;
+			queue=null;
 			queueMap=null;
 		}
 
@@ -63,42 +71,52 @@ package com.photodispatcher.tech{
 			return (idx+1).toString();
 		}
 		private function pgCaption(idx:int):String{
-			if(!queue || idx<0 || idx>=queue.length) return '-';
-			var pg:PrintGroup=queue[idx] as PrintGroup;
+			if(!queueAC || idx<0 || idx>=queueAC.length) return '-';
+			var pg:PrintGroup=queueAC.getItemAt(idx) as PrintGroup;
 			if(pg) return pg.id;
 			return '-';
 		}
 		
-		public function register(pgId:String):void{
+		private function getPg(idx:int):PrintGroup{
+			if(!queueAC || idx<0 || idx>=queueAC.length) return null;
+			return queueAC.getItemAt(idx) as PrintGroup; 
+		}
+		
+		public function start():void{
 			isStarted=true;
+			pgQueue=[];
+			currIdx=-1;
+			isLoading=false;
+			queue=null;
+			queueAC=null;
+			queueMap=null;
+		}
+
+		public function stop():void{
+			isStarted=false;
+			isLoading=false;
+		}
+
+		public function register(pgId:String):void{
+			if(!isStarted) return;
 			if(!pgId) return;
-			//is in check
-			//if(currPgId==pgId) return;
+			if(pgQueue.length>0 && pgId==pgQueue[0]) return;
+			/*
 			//is in check queue
 			if(pgQueue.length>0){
 				var idx:int=pgQueue.indexOf(pgId);
 				if(idx>-1) return;
 			}
+			*/
 			pgQueue.push(pgId);
 			checkNext();
 		}
 		
-		public function stop():void{
-			pgQueue=[];
-			isStarted=false;
-			
-			currIdx=-1;
-			isLoading=false;
-			queueId=0;
-			queue=null;
-			queueMap=null;
-		}
-		
 		protected function get dueIndex():int{
-			if(!queue) return -1;
+			if(!queueAC) return -1;
 			if(currIdx==-1){
 				//start queue
-				if(revers) return queue.length-1;
+				if(revers) return queueAC.length-1;
 				return 0;
 			}
 			var idx:int=currIdx;
@@ -107,7 +125,7 @@ package com.photodispatcher.tech{
 			}else{
 				idx++;
 			}
-			if(idx<0 || idx>=queue.length) idx=-1;
+			if(idx<0 || idx>=queueAC.length) idx=-1;
 			return idx;
 		}
 		
@@ -126,23 +144,31 @@ package com.photodispatcher.tech{
 				if(!queueMap.hasOwnProperty(currId)){
 					//check if queue complited
 					//TODO check by registred, index can be wrong (wrong seq)
-					if(registred<queue.length){
-						logErr('Партия '+queueId.toString() +' не завершена: '+registred.toString() +' из '+queue.length.toString());
+					if(registred<queueAC.length){
+						logErr('Партия '+queueId.toString() +' не завершена: '+registred.toString() +' из '+queueAC.length.toString());
 					}
 					break;
 				}
 				idx=queueMap[currId];
 				//check index
 				//TODO check if currentQueueIndex out of Queue lenght 
-				if(idx!=dueIndex){
+				if(idx!=dueIndex && idx!=currIdx){
 					logErr('Ошибка последовательности в партии: '+queueId.toString()+'. '+ indexCaption(idx)+' вместо '+indexCaption(dueIndex));
 					logMsg(currId+' вместо '+pgCaption(dueIndex));
+					//mark pg
+					if(getPg(idx)) getPg(idx).checkStatus=PrintGroup.CHECK_STATUS_ERR; 
+				}else{
+					//mark pg
+					if(getPg(idx)) getPg(idx).checkStatus=PrintGroup.CHECK_STATUS_IN_CHECK;
 				}
 				//register
 				if(regArray[idx] == undefined){
 					registred++;
 					regArray[idx]=new Date();
 				}
+				//mark previouse pg
+				var pg:PrintGroup=getPg(currIdx);
+				if(pg && pg.checkStatus==PrintGroup.CHECK_STATUS_IN_CHECK) pg.checkStatus=PrintGroup.CHECK_STATUS_OK;
 				currIdx=idx;
 				pgQueue.shift();
 			}
@@ -155,16 +181,17 @@ package com.photodispatcher.tech{
 			if(!pgQueue || pgQueue.length==0) return;
 			var pgId:String=pgQueue[0];
 			isLoading=true;
-			queue=null;
 			currIdx=-1;
 			queueMap=null;
-			queueId=0;
+			queue=null;
+			queueAC=null;
 			regArray=null;
 			registred=0;
 			
 			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latchR:DbLatch= new DbLatch(true);
 			latchR.addEventListener(Event.COMPLETE,onloadQueue);
+			//TODO load Queue vs items
 			latchR.addLatch(svc.loadQueueItemsByPG(pgId, loadRejects),pgId);
 			latchR.start();
 		}
@@ -188,29 +215,26 @@ package com.photodispatcher.tech{
 				checkNext();
 				return;
 			}
-			if(latch.complite) queue=latch.lastDataArr;
-			if(!queue || queue.length==0){
+			if(latch.complite) queue=latch.lastDataItem as PrnQueue;
+			if(!queue || queue.printGroups.length==0){
 				logMsg('Ошибка определения партии для : '+pgId+'. '+latch.lastError);
-				queue=null;
 				pgQueue.shift();
 				isLoading=false;
 				checkNext();
 				return;
 			}
+			queueAC=queue.printGroups;
 			//init regArray
-			regArray=new Array(queue.length);
+			regArray=new Array(queueAC.length);
 			//build map
-			var pg:PrintGroup=queue[0] as PrintGroup;
-			queueId=pg.prn_queue;
 			queueMap=new Object();
-			idx=0;
-			for each(pg in queue){
-				queueMap[pg.id]=idx;
-				idx++;
+			var pg:PrintGroup;
+			for (idx= 0; idx< queueAC.length; idx++){
+				pg=queueAC.getItemAt(idx) as PrintGroup;
+				if(pg && pg.id) queueMap[pg.id]=idx;
 			}
 			isLoading=false;
 			checkNext();
-			
 		}
 
 		protected function logErr(msg:String):void{
