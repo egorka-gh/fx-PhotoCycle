@@ -21,25 +21,10 @@ package com.photodispatcher.tech{
 		private var queueMap:Object;
 		private var isLoading:Boolean;
 
-		/*
-		private var _queue:Array;
-		private function get queueArr():Array{
-			return _queue;
-		}
-		private function set queueArr(value:Array):void{
-			_queue = value;
-			if(_queue){
-				queueAC=new ArrayCollection(_queue);
-			}else{
-				queueAC=null;
-			}
-		}
-		*/
-		
 		protected var regArray:Array;
 		
 		public var revers:Boolean=false;
-		public var loadRejects:Boolean=false;
+		public var loadRejects:Boolean=true;
 		[Bindable]
 		public var isStarted:Boolean;
 		[Bindable]
@@ -54,14 +39,23 @@ package com.photodispatcher.tech{
 		public var currIdx:int;
 		[Bindable]
 		public var registred:int;
+		[Bindable]
+		public var bookRegister:TechBookRegister;
 
+		private var strictMode:Boolean;
 		
-		public function TechQueueRegister(){
+		/*
+		*strictMode - manual mode, strict queue sequence vs book checking 
+		*/
+		public function TechQueueRegister(strictMode:Boolean=true){
+			
 			super(null);
+			this.strictMode=strictMode;
+			
 			pgQueue=[];
 			isStarted=false;
 			
-			currIdx=-1;
+			currIdx=0;
 			isLoading=false;
 			queue=null;
 			queueMap=null;
@@ -85,11 +79,12 @@ package com.photodispatcher.tech{
 		public function start():void{
 			isStarted=true;
 			pgQueue=[];
-			currIdx=-1;
+			currIdx=0;
 			isLoading=false;
 			queue=null;
 			queueAC=null;
 			queueMap=null;
+			lastId='';
 		}
 
 		public function stop():void{
@@ -97,10 +92,10 @@ package com.photodispatcher.tech{
 			isLoading=false;
 		}
 
-		public function register(pgId:String):void{
+		public function register(pgId:String, book:int=0):void{
 			if(!isStarted) return;
 			if(!pgId) return;
-			if(pgQueue.length>0 && pgId==pgQueue[0]) return;
+			var techBook:TechBook= new TechBook(book,pgId);
 			/*
 			//is in check queue
 			if(pgQueue.length>0){
@@ -108,10 +103,11 @@ package com.photodispatcher.tech{
 				if(idx>-1) return;
 			}
 			*/
-			pgQueue.push(pgId);
+			pgQueue.push(techBook);
 			checkNext();
 		}
 		
+		/*
 		protected function get dueIndex():int{
 			if(!queueAC) return -1;
 			if(currIdx==-1){
@@ -128,6 +124,9 @@ package com.photodispatcher.tech{
 			if(idx<0 || idx>=queueAC.length) idx=-1;
 			return idx;
 		}
+		*/
+		
+		private var lastId:String;
 		
 		private function checkNext():void{
 			if(isLoading) return;
@@ -137,39 +136,91 @@ package com.photodispatcher.tech{
 			}
 				
 			var idx:int;
-			var currId:String;
+			var currBook:TechBook;
 			
 			while(pgQueue.length>0){
-				currId=pgQueue[0];
-				if(!queueMap.hasOwnProperty(currId)){
+				currBook=pgQueue[0] as TechBook;
+				
+				while(currBook.printGroupId==lastId){
+					if(strictMode){
+						if(!bookRegister || bookRegister.printgroup.id!=currBook.printGroupId) createBookRegister();
+						if(!bookRegister.register(currBook.book)){
+							//stop on current
+							pgQueue=[];
+							return; 
+						}
+					}
+					pgQueue.shift();
+					continue;
+				}
+				lastId=currBook.printGroupId;
+
+				//TODO bookRegister Complited ??
+
+				//new queue? 
+				if(!queueMap.hasOwnProperty(currBook.printGroupId)){
 					//check if queue complited
-					//TODO check by registred, index can be wrong (wrong seq)
+					//TODO check by index?  
+					//check by registred
 					if(registred<queueAC.length){
 						logErr('Партия '+queueId.toString() +' не завершена: '+registred.toString() +' из '+queueAC.length.toString());
+						//TODO bookRegister Complited ??
 					}
 					break;
 				}
-				idx=queueMap[currId];
+				
+				idx=queueMap[currBook.printGroupId];
+				var pg:PrintGroup=getPg(currIdx);
+				var checkPg:PrintGroup;
 				//check index
-				//TODO check if currentQueueIndex out of Queue lenght 
-				if(idx!=dueIndex && idx!=currIdx){
-					logErr('Ошибка последовательности в партии: '+queueId.toString()+'. '+ indexCaption(idx)+' вместо '+indexCaption(dueIndex));
-					logMsg(currId+' вместо '+pgCaption(dueIndex));
+				if(idx!=currIdx){
+					logErr('Ошибка последовательности в партии: '+queueId.toString()+'. '+ indexCaption(idx)+' вместо '+indexCaption(currIdx));
+					logMsg(currBook.printGroupId+' вместо '+pgCaption(currIdx));
 					//mark pg
-					if(getPg(idx)) getPg(idx).checkStatus=PrintGroup.CHECK_STATUS_ERR; 
+					if(pg) pg.checkStatus=PrintGroup.CHECK_STATUS_ERR;
+					checkPg=getPg(idx);
+					if(checkPg) checkPg.checkStatus=PrintGroup.CHECK_STATUS_ERR;
+					if(strictMode){
+						//stop on current ???
+						pgQueue=[];
+						return; 
+					}
 				}else{
 					//mark pg
-					if(getPg(idx)) getPg(idx).checkStatus=PrintGroup.CHECK_STATUS_IN_CHECK;
+					if(pg){
+						pg.checkStatus=strictMode?PrintGroup.CHECK_STATUS_IN_CHECK:PrintGroup.CHECK_STATUS_OK;
+						//check reprint in strict mode
+						if(strictMode && pg.is_reprint && !queue.is_reprint){
+							logErr('Перепечатка: '+pg.id);
+						}
+					}
+					//register print group
+					if(regArray[currIdx] == undefined){
+						registred++;
+						regArray[currIdx]=new Date();
+					}
+					if(strictMode){
+						//register book
+						if(!bookRegister || bookRegister.printgroup.id!=currBook.printGroupId) createBookRegister();
+						if(!bookRegister.register(currBook.book)){
+							//stop on current
+							pgQueue=[];
+							return; 
+						}
+						//check next
+						//TODO if bookRegister.register complited??????
+						//??????????? currIdx++;
+					}else{
+						//move index && check next
+						currIdx=idx;
+					}
 				}
-				//register
-				if(regArray[idx] == undefined){
-					registred++;
-					regArray[idx]=new Date();
+				if(strictMode){
+					//mark previouse pg
+					pg=getPg(currIdx-1);
+					if(pg && pg.checkStatus==PrintGroup.CHECK_STATUS_IN_CHECK) pg.checkStatus=PrintGroup.CHECK_STATUS_OK;
 				}
-				//mark previouse pg
-				var pg:PrintGroup=getPg(currIdx);
-				if(pg && pg.checkStatus==PrintGroup.CHECK_STATUS_IN_CHECK) pg.checkStatus=PrintGroup.CHECK_STATUS_OK;
-				currIdx=idx;
+
 				pgQueue.shift();
 			}
 			
@@ -186,7 +237,9 @@ package com.photodispatcher.tech{
 			queue=null;
 			queueAC=null;
 			regArray=null;
+			lastId='';
 			registred=0;
+			destroyBookRegister();
 			
 			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latchR:DbLatch= new DbLatch(true);
@@ -223,16 +276,29 @@ package com.photodispatcher.tech{
 				checkNext();
 				return;
 			}
-			queueAC=queue.printGroups;
+			
+			var pg:PrintGroup;
+			queueAC=new ArrayCollection();
+			for (idx= 0; idx< queue.printGroups.length; idx++){
+				if(revers){
+					pg=queue.printGroups(queue.printGroups.length-idx-1) as PrintGroup;
+				}else{
+					pg=queue.printGroups.getItemAt(idx) as PrintGroup;
+				}					
+				if(pg) pg.checkOrder=idx+1;
+				queueAC.addItem(pg);
+			}
+			
 			//init regArray
 			regArray=new Array(queueAC.length);
+			
 			//build map
 			queueMap=new Object();
-			var pg:PrintGroup;
 			for (idx= 0; idx< queueAC.length; idx++){
 				pg=queueAC.getItemAt(idx) as PrintGroup;
 				if(pg && pg.id) queueMap[pg.id]=idx;
 			}
+			
 			isLoading=false;
 			checkNext();
 		}
