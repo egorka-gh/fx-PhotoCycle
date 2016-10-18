@@ -13,8 +13,10 @@ package com.photodispatcher.tech{
 	
 	import org.granite.tide.Tide;
 	
+	[Event(name="clear", type="flash.events.Event")]
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]
+	
 	public class TechQueueRegister extends EventDispatcher{
 		
 		private var pgQueue:Array;
@@ -23,6 +25,7 @@ package com.photodispatcher.tech{
 
 		protected var regArray:Array;
 		
+		[Bindable]
 		public var revers:Boolean=false;
 		public var loadRejects:Boolean=true;
 		[Bindable]
@@ -76,20 +79,37 @@ package com.photodispatcher.tech{
 			return queueAC.getItemAt(idx) as PrintGroup; 
 		}
 		
+		public function get isComplited():Boolean{
+			if(!queue || !queueAC || queueAC.length==0) return true;
+			if(strictMode) return currIdx>=queueAC.length && (!bookRegister || bookRegister.isComplited);
+			return registred>=queueAC.length;
+		}
+
+		
 		public function start():void{
 			isStarted=true;
 			pgQueue=[];
-			currIdx=0;
+			currIdx=-1;
 			isLoading=false;
 			queue=null;
 			queueAC=null;
 			queueMap=null;
 			lastId='';
+			destroyBookRegister();
 		}
 
 		public function stop():void{
 			isStarted=false;
 			isLoading=false;
+		}
+
+		public function load(pgId:String):void{
+			if(isLoading) return;
+			//reset
+			start();
+			var techBook:TechBook= new TechBook(-1,pgId);
+			pgQueue.push(techBook);
+			loadQueue();
 		}
 
 		public function register(pgId:String, book:int=0):void{
@@ -107,25 +127,6 @@ package com.photodispatcher.tech{
 			checkNext();
 		}
 		
-		/*
-		protected function get dueIndex():int{
-			if(!queueAC) return -1;
-			if(currIdx==-1){
-				//start queue
-				if(revers) return queueAC.length-1;
-				return 0;
-			}
-			var idx:int=currIdx;
-			if(revers){
-				idx--;
-			}else{
-				idx++;
-			}
-			if(idx<0 || idx>=queueAC.length) idx=-1;
-			return idx;
-		}
-		*/
-		
 		private var lastId:String;
 		
 		private function checkNext():void{
@@ -141,75 +142,103 @@ package com.photodispatcher.tech{
 			while(pgQueue.length>0){
 				currBook=pgQueue[0] as TechBook;
 				
-				while(currBook.printGroupId==lastId){
+				if(currBook.printGroupId==lastId){
 					if(strictMode){
-						if(!bookRegister || bookRegister.printgroup.id!=currBook.printGroupId) createBookRegister();
-						if(!bookRegister.register(currBook.book)){
+						//register book
+						if(bookRegister && currBook.book!=0 && !bookRegister.register(currBook.book)){
 							//stop on current
 							pgQueue=[];
 							return; 
 						}
+						if(bookRegister && bookRegister.isComplited){
+							lastId='';
+							//next pg
+							currIdx++;
+						}
 					}
+					//book - ok, check next
 					pgQueue.shift();
 					continue;
+				}else{
+					if(strictMode){
+						//bookRegister Complited ??
+						if(bookRegister && !bookRegister.isComplited){
+							logErr('Последовательности книг не завершена '+bookRegister.printgroup.id+'. ');
+							//stop on current
+							pgQueue=[];
+							return; 
+						}
+						//createBookRegister();
+					}
 				}
+
 				lastId=currBook.printGroupId;
 
-				//TODO bookRegister Complited ??
 
 				//new queue? 
 				if(!queueMap.hasOwnProperty(currBook.printGroupId)){
 					//check if queue complited
 					//TODO check by index?  
 					//check by registred
-					if(registred<queueAC.length){
-						logErr('Партия '+queueId.toString() +' не завершена: '+registred.toString() +' из '+queueAC.length.toString());
-						//TODO bookRegister Complited ??
+					if(!isComplited){
+						if(strictMode){
+							logErr('Партия '+queueId.toString() +' не завершена: '+indexCaption(currIdx)+' из '+queueAC.length.toString());
+							//stop on current
+							pgQueue=[];
+							return; 
+						}else{
+							logErr('Партия '+queueId.toString() +' не завершена: '+registred.toString() +' из '+queueAC.length.toString());
+						}
 					}
+					//load new queue
 					break;
 				}
-				
+				///TODO check if currIdx out of sequence
 				idx=queueMap[currBook.printGroupId];
 				var pg:PrintGroup=getPg(currIdx);
-				var checkPg:PrintGroup;
 				//check index
 				if(idx!=currIdx){
 					logErr('Ошибка последовательности в партии: '+queueId.toString()+'. '+ indexCaption(idx)+' вместо '+indexCaption(currIdx));
 					logMsg(currBook.printGroupId+' вместо '+pgCaption(currIdx));
 					//mark pg
 					if(pg) pg.checkStatus=PrintGroup.CHECK_STATUS_ERR;
-					checkPg=getPg(idx);
-					if(checkPg) checkPg.checkStatus=PrintGroup.CHECK_STATUS_ERR;
 					if(strictMode){
 						//stop on current ???
 						pgQueue=[];
 						return; 
 					}
 				}else{
-					//mark pg
-					if(pg){
-						pg.checkStatus=strictMode?PrintGroup.CHECK_STATUS_IN_CHECK:PrintGroup.CHECK_STATUS_OK;
-						//check reprint in strict mode
-						if(strictMode && pg.is_reprint && !queue.is_reprint){
-							logErr('Перепечатка: '+pg.id);
-						}
-					}
 					//register print group
 					if(regArray[currIdx] == undefined){
 						registred++;
 						regArray[currIdx]=new Date();
 					}
-					if(strictMode){
-						//register book
-						if(!bookRegister || bookRegister.printgroup.id!=currBook.printGroupId) createBookRegister();
-						if(!bookRegister.register(currBook.book)){
-							//stop on current
-							pgQueue=[];
-							return; 
+					//mark pg
+					if(pg){
+						if(strictMode){
+							pg.checkStatus=PrintGroup.CHECK_STATUS_IN_CHECK;
+							//check reprint in strict mode
+							if(pg.is_reprint && !queue.is_reprint){
+								logErr('Перепечатка: '+pg.id);
+							}
+							//register book
+							createBookRegister(pg);
+							if(currBook.book!=0 && !bookRegister.register(currBook.book)){
+								//stop on current
+								pgQueue=[];
+								return; 
+							}
+						}else{
+							pg.checkStatus=PrintGroup.CHECK_STATUS_OK;
 						}
+					}
+					if(strictMode){
 						//check next
-						//TODO if bookRegister.register complited??????
-						//??????????? currIdx++;
+						if(bookRegister && bookRegister.isComplited){
+							lastId='';
+							//must be next pg
+							currIdx++;
+						}
 					}else{
 						//move index && check next
 						currIdx=idx;
@@ -222,15 +251,31 @@ package com.photodispatcher.tech{
 				}
 
 				pgQueue.shift();
+				if(isComplited) dispatchEvent(new Event(Event.COMPLETE));
 			}
 			
 			if(pgQueue.length>0) loadQueue(); 
 		}
 
+		private function createBookRegister(pg:PrintGroup):void{
+			if(!pg) return;
+			destroyBookRegister();
+			bookRegister= new TechBookRegister(pg,revers);
+			bookRegister.addEventListener(ErrorEvent.ERROR, onBookRegisterErr);
+		}
+		private function onBookRegisterErr(event:ErrorEvent):void{
+			dispatchEvent(event.clone());
+		}
+		private function destroyBookRegister():void{
+			if(!bookRegister) return;
+			bookRegister.removeEventListener(ErrorEvent.ERROR, onBookRegisterErr);
+			bookRegister=null;
+		}
+		
 		private function loadQueue():void{
 			if(!isStarted) return;
 			if(!pgQueue || pgQueue.length==0) return;
-			var pgId:String=pgQueue[0];
+			var pgId:String=(pgQueue[0] as TechBook).printGroupId;
 			isLoading=true;
 			currIdx=-1;
 			queueMap=null;
@@ -247,6 +292,8 @@ package com.photodispatcher.tech{
 			//TODO load Queue vs items
 			latchR.addLatch(svc.loadQueueItemsByPG(pgId, loadRejects),pgId);
 			latchR.start();
+			//signal previose complited
+			dispatchEvent(new Event(Event.CLEAR));
 		}
 		protected function onloadQueue(e:Event):void{
 			var latch:DbLatch=e.target as DbLatch;
@@ -262,8 +309,9 @@ package com.photodispatcher.tech{
 				isLoading=false;
 				return;
 			}
-			if(pgQueue[0]!=pgId){
-				logMsg('Ошибка выполнения: вершина стека: '+pgQueue[0]+'; ожидалось: ' +pgId+'.');
+			var tBook:TechBook=pgQueue[0] as TechBook;
+			if(tBook.printGroupId!=pgId){
+				logMsg('Ошибка выполнения: вершина стека: '+tBook.printGroupId+'; ожидалось: ' +pgId+'.');
 				isLoading=false;
 				checkNext();
 				return;
@@ -281,11 +329,14 @@ package com.photodispatcher.tech{
 			queueAC=new ArrayCollection();
 			for (idx= 0; idx< queue.printGroups.length; idx++){
 				if(revers){
-					pg=queue.printGroups(queue.printGroups.length-idx-1) as PrintGroup;
+					pg=queue.printGroups.getItemAt(queue.printGroups.length-idx-1) as PrintGroup;
 				}else{
 					pg=queue.printGroups.getItemAt(idx) as PrintGroup;
 				}					
-				if(pg) pg.checkOrder=idx+1;
+				if(pg){
+					if(pg.is_reprint && !queue.is_reprint) pg.checkStatus=PrintGroup.CHECK_STATUS_REPRINT;
+					pg.checkOrder=idx+1;
+				}
 				queueAC.addItem(pg);
 			}
 			
@@ -298,9 +349,16 @@ package com.photodispatcher.tech{
 				pg=queueAC.getItemAt(idx) as PrintGroup;
 				if(pg && pg.id) queueMap[pg.id]=idx;
 			}
-			
+			currIdx=0;
 			isLoading=false;
-			checkNext();
+			if(tBook.book==-1){
+				//just load & stop
+				pg=queueAC.getItemAt(0) as PrintGroup;
+				createBookRegister(pg);
+				pgQueue=[];
+			}else{
+				checkNext();
+			}
 		}
 
 		protected function logErr(msg:String):void{

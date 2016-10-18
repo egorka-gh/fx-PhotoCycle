@@ -324,6 +324,45 @@ package com.photodispatcher.context{
 			return latch;
 		}
 
+		public static function initTechBatch():DbLatch{
+			var latch:DbLatch=new DbLatch();
+			latch.debugName='initTechbatch';
+			//register services
+			Tide.getInstance().addComponents([
+				DictionaryService, 
+				SourceService, 
+				//LabResizeService, 
+				OrderStateService, 
+				//BookSynonymService, 
+				//RollService, 
+				//ContentFilterService, 
+				//LabService,
+				TechPointService,
+				TechPickerService,
+				TechService,
+				OrderService,
+				PrintGroupService,
+				PrnStrategyService//+
+			]);
+			
+			//fill from config
+			//Context.fillFromConfig();
+			
+			//init static maps
+			latch.join(Context.initSourceLists());
+			latch.join(Context.initAttributeLists());
+			//latch.join(LabResize.initSizeMap());
+			latch.join(OrderState.initStateMap());
+			//latch.join(BookSynonym.initSynonymMap());
+			//latch.join(FieldValue.initSynonymMap());
+			//latch.join(Roll.initItemsMap());
+			//latch.join(LabPrintCode.initChanelMap());
+			//latch.join(AttrJsonMap.initJsonMap());
+			
+			//latch.start();//start at caller?
+			return latch;
+		}
+
 		public static function initPhotoGlue():DbLatch{
 			var latch:DbLatch=new DbLatch();
 			latch.debugName='initPhotoPicker';

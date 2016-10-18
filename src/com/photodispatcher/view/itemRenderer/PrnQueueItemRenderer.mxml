@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false">
+<fx:Script>
+	<![CDATA[
+		import com.photodispatcher.model.mysql.entities.PrintGroup;
+		
+		
+		
+		
+		protected function getStateColor(state:int):int{
+			switch(state){
+				case PrintGroup.CHECK_STATUS_ERR:
+					return 0xf90000; //красный
+					break;
+				case PrintGroup.CHECK_STATUS_OK:
+					return 0x00DD00; //зеленый
+					break;
+				case PrintGroup.CHECK_STATUS_IN_CHECK:
+					return 0xf9f900; //желтый
+					break;
+				case PrintGroup.CHECK_STATUS_REPRINT:
+					//return 0xbbbbbb; //серый
+					return 0xf900f9; //малиновый
+					break;
+				default:
+					return 0xFFFFFF; //белый
+					break;
+			}
+		}
+
+		[Bindable]
+		private var pg:PrintGroup;
+		
+		override public function set data(value:Object):void{
+			super.data = value;
+			pg=value as PrintGroup;
+		}
+		
+	]]>
+</fx:Script>	
+	
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="hovered"/>
+		<s:State name="selected"/>
+	</s:states> 
+
+	<s:Rect  top="1" left="0" right="0" bottom="1">
+		<s:fill>
+			<s:SolidColor color="{pg?getStateColor(pg.checkStatus):0xFFFFFF}"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="#cccccc" color.selected="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+
+	<s:Label text="{pg.checkOrder} : {pg.id}" top="4" left="1" right="1" bottom="2" maxDisplayedLines="1"/>
+	
+</s:ItemRenderer>

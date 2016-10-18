@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechLog;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.tech.TechQueueRegister;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+		
+			public static const LOG_LEN_LIMIT:int=4000;
+			public static const BAR_LEN_LIMIT:int=2000;
+			//public static const REGLISTLIMIT:int=100;
+			
+			//public var soundOffOnReprint:Boolean;
+			
+			public var techPoint:TechPoint;
+			
+			private var _barcodeReaders:Array;
+			public function get barcodeReaders():Array{
+				return _barcodeReaders;
+			}
+			public function set barcodeReaders(value:Array):void{
+				var reader:ComReader;
+				//stop old
+				if(_barcodeReaders){
+					for each(reader in _barcodeReaders){
+						if(reader){
+							reader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+							reader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+							reader.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+							reader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+						}
+					}
+				}
+				//start new
+				_barcodeReaders = value;
+				if(_barcodeReaders){
+					for each(reader in _barcodeReaders){
+						if(reader){
+							reader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+							reader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+							reader.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+							reader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+						}
+					}
+				}
+			}
+
+			/*
+			private var _barcodeReader:ComReader;
+			public function get barcodeReader():ComReader{
+				return _barcodeReader;
+			}
+			public function set barcodeReader(value:ComReader):void{
+				if(_barcodeReader){
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+				_barcodeReader = value;
+				if(_barcodeReader){
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onReaderConnect);
+					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+				}
+			}
+			*/
+			
+			[Bindable]
+			private var queueRegister:TechQueueRegister;
+			
+			private var logText:String = '';
+
+			private var _barText:String='';
+			[Bindable]
+			public function get barText():String{
+				return _barText;
+			}
+			public function set barText(value:String):void{
+				if(!value){
+					_barText='';
+					return;
+				}
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				var txt:String=fmt.format(new Date())+': '+ value+_barText; 
+				if(txt.length>BAR_LEN_LIMIT) txt=txt.substr(0,BAR_LEN_LIMIT);
+				_barText=txt;
+			}
+
+
+			private function onError(event:BarCodeEvent):void{
+				barText=event.barcode+'\n';
+				logToScreen('Ошибка: '+event.error,true);
+				
+			}
+
+			private function onBarDisconnect(event:BarCodeEvent):void{
+				log('Отключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			private function onReaderConnect(event:BarCodeEvent):void{
+				log('Сканер ШК подключен '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+
+			private function onRegisterMsg(event:ErrorEvent):void{
+				logToScreen(event.text,event.errorID>0);
+			}
+
+			private function onNewQueue(event:Event):void{
+				barText='';
+			}
+
+			private function onQueueComplited(event:Event):void{
+				logToScreen('Партия завершена',false);
+			}
+			
+			private var currBarcode:String='';
+			
+			private function onBarCode(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				if(barcode==currBarcode) return; //doublescan or more then 1 barreader
+				currBarcode=barcode;
+				//parce barcode
+				var pgId:String;
+				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				if(!pgId){
+					//TODO rise err
+					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
+					return;
+				}
+				
+				var bookNum:int=int(barcode.substr(0,3));
+				var pageNum:int=int(barcode.substr(6,2));
+				queueRegister.register(pgId,bookNum);
+				barText=barcode+'\n';
+			}
+			
+			public function log(mesage:String):void{
+				logToScreen(mesage);
+			}
+			public function clear():void{
+				cleanLog();
+			}
+			
+			private var sound:Sound;
+			
+			public function set alertSound(filepath:String):void{
+				if(!filepath) return;
+				var file:File= new File(filepath);
+				if(!file.exists) return;
+				sound= new Sound(new URLRequest(file.url));
+			}
+
+			
+			private function logToScreen(msg:String, isError:Boolean=false):void{
+				var color:String=isError?"'#990000'":"'#006600'";
+				var bold:String=isError?"fontWeight='bold'":'';
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				logText ="<span>"+fmt.format(new Date())+" </span>"+"<span color="+color+" "+bold+">"+msg+"</span> <br />"+logText ;
+
+				//cut
+				if(logText.length> LOG_LEN_LIMIT){
+					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
+					if(idx!=-1){
+						logText=logText.substr(0,idx+6);
+					}
+				}
+
+				try{
+					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
+				}catch(error:Error){
+					trace('TextFlow err, txt: '+logText);
+					trace(error.message);
+				}
+				
+				if(isError && sound){
+					//TODO
+						try{
+							sound.play();
+						}catch(error:Error){}
+				}
+
+				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
+			}
+
+			
+			public function start():void{
+				cleanLog();
+				barText='';
+				if(!techPoint){
+					//TODO rise err or log in screen
+					logToScreen('---------- Не задана технологическая точка ----------',true);
+				}
+				
+				var reader:ComReader;
+				if(barcodeReaders){
+					for each(reader in barcodeReaders){
+						if(reader) reader.start();
+					}
+				}
+				//if(barcodeReader) barcodeReader.start();
+				if(!queueRegister){
+					queueRegister=new TechQueueRegister(true);
+					queueRegister.addEventListener(ErrorEvent.ERROR,onRegisterMsg);
+					queueRegister.addEventListener(Event.COMPLETE,onQueueComplited);
+					queueRegister.addEventListener(Event.CLEAR,onNewQueue);
+				}
+				queueRegister.revers==Boolean(Context.getAttribute("reversOrder"));
+				queueRegister.start();
+			}
+
+			public function stop():void{
+				cleanLog();
+				queueRegister.stop();
+				var reader:ComReader;
+				if(barcodeReaders){
+					for each(reader in barcodeReaders){
+						if(reader) reader.stop();
+					}
+				}
+				//if(barcodeReader) barcodeReader.stop();
+				
+			}
+			
+			private function cleanLog():void{
+				logText='';
+				logTextArea.text='';
+				barText='';
+			}
+			
+			protected function lstOreders_changingHandler(event:IndexChangeEvent):void{
+				event.preventDefault();
+			}
+			
+			protected function btAddManual_clickHandler(event:MouseEvent):void{
+				var pop:PGFindePopup=new PGFindePopup();
+				pop.addEventListener(PopUpEvent.CLOSE, onAddManual);
+				pop.open(null,true);
+			}
+			private function onAddManual(event:PopUpEvent):void{
+				var pop:PGFindePopup=event.target as PGFindePopup;
+				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onAddManual);
+				if(event.commit){
+					var pg:PrintGroup=event.data as PrintGroup;
+					if(pg && queueRegister && queueRegister.isStarted) queueRegister.load(pg.id);
+				}
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" >
+			<s:Label text="Порядок: {queueRegister.revers?'Обратный':'Прямой'}"/>
+			<s:Spacer width="100%"/>
+			<s:Label text="Партия: {queueRegister.queue.id} {queueRegister.queue.label}"/>
+			<s:Label text="Заказов: {queueRegister.registred}:{queueRegister.queueAC.length}"/>
+			<s:Label text="Заказ: {queueRegister.bookRegister.printgroup.id}"/>
+			<s:Label text="Книг: {queueRegister.bookRegister.booksToRegister}"/>
+		</s:HGroup>
+		<s:HGroup gap="5" width="100%" height="100%">
+			<s:VGroup minWidth="300" width="100%" height="100%">
+				<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
+				<s:Group width="100%" height="300">
+					<s:Rect  top="0" left="0" right="0" bottom="0">
+						<s:fill>
+							<!--<s:SolidColor color="{pg?getStateColor(pg.checkStatus):0xFFFFFF}"/>-->
+							<s:SolidColor color="{queueRegister.queue?0xffffff:0xcccccc}"/>
+						</s:fill>
+						<s:stroke>
+							<s:SolidColorStroke color="0" weight="1"/>
+						</s:stroke>
+					</s:Rect>
+					<s:VGroup top="5" left="5" right="5" bottom="5" gap="10" verticalAlign="middle" fontSize="20">
+						<s:Label text="Партия: {queueRegister.queue.id} {queueRegister.queue.label}"
+								 textAlign="center" width="100%" maxDisplayedLines="1"/>
+						<s:Label text="Заказов: {queueRegister.queueAC.length}"
+								 textAlign="center" width="100%" maxDisplayedLines="1"/>
+						<s:Label text="Заказ: {queueRegister.bookRegister.printgroup.id}{queueRegister.bookRegister.printgroup.is_reprint?' Перепечатка':''}"
+								 backgroundColor="{0xf900f9}" backgroundAlpha="{(queueRegister.bookRegister &amp;&amp; queueRegister.bookRegister.printgroup.is_reprint)?0.7:0}"
+								 textAlign="center" width="100%" maxDisplayedLines="1"/>
+						<s:Label text="Книг: {queueRegister.bookRegister.booksToRegister}"
+								 textAlign="center" width="100%" maxDisplayedLines="1"/>
+						<s:Label text="Книга: {queueRegister.bookRegister.currBook.book}{queueRegister.bookRegister.currBook.isRejected?' Брак':''}"
+								 backgroundColor="{0xbbbbbb}" backgroundAlpha="{queueRegister.bookRegister &amp;&amp; queueRegister.bookRegister.currBook.isRejected?0.7:0}"
+								 textAlign="center" width="100%" maxDisplayedLines="1"/>
+					</s:VGroup>
+				</s:Group>
+			</s:VGroup>
+			<s:VGroup height="100%">
+				<s:Label text="Заказы"/>
+				<s:List id="lstOreders"
+						dataProvider="{queueRegister.queueAC}"
+						selectedIndex="{queueRegister.currIdx}"
+						itemRenderer="com.photodispatcher.view.itemRenderer.PrnQueueItemRenderer"
+						changing="lstOreders_changingHandler(event)"
+						width="110" height="100%"/>
+			</s:VGroup>
+			<s:VGroup height="100%">
+				<s:Label text="Книги"/>
+				<s:List id="lstBooks"
+						dataProvider="{queueRegister.bookRegister.booksAC}"
+						selectedIndex="{queueRegister.bookRegister.currIdx}"
+						itemRenderer="com.photodispatcher.view.itemRenderer.TechBookRenderer"
+						changing="lstOreders_changingHandler(event)"
+						width="60" height="100%"/>
+			</s:VGroup>
+			<s:VGroup height="100%">
+				<s:Label text="ШК"/>
+				<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="160" height="100%" editable="false"/>
+			</s:VGroup>
+		</s:HGroup>
+		<s:HGroup gap="7" width="100%">
+			<s:Button label="Очистить" click="{cleanLog()}"/>
+			<s:Button id="btAddManual" label="Найти заказ" click="btAddManual_clickHandler(event)"/>
+		</s:HGroup> 
+	</s:VGroup>
+	
+</s:Group>

@@ -36,6 +36,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const CHECK_STATUS_ERR:int=-1;
 		public static const CHECK_STATUS_IN_CHECK:int=10;
 		public static const CHECK_STATUS_REJECT:int=20;
+		public static const CHECK_STATUS_REPRINT:int=30;
 		public static const CHECK_STATUS_OK:int=100;
 
 		public static function sourceIdFromId(pgId:String):int{

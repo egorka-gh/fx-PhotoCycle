@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   xmlns:view="com.photodispatcher.view.*" 
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   showStatusBar="false"
+					   creationComplete="{initApp()}" 
+					   closing="windowedapplication1_closingHandler(event)" 
+					   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
+			import com.photodispatcher.model.mysql.services.TechPointService;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.EBS6kController;
+			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.ModalPopUp;
+			import com.photodispatcher.view.config.DatabasePopup;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			
+			[Bindable]
+			private var techPionts:ArrayCollection;
+			[Bindable]
+			private var coms:ArrayCollection= new ArrayCollection;
+			
+			[Bindable]
+			private var barcodeReaders:Array; //ComReader
+			//private var barcodeReader:ComReader;
+			
+			[Bindable]
+			private var techPointObj:TechPoint;
+			
+			protected var _reversOrder:Boolean;
+			[Bindable]
+			public function get reversOrder():Boolean{
+				return _reversOrder;
+			}
+			public function set reversOrder(value:Boolean):void{
+				_reversOrder = value;
+				Context.setAttribute("reversOrder", value);
+			}
+			
+
+			protected var _alertSound:String;
+			[Bindable]
+			public function get alertSound():String{
+				return _alertSound;
+			}
+			public function set alertSound(value:String):void{
+				_alertSound = value;
+				Context.setAttribute("alertSound", value);
+			}
+
+			/*
+			protected var _soundOffOnReprint:Boolean;
+			[Bindable]
+			public function get soundOffOnReprint():Boolean{
+				return _soundOffOnReprint;
+			}
+			public function set soundOffOnReprint(value:Boolean):void{
+				_soundOffOnReprint = value;
+				Context.setAttribute("soundOffOnReprint", value);
+			}
+			*/
+
+			private var _techPoint:int;
+			[Bindable]
+			protected function get techPointID():int{
+				return _techPoint;
+			}
+			protected function set techPointID(value:int):void{
+				_techPoint = value;
+				if(_techPoint){
+					Context.setAttribute("techPoint", _techPoint);
+					setTechPointObj(_techPoint);
+				}
+			}
+			
+			private function setTechPointObj(id:int):void{
+				if(!techPionts) return;
+				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
+				Context.setAttribute("tech.object", techPointObj);
+			}
+			
+			private var bdPopup:DatabasePopup;
+			private function initApp():void{
+				bdPopup= new DatabasePopup();
+				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
+				bdPopup.chekConnect();//SQLMode.UPDATE,false);
+			}
+			private function bdPopClose(e:PopUpEvent):void{
+				var connected:Boolean=e.commit;
+				if(connected){
+					//connected
+					init();
+				}else{
+					//no connection
+					currentState='disconnected';
+					bdPopup.open(null);
+				}
+			}
+			
+			private var startPopup:ModalPopUp;
+			
+			private function init():void{
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+				
+				var initLatch:DbLatch=Context.initTechBatch();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+				
+				var latch:DbLatch= new DbLatch();
+				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				latch.addEventListener(Event.COMPLETE,onTPLoad);
+				latch.addLatch(svc.loadAll(0));
+				latch.start();
+				initLatch.join(latch);
+				initLatch.start();
+			}
+			private function onTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPLoad);
+					if(latch.complite){
+						techPionts=latch.lastDataAC;
+					}
+				}
+			}
+			private function onInit(event:Event):void{
+				startPopup.close();
+				startPopup=null;
+				
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						Alert.show('Ошибка инициализации'+'/n'+latch.error);
+						currentState='disconnected';
+						return;
+					}
+				}
+				
+				coms.source=ComInfo.load();
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					techPointID=so.data.techPoint;
+					reversOrder=so.data.reversOrder;
+					alertSound=so.data.alertSound;
+					//soundOffOnReprint=so.data.soundOffOnReprint;
+				}
+				
+				//init messenger
+				if(techPointObj) Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_TECH, techPointObj?techPointObj.tech_type:0);
+				MessengerGeneric.connect();
+				
+				if(techPointObj && coms.length>0){
+					start();
+				}else{
+					currentState='config';
+				}
+			}
+			
+			private function start():void{
+				//if(!techPointObj || coms.length==0){
+				if(coms.length==0){
+					Alert.show('Приложение не настроено');
+					currentState='config';
+					return;
+				}
+
+				serialProxy.start(coms.source);
+				if(!serialProxy.isStarted){
+					currentState='config';
+					return;
+				}
+
+				var readersProxy:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
+				if(!readersProxy || readersProxy.length==0){
+					Alert.show('Приложение не настроено');
+					serialProxy.stop();
+					currentState='config';
+					return;
+				}
+
+				currentState='monitor';
+				var reader:ComReader;
+				//stop old?
+				if(barcodeReaders){
+					for each(reader in barcodeReaders){
+						if(reader){
+							reader.stop();
+							reader.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+						}
+						
+					}
+				}
+				barcodeReaders=null;
+				var newReades:Array=[];
+				var pr:Socket2Com;
+				for each(pr in readersProxy){
+					if(pr){
+						reader= new ComReader();
+						reader.comPort=pr;
+						reader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+						newReades.push(reader);
+					}
+				}
+				barcodeReaders=newReades;
+				//create barcode readers
+				/*
+				var pr:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_BARREADER);
+				if(pr){
+					barcodeReader= new ComReader();
+					barcodeReader.comPort=pr;
+					barcodeReader.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					//barcodeReader.start();
+				}
+				*/
+				
+				if(techMonitor) techMonitor.start();
+			}
+			
+			private function stop():void{
+				if(techMonitor) techMonitor.stop();
+				//if(barcodeReader) barcodeReader.stop();
+				//if(flap) flap.stop();
+				if(serialProxy) serialProxy.stop();
+				currentState='config';
+			}
+			
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				//TODO flush data
+				//if(flap) flap.stop();
+				//if(barcodeReader) barcodeReader.stop();
+				if(serialProxy) serialProxy.stop();
+				if(techMonitor) techMonitor.stop();
+				MessengerGeneric.disconnect();
+			}
+			
+			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
+				var tp:TechPoint= ddTechPoint.selectedItem as TechPoint;
+				if (!tp) return;
+				techPointID=tp.id;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.techPoint = techPointID;
+				so.flush();  
+			}
+			
+			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
+				//if(flap) flap.stop();
+				var reader:ComReader=event.target as ComReader;
+				if(reader) reader.stop();
+				serialProxy.stop();
+				var bar:String=event.barcode;
+				bar = bar.replace(String.fromCharCode(13),'[LF]');
+				bar = bar.replace(String.fromCharCode(10),'[CR]');
+				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
+				currentState='config';
+			}
+			
+			protected function btAddCom_clickHandler(event:MouseEvent):void{
+				var cp:ComInfo= new ComInfo();
+				coms.addItem(cp);
+				comList.selectedItem=cp;
+			}
+			
+			protected function btSaveComs_clickHandler(event:MouseEvent):void{
+				ComInfo.save(coms.source);
+			}
+			
+			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
+				Alert.show('Ошибка SerialProxy \n '+event.error,'Ошибка');
+				currentState='config';
+			}
+			
+			protected function chbRevers_changeHandler(event:Event):void{
+				reversOrder=chbRevers.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.reversOrder = reversOrder;
+				so.flush();  
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				MessengerGeneric.disconnect();
+				if(serialProxy) serialProxy.stop();
+				if(techMonitor) techMonitor.stop();
+				FlexGlobals.topLevelApplication.exit();
+			}
+			
+			protected function btSoundFile_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,prtFolderSet);
+				file.browseForOpen('Выбирите файл звука (mp3)');
+			}
+			protected function prtFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,prtFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					alertSound=file.nativePath;;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.alertSound = alertSound;
+					so.flush();
+				}
+			}
+
+			protected function btSoundTest_clickHandler(event:MouseEvent):void{
+				if(!alertSound) return;
+				var file:File= new File(alertSound);
+				if(!file.exists) return;
+				var sound:Sound= new Sound(new URLRequest(file.url));
+				try{
+					sound.play();
+				}catch(error:Error){}
+			}
+			
+			/*
+			protected function chkSoundOff_changeHandler(event:Event):void{
+				soundOffOnReprint=chkSoundOff.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.soundOffOnReprint = soundOffOnReprint;
+				so.flush();  
+			}
+			*/
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="disconnected"/>
+		<s:State name="config"/>
+		<s:State name="monitor"/>
+	</s:states>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
+			  top="5" right="5"/>
+	
+	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Технологическая точка:"/>
+			<s:DropDownList id="ddTechPoint" dataProvider="{techPionts}" selectedItem="{techPointObj}" 
+							width="250"
+							labelField="name" change="ddTechPoint_changeHandler(event)"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Обратный порядок:"/>
+			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Звук ошибки:"/>
+			<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
+			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)" width="40"/>
+			<s:Button id="btSoundTest" label="►" click="btSoundTest_clickHandler(event)" width="40"/>
+		</s:HGroup>
+
+<!--		<s:HGroup gap="2" verticalAlign="baseline" paddingLeft="80">
+			<s:CheckBox id="chkSoundOff" selected="{soundOffOnReprint}"  change="chkSoundOff_changeHandler(event)"/>
+			<s:Label text="Не орать если номер группы >2"/>
+		</s:HGroup>
+-->
+		<s:VGroup gap="5">
+			<s:HGroup gap="10">
+				<s:List id="comList" dataProvider="{coms}" height="100%"/>
+				<itemRenderer:ComInfoRenderer data="{comList.selectedItem}"/>
+			</s:HGroup>
+			<s:HGroup gap="10" width="100%" horizontalAlign="right">
+				<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
+				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		
+		<s:Spacer height="10"/>
+	</s:VGroup>
+	
+	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
+		<view:TechBatchMonitor id="techMonitor" techPoint="{techPointObj}" 
+							  barcodeReaders="{barcodeReaders}"
+							  alertSound="{alertSound}"
+							  width="100%" height="100%"/>
+	</s:VGroup>
+	
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+		<s:Spacer width="100%"/>
+		<s:Button label="Стоп" includeIn="monitor" click="{stop()}"/>
+		<s:Button label="Старт" includeIn="config" click="{start()}"/>
+		<s:Button label="Закрыть" click="button1_clickHandler(event)" />
+	</s:HGroup>
+	
+</s:WindowedApplication>
