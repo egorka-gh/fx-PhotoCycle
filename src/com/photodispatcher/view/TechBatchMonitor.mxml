@@ -320,27 +320,39 @@
 				<s:Label text="Заказы"/>
 				<s:List id="lstOreders"
 						dataProvider="{queueRegister.queueAC}"
-						selectedIndex="{queueRegister.currIdx}"
+						selectedIndex="{queueRegister.queueAC?queueRegister.currIndex:-1}"
 						itemRenderer="com.photodispatcher.view.itemRenderer.PrnQueueItemRenderer"
 						changing="lstOreders_changingHandler(event)"
-						width="110" height="100%"/>
+						width="120" height="100%"/>
+				<s:HGroup width="100%" gap="10" horizontalAlign="center" enabled="{Boolean(queueRegister.queueAC)}">
+					<s:Button id="btQueuePrev" label="▲" width="25" skinClass="com.photodispatcher.view.skins.ButtonNarrowSkin"
+							  click="{queueRegister.moveIndex(false)}"/>
+					<s:Button id="btQueueNext" label="▼" width="25" skinClass="com.photodispatcher.view.skins.ButtonNarrowSkin"
+							  click="{queueRegister.moveIndex(true)}"/>
+				</s:HGroup>
 			</s:VGroup>
 			<s:VGroup height="100%">
 				<s:Label text="Книги"/>
-				<s:List id="lstBooks"
-						dataProvider="{queueRegister.bookRegister.booksAC}"
-						selectedIndex="{queueRegister.bookRegister.currIdx}"
+				<s:List id="lstBooks" 
+						dataProvider="{queueRegister.bookRegister?queueRegister.bookRegister.booksAC:null}"
+						selectedIndex="{queueRegister.bookRegister?queueRegister.bookRegister.currIndex:-1}"
 						itemRenderer="com.photodispatcher.view.itemRenderer.TechBookRenderer"
 						changing="lstOreders_changingHandler(event)"
-						width="60" height="100%"/>
+						width="70" height="100%"/>
+				<s:HGroup width="100%" gap="10" horizontalAlign="center" enabled="{Boolean(queueRegister.bookRegister)}">
+					<s:Button id="btBookPrev" label="▲" width="25" skinClass="com.photodispatcher.view.skins.ButtonNarrowSkin"
+							  click="{queueRegister.bookRegister.moveIndex(false)}"/>
+					<s:Button id="btBookNext" label="▼" width="25" skinClass="com.photodispatcher.view.skins.ButtonNarrowSkin"
+							  click="{queueRegister.bookRegister.moveIndex(true)}"/>
+				</s:HGroup>
 			</s:VGroup>
 			<s:VGroup height="100%">
 				<s:Label text="ШК"/>
 				<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="160" height="100%" editable="false"/>
 			</s:VGroup>
 		</s:HGroup>
-		<s:HGroup gap="7" width="100%">
-			<s:Button label="Очистить" click="{cleanLog()}"/>
+		<s:HGroup gap="15" width="100%">
+			<s:Button label="Сбросить" click="{cleanLog(); queueRegister.start();}"/>
 			<s:Button id="btAddManual" label="Найти заказ" click="btAddManual_clickHandler(event)"/>
 		</s:HGroup> 
 	</s:VGroup>

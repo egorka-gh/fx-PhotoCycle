@@ -39,7 +39,23 @@ package com.photodispatcher.tech{
 		[Bindable]
 		public var queueAC:ArrayCollection;
 		[Bindable]
-		public var currIdx:int;
+		public var currIndex:int=-1;
+
+		
+		private var _currIdx:int;
+		protected function get currIdx():int{
+			return _currIdx;
+		}
+		protected function set currIdx(value:int):void{
+			_currIdx = value;
+			if(queueAC && _currIdx>=0 && _currIdx<queueAC.length){
+				currIndex=_currIdx;
+			}else{
+				currIndex=-1;
+			}
+		}
+
+
 		[Bindable]
 		public var registred:int;
 		[Bindable]
@@ -85,6 +101,23 @@ package com.photodispatcher.tech{
 			return registred>=queueAC.length;
 		}
 
+		public function moveIndex(forward:Boolean=true):void{
+			if(!queueAC || queueAC.length==0) return;
+			if(forward){
+				if(currIdx<(queueAC.length-1)) currIdx=currIdx+1;
+			}else{
+				if(currIdx>0) currIdx=currIdx-1;
+			}
+			//create book register
+			if(strictMode){
+				var pg:PrintGroup=getPg(currIdx);
+				if(pg){
+					createBookRegister(pg);
+				}else{
+					destroyBookRegister();
+				}
+			}
+		}
 		
 		public function start():void{
 			isStarted=true;
@@ -276,6 +309,7 @@ package com.photodispatcher.tech{
 			if(!isStarted) return;
 			if(!pgQueue || pgQueue.length==0) return;
 			var pgId:String=(pgQueue[0] as TechBook).printGroupId;
+			if(!pgId) return;
 			isLoading=true;
 			currIdx=-1;
 			queueMap=null;

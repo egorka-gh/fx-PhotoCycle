@@ -29,14 +29,23 @@ package com.photodispatcher.tech{
 		
 		[Bindable]
 		public var currBook:TechBook;
-		private var _currIdx:int=-1;
 		[Bindable]
-		public function get currIdx():int{
+		public var currIndex:int=-1;
+		
+		
+		private var _currIdx:int=-1;
+		protected function get currIdx():int{
 			return _currIdx;
 		}
-		public function set currIdx(value:int):void{
+		protected function set currIdx(value:int):void{
 			_currIdx = value;
-			if(booksAC && _currIdx>=0 && _currIdx<booksAC.length) currBook=booksAC.getItemAt(_currIdx) as TechBook;
+			if(booksAC && _currIdx>=0 && _currIdx<booksAC.length){
+				currIndex=_currIdx;
+				currBook=booksAC.getItemAt(_currIdx) as TechBook;
+			}else{
+				currIndex=-1;
+				currBook=null;
+			}
 		}
 
 		
@@ -111,6 +120,15 @@ package com.photodispatcher.tech{
 		
 		public function get isComplited():Boolean{
 			return currIdx>=booksAC.length;
+		}
+		
+		public function moveIndex(forward:Boolean=true):void{
+			if(!booksAC || booksAC.length==0) return;
+			if(forward){
+				if(currIdx<(booksAC.length-1)) currIdx=currIdx+1;
+			}else{
+				if(currIdx>0) currIdx=currIdx-1;
+			}
 		}
 		
 		private var lastBookNum:int=-1;
