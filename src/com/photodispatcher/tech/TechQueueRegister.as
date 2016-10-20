@@ -1,4 +1,5 @@
 package com.photodispatcher.tech{
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrnQueue;
@@ -52,6 +53,15 @@ package com.photodispatcher.tech{
 				currIndex=_currIdx;
 			}else{
 				currIndex=-1;
+			}
+			//create book register
+			if(strictMode){
+				var pg:PrintGroup=getPg(currIdx);
+				if(pg){
+					createBookRegister(pg);
+				}else{
+					destroyBookRegister();
+				}
 			}
 		}
 
@@ -107,15 +117,6 @@ package com.photodispatcher.tech{
 				if(currIdx<(queueAC.length-1)) currIdx=currIdx+1;
 			}else{
 				if(currIdx>0) currIdx=currIdx-1;
-			}
-			//create book register
-			if(strictMode){
-				var pg:PrintGroup=getPg(currIdx);
-				if(pg){
-					createBookRegister(pg);
-				}else{
-					destroyBookRegister();
-				}
 			}
 		}
 		
@@ -175,25 +176,63 @@ package com.photodispatcher.tech{
 			while(pgQueue.length>0){
 				currBook=pgQueue[0] as TechBook;
 				
-				if(currBook.printGroupId==lastId){
-					if(strictMode){
-						//register book
-						if(bookRegister && currBook.book!=0 && !bookRegister.register(currBook.book)){
-							//stop on current
-							pgQueue=[];
-							return; 
+				//check same printgroup 
+				if(strictMode){
+					if(currBook.book!=0 ){
+						if(bookRegister && bookRegister.printgroup.id==currBook.printGroupId){
+							//same printgroup - register book
+							//try to register book
+							if(!bookRegister.register(currBook.book)){
+								//stop on current
+								pgQueue=[];
+								return; 
+							}
+							//try to forward index
+							nextIndex();
+							//book - ok, check next
+							pgQueue.shift();
+							continue;
 						}
-						if(bookRegister && bookRegister.isComplited){
-							lastId='';
-							//next pg
-							currIdx++;
+					}
+				}else{
+					//simple mode
+					if(currBook.printGroupId==lastId){
+						//no book checking, skip 
+						pgQueue.shift();
+						continue;
+					}
+				}
+				
+				/*
+				if(currBook.printGroupId==lastId){
+					//same printGroup
+					if(strictMode && currBook.book!=0 ){
+						if(bookRegister && bookRegister.printgroup.id==currBook.printGroupId){
+							//try to register book
+							if(!bookRegister.register(currBook.book)){
+								//stop on current
+								pgQueue=[];
+								return; 
+							}
+							//try to forward index
+							nextIndex();
+						}else{
+							if(!bookRegister){
+								logMsg('Ошибка выполнения, bookRegister не определен');
+							}else{
+								logErr('Не верная последовательность. Ожидалось ' 
+									+bookRegister.printgroup.id +':'+(bookRegister.currBook?bookRegister.currBook.book:'?')
+									+' вместо '+currBook.printGroupId+':'+currBook.book);
+								pgQueue=[];
+								return; 
+							}
 						}
 					}
 					//book - ok, check next
 					pgQueue.shift();
 					continue;
 				}else{
-					if(strictMode){
+					if(strictMode && lastId){
 						//bookRegister Complited ??
 						if(bookRegister && !bookRegister.isComplited){
 							logErr('Последовательности книг не завершена '+bookRegister.printgroup.id+'. ');
@@ -201,9 +240,9 @@ package com.photodispatcher.tech{
 							pgQueue=[];
 							return; 
 						}
-						//createBookRegister();
 					}
 				}
+				*/
 
 				lastId=currBook.printGroupId;
 
@@ -234,7 +273,14 @@ package com.photodispatcher.tech{
 					logErr('Ошибка последовательности в партии: '+queueId.toString()+'. '+ indexCaption(idx)+' вместо '+indexCaption(currIdx));
 					logMsg(currBook.printGroupId+' вместо '+pgCaption(currIdx));
 					//mark pg
-					if(pg) pg.checkStatus=PrintGroup.CHECK_STATUS_ERR;
+					if(pg){
+						pg.checkStatus=PrintGroup.CHECK_STATUS_ERR;
+					}
+					//may be reject? 
+					pg=getPg(idx);
+					if(pg && pg.isBookRejected(currBook.book)){
+						logErr('Не убран брак '+pg.id+' книга '+currBook.book.toString());
+					}
 					if(strictMode){
 						//stop on current ???
 						pgQueue=[];
@@ -255,8 +301,7 @@ package com.photodispatcher.tech{
 								logErr('Перепечатка: '+pg.id);
 							}
 							//register book
-							createBookRegister(pg);
-							if(currBook.book!=0 && !bookRegister.register(currBook.book)){
+							if(currBook.book!=0 && bookRegister && !bookRegister.register(currBook.book)){
 								//stop on current
 								pgQueue=[];
 								return; 
@@ -266,34 +311,43 @@ package com.photodispatcher.tech{
 						}
 					}
 					if(strictMode){
-						//check next
-						if(bookRegister && bookRegister.isComplited){
-							lastId='';
-							//must be next pg
-							currIdx++;
-						}
+						//try to forward index
+						nextIndex();
 					}else{
-						//move index && check next
-						currIdx=idx;
+						//TODO implement in simple mode
+						//move index && set to next?
+						//currIdx=idx;
 					}
-				}
-				if(strictMode){
-					//mark previouse pg
-					pg=getPg(currIdx-1);
-					if(pg && pg.checkStatus==PrintGroup.CHECK_STATUS_IN_CHECK) pg.checkStatus=PrintGroup.CHECK_STATUS_OK;
 				}
 
 				pgQueue.shift();
-				if(isComplited) dispatchEvent(new Event(Event.COMPLETE));
+				//if(isComplited) dispatchEvent(new Event(Event.COMPLETE));
 			}
 			
 			if(pgQueue.length>0) loadQueue(); 
 		}
 
+		private function nextIndex():void{
+			//TODO implement simple mode
+			//TODO register in simple mode?
+			while (!isComplited && bookRegister && bookRegister.isComplited){
+				//skip complited or fully rejected
+				
+				//mark pg state
+				var pg:PrintGroup=getPg(currIdx);
+				if(pg && pg.checkStatus==PrintGroup.CHECK_STATUS_IN_CHECK) pg.checkStatus=PrintGroup.CHECK_STATUS_OK;
+
+				if(queueAC && queueAC.length>0 && currIdx<queueAC.length) currIdx=currIdx+1;
+
+				//TODO register in simple mode?
+			}
+			if(isComplited) dispatchEvent(new Event(Event.COMPLETE));
+		}
+		
 		private function createBookRegister(pg:PrintGroup):void{
 			if(!pg) return;
 			destroyBookRegister();
-			bookRegister= new TechBookRegister(pg,revers);
+			bookRegister= new TechBookRegister(pg,Boolean(Context.getAttribute("reversBook")));
 			bookRegister.addEventListener(ErrorEvent.ERROR, onBookRegisterErr);
 		}
 		private function onBookRegisterErr(event:ErrorEvent):void{
@@ -386,11 +440,12 @@ package com.photodispatcher.tech{
 			currIdx=0;
 			isLoading=false;
 			if(tBook.book==-1){
+				//manual mode
 				//just load & stop
-				pg=queueAC.getItemAt(0) as PrintGroup;
-				createBookRegister(pg);
 				pgQueue=[];
 			}else{
+				//skip first fully rejected
+				nextIndex();
 				checkNext();
 			}
 		}

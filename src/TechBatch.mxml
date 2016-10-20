@@ -62,7 +62,17 @@
 				_reversOrder = value;
 				Context.setAttribute("reversOrder", value);
 			}
-			
+
+			protected var _reversBook:Boolean;
+			[Bindable]
+			public function get reversBook():Boolean{
+				return _reversBook;
+			}
+			public function set reversBook(value:Boolean):void{
+				_reversBook = value;
+				Context.setAttribute("reversBook", value);
+			}
+
 
 			protected var _alertSound:String;
 			[Bindable]
@@ -171,6 +181,7 @@
 				if (so.size>0){
 					techPointID=so.data.techPoint;
 					reversOrder=so.data.reversOrder;
+					reversBook=so.data.reversBook;
 					alertSound=so.data.alertSound;
 					//soundOffOnReprint=so.data.soundOffOnReprint;
 				}
@@ -352,6 +363,13 @@
 			}
 			*/
 			
+			protected function chbReversBook_changeHandler(event:Event):void{
+				reversBook=chbReversBook.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.reversBook = reversBook;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -383,8 +401,12 @@
 		</s:HGroup>
 		
 		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Обратный порядок:"/>
+			<s:Label text="Обратный порядок партии:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Обратный порядок книг:"/>
+			<s:CheckBox id="chbReversBook" selected="{reversBook}"  change="chbReversBook_changeHandler(event)"/>
 		</s:HGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">

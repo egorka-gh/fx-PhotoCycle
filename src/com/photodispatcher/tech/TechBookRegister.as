@@ -25,6 +25,7 @@ package com.photodispatcher.tech{
 		public var printgroup:PrintGroup;
 		[Bindable]
 		public var booksAC:ArrayCollection;
+		[Bindable]
 		public var revers:Boolean;
 		
 		[Bindable]
@@ -170,7 +171,7 @@ package com.photodispatcher.tech{
 					return false;
 				}else{
 					book.checkState=PrintGroup.CHECK_STATUS_OK;
-					currIdx++;
+					currIdx=currIdx+1;
 					skipRejected();
 					return true;
 				}
@@ -180,17 +181,17 @@ package com.photodispatcher.tech{
 		}
 		
 		private function skipRejected():void{
+			if(!booksAC || booksAC.length==0) return;
 			var book:TechBook;
-			if(currIdx>=booksAC.length) return;
-			//get current
-			book=getBookByIdx(currIdx);
-			//skip rejects
-			while(book && book.isRejected){
-				currIdx++;
-				if(currIdx<booksAC.length){
-					book=getBookByIdx(currIdx);
+			while(currIdx<booksAC.length){
+				//get current
+				book=getBookByIdx(currIdx);
+				if(book && book.isRejected){
+					//skip
+					logMsg('Пропускаю книгу ' +book.book+ (!isReprint?' Брак':''));
+					currIdx=currIdx+1;
 				}else{
-					book=null;
+					break;
 				}
 			}
 		}

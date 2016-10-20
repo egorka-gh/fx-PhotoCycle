@@ -274,13 +274,19 @@
 				}
 			}
 
+			
+			private function reset():void{
+				currBarcode='';
+				cleanLog(); 
+				queueRegister.start();	
+			}
 		]]>
 	</fx:Script>
 	
 	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
 			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
 		<s:HGroup gap="5" width="100%" >
-			<s:Label text="Порядок: {queueRegister.revers?'Обратный':'Прямой'}"/>
+			<s:Label text="Порядок: {queueRegister.revers?'Обратный':'Прямой'}/{queueRegister.bookRegister?(queueRegister.bookRegister.revers?'Обратный':'Прямой'):''}"/>
 			<s:Spacer width="100%"/>
 			<s:Label text="Партия: {queueRegister.queue.id} {queueRegister.queue.label}"/>
 			<s:Label text="Заказов: {queueRegister.registred}:{queueRegister.queueAC.length}"/>
@@ -352,7 +358,7 @@
 			</s:VGroup>
 		</s:HGroup>
 		<s:HGroup gap="15" width="100%">
-			<s:Button label="Сбросить" click="{cleanLog(); queueRegister.start();}"/>
+			<s:Button label="Сбросить" click="{reset()}"/>
 			<s:Button id="btAddManual" label="Найти заказ" click="btAddManual_clickHandler(event)"/>
 		</s:HGroup> 
 	</s:VGroup>

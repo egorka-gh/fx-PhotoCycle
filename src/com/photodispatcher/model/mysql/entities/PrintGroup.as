@@ -299,6 +299,15 @@ package com.photodispatcher.model.mysql.entities {
 			files.addItem(file);
 			file_num=files.length;
 		}
+		
+		public function isBookRejected(book:int):Boolean{
+			if(!rejects || rejects.length==0) return false;
+			var reject:PrintGroupReject;
+			for each(reject in rejects){
+				if(reject && reject.book==book) return true;
+			}
+			return false;
+		}
 
 		public function addReject(book:int, sheet:int, unit:int, activity:int):void{
 			if(book<1) return;
