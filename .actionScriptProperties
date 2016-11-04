@@ -61,6 +61,9 @@
     <application path="PhotoLoader.mxml">
       <airExcludes/>
     </application>
+    <application path="TechBatch.mxml">
+      <airExcludes/>
+    </application>
   </applications>
   <modules/>
   <buildCSSFiles/>

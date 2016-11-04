@@ -103,6 +103,7 @@ package com.photodispatcher.provider.preprocess{
 					pg.is_reprint=true;
 					pg.reprint_id=pg.id;
 					pg.id=lastOrder.id+'_'+pgIdx.toString();
+					pg.prn_queue=0;
 					
 					if(reprintActivity){
 						pg.staffActivityCaption='';

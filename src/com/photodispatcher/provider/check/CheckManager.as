@@ -346,7 +346,13 @@ package com.photodispatcher.provider.check{
 				trace('setOrderStateWeb web err: '+pw.errMesage);
 				lastError='Ошибка сайта: '+pw.errMesage;
 				if(pw.lastOrderId) StateLog.log(OrderState.ERR_WEB,pw.lastOrderId,'','Ошибка сайта: '+pw.errMesage);
-				//web err, can't save
+				//web err, can't save???
+				//if(order && order.state==OrderState.FTP_INCOMPLITE){
+				if(order){
+					//save if in error state
+					order.state=OrderState.FTP_INCOMPLITE;
+					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
+				}
 			}else{
 				if(order){
 					//save

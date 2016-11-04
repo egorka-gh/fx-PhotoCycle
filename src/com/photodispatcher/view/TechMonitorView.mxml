@@ -449,7 +449,7 @@
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%" height="100%">
 			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
-			<s:DataGrid width="160" height="100%" fontSize="10"
+			<s:DataGrid width="160" height="100%" fontSize="10" skinClass="spark.skins.spark.DataGridSkin"
 						dataProvider="{regList}" locale="ru_RU" columns="{regListColumnth}"/>
 			<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="160" height="100%" editable="false"/>
 		</s:HGroup>

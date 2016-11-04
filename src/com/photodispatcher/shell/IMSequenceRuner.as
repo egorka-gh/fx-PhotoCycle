@@ -104,8 +104,8 @@ package com.photodispatcher.shell{
 					state=IMCommand.STATE_ERR;
 					IMRuner.stopAll();
 					dispatchEvent(new IMRunerEvent(IMRunerEvent.IM_COMPLETED,e.command,true,e.error));
+					return;
 				}
-				return;
 			}
 			runNextCmd();
 		}
