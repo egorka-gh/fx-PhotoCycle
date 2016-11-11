@@ -126,7 +126,7 @@
 			
 			protected function btCancel_clickHandler(event:MouseEvent):void{
 				if(!order) return;
-				order.state= OrderState.CANCELED;
+				order.state= OrderState.CANCELED_USER;
 				var latch:DbLatch= new DbLatch();
 				//latch.addEventListener(Event.COMPLETE,onOrderLoad);
 				latch.addLatch(bdService.save(order,0));

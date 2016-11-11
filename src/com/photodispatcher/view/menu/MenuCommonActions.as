@@ -154,7 +154,7 @@ package com.photodispatcher.view.menu{
 				var latch:DbLatch= new DbLatch();
 				latch.callContext=canceled;
 				latch.addEventListener(Event.COMPLETE,onOrdersCancel);
-				latch.addLatch(svc.cancelOrders(orderIds, OrderState.CANCELED));
+				latch.addLatch(svc.cancelOrders(orderIds, OrderState.CANCELED_USER));
 				latch.start();
 			}
 		}
@@ -170,10 +170,10 @@ package com.photodispatcher.view.menu{
 					for each(var o:Object in canceled){
 						if(o is Order){
 							order=o as Order;
-							order.state=OrderState.CANCELED;
+							order.state=OrderState.CANCELED_USER;
 						}else if(o is PrintGroup){
 							pg=o as PrintGroup;
-							pg.state=OrderState.CANCELED;
+							pg.state=OrderState.CANCELED_USER;
 						}
 					}
 				}

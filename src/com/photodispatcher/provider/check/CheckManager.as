@@ -349,8 +349,10 @@ package com.photodispatcher.provider.check{
 				//web err, can't save???
 				//if(order && order.state==OrderState.FTP_INCOMPLITE){
 				if(order){
-					//save if in error state
-					order.state=OrderState.FTP_INCOMPLITE;
+					//save error state
+					// or set canceled state
+					//order.state=OrderState.FTP_INCOMPLITE;
+					if(order.state!=OrderState.FTP_INCOMPLITE) order.state=OrderState.CANCELED;
 					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
 				}
 			}else{

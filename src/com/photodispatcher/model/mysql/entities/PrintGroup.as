@@ -299,7 +299,16 @@ package com.photodispatcher.model.mysql.entities {
 			files.addItem(file);
 			file_num=files.length;
 		}
-		
+
+		public function isSheetRejected(book:int, sheet:int):Boolean{
+			if(!rejects || rejects.length==0) return false;
+			var reject:PrintGroupReject;
+			for each(reject in rejects){
+				if(reject && reject.book==book && (is_pdf || (reject.sheet==-1 || reject.sheet==sheet))) return true;
+			}
+			return false;
+		}
+
 		public function isBookRejected(book:int):Boolean{
 			if(!rejects || rejects.length==0) return false;
 			var reject:PrintGroupReject;
@@ -313,7 +322,7 @@ package com.photodispatcher.model.mysql.entities {
 			if(book<1) return;
 			var oldItem:PrintGroupReject;
 			var i:int;
-			var added:Boolean;
+			var exists:Boolean;
 			var compact:Boolean;
 			var newItem:PrintGroupReject=new PrintGroupReject();
 			newItem.print_group=this.id;
@@ -337,7 +346,7 @@ package com.photodispatcher.model.mysql.entities {
 						if(newItem.sheet==-1){
 							//all sheets in block  
 							if(oldItem.sheet==-1){
-								added=true;
+								exists=true;
 								break;
 							}else{
 								//remove added vs single sheet 
@@ -345,19 +354,30 @@ package com.photodispatcher.model.mysql.entities {
 								compact=true;
 							}
 						}else if(oldItem.sheet==newItem.sheet){
-							added=true;
+							exists=true;
 							break;
 						}
 					}
 				}
 				if(compact){
-					var newRejects:ArrayCollection= new ArrayCollection();
+					var newRejects:Array=[];
+					//var newRejects:ArrayCollection= new ArrayCollection();
 					for each(oldItem in rejects){
-						if(oldItem) newRejects.addItem(oldItem);
+						if(oldItem) newRejects.push(oldItem);// .addItem(oldItem);
 					}
-					rejects=newRejects;
+					rejects=new ArrayCollection(newRejects);
 				}
-				if(!added) rejects.addItem(newItem);
+				if(!exists) rejects.addItem(newItem);
+			}
+		}
+		
+		public function compactRejects():void{
+			if(!rejects) return;
+			var oldItems:ArrayCollection=rejects;
+			rejects=null;
+			var item:PrintGroupReject;
+			for each(item in oldItems){
+				if(item) addReject(item.book, item.sheet, item.thech_unit, item.activity);
 			}
 		}
 
