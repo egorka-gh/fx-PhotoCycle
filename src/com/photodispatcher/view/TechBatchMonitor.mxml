@@ -37,6 +37,7 @@
 			//public var soundOffOnReprint:Boolean;
 			
 			public var techPoint:TechPoint;
+			public var useTechBarcode:Boolean;
 			
 			private var _barcodeReaders:Array;
 			public function get barcodeReaders():Array{
@@ -149,15 +150,25 @@
 				currBarcode=barcode;
 				//parce barcode
 				var pgId:String;
-				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				var bookNum:int;
+				if(useTechBarcode && PrintGroup.isTechBarcode(barcode)){
+					pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+					bookNum=PrintGroup.bookFromTechBarcode(barcode);// int(barcode.substr(0,3));
+					//var pageNum:int=int(barcode.substr(6,2));
+				}else{
+					pgId=PrintGroup.idFromBookBarcode(barcode);
+					bookNum=PrintGroup.bookFromBookBarcode(barcode);
+				}
 				if(!pgId){
-					//TODO rise err
 					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
 					return;
 				}
+				if(bookNum<=0){
+					logToScreen('---------- Не верный номер книги: '+bookNum.toString()+' ----------',true);
+					return;
+				}
+
 				
-				var bookNum:int=int(barcode.substr(0,3));
-				var pageNum:int=int(barcode.substr(6,2));
 				queueRegister.register(pgId,bookNum);
 				barText=barcode+'\n';
 			}

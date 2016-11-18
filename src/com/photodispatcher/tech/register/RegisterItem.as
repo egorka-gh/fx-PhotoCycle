@@ -31,6 +31,8 @@ package com.photodispatcher.tech.register{
 			this.isRejected=isRejected;
 		}
 		
-		
+		public function isEqual(to.RegisterItem):Boolean{
+			return to && (!to.pgId || !pgId || to.pgId==pgId) && to.book==book && to.sheet==sheet;
+		}
 	}
 }

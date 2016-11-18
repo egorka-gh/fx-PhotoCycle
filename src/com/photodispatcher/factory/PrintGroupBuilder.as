@@ -606,7 +606,7 @@ package com.photodispatcher.factory{
 					if(pgCover && pgCover.files && pgCover.files.length>0){
 						pgCover.sub_id=so.sub_id;
 						pgCover.id=order.id+'_'+pgNum.toString();
-						pgCover.sheet_num=so.books_num; 
+						pgCover.sheet_num=1; 
 						pgCover.prints=pgCover.book_num;
 						if(!order.printGroups) order.printGroups=new ArrayCollection();
 						order.printGroups.addItem(pgCover);

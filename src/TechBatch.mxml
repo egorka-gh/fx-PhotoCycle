@@ -73,7 +73,17 @@
 				Context.setAttribute("reversBook", value);
 			}
 
+			private var _useTechBarcode:Boolean;
+			[Bindable]
+			public function get useTechBarcode():Boolean{
+				return _useTechBarcode;
+			}
+			public function set useTechBarcode(value:Boolean):void{
+				_useTechBarcode = value;
+				Context.setAttribute("useTechBarcode", value);
+			}
 
+			
 			protected var _alertSound:String;
 			[Bindable]
 			public function get alertSound():String{
@@ -183,6 +193,7 @@
 					reversOrder=so.data.reversOrder;
 					reversBook=so.data.reversBook;
 					alertSound=so.data.alertSound;
+					useTechBarcode=so.data.useTechBarcode;
 					//soundOffOnReprint=so.data.soundOffOnReprint;
 				}
 				
@@ -370,6 +381,13 @@
 				so.flush();  
 			}
 			
+			protected function chbUseTechBarcode_changeHandler(event:Event):void{
+				useTechBarcode=chbUseTechBarcode.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.useTechBarcode = useTechBarcode;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -421,6 +439,11 @@
 			<s:Label text="Не орать если номер группы >2"/>
 		</s:HGroup>
 -->
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Технологический ШК:"/>
+			<s:CheckBox id="chbUseTechBarcode" selected="{useTechBarcode}"  change="chbUseTechBarcode_changeHandler(event)"/>
+		</s:HGroup>
+
 		<s:VGroup gap="5">
 			<s:HGroup gap="10">
 				<s:List id="comList" dataProvider="{coms}" height="100%"/>
@@ -439,6 +462,7 @@
 		<view:TechBatchMonitor id="techMonitor" techPoint="{techPointObj}" 
 							  barcodeReaders="{barcodeReaders}"
 							  alertSound="{alertSound}"
+							  useTechBarcode="{useTechBarcode}"
 							  width="100%" height="100%"/>
 	</s:VGroup>
 	

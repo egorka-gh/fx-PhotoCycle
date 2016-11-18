@@ -2,6 +2,7 @@ package com.photodispatcher.tech.register{
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupReject;
+	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.ErrorEvent;
 	import flash.events.EventDispatcher;
@@ -104,10 +105,28 @@ package com.photodispatcher.tech.register{
 
 		public function register(regItem:RegisterItem):Boolean{
 			if(!regItem){
-				logErr('Ошибка выполнения null regItem');
+				logErr('Ошибка выполнения (null regItem).');
 				return false;
 			}
-			
+			if(!regItems || regItems.length==0){
+				logErr('Ошибка инициализации, пустой массив листов.');
+				return false;
+			}
+			if(regItem.book<1 || regItem.book>printgroup.book_num || regItem.sheet<0 || regItem.sheet>printgroup.sheet_num){
+				logErr('Ошибка. Не допустимый лист: '+StrUtil.sheetName(regItem.book,regItem.sheet));
+				return false;
+			}
+			var nextItem:RegisterItem=getNextItem();
+			if(!nextItem){
+				//out of sequence 
+				//check complite
+				//look for item & check registred
+				//hz
+			}
+			if(!nextItem.isEqual(regItem)){
+				//try detect direction if not set and still not detected
+				//check if rejected
+			}
 		}
 		
 		
@@ -128,7 +147,7 @@ package com.photodispatcher.tech.register{
 			return regItems[lastIndex] as RegisterItem;
 		}
 
-		private function nextItem(skipRejects:Boolean=true, revers:Boolean=false):RegisterItem{
+		private function getNextItem(skipRejects:Boolean=true, revers:Boolean=false):RegisterItem{
 			if(!regItems) return null;
 			var item:RegisterItem;
 			var startIdx:int=lastIndex;
@@ -160,9 +179,11 @@ package com.photodispatcher.tech.register{
 		}
 
 		protected function logErr(msg:String):void{
+			if(printgroup) msg=printgroup.id+' '+msg;
 			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,msg,1));
 		}
 		protected function logMsg(msg:String):void{
+			if(printgroup) msg=printgroup.id+' '+msg;
 			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,msg,0));
 		}
 

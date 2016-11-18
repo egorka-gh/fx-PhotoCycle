@@ -372,8 +372,8 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		public function compactRejects():void{
-			if(!rejects) return;
-			var oldItems:ArrayCollection=rejects;
+			var oldItems:ArrayCollection=rejects as ArrayCollection;
+			if(!oldItems) return;
 			rejects=null;
 			var item:PrintGroupReject;
 			for each(item in oldItems){
@@ -1079,9 +1079,14 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		public static function isTechBarcode(techBarcode:String):Boolean{
-			if(!techBarcode || techBarcode.length<14) return false;
+			//3(book)+3(books)+2(sheet)+2(sheets)=10 +2(src)+2(pg)= 14 + 1 (at least 1 digit for order) 
+			if(!techBarcode || techBarcode.length<15) return false;
+			//check if book>books or sheet>sheets
+			if((bookFromTechBarcode(techBarcode)>bookNumFromTechBarcode(techBarcode)) ||
+			   (sheetFromTechBarcode(techBarcode)>sheetNumFromTechBarcode(techBarcode))) return false;
 			//uses fact that books <199 & source id is 1 char len and is >0
-			return techBarcode.charAt(0)=='0';
+			//return techBarcode.charAt(0)=='0';
+			return true;
 		}
 		
 		public static function bookFromTechBarcode(code:String):int{
