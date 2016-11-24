@@ -34,6 +34,7 @@ package com.photodispatcher.model.mysql.entities.messenger {
 		public static const TYPE_REPRINT:int=30;
 		public static const TYPE_TECH:int=35;
 		public static const TYPE_GLUE:int=40;
+		public static const TYPE_BELGLUE:int=41;
 		public static const TYPE_PICKER:int=45;
 		public static const TYPE_JOIN:int=50;
 		public static const TYPE_MONITOR:int=55;

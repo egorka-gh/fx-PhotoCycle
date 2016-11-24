@@ -13,6 +13,7 @@ package com.photodispatcher.tech{
 	import mx.collections.ArrayCollection;
 	
 	import org.granite.tide.Tide;
+	import com.photodispatcher.tech.register.TechBook;
 	
 	[Event(name="clear", type="flash.events.Event")]
 	[Event(name="complete", type="flash.events.Event")]

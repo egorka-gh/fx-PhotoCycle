@@ -1,4 +1,4 @@
-package com.photodispatcher.tech{
+package com.photodispatcher.tech.register{
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
 	[Bindable]
@@ -15,5 +15,8 @@ package com.photodispatcher.tech{
 		public var checkState:int;
 		public var isRejected:Boolean;
 		
+		public var sheetsTotal:int;
+		public var sheetsFeeded:int;
+		public var sheetsDone:int;
 	}
 }

@@ -7,6 +7,7 @@ package com.photodispatcher.tech{
 	import flash.events.IEventDispatcher;
 	
 	import mx.collections.ArrayCollection;
+	import com.photodispatcher.tech.register.TechBook;
 	
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]

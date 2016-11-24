@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   xmlns:view="com.photodispatcher.view.*" 
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   showStatusBar="false"
+					   creationComplete="{initApp()}" 
+					   closing="windowedapplication1_closingHandler(event)" xmlns:config="com.photodispatcher.view.config.*" 
+					   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.akmeful.fotakrama.project.INamespaced;
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.LayersetGroup;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
+			import com.photodispatcher.model.mysql.services.TechPickerService;
+			import com.photodispatcher.model.mysql.services.TechPointService;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.FeederController;
+			import com.photodispatcher.service.barcode.GlueController;
+			import com.photodispatcher.service.messenger.MessengerGeneric;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.ModalPopUp;
+			import com.photodispatcher.view.config.DatabasePopup;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			
+			[Bindable]
+			private var techPionts:ArrayCollection;
+			
+			[Bindable]
+			private var comReaders:ArrayCollection= new ArrayCollection;
+			
+			[Bindable]
+			private var comFeederProxy:ComInfo; 
+			[Bindable]
+			private var comGlueProxy:ComInfo; 
+			
+			[Bindable]
+			private var feedDelay:int=100;
+			[Bindable]
+			private var pushDelay:int=100;
+
+			[Bindable]
+			public var doubleSheetOff:Boolean=false;
+
+			[Bindable]
+			public var engineOnStartOn:Boolean=false;
+			[Bindable]
+			public var vacuumOnStartOn:Boolean=false;
+			[Bindable]
+			public var engineOnErrOff:Boolean=false;
+			[Bindable]
+			public var vacuumOnErrOff:Boolean=false;
+			[Bindable]
+			public var stopOnComplite:Boolean=true;
+			[Bindable]
+			public var pauseOnComplite:Boolean=false;
+			
+			[Bindable]
+			private var techPointObj:TechPoint;
+
+			protected var _reversOrder:Boolean
+			[Bindable]
+			public function get reversOrder():Boolean{
+				return _reversOrder;
+			}
+			public function set reversOrder(value:Boolean):void{
+				_reversOrder = value;
+				Context.setAttribute("reversOrder", value);
+			}
+			
+			
+			private var _techPoint:int;
+			[Bindable]
+			protected function get techPointID():int{
+				return _techPoint;
+			}
+			protected function set techPointID(value:int):void{
+				_techPoint = value;
+				if(_techPoint){
+					Context.setAttribute("techPoint", _techPoint);
+					setTechPointObj(_techPoint);
+				}
+			}
+			
+			private function setTechPointObj(id:int):void{
+				if(!techPionts) return;
+				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
+				Context.setAttribute("tech.object", techPointObj);
+			}
+			
+			private var bdPopup:DatabasePopup;
+			private function initApp():void{
+				bdPopup= new DatabasePopup();
+				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
+				bdPopup.chekConnect();
+			}
+			
+			private function bdPopClose(e:PopUpEvent):void{
+				var connected:Boolean=e.commit;
+				if(connected){
+					//connected
+					init();
+				}else{
+					//no connection
+					currentState='disconnected';
+					bdPopup.open(null);
+				}
+			}
+			
+			private var startPopup:ModalPopUp;
+			private function init():void{
+				//lock screen
+				startPopup= new ModalPopUp();
+				startPopup.label='Инициализация';
+				startPopup.open(null);
+				
+				var initLatch:DbLatch=Context.initPhotoPicker();
+				initLatch.addEventListener(Event.COMPLETE, onInit);
+				
+				var latch:DbLatch= new DbLatch();
+				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
+				latch.addEventListener(Event.COMPLETE,onTPLoad);
+				//TODO SourceType???
+				latch.addLatch(svc.loadAll(SourceType.TECH_GLUING));
+				latch.start();
+				initLatch.join(latch);
+				
+				initLatch.start();
+			}
+			private function onTPLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTPLoad);
+					if(latch.complite){
+						techPionts=latch.lastDataAC;
+					}
+				}
+			}
+			private function onInit(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onInit);
+					if(!latch.complite){
+						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
+						return;
+					}
+				}
+				
+				comReaders= new ArrayCollection();
+				var coms:Array=ComInfo.load();
+				var ci:ComInfo;
+				for each (ci in coms){
+					if (ci.type==ComInfo.COM_TYPE_CONTROLLER) comFeederProxy= ci; 
+					if (ci.type==ComInfo.COM_TYPE_GLUECONTROLLER) comGlueProxy= ci; 
+					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReaders.addItem(ci); 
+				}
+				if(!comFeederProxy){
+					comFeederProxy= new ComInfo(); 
+					comFeederProxy.type=ComInfo.COM_TYPE_CONTROLLER;
+					comFeederProxy.suffix=FeederController.MSG_SUFIX;
+				}
+				if(!comGlueProxy){
+					comGlueProxy= new ComInfo(); 
+					comGlueProxy.type=ComInfo.COM_TYPE_GLUECONTROLLER;
+					comGlueProxy.suffix=GlueController.MSG_SUFIX;
+				}
+				var techGroupId:int;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					techPointID=so.data.techPoint;
+					techGroupId=so.data.techGroupId;
+					reversOrder=so.data.reversOrder; 
+					doubleSheetOff=so.data.doubleSheetOff;
+					feedDelay=so.data.feedDelay;
+					if(feedDelay<=0) feedDelay=300;
+					pushDelay=so.data.bookDelay;
+					if(pushDelay<=0) pushDelay=300;
+					engineOnStartOn=so.data.engineOnStartOn;
+					vacuumOnStartOn=so.data.vacuumOnStartOn;
+					engineOnErrOff=so.data.engineOnErrOff;
+					vacuumOnErrOff=so.data.vacuumOnErrOff;
+					if(so.data.hasOwnProperty('stopOnComplite')) stopOnComplite=so.data.stopOnComplite;
+					pauseOnComplite=so.data.pauseOnComplite;
+				}
+				
+				startPopup.close();
+				startPopup=null;
+				
+				//init messenger
+				if(techPointObj) Context.station.name=techPointObj.name;
+				Context.station.setType(CycleStation.TYPE_BELGLUE,2);
+				MessengerGeneric.connect();
+				
+				currentState='config';
+			}
+			
+			
+			private function start():void{
+				if(!techPointObj 
+					|| !comFeederProxy || !comFeederProxy.num 
+					|| !comGlueProxy || !comGlueProxy.num 
+					|| comReaders.length==0 ){
+					Alert.show('Приложение не настроено');
+					currentState='config';
+					return;
+				}
+				var arr:Array=comReaders.source.concat(comFeederProxy,comGlueProxy); 
+				serialProxy.start(arr);
+				if(!serialProxy.isStarted){
+					return;
+				}
+				
+				currentState='monitor';
+				if(techPickerView) techPickerView.start();
+			}
+			
+			private function stop():void{
+				if(techPickerView) techPickerView.stop();
+				if(serialProxy) serialProxy.stop();
+				currentState='config';
+			}
+			
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				//TODO flush data
+				MessengerGeneric.disconnect();
+				if(serialProxy) serialProxy.stop();
+				if(techPickerView) techPickerView.stop();
+			}
+			
+			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
+				var tp:TechPoint= ddTechPoint.selectedItem as TechPoint;
+				if (!tp) return;
+				techPointID=tp.id;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.techPoint = techPointID;
+				so.flush();  
+			}
+			
+			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
+				var barcodeReader:ComReader= event.target as ComReader;
+				if(barcodeReader) barcodeReader.stop();
+				//serialProxy.stop();
+				var bar:String=event.barcode;
+				bar = bar.replace(String.fromCharCode(13),'[LF]');
+				bar = bar.replace(String.fromCharCode(10),'[CR]');
+				if(barcodeReader) bar=barcodeReader.comCaption+': '+bar;
+				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
+				currentState='config';
+			}
+			
+			protected function btSaveComs_clickHandler(event:MouseEvent):void{
+				var arr:Array=comReaders.source.concat(comFeederProxy,comGlueProxy);
+				ComInfo.save(arr);
+			}
+			
+			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
+				Alert.show('Ошибка SerialProxy \n '+event.error,'Ошибка');
+				//currentState='config';
+			}
+			
+			protected function chbRevers_changeHandler(event:Event):void{
+				reversOrder=chbRevers.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.reversOrder = reversOrder;
+				so.flush();  
+			}
+			
+			
+			protected function setBool(prop:String):void{
+				if(!this.hasOwnProperty(prop)) return;
+				var checkb:CheckBox= this['tg_'+prop] as CheckBox;
+				if (!checkb) return;
+				var result:Boolean=checkb.selected;
+				this[prop]=checkb.selected; 
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data[prop] = result;
+				so.flush();  
+			}
+			
+			protected function btAddCom_clickHandler(event:MouseEvent):void{
+				var cp:ComInfo= new ComInfo();
+				cp.type=ComInfo.COM_TYPE_BARREADER;
+				comReaders.addItem(cp);
+				comList.selectedItem=cp;
+			}
+			
+			protected function btDelCom_clickHandler(event:MouseEvent):void{
+				if(comList && comList.selectedIndex!=-1){
+					comReaders.removeItemAt(comList.selectedIndex);
+					comList.selectedIndex=-1
+				}
+			}
+			
+			protected function spFeedDelay_changeHandler(event:Event):void{
+				feedDelay=spFeedDelay.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.feedDelay = feedDelay;
+				so.flush();  
+			}
+			
+			protected function nsBookDelay_changeHandler(event:Event):void{
+				pushDelay=nsBookDelay.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.bookDelay = pushDelay;
+				so.flush();  
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="disconnected"/>
+		<s:State name="config"/>
+		<s:State name="monitor"/>
+	</s:states>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
+			  top="5" right="5"/>
+	
+	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Технологическая точка:"/>
+			<s:DropDownList id="ddTechPoint" dataProvider="{techPionts}" selectedItem="{techPointObj}" 
+							labelField="name" change="ddTechPoint_changeHandler(event)"
+							width="200"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Обратный порядок:"/>
+			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
+			<!--<s:Spacer width="10"/>
+			<s:Label text="Время цикла(млсек):"/>
+			<s:NumericStepper id="spTurnInterval" minimum="500" maximum="10000" snapInterval="100" value="{turnInterval}" change="spTurnInterval_changeHandler(event)"/>-->
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Задержка подачи листа (млсек):"/>
+			<s:NumericStepper id="spFeedDelay" minimum="100" maximum="5000" snapInterval="100" value="{feedDelay}" change="spFeedDelay_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup gap="0" verticalAlign="baseline">
+			<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 
+			<s:Label text="Отключить контроль двойного листа для разворотов"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Задержка выброса книги (млсек):"/>
+			<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="100" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
+		</s:HGroup>
+
+		<s:HGroup gap="0" verticalAlign="baseline">
+			<s:Label text="При старте включать:" width="180"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
+			<s:Label text="Привод"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_vacuumOnStartOn" selected="{vacuumOnStartOn}" change="{setBool('vacuumOnStartOn')}"/>
+			<s:Label text="Вакуум"/>
+		</s:HGroup>
+		<s:HGroup gap="0" verticalAlign="baseline">
+			<s:Label text="При паузе/ошибке выключать:" width="180"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
+			<s:Label text="Привод"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
+			<s:Label text="Вакуум"/>
+		</s:HGroup>
+		<s:HGroup gap="0" verticalAlign="baseline">
+			<s:Label text="При завершении заказа"  width="180"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
+			<s:Label text="Стоп"/>
+			<s:Spacer width="10"/>
+			<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
+			<s:Label text="Пауза"/>
+		</s:HGroup>
+		
+		<s:Spacer height="5"/>
+		<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
+		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" resizeToContent="true">
+			<s:NavigatorContent label="Подача" backgroundAlpha="0" width="100%">
+				<s:Group width="100%">
+					<itemRenderer:ComInfoRenderer  data="{comFeederProxy}" lockType="true" lockSuffix="true"/>
+				</s:Group>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%">
+				<s:Group width="100%">
+					<itemRenderer:ComInfoRenderer  data="{comGlueProxy}" lockType="true" lockSuffix="true"/>
+				</s:Group>
+			</s:NavigatorContent>
+			<s:NavigatorContent label="Сканеры ШК" backgroundAlpha="0" width="100%">
+				<s:HGroup gap="0">
+					<s:VGroup gap="5" height="92%">
+						<s:List id="comList" dataProvider="{comReaders}"  height="100%"/>
+						<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
+						<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
+					</s:VGroup> 
+					<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
+				</s:HGroup>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+		
+		<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+	</s:VGroup>
+	
+	
+	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
+		<view:GlueFeederView id="techPickerView" techPoint="{techPointObj}" 
+							 serialProxy="{serialProxy}"
+							 reversOrder="{reversOrder}" 
+							 feedDelay="{feedDelay}"
+							 pushDelay="{pushDelay}"
+							 engineOnStartOn="{engineOnStartOn}"
+							 vacuumOnStartOn="{vacuumOnStartOn}"
+							 engineOnErrOff="{engineOnErrOff}"
+							 vacuumOnErrOff="{vacuumOnErrOff}"
+							 stopOnComplite="{stopOnComplite}"
+							 doubleSheetOff="{doubleSheetOff}"
+							 pauseOnComplite="{pauseOnComplite}"
+							 width="100%" height="100%"/>
+	</s:VGroup>
+	
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+		<s:Spacer width="100%"/>
+		<s:Button label="Настройки" includeIn="monitor" click="{stop()}"/>
+		<s:Button label="Старт" includeIn="config" click="{start()}"/>
+		<s:Button label="Закрыть" click="{stop(); MessengerGeneric.disconnect(); FlexGlobals.topLevelApplication.exit();}"/>
+	</s:HGroup>
+	
+</s:WindowedApplication>

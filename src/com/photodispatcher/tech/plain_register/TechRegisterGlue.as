@@ -1,5 +1,6 @@
-package com.photodispatcher.tech
+package com.photodispatcher.tech.plain_register
 {
+
 	public class TechRegisterGlue extends TechRegisterBase{
 		
 		public function TechRegisterGlue(printGroup:String, books:int, sheets:int){

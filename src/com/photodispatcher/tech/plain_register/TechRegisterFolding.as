@@ -1,4 +1,4 @@
-package com.photodispatcher.tech{
+package com.photodispatcher.tech.plain_register{
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.TechLog;
 	import com.photodispatcher.model.mysql.services.TechService;

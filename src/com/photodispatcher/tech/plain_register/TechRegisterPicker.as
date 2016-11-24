@@ -1,4 +1,4 @@
-package com.photodispatcher.tech{
+package com.photodispatcher.tech.plain_register{
 	
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.util.StrUtil;

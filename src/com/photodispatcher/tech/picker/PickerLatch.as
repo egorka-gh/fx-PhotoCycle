@@ -14,6 +14,7 @@ package com.photodispatcher.tech.picker{
 		public static const TYPE_BARCODE:int		=3;
 		public static const TYPE_REGISTER:int		=4;
 		public static const TYPE_BD:int				=5;
+		public static const TYPE_PRESSOFF:int		=6;
 
 		
 		[Bindable]

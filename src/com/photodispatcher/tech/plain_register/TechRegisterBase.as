@@ -1,4 +1,4 @@
-package com.photodispatcher.tech{
+package com.photodispatcher.tech.plain_register{
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
@@ -453,6 +453,7 @@ package com.photodispatcher.tech{
 			if(!lastBook) return false;
 			if(bookPart==BookSynonym.BOOK_PART_COVER) return true;
 			var endSheet:int=revers?1:sheets;
+			if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER) endSheet=revers?1:0;
 			return lastSheet==endSheet;
 		}
 		

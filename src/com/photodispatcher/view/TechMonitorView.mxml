@@ -19,10 +19,10 @@
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.ValveCom;
-			import com.photodispatcher.tech.TechRegisterBase;
-			import com.photodispatcher.tech.TechRegisterCommon;
-			import com.photodispatcher.tech.TechRegisterFolding;
-			import com.photodispatcher.tech.TechRegisterPrint;
+			import com.photodispatcher.tech.plain_register.TechRegisterBase;
+			import com.photodispatcher.tech.plain_register.TechRegisterCommon;
+			import com.photodispatcher.tech.plain_register.TechRegisterFolding;
+			import com.photodispatcher.tech.plain_register.TechRegisterPrint;
 			import com.photodispatcher.util.StrUtil;
 			
 			import mx.collections.ArrayCollection;

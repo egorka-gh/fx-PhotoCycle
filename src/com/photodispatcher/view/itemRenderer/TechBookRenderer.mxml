@@ -7,7 +7,7 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
-			import com.photodispatcher.tech.TechBook;
+			import com.photodispatcher.tech.register.TechBook;
 			
 			protected function getStateColor(state:int):int{
 				switch(state){

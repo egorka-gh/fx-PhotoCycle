@@ -1,4 +1,4 @@
-package com.photodispatcher.tech{
+package com.photodispatcher.tech.plain_register{
 	
 	public class TechRegisterCommon extends TechRegisterBase{
 		
