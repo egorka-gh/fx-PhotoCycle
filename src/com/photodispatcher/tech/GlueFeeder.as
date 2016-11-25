@@ -50,7 +50,7 @@ package com.photodispatcher.tech{
 		
 		protected static const BD_TIMEOUT_MIN:int=300;
 		protected static const BD_TIMEOUT_MAX:int=1000;
-		protected static const BD_MAX_WAITE:int=10000;
+		protected static const BD_MAX_WAITE:int=3000;
 
  
 		[Bindable]
@@ -175,7 +175,7 @@ package com.photodispatcher.tech{
 		public function set feedDelay(value:int):void{
 			if(value<100) value=100;
 			_feedDelay = value;
-			if(layerOutLatch) layerOutLatch.setTimeout(1000+_feedDelay); 
+			//if(layerOutLatch) layerOutLatch.setTimeout(1000+_feedDelay); 
 		}
 		
 		
@@ -189,8 +189,8 @@ package com.photodispatcher.tech{
 			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', 200*3);
 			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
 			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',2000);
-			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000+feedDelay); //1сек
-			barLatch = new PickerLatch(PickerLatch.TYPE_BARCODE, 1,'Сканер','Ожидание штрихкода',2000);
+			barLatch = new PickerLatch(PickerLatch.TYPE_BARCODE, 1,'Сканер','Ожидание штрихкода',layerInLatch.getTimeout()+1000);
+			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000); //1сек
 			registerLatch = new PickerLatch(PickerLatch.TYPE_REGISTER, 1,'Книга','Контроль очередности',200*2);
 			bdLatch= new PickerLatch(PickerLatch.TYPE_BD, 2,'База данных','Получение параметров заказа',2*BD_MAX_WAITE); //callDbLate wl pause after BD_MAX_WAITE
 			
@@ -733,7 +733,8 @@ package com.photodispatcher.tech{
 						
 						//cycle feeding
 						currentGroupStep=0;
-						nextStep();
+						//nextStep();
+						startFeedDelay();
 						return;
 					}
 					feedSheet();
@@ -751,7 +752,7 @@ package com.photodispatcher.tech{
 			//set latches
 			layerInLatch.layer=currentLayer;
 			layerInLatch.setOn();
-			if(barcodeReaders && barcodeReaders.length>0 && barcodeReaders[0] is ComReaderEmulator) (barcodeReaders[0] as ComReaderEmulator).emulateNext(); 
+			//if(barcodeReaders && barcodeReaders.length>0 && barcodeReaders[0] is ComReaderEmulator) (barcodeReaders[0] as ComReaderEmulator).emulateNext(); 
 			barLatch.setOn();
 			aclLatch.setOn();
 			log('Старт подачи листа')
@@ -772,12 +773,15 @@ package com.photodispatcher.tech{
 						checkLatches();
 						break;
 					}
+					//no break to call pause
+				case PickerLatch.TYPE_BD:
 				case PickerLatch.TYPE_REGISTER:
 					pause('Таймаут ожидания. '+l.label+':'+l.caption);
 					break;
 				case PickerLatch.TYPE_BARCODE:
-					if(layerInLatch.isOn || layerOutLatch.isOn){
-						//sheet is not in or not out; restart
+					if(layerInLatch.isOn){
+						//sheet is not in, can be refeed, reset
+						//will never run if timeout > then layerInLatch timeout
 						barLatch.setOn();
 					}else{
 						//TODO neve run?
@@ -799,25 +803,25 @@ package com.photodispatcher.tech{
 						log('Повторная подача листа.');
 						refeed=false;
 						layerInLatch.setOn(); //restart in latch
-						if(currentGroup==COMMAND_GROUP_BOOK_SHEET) barLatch.setOn(); //restart bar latch
+						if(currentGroup==COMMAND_GROUP_BOOK_SHEET && barLatch.isOn) barLatch.setOn(); //reset bar latch
 						aclLatch.setOn();
 						controller.feed();
 						return;
 					}
 					//empty tay or some else 
-						//check if defect complited
-						if(currentGroup==COMMAND_GROUP_BOOK_SHEET){
-							if(register && register.inexactBookSequence && register.currentBookComplited){
-								register.finalise();
-								register=null;
-								inexactBookSequence=false;
-								log('Сборка брака завершена: заказ "'+currPgId+'"');
-								stop();
-								return;
-							}
+					//check if defect complited
+					if(currentGroup==COMMAND_GROUP_BOOK_SHEET){
+						if(register && register.inexactBookSequence && register.currentBookComplited){
+							register.finalise();
+							register=null;
+							inexactBookSequence=false;
+							log('Сборка брака завершена: заказ "'+currPgId+'"');
+							stop();
+							return;
 						}
-						pause('Заполните лотк подачи');
-						return;
+					}
+					pause('Заполните лотк подачи');
+					return;
 					break;
 				case PickerLatch.TYPE_LAYER_OUT:
 					//layer not out
@@ -873,43 +877,51 @@ package com.photodispatcher.tech{
 			}
 			//reset refeed
 			refeed=false;
-				if(layerInLatch.isOn && (event.state==FeederController.CHANEL_STATE_SINGLE_SHEET || event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET)){
-					//layerIn msg					
-					var waiteState:int=FeederController.CHANEL_STATE_SINGLE_SHEET;
-					//var wrongState:int=FeederController.CHANEL_STATE_DOUBLE_SHEET;
-					if(currentLayer==Layer.LAYER_SHEET){
-						waiteState=FeederController.CHANEL_STATE_DOUBLE_SHEET;
-						//wrongState=FeederController.CHANEL_STATE_SINGLE_SHEET;
-					}
-					
-					if((event.state==waiteState) || (doubleSheetOff && currentLayer==Layer.LAYER_SHEET && event.state==FeederController.CHANEL_STATE_SINGLE_SHEET)){
-						//start OutLatch
-						layerOutLatch.setOn();
-						//layer in
-						//currentTray=-1;
-						layerInLatch.forward();
-					}else{ //if(event.state==wrongState){
-						//wrong state
-						pause('Лоток подачи: '+FeederController.chanelStateName(event.state));
-					}
-				}else if(layerOutLatch.isOn && event.state==FeederController.CHANEL_STATE_SHEET_PASS){
-					//layer out
-					if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
-					if(feedDelay<100){
-						layerOutLatch.forward();
-					}else{
-						startFeedDelay();
-					}
-				}else{
-					//unexpected msg
-					pause('Лоток подачи. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
+			if(layerInLatch.isOn && (event.state==FeederController.CHANEL_STATE_SINGLE_SHEET || event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET)){
+				//layerIn msg					
+				var waiteState:int=FeederController.CHANEL_STATE_SINGLE_SHEET;
+				//var wrongState:int=FeederController.CHANEL_STATE_DOUBLE_SHEET;
+				if(currentLayer==Layer.LAYER_SHEET){
+					waiteState=FeederController.CHANEL_STATE_DOUBLE_SHEET;
+					//wrongState=FeederController.CHANEL_STATE_SINGLE_SHEET;
 				}
+				
+				if((event.state==waiteState) || (doubleSheetOff && currentLayer==Layer.LAYER_SHEET && event.state==FeederController.CHANEL_STATE_SINGLE_SHEET)){
+					//start OutLatch
+					layerOutLatch.setOn();
+					//layer in
+					//currentTray=-1;
+					layerInLatch.forward();
+				}else{ //if(event.state==wrongState){
+					//wrong state
+					pause('Лоток подачи: '+FeederController.chanelStateName(event.state));
+				}
+			}else if(layerOutLatch.isOn && event.state==FeederController.CHANEL_STATE_SHEET_PASS){
+				//sheet out
+				currBarcode=null;//close if added scaner over conveyer
+				layerOutLatch.forward();
+				//if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
+				/*
+				if(feedDelay<100){
+					layerOutLatch.forward();
+				}else{
+					startFeedDelay();
+				}
+				*/
+			}else{
+				//unexpected msg
+				pause('Лоток подачи. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
+			}
 		}
 		
 		private var feedTimer:Timer;
 		
 		protected function startFeedDelay():void{
-			if(feedDelay<100) return;
+			if(feedDelay<100){
+				//layerOutLatch.forward();
+				nextStep();
+				return;
+			}
 			
 			if(!feedTimer){
 				feedTimer= new Timer(feedDelay,1);
@@ -919,7 +931,8 @@ package com.photodispatcher.tech{
 			log('Задержка подачи листа');
 		}
 		private function onFeedDelayTimer(evt:TimerEvent):void{
-			layerOutLatch.forward();
+			//layerOutLatch.forward();
+			nextStep();
 		}
 
 		protected function onBarCode(event:BarCodeEvent):void{
@@ -955,7 +968,6 @@ package com.photodispatcher.tech{
 				bdWait=0;
 				bdAttempt=0;
 				*/
-				bdLatch.setOn();
 				checkOrderParams();
 				//new register
 				register= new TechRegisterPicker(pgId,currBookTot,currSheetTot);
@@ -1017,6 +1029,7 @@ package com.photodispatcher.tech{
 		
 		protected function checkOrderParams():void{
 			if(!currPgId) return;
+			bdLatch.setOn();
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch();
 			//load reprints

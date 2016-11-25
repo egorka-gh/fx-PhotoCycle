@@ -76,6 +76,10 @@ package com.photodispatcher.tech.picker{
 			}
 		}
 		
+		public function getTimeout():int{
+			return timeout;
+		}
+		
 		public function setOn():void{
 			_step=0;
 			caption=defaultCaption;
@@ -88,7 +92,7 @@ package com.photodispatcher.tech.picker{
 				}else{
 					timer.reset();//?
 				}
-				if(timer) timer.start();
+				timer.start();
 			}
 		}
 
