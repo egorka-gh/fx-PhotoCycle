@@ -1216,7 +1216,7 @@ package com.photodispatcher.tech.picker{
 			if(currExtraInfo.book_part>0) register.setBookPart(currExtraInfo.book_part);
 			bdLatch.forward('Проверка заказа');
 			
-			currBookTypeName=getBookTypeName(currExtraInfo.book_type)
+			currBookTypeName=getBookTypeName(currExtraInfo.book_type);
 			//check book type
 			if(!layerset.is_book_check_off && layerset.book_type!=currExtraInfo.book_type){
 				pause('Тип книги "'+currBookTypeName+'" заказа не соответствует шаблону.');

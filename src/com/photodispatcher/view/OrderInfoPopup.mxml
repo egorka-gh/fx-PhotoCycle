@@ -28,6 +28,7 @@
 			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.StaffActivityService;
 			import com.photodispatcher.provider.preprocess.ReprintBuilder;
 			import com.photodispatcher.util.StrUtil;
@@ -481,6 +482,16 @@
 			}
 			
 			
+			protected function btResetOtk_clickHandler(event:MouseEvent):void{
+				if(order && order.state==OrderState.TECH_OTK){
+					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+					var latch:DbLatch= new DbLatch();
+					latch.addEventListener(Event.COMPLETE,onOrderClean);
+					latch.addLatch(svc.extraStateReset(order.id,'',OrderState.TECH_OTK));
+					latch.start();
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -578,6 +589,7 @@
 					</s:HGroup>
 					<s:HGroup gap="10" verticalAlign="baseline" width="100%"  horizontalAlign="right">
 						<s:Button label="Перезагрузить" click="button1_clickHandler(event)"/>
+						<s:Button id="btResetOtk" label="Вернуть на ОТК" enabled="{order.state==OrderState.TECH_OTK}" click="btResetOtk_clickHandler(event)"/>
 					</s:HGroup>
 				</s:VGroup>
 			</s:Group>

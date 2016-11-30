@@ -302,6 +302,24 @@ package com.photodispatcher.service.barcode
 				}
 			}
 		}
+		
+		public function traceDisconnected():String{
+			var ci:ComInfo;
+			if(!comInfos) return 'Пустой список портов';
+			var msg:String='';
+			//collect disconnected clients
+			for each(ci in comInfos){
+				if(ci){
+					if(!ci.proxy && ci.num){
+						msg=msg+' '+ci.label+' no proxy;';		
+					}else if(!ci.proxy.connected){
+						msg=msg+' '+ci.label+' не подключен;';		
+					}
+				}
+			}
+			if(!msg) msg='Все ' +comInfos.length.toString()+' подключены';
+			return msg;
+		}
 
 		public function stop():void{
 			_isStarted=false;

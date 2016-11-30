@@ -192,7 +192,7 @@ package com.photodispatcher.tech{
 			barLatch = new PickerLatch(PickerLatch.TYPE_BARCODE, 1,'Сканер','Ожидание штрихкода',layerInLatch.getTimeout()+1000);
 			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000); //1сек
 			registerLatch = new PickerLatch(PickerLatch.TYPE_REGISTER, 1,'Книга','Контроль очередности',200*2);
-			bdLatch= new PickerLatch(PickerLatch.TYPE_BD, 2,'База данных','Получение параметров заказа',2*BD_MAX_WAITE); //callDbLate wl pause after BD_MAX_WAITE
+			bdLatch= new PickerLatch(PickerLatch.TYPE_BD, 1,'База данных','Получение параметров заказа',2*BD_MAX_WAITE); //callDbLate wl pause after BD_MAX_WAITE
 			
 			latches=[aclLatch,layerInLatch,layerOutLatch,barLatch,registerLatch,bdLatch];
 			var l:PickerLatch;
@@ -291,6 +291,7 @@ package com.photodispatcher.tech{
 			return _barcodeReaders;
 		}
 		protected function set barcodeReaders(value:Array):void{
+			log('Set barcode readers');
 			var barReader:ComReader;
 			if(_barcodeReaders){
 				for each(barReader in _barcodeReaders){
@@ -309,6 +310,13 @@ package com.photodispatcher.tech{
 				}
 			}
 			//checkPrepared();
+			var msg:String;
+			if(!_barcodeReaders || _barcodeReaders.length==0){
+				msg='has no barcode readers';
+			}else{
+				msg='has '+_barcodeReaders.length.toString()+' barcode readers';
+			}
+			log(msg);
 		}
 
 		protected var _controller:FeederController;
@@ -350,10 +358,14 @@ package com.photodispatcher.tech{
 			}
 		}
 		protected function onGlueHandlerErr(event:ErrorEvent):void{
-			if(!isRunning || !isPaused) return;
+			if(!isRunning || isPaused){
+				log('Cклейка: '+event.text);
+				return;
+			}
 			if(glueHandler.isRunning && glueHandler.hasPauseRequest){
 				pauseRequest('Cклейка: '+event.text);
 			}else{
+				log('Cклейка: '+event.text);
 				stop();
 			}
 		}
@@ -390,9 +402,18 @@ package com.photodispatcher.tech{
 				log('SerialProxy not started...');
 				return;
 			}
-			//connect
-			serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
-			serialProxy.connectAll();
+			if(!isRunning){
+				//connect
+				serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+				serialProxy.connectAll();
+			}else{
+				if(!serialProxy.connected){
+					log('SerialProxy часть COM портов не подключено');
+					log('SerialProxy:' +serialProxy.traceDisconnected());
+					return;
+				}
+				startInternal();	
+			}
 		}
 
 		public function setEngineOn():void{
@@ -431,7 +452,7 @@ package com.photodispatcher.tech{
 			if(!barcodeReaders){
 				//init bar readers
 				var newBarcodeReaders:Array=[];
-				for (i=0; i<readers.length; i++) newBarcodeReaders.push(new ComReader(500));
+				for (i=0; i<readers.length; i++) newBarcodeReaders.push(new ComReader());
 				barcodeReaders=newBarcodeReaders;
 			}
 			if(readers.length!=barcodeReaders.length){
@@ -446,14 +467,17 @@ package com.photodispatcher.tech{
 			hasPauseRequest=false;
 			if(!checkPrepared(true)) return;
 			if(!glueHandler || !glueHandler.start()){
+				log('startInternal: glueHandler init error');
 				return;
 			}
+			log('SerialProxy:' +serialProxy.traceDisconnected());
+			if(!barcodeReaders || barcodeReaders.length==0 || ! controller){
+				log('startInternal: barcodeReaders or controller init error');
+				return;
+			}
+			log('SerialProxy:' +serialProxy.traceDisconnected());
 			if(isRunning){
 				resume();
-				return;
-			}
-			if(!barcodeReaders || barcodeReaders.length==0 || ! controller){
-				//TODO err?
 				return;
 			}
 			if(logger) logger.clear();
@@ -476,6 +500,7 @@ package com.photodispatcher.tech{
 		protected function resume():void{
 			if(!isRunning || !isPaused) return;
 			if(pausedGroup==-1 || pausedGroupStep==-1) return;
+			currBarcode=null;
 			log('start resume');
 			resetLatches();
 			isPaused=false;
@@ -515,8 +540,10 @@ package com.photodispatcher.tech{
 			log('paused');
 			currentGroup=pausedGroup;
 			currentGroupStep=pausedGroupStep;
+			/*
 			log('restarting SerialProxy...');
 			serialProxy.restart();
+			*/
 		}
 		
 		protected function isServiceGroup(group:int):Boolean{
@@ -526,7 +553,7 @@ package com.photodispatcher.tech{
 		public function stop():void{
 			if(!isRunning) return;
 			if(isPaused) isPaused=false;
-			if(glueHandler && glueHandler.isRunning) glueHandler.stop();
+			//if(glueHandler && glueHandler.isRunning) glueHandler.stop();
 			log('stop sequence');
 			resetLatches();
 			currentGroup= COMMAND_GROUP_STOP;
@@ -944,6 +971,7 @@ package com.photodispatcher.tech{
 				if(barcode!=currBarcode) pause('Не ожидаемое срабатывание сканера ШК, код:' +barcode);
 				return;
 			}
+			barLatch.forward();
 			if(barcode==currBarcode) return; //doublescan or more then 1 barreader
 			currBarcode=barcode;
 			//parce barcode
@@ -1021,7 +1049,6 @@ package com.photodispatcher.tech{
 			currBookIdx=register.currentBook;
 			currSheetIdx=register.currentSheet;
 			registerLatch.forward();
-			barLatch.forward();
 		}
 		protected function log(msg:String):void{
 			if(logger) logger.log(msg);
@@ -1039,6 +1066,7 @@ package com.photodispatcher.tech{
 		}
 		protected function onReprintsLoad(e:Event):void{
 			currReprints=[];
+			var bookType:int
 			var latch:DbLatch=e.target as DbLatch;
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE,onReprintsLoad);
@@ -1048,16 +1076,19 @@ package com.photodispatcher.tech{
 						for each (var pg:PrintGroup in list){
 							if(pg){
 								currReprints.push(pg.id);
+								bookType=pg.book_type;
 							}
 						}
 					}
 				}
 			}
+			currBookTypeName=getBookTypeName(bookType);
 			bdLatch.forward();
 		}
 
 		protected function getBookTypeName(bookType:int):String{
 			var result:String;
+			if(!bookType) return '';
 			var ac:ArrayCollection=Context.getAttribute('book_typeList') as ArrayCollection;
 			if(ac){
 				var fv:FieldValue=ArrayUtil.searchItem('value',bookType,ac.source) as FieldValue;

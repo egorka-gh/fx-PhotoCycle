@@ -71,7 +71,7 @@
 			[Bindable]
 			public var vacuumOnErrOff:Boolean=false;
 			[Bindable]
-			public var stopOnComplite:Boolean=true;
+			public var stopOnComplite:Boolean=false;
 			[Bindable]
 			public var pauseOnComplite:Boolean=false;
 			
