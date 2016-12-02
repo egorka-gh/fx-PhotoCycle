@@ -92,6 +92,28 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function getLink(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getLink", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getLink", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getLink", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function getLinkByPG(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getLinkByPG", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getLinkByPG", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getLinkByPG", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function getQueueMarkPGs(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("getQueueMarkPGs", arg0, resultHandler, faultHandler) as AsyncToken;
