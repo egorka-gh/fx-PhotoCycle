@@ -32,7 +32,6 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.printer.Printer;
 	import com.photodispatcher.provider.preprocess.PrintCompleteTask;
-	import com.photodispatcher.provider.preprocess.QueueMarkTask;
 	import com.photodispatcher.service.messenger.MessengerGeneric;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;

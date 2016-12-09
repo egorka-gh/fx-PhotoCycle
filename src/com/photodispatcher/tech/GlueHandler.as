@@ -28,6 +28,8 @@ package com.photodispatcher.tech{
 		[Bindable]
 		public var isRunning:Boolean;
 		
+		public var nonStopMode:Boolean;
+		
 		//requests feeder pause
 		[Bindable]
 		public var hasPauseRequest:Boolean;
@@ -112,9 +114,26 @@ package com.photodispatcher.tech{
 			return 	prepared;
 		}
 		
-		public function start():Boolean{
+		private var startTimer:Timer;
+		public function start(startDelay:int=0):Boolean{
 			createLatches();
 			if(isRunning) return true;
+			if(startDelay<=100){
+				return startInternal();
+			}else{
+				startTimer= new Timer(startDelay,1);
+				startTimer.addEventListener(TimerEvent.TIMER, onStartTimer);
+				startTimer.start();
+				return true;
+			}
+		}
+		private function onStartTimer(e:TimerEvent):void{
+			startTimer.removeEventListener(TimerEvent.TIMER, onStartTimer);
+			startTimer= null;
+			startInternal();
+		}
+
+		private function startInternal():Boolean{
 			if(!checkPrepared(true)) return false;
 			log('Старт');
 			//reset state
@@ -127,6 +146,7 @@ package com.photodispatcher.tech{
 			hasPauseRequest=false;
 			return true;
 		}
+		
 		public function resume():void{
 			if(!isRunning) return;
 			hasPauseRequest=false;
@@ -136,15 +156,17 @@ package com.photodispatcher.tech{
 		protected function pauseRequest(err:String):void{
 			//ask feeder pause
 			if(!isRunning || hasPauseRequest) return;
-			hasPauseRequest=true;
+			if(!nonStopMode) hasPauseRequest=true;
 			log(err);
 			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,err));
 		}
 		public function stop(err:String=''):void{
 			if(!isRunning) return;
-			isRunning=false;
-			hasPauseRequest=false;
-			controller.engineStop();
+			if(!nonStopMode){
+				isRunning=false;
+				hasPauseRequest=false;
+				controller.engineStop();
+			}
 			if(err){
 				log(err);
 				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,err));
@@ -154,6 +176,7 @@ package com.photodispatcher.tech{
 		private var stopBook:TechBook;
 		public function pauseOnBook(printGroupId:String='lastAdded', book:int=-1):void{
 			if(!isRunning) return;
+			if(nonStopMode) return;
 			if(printGroupId=='lastAdded' && book==-1){
 				//get last added
 				var tb:TechBook;
@@ -176,6 +199,8 @@ package com.photodispatcher.tech{
 				stopBook=null;
 				return false;
 			}
+			if(nonStopMode) return false;
+			
 			var tb:TechBook=currentBook;
 			if(!tb){
 				stopBook=null;
@@ -244,37 +269,41 @@ package com.photodispatcher.tech{
 		protected function onControllerMsg(event:ControllerMesageEvent):void{
 			if(!isRunning ) return;
 			var tb:TechBook=currentBook;//refresh view
-				if(event.state==GlueController.STATE_SENSOR0_OFF){
-					//press open
-					if(latchPressOff.isOn && tb){
-						tb.sheetsDone++;
-						if(tb.sheetsDone>tb.sheetsFeeded){
-							stop('Ошибка контроля книги (подано<склеено) '+tb.printGroupId+' '+tb.book);
-							return;
-						}
-						if(tb.sheetsFeeded==tb.sheetsDone && tb.sheetsFeeded==tb.sheetsTotal){
-							//book complited
-							if(latchPushBook.isOn){
-								stop('Ошибка не убрана предидущая книга');
-								return;
-							}
-							pushBook();
-						}
-						latchPressOff.forward();
-					}else{
-						pauseRequest('Не ожидаемое срабатывание '+latchPressOff.label);
-						return;
+			if(!tb){
+				stop('Нет данных о текущей книге');
+				return;
+			}
+			if(event.state==GlueController.STATE_SENSOR0_OFF){
+				//press open
+				if(latchPressOff.isOn && tb){
+					tb.sheetsDone++;
+					if(tb.sheetsDone>tb.sheetsFeeded){
+						stop('Ошибка контроля книги (подано<склеено) '+tb.printGroupId+' '+tb.book);
+						if(!nonStopMode) return;
 					}
-				}else if(event.state==GlueController.STATE_SENSOR0_ON){
-					checkStopBook();
-					//press push
-					if(latchPressOff.isOn){
-						//press still closed???? 
-						log('Повторное срабатывание '+latchPressOff.label);
-					}else{
-						latchPressOff.setOn();
+					if(tb.sheetsDone==tb.sheetsTotal && (tb.sheetsFeeded==tb.sheetsTotal || nonStopMode)){
+						//book complited
+						if(latchPushBook.isOn){
+							stop('Ошибка не убрана предидущая книга');
+							if(!nonStopMode) return;
+						}
+						pushBook();
 					}
+					latchPressOff.forward();
+				}else{
+					pauseRequest('Не ожидаемое срабатывание '+latchPressOff.label);
+					return;
 				}
+			}else if(event.state==GlueController.STATE_SENSOR0_ON){
+				checkStopBook();
+				//press push
+				if(latchPressOff.isOn){
+					//press still closed???? 
+					log('Повторное срабатывание '+latchPressOff.label);
+				}else{
+					latchPressOff.setOn();
+				}
+			}
 		}
 
 		private var timer:Timer;
@@ -299,10 +328,20 @@ package com.photodispatcher.tech{
 			if(!isRunning ) return;
 			if(!latchPushBook.isOn) return;
 			controller.pushBook();
+			//refresh view
+			currentBook;
 		}
 		
 		public function removeBook():void{
-			if(isRunning) return;
+			if(isRunning && !nonStopMode) return;
+			if(isRunning){
+				var tb:TechBook=bookQueue.shift() as TechBook;
+				if(tb){
+					log('Убираю книгу '+tb.printGroupId+' '+tb.book);
+					//refresh view
+					currentBook;
+				}
+			}
 			if(controller) controller.pushBook();
 		}
 		

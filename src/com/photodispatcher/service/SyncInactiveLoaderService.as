@@ -1,11 +1,12 @@
 package com.photodispatcher.service{
+	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.ProcessState;
 	import com.photodispatcher.model.mysql.AsyncLatch;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.model.mysql.services.OrderLoadService;
+	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -15,16 +16,13 @@ package com.photodispatcher.service{
 	import flash.globalization.DateTimeFormatter;
 	
 	import mx.collections.ArrayCollection;
+	import mx.collections.ArrayList;
 	import mx.managers.CursorManager;
 	
 	import org.granite.tide.Tide;
 	
 	[Event(name="complete", type="flash.events.Event")]
-	public class SyncLoaderService extends EventDispatcher{
-		
-		public function SyncLoaderService(){
-			super(null);
-		}
+	public class SyncInactiveLoaderService extends EventDispatcher{
 		//async, interact vs sites, fetch raw orders into memory
 		//serial, interact vs bd, translate to regular order obj's & persists in bd
 		
@@ -32,17 +30,21 @@ package com.photodispatcher.service{
 		
 		private var syncItems:Array;
 		private var isRunning:Boolean=false;
-		private var service:OrderLoadService;
+		//private var service:OrderService;
 		
-		public function sync():void{
-			if (isRunning) return;
-			if (!sources) return;
-			
-			webSync();
+		public function SyncInactiveLoaderService(){
+			super(null);
 		}
 		
 		public function get isBusy():Boolean{
 			return isRunning;
+		}
+
+		public function sync():void{
+			if (isRunning) return;
+			if (!sources) return;
+
+			webSync();
 		}
 		
 		private var webLath:DbLatch;
@@ -63,21 +65,17 @@ package com.photodispatcher.service{
 						webLath.join(aLath);
 						aLath.start();
 						syncSvc.addEventListener(Event.COMPLETE,handleWebComplete);
-						syncSvc.syncLoad();
+						syncSvc.sync();
 					}
 				}
 			}
 			//clear temp table
-			if(!service) service=Tide.getInstance().getContext().byType(OrderLoadService,true) as OrderLoadService;
-			if(!service){
-				webLath.release();
-			}else{
-				webLath.addLatch(service.beginSync());
-			}
+			if(!service) service=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			webLath.addLatch(service.beginSync());
 			//waite complite
 			webLath.start();
 		}
-		
+
 		private function endSync():void{
 			isRunning=false;
 			CursorManager.removeBusyCursor();
@@ -99,7 +97,7 @@ package com.photodispatcher.service{
 			}
 			proSync.latch.release();
 		}
-		
+
 		private function onWebSyncComplite(e:Event):void{
 			webLath.removeEventListener(Event.COMPLETE,onWebSyncComplite);
 			if(syncItems.length==0){
@@ -113,12 +111,11 @@ package com.photodispatcher.service{
 			var dbLatch:DbLatch;
 			if(syncItems.length==0){
 				//fill complite , run db sync pocedure
-				//TODO 4 debug
-				//endSync();
 				dbLatch= new DbLatch(true);
 				dbLatch.addEventListener(Event.COMPLETE, onSyncComplite);
-				dbLatch.addLatch(service.sync());
-				dbLatch.start();
+				//TODO implement db sync
+				//dbLatch.addLatch(service.sync());
+				//dbLatch.start();
 				return;
 			}
 			//add by 50 items 
@@ -182,6 +179,6 @@ package com.photodispatcher.service{
 			}
 			endSync();
 		}
-		
+
 	}
 }

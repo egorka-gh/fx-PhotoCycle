@@ -4,6 +4,8 @@ package com.photodispatcher.print{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrnQueue;
+	import com.photodispatcher.model.mysql.entities.PrnQueueLink;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.PrnStrategyService;
 	import com.photodispatcher.provider.preprocess.QueueMarkTask;
 	
@@ -87,6 +89,7 @@ package com.photodispatcher.print{
 				//try to start queue
 				if(printManager.getLabStartedQueue(lab.id)==null){
 					//start prnQueue
+					StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pgCandidat.id,'Сарт партии '+ prnQueue.id.toString());
 					isStarting=true;
 					var svcs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 					var latch:DbLatch= new DbLatch();
@@ -131,6 +134,12 @@ package com.photodispatcher.print{
 			if(!latch) return;
 			latch.removeEventListener(Event.COMPLETE,onstartQueue);
 			if(latch.complite){
+				/*
+				if(pgFetched && pgFetched.length>0){
+					var pgCandidat:PrintGroup=pgFetched[0] as PrintGroup;
+					if(pgCandidat) StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pgCandidat.id,'Партия '+ prnQueue.id.toString()+' стартанула. Подготовка маркировки.');
+				}
+				*/
 				markQueue();
 			}else{
 				prnQueue.started=null;
@@ -155,12 +164,29 @@ package com.photodispatcher.print{
 			return pgCandidat;
 		}
 
+		private var markQueueLink:PrnQueueLink;
+		
 		private function markQueue():void{
+			markQueueLink=null;
 			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latch:DbLatch=new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onLoadMark);
 			latch.addLatch(svc.getQueueMarkPGs(prnQueue.id));
+			
+			var slatch:DbLatch=new DbLatch();
+			slatch.addEventListener(Event.COMPLETE,onLoadLink);
+			slatch.addLatch(svc.getLink(prnQueue.id));
+			slatch.start();
+			latch.join(slatch);
 			latch.start();
+		}
+
+		private function onLoadLink(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoadLink);
+				if(latch.complite) markQueueLink=latch.lastDataItem as PrnQueueLink;
+			}
 		}
 
 		private function onLoadMark(evt:Event):void{
@@ -172,7 +198,13 @@ package com.photodispatcher.print{
 					var pgStart:PrintGroup=latch.lastDataArr[0] as PrintGroup;
 					var pgEnd:PrintGroup;
 					if(latch.lastDataArr.length>1) pgEnd=latch.lastDataArr[1] as PrintGroup;
-					var qmTask:QueueMarkTask= new QueueMarkTask(pgStart, pgEnd);
+					/*
+					var mtxt:String="";
+					if(markQueueLink) mtxt=" ("+markQueueLink.prn_queue.toString()+'-'+markQueueLink.prn_queue_link.toString()+")";
+					StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pgStart.id,'Сарт маркировки партии '+ pgStart.prn_queue.toString()+mtxt);
+					if(pgEnd) StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pgEnd.id,'Сарт маркировки партии '+ pgEnd.prn_queue.toString()+mtxt);
+					*/
+					var qmTask:QueueMarkTask= new QueueMarkTask(pgStart, pgEnd, markQueueLink);
 					qmTask.addEventListener(Event.COMPLETE, onqmTask);
 					qmTask.run();
 				}else if(isFetching){
@@ -187,6 +219,7 @@ package com.photodispatcher.print{
 			if(qmTask){
 				qmTask.removeEventListener(Event.COMPLETE, onqmTask);
 				if(qmTask.hasError){
+					StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,qmTask.startPrintgroup.id,'Ошибка маркировки партии '+qmTask.error);
 					Alert.show('Ошибка маркировки партии '+qmTask.error);
 				}
 			}

@@ -2,9 +2,12 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.IMRunerEvent;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrnQueueLink;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMSequenceRuner;
 	import com.photodispatcher.util.IMCommandUtil;
@@ -20,18 +23,20 @@ package com.photodispatcher.provider.preprocess{
 	public class QueueMarkTask extends EventDispatcher{
 		public static const TEMP_FOLDER:String='pdf_wrk';
 
-		private var startPrintgroup:PrintGroup;
+		public var startPrintgroup:PrintGroup;
 		private var endPrintgroup:PrintGroup
+		private var queueLink:PrnQueueLink;
 		private var commands:Array;
 		private var tempFolders:Array;
 		
 		public var hasError:Boolean;
 		public var error:String;
 
-		public function QueueMarkTask(startPrintgroup:PrintGroup,endPrintgroup:PrintGroup){
+		public function QueueMarkTask(startPrintgroup:PrintGroup,endPrintgroup:PrintGroup, queueLink:PrnQueueLink=null){
 			super(null);
 			this.startPrintgroup=startPrintgroup;
 			this.endPrintgroup=endPrintgroup;
+			this.queueLink=queueLink;
 			commands=[];
 			tempFolders=[];
 		}
@@ -216,7 +221,14 @@ package com.photodispatcher.provider.preprocess{
 				command.folder=wrkDir.nativePath;
 				command.add('img-0000.jpg');
 			}
-			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Партия:'+printGroup.prn_queue.toString(),printGroup.bookTemplate.queue_offset);
+			var txt:String;
+			if(queueLink){
+				txt=queueLink.prn_queue.toString()+'-'+queueLink.prn_queue_link.toString();
+			}else{
+				txt=printGroup.prn_queue.toString();
+			}
+			StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,printGroup.id,'Маркировка партии '+ txt);
+			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Партия:'+txt,printGroup.bookTemplate.queue_offset);
 			IMCommandUtil.setOutputParams(command, '100');
 			if(!printGroup.is_pdf){
 				command.add(fileName);

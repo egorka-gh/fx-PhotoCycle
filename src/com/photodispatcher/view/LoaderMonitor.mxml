@@ -22,6 +22,7 @@
 			import com.photodispatcher.model.mysql.entities.StateLog;
 			import com.photodispatcher.model.mysql.services.OrderLoadService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.service.SyncInactiveLoaderService;
 			import com.photodispatcher.service.SyncLoaderService;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -44,6 +45,7 @@
 			public var helperMode:Boolean=false;
 
 			private var syncService:SyncLoaderService;
+			private var syncInactiveService:SyncInactiveLoaderService;
 			
 			//[Bindable]
 			//private var ordersErrLimitList:ArrayCollection= new ArrayCollection();
@@ -65,6 +67,9 @@
 				
 				syncService= new SyncLoaderService();
 				syncService.sources=sources.source;
+				
+				syncInactiveService=new SyncInactiveLoaderService();
+				syncInactiveService.sources=sources.source;
 				
 				if(focusManager) focusManager.setFocus(focusHolder);
 			}
@@ -88,25 +93,57 @@
 			}
 			private function resync():void{
 				if(timer) timer.stop();
+				if(syncService.isBusy || syncInactiveService.isBusy){
+					startSyncTimer();
+					return;
+				}
+				syncState='Получение списка загрузки';
 				syncService.addEventListener(Event.COMPLETE,resyncCompleted);
 				syncService.sync();
 			}
+
 			private function resyncCompleted(e:Event):void{
 				syncService.removeEventListener(Event.COMPLETE,resyncCompleted);
 				trace('resyncCompleted');
 				
-				if(!timer){
-					var interval:int=Context.getAttribute('syncInterval');
-					if(!interval) interval=REFRESH_INTERVAL;
-					timer=new Timer(interval*60*1000,0);
-					timer.addEventListener(TimerEvent.TIMER,onTimer);
-				}
-				timer.start();
-				
+				// start download 
 				if(startServices){
 					startServices=false;
 					downloadManager.isStarted=true;
 				}
+
+				if(syncInactiveService.isBusy){
+					syncState='Ошибка. Сихронизация активных занята.';
+					trace('wrong state syncInactiveService.isBusy');
+					startSyncTimer();
+					return;
+				}
+				//resync active
+				syncState='Сихронизация активных заказов.';
+				syncInactiveService.addEventListener(Event.COMPLETE,resyncInactiveCompleted);
+				syncInactiveService.sync();
+			}
+			
+			private function resyncInactiveCompleted(e:Event):void{
+				syncState='Ожидание синхронизации.';
+				syncInactiveService.removeEventListener(Event.COMPLETE,resyncInactiveCompleted);
+				trace('resync active Completed');
+				startSyncTimer();
+			}
+			
+			[Bindable]
+			private var syncState:String;
+			
+			private function startSyncTimer():void{
+				if(!timer){
+					var interval:int=Context.getAttribute('syncInterval');
+					if(!interval) interval=REFRESH_INTERVAL;
+					timer=new Timer(interval*60*1000,1);
+					timer.addEventListener(TimerEvent.TIMER,onTimer);
+				}else{
+					timer.reset();
+				}
+				timer.start();
 			}
 
 			private function stopSync():void{
@@ -222,6 +259,7 @@
 				<s:HGroup id="gState" gap="10" top="0" left="0" right="0" bottom="0">
 					<s:VGroup gap="10" height="100%"  enabled="{!helperMode}">
 						<s:Label text="Web синхронизация" fontWeight="bold"/>
+						<s:Label text="{syncState}"/>
 						<s:HGroup gap="10">
 							<s:Button id="btStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить синхронизацию" 
 									  click="{startSync()}" enabled="{!isRuning}"/>

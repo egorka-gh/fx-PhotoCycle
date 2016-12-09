@@ -12,13 +12,16 @@
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.PrnQueueLink;
 			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.model.mysql.services.PrnStrategyService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.tech.GlueHandler;
 			import com.photodispatcher.tech.plain_register.TechRegisterBase;
 			import com.photodispatcher.tech.plain_register.TechRegisterCommon;
 			import com.photodispatcher.tech.plain_register.TechRegisterFolding;
@@ -39,6 +42,8 @@
 			
 			public var extendedPrint:Boolean;
 			public var soundOffOnReprint:Boolean;
+			
+			public var hasGlue:Boolean;
 			
 			public var techPoint:TechPoint;
 			
@@ -133,6 +138,24 @@
 				}
 			}
 
+			private var _glueHandler:GlueHandler;  
+			[Bindable]
+			public function get glueHandler():GlueHandler{
+				return _glueHandler;
+			}
+			public function set glueHandler(value:GlueHandler):void{
+				if(_glueHandler){
+					_glueHandler.removeEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				}
+				_glueHandler = value;
+				if(_glueHandler){
+					_glueHandler.logger=this;
+					_glueHandler.addEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				}
+			}
+			protected function onGlueHandlerErr(event:ErrorEvent):void{
+				logToScreen('Cклейка: '+event.text, true);
+			}
 			
 			private var logText:String = '';
 
@@ -183,7 +206,25 @@
 			}
 
 			
+			private var markQueueLink:PrnQueueLink;
+			private function onLoadLink(evt:Event):void{
+				var latch:DbLatch= evt.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onLoadLink);
+					if(latch.complite) markQueueLink=latch.lastDataItem as PrnQueueLink;
+				}
+			}
+
 			private function createRegister(printGroup:String,books:int,sheets:int):void{
+				//load  queue links
+				markQueueLink=null;
+				var svcPs:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+				var slatch:DbLatch=new DbLatch();
+				slatch.addEventListener(Event.COMPLETE,onLoadLink);
+				slatch.addLatch(svcPs.getLinkByPG(printGroup));
+				slatch.start();
+
+				//create register
 				var result:TechRegisterBase;
 				if(!techPoint){
 					if(currRegister){
@@ -256,6 +297,7 @@
 				
 				var bookNum:int=int(barcode.substr(0,3));
 				var pageNum:int=int(barcode.substr(6,2));
+				if(hasGlue && glueHandler) glueHandler.await(pgId,bookNum,pageNum,int(barcode.substr(8,2)));
 				
 				if(currRegister && currRegister.checkPrintGroup(pgId)){
 					currRegister.printGroupId=pgId;
@@ -273,6 +315,9 @@
 					if(!currRegister){
 						logToScreen('---------- Не поддерживаемый режим регистрации ШК ----------',true);
 						return;
+					}
+					if(hasGlue && glueHandler && !glueHandler.isPrepared){
+						logToScreen('Не инициализирован контролер склейки',true);
 					}
 					//start new
 					barText='';
@@ -301,6 +346,14 @@
 					return;
 				}
 				var printCaption:String=PrintGroup.tech2BookBarcodeCaption(barcode);
+				
+				if(markQueueLink){
+					printCaption=printCaption+' '+markQueueLink.prn_queue.toString()+'-'+markQueueLink.prn_queue_link.toString();
+				}else if(currRegister  && currRegister.getPrintGroup() && currRegister.getPrintGroup().prn_queue){
+					printCaption=printCaption+' '+currRegister.getPrintGroup().prn_queue.toString();
+				}
+
+				
 				if(printBar && printCaption){
 					log('Печать ШК '+printBar+' '+printCaption);
 					if(printer) printer.sendMessages([printBar, printCaption]);
@@ -386,6 +439,7 @@
 				
 				if(printer) printer.start();
 				if(flap) flap.start();
+				if(hasGlue && glueHandler) glueHandler.start(3000); //glueHandler.start();
 			}
 
 			public function createGridColumns():void{
@@ -417,6 +471,10 @@
 				
 				if(printer) printer.stop();
 				if(flap) flap.stop();
+				if(glueHandler){
+					glueHandler.stop();
+					glueHandler.isRunning=false;
+				}
 			}
 			
 			private function cleanLog():void{
@@ -434,6 +492,10 @@
 				if(flap) flap.setOff();
 			}
 			
+			protected function btPushBook_clickHandler(event:MouseEvent):void{
+				if(glueHandler) glueHandler.removeBook();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -449,9 +511,23 @@
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%" height="100%">
 			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
-			<s:DataGrid width="160" height="100%" fontSize="10" skinClass="spark.skins.spark.DataGridSkin"
-						dataProvider="{regList}" locale="ru_RU" columns="{regListColumnth}"/>
-			<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="160" height="100%" editable="false"/>
+			<s:VGroup width="330" height="100%" gap="5">
+				
+				<s:HGroup gap="5" width="100%" height="100%">
+					<s:DataGrid width="100%" height="100%" fontSize="10" skinClass="spark.skins.spark.DataGridSkin"
+								dataProvider="{regList}" locale="ru_RU" columns="{regListColumnth}"/>
+					<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="100%" height="100%" editable="false"/>
+				</s:HGroup>
+				<s:Spacer height="5"/>
+				<s:Label text="Склейка" fontWeight="bold"/>
+				<s:Label text="Заказ: {glueHandler.currentBookView.printGroupId}"/>
+				<s:Label text="Книга: {glueHandler.currentBookView.book}"/>
+				<s:Label text="Листов всего: {glueHandler.currentBookView.sheetsTotal}"/>
+				<s:Label text="Листов подано: {glueHandler.currentBookView.sheetsFeeded}"/>
+				<s:Label text="Листов склеено: {glueHandler.currentBookView.sheetsDone}"/>
+				<s:Button id="btPushBook" label="Убрать книгу" click="btPushBook_clickHandler(event)" />
+
+			</s:VGroup>
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%">
 			<s:Button label="Очистить" click="{cleanLog()}"/>

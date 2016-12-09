@@ -303,7 +303,8 @@ package com.photodispatcher.context{
 				TechPointService,
 				TechPickerService,
 				TechService,
-				OrderService //+
+				OrderService,
+				PrnStrategyService//+
 			]);
 			
 			//fill from config

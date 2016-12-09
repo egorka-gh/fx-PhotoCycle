@@ -211,6 +211,10 @@ package com.photodispatcher.tech.plain_register{
 			}
 		}
 		
+		public function getPrintGroup():PrintGroup{
+			return printGroup;
+		}
+		
 		public function checkPrintGroup(pgId:String):Boolean{
 			if(!pgId || !printGroupId) return false;
 			if(pgId==printGroupId) return true;
