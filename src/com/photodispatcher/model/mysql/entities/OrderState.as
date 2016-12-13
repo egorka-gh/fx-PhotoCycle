@@ -125,6 +125,9 @@ package com.photodispatcher.model.mysql.entities {
 		public static const CANCELED_PRODUCTION:int=515;
 		public static const SKIPPED:int=520;
 		
+		public static const CANCELED_LOADER_INVALID:int=529;
+		public static const CANCELED_LOADER_DELETED:int=530;
+		
 		private static var stateMap:Object;
 		
 		public static function getStateName(id:int):String{

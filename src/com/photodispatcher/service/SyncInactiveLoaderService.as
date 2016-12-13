@@ -6,7 +6,7 @@ package com.photodispatcher.service{
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
-	import com.photodispatcher.model.mysql.services.OrderService;
+	import com.photodispatcher.model.mysql.services.OrderLoadService;
 	import com.photodispatcher.service.web.BaseWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -30,7 +30,9 @@ package com.photodispatcher.service{
 		
 		private var syncItems:Array;
 		private var isRunning:Boolean=false;
-		//private var service:OrderService;
+		private var service:OrderLoadService;
+		
+		
 		
 		public function SyncInactiveLoaderService(){
 			super(null);
@@ -70,7 +72,7 @@ package com.photodispatcher.service{
 				}
 			}
 			//clear temp table
-			if(!service) service=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+			if(!service) service=Tide.getInstance().getContext().byType(OrderLoadService,true) as OrderLoadService;
 			webLath.addLatch(service.beginSync());
 			//waite complite
 			webLath.start();
@@ -113,9 +115,8 @@ package com.photodispatcher.service{
 				//fill complite , run db sync pocedure
 				dbLatch= new DbLatch(true);
 				dbLatch.addEventListener(Event.COMPLETE, onSyncComplite);
-				//TODO implement db sync
-				//dbLatch.addLatch(service.sync());
-				//dbLatch.start();
+				dbLatch.addLatch(service.syncValid());
+				dbLatch.start();
 				return;
 			}
 			//add by 50 items 
@@ -142,39 +143,23 @@ package com.photodispatcher.service{
 			var dbLatch:DbLatch=e.target as DbLatch;
 			if(dbLatch){
 				dbLatch.removeEventListener(Event.COMPLETE,onSyncComplite);
-				var df:DateTimeFormatter=new DateTimeFormatter('ru_RU'); df.setDateTimePattern('HH:mm');
+				//var df:DateTimeFormatter=new DateTimeFormatter('ru_RU'); df.setDateTimePattern('HH:mm');
 				var s:String;
 				var target:Source;
-				if(dbLatch.complite){
-					var sa:Array=dbLatch.lastDataArr;
-					if(sa){
-						for each(var result:Source in sa){
-							if(result.online){
-								target=ArrayUtil.searchItem('id',result.id, sources) as Source;
-								if(target){
-									if(result.sync_state){
-										//s='Синхронизирован в '+df.format(new Date());
-										s='Ok. Элементов: '+target.syncState.items.toString()+', в '+df.format(new Date());
-										target.syncState.setState(ProcessState.STATE_OK_WAITE,s);
-										target.sync=result.sync;
-										target.sync_date=result.sync_date;
-										target.sync_state=result.sync_state;
-									}else{
-										s='Ошибка синхронизации в '+df.format(new Date());
-										target.syncState.setState(ProcessState.STATE_ERROR,s);
-									}
-								}
-							}
-						}
-					}
-				}else{
+				if(!dbLatch.complite){
 					for each(target in sources){
 						if(target.online){
-							s='Ошибка синхронизации в '+df.format(new Date());
+							s='Ошибка синхронизации активных';
 							target.syncState.setState(ProcessState.STATE_ERROR,s);
 						}
 					}
 					dbLatch.showError();
+				}else{
+					for each(target in sources){
+						if(target.online){
+							target.syncState.setState(ProcessState.STATE_OK_WAITE);
+						}
+					}
 				}
 			}
 			endSync();

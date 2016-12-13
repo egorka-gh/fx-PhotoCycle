@@ -9,6 +9,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.mysql.entities.AppConfig;
+			import com.photodispatcher.service.CleanLoaderService;
 			import com.photodispatcher.shell.IMCommand;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.util.ArrayUtil;
@@ -49,13 +50,21 @@
 			private var ftpConnectImeout:int;
 
 			[Bindable]
-			private var config:AppConfig;
+			public var config:AppConfig;
+			
+			[Bindable]
+			private var cleaner:CleanLoaderService;
+			protected function btCleanFS_clickHandler(event:MouseEvent):void{
+				if(CleanLoaderService.busy) return;
+				cleaner.cleanFileSystem();
+			}
+
 
 			protected function group1_creationCompleteHandler(event:FlexEvent):void{
 				
 				imPath=Context.getAttribute('imPath');
 				workFolder=Context.getAttribute('workFolder');
-				config=Context.config;
+				//config=Context.config;
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
@@ -72,7 +81,8 @@
 				if(!syncInterval) syncInterval=10;
 				ftpConnectImeout=so.data.ftpConnectImeout;
 				if(!ftpConnectImeout) ftpConnectImeout=15;
-
+				
+				cleaner= new CleanLoaderService();
 			}
 			
 			private function pingIM():void{
@@ -267,6 +277,27 @@
 					<s:Button id="btPrtFolder" label="..." click="btPrtFolder_clickHandler(event)"/>
 				</mx:HBox>-->
 			</s:FormItem> 
+			
+			<s:FormItem label="Очистка папок">
+				<s:CheckBox id="tgCleanFS" selected="@{config.clean_fs}"/>
+				<s:HGroup gap="5" enabled="{config.clean_fs}" verticalAlign="baseline">
+					<s:Label text="Дней >"/>
+					<s:NumericStepper value="@{config.clean_fs_days}" minimum="0" maximum="360"/>
+					
+					<s:Spacer width="5"/>
+					<s:Label text="Старт в"/>
+					<s:NumericStepper value="@{config.clean_fs_hour}" minimum="0" maximum="23" width="40"/>
+					<s:Label text="часов"/>
+					
+				</s:HGroup>
+				<s:HGroup gap="10" enabled="{config.clean_fs}" verticalAlign="bottom">
+					<s:Button id="btCleanFS" label="Выполнить" enabled="{!CleanLoaderService.busy}" click="btCleanFS_clickHandler(event)"/>
+					<mx:ProgressBar label="" labelPlacement="right" labelWidth="0" horizontalGap="0" 
+									mode="event" source="{cleaner}" width="200"/>
+					<s:Label text="{cleaner.state}" width="250"/>
+				</s:HGroup>
+			</s:FormItem>
+
 			
 			<s:FormItem label="Интервал синхронизации (мин)">
 				<s:TextInput id="tiSyncInterval" text="{syncInterval}"

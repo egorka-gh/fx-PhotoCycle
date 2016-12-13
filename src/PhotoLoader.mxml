@@ -18,6 +18,7 @@
 			import com.photodispatcher.event.IMRunerEvent;
 			import com.photodispatcher.model.mysql.AsyncLatch;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.service.CleanLoaderService;
 			import com.photodispatcher.shell.IMRuner;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.PasswPopup;
@@ -38,6 +39,8 @@
 			
 			private var bdPopup:DatabasePopup;
 
+			[Bindable]
+			private var cleaner:CleanLoaderService;
 
 			private function initApp():void{
 				bdPopup= new DatabasePopup();
@@ -61,11 +64,13 @@
 			private var startPopup:ModalPopUp;
 			protected function button1_clickHandler(event:MouseEvent):void{
 				//if(vMonitor) vMonitor.stop();
+				if(cleaner) cleaner.stopSchedule();
 				currentState='config';
 			}
 			
 			protected function button2_clickHandler(event:MouseEvent):void{
 				fillContext();
+
 				currentState='monitor';
 			}
 			
@@ -165,7 +170,14 @@
 				}
 			}
 			private function postInit():void{
-				
+				if(!cleaner){
+					cleaner=new CleanLoaderService();
+					cleaner.addEventListener(Event.COMPLETE, cleanComplite);
+					cleaner.addEventListener("schedule", onCleanerStart);
+				}
+				if(currentState=='monitor') cleaner.schedule();
+				if(vConfig) vConfig.config=Context.config;
+
 				/*
 				currentState='monitor';
 				if(vMonitor){
@@ -193,6 +205,13 @@
 				}
 			}
 			
+			private function onCleanerStart(e:Event):void{
+				if(currentState!='config') currentState='monitorAndCleaner';
+			}
+			private function cleanComplite(e:Event):void{
+				if(currentState!='config') currentState='monitor';
+			}
+
 			
 			[Bindable]
 			private var cfgEnabled:Boolean;
@@ -233,10 +252,11 @@
 		<s:State name="disconnected"/>
 		<s:State name="config" enterState="state1_enterStateHandler(event)"/>
 		<s:State name="monitor" stateGroups="monitorGrp"/>
+		<s:State name="monitorAndCleaner" stateGroups="monitorGrp"/>
 	</s:states>
 	<s:VGroup gap="10" top="5" left="5" right="5" bottom="35">
 		<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"/>
-		<config:LoaderConfig includeIn="config" enabled="{cfgEnabled}" width="100%" height="100%"/>
+		<config:LoaderConfig id="vConfig" includeIn="config" enabled="{cfgEnabled}" width="100%" height="100%"/>
 		<view:LoaderMonitor id="vMonitor" includeIn="monitorGrp" width="100%" height="100%"/>
 	</s:VGroup>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10"  verticalAlign="middle">
@@ -244,6 +264,12 @@
 		<s:Spacer width="5"/>
 		<s:Label text="{Context.appID}"/>
 		<s:Spacer width="5"/>
+
+		<s:Label text="{cleaner.state}" width="250" maxDisplayedLines="1"/>
+		<mx:ProgressBar width="200" includeIn="monitorAndCleaner"
+						label="" labelPlacement="right" labelWidth="0" horizontalGap="0"
+						mode="event" source="{cleaner}" />		
+		
 		<s:Spacer width="100%"/>
 		<s:Button label="Настройки" includeIn="monitor" click="button1_clickHandler(event)"/>
 		<s:Button label="Монитор" includeIn="config" click="button2_clickHandler(event)"/>

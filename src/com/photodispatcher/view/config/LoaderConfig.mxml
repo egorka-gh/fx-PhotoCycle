@@ -12,6 +12,7 @@
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.AbstractEntity;
+			import com.photodispatcher.model.mysql.entities.AppConfig;
 			import com.photodispatcher.model.mysql.entities.DmlResult;
 			import com.photodispatcher.model.mysql.entities.SelectResult;
 			import com.photodispatcher.model.mysql.entities.Source;
@@ -38,6 +39,9 @@
 			[Bindable]
 			private var gridEditable:Boolean=false;
 			
+			[Bindable]
+			public var config:AppConfig;
+
 			
 			private function init():void{
 			}
@@ -162,7 +166,7 @@
 				<fx:String>Источники</fx:String> 
 			</mx:ArrayCollection>
 		</s:TabBar>
-		<config:LoaderCommonConfig  includeIn="common" width="100%" height="100%"/>
+		<config:LoaderCommonConfig  includeIn="common" config="{config}" width="100%" height="100%"/>
 
 		<config:ItemsGrid id="itemsGrid" includeIn="list" editable="{gridEditable}"
 						  currentData="{currentList}" currentColumns="{currentColumns}" 
