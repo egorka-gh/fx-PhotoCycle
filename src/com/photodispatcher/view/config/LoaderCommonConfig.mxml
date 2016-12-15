@@ -306,7 +306,7 @@
 							 width="50"/>
 			</s:FormItem> 
 
-			<s:FormItem label="Ручной запуск сервисов">
+			<s:FormItem label="Ручной запуск загрузки">
 				<s:HGroup gap="5" verticalAlign="baseline">
 					<s:CheckBox id="tg_manualStart" selected="{manualStart}" change="tg_manualStart_changeHandler(event)"/>
 					<s:Spacer width="5"/>

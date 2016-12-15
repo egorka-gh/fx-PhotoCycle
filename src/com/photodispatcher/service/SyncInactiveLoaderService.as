@@ -67,7 +67,7 @@ package com.photodispatcher.service{
 						webLath.join(aLath);
 						aLath.start();
 						syncSvc.addEventListener(Event.COMPLETE,handleWebComplete);
-						syncSvc.sync();
+						syncSvc.syncActiveLoader();
 					}
 				}
 			}

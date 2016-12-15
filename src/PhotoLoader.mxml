@@ -170,22 +170,21 @@
 				}
 			}
 			private function postInit():void{
+				if(vConfig) vConfig.config=Context.config;
+				
+				currentState='monitor';
+				
 				if(!cleaner){
 					cleaner=new CleanLoaderService();
 					cleaner.addEventListener(Event.COMPLETE, cleanComplite);
 					cleaner.addEventListener("schedule", onCleanerStart);
 				}
-				if(currentState=='monitor') cleaner.schedule();
-				if(vConfig) vConfig.config=Context.config;
+				cleaner.schedule();
 
-				/*
-				currentState='monitor';
 				if(vMonitor){
 					vMonitor.init();
 					vMonitor.start();
 				}
-				*/
-				
 			}
 			private function onImPing(e:IMRunerEvent):void{
 				var im:IMRuner=e.target as IMRuner;

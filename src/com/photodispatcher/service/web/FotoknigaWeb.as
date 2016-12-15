@@ -294,6 +294,7 @@ package com.photodispatcher.service.web{
 			var states:Array=[ORDER_STATE_CHECKOUT];
 			states=states.concat(PARAM_STATUS_PRELOAD_VALUES);
 			states.push(PARAM_STATUS_ORDERED_VALUE);
+			states.push(ORDER_STATE_MADE);
 			post[PARAM_STATUSES]=states;
 			if(source.fbookSid) post.sid=source.fbookSid;
 			client.getData( new InvokerUrl(baseUrl+URL_API),post);

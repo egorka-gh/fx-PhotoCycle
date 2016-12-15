@@ -105,12 +105,6 @@
 			private function resyncCompleted(e:Event):void{
 				syncService.removeEventListener(Event.COMPLETE,resyncCompleted);
 				trace('resyncCompleted');
-				
-				// start download 
-				if(startServices){
-					startServices=false;
-					downloadManager.isStarted=true;
-				}
 
 				if(syncInactiveService.isBusy){
 					syncState='Ошибка. Сихронизация активных занята.';
@@ -128,6 +122,13 @@
 				syncState='Ожидание синхронизации.';
 				syncInactiveService.removeEventListener(Event.COMPLETE,resyncInactiveCompleted);
 				trace('resync active Completed');
+
+				// start download 
+				if(startServices){
+					startServices=false;
+					downloadManager.isStarted=true;
+				}
+
 				startSyncTimer();
 			}
 			
