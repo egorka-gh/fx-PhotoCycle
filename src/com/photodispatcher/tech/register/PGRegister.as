@@ -44,19 +44,19 @@ package com.photodispatcher.tech.register{
 			regItems=[];
 			var i:int;
 			var j:int;
-			var item:RegisterItem;
+			var item:SheetRegister;
 			if(!isReprint){
 				//normal pg
 				printgroup.compactRejects();
 				for (i = 1; i <= printgroup.book_num; i++){
 					if(printgroup.book_part==BookSynonym.BOOK_PART_COVER){
-						item=new RegisterItem(i,0,printgroup.id, printgroup.isSheetRejected(i,0));
+						item=new SheetRegister(i,0,printgroup.id, printgroup.isSheetRejected(i,0));
 						if(item.isRejected) rejectedNum++; else toRegisterNum++;
 						regItems.push(item); 
 					}else{
 						//block items
 						for (j = 1; j <= printgroup.sheet_num; j++){
-							item=new RegisterItem(i,j,printgroup.id, printgroup.isSheetRejected(i,j));
+							item=new SheetRegister(i,j,printgroup.id, printgroup.isSheetRejected(i,j));
 							if(item.isRejected) rejectedNum++; else toRegisterNum++;
 							if(j == printgroup.sheet_num && printgroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) item.sheet=0;
 							regItems.push(item);
@@ -82,19 +82,19 @@ package com.photodispatcher.tech.register{
 					if(reject.sheet==-1){
 						//add whole book
 						if(printgroup.book_part==BookSynonym.BOOK_PART_COVER){
-							item=new RegisterItem(reject.book,0,printgroup.id);
+							item=new SheetRegister(reject.book,0,printgroup.id);
 							toRegisterNum++;
 							regItems.push(item);
 						}else{
 							for (j = 1; j <= printgroup.sheet_num; j++){
-								item=new RegisterItem(reject.book,j,printgroup.id);
+								item=new SheetRegister(reject.book,j,printgroup.id);
 								toRegisterNum++;
 								if(j == printgroup.sheet_num && printgroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) item.sheet=0;
 								regItems.push(item);
 							}
 						}
 					}else{
-						item=new RegisterItem(reject.book,reject.sheet,printgroup.id);
+						item=new SheetRegister(reject.book,reject.sheet,printgroup.id);
 						toRegisterNum++;
 						regItems.push(item);
 					}
@@ -103,7 +103,7 @@ package com.photodispatcher.tech.register{
 			if(direction==DIRECTION_REVERS) reorderRegItems();
 		}
 
-		public function register(regItem:RegisterItem):Boolean{
+		public function register(regItem:SheetRegister):Boolean{
 			if(!regItem){
 				logErr('Ошибка выполнения (null regItem).');
 				return false;
@@ -116,7 +116,7 @@ package com.photodispatcher.tech.register{
 				logErr('Ошибка. Не допустимый лист: '+StrUtil.sheetName(regItem.book,regItem.sheet));
 				return false;
 			}
-			var nextItem:RegisterItem=getNextItem();
+			var nextItem:SheetRegister=getNextItem();
 			if(!nextItem){
 				//out of sequence 
 				//check complite
@@ -130,11 +130,11 @@ package com.photodispatcher.tech.register{
 		}
 		
 		
-		private function getItemIndex(item:RegisterItem){
+		private function getItemIndex(item:SheetRegister){
 			if(!item || !regItems || regItems.length==0) return -1;
 			var idx:int = -1;
 			regItems.some(function (element:Object, index:int, arr:Array):Boolean {
-				var it:RegisterItem=element as RegisterItem;
+				var it:SheetRegister=element as SheetRegister;
 				var res:Boolean = it && it.book==item.book && it.sheet==item.sheet;
 				if(res) idx = index;
 				return res;
@@ -142,14 +142,14 @@ package com.photodispatcher.tech.register{
 			return idx;
 		}
 		
-		private function currentItem():RegisterItem{
+		private function currentItem():SheetRegister{
 			if(!regItems || lastIndex>=regItems.length || lastIndex<0) return null;
-			return regItems[lastIndex] as RegisterItem;
+			return regItems[lastIndex] as SheetRegister;
 		}
 
-		private function getNextItem(skipRejects:Boolean=true, revers:Boolean=false):RegisterItem{
+		private function getNextItem(skipRejects:Boolean=true, revers:Boolean=false):SheetRegister{
 			if(!regItems) return null;
-			var item:RegisterItem;
+			var item:SheetRegister;
 			var startIdx:int=lastIndex;
 			var offset:int=1;
 			if(revers){
@@ -157,7 +157,7 @@ package com.photodispatcher.tech.register{
 				offset=-1;
 			}
 			while(skipRejects && (startIdx+offset)<regItems.length && (startIdx+offset)>=0){
-				item=regItems[startIdx+offset] as RegisterItem;
+				item=regItems[startIdx+offset] as SheetRegister;
 				if(item && !item.isRejected) break;
 				if(revers){
 					offset--;	
@@ -165,7 +165,7 @@ package com.photodispatcher.tech.register{
 					offset++;
 				}
 			}
-			if((startIdx+offset)<regItems.length && (startIdx+offset)>=0) item=regItems[startIdx+offset] as RegisterItem;
+			if((startIdx+offset)<regItems.length && (startIdx+offset)>=0) item=regItems[startIdx+offset] as SheetRegister;
 			return item;
 		}
 		

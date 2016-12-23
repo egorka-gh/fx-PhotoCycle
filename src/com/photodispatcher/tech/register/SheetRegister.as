@@ -1,6 +1,13 @@
 package com.photodispatcher.tech.register{
+	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
-	public class RegisterItem{
+	public class SheetRegister{
+		
+		public static function fromBarcode(barcode:String):SheetRegister{
+			var sTmp:String=PrintGroup.digitIdFromTechBarcode(barcode);
+			if(!sTmp) return null;
+			return new SheetRegister(PrintGroup.bookFromTechBarcode(barcode),PrintGroup.sheetFromTechBarcode(barcode),PrintGroup.idFromDigitId(sTmp)); 
+		}
 		
 		public var pgId:String;
 		public var book:int;
@@ -24,14 +31,14 @@ package com.photodispatcher.tech.register{
 
 		public var regTime:Date;
 		
-		public function RegisterItem(book:int, sheet:int, pgId:String='', isRejected:Boolean=false){
+		public function SheetRegister(book:int, sheet:int, pgId:String='', isRejected:Boolean=false){
 			this.book=book;
 			this.sheet=sheet;
 			this.pgId=pgId;
 			this.isRejected=isRejected;
 		}
 		
-		public function isEqual(to.RegisterItem):Boolean{
+		public function isEqual(to:SheetRegister):Boolean{
 			return to && (!to.pgId || !pgId || to.pgId==pgId) && to.book==book && to.sheet==sheet;
 		}
 	}
