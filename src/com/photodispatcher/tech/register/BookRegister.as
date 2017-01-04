@@ -51,11 +51,9 @@ package com.photodispatcher.tech.register{
 		}
 
 
-		public function BookRegister(book:int, pgId:String='', isRejected:Boolean=false){
+		public function BookRegister(book:int, pgId:String=''){
 			this.book=book;
 			this.pgId=pgId;
-			this.isRejected=isRejected;
-
 		}
 		
 		public function addSheet(sheet:SheetRegister):void{
@@ -105,16 +103,20 @@ package com.photodispatcher.tech.register{
 			//try to skip rejected
 			if(nextSheet && nextSheet.isRejected){
 				var i:int=currIdx+1;
-				while(i<sheets.length){
+				while(i<sheets.length && nextSheet.isRejected){
 					nextSheet=getSheet(i);
-					if(!nextSheet || !nextSheet.isRejected){
-						nextSheet=null;
-						break;
-					}
+					if(!nextSheet) break;
 					if(nextSheet.isEqual(sheet)){
-						currIdx=i;
-						return register(sheet);
+						if(!nextSheet.isRejected){
+							//rejects skipped register
+							currIdx=i;
+							return register(sheet);
+						}else{
+							//missed rejects, wrong seq
+							break;
+						}
 					}
+					//
 					i++;
 				}
 			}
@@ -140,6 +142,16 @@ package com.photodispatcher.tech.register{
 			}
 			return res;
 		}
+		
+		public function reset():void{
+			if(sheetsRegistred>0){
+				for(var sheet:SheetRegister in sheets) sheet.isRegistered=false;
+			}
+			currIdx=0;
+			rejectRegistred=false;
+			sheetsRegistred=0;
+		}
+
 		
 		public function getSheet(idx:int):SheetRegister{
 			if(!sheets || idx>=sheets.length) return null;

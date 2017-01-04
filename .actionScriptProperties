@@ -64,6 +64,9 @@
     <application path="TechBatch.mxml">
       <airExcludes/>
     </application>
+    <application path="TechBG.mxml">
+      <airExcludes/>
+    </application>
   </applications>
   <modules/>
   <buildCSSFiles/>
@@ -72,8 +75,8 @@
     <buildTarget buildTargetName="default">
       <airSettings airCertificatePath="D:/Egorka/Folders/flex/airCert/egorka.p12" airTimestamp="false" anePathSet="true" version="1">
         <airExcludes>
-          <pathEntry path="jp"/>
           <pathEntry path="com"/>
+          <pathEntry path="jp"/>
         </airExcludes>
         <anePaths/>
       </airSettings>

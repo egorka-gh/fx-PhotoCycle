@@ -29,7 +29,7 @@
 			public static const BAR_LEN_LIMIT:int=2000;
 			
 			public var techPoint:TechPoint;
-			
+			public var useTechBarcode:Boolean;
 			public var alertSize:uint=40;
 			public var alertTime:uint=7;
 
@@ -230,10 +230,22 @@
 				var pgId:String;
 				barText='c:'+barcode+'\n';
 				
-				var newScanId:String=PrintGroup.idFromBookBarcode(barcode);
-				var newOrderId:String=PrintGroup.orderIdFromBookBarcode(barcode);
-				var newBook:int=PrintGroup.bookFromBookBarcode(barcode);
+				var newScanId:String;//=PrintGroup.idFromBookBarcode(barcode);
+				var newOrderId:String;//=PrintGroup.orderIdFromBookBarcode(barcode);
+				var newBook:int;//=PrintGroup.bookFromBookBarcode(barcode);
 
+				if(useTechBarcode && PrintGroup.isTechBarcode(barcode)){
+					newScanId=PrintGroup.idFromDigitId(barcode.substr(10));
+					newOrderId=PrintGroup.orderIdFromTechBarcode(barcode);
+					newBook=PrintGroup.bookFromTechBarcode(barcode);// int(barcode.substr(0,3));
+					//var pageNum:int=int(barcode.substr(6,2));
+				}else{
+					newScanId=PrintGroup.idFromBookBarcode(barcode);
+					newOrderId=PrintGroup.orderIdFromBookBarcode(barcode);
+					newBook=PrintGroup.bookFromBookBarcode(barcode);
+				}
+
+				
 				if(!newScanId || !newOrderId){
 					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
 					return;

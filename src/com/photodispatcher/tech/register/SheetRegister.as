@@ -1,5 +1,6 @@
 package com.photodispatcher.tech.register{
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
+	import com.photodispatcher.util.StrUtil;
 	
 	public class SheetRegister{
 		
@@ -40,6 +41,10 @@ package com.photodispatcher.tech.register{
 		
 		public function isEqual(to:SheetRegister):Boolean{
 			return to && (!to.pgId || !pgId || to.pgId==pgId) && to.book==book && to.sheet==sheet;
+		}
+		
+		public function get caption():String{
+			return StrUtil.lPad(book.toString(),3)+':'+StrUtil.lPad(sheet.toString(),2);
 		}
 	}
 }

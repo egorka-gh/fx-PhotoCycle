@@ -185,6 +185,7 @@
 					if(val) alertSize=val;
 					val=so.data.alertTime;
 					if(val) alertTime=val;
+					useTechBarcode=so.data.useTechBarcode;
 					alertSound=so.data.alertSound;
 					AlertrPopup.alertSound=alertSound;
 				}
@@ -346,6 +347,23 @@
 				}
 			}
 			
+			private var _useTechBarcode:Boolean;
+			[Bindable]
+			public function get useTechBarcode():Boolean{
+				return _useTechBarcode;
+			}
+			public function set useTechBarcode(value:Boolean):void{
+				_useTechBarcode = value;
+				Context.setAttribute("useTechBarcode", value);
+			}
+
+			protected function chbUseTechBarcode_changeHandler(event:Event):void{
+				useTechBarcode=chbUseTechBarcode.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.useTechBarcode = useTechBarcode;
+				so.flush();  
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -391,7 +409,12 @@
 			<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
 			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)"/>
 		</s:HGroup>
-		
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Технологический ШК:"/>
+			<s:CheckBox id="chbUseTechBarcode" selected="{useTechBarcode}"  change="chbUseTechBarcode_changeHandler(event)"/>
+		</s:HGroup>
+
 		<!--<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
@@ -425,6 +448,7 @@
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
 		<view:TechJoinView id="techMonitor" techPoint="{techPointObj}" 
 						   barcodeReaderCover="{barcodeReaderCover}"  barcodeReaderBlock="{barcodeReaderBlock}"
+						   useTechBarcode="{useTechBarcode}"
 						   alertSize="{alertSize}" alertTime="{alertTime}"
 						   width="100%" height="100%"/>
 	</s:VGroup>
