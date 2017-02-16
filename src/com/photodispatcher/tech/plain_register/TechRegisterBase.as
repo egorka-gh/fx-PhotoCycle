@@ -21,7 +21,6 @@ package com.photodispatcher.tech.plain_register{
 	import flash.utils.Timer;
 	
 	import org.granite.tide.Tide;
-	import org.osmf.events.TimeEvent;
 	
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]
@@ -344,7 +343,7 @@ package com.photodispatcher.tech.plain_register{
 			flushTimer.reset();
 			flushTimer.start();
 		}
-		protected function onFlushTimer(event:TimeEvent):void{
+		protected function onFlushTimer(event:TimerEvent):void{
 			flushTimer.removeEventListener(TimerEvent.TIMER, onFlushTimer);
 			flushData();
 		}

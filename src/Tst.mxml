@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.service.modbus.ModbusClient;
+			import com.photodispatcher.service.modbus.ModbusRequestEvent;
+			import com.photodispatcher.service.modbus.ModbusResponseEvent;
+			import com.photodispatcher.service.modbus.ModbusServer;
+			import com.photodispatcher.service.modbus.data.ModbusADU;
+			
+			import flash.sampler.NewObjectSample;
+			
+			import mx.events.FlexEvent;
+			[Bindable]
+			protected var color1:uint=0xbbbbbb; 
+			[Bindable]
+			protected var color2:uint=0xbbbbbb; 
+			[Bindable]
+			protected var color3:uint=0xbbbbbb; 
+			
+			
+			[Bindable]
+			protected var server:ModbusServer;
+			[Bindable]
+			protected var client:ModbusClient;
+			
+			protected function connect():void{
+				server.serverIP=pcIP.text;
+				server.serverPort=pcPort.value;
+				server.start();
+				
+				client.serverIP=cliIP.text;
+				client.serverPort=cliPort.value;
+				client.start();
+			}
+
+			protected function disconnect():void{
+				server.stop();
+				client.stop();
+			}
+
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void{
+				server=new ModbusServer();
+				server.addEventListener(ErrorEvent.ERROR, onServerErr);
+				server.addEventListener(ModbusRequestEvent.REQUEST_EVENT, onServerADU);
+				
+				client=new ModbusClient();
+				client.addEventListener(ErrorEvent.ERROR, onClientErr);
+				client.addEventListener(ModbusResponseEvent.RESPONSE_EVENT, onClientADU);
+				
+			}
+			
+			private function onServerErr(evt:ErrorEvent):void{
+				taLog.text= taLog.text+'Server: '+ evt.text+'\n';
+			}
+			private function onClientErr(evt:ErrorEvent):void{
+				taLog.text= taLog.text+'Client: '+ evt.text+'\n';
+			}
+
+			private function onServerADU(evt:ModbusRequestEvent):void{
+				var txt:String;
+				var adu:ModbusADU=evt.adu;
+				if(adu){
+					txt='ADU ti:'+adu.transactionId;
+					if(adu.pdu){
+						txt=txt+'; PDU fnc:'+adu.pdu.functionCode+' adr:'+adu.pdu.address+' val:'+adu.pdu.value;
+					}
+				}else{
+					txt='Empty ADU';
+				}
+				taLog.text= taLog.text+txt+'\n';
+			}
+
+			private function onClientADU(evt:ModbusResponseEvent):void{
+				var txt:String;
+				var adu:ModbusADU=evt.adu;
+				if(adu){
+					txt='ADU ti:'+adu.transactionId;
+					if(adu.pdu){
+						txt=txt+'; PDU fnc:'+adu.pdu.functionCode+' adr:'+adu.pdu.address+' val:'+adu.pdu.value;
+					}
+				}else{
+					txt='Empty ADU';
+				}
+				taLog.text= taLog.text+txt+'\n';
+			}
+
+			protected function btWrReg_clickHandler(event:MouseEvent):void{
+				if(client){
+					client.writeRegister(nsAdr.value,nsVal.value);
+				}
+			}
+			
+			protected function btRdReg_clickHandler(event:MouseEvent):void{
+				if(client){
+					client.readHoldingRegisters(nsAdr.value,nsVal.value);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:VGroup width="100%" height="100%" gap="5">
+		<s:HGroup gap="10" >
+			<s:VGroup  gap="5">
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="PC IP:port" />
+					<s:TextInput id="pcIP" text="127.0.0.1"/>
+					<s:NumericStepper id="pcPort" value="503" minimum="0" maximum="1000"/>
+				</s:HGroup>
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="Контролth IP:port" />
+					<s:TextInput id="cliIP" text="127.0.0.1"/>
+					<s:NumericStepper id="cliPort" value="502" minimum="0" maximum="1000"/>
+				</s:HGroup>
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="Адрес" />
+					<s:NumericStepper id="nsAdr" value="0" minimum="0" maximum="1000"/>
+					<s:Label text="Значение" />
+					<s:NumericStepper id="nsVal" value="0" minimum="0" maximum="1000"/>
+					<s:Button id="btWrReg" label="write reg" click="btWrReg_clickHandler(event)"/>
+					<s:Button id="btRdReg" label="read reg" click="btRdReg_clickHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+
+			<s:VGroup  gap="5">
+				<s:Button label="Connect" click="{connect()}"/>
+				<s:Button label="Disconnect" click="{disconnect()}"/>
+				<s:Group >
+					<s:Rect x="0" y="0" width="20" height="20">
+						<s:fill>
+							<s:SolidColor color="{server.connected?0x00bb00:0xbbbbbb}"/>
+						</s:fill>
+					</s:Rect>
+					<s:Rect x="22" y="0" width="20" height="20">
+						<s:fill>
+							<s:SolidColor color="{server.cilentConnected?0x00bb00:0xbbbbbb}"/>
+						</s:fill>
+					</s:Rect>
+					<s:Rect x="44" y="0" width="20" height="20">
+						<s:fill>
+							<s:SolidColor color="{client.connected?0x00bb00:0xbbbbbb}"/>
+						</s:fill>
+					</s:Rect>
+				</s:Group>
+			</s:VGroup>
+		</s:HGroup>
+		<s:TextArea id="taLog" width="100%" height="100%"/>
+	</s:VGroup>
+</s:WindowedApplication>
