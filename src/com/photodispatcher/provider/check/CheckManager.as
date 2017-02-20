@@ -257,7 +257,7 @@ package com.photodispatcher.provider.check{
 						md5Checker.currentOrder.saveState();
 						latch= new DbLatch(true);
 						latch.addEventListener(Event.COMPLETE,onSave);
-						latch.addLatch(bdService.save(OrderLoad.fromOrder(md5Checker.currentOrder),0));
+						latch.addLatch(bdService.save(OrderLoad.fromOrder(md5Checker.currentOrder),0),md5Checker.currentOrder.id);
 						latch.start();
 					}
 					removeOrder(md5Checker.currentOrder.id);
@@ -277,17 +277,17 @@ package com.photodispatcher.provider.check{
 			if(latch){
 				latch.removeEventListener(Event.COMPLETE, onSave);
 				if(!latch.complite){
-					if(latch.lastErrCode==OrderState.ERR_WRONG_STATE && latch.lastTag){
+					//if(latch.lastErrCode==OrderState.ERR_WRONG_STATE && latch.lastTag){
+					if(latch.lastTag){
 						StateLog.log(OrderState.ERR_WRONG_STATE,latch.lastTag,'',latch.lastError);
 					}
+					removeOrder(latch.lastTag);
 				}
 			}
 			startNext();
 		}
 		
 		private function onImComplite(evt:Event):void{
-			//TODO implement
-			var latch:DbLatch;
 			if(imChecker.hasError){
 				lastError='Ошибка IM '+imChecker.currentOrder.id+'; '+imChecker.error;
 				if(imChecker.currentOrder.state==OrderState.FTP_INCOMPLITE){
@@ -296,21 +296,16 @@ package com.photodispatcher.provider.check{
 					//then remove
 					setOrderStateWeb(imChecker.currentOrder,OrderLoad.REMOTE_STATE_ERROR,imChecker.error);
 				}else{
-					/*
-					if(imChecker.currentOrder.state<0 && !imChecker.currentOrder.exceedErrLimit){
-						//reset & save?
-						imChecker.currentOrder.state=OrderState.FTP_CHECK;
-						imChecker.currentOrder.saveState();
-						latch= new DbLatch(true);
-						latch.addLatch(bdService.save(OrderLoad.fromOrder(imChecker.currentOrder)));
-						latch.start();
-					}
-					*/
+					//hz
 					removeOrder(imChecker.currentOrder.id);
 				}
 			}else if(imChecker.currentOrder.state==OrderState.FTP_COMPLETE){
-				//same exept remote state done on site
-				setOrderStateWeb(imChecker.currentOrder,OrderLoad.REMOTE_STATE_DONE);
+				//save in bd first  check if saved then set web state, reset db state if web incomplite mark in bd
+				//save, awaited state in bd FTP_CHECK
+				var latch:DbLatch= new DbLatch(true);
+				latch.addEventListener(Event.COMPLETE,onSaveIM_OK);
+				latch.addLatch(bdService.save(OrderLoad.fromOrder(imChecker.currentOrder),OrderState.FTP_CHECK),imChecker.currentOrder.id);
+				latch.start();
 			}else{
 				//her poime
 				removeOrder(imChecker.currentOrder.id);
@@ -318,7 +313,32 @@ package com.photodispatcher.provider.check{
 			}
 			startNext();
 		}
-
+		private function onSaveIM_OK(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE, onSaveIM_OK);
+				if(!latch.complite){
+					//log & remove
+					if(latch.lastTag){
+						StateLog.log(OrderState.ERR_WRONG_STATE,latch.lastTag,'',latch.lastError);
+					}
+					removeOrder(latch.lastTag);
+				}else{
+					//set remote state done on site
+					if(latch.lastTag){
+						var order:Order=ArrayUtil.searchItem('id',latch.lastTag,queue.source) as Order;
+						if(order){
+							if(order.state==OrderState.FTP_COMPLETE){
+								setOrderStateWeb(order,OrderLoad.REMOTE_STATE_DONE);
+							}else{
+								removeOrder(order.id);
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		private function setOrderStateWeb(order:Order, remoteState:int, comment:String=''):void{
 			if(!order) return;
 			var source:Source=Context.getSource(order.source);
@@ -337,6 +357,9 @@ package com.photodispatcher.provider.check{
 			pw.removeEventListener(Event.COMPLETE,onSetOrderStateWeb);
 			//finde order 4 save
 			var order:Order;
+			//if IM incomplite - state in bd FTP_CHECK
+			//if complited - state in bd FTP_COMPLETE
+			var fromState:int=OrderState.FTP_CHECK;
 			if(pw.lastOrderId){
 				order=ArrayUtil.searchItem('id',pw.lastOrderId,queue.source) as Order;
 			}
@@ -347,23 +370,35 @@ package com.photodispatcher.provider.check{
 				lastError='Ошибка сайта: '+pw.errMesage;
 				if(pw.lastOrderId) StateLog.log(OrderState.ERR_WEB,pw.lastOrderId,'','Ошибка сайта: '+pw.errMesage);
 				//web err, can't save???
-				//if(order && order.state==OrderState.FTP_INCOMPLITE){
 				if(order){
-					//save error state
-					// or set canceled state
-					//order.state=OrderState.FTP_INCOMPLITE;
+					//complited order? state in bd FTP_COMPLETE!!
+					if(order.state==OrderState.FTP_COMPLETE) fromState=order.state;
+					//save error state or set canceled state
 					if(order.state!=OrderState.FTP_INCOMPLITE) order.state=OrderState.CANCELED;
-					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
 				}
-			}else{
-				if(order){
-					//save
-					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
-					/*
+			}
+			if(order){
+				//complete state allready saved
+				if(order.state!=OrderState.FTP_COMPLETE){
+					//save in bd
 					var latch:DbLatch= new DbLatch(true);
-					latch.addLatch(bdService.save(OrderLoad.fromOrder(order)));
+					latch.addEventListener(Event.COMPLETE,onSaveIM_web);
+					latch.addLatch(bdService.save(OrderLoad.fromOrder(order),fromState),order.id);
 					latch.start();
-					*/
+				}
+				//rise complite
+				dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
+			}
+		}
+		private function onSaveIM_web(evt:Event):void{
+			var latch:DbLatch=evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE, onSaveIM_web);
+				if(!latch.complite){
+					//if(latch.lastErrCode==OrderState.ERR_WRONG_STATE && latch.lastTag){
+					if(latch.lastTag){
+						StateLog.log(OrderState.ERR_WRONG_STATE,latch.lastTag,'',latch.lastError);
+					}
 				}
 			}
 		}

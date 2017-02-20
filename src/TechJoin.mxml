@@ -186,6 +186,7 @@
 					val=so.data.alertTime;
 					if(val) alertTime=val;
 					useTechBarcode=so.data.useTechBarcode;
+					useController=so.data.useController;
 					alertSound=so.data.alertSound;
 					AlertrPopup.alertSound=alertSound;
 				}
@@ -356,14 +357,29 @@
 				_useTechBarcode = value;
 				Context.setAttribute("useTechBarcode", value);
 			}
-
 			protected function chbUseTechBarcode_changeHandler(event:Event):void{
 				useTechBarcode=chbUseTechBarcode.selected;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.useTechBarcode = useTechBarcode;
 				so.flush();  
 			}
-
+			
+			private var _useController:Boolean;
+			[Bindable]
+			public function get useController():Boolean{
+				return _useController;
+			}
+			public function set useController(value:Boolean):void{
+				_useController = value;
+				Context.setAttribute("useController", value);
+			}
+			protected function chbUseController_changeHandler(event:Event):void{
+				useController=chbUseController.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.useController = useController;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -410,28 +426,57 @@
 			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)"/>
 		</s:HGroup>
 
-		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Технологический ШК:"/>
-			<s:CheckBox id="chbUseTechBarcode" selected="{useTechBarcode}"  change="chbUseTechBarcode_changeHandler(event)"/>
-		</s:HGroup>
-
 		<!--<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
 		</s:HGroup>-->
 		
 		<s:Spacer height="5"/>
+		<s:HGroup gap="10">
+			<s:VGroup gap="5">
+				<s:Label text="Сканер обложки" fontWeight="bold"/>
+				<itemRenderer:ComInfoRenderer  data="{comInfoCover}" lockType="true"/>
+			</s:VGroup>
+			
+			<s:VGroup gap="5">
+				<s:Label text="Сканер блока" fontWeight="bold"/>
+				<itemRenderer:ComInfoRenderer  data="{comInfoBlock}" lockType="true"/>
+			</s:VGroup>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Технологический ШК:"/>
+			<s:CheckBox id="chbUseTechBarcode" selected="{useTechBarcode}"  change="chbUseTechBarcode_changeHandler(event)"/>
+		</s:HGroup>
+		
+		<s:Spacer height="5"/>
 		<s:VGroup gap="5">
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Автоподача блоков:"/>
+				<s:CheckBox id="chbUseController" selected="{useController}"  change="chbUseController_changeHandler(event)"/>
+			</s:HGroup>
 			
-			<s:Label text="Сканер обложки" fontWeight="bold"/>
-			<itemRenderer:ComInfoRenderer  data="{comInfoCover}" lockType="true"/>
-			
-			<s:Spacer height="5"/>
-			<s:Label text="Сканер блока" fontWeight="bold"/>
-			<itemRenderer:ComInfoRenderer  data="{comInfoBlock}" lockType="true"/>
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Компьютер IP:" />
+				<s:TextInput id="tiModbusPC_IP" text="192.168.250.2" enabled="false"/>
+				<s:Label text="порт:" />
+				<s:NumericStepper id="nsModbusPC_Port" value="503" minimum="0" maximum="1000" enabled="false"/>
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Контролер  IP:" />
+				<s:TextInput id="tiModbusIP" text="192.168.250.1"  enabled="false"/>
+				<s:Label text="порт:" />
+				<s:NumericStepper id="nsModbusPort" value="502" minimum="0" maximum="1000"  enabled="false"/>
+			</s:HGroup>
+			<s:Label text="Рейка:" />
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Максимальный ход (импульсов):" />
+				<s:NumericStepper id="nsMaxSplineRun" value="2000" minimum="100" maximum="3000"   enabled="false"/>
+			</s:HGroup>
 
-			<s:Spacer height="5"/>
-			<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+		</s:VGroup>
+
+		<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
 
 			<!--<s:HGroup gap="10">
 				<s:List id="comList" dataProvider="{coms}" height="100%"/>
@@ -441,7 +486,7 @@
 				<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
 				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
 			</s:HGroup>-->
-		</s:VGroup>
+		
 		
 	</s:VGroup>
 	

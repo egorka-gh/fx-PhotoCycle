@@ -48,7 +48,7 @@ package com.photodispatcher.provider.ftp_loader{
 		[Bindable]
 		public var checker:CheckManager;
 		
-		private var writeOrders:Array=[];
+		//private var writeOrders:Array=[];
 
 		private function get bdService():OrderLoadService{
 			return Tide.getInstance().getContext().byType(OrderLoadService,true) as OrderLoadService;
@@ -162,7 +162,7 @@ package com.photodispatcher.provider.ftp_loader{
 		private function start():void{
 			if(_isStarted) return;
 			if(!services || services.length==0) return;
-			writeOrders=[];
+			//writeOrders=[];
 			autoLoadInterval=Context.getAttribute('syncInterval');
 			_isStarted=true;
 			var f:DownloadQueueManager;
@@ -183,7 +183,7 @@ package com.photodispatcher.provider.ftp_loader{
 				if(f) f.stop();
 			}
 			if(checker) checker.isStarted=false;
-			writeOrders=[];
+			//writeOrders=[];
 		}
 		
 		public function reLoad():void{
@@ -216,6 +216,7 @@ package com.photodispatcher.provider.ftp_loader{
 
 		private function resync(orders:Array):void{
 			if(!orders) return;
+			/*
 			//resync write orders
 			var a:Array=new Array();
 			if(writeOrders.length>0) a=a.concat(writeOrders);
@@ -236,8 +237,9 @@ package com.photodispatcher.provider.ftp_loader{
 					}
 				}
 			}
+			*/
 			
-			//TODO resync error orders
+			//TODO resync error orders??
 
 			checker.sync(orders);
 
@@ -253,23 +255,18 @@ package com.photodispatcher.provider.ftp_loader{
 		}
 		
 		private function onOrderLoaded(e:ImageProviderEvent):void{ 
-			saveOrder(e.order, OrderState.FTP_CAPTURED);
-			//push to file check service 
+			//saveOrder(e.order, OrderState.FTP_CAPTURED);
+			//order is loaded & saved vs state FTP_WAITE_CHECK
 			checker.check(e.order);
 		}
 
 		private function onCheckerComplite(e:ImageProviderEvent):void{ 
-			saveOrder(e.order, OrderState.FTP_CHECK);
+			//saveOrder(e.order, OrderState.FTP_CHECK);
 		}
 
-		
+		/*
 		private function saveOrder(order:Order, fromState:int):void{
 			if(!order) return;
-			/* set order state ?
-			if(order.state<OrderState.CANCELED_SYNC){
-				order.state=OrderState.PREPROCESS_WAITE;
-			}
-			*/
 			trace('Save order '+order.id+' State:'+order.state.toString());
 			
 			order.state_date=new Date();
@@ -304,6 +301,7 @@ package com.photodispatcher.provider.ftp_loader{
 				}
 			}
 		}
+		*/
 
 	}
 }

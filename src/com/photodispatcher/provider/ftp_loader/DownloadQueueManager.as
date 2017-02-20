@@ -799,10 +799,33 @@ package com.photodispatcher.provider.ftp_loader{
 		private function onDownloadManagerLoad(event:ImageProviderEvent):void{
 			var order:Order=event.order;
 			if(order) order.saveState();
-			removeOrder(order);
-
-			dispatchEvent(event.clone());
-			//dispatchEvent(new Event('queueLenthChange'));
+			
+			//save, awaited state in bd FTP_CAPTURED
+			var latch:DbLatch= new DbLatch(true);
+			latch.addEventListener(Event.COMPLETE,onOrderSave);
+			latch.callContext=order;
+			latch.addLatch(bdService.save(OrderLoad.fromOrder(order),OrderState.FTP_CAPTURED),order.id);
+			latch.start();
+			
+			//removeOrder(order);
+			//dispatchEvent(event.clone());
+			////dispatchEvent(new Event('queueLenthChange'));
+		}
+		private function onOrderSave(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			var order:Order;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onOrderSave);
+				order= latch.callContext as Order;
+				removeOrder(order);
+				if(!latch.complite){
+					if(order && order.id){
+						StateLog.log(OrderState.ERR_WRONG_STATE, order.id,'',latch.lastError);
+					}
+				}else{
+					dispatchEvent(new ImageProviderEvent(ImageProviderEvent.ORDER_LOADED_EVENT,order));
+				}
+			}
 		}
 
 		protected function onDownloadFault(event:ImageProviderEvent):void{
