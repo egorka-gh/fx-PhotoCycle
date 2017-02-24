@@ -10,10 +10,8 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.LayerAllocation;
-			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.Layerset;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.model.mysql.services.TechPickerService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.tech.GlueFeeder;
@@ -45,8 +43,24 @@
 			public var layerOnComplite:int=0;
 			
 			public  var doubleSheetOff:Boolean=false;
-
+			public var dataBaseOff:Boolean=false;
+			public var feedOn:Boolean=true;
+			
 			public var serialProxy:SerialProxy;
+			
+			private var sound:Sound;
+			public function set alertSound(filepath:String):void{
+				if(!filepath) return;
+				var file:File= new File(filepath);
+				if(!file.exists) return;
+				sound= new Sound(new URLRequest(file.url));
+			}
+			protected function playAlertSound():void{
+				if(!sound) return;
+				try{
+					sound.play();
+				}catch(error:Error){}
+			}
 			
 			[Bindable]
 			private var logText:String = '';
@@ -93,6 +107,7 @@
 				glueFeeder.feedDelay=feedDelay;
 				glueFeeder.pushDelay=pushDelay;
 				glueFeeder.logger=this;
+				glueFeeder.dataBaseOff=dataBaseOff;
 				glueFeeder.addEventListener(ErrorEvent.ERROR, onPickerErr);
 			}
 

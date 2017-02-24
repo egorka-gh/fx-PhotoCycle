@@ -269,13 +269,27 @@ package com.photodispatcher.tech{
 		protected function onControllerMsg(event:ControllerMesageEvent):void{
 			if(!isRunning ) return;
 			var tb:TechBook=currentBook;//refresh view
-			if(!tb){
-				stop('Нет данных о текущей книге');
-				return;
-			}
 			if(event.state==GlueController.STATE_SENSOR0_OFF){
-				//press open
-				if(latchPressOff.isOn && tb){
+				//press is opened
+				if(latchPressOff.isOn){
+					latchPressOff.forward();
+				}else{
+					pauseRequest('Не ожидаемое срабатывание '+latchPressOff.label);
+					return;
+				}
+
+			}else if(event.state==GlueController.STATE_SENSOR0_ON){
+				//press is pushed
+				if (checkStopBook()) return;
+				if(latchPressOff.isOn){
+					//press still closed???? 
+					log('Не получено событие пресс отпущен ('+latchPressOff.label+')');
+				}else{
+					latchPressOff.setOn();
+				}
+
+				//check sheet/book
+				if(tb){
 					tb.sheetsDone++;
 					if(tb.sheetsDone>tb.sheetsFeeded){
 						stop('Ошибка контроля книги (подано<склеено) '+tb.printGroupId+' '+tb.book);
@@ -289,19 +303,9 @@ package com.photodispatcher.tech{
 						}
 						pushBook();
 					}
-					latchPressOff.forward();
 				}else{
-					pauseRequest('Не ожидаемое срабатывание '+latchPressOff.label);
+					stop('Нет данных о текущей книге');
 					return;
-				}
-			}else if(event.state==GlueController.STATE_SENSOR0_ON){
-				checkStopBook();
-				//press push
-				if(latchPressOff.isOn){
-					//press still closed???? 
-					log('Повторное срабатывание '+latchPressOff.label);
-				}else{
-					latchPressOff.setOn();
 				}
 			}
 		}

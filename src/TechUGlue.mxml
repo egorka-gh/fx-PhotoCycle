@@ -5,34 +5,23 @@
 					   xmlns:barcode="com.photodispatcher.service.barcode.*"
 					   xmlns:view="com.photodispatcher.view.*" 
 					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   xmlns:config="com.photodispatcher.view.config.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="windowedapplication1_closingHandler(event)" xmlns:config="com.photodispatcher.view.config.*" 
+					   closing="windowedapplication1_closingHandler(event)"  
 					   >
 	
 	<fx:Script>
 		<![CDATA[
-			import com.akmeful.fotakrama.project.INamespaced;
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
-			import com.photodispatcher.model.mysql.DbLatch;
-			import com.photodispatcher.model.mysql.entities.LayersetGroup;
-			import com.photodispatcher.model.mysql.entities.OrderState;
-			import com.photodispatcher.model.mysql.entities.SourceType;
-			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
-			import com.photodispatcher.model.mysql.services.TechPickerService;
-			import com.photodispatcher.model.mysql.services.TechPointService;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.FeederController;
 			import com.photodispatcher.service.barcode.GlueController;
-			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
-			import com.photodispatcher.view.ModalPopUp;
-			import com.photodispatcher.view.config.DatabasePopup;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
@@ -42,9 +31,6 @@
 			
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
-			
-			[Bindable]
-			private var techPionts:ArrayCollection;
 			
 			[Bindable]
 			private var comReaders:ArrayCollection= new ArrayCollection;
@@ -62,8 +48,9 @@
 			[Bindable]
 			public var doubleSheetOff:Boolean=false;
 			[Bindable]
-			public var dataBaseOff:Boolean=false;
-			
+			public var dataBaseOff:Boolean=true;
+			[Bindable]
+			public var feedOn:Boolean=false;
 
 			[Bindable]
 			public var engineOnStartOn:Boolean=false;
@@ -78,9 +65,6 @@
 			[Bindable]
 			public var pauseOnComplite:Boolean=false;
 			
-			[Bindable]
-			private var techPointObj:TechPoint;
-
 			protected var _reversOrder:Boolean
 			[Bindable]
 			public function get reversOrder():Boolean{
@@ -91,84 +75,23 @@
 				Context.setAttribute("reversOrder", value);
 			}
 			
-			
-			private var _techPoint:int;
+			protected var _alertSound:String;
 			[Bindable]
-			protected function get techPointID():int{
-				return _techPoint;
+			public function get alertSound():String{
+				return _alertSound;
 			}
-			protected function set techPointID(value:int):void{
-				_techPoint = value;
-				if(_techPoint){
-					Context.setAttribute("techPoint", _techPoint);
-					setTechPointObj(_techPoint);
-				}
+			public function set alertSound(value:String):void{
+				_alertSound = value;
+				Context.setAttribute("alertSound", value);
 			}
-			
-			private function setTechPointObj(id:int):void{
-				if(!techPionts) return;
-				techPointObj=ArrayUtil.searchItem('id',id,techPionts.source) as TechPoint;
-				Context.setAttribute("tech.object", techPointObj);
-			}
-			
-			private var bdPopup:DatabasePopup;
+
 			private function initApp():void{
-				bdPopup= new DatabasePopup();
-				bdPopup.addEventListener(PopUpEvent.CLOSE,bdPopClose);
-				bdPopup.chekConnect();
+				init();
 			}
 			
-			private function bdPopClose(e:PopUpEvent):void{
-				var connected:Boolean=e.commit;
-				if(connected){
-					//connected
-					init();
-				}else{
-					//no connection
-					currentState='disconnected';
-					bdPopup.open(null);
-				}
-			}
 			
-			private var startPopup:ModalPopUp;
 			private function init():void{
 				//lock screen
-				startPopup= new ModalPopUp();
-				startPopup.label='Инициализация';
-				startPopup.open(null);
-				
-				var initLatch:DbLatch=Context.initPhotoPicker();
-				initLatch.addEventListener(Event.COMPLETE, onInit);
-				
-				var latch:DbLatch= new DbLatch();
-				var svc:TechPointService=Tide.getInstance().getContext().byType(TechPointService,true) as TechPointService;
-				latch.addEventListener(Event.COMPLETE,onTPLoad);
-				//TODO SourceType???
-				latch.addLatch(svc.loadAll(SourceType.TECH_GLUING));
-				latch.start();
-				initLatch.join(latch);
-				
-				initLatch.start();
-			}
-			private function onTPLoad(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onTPLoad);
-					if(latch.complite){
-						techPionts=latch.lastDataAC;
-					}
-				}
-			}
-			private function onInit(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onInit);
-					if(!latch.complite){
-						startPopup.label='Ошибка инициализации'+'/n'+latch.error;
-						return;
-					}
-				}
-				
 				comReaders= new ArrayCollection();
 				var coms:Array=ComInfo.load();
 				var ci:ComInfo;
@@ -187,13 +110,11 @@
 					comGlueProxy.type=ComInfo.COM_TYPE_GLUECONTROLLER;
 					comGlueProxy.suffix=GlueController.MSG_SUFIX;
 				}
-				var techGroupId:int;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				if (so.size>0){
-					techPointID=so.data.techPoint;
-					techGroupId=so.data.techGroupId;
 					reversOrder=so.data.reversOrder; 
 					doubleSheetOff=so.data.doubleSheetOff;
+					feedOn=so.data.feedOn;
 					dataBaseOff=so.data.dataBaseOff;
 					feedDelay=so.data.feedDelay;
 					if(feedDelay<=0) feedDelay=300;
@@ -205,23 +126,15 @@
 					vacuumOnErrOff=so.data.vacuumOnErrOff;
 					if(so.data.hasOwnProperty('stopOnComplite')) stopOnComplite=so.data.stopOnComplite;
 					pauseOnComplite=so.data.pauseOnComplite;
+					alertSound=so.data.alertSound;
 				}
-				
-				startPopup.close();
-				startPopup=null;
-				
-				//init messenger
-				if(techPointObj) Context.station.name=techPointObj.name;
-				Context.station.setType(CycleStation.TYPE_BELGLUE,2);
-				MessengerGeneric.connect();
 				
 				currentState='config';
 			}
 			
 			
 			private function start():void{
-				if(!techPointObj 
-					|| !comFeederProxy || !comFeederProxy.num 
+				if(!comFeederProxy || !comFeederProxy.num 
 					|| !comGlueProxy || !comGlueProxy.num 
 					|| comReaders.length==0 ){
 					Alert.show('Приложение не настроено');
@@ -245,19 +158,8 @@
 			}
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
-				//TODO flush data
-				MessengerGeneric.disconnect();
 				if(serialProxy) serialProxy.stop();
 				if(techPickerView) techPickerView.stop();
-			}
-			
-			protected function ddTechPoint_changeHandler(event:IndexChangeEvent):void{
-				var tp:TechPoint= ddTechPoint.selectedItem as TechPoint;
-				if (!tp) return;
-				techPointID=tp.id;
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.techPoint = techPointID;
-				so.flush();  
 			}
 			
 			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
@@ -329,6 +231,35 @@
 				so.flush();  
 			}
 			
+			protected function btSoundFile_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,prtFolderSet);
+				file.browseForOpen('Выбирите файл звука (mp3)');
+			}
+			protected function prtFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,prtFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					alertSound=file.nativePath;;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.alertSound = alertSound;
+					so.flush();
+				}
+			}
+			
+			protected function btSoundTest_clickHandler(event:MouseEvent):void{
+				if(!alertSound) return;
+				var file:File= new File(alertSound);
+				if(!file.exists) return;
+				var sound:Sound= new Sound(new URLRequest(file.url));
+				try{
+					sound.play();
+				}catch(error:Error){}
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -348,37 +279,18 @@
 		</s:fill>
 	</s:Rect>
 	
-	<s:Button label="Выбрать БД" includeIn="disconnected,config" click="{bdPopup.open(null)}"
-			  top="5" right="5"/>
-	
-	<s:VGroup  includeIn="config" gap="10" top="5" left="5" right="5" bottom="50">
-		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Технологическая точка:"/>
-			<s:DropDownList id="ddTechPoint" dataProvider="{techPionts}" selectedItem="{techPointObj}" 
-							labelField="name" change="ddTechPoint_changeHandler(event)"
-							width="200"/>
-		</s:HGroup>
+	<s:VGroup  includeIn="config" gap="10" top="5" left="10" right="5" bottom="50">
 		
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
-			<!--<s:Spacer width="10"/>
-			<s:Label text="Время цикла(млсек):"/>
-			<s:NumericStepper id="spTurnInterval" minimum="500" maximum="10000" snapInterval="100" value="{turnInterval}" change="spTurnInterval_changeHandler(event)"/>-->
 		</s:HGroup>
-
+		
 		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Задержка подачи листа (млсек):"/>
-			<s:NumericStepper id="spFeedDelay" minimum="100" maximum="5000" snapInterval="100" value="{feedDelay}" change="spFeedDelay_changeHandler(event)"/>
-		</s:HGroup>
-		<s:HGroup gap="0" verticalAlign="baseline">
-			<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 
-			<s:Label text="Отключить контроль двойного листа для разворотов"/>
-		</s:HGroup>
-
-		<s:HGroup gap="0" verticalAlign="baseline">
-			<s:CheckBox id="tg_dataBaseOff" selected="{dataBaseOff}" change="{setBool('dataBaseOff')}"/> 
-			<s:Label text="Внешний ШК (отключить базу данных)"/>
+			<s:Label text="Звук ошибки:"/>
+			<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
+			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)" width="40"/>
+			<s:Button id="btSoundTest" label="►" click="btSoundTest_clickHandler(event)" width="40"/>
 		</s:HGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">
@@ -386,38 +298,52 @@
 			<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="100" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
 		</s:HGroup>
 
-		<s:HGroup gap="0" verticalAlign="baseline">
-			<s:Label text="При старте включать:" width="180"/>
-			<s:Spacer width="10"/>
-			<s:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
-			<s:Label text="Привод"/>
-			<s:Spacer width="10"/>
-			<s:CheckBox id="tg_vacuumOnStartOn" selected="{vacuumOnStartOn}" change="{setBool('vacuumOnStartOn')}"/>
-			<s:Label text="Вакуум"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Подача листа"/>
+			<s:CheckBox id="tg_feedOn" selected="{feedOn}" change="{setBool('feedOn')}"/> 
 		</s:HGroup>
-		<s:HGroup gap="0" verticalAlign="baseline">
-			<s:Label text="При паузе/ошибке выключать:" width="180"/>
-			<s:Spacer width="10"/>
-			<s:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
-			<s:Label text="Привод"/>
-			<s:Spacer width="10"/>
-			<s:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
-			<s:Label text="Вакуум"/>
-		</s:HGroup>
-		<s:HGroup gap="0" verticalAlign="baseline">
-			<s:Label text="При завершении заказа"  width="180"/>
-			<s:Spacer width="10"/>
-			<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
-			<s:Label text="Стоп"/>
-			<s:Spacer width="10"/>
-			<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
-			<s:Label text="Пауза"/>
-		</s:HGroup>
+		<s:VGroup  gap="5" width="100%" paddingLeft="15" enabled="{feedOn}">
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Задержка подачи листа (млсек):"/>
+				<s:NumericStepper id="spFeedDelay" minimum="100" maximum="5000" snapInterval="100" value="{feedDelay}" change="spFeedDelay_changeHandler(event)"/>
+			</s:HGroup>
+			<s:HGroup gap="0" verticalAlign="baseline">
+				<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 
+				<s:Label text="Отключить контроль двойного листа для разворотов"/>
+			</s:HGroup>
+			<s:HGroup gap="0" verticalAlign="baseline">
+				<s:Label text="При старте включать:" width="180"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
+				<s:Label text="Привод"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_vacuumOnStartOn" selected="{vacuumOnStartOn}" change="{setBool('vacuumOnStartOn')}"/>
+				<s:Label text="Вакуум"/>
+			</s:HGroup>
+			<s:HGroup gap="0" verticalAlign="baseline">
+				<s:Label text="При паузе/ошибке выключать:" width="180"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
+				<s:Label text="Привод"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
+				<s:Label text="Вакуум"/>
+			</s:HGroup>
+			<s:HGroup gap="0" verticalAlign="baseline">
+				<s:Label text="При завершении заказа"  width="180"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
+				<s:Label text="Стоп"/>
+				<s:Spacer width="10"/>
+				<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
+				<s:Label text="Пауза"/>
+			</s:HGroup>
+		</s:VGroup>
 		
 		<s:Spacer height="5"/>
 		<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
 		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" resizeToContent="true">
-			<s:NavigatorContent label="Подача" backgroundAlpha="0" width="100%">
+			<s:NavigatorContent label="Подача" backgroundAlpha="0" width="100%" enabled="{feedOn}">
 				<s:Group width="100%">
 					<itemRenderer:ComInfoRenderer  data="{comFeederProxy}" lockType="true" lockSuffix="true"/>
 				</s:Group>
@@ -444,7 +370,7 @@
 	
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<view:GlueFeederView id="techPickerView" techPoint="{techPointObj}" 
+		<view:GlueFeederView id="techPickerView" 
 							 serialProxy="{serialProxy}"
 							 reversOrder="{reversOrder}" 
 							 feedDelay="{feedDelay}"
@@ -455,9 +381,10 @@
 							 vacuumOnErrOff="{vacuumOnErrOff}"
 							 stopOnComplite="{stopOnComplite}"
 							 doubleSheetOff="{doubleSheetOff}"
-							 dataBaseOff="{dataBaseOff}"
-							 feedOn="true"
+							 dataBaseOff="true"
+							 feedOn="{feedOn}"
 							 pauseOnComplite="{pauseOnComplite}"
+							 alertSound="{alertSound}"
 							 width="100%" height="100%"/>
 	</s:VGroup>
 	
@@ -465,7 +392,7 @@
 		<s:Spacer width="100%"/>
 		<s:Button label="Настройки" includeIn="monitor" click="{stop()}"/>
 		<s:Button label="Старт" includeIn="config" click="{start()}"/>
-		<s:Button label="Закрыть" click="{stop(); MessengerGeneric.disconnect(); FlexGlobals.topLevelApplication.exit();}"/>
+		<s:Button label="Закрыть" click="{stop(); FlexGlobals.topLevelApplication.exit();}"/>
 	</s:HGroup>
 	
 </s:WindowedApplication>

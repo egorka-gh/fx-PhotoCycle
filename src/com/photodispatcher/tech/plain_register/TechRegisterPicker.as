@@ -8,8 +8,8 @@ package com.photodispatcher.tech.plain_register{
 	public class TechRegisterPicker extends TechRegisterBase{
 		
 		public function TechRegisterPicker(printGroup:String, books:int, sheets:int){
-			super(printGroup, books, sheets);
 			_type=TYPE_PICKER;
+			super(printGroup, books, sheets);
 			logOk=false;
 			bookPart=BookSynonym.BOOK_PART_ANY;
 			lastSheet=-1;
@@ -23,6 +23,8 @@ package com.photodispatcher.tech.plain_register{
 		public function setBookPart(value:int):void{
 			bookPart=value;
 		}
+		
+		public var noDataBase:Boolean;
 		
 		override public function register(book:int, sheet:int):void{
 			if(lastSheet==-1){
@@ -51,7 +53,7 @@ package com.photodispatcher.tech.plain_register{
 				registred++;
 				log=true;
 			}
-			if(log){
+			if(log && !noDataBase){
 				if(!calcOnLog){
 					_needFlush=true;
 					startFlushTimer();

@@ -371,7 +371,6 @@
 			}
 			
 			private var sound:Sound;
-			
 			public function set alertSound(filepath:String):void{
 				if(!filepath) return;
 				var file:File= new File(filepath);

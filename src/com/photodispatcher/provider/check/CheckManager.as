@@ -138,7 +138,7 @@ package com.photodispatcher.provider.check{
 			}
 			
 			if(toKill.length>0){
-				var arr:Array=queue.source;
+				var arr:Array=queue.source.concat();
 				for each(var id:String in toKill){
 					idx=ArrayUtil.searchItemIdx('id',id,arr);
 					if(idx!=-1) arr.splice(idx,1);

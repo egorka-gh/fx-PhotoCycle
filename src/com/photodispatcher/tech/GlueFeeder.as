@@ -79,6 +79,8 @@ package com.photodispatcher.tech{
 		[Bindable]
 		public var currBookTypeName:String=''; 
 		
+		public var dataBaseOff:Boolean;
+		
 		public var engineOnStartOn:Boolean=false;
 		public var vacuumOnStartOn:Boolean=false;
 		public var engineOnErrOff:Boolean=false;
@@ -976,21 +978,45 @@ package com.photodispatcher.tech{
 			currBarcode=barcode;
 			//parce barcode
 			var pgId:String;
-			if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
-			if(!pgId){
-				pause('Не верный штрих код: '+barcode);
-				return;
+			var bookNum:int;
+			var bookTotal:int;
+			var pageNum:int;
+			var pageTotal:int;
+			
+			if(!dataBaseOff){
+				//cycle barcode
+				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				if(!pgId){
+					pause('Не верный штрих код: '+barcode);
+					return;
+				}
+				bookNum=int(barcode.substr(0,3));
+				bookTotal=int(barcode.substr(3,3))
+				pageNum=int(barcode.substr(6,2));
+				pageTotal=int(barcode.substr(8,2));
+			}else{
+				//external barcode
+				//1 book always
+				/*format [xxxxxx][nnn][ttt] 
+					nnn - 3digit current sheet
+					ttt - 3digit total sheets
+					xxxxxx - some digits vs order id 
+				*/
+				bookTotal=1;
+				bookNum=1;
+				pageTotal=int(barcode.substr(barcode.length-3,3));
+				pageNum=int(barcode.substr(barcode.length-6,3));
+				pgId=barcode.substr(0,barcode.length-6);
 			}
-			var bookNum:int=int(barcode.substr(0,3));
-			var pageNum:int=int(barcode.substr(6,2));
-			glueHandler.await(pgId,bookNum,pageNum,int(barcode.substr(8,2)));
+			
+			glueHandler.await(pgId,bookNum,pageNum,pageTotal);
 			//if(currSheetIdx==-1){
 			if(!register){
 				//new order
 				currPgId=pgId;
 				currReprints=[];
-				currBookTot=int(barcode.substr(3,3));
-				currSheetTot=int(barcode.substr(8,2));
+				currBookTot=bookTotal;
+				currSheetTot=pageTotal;
 				/*
 				//template check
 				bdWait=0;
@@ -1003,6 +1029,7 @@ package com.photodispatcher.tech{
 				register.revers=reversOrder;
 				register.inexactBookSequence=inexactBookSequence;
 				register.detectFirstBook=detectFirstBook;
+				register.noDataBase=dataBaseOff;
 				//reset detectFirstBook
 				if(detectFirstBook) detectFirstBook=false;
 			}else{
@@ -1056,6 +1083,7 @@ package com.photodispatcher.tech{
 		
 		protected function checkOrderParams():void{
 			if(!currPgId) return;
+			if(dataBaseOff) return;
 			bdLatch.setOn();
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch();
