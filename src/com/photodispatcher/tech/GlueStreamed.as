@@ -35,7 +35,7 @@ package com.photodispatcher.tech{
 		[Bindable]
 		public var prepared:Boolean;
 		
-		protected var _inexactBookSequence:Boolean=false;
+		private var _inexactBookSequence:Boolean=false;
 		[Bindable]
 		public function get inexactBookSequence():Boolean{
 			return _inexactBookSequence;
@@ -45,7 +45,7 @@ package com.photodispatcher.tech{
 			if(_inexactBookSequence) detectFirstBook=false;
 		}
 		
-		protected var _detectFirstBook:Boolean=false;
+		private var _detectFirstBook:Boolean=false;
 		[Bindable]
 		public function get detectFirstBook():Boolean{
 			return _detectFirstBook;
@@ -70,7 +70,7 @@ package com.photodispatcher.tech{
 		
 		public var pushDelay:int=200;
 		
-		protected var _serialProxy:SerialProxy;
+		private var _serialProxy:SerialProxy;
 		public function get serialProxy():SerialProxy{
 			return _serialProxy;
 		}
@@ -139,7 +139,15 @@ package com.photodispatcher.tech{
 			_logger = value;
 		}
 		
-		public var feedDelay:int;
+		private var _feedDelay:int;
+		public function get feedDelay():int{
+			return _feedDelay;
+		}
+		
+		public function set feedDelay(value:int):void{
+			if(value<100) value=100;
+			_feedDelay = value;
+		}
 		
 		public function init():void{
 			checkPrepared();
@@ -265,7 +273,7 @@ package com.photodispatcher.tech{
 			if(!serialProxy) return;
 			log('Start');
 			if(!serialProxy.isStarted){
-				logErr(('SerialProxy not started...');
+				logErr('SerialProxy not started...');
 				return;
 			}
 			if(!isRunning){
@@ -327,7 +335,7 @@ package com.photodispatcher.tech{
 		protected function startInternal():void{
 			if(!checkPrepared(true)) return;
 			if(!glueHandler || !glueHandler.start()){
-				logErr(('startInternal: glueHandler init error');
+				logErr('startInternal: glueHandler init error');
 				return;
 			}
 			log('SerialProxy:' +serialProxy.traceDisconnected());
@@ -360,6 +368,9 @@ package com.photodispatcher.tech{
 			//glueHandler??
 		}
 		
+		public function pauseRequest(msg:String=''):void{
+			
+		}
 		
 		protected function onBarCode(event:BarCodeEvent):void{
 			var barcode:String=event.barcode;

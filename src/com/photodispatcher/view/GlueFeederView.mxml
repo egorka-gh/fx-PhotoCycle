@@ -15,6 +15,7 @@
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.tech.GlueFeeder;
+			import com.photodispatcher.tech.GlueStreamed;
 			import com.photodispatcher.view.itemRenderer.TraySetDataGridRowBackground;
 			
 			import flash.globalization.DateTimeStyle;
@@ -44,6 +45,7 @@
 			
 			public  var doubleSheetOff:Boolean=false;
 			public var dataBaseOff:Boolean=false;
+			[Bindable]
 			public var feedOn:Boolean=true;
 			
 			public var serialProxy:SerialProxy;
@@ -88,34 +90,41 @@
 			}
 
 			[Bindable]
-			private var glueFeeder:GlueFeeder;
+			private var glue:GlueStreamed; //GlueFeeder;
 			
 			public function start():void{
-				glueFeeder= new GlueFeeder();
-				glueFeeder.init();
+				if(feedOn){
+					glue= new GlueFeeder();
+				}else{
+					glue= new GlueStreamed();
+				}
+				glue.init();
 				
-				glueFeeder.serialProxy=serialProxy;
-				glueFeeder.engineOnStartOn=engineOnStartOn;
-				glueFeeder.vacuumOnStartOn=vacuumOnStartOn;
-				glueFeeder.engineOnErrOff=engineOnErrOff;
-				glueFeeder.vacuumOnErrOff=vacuumOnErrOff;
-				glueFeeder.stopOnComplite=stopOnComplite;
-				glueFeeder.pauseOnComplite=pauseOnComplite;
-				glueFeeder.doubleSheetOff=doubleSheetOff;
-				glueFeeder.reversOrder=reversOrder;
-				glueFeeder.techPoint=techPoint;
-				glueFeeder.feedDelay=feedDelay;
-				glueFeeder.pushDelay=pushDelay;
-				glueFeeder.logger=this;
-				glueFeeder.dataBaseOff=dataBaseOff;
-				glueFeeder.addEventListener(ErrorEvent.ERROR, onPickerErr);
+				glue.serialProxy=serialProxy;
+				glue.engineOnStartOn=engineOnStartOn;
+				glue.vacuumOnStartOn=vacuumOnStartOn;
+				glue.engineOnErrOff=engineOnErrOff;
+				glue.vacuumOnErrOff=vacuumOnErrOff;
+				glue.stopOnComplite=stopOnComplite;
+				glue.pauseOnComplite=pauseOnComplite;
+				glue.doubleSheetOff=doubleSheetOff;
+				glue.reversOrder=reversOrder;
+				glue.techPoint=techPoint;
+				glue.feedDelay=feedDelay;
+				glue.pushDelay=pushDelay;
+				glue.logger=this;
+				glue.dataBaseOff=dataBaseOff;
+				glue.addEventListener(ErrorEvent.ERROR, onPickerErr);
+				if(feedOn){
+					glue.start();
+				}
 			}
 
 			public function stop():void{
-				if(glueFeeder){
-					glueFeeder.stop();
-					glueFeeder.removeEventListener(ErrorEvent.ERROR, onPickerErr);
-					glueFeeder.destroy();
+				if(glue){
+					glue.stop();
+					glue.removeEventListener(ErrorEvent.ERROR, onPickerErr);
+					glue.destroy();
 					//techPicker=null;
 				}
 			}
@@ -129,64 +138,64 @@
 			}
 			
 			protected function btPushBook_clickHandler(event:MouseEvent):void{
-				if(glueFeeder && glueFeeder.glueHandler && !glueFeeder.glueHandler.isRunning) glueFeeder.glueHandler.removeBook(); 
+				if(glue && glue.glueHandler && !glue.glueHandler.isRunning) glue.glueHandler.removeBook(); 
 			}
 			
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
-		<s:ArrayCollection id="acLatches" source="{glueFeeder.latches}"/>
+		<s:ArrayCollection id="acLatches" source="{glue.latches}"/>
 	</fx:Declarations>
 	
 	<s:VGroup gap="10" width="100%" height="100%">
 		<s:HGroup gap="10" width="100%">
 			<s:VGroup gap="10" width="100%">
 				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:CheckBox id="tgSkipBookNumCheck" selected="@{glueFeeder.inexactBookSequence}"
-								enabled="{!glueFeeder.isRunning || glueFeeder.isPaused}"/>
+					<s:CheckBox id="tgSkipBookNumCheck" selected="@{glue.inexactBookSequence}"
+								enabled="{!glue.isRunning || glue.isPaused}"/>
 					<s:Label text="Сборка брака"/>
 					<s:Spacer width="20"/>
-					<s:CheckBox id="tgDetectFirstBook" selected="@{glueFeeder.detectFirstBook}"
-								enabled="{!glueFeeder.isRunning || glueFeeder.isPaused}"/>
+					<s:CheckBox id="tgDetectFirstBook" selected="@{glue.detectFirstBook}"
+								enabled="{!glue.isRunning || glue.isPaused}"/>
 					<s:Label text="Не полный заказ"/>
 				</s:HGroup>
 				
 				<s:HGroup gap="10" width="100%">
 					<s:VGroup gap="5" width="100%">
 						<s:HGroup gap="10" width="100%">
-							<s:Label text="Заказ: {glueFeeder.currPgId}"/>
-							<s:Label text="Тип книги: {glueFeeder.currBookTypeName}"/>
-							<s:Label text="Книга: {glueFeeder.currBookIdx.toString()}({glueFeeder.currBookTot.toString()})"/>
-							<s:Label text="Разворот: {glueFeeder.currSheetIdx.toString()}({glueFeeder.currSheetTot.toString()})"/>
+							<s:Label text="Заказ: {glue.currPgId}"/>
+							<s:Label text="Тип книги: {glue.currBookTypeName}"/>
+							<s:Label text="Книга: {glue.currBookIdx.toString()}({glue.currBookTot.toString()})"/>
+							<s:Label text="Разворот: {glue.currSheetIdx.toString()}({glue.currSheetTot.toString()})"/>
 						</s:HGroup>
 					</s:VGroup>
 				</s:HGroup>
 			</s:VGroup>	
-			<s:VGroup gap="12" paddingRight="10">
+			<s:VGroup gap="12" paddingRight="10" enabled="{feedOn}">
 				<!--<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}">
 					<s:ToggleButton id="tgVacuum" label="Вакуум" change="{tgVacuum.selected?techPicker.controller.vacuumOn():techPicker.controller.vacuumOff()}"/>
 					<s:ToggleButton id="tgEngine" label="Мотор" change="{tgEngine.selected?techPicker.controller.engineOn():techPicker.controller.engineOff()}"/>
 				</s:HGroup>-->
-				<s:HGroup gap="5" verticalAlign="baseline" width="150">
+				<s:HGroup gap="5" verticalAlign="baseline" width="150" >
 					<s:Label text="Вакуум"/>
 					<s:Spacer width="100%"/>
-					<s:Button label="On" width="40" click="{glueFeeder.setVacuumOn()}"/>
-					<s:Button label="Off" width="40" click="{glueFeeder.setVacuumOff()}"/>
+					<s:Button label="On" width="40" click="{glue.setVacuumOn()}"/>
+					<s:Button label="Off" width="40" click="{glue.setVacuumOff()}"/>
 				</s:HGroup>
-				<s:HGroup gap="5" verticalAlign="baseline" width="150">
+				<s:HGroup gap="5" verticalAlign="baseline" width="150" >
 					<s:Label text="Мотор"/>
 					<s:Spacer width="100%"/>
-					<s:Button label="On" width="40" click="{glueFeeder.setEngineOn()}"/>
-					<s:Button label="Off" width="40" click="{glueFeeder.setEngineOff()}"/>
+					<s:Button label="On" width="40" click="{glue.setEngineOn()}"/>
+					<s:Button label="Off" width="40" click="{glue.setEngineOff()}"/>
 				</s:HGroup>
-				<s:HGroup gap="10">
-					<s:Button id="btStart" label="Старт" enabled="{!glueFeeder.isRunning || glueFeeder.isPaused}" click="glueFeeder.start()"/>
-					<s:Button label="Перезапуск COM" enabled="{!glueFeeder.isRunning || glueFeeder.isPaused}" click="{serialProxy.restart()}"/>
+				<s:HGroup gap="10" >
+					<s:Button id="btStart" label="Старт" enabled="{!glue.isRunning || glue.isPaused}" click="glue.start()"/>
+					<s:Button label="Перезапуск COM" enabled="{!glue.isRunning || glue.isPaused}" click="{serialProxy.restart()}"/>
 				</s:HGroup>
-				<s:HGroup gap="10">
-					<s:Button id="btPause" label="Пауза" enabled="{glueFeeder.isRunning}" click="glueFeeder.pauseRequest()"/>
-					<s:Button id="btStop" label="Стоп" click="glueFeeder.stop()"/>
+				<s:HGroup gap="10" >
+					<s:Button id="btPause" label="Пауза" enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
+					<s:Button id="btStop" label="Стоп" click="glue.stop()"/>
 				</s:HGroup>
 			</s:VGroup>
 		</s:HGroup>
@@ -206,13 +215,13 @@
 				</s:List>
 				<s:Spacer height="5"/>
 				<s:Label text="Склейка" fontWeight="bold"/>
-				<s:Label text="Заказ: {glueFeeder.glueHandler.currentBookView.printGroupId}"/>
-				<s:Label text="Книга: {glueFeeder.glueHandler.currentBookView.book}"/>
-				<s:Label text="Листов всего: {glueFeeder.glueHandler.currentBookView.sheetsTotal}"/>
-				<s:Label text="Листов подано: {glueFeeder.glueHandler.currentBookView.sheetsFeeded}"/>
-				<s:Label text="Листов склеено: {glueFeeder.glueHandler.currentBookView.sheetsDone}"/>
+				<s:Label text="Заказ: {glue.glueHandler.currentBookView.printGroupId}"/>
+				<s:Label text="Книга: {glue.glueHandler.currentBookView.book}"/>
+				<s:Label text="Листов всего: {glue.glueHandler.currentBookView.sheetsTotal}"/>
+				<s:Label text="Листов подано: {glue.glueHandler.currentBookView.sheetsFeeded}"/>
+				<s:Label text="Листов склеено: {glue.glueHandler.currentBookView.sheetsDone}"/>
 				<s:Button id="btPushBook" label="Убрать книгу"
-						  enabled="{!glueFeeder.glueHandler.isRunning}"
+						  enabled="{!glue.glueHandler.isRunning}"
 						  click="btPushBook_clickHandler(event)" />
 			</s:VGroup>
 		</s:HGroup>

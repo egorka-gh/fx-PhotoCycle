@@ -35,7 +35,7 @@ package com.photodispatcher.tech{
 	import org.granite.tide.Tide;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
-	public class GlueFeeder extends EventDispatcher{
+	public class GlueFeeder extends GlueStreamed{
 		public static const START_DELAY:int	=2000;
 
 		//public static const COMMAND_GROUP_BOOK_START:int	=0;
@@ -52,91 +52,7 @@ package com.photodispatcher.tech{
 		protected static const BD_TIMEOUT_MAX:int=1000;
 		protected static const BD_MAX_WAITE:int=3000;
 
- 
-		[Bindable]
-		public var prepared:Boolean;
-		
-		protected var _inexactBookSequence:Boolean=false;
-		[Bindable]
-		public function get inexactBookSequence():Boolean{
-			return _inexactBookSequence;
-		}
-		public function set inexactBookSequence(value:Boolean):void{
-			_inexactBookSequence = value;
-			if(_inexactBookSequence) detectFirstBook=false;
-		}
-
-		protected var _detectFirstBook:Boolean=false;
-		[Bindable]
-		public function get detectFirstBook():Boolean{
-			return _detectFirstBook;
-		}
-		public function set detectFirstBook(value:Boolean):void{
-			_detectFirstBook = value;
-			if(_detectFirstBook) inexactBookSequence=false;
-		}
-
-		[Bindable]
-		public var currBookTypeName:String=''; 
-		
-		public var dataBaseOff:Boolean;
-		
-		public var engineOnStartOn:Boolean=false;
-		public var vacuumOnStartOn:Boolean=false;
-		public var engineOnErrOff:Boolean=false;
-		public var vacuumOnErrOff:Boolean=false;
-		
-		public var stopOnComplite:Boolean=false;
-		public var pauseOnComplite:Boolean=false;
-		
-		public var pushDelay:int=200;
-
-		protected var _serialProxy:SerialProxy;
-		public function get serialProxy():SerialProxy{
-			return _serialProxy;
-		}
-		public function set serialProxy(value:SerialProxy):void{
-			if(_serialProxy){
-				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
-				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
-				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0);
-			}
-			_serialProxy = value;
-			if(_serialProxy){
-				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
-				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
-				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0,false,10);
-				if(_serialProxy.isStarted) _serialProxy.connectAll();
-			}
-		}
-		protected function onSerialProxyStart(evt:SerialProxyEvent):void{
-			log('SerialProxy: started, connect to com proxies...');
-			serialProxy.connectAll();
-		}
-
-		protected function onProxyConnect0(evt:SerialProxyEvent):void{
-			log('SerialProxy: connected, start devices');
-			startDevices();
-		}
-		protected function onProxyErr(evt:SerialProxyEvent):void{
-			log('SerialProxy error: '+evt.error);
-			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,evt.error));
-		}
-
-		public var techPoint:TechPoint;
-		public var reversOrder:Boolean;
-		public  var doubleSheetOff:Boolean=false;
-
-		protected var engineOn:Boolean;
-		protected var vacuumOn:Boolean;
-		[Bindable]
-		public var isRunning:Boolean;
-		[Bindable]
-		public var isPaused:Boolean;
-		
 		//Latches
-		[Bindable]
-		public var latches:Array;
 		protected var aclLatch:PickerLatch;
 		protected var layerInLatch:PickerLatch;
 		protected var layerOutLatch:PickerLatch;
@@ -144,49 +60,13 @@ package com.photodispatcher.tech{
 		protected var registerLatch:PickerLatch;
 		protected var bdLatch:PickerLatch;
 		
-		//print group params
-		[Bindable]
-		public var currPgId:String='';
-		protected var currBarcode:String;
-		protected var currReprints:Array;
-		[Bindable]
-		public var currBookTot:int;
-		[Bindable]
-		public var currBookIdx:int;
-		[Bindable]
-		public var currSheetTot:int;
-		[Bindable]
-		public var currSheetIdx:int;
-		
 		protected var currentLayer:int;
-
-		protected var _logger:ISimpleLogger;
-		public function get logger():ISimpleLogger{
-			return _logger;
-		}
-		public function set logger(value:ISimpleLogger):void{
-			_logger = value;
-			//if(controller) controller.logger=value;
-		}
-
-		private var _feedDelay:int;
-		public function get feedDelay():int{
-			return _feedDelay;
-		}
-
-		public function set feedDelay(value:int):void{
-			if(value<100) value=100;
-			_feedDelay = value;
-			//if(layerOutLatch) layerOutLatch.setTimeout(1000+_feedDelay); 
-		}
-		
 		
 		public function GlueFeeder(){
-			super(null);
-			feedDelay=100;
+			super();
 		}
 		
-		public function init():void{
+		override public function init():void{
 			
 			aclLatch = new PickerLatch(PickerLatch.TYPE_ACL, 1,'Контроллер','Ожидание подтверждения команды', 200*3);
 			//layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER, 2,'Фотодатчик','Ожидание листа',turnInterval)
@@ -205,7 +85,7 @@ package com.photodispatcher.tech{
 			checkPrepared();
 		}
 
-		protected function checkPrepared(alert:Boolean=false):Boolean{
+		override protected function checkPrepared(alert:Boolean=false):Boolean{
 			prepared=barcodeReaders && barcodeReaders.length>0 && 
 				controller && controller.connected &&
 				glueHandler && glueHandler.isPrepared;
@@ -234,7 +114,7 @@ package com.photodispatcher.tech{
 			return 	prepared;
 		}
 		
-		public function destroy():void{
+		override public function destroy():void{
 			var l:PickerLatch;
 			for each(l in latches){
 				l.removeEventListener(ErrorEvent.ERROR, onLatchTimeout);
@@ -266,59 +146,8 @@ package com.photodispatcher.tech{
 		public function set currentGroup(value:int):void{
 			if(_currentGroup != value){
 				currentGroupStep=0;
-				/*
-				var ls:LayerSequence;
-				switch(value){
-					case COMMAND_GROUP_BOOK_SHEET:
-						ls= new LayerSequence();
-						ls.layer_group=COMMAND_GROUP_BOOK_SHEET;
-						ls.seqlayer=Layer.LAYER_SHEET;
-						ls.seqlayer_name='Разворот';
-						ls.seqorder=1;
-						currentSequence=[ls];
-						break;
-					default:
-						currentSequence=[];
-						break;
-				}
-
-				log('group: '+value.toString());
-				*/
 			}
 			_currentGroup = value;
-		}
-
-		protected var _barcodeReaders:Array;
-		protected function get barcodeReaders():Array{
-			return _barcodeReaders;
-		}
-		protected function set barcodeReaders(value:Array):void{
-			log('Set barcode readers');
-			var barReader:ComReader;
-			if(_barcodeReaders){
-				for each(barReader in _barcodeReaders){
-					barReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
-					barReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
-					barReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
-					//barReader.stop();
-				}
-			}
-			_barcodeReaders = value;
-			if(_barcodeReaders){
-				for each(barReader in _barcodeReaders){
-					barReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
-					barReader.addEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
-					barReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
-				}
-			}
-			//checkPrepared();
-			var msg:String;
-			if(!_barcodeReaders || _barcodeReaders.length==0){
-				msg='has no barcode readers';
-			}else{
-				msg='has '+_barcodeReaders.length.toString()+' barcode readers';
-			}
-			log(msg);
 		}
 
 		protected var _controller:FeederController;
@@ -344,22 +173,7 @@ package com.photodispatcher.tech{
 			}
 		}
 		
-		private var _glueHandler:GlueHandler;
-		[Bindable]
-		public function get glueHandler():GlueHandler{
-			return _glueHandler;
-		}
-		public function set glueHandler(value:GlueHandler):void{
-			if(_glueHandler){
-				_glueHandler.removeEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
-			}
-			_glueHandler = value;
-			if(_glueHandler){
-				_glueHandler.logger=logger;
-				_glueHandler.addEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
-			}
-		}
-		protected function onGlueHandlerErr(event:ErrorEvent):void{
+		override protected function onGlueHandlerErr(event:ErrorEvent):void{
 			if(!isRunning || isPaused){
 				log('Cклейка: '+event.text);
 				return;
@@ -371,33 +185,13 @@ package com.photodispatcher.tech{
 				stop();
 			}
 		}
-
 		
 		protected function onControllerDisconnect(event:BarCodeEvent):void{
 			log('Отключен контролер '+event.barcode);
 			//pause('Отключен контролер '+event.barcode); busy bug
 		}
 
-
-		protected var _register:TechRegisterPicker;
-		public function get register():TechRegisterPicker{
-			return _register;
-		}
-		public function set register(value:TechRegisterPicker):void{
-			if(_register){
-				//stop listen
-				_register.removeEventListener(ErrorEvent.ERROR, onRegisterErr);
-				_register.removeEventListener(Event.COMPLETE, onRegisterComplite);
-			}
-			_register = value;
-			if(_register){
-				//listen
-				_register.addEventListener(ErrorEvent.ERROR, onRegisterErr);
-				_register.addEventListener(Event.COMPLETE, onRegisterComplite);
-			}
-		}
-
-		public function start():void{
+		override public function start():void{
 			if(!serialProxy) return;
 			log('Start');
 			if(!serialProxy.isStarted){
@@ -418,26 +212,26 @@ package com.photodispatcher.tech{
 			}
 		}
 
-		public function setEngineOn():void{
+		override public function setEngineOn():void{
 			if(controller) controller.engineOn(); 
 		}
-		public function setEngineOff():void{
+		override public function setEngineOff():void{
 			if(controller) controller.engineOff(); 
 		}
-		public function setVacuumOn():void{
+		override public function setVacuumOn():void{
 			if(controller) controller.vacuumOn(); 
 		}
-		public function setVacuumOff():void{
+		override public function setVacuumOff():void{
 			if(controller) controller.vacuumOff(); 
 		}
 
-		protected function onProxyConnect(evt:SerialProxyEvent):void{
+		override protected function onProxyConnect(evt:SerialProxyEvent):void{
 			log('SerialProxy: connected to com proxies (start)');
 			serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
 			//startDevices()
 			startInternal();
 		}
-		protected function startDevices():void{
+		override protected function startDevices():void{
 			//create devs
 			var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_CONTROLLER);
 			if(!controller) controller= new FeederController();
@@ -465,7 +259,7 @@ package com.photodispatcher.tech{
 			for (i=0; i<readers.length; i++) (barcodeReaders[i] as ComReader).start(readers[i]);
 		}
 
-		protected function startInternal():void{
+		override protected function startInternal():void{
 			hasPauseRequest=false;
 			if(!checkPrepared(true)) return;
 			if(!glueHandler || !glueHandler.start()){
@@ -511,7 +305,7 @@ package com.photodispatcher.tech{
 		}
 
 		protected var hasPauseRequest:Boolean=false;
-		public function pauseRequest(msg:String=''):void{
+		override public function pauseRequest(msg:String=''):void{
 			if(hasPauseRequest) return;
 			if(isServiceGroup(currentGroup)) return;
 			log('Запрос паузы. '+msg);
@@ -552,7 +346,7 @@ package com.photodispatcher.tech{
 			return (group==COMMAND_GROUP_START || group==COMMAND_GROUP_STOP || group==COMMAND_GROUP_PAUSE || group==COMMAND_GROUP_RESUME);
 		}
 
-		public function stop():void{
+		override public function stop():void{
 			if(!isRunning) return;
 			if(isPaused) isPaused=false;
 			//if(glueHandler && glueHandler.isRunning) glueHandler.stop();
@@ -638,15 +432,8 @@ package com.photodispatcher.tech{
 					}
 					switch(currentGroupStep){
 						case 0:
-							/*
-							if(currentTray!=-1){
-							aclLatch.setOn();
-							controller.close(currentTray);
-							}else{
-							*/
 							currentGroupStep++;
 							nextStep();
-							//}
 							break;
 						case 1:
 							if (vacuumOnErrOff){
@@ -714,15 +501,8 @@ package com.photodispatcher.tech{
 					}
 					switch(currentGroupStep){
 						case 0:
-							/*
-							if(currentTray!=-1){
-							aclLatch.setOn();
-							controller.close(currentTray);
-							}else{
-							*/
 							currentGroupStep++;
 							nextStep();
-							//}
 							break;
 						case 1:
 							aclLatch.setOn();
@@ -964,7 +744,7 @@ package com.photodispatcher.tech{
 			nextStep();
 		}
 
-		protected function onBarCode(event:BarCodeEvent):void{
+		override protected function onBarCode(event:BarCodeEvent):void{
 			var barcode:String=event.barcode;
 			log('barcod: '+barcode);
 			if(!isRunning || isPaused) return;
@@ -1052,36 +832,18 @@ package com.photodispatcher.tech{
 			register.register(bookNum,pageNum);
 			//barLatch.forward();
 		}
-		protected function onBarError(event:BarCodeEvent):void{
-			pause('Ошибка сканера ШК: '+event.error);
-		}
-		protected function onBarDisconnect(event:BarCodeEvent):void{
-			log('Отключен сканер ШК '+event.barcode);
-			//pause('Отключен сканер ШК '+event.barcode); busy bug
-		}
 
-		protected function checkPrintgroup(pgId:String):Boolean{
-			var res:Boolean=pgId==currPgId;
-			if(!res && currReprints){
-				res=currReprints.indexOf(pgId)!=-1;
-			}
-			return res;
-		}
-		
-		protected function onRegisterErr(event:ErrorEvent):void{
+		override protected function onRegisterErr(event:ErrorEvent):void{
 			if(glueHandler) glueHandler.pauseOnBook();
 			pause(event.text);
 		}
-		protected function onRegisterComplite(event:Event):void{
+		override protected function onRegisterComplite(event:Event):void{
 			currBookIdx=register.currentBook;
 			currSheetIdx=register.currentSheet;
 			registerLatch.forward();
 		}
-		protected function log(msg:String):void{
-			if(logger) logger.log(msg);
-		}
 		
-		protected function checkOrderParams():void{
+		override protected function checkOrderParams():void{
 			if(!currPgId) return;
 			if(dataBaseOff) return;
 			bdLatch.setOn();
@@ -1092,7 +854,7 @@ package com.photodispatcher.tech{
 			latch.addLatch(svc.loadReprintsByPG(currPgId));
 			latch.start();
 		}
-		protected function onReprintsLoad(e:Event):void{
+		override protected function onReprintsLoad(e:Event):void{
 			currReprints=[];
 			var bookType:int
 			var latch:DbLatch=e.target as DbLatch;
@@ -1114,16 +876,5 @@ package com.photodispatcher.tech{
 			bdLatch.forward();
 		}
 
-		protected function getBookTypeName(bookType:int):String{
-			var result:String;
-			if(!bookType) return '';
-			var ac:ArrayCollection=Context.getAttribute('book_typeList') as ArrayCollection;
-			if(ac){
-				var fv:FieldValue=ArrayUtil.searchItem('value',bookType,ac.source) as FieldValue;
-				if(fv) result=fv.label;
-			}
-			if(!result) result='id:'+bookType;
-			return result;
-		}
 	}
 }
