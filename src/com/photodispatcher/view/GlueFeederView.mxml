@@ -70,12 +70,17 @@
 			private var dtFmt:DateTimeFormatter;
 
 			public function log(mesage:String):void{
+				var str:String;
 				if(!dtFmt){
 					dtFmt=new DateTimeFormatter();
 					dtFmt.timeStyle=DateTimeStyle.LONG;
 					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
 				}
-				logText=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
+				str=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
+				if(!feedOn && str.length>4000){
+					str=str.substr(-2000);
+				}
+				logText=str;
 			}
 			public function clear():void{
 				logText='';
@@ -98,7 +103,6 @@
 				}else{
 					glue= new GlueStreamed();
 				}
-				glue.init();
 				
 				glue.serialProxy=serialProxy;
 				glue.engineOnStartOn=engineOnStartOn;
@@ -114,8 +118,10 @@
 				glue.pushDelay=pushDelay;
 				glue.logger=this;
 				glue.dataBaseOff=dataBaseOff;
+				glue.init();
+				
 				glue.addEventListener(ErrorEvent.ERROR, onPickerErr);
-				if(feedOn){
+				if(!feedOn){
 					glue.start();
 				}
 			}
@@ -130,7 +136,12 @@
 			}
 			
 			private function onPickerErr(event:ErrorEvent):void{
-				Alert.show(event.text);	
+				if(feedOn){
+					Alert.show(event.text);	
+				}else{
+					log(event.text);
+					playAlertSound();
+				}
 			}
 			
 			protected function preventChanging(event:IndexChangeEvent):void{

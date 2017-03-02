@@ -134,7 +134,8 @@
 			
 			
 			private function start():void{
-				if(!comFeederProxy || !comFeederProxy.num 
+				if(!feedOn) comFeederProxy.num='';
+				if((feedOn && (!comFeederProxy || !comFeederProxy.num)) 
 					|| !comGlueProxy || !comGlueProxy.num 
 					|| comReaders.length==0 ){
 					Alert.show('Приложение не настроено');

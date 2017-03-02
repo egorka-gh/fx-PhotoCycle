@@ -76,18 +76,19 @@ package com.photodispatcher.tech{
 		}
 		public function set serialProxy(value:SerialProxy):void{
 			if(_serialProxy){
-				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
+				//_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
 				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
-				_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0);
+				//_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0);
 			}
 			_serialProxy = value;
 			if(_serialProxy){
-				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
+				//_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
 				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
-				_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0,false,10);
-				if(_serialProxy.isStarted) _serialProxy.connectAll();
+				//_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0,false,10);
+				//if(_serialProxy.isStarted) _serialProxy.connectAll();
 			}
 		}
+		/*
 		protected function onSerialProxyStart(evt:SerialProxyEvent):void{
 			log('SerialProxy: started, connect to com proxies...');
 			serialProxy.connectAll();
@@ -97,9 +98,11 @@ package com.photodispatcher.tech{
 			log('SerialProxy: connected, start devices');
 			startDevices();
 		}
+		*/
+		
 		protected function onProxyErr(evt:SerialProxyEvent):void{
-			log('SerialProxy error: '+evt.error);
-			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,evt.error));
+			isRunning=false;
+			logErr('SerialProxy error: '+evt.error);
 		}
 		
 		public var techPoint:TechPoint;
@@ -150,7 +153,7 @@ package com.photodispatcher.tech{
 		}
 		
 		public function init():void{
-			checkPrepared();
+			//checkPrepared();
 		}
 		
 		protected function checkPrepared(showAlert:Boolean=false):Boolean{
@@ -172,8 +175,9 @@ package com.photodispatcher.tech{
 			if(!prepared && showAlert){
 				var msg:String='';
 				if(!barcodeReaders || barcodeReaders.length==0) msg='Не инициализированы сканеры ШК';
-				if(!barsConnected) msg='\n Не подключены сканеры ШК';
-				if(!glueHandler || !glueHandler.isPrepared) msg+='\n Не инициализирована склейка';
+				if(!barsConnected) msg= (msg?'\n':'')+'Не подключены сканеры ШК';
+				if(!glueHandler || !glueHandler.isPrepared) msg=(msg?'\n':'')+'Не инициализирована склейка';
+				log(msg);
 				Alert.show(msg);
 			}
 			return 	prepared;
@@ -194,7 +198,7 @@ package com.photodispatcher.tech{
 			return _barcodeReaders;
 		}
 		protected function set barcodeReaders(value:Array):void{
-			log('Set barcode readers');
+			//log('Set barcode readers');
 			var barReader:ComReader;
 			if(_barcodeReaders){
 				for each(barReader in _barcodeReaders){
@@ -212,6 +216,7 @@ package com.photodispatcher.tech{
 					barReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
 				}
 			}
+			/*
 			//checkPrepared();
 			var msg:String;
 			if(!_barcodeReaders || _barcodeReaders.length==0){
@@ -220,6 +225,7 @@ package com.photodispatcher.tech{
 				msg='has '+_barcodeReaders.length.toString()+' barcode readers';
 			}
 			log(msg);
+			*/
 		}
 		
 		
@@ -269,13 +275,36 @@ package com.photodispatcher.tech{
 			}
 		}
 		
+		public function setEngineOn():void{
+		}
+		public function setEngineOff():void{
+		}
+		public function setVacuumOn():void{
+		}
+		public function setVacuumOff():void{
+		}
+		
 		public function start():void{
+			isRunning=false;
+			if(logger) logger.clear();
 			if(!serialProxy) return;
-			log('Start');
+			log('Старт');
 			if(!serialProxy.isStarted){
 				logErr('SerialProxy not started...');
 				return;
 			}
+			isRunning=true;
+			
+			if(!serialProxy.connected){
+				//connect
+				log('Ожидание подключения COM портов');
+				serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+				serialProxy.connectAll();
+				return;
+			}
+			
+			onProxyConnect(null);
+			/*
 			if(!isRunning){
 				//connect
 				serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
@@ -288,33 +317,28 @@ package com.photodispatcher.tech{
 				}
 				startInternal();	
 			}
+			*/
 		}
-		
-		public function setEngineOn():void{
-		}
-		public function setEngineOff():void{
-		}
-		public function setVacuumOn():void{
-		}
-		public function setVacuumOff():void{
-		}
-		
 		protected function onProxyConnect(evt:SerialProxyEvent):void{
-			log('SerialProxy: connected to com proxies (start)');
 			serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+			log('SerialProxy: connect complite');
+			if(!serialProxy.connected){
+				log('Часть COM портов не подключено');
+				log('SerialProxy:' +serialProxy.traceDisconnected());
+			}
+			
 			//startDevices()
 			startInternal();
 		}
+
 		protected function startDevices():void{
-			//create devs
-			var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_CONTROLLER);
-			
+			//start glueHandler
 			if(!glueHandler) glueHandler=new GlueHandler();
 			glueHandler.init(serialProxy);
 			glueHandler.pushDelay=pushDelay;
 			glueHandler.nonStopMode=true;
+			glueHandler.start();
 			
-			//var barReader:ComReader;
 			var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
 			if(!readers || readers.length==0) return;
 			var i:int;
@@ -331,21 +355,16 @@ package com.photodispatcher.tech{
 			//start readers
 			for (i=0; i<readers.length; i++) (barcodeReaders[i] as ComReader).start(readers[i]);
 		}
-		
+
 		protected function startInternal():void{
-			if(!checkPrepared(true)) return;
-			if(!glueHandler || !glueHandler.start()){
-				logErr('startInternal: glueHandler init error');
+			startDevices();
+			if(!checkPrepared(true)){
+				isRunning=false;
+				log('Ошибка запуска');
 				return;
 			}
 			log('SerialProxy:' +serialProxy.traceDisconnected());
-			if(!barcodeReaders || barcodeReaders.length==0){
-				logErr('startInternal: barcodeReaders init error');
-				return;
-			}
-			if(logger) logger.clear();
-			log('SerialProxy:' +serialProxy.traceDisconnected());
-			log('start');
+			log('start internal complete');
 			currBarcode=null;
 			currPgId='';
 			currBookTot=-1;

@@ -164,7 +164,7 @@ package com.photodispatcher.service.barcode
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: '+err.message));
 				return;
 			}
-			//start proxy
+			//start process
 			dstFile=srcDir.resolvePath(PROXY_EXE);
 			process= new ProcessRunner(dstFile.nativePath);
 			srcDir=File.applicationStorageDirectory;
@@ -188,7 +188,7 @@ package com.photodispatcher.service.barcode
 				return;
 			}
 			
-			//create proxies
+			//create com proxies
 			for each (ci in comInfos){
 				if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
 					if(!ci.proxy){
@@ -242,10 +242,10 @@ package com.photodispatcher.service.barcode
 			return result;
 		}
 		
-		private var toConnect:Array;
+		private var toConnect:Array=[];
 		public function connectAll():void{
 			var ci:ComInfo;
-			toConnect=[];
+			//toConnect=[];
 			_connected=false;
 			for each (ci in comInfos){
 				if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
@@ -253,7 +253,9 @@ package com.photodispatcher.service.barcode
 						var proxy:Socket2Com= new Socket2Com(ci,remoteIp);
 						ci.proxy=proxy;
 					}
-					if(!ci.proxy.connected) toConnect.push(ci.proxy);
+					if(!ci.proxy.connected){
+						if(toConnect.indexOf(ci.proxy)==-1) toConnect.push(ci.proxy);
+					}
 				}
 			}
 			connectNext();
@@ -262,7 +264,7 @@ package com.photodispatcher.service.barcode
 			if(toConnect.length==0){
 				//complited
 				_connected=true;
-				dispatchEvent(new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_CONNECTED));
+				dispatchConnected();
 				return;
 			}
 			var proxy:Socket2Com= toConnect.pop() as Socket2Com;
@@ -303,6 +305,19 @@ package com.photodispatcher.service.barcode
 			}
 		}
 		
+		private var dispatchConnectedTimer:Timer;
+		private function dispatchConnected():void{
+			dispatchConnectedTimer= new Timer(3500,1);
+			dispatchConnectedTimer.addEventListener(TimerEvent.TIMER,ondispatchConnectedTimer);
+			dispatchConnectedTimer.start();
+		}
+		private function ondispatchConnectedTimer(evt:TimerEvent):void{
+			dispatchConnectedTimer.removeEventListener(TimerEvent.TIMER,ondispatchConnectedTimer);
+			dispatchConnectedTimer=null;
+			dispatchEvent(new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_CONNECTED));			
+		}
+
+		
 		public function traceDisconnected():String{
 			var ci:ComInfo;
 			if(!comInfos) return 'Пустой список портов';
@@ -312,7 +327,7 @@ package com.photodispatcher.service.barcode
 				if(ci){
 					if(!ci.proxy && ci.num){
 						msg=msg+' '+ci.label+' no proxy;';		
-					}else if(!ci.proxy.connected){
+					}else if(ci.proxy && !ci.proxy.connected){
 						msg=msg+' '+ci.label+' не подключен;';		
 					}
 				}
