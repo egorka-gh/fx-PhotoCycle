@@ -36,13 +36,13 @@ package com.photodispatcher.tech{
 
 		[Bindable]
 		public var latches:Array;
-		protected var latchPushBook:PickerLatch;
-		protected var latchPressOff:PickerLatch;
+		private var latchPushBook:PickerLatch;
+		private var latchPressOff:PickerLatch;
 
 		[Bindable]
 		public var currentBookView:TechBook;
 		
-		private var bookQueue:Array=[];
+		protected var bookQueue:Array=[];
 		
 		private var _pushDelay:int;
 		public function get pushDelay():int{
@@ -55,10 +55,10 @@ package com.photodispatcher.tech{
 		public var logger:ISimpleLogger;
 
 		private var _controller:GlueController;
-		protected function get controller():GlueController{
+		private function get controller():GlueController{
 			return _controller;
 		}
-		protected function set controller(value:GlueController):void{
+		private function set controller(value:GlueController):void{
 			if(_controller){
 				_controller.removeEventListener(ErrorEvent.ERROR, onControllerErr);
 				_controller.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
@@ -157,7 +157,7 @@ package com.photodispatcher.tech{
 			//ask feeder pause
 			if(!isRunning || hasPauseRequest) return;
 			if(!nonStopMode) hasPauseRequest=true;
-			log(err);
+			//log(err);
 			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,err));
 		}
 		public function stop(err:String=''):void{
@@ -173,7 +173,7 @@ package com.photodispatcher.tech{
 			}
 		}
 
-		private var stopBook:TechBook;
+		protected var stopBook:TechBook;
 		public function pauseOnBook(printGroupId:String='lastAdded', book:int=-1):void{
 			if(!isRunning) return;
 			if(nonStopMode) return;
@@ -193,7 +193,7 @@ package com.photodispatcher.tech{
 			checkStopBook();
 		}
 		
-		private function checkStopBook():Boolean{
+		protected function checkStopBook():Boolean{
 			if(!stopBook) return false;
 			if(!isRunning){
 				stopBook=null;
@@ -239,19 +239,19 @@ package com.photodispatcher.tech{
 			return tb;
 		}
 		
-		protected function onControllerDisconnect(event:BarCodeEvent):void{
+		private function onControllerDisconnect(event:BarCodeEvent):void{
 			log('Отключен контролер склейки '+event.barcode);
 			//TODO err?
 		}
 		protected function onControllerErr(event:ErrorEvent):void{
 			pauseRequest('Ошибка контролера: '+event.text);
 		}
-		protected function onControllerCommandComplite(event:Event):void{
+		private function onControllerCommandComplite(event:Event):void{
 			latchPushBook.forward();
 			checkStopBook();
 		}
 		
-		protected function onLatchTimeout(event:ErrorEvent):void{
+		private function onLatchTimeout(event:ErrorEvent):void{
 			if(!isRunning) return;
 			var l:PickerLatch=event.target as PickerLatch;
 			if(!l) return; 

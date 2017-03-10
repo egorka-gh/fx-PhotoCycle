@@ -296,7 +296,7 @@
 
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Задержка выброса книги (млсек):"/>
-			<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="100" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
+			<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
 		</s:HGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">
@@ -306,7 +306,7 @@
 		<s:VGroup  gap="5" width="100%" paddingLeft="15" enabled="{feedOn}">
 			<s:HGroup gap="5" verticalAlign="baseline">
 				<s:Label text="Задержка подачи листа (млсек):"/>
-				<s:NumericStepper id="spFeedDelay" minimum="100" maximum="5000" snapInterval="100" value="{feedDelay}" change="spFeedDelay_changeHandler(event)"/>
+				<s:NumericStepper id="spFeedDelay" minimum="100" maximum="5000" snapInterval="10" value="{feedDelay}" change="spFeedDelay_changeHandler(event)"/>
 			</s:HGroup>
 			<s:HGroup gap="0" verticalAlign="baseline">
 				<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 

@@ -44,6 +44,8 @@
 			public var soundOffOnReprint:Boolean;
 			
 			public var hasGlue:Boolean;
+			[Bindable]
+			public var glueType:int;
 			
 			public var techPoint:TechPoint;
 			
@@ -524,7 +526,7 @@
 				<s:Label text="Листов всего: {glueHandler.currentBookView.sheetsTotal}"/>
 				<s:Label text="Листов подано: {glueHandler.currentBookView.sheetsFeeded}"/>
 				<s:Label text="Листов склеено: {glueHandler.currentBookView.sheetsDone}"/>
-				<s:Button id="btPushBook" label="Убрать книгу" click="btPushBook_clickHandler(event)" />
+				<s:Button id="btPushBook" label="Убрать книгу" click="btPushBook_clickHandler(event)"  enabled="{glueType==0}"/>
 
 			</s:VGroup>
 		</s:HGroup>

@@ -15,6 +15,7 @@ package com.photodispatcher.service.modbus{
 	import flash.utils.ByteArray;
 	import flash.utils.Timer;
 	
+	[Event(name="connectChange", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	[Event(name="responseEvent", type="com.photodispatcher.service.modbus.ModbusResponseEvent")]
 	public class ModbusClient extends EventDispatcher{

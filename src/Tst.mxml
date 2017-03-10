@@ -2,6 +2,7 @@
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
 					   xmlns:s="library://ns.adobe.com/flex/spark" 
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   implements="com.photodispatcher.interfaces.ISimpleLogger"
 					   creationComplete="windowedapplication1_creationCompleteHandler(event)">
 	
 	<fx:Script>
@@ -11,9 +12,12 @@
 			import com.photodispatcher.service.modbus.ModbusResponseEvent;
 			import com.photodispatcher.service.modbus.ModbusServer;
 			import com.photodispatcher.service.modbus.data.ModbusADU;
+			import com.photodispatcher.tech.GlueHandlerMB;
+			import com.photodispatcher.util.NetUtil;
 			
 			import flash.sampler.NewObjectSample;
 			
+			import mx.controls.Alert;
 			import mx.events.FlexEvent;
 			[Bindable]
 			protected var color1:uint=0xbbbbbb; 
@@ -22,13 +26,39 @@
 			[Bindable]
 			protected var color3:uint=0xbbbbbb; 
 			
-			
+			/*
 			[Bindable]
 			protected var server:ModbusServer;
 			[Bindable]
 			protected var client:ModbusClient;
+			*/
+			
+			[Bindable]
+			protected var glueHandler:GlueHandlerMB;
 			
 			protected function connect():void{
+				if(!pcIP.text || !pcPort.value || !cliIP.text || !cliPort.value){
+					Alert.show('Не настроен контролер склейки');
+					return;
+				}
+				
+				if(glueHandler){
+					glueHandler.removeEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				}
+				
+				glueHandler= new GlueHandlerMB()
+				glueHandler.serverIP=pcIP.text;
+				glueHandler.serverPort=pcPort.value;
+				glueHandler.clientIP=cliIP.text;
+				glueHandler.clientPort=cliPort.value;
+				glueHandler.init(null);
+				glueHandler.nonStopMode=true;
+				glueHandler.logger=this;
+				glueHandler.addEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+
+				glueHandler.start();
+
+					/*
 				server.serverIP=pcIP.text;
 				server.serverPort=pcPort.value;
 				server.start();
@@ -36,14 +66,27 @@
 				client.serverIP=cliIP.text;
 				client.serverPort=cliPort.value;
 				client.start();
+				*/
+			}
+			protected function onGlueHandlerErr(event:ErrorEvent):void{
+				log(event.text);
 			}
 
+			
 			protected function disconnect():void{
+				if(glueHandler){
+					glueHandler.stop();
+					glueHandler.isRunning=false;
+				}
+				
+				/*
 				server.stop();
 				client.stop();
+				*/
 			}
 
 			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void{
+				/*
 				server=new ModbusServer();
 				server.addEventListener(ErrorEvent.ERROR, onServerErr);
 				server.addEventListener(ModbusRequestEvent.REQUEST_EVENT, onServerADU);
@@ -51,6 +94,7 @@
 				client=new ModbusClient();
 				client.addEventListener(ErrorEvent.ERROR, onClientErr);
 				client.addEventListener(ModbusResponseEvent.RESPONSE_EVENT, onClientADU);
+				*/
 				
 			}
 			
@@ -89,6 +133,14 @@
 				taLog.text= taLog.text+txt+'\n';
 			}
 
+			public function log(mesage:String):void{
+				taLog.text= taLog.text+mesage+'\n';
+			}
+			public function clear():void{
+				taLog.text='';
+			}
+
+			/*
 			protected function btWrReg_clickHandler(event:MouseEvent):void{
 				if(client){
 					client.writeRegister(nsAdr.value,nsVal.value);
@@ -99,6 +151,15 @@
 				if(client){
 					client.readHoldingRegisters(nsAdr.value,nsVal.value);
 				}
+			}
+			*/
+			
+			protected function pcIP_creationCompleteHandler(event:FlexEvent):void{
+				pcIP.text=NetUtil.getIP();
+			}
+			
+			protected function btFP_clickHandler(event:MouseEvent):void{
+				if(glueHandler) glueHandler.controller.pushBlock();
 			}
 			
 		]]>
@@ -113,15 +174,15 @@
 			<s:VGroup  gap="5">
 				<s:HGroup gap="5" verticalAlign="baseline">
 					<s:Label text="PC IP:port" />
-					<s:TextInput id="pcIP" text="127.0.0.1"/>
+					<s:TextInput id="pcIP" creationComplete="pcIP_creationCompleteHandler(event)"/>
 					<s:NumericStepper id="pcPort" value="503" minimum="0" maximum="1000"/>
 				</s:HGroup>
 				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:Label text="Контролth IP:port" />
-					<s:TextInput id="cliIP" text="127.0.0.1"/>
+					<s:Label text="Контролер IP:port" />
+					<s:TextInput id="cliIP" text=""/>
 					<s:NumericStepper id="cliPort" value="502" minimum="0" maximum="1000"/>
 				</s:HGroup>
-				<s:HGroup gap="5" verticalAlign="baseline">
+<!--				<s:HGroup gap="5" verticalAlign="baseline">
 					<s:Label text="Адрес" />
 					<s:NumericStepper id="nsAdr" value="0" minimum="0" maximum="1000"/>
 					<s:Label text="Значение" />
@@ -129,25 +190,27 @@
 					<s:Button id="btWrReg" label="write reg" click="btWrReg_clickHandler(event)"/>
 					<s:Button id="btRdReg" label="read reg" click="btRdReg_clickHandler(event)"/>
 				</s:HGroup>
-			</s:VGroup>
+-->			</s:VGroup>
 
 			<s:VGroup  gap="5">
 				<s:Button label="Connect" click="{connect()}"/>
 				<s:Button label="Disconnect" click="{disconnect()}"/>
+				<s:Spacer height="10"/>
+				<s:Button label="Final_paper" id="btFP" click="btFP_clickHandler(event)"/> 
 				<s:Group >
 					<s:Rect x="0" y="0" width="20" height="20">
 						<s:fill>
-							<s:SolidColor color="{server.connected?0x00bb00:0xbbbbbb}"/>
+							<s:SolidColor color="{glueHandler.controller.server.connected?0x00bb00:0xbbbbbb}"/>
 						</s:fill>
 					</s:Rect>
 					<s:Rect x="22" y="0" width="20" height="20">
 						<s:fill>
-							<s:SolidColor color="{server.cilentConnected?0x00bb00:0xbbbbbb}"/>
+							<s:SolidColor color="{glueHandler.controller.server.cilentConnected?0x00bb00:0xbbbbbb}"/>
 						</s:fill>
 					</s:Rect>
 					<s:Rect x="44" y="0" width="20" height="20">
 						<s:fill>
-							<s:SolidColor color="{client.connected?0x00bb00:0xbbbbbb}"/>
+							<s:SolidColor color="{glueHandler.controller.client.connected?0x00bb00:0xbbbbbb}"/>
 						</s:fill>
 					</s:Rect>
 				</s:Group>

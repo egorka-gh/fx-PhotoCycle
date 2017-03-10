@@ -28,7 +28,9 @@
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.tech.GlueHandler;
+			import com.photodispatcher.tech.GlueHandlerMB;
 			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.NetUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
@@ -91,8 +93,27 @@
 				_hasGlue = value;
 				Context.setAttribute("hasGlue", value);
 			}
+			private var _glueType:int;
+			[Bindable]
+			public function get glueType():int{
+				return _glueType;
+			}
+			public function set glueType(value:int):void{
+				_glueType = value;
+				Context.setAttribute("glueType", value);
+			}
+			
 			[Bindable]
 			private var pushDelay:int=100;
+
+			[Bindable]
+			public var glueServerIP:String='';
+			[Bindable]
+			public var glueServerPort:int=503;
+			[Bindable]
+			public var glueClientIP:String='';
+			[Bindable]
+			public var glueClientPort:int=502;
 
 			
 			protected var _alertSound:String;
@@ -203,9 +224,18 @@
 					reversOrder=so.data.reversOrder;
 					extendedPrint=so.data.extendedPrint;
 					hasGlue=so.data.hasGlue;
+					glueType=so.data.glueType;
 					pushDelay=so.data.bookDelay;
 					alertSound=so.data.alertSound;
 					soundOffOnReprint=so.data.soundOffOnReprint;
+					
+					glueServerIP=so.data.glueServerIP;
+					if(!glueServerIP) glueServerIP=NetUtil.getIP();
+					glueServerPort=so.data.glueServerPort;
+					if(!glueServerPort) glueServerPort=503;
+					glueClientIP=so.data.glueClientIP;
+					glueClientPort=so.data.glueClientPort;
+					if(!glueClientPort) glueClientPort=502;
 				}
 				if(pushDelay<=0) pushDelay=100;
 				
@@ -227,7 +257,13 @@
 					currentState='config';
 					return;
 				}
-
+				if(hasGlue && glueType!=0){
+					if(!glueServerIP || !glueServerPort || !glueClientIP || !glueClientPort){
+						Alert.show('Не настроен контролер склейки');
+						currentState='config';
+						return;
+					}
+				}
 				serialProxy.start(coms.source);
 				if(!serialProxy.isStarted){
 					currentState='config';
@@ -290,9 +326,19 @@
 				}
 				
 				if(hasGlue){
-					if(!glueHandler) glueHandler=new GlueHandler();
-					glueHandler.init(serialProxy);
-					glueHandler.pushDelay=pushDelay;
+					if(glueType==0){
+						if(!glueHandler) glueHandler=new GlueHandler();
+						glueHandler.init(serialProxy);
+						glueHandler.pushDelay=pushDelay;
+					}else{
+						var gh:GlueHandlerMB=new GlueHandlerMB();
+						gh.serverIP=glueServerIP;
+						gh.serverPort=glueServerPort;
+						gh.clientIP=glueClientIP;
+						gh.clientPort=glueClientPort;
+						gh.init(null);
+						glueHandler=gh;
+					}
 					glueHandler.nonStopMode=true;
 				}else{
 					glueHandler=null;
@@ -433,6 +479,22 @@
 				so.flush();  
 			}
 			
+			protected function ddGlueType_changeHandler(event:IndexChangeEvent):void{
+				glueType=ddGlueType.selectedIndex;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.glueType = glueType;
+				so.flush();  
+			}
+			
+			protected function saveGlueEth():void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.glueServerIP = glueServerIP;
+				so.data.glueServerPort = glueServerPort;
+				so.data.glueClientIP = glueClientIP;
+				so.data.glueClientPort = glueClientPort;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -475,12 +537,38 @@
 
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Склейщик:"/>
-			<s:CheckBox id="chbHasGlue" selected="{hasGlue}"  change="chbHasGlue_changeHandler(event)"/>
-			<s:Label text="Задержка выброса книги (млсек):"/>
-			<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="100"
-							  enabled="{chbHasGlue.selected}"
-							  value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
+			<s:CheckBox id="chbHasGlue" selected="{hasGlue}" change="chbHasGlue_changeHandler(event)"/>
+			<s:Label text="Тип:"/>
+			<s:DropDownList id="ddGlueType" selectedIndex="{glueType}" change="ddGlueType_changeHandler(event)">
+				<s:ArrayCollection>
+					<fx:String>COM</fx:String>
+					<fx:String>Ethernet</fx:String>
+				</s:ArrayCollection>
+			</s:DropDownList>
 		</s:HGroup>
+		<s:VGroup gap="5" width="100%" enabled="{hasGlue}">
+			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==0}">
+				<s:Label text="Задержка выброса книги (млсек):"/>
+				<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10"
+								  value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
+				<s:Label text="Компьютер IP:"/>
+				<s:TextInput id="tiPCIP" text="@{glueServerIP}" change="{saveGlueEth()}"/>
+				<s:Label text="порт:"/>
+				<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
+								  value="@{glueServerPort}" change="{saveGlueEth()}"/>
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
+				<s:Label text="Контролер  IP:"/>
+				<s:TextInput id="tiGlueIP" text="@{glueClientIP}" change="{saveGlueEth()}"/>
+				<s:Label text="порт:"/>
+				<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
+								  value="@{glueClientPort}" change="{saveGlueEth()}"/>
+			</s:HGroup>
+			
+		</s:VGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Звук ошибки:"/>
@@ -512,7 +600,7 @@
 		<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" 
 							  barcodeReaders="{barcodeReaders}" flap="{flap}" 
 							  printer="{printer}" extendedPrint="{extendedPrint}"
-							  hasGlue="{hasGlue}" glueHandler="{glueHandler}"
+							  hasGlue="{hasGlue}" glueType="{glueType}" glueHandler="{glueHandler}"
 							  alertSound="{alertSound}"
 							  soundOffOnReprint="{soundOffOnReprint}"
 							  width="100%" height="100%"/>
