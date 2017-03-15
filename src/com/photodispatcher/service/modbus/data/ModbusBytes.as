@@ -5,6 +5,18 @@ package com.photodispatcher.service.modbus.data{
 		
 		protected var bytes:Array=[];
 
+		public static function int2bcd(value:int):int{
+			var res:int=0;
+			var shift:int=0;
+			var dec:int=value;
+			while (dec>0){
+				res=res+((dec % 10) << shift);
+				dec=int(dec/10);
+				shift+=4;
+			}
+			return res;
+		}
+		
 		public static function readByte(bytes:ByteArray):int{
 			var readVal:int;
 			if(bytes && bytes.bytesAvailable>0) readVal=bytes.readByte();

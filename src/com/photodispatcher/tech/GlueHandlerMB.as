@@ -103,16 +103,9 @@ package com.photodispatcher.tech{
 		}
 		override public function stop(err:String=''):void{
 			if(!isRunning) return;
-			if(!nonStopMode){
-				isRunning=false;
-				hasPauseRequest=false;
-				//controller.engineStop();
-			}
+			isRunning=false;
+			hasPauseRequest=false;
 			if(controller) controller.stop();
-			if(err){
-				log(err);
-				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,err));
-			}
 		}
 		
 		override public function removeBook():void{
@@ -120,24 +113,7 @@ package com.photodispatcher.tech{
 		}
 		
 		override protected function checkStopBook():Boolean{
-			if(!stopBook) return false;
-			if(!isRunning){
-				stopBook=null;
-				return false;
-			}
-			if(nonStopMode) return false;
-			
-			var tb:TechBook=currentBook;
-			if(!tb){
-				stopBook=null;
-				return false;
-			}
-			if(tb.printGroupId==stopBook.printGroupId && tb.book==stopBook.book){
-				log('Остановка на книге '+tb.printGroupId+' '+tb.book)
-				//controller.engineStop();
-				stopBook=null;
-				return true;
-			}
+			if(stopBook) stopBook=null; 
 			return false;
 		}
 		
@@ -150,8 +126,7 @@ package com.photodispatcher.tech{
 			if(tb){
 				tb.sheetsDone++;
 				if(tb.sheetsDone>tb.sheetsFeeded){
-					stop('Ошибка контроля книги (подано<склеено) '+tb.printGroupId+' '+tb.book);
-					if(!nonStopMode) return;
+					logErr('Ошибка контроля книги (подано<склеено) '+tb.printGroupId+' '+tb.book);
 				}
 				if(tb.sheetsDone==(tb.sheetsTotal-1)){
 					log('Следующий лист последний '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
@@ -168,9 +143,13 @@ package com.photodispatcher.tech{
 					}
 				}
 			}else{
-				stop('Нет данных о текущей книге');
+				logErr('Нет данных о текущей книге');
 				return;
 			}
+		}
+
+		private function logErr(msg:String):void{
+			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,msg));
 		}
 
 		override protected function pushBook():void{

@@ -101,10 +101,12 @@ package com.photodispatcher.service.modbus{
 		private function onSocketData( event:ProgressEvent ):void{
 			var bytes:ByteArray = new ByteArray();
 			event.target.readBytes(bytes, 0, event.target.bytesAvailable);
+			/*
 			if(ignoreMessage){
 				cleanController();
 				return;
 			}
+			*/
 			logMsg('< '+ModbusBytes.byteArrayToStr(bytes));
 			var adu:ModbusADU=ModbusADU.readResponse(bytes);
 			var needResponse:Boolean=true;
@@ -145,7 +147,7 @@ package com.photodispatcher.service.modbus{
 				clientSocket.removeEventListener(ProgressEvent.SOCKET_DATA, onSocketData );
 				if(clientSocket.connected) clientSocket.close();
 			}
-			cleanController();
+			//cleanController();
 			clientSocket = event.socket;
 			clientSocket.addEventListener(Event.CLOSE, onSocketClose );
 			clientSocket.addEventListener(IOErrorEvent.IO_ERROR, onIOErrorEvent );
@@ -156,6 +158,7 @@ package com.photodispatcher.service.modbus{
 			
 		}
 		
+		/*
 		private var cleanTimer:Timer;
 		private var ignoreMessage:Boolean;
 		private function cleanController():void{
@@ -171,6 +174,7 @@ package com.photodispatcher.service.modbus{
 			ignoreMessage=false;
 			logMsg('message buffer clean complete');
 		}
+		*/
 
 		private function onserverSocketClose(event:Event):void{
 			logErr('Server disconnected');
