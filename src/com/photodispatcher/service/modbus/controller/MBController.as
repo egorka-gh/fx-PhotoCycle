@@ -15,6 +15,9 @@ package com.photodispatcher.service.modbus.controller{
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="controllerMesage", type="com.photodispatcher.event.ControllerMesageEvent")]
 	public class MBController extends EventDispatcher{
+		public static const MESSAGE_CHANEL_SERVER:int	=0;
+		public static const MESSAGE_CHANEL_CLIENT:int	=1;
+
 		
 		public function MBController(){
 			super(null);
@@ -62,10 +65,11 @@ package com.photodispatcher.service.modbus.controller{
 				client.stop();
 				client=null;
 			}
+			dispatchEvent(new Event('connectChange'));
 		}
 
-		private function onClientADU(evt:ModbusResponseEvent):void{
-			//push writed
+		protected function onClientADU(evt:ModbusResponseEvent):void{
+			//register writed
 		}
 		
 		[Bindable('connectChange')]
@@ -80,6 +84,7 @@ package com.photodispatcher.service.modbus.controller{
 		
 		protected function onClientConnect(evt:Event):void{
 			dispatchEvent(new Event('connectChange'));
+			//implement client init
 		}
 		protected function onServerConnect(evt:Event):void{
 			if(server && server.cilentConnected){

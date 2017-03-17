@@ -233,5 +233,13 @@ package com.photodispatcher.service.modbus.data{
 			}
 		}
 
+		public function hasValue(index:int):Boolean{
+			return values && values.length>=(index+1);
+		}
+		public function getValue(index:int):int{
+			if(hasValue(index)) return values[index];
+			return 0;
+		}
+
 	}
 }

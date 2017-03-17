@@ -18,7 +18,7 @@ package com.photodispatcher.service.modbus.controller{
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	[Event(name="complete", type="flash.events.Event")]
 	[Event(name="controllerMesage", type="com.photodispatcher.event.ControllerMesageEvent")]
-	public class GlueMBController extends EventDispatcher{
+	public class GlueMBController extends MBController{
 		/*
 		ПЛК -> ПК
 		Регистр  0:
@@ -53,57 +53,13 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_REGISTER_IGNORE_ERRORS:int				=4;
 		
 		public function GlueMBController(){
-			super(null);
+			super();
 		}
-		
-		[Bindable]
-		public var server:ModbusServer;
-		public var serverIP:String='';
-		public var serverPort:int=503;
-
-		[Bindable]
-		public var client:ModbusClient;
-		public var clientIP:String='';
-		public var clientPort:int=502;
 		
 		public var timeoutMainPlateForward:int;
 		public var timeoutMainPlateRevers:int;
 		public var timeoutUnload:int;
 
-		public function start():void{
-			if(server){
-				server.removeEventListener(ErrorEvent.ERROR, onServerErr);
-				server.removeEventListener(ModbusRequestEvent.REQUEST_EVENT, onServerADU);
-				server.removeEventListener("connectChange", onServerConnect);
-				server.stop();
-				server=null;
-			}
-			server=new ModbusServer();
-			server.addEventListener(ErrorEvent.ERROR, onServerErr);
-			server.addEventListener(ModbusRequestEvent.REQUEST_EVENT, onServerADU);
-			server.addEventListener("connectChange", onServerConnect);
-			server.serverIP=serverIP;
-			server.serverPort=serverPort;
-			server.start();
-		}
-		
-		public function stop():void{
-			if(server){
-				server.removeEventListener(ErrorEvent.ERROR, onServerErr);
-				server.removeEventListener(ModbusRequestEvent.REQUEST_EVENT, onServerADU);
-				server.removeEventListener("connectChange", onServerConnect);
-				server.stop();
-				server=null;
-			}
-			if(client){
-				client.removeEventListener(ErrorEvent.ERROR, onClientErr);
-				client.removeEventListener(ModbusResponseEvent.RESPONSE_EVENT, onClientADU);
-				client.removeEventListener("connectChange", onClientConnect);
-				client.stop();
-				client=null;
-			}
-		}
-		
 		//Main_Plate_Forward_Timeout_Time
 		public function setMainPlateForwardTimeout(msec:int):void{
 			if(client && client.connected){
@@ -112,6 +68,7 @@ package com.photodispatcher.service.modbus.controller{
 				logErr('Контроллер не подключен');
 			}
 		}
+
 		//Main_Plate_Revers_Timeout_Time
 		public function setMainPlateReversTimeout(msec:int):void{
 			if(client && client.connected){
@@ -120,6 +77,7 @@ package com.photodispatcher.service.modbus.controller{
 				logErr('Контроллер не подключен');
 			}
 		}
+		
 		public function setUnloadTimeout(msec:int):void{
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_UNLOAD_TIMEOUT, ModbusBytes.int2bcd(int(msec/100)));
@@ -127,7 +85,6 @@ package com.photodispatcher.service.modbus.controller{
 				logErr('Контроллер не подключен');
 			}
 		}
-		
 		
 		
 		public function pushBlock():void{
@@ -138,21 +95,9 @@ package com.photodispatcher.service.modbus.controller{
 				logErr('Контроллер не подключен');
 			}
 		}
-		private function onClientADU(evt:ModbusResponseEvent):void{
-			//push writed
-		}
 		
-		[Bindable('connectChange')]
-		public function set connected(val:Boolean):void{dispatchEvent(new Event('connectChange'));}
-		public function get connected():Boolean{
-			return client && client.connected && server && server.cilentConnected;
-		}
 		
-		public function get serverStarted():Boolean{
-			return server && server.connected;
-		}
-		
-		private function onClientConnect(evt:Event):void{
+		override protected function onClientConnect(evt:Event):void{
 			dispatchEvent(new Event('connectChange'));
 			if(client && client.connected){
 				if(timeoutMainPlateForward>0) setMainPlateForwardTimeout(timeoutMainPlateForward);
@@ -160,57 +105,15 @@ package com.photodispatcher.service.modbus.controller{
 				if(timeoutUnload>0) setUnloadTimeout(timeoutUnload);
 			}
 		}
-		private function onServerConnect(evt:Event):void{
-			if(server && server.cilentConnected){
-				if(client){
-					client.removeEventListener(ErrorEvent.ERROR, onClientErr);
-					client.removeEventListener(ModbusResponseEvent.RESPONSE_EVENT, onClientADU);
-					client.removeEventListener("connectChange", onClientConnect);
-					client.stop();
-					client=null;
-				}
-				client=new ModbusClient();
-				client.addEventListener(ErrorEvent.ERROR, onClientErr);
-				client.addEventListener(ModbusResponseEvent.RESPONSE_EVENT, onClientADU);
-				client.addEventListener("connectChange", onClientConnect);
-				client.serverIP=clientIP;
-				client.serverPort=clientPort;
-				client.start();
-				
-			}
-
-			dispatchEvent(new Event('connectChange'))
-		}
-
-
-		private function onServerErr(evt:ErrorEvent):void{
-			if(evt.errorID==0){
-				logMsg('PC: '+ evt.text);
-			}else{
-				logErr('PC: '+ evt.text);
-			}
-		}
-		private function onClientErr(evt:ErrorEvent):void{
-			if(evt.errorID==0){
-				logMsg('Controller: '+ evt.text);
-			}else{
-				logErr('Controller: '+ evt.text);
-			}
-		}
-
-		private function onServerADU(evt:ModbusRequestEvent):void{
+		
+		override protected function onServerADU(evt:ModbusRequestEvent):void{
 			//msg from controller
+			super.onServerADU(evt);
 			var txt:String;
 			var adu:ModbusADU=evt.adu;
-			if(adu){
-				txt='ADU ti:'+adu.transactionId;
-				if(adu.pdu){
-					txt=txt+'; PDU fnc:'+adu.pdu.functionCode+' adr:'+adu.pdu.address+' val:'+adu.pdu.value;
-				}
-			}else{
-				txt='Empty ADU';
-			}
-			logMsg('<< '+txt);
+
+			if(!adu) return;
+
 			txt='';
 			//check adr
 			if(adu.pdu.address!=0){
@@ -251,13 +154,6 @@ package com.photodispatcher.service.modbus.controller{
 				}
 			}
 			if(txt) logMsg(txt);
-		}
-
-		protected function logErr(msg:String):void{
-			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,msg,1));
-		}
-		protected function logMsg(msg:String):void{
-			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,msg,0));
 		}
 
 	}
