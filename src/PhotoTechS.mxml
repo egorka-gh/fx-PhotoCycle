@@ -115,6 +115,10 @@
 			[Bindable]
 			public var glueClientPort:int=502;
 
+			[Bindable]
+			public var glueSideStopOffDelay:int=0;
+			[Bindable]
+			public var glueSideStopOnDelay:int=0;
 			
 			protected var _alertSound:String;
 			[Bindable]
@@ -236,6 +240,8 @@
 					glueClientIP=so.data.glueClientIP;
 					glueClientPort=so.data.glueClientPort;
 					if(!glueClientPort) glueClientPort=502;
+					glueSideStopOffDelay=so.data.glueSideStopOffDelay;
+					glueSideStopOnDelay=so.data.glueSideStopOnDelay;
 				}
 				if(pushDelay<=0) pushDelay=100;
 				
@@ -336,6 +342,8 @@
 						gh.serverPort=glueServerPort;
 						gh.clientIP=glueClientIP;
 						gh.clientPort=glueClientPort;
+						gh.glueSideStopOffDelay=glueSideStopOffDelay;
+						gh.glueSideStopOnDelay=glueSideStopOnDelay;
 						gh.init(null);
 						glueHandler=gh;
 					}
@@ -492,6 +500,8 @@
 				so.data.glueServerPort = glueServerPort;
 				so.data.glueClientIP = glueClientIP;
 				so.data.glueClientPort = glueClientPort;
+				so.data.glueSideStopOffDelay = glueSideStopOffDelay;
+				so.data.glueSideStopOnDelay = glueSideStopOnDelay;
 				so.flush();  
 			}
 			
@@ -566,6 +576,18 @@
 				<s:Label text="порт:"/>
 				<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
 								  value="@{glueClientPort}" change="{saveGlueEth()}"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
+				<s:Label text="Таймер выключения боковых упоров (мс):"/>
+				<s:NumericStepper id="nsSide_Stop_Off_delay" minimum="10" maximum="9000" snapInterval="10"
+								  value="@{glueSideStopOffDelay}" change="{saveGlueEth()}"/>
+			</s:HGroup>
+
+			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
+				<s:Label text="Таймер включения боковых упоров (мс):"/>
+				<s:NumericStepper id="nsSide_Stop_On_delay" minimum="10" maximum="10000" snapInterval="10"
+								  value="@{glueSideStopOnDelay}" change="{saveGlueEth()}"/>
 			</s:HGroup>
 			
 		</s:VGroup>

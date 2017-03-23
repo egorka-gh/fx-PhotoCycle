@@ -4,6 +4,7 @@ package com.photodispatcher.printer{
 	import com.photodispatcher.model.mysql.entities.DeliveryType;
 	import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 	import com.photodispatcher.model.mysql.entities.MailPackage;
+	import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
 	import com.photodispatcher.model.mysql.entities.MailPackageProperty;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintForm;
@@ -180,20 +181,21 @@ package com.photodispatcher.printer{
 			print(report);
 		}
 
-		public function printDeliveryForm(packege:MailPackage, form:DeliveryTypePrintForm, barcode:String='', providerId:String=''):void{
+		//public function printDeliveryForm(packege:MailPackage, form:DeliveryTypePrintForm, barcode:String='', providerId:String=''):void{
+		public function printDeliveryForm(packege:MailPackage, form:DeliveryTypePrintForm, barcode:MailPackageBarcode):void{
 			if(!packege || !form) return;
+			var s:String;
 			switch(form.report){
 				case 'mpBarcodeFrm':
-					/**/
 					if(packege.state<OrderState.PACKAGE_PACKED){
-						var s:String=OrderState.getStateName(OrderState.PACKAGE_PACKED);
+						s=OrderState.getStateName(OrderState.PACKAGE_PACKED);
 						Alert.show('Печать ШК разрешена в статусе не ниже '+s);
 					}else{
-						printMPBarcode(packege.id_name, barcode, providerId);
+						printMPBarcode(packege.id_name, barcode);
 					}
-					/**/
-					//4debug
-					//printMPBarcode(packege.id_name, barcode, providerId);
+					break;
+				case 'mpBarcodeFrm2':
+					printMPBarcode2(barcode);
 					break;
 				/*
 				case 'frmATzaiava':
@@ -207,21 +209,44 @@ package com.photodispatcher.printer{
 			}
 		}
 		
-		public function printMPBarcode(idCaption:String, barcode:String, providerId:String):void{
+		protected function printMPBarcode(idCaption:String, barcode:MailPackageBarcode):void{
 			if(!idCaption || !barcode) return;
 			
 			var report:Report=new Report();
 			report.printer=	Context.getAttribute('termPrinter');
-
+			
 			report.id='mpBarcodeFrm';
 			report.parameters=[];
 			var param:Parameter;
 			param=new Parameter(); param.id='pgroup_hm'; param.valString=idCaption; report.parameters.push(param);
-			param=new Parameter(); param.id='pprovider_id'; param.valString=providerId?'K'+providerId:''; report.parameters.push(param);
-			param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode); report.parameters.push(param);
-			param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode; report.parameters.push(param);
+			param=new Parameter(); param.id='pprovider_id'; param.valString=(barcode.preorder_num?('K'+barcode.preorder_num):''); report.parameters.push(param);
+			param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.barcode); report.parameters.push(param);
+			param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode.barcode; report.parameters.push(param);
 			print(report);
 		}
+		
+		protected function printMPBarcode2(barcode:MailPackageBarcode):void{
+			if(!barcode) return;
+			if(barcode.bar_type!=MailPackageBarcode.TYPE_SITE_BOX){
+				Alert.show('Не верный тип ШК');
+				return;
+			}
+			
+			var report:Report=new Report();
+			report.printer=	Context.getAttribute('termPrinter');
+			
+			report.id='mpBarcodeFrm2';
+			report.parameters=[];
+			var param:Parameter;
+			
+			param=new Parameter(); param.id='pgroup_hm'; param.valString=''; report.parameters.push(param);
+			param=new Parameter(); param.id='pprovider_id'; param.valString=barcode.box_orderNumber; report.parameters.push(param);
+			param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.barcode); report.parameters.push(param);
+			//param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode.barcode; report.parameters.push(param);
+			param=new Parameter(); param.id='pbarcode_hm'; param.valString=''; report.parameters.push(param);
+			print(report);
+		}
+		
 /*
 		private function printATzaiava(packege:MailPackage):void{
 			if(!packege || !packege.properties) return;

@@ -14,6 +14,7 @@ package com.photodispatcher.model.mysql.entities {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackageBarcode")]
     public class MailPackageBarcode extends MailPackageBarcodeBase {
 		public static const TYPE_SITE:int=1;
+		public static const TYPE_SITE_BOX:int=2;
 
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
@@ -21,6 +22,9 @@ package com.photodispatcher.model.mysql.entities {
 			var col:GridColumn;
 			col= new GridColumn('barcode'); col.headerText='Штрихкод'; result.addItem(col);
 			col= new GridColumn('preorder_num'); col.headerText='Предзаказ'; result.addItem(col);
+			col= new GridColumn('box_orderNumber'); col.headerText='НетПринт №'; result.addItem(col);
+			col= new GridColumn('box_number'); col.headerText='Корбка №'; result.addItem(col);
+			col= new GridColumn('box_weight'); col.headerText='Корбка вес'; result.addItem(col);
 			
 			return result;
 		}
@@ -30,5 +34,10 @@ package com.photodispatcher.model.mysql.entities {
         }
 		
 		public var preorder_num:String='';
+		public var box_id:String='';
+		public var box_number:String='';
+		public var box_weight:String='';
+		public var box_orderId:String='';
+		public var box_orderNumber:String='';
     }
 }

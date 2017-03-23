@@ -6,6 +6,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
 	import com.photodispatcher.model.mysql.entities.MailPackageProperty;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.util.ArrayUtil;
 	import com.photodispatcher.util.JsonUtil;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -65,8 +66,6 @@ package com.photodispatcher.factory{
 			//build prorerties
 			var props:Array=[];
 			var prop:MailPackageProperty;
-			var barcodes:Array=[];
-			var bar:MailPackageBarcode;
 			for each(ajm in mppMap){
 				val=JsonUtil.getRawVal(ajm.json_key, raw);
 				if(val){
@@ -95,10 +94,38 @@ package com.photodispatcher.factory{
 				}
 			}
 			
-			//fill barcodes
-				if(raw.hasOwnProperty('barcodes')){
-					for each(var barObj:Object in raw.barcodes){
-						if(barObj.hasOwnProperty('barcode') && barObj.barcode){
+			var barcodes:Array=[];
+			var bar:MailPackageBarcode;
+			var barObj:Object;
+			var idx:int;
+
+			//fill boxes (barcodes)
+			if(raw.hasOwnProperty('boxes')){
+				for each(barObj in raw.boxes){
+					if(barObj.hasOwnProperty('barcode') && barObj.barcode){
+						bar= new MailPackageBarcode();
+						bar.source=source;
+						bar.id=result.id;
+						bar.barcode=barObj.barcode;
+						bar.bar_type=MailPackageBarcode.TYPE_SITE_BOX;
+						if(barObj.hasOwnProperty('id')) bar.box_id=barObj.id;
+						if(barObj.hasOwnProperty('number')) bar.box_number=barObj.number;
+						if(barObj.hasOwnProperty('weight')) bar.box_weight=barObj.weight;
+						if(barObj.hasOwnProperty('orderId')) bar.box_orderId=barObj.orderId;
+						if(barObj.hasOwnProperty('orderNumber')) bar.box_orderNumber=barObj.orderNumber;
+						barcodes.push(bar); 
+					}
+				}
+			}
+
+			//fill simple barcodes
+			if(raw.hasOwnProperty('barcodes')){
+				for each(barObj in raw.barcodes){
+					if(barObj.hasOwnProperty('barcode') && barObj.barcode){
+						//check & skip if same barcode exists
+						idx= ArrayUtil.searchItemIdx('barcode',barObj.barcode,barcodes);
+						if(idx==-1){
+							//add
 							bar= new MailPackageBarcode();
 							bar.source=source;
 							bar.id=result.id;
@@ -108,8 +135,11 @@ package com.photodispatcher.factory{
 							barcodes.push(bar); 
 						}
 					}
+				}
 			}
 
+
+			
 			result.properties= new ArrayCollection(props);
 			result.barcodes= new ArrayCollection(barcodes);
 			return result;

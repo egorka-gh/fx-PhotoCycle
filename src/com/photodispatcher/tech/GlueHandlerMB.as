@@ -27,6 +27,10 @@ package com.photodispatcher.tech{
 		public var clientIP:String='';
 		public var clientPort:int=502;
 		
+		public var glueSideStopOffDelay:int=0;
+		public var glueSideStopOnDelay:int=0;
+		
+
 		private var _controller:GlueMBController;
 		[Bindable]
 		public function get controller():GlueMBController{
@@ -68,6 +72,8 @@ package com.photodispatcher.tech{
 			controller.serverPort=serverPort;
 			controller.clientIP=clientIP;
 			controller.clientPort=clientPort;
+			controller.sideStopOffDelay=glueSideStopOffDelay;
+			controller.sideStopOnDelay=glueSideStopOnDelay;
 			controller.start();
 		}
 		

@@ -51,6 +51,8 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_REGISTER_UNLOAD_TIMEOUT:int				=2;
 		public static const CONTROLLER_REGISTER_FINAL_PAPER:int					=3;
 		public static const CONTROLLER_REGISTER_IGNORE_ERRORS:int				=4;
+		public static const CONTROLLER_REGISTER_SIDE_STOP_OFF_DELAY:int			=5;
+		public static const CONTROLLER_REGISTER_SIDE_STOP_ON_DELAY:int			=6;
 		
 		public function GlueMBController(){
 			super();
@@ -59,11 +61,13 @@ package com.photodispatcher.service.modbus.controller{
 		public var timeoutMainPlateForward:int;
 		public var timeoutMainPlateRevers:int;
 		public var timeoutUnload:int;
+		public var sideStopOffDelay:int=0;
+		public var sideStopOnDelay:int=0;
 
 		//Main_Plate_Forward_Timeout_Time
 		public function setMainPlateForwardTimeout(msec:int):void{
 			if(client && client.connected){
-				client.writeRegister(CONTROLLER_REGISTER_MAIN_PLATE_FORWARD_TIMEOUT, ModbusBytes.int2bcd(int(msec/100)));
+				client.writeRegister(CONTROLLER_REGISTER_MAIN_PLATE_FORWARD_TIMEOUT, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -72,7 +76,7 @@ package com.photodispatcher.service.modbus.controller{
 		//Main_Plate_Revers_Timeout_Time
 		public function setMainPlateReversTimeout(msec:int):void{
 			if(client && client.connected){
-				client.writeRegister(CONTROLLER_REGISTER_MAIN_PLATE_REVERSE_TIMEOUT, ModbusBytes.int2bcd(int(msec/100)));
+				client.writeRegister(CONTROLLER_REGISTER_MAIN_PLATE_REVERSE_TIMEOUT, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -80,7 +84,23 @@ package com.photodispatcher.service.modbus.controller{
 		
 		public function setUnloadTimeout(msec:int):void{
 			if(client && client.connected){
-				client.writeRegister(CONTROLLER_REGISTER_UNLOAD_TIMEOUT, ModbusBytes.int2bcd(int(msec/100)));
+				client.writeRegister(CONTROLLER_REGISTER_UNLOAD_TIMEOUT, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function setSideStopOffDelay(msec:int):void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_SIDE_STOP_OFF_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function setSideStopOnDelay(msec:int):void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_SIDE_STOP_ON_DELAY, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -100,9 +120,11 @@ package com.photodispatcher.service.modbus.controller{
 		override protected function onClientConnect(evt:Event):void{
 			dispatchEvent(new Event('connectChange'));
 			if(client && client.connected){
-				if(timeoutMainPlateForward>0) setMainPlateForwardTimeout(timeoutMainPlateForward);
-				if(timeoutMainPlateRevers>0) setMainPlateReversTimeout(timeoutMainPlateRevers);
-				if(timeoutUnload>0) setUnloadTimeout(timeoutUnload);
+				//if(timeoutMainPlateForward>0) setMainPlateForwardTimeout(timeoutMainPlateForward);
+				//if(timeoutMainPlateRevers>0) setMainPlateReversTimeout(timeoutMainPlateRevers);
+				//if(timeoutUnload>0) setUnloadTimeout(timeoutUnload);
+				if(sideStopOffDelay>10) setSideStopOffDelay(sideStopOffDelay);
+				if(sideStopOnDelay>10) setSideStopOnDelay(sideStopOnDelay);
 			}
 		}
 		

@@ -323,14 +323,16 @@
 				if(dgBarCode) dgBarCode.selectedItem=bar;
 			}
 			
+			/*
 			protected function btPrintBarcode_clickHandler(event:MouseEvent):void{
 				if(!mailPackage) return;
 				var bar:MailPackageBarcode;
 				if(dgBarCode) bar=dgBarCode.selectedItem as MailPackageBarcode;
 				if(!bar && mailPackage.barcodes && mailPackage.barcodes.length>0) bar=mailPackage.barcodes.getItemAt(0) as MailPackageBarcode;
 				if(!bar) return;
-				Printer.instance.printMPBarcode(mailPackage.id_name, bar.barcode, bar.preorder_num);
+				Printer.instance.printMPBarcode(mailPackage.id_name, bar);
 			}
+			*/
 			
 			protected function dgPackages_creationCompleteHandler(event:FlexEvent):void{
 				var gridMenu:GridContexMenu;
@@ -352,6 +354,7 @@
 					var bar:MailPackageBarcode;
 					if(dgBarCode) bar=dgBarCode.selectedItem as MailPackageBarcode;
 					if(!bar && mailPackage.barcodes && mailPackage.barcodes.length>0) bar=mailPackage.barcodes.getItemAt(0) as MailPackageBarcode;
+					/*
 					var code:String='';
 					var providerId:String='';
 					if(bar){
@@ -359,6 +362,8 @@
 						providerId=bar.preorder_num;
 					}
 					Printer.instance.printDeliveryForm(mailPackage,form,code,providerId);
+					*/
+					Printer.instance.printDeliveryForm(mailPackage, form, bar);
 				}
 			}
 			
