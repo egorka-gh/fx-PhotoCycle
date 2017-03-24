@@ -24,6 +24,9 @@ package com.photodispatcher.service.modbus.controller{
 		}
 		
 		[Bindable]
+		public var isBusy:Boolean=false;
+		
+		[Bindable]
 		public var server:ModbusServer;
 		public var serverIP:String='';
 		public var serverPort:int=503;
@@ -66,6 +69,7 @@ package com.photodispatcher.service.modbus.controller{
 				client=null;
 			}
 			dispatchEvent(new Event('connectChange'));
+			isBusy=false;
 		}
 
 		protected function onClientADU(evt:ModbusResponseEvent):void{
@@ -84,6 +88,7 @@ package com.photodispatcher.service.modbus.controller{
 		
 		protected function onClientConnect(evt:Event):void{
 			dispatchEvent(new Event('connectChange'));
+			isBusy=false;
 			//implement client init
 		}
 		protected function onServerConnect(evt:Event):void{
@@ -105,6 +110,7 @@ package com.photodispatcher.service.modbus.controller{
 				
 			}
 			dispatchEvent(new Event('connectChange'))
+			isBusy=true;
 		}
 		
 		

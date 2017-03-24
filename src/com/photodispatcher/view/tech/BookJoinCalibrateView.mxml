@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.tech.BookJoinHandler;
+			import flash.globalization.DateTimeStyle;
+			import spark.formatters.DateTimeFormatter;
+			
+			[Bindable]
+			public var splineMaxRun:int;
+			[Bindable]
+			public var splineCalibrationSteps:int;
+			[Bindable]
+			public var splineCalibrationMM:int;
+
+			
+			private var _handler:BookJoinHandler;  
+			[Bindable]
+			public function get handler():BookJoinHandler{
+				return _handler;
+			}
+			public function set handler(value:BookJoinHandler):void{
+				if(_handler){
+					_handler.removeEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				}
+				_handler = value;
+				if(_handler){
+					_handler.logger=this;
+					_handler.addEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				}
+			}
+			protected function onGlueHandlerErr(event:ErrorEvent):void{
+				log('Ошибка: '+event.text);
+			}
+			
+			[Bindable]
+			private var logText:String = '';
+			private var dtFmt:DateTimeFormatter;
+			
+			public function log(mesage:String):void{
+				var str:String;
+				if(!dtFmt){
+					dtFmt=new DateTimeFormatter();
+					dtFmt.timeStyle=DateTimeStyle.LONG;
+					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
+				}
+				str=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
+				if(str.length>4000){
+					str=str.substr(-2000);
+				}
+				logText=str;
+			}
+			public function clear():void{
+				logText='';
+			}
+
+			
+			public function start():void{
+				clear();
+				if(handler) handler.start(); 
+			}
+
+			public function stop():void{
+				//clear();
+				if(handler) handler.stop();
+				handler=null;
+			}
+			
+			protected function btRun_clickHandler(event:MouseEvent):void{
+				if(handler && handler.controller){
+					handler.controller.gotoPosition(splineCalibrationSteps);
+				}
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.splineMaxRun = splineMaxRun;
+				so.data.splineCalibrationSteps = splineCalibrationSteps;
+				so.data.splineCalibrationMM = splineCalibrationMM;
+				so.flush();  
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="5" width="100%" height="100%"  
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Максимальный ход рейки (шагов):" />
+			<s:NumericStepper id="nsSplineMaxRun" minimum="0" maximum="3000" snapInterval="1"
+							  value="@{splineMaxRun}"/>
+		</s:HGroup>
+		<s:Spacer height="5"/>
+		<s:Label text="Калибровка" />
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Количество шагов рейки:" />
+			<s:NumericStepper id="nsSplineCalibrationSteps" minimum="0" maximum="{splineMaxRun}" snapInterval="1"
+							  value="@{splineCalibrationSteps}"/>
+			<s:Button label="Выполнить"
+					  id="btRun" click="btRun_clickHandler(event)"
+					  enabled="{handler &amp;&amp; handler.controller &amp;&amp; !handler.controller.isBusy}"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Ход рейки в мм:" />
+			<s:NumericStepper id="nsSplineCalibrationMM" minimum="0" maximum="{splineMaxRun}" snapInterval="1"
+							  value="@{splineCalibrationMM}"/>
+		</s:HGroup>
+		
+		<s:Spacer height="5"/>
+		<s:Button label="Сохранить" click="button1_clickHandler(event)"/>
+
+		<s:Spacer height="10"/>
+		<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false"/>
+	</s:VGroup>
+	
+</s:Group>

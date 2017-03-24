@@ -7,7 +7,7 @@
 					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
-					   closing="windowedapplication1_closingHandler(event)" 
+					   closing="windowedapplication1_closingHandler(event)" xmlns:tech="com.photodispatcher.view.tech.*" 
 					   >
 	
 	<fx:Script>
@@ -26,7 +26,10 @@
 			import com.photodispatcher.service.barcode.Socket2Com;
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.service.messenger.MessengerGeneric;
+			import com.photodispatcher.service.modbus.controller.BookJoinMBController;
+			import com.photodispatcher.tech.BookJoinHandler;
 			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.NetUtil;
 			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.AlertrPopup;
 			import com.photodispatcher.view.ModalPopUp;
@@ -63,9 +66,23 @@
 			[Bindable]
 			private var alertSound:String;
 			
-			
 			[Bindable]
-			private var flap:ValveCom; 
+			public var glueServerIP:String='';
+			[Bindable]
+			public var glueServerPort:int=503;
+			[Bindable]
+			public var glueClientIP:String='';
+			[Bindable]
+			public var glueClientPort:int=502;
+			[Bindable]
+			protected var splineMaxRun:int;
+			[Bindable]
+			protected var splineCalibrationSteps:int;
+			[Bindable]
+			protected var splineCalibrationMM:int;
+			[Bindable]
+			protected var splineOffset:int;
+
 			
 			[Bindable]
 			private var techPointObj:TechPoint;
@@ -186,9 +203,23 @@
 					val=so.data.alertTime;
 					if(val) alertTime=val;
 					useTechBarcode=so.data.useTechBarcode;
-					useController=so.data.useController;
 					alertSound=so.data.alertSound;
 					AlertrPopup.alertSound=alertSound;
+					
+					glueServerIP=so.data.glueServerIP;
+					if(!glueServerIP) glueServerIP=NetUtil.getIP();
+					glueServerPort=so.data.glueServerPort;
+					if(!glueServerPort) glueServerPort=503;
+					glueClientIP=so.data.glueClientIP;
+					glueClientPort=so.data.glueClientPort;
+					if(!glueClientPort) glueClientPort=502;
+					
+					splineMaxRun=so.data.splineMaxRun;
+					if(splineMaxRun<100) splineMaxRun=2000;
+					splineCalibrationSteps=so.data.splineCalibrationSteps;
+					splineCalibrationMM=so.data.splineCalibrationMM;
+					splineOffset=so.data.splineOffset;
+
 				}
 				
 				//init messenger
@@ -203,7 +234,36 @@
 				}
 			}
 			
+			[Bindable]
+			protected var cController:BookJoinHandler;
+			
+			private function calibrate():void{
+				if(!glueServerIP || !glueServerPort || !glueClientIP || !glueClientPort){
+					Alert.show('Не настроен контролер склейки');
+					return;
+				}
+				currentState='calibration';
+				cController=new BookJoinHandler();
+				cController.serverIP=glueServerIP;
+				cController.serverPort=glueServerPort;
+				cController.clientIP=glueClientIP;
+				cController.clientPort=glueClientPort;
+				cController.init();
+				if(calibrateView) calibrateView.start();
+			}
+
+			private function calibrateEnd():void{
+				if(calibrateView){
+					splineMaxRun=calibrateView.splineMaxRun;
+					splineCalibrationSteps=calibrateView.splineCalibrationSteps;
+					splineCalibrationMM=calibrateView.splineCalibrationMM;
+					calibrateView.stop();
+				}
+				currentState='config';
+			}
+
 			private function start():void{
+				return;
 				if(!techPointObj || !comInfoCover.num || !comInfoBlock.num){
 					Alert.show('Приложение не настроено');
 					currentState='config';
@@ -253,7 +313,6 @@
 			}
 			
 			private function stop():void{
-				if(flap) flap.stop();
 				if(techMonitor) techMonitor.stop();
 				if(barcodeReaderCover) barcodeReaderCover.stop();
 				serialProxy.stop();
@@ -262,7 +321,6 @@
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				MessengerGeneric.disconnect();
-				if(flap) flap.stop();
 				if(barcodeReaderCover) barcodeReaderCover.stop();
 				if(serialProxy) serialProxy.stop();
 				if(techMonitor) techMonitor.stop();
@@ -298,6 +356,7 @@
 			protected function btSaveComs_clickHandler(event:MouseEvent):void{
 				//ComInfo.save(coms.source);
 				ComInfo.save([comInfoCover, comInfoBlock]);
+				saveGlueEth();
 			}
 			
 			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
@@ -364,21 +423,17 @@
 				so.flush();  
 			}
 			
-			private var _useController:Boolean;
-			[Bindable]
-			public function get useController():Boolean{
-				return _useController;
-			}
-			public function set useController(value:Boolean):void{
-				_useController = value;
-				Context.setAttribute("useController", value);
-			}
-			protected function chbUseController_changeHandler(event:Event):void{
-				//useController=chbUseController.selected;
+			
+			protected function saveGlueEth():void{
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.useController = useController;
+				so.data.glueServerIP = glueServerIP;
+				so.data.glueServerPort = glueServerPort;
+				so.data.glueClientIP = glueClientIP;
+				so.data.glueClientPort = glueClientPort;
+				so.data.splineOffset = splineOffset;
 				so.flush();  
 			}
+
 			
 		]]>
 	</fx:Script>
@@ -389,6 +444,7 @@
 	
 	<s:states>
 		<s:State name="disconnected"/>
+		<s:State name="calibration"/>
 		<s:State name="config"/>
 		<s:State name="monitor"/>
 	</s:states>
@@ -449,46 +505,40 @@
 			<s:CheckBox id="chbUseTechBarcode" selected="{useTechBarcode}"  change="chbUseTechBarcode_changeHandler(event)"/>
 		</s:HGroup>
 		
-		<!--<s:Spacer height="5"/>
+		<s:Spacer height="5"/>
 		<s:VGroup gap="5">
 			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Автоподача блоков:"/>
-				<s:CheckBox id="chbUseController" selected="{useController}"  change="chbUseController_changeHandler(event)"/>
+				<s:Label text="Компьютер IP:"/>
+				<s:TextInput id="tiPCIP" text="@{glueServerIP}"/>
+				<s:Label text="порт:"/>
+				<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
+								  value="@{glueServerPort}"/>
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Контролер  IP:"/>
+				<s:TextInput id="tiGlueIP" text="@{glueClientIP}"/>
+				<s:Label text="порт:"/>
+				<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
+								  value="@{glueClientPort}"/>
 			</s:HGroup>
 			
 			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Компьютер IP:" />
-				<s:TextInput id="tiModbusPC_IP" text="192.168.250.2" enabled="false"/>
-				<s:Label text="порт:" />
-				<s:NumericStepper id="nsModbusPC_Port" value="503" minimum="0" maximum="1000" enabled="false"/>
+				<s:Label text="Смещение рейки(мм):" />
+				<s:NumericStepper id="nsSplineOffset" minimum="0" maximum="100" snapInterval="1"
+								  value="@{splineOffset}"/>
 			</s:HGroup>
-			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Контролер  IP:" />
-				<s:TextInput id="tiModbusIP" text="192.168.250.1"  enabled="false"/>
-				<s:Label text="порт:" />
-				<s:NumericStepper id="nsModbusPort" value="502" minimum="0" maximum="1000"  enabled="false"/>
-			</s:HGroup>
-			<s:Label text="Рейка:" />
-			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Максимальный ход (импульсов):" />
-				<s:NumericStepper id="nsMaxSplineRun" value="2000" minimum="100" maximum="3000"   enabled="false"/>
-			</s:HGroup>
-
 		</s:VGroup>
--->
+
 		<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
 
-			<!--<s:HGroup gap="10">
-				<s:List id="comList" dataProvider="{coms}" height="100%"/>
-				<itemRenderer:ComInfoRenderer data="{comList.selectedItem}"/>
-			</s:HGroup>
-			<s:HGroup gap="10" width="100%" horizontalAlign="right">
-				<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
-				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
-			</s:HGroup>-->
-		
-		
 	</s:VGroup>
+	
+	<tech:BookJoinCalibrateView id="calibrateView" includeIn="calibration" top="5" left="5" right="5" bottom="50"
+								handler="{cController}"
+								splineMaxRun="{splineMaxRun}"
+								splineCalibrationSteps="{splineCalibrationSteps}"
+								splineCalibrationMM="{splineCalibrationMM}"
+								/>
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
 		<view:TechJoinView id="techMonitor" techPoint="{techPointObj}" 
@@ -501,6 +551,8 @@
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
 		<s:Spacer width="100%"/>
 		<s:Button label="Стоп" includeIn="monitor" click="{stop()}"/>
+		<s:Button label="Калибровка" includeIn="config" click="{calibrate()}"/>
+		<s:Button label="Завершить" includeIn="calibration" click="{calibrateEnd()}"/>
 		<s:Button label="Старт" includeIn="config" click="{start()}"/>
 		<s:Button label="Закрыть" click="{closeApp()}" />
 	</s:HGroup>

@@ -57,8 +57,10 @@ package com.photodispatcher.service.modbus.controller{
 		
 		public function findReference():void{
 			if(client && client.connected){
+				logMsg('Котролер: старт поиска исходной позиции');
 				client.writeRegister(CONTROLLER_REGISTER_FIND_REFERENCE,1);
 				waiteCmd=-1;
+				isBusy=true;
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -66,8 +68,10 @@ package com.photodispatcher.service.modbus.controller{
 		
 		public function gotoPosition(value:int):void{
 			if(client && client.connected){
+				logMsg('Котролер: переход на позицию '+value.toString());
 				client.writeRegister(CONTROLLER_REGISTER_SET_RELATIVE_POSITION,value);
 				waiteCmd=CONTROLLER_REGISTER_SET_RELATIVE_POSITION;
+				isBusy=true;
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -104,80 +108,48 @@ package com.photodispatcher.service.modbus.controller{
 		override protected function onClientConnect(evt:Event):void{
 			super.onClientConnect(evt);
 			// TODO implement client init
+			
+
+			findReference();
 		}
 		
 		override protected function onServerADU(evt:ModbusRequestEvent):void{
 			super.onServerADU(evt);
 			//adu proccessing
 			var adu:ModbusADU=evt.adu;
+			var riseEvent:Boolean=true;
 			if(!adu) return;
 			//check adr
 			if(adu.pdu.address!=0){
 				logMsg('wrong register address ' +adu.pdu.address);
 				return;
 			}
+
 			switch(adu.pdu.value){
 				case CONTROLLER_FIND_REFERENCE_COMPLITE:
-				case CONTROLLER_PAPER_SENSOR_IN:
-				case CONTROLLER_PAPER_SENSOR_OUT:
-				case CONTROLLER_GOTO_RELATIVE_POSITION_COMPLITE:
-				case CONTROLLER_ERR_HASNO_REFERENCE:
-				case CONTROLLER_ERR_GOTO_TIMEOUT:
-					//notify handler
-					dispatchEvent(new ControllerMesageEvent(MBController.MESSAGE_CHANEL_SERVER,adu.pdu.value));
+					isBusy=false;
 					break;
+				//case CONTROLLER_PAPER_SENSOR_IN:
+				//case CONTROLLER_PAPER_SENSOR_OUT:
+				case CONTROLLER_GOTO_RELATIVE_POSITION_COMPLITE:
+					isBusy=false;
+					break;
+				//case CONTROLLER_ERR_HASNO_REFERENCE:
+				//case CONTROLLER_ERR_GOTO_TIMEOUT:
 				default:{
+					riseEvent=false;
 					logMsg('Неизвестный код сообщения '+adu.pdu.value);
 					break;
 				}
 			}
-
-			/*
-			switch(adu.pdu.value){
-				case CONTROLLER_FIND_REFERENCE_COMPLITE:{
-					//notify handler
-					dispatchEvent(new ControllerMesageEvent(0,CONTROLLER_FIND_REFERENCE_COMPLITE));
-					txt='Поиск исходного положения завершен';
-					break;
-				}
-				case CONTROLLER_PAPER_SENSOR_IN:{
-					dispatchEvent(new ControllerMesageEvent(0,CONTROLLER_PAPER_SENSOR_IN));
-					txt='Лист пошел';
-					break;
-				}
-				case CONTROLLER_PAPER_SENSOR_OUT:{
-					dispatchEvent(new ControllerMesageEvent(0,CONTROLLER_PAPER_SENSOR_OUT));
-					txt='Лист вышел';
-					break;
-				}
-				case CONTROLLER_GOTO_RELATIVE_POSITION_COMPLITE:{
-					dispatchEvent(new ControllerMesageEvent(0,CONTROLLER_GOTO_RELATIVE_POSITION_COMPLITE));
-					txt='Переход в заданное положение завершен';
-					break;
-				}
-				case CONTROLLER_ERR_HASNO_REFERENCE:{
-					dispatchEvent(new ControllerMesageEvent(0,CONTROLLER_ERR_HASNO_REFERENCE));
-					txt='Не выполнен поиск исходного положения';
-					break;
-				}
-				case CONTROLLER_ERR_GOTO_TIMEOUT:{
-					dispatchEvent(new ControllerMesageEvent(0,CONTROLLER_ERR_GOTO_TIMEOUT));
-					txt='Таймаут перехода в заданное положение';
-					break;
-				}
-				default:{
-					txt='Неизвестный код сообщения '+adu.pdu.value;
-					break;
-				}
-			}
-			if(txt) logMsg(txt);
-			*/
-
+			//notify handler
+			if(riseEvent) dispatchEvent(new ControllerMesageEvent(MBController.MESSAGE_CHANEL_SERVER,adu.pdu.value));
 		}
 
 		override public function start():void{
 			super.start();
 			waiteCmd=-1;
+			isBusy=true;
 		}
 		
 		override public function stop():void{
