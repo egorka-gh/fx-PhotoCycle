@@ -67,13 +67,13 @@
 			private var alertSound:String;
 			
 			[Bindable]
-			public var glueServerIP:String='';
+			public var serverIP:String='';
 			[Bindable]
-			public var glueServerPort:int=503;
+			public var serverPort:int=503;
 			[Bindable]
-			public var glueClientIP:String='';
+			public var clientIP:String='';
 			[Bindable]
-			public var glueClientPort:int=502;
+			public var clientPort:int=502;
 			[Bindable]
 			protected var splineMaxRun:int;
 			[Bindable]
@@ -82,6 +82,10 @@
 			protected var splineCalibrationMM:int;
 			[Bindable]
 			protected var splineOffset:int;
+			[Bindable]
+			protected var timeoutBlockOut:int=0;
+			[Bindable]
+			protected var timeoutBlockPass:int=0;
 
 			
 			[Bindable]
@@ -206,20 +210,21 @@
 					alertSound=so.data.alertSound;
 					AlertrPopup.alertSound=alertSound;
 					
-					glueServerIP=so.data.glueServerIP;
-					if(!glueServerIP) glueServerIP=NetUtil.getIP();
-					glueServerPort=so.data.glueServerPort;
-					if(!glueServerPort) glueServerPort=503;
-					glueClientIP=so.data.glueClientIP;
-					glueClientPort=so.data.glueClientPort;
-					if(!glueClientPort) glueClientPort=502;
+					serverIP=so.data.serverIP;
+					if(!serverIP) serverIP=NetUtil.getIP();
+					serverPort=so.data.serverPort;
+					if(!serverPort) serverPort=503;
+					clientIP=so.data.clientIP;
+					clientPort=so.data.clientPort;
+					if(!clientPort) clientPort=502;
 					
 					splineMaxRun=so.data.splineMaxRun;
 					if(splineMaxRun<100) splineMaxRun=2000;
 					splineCalibrationSteps=so.data.splineCalibrationSteps;
 					splineCalibrationMM=so.data.splineCalibrationMM;
 					splineOffset=so.data.splineOffset;
-
+					timeoutBlockOut=so.data.timeoutBlockOut;
+					timeoutBlockPass=so.data.timeoutBlockPass;
 				}
 				
 				//init messenger
@@ -238,16 +243,16 @@
 			protected var cController:BookJoinHandler;
 			
 			private function calibrate():void{
-				if(!glueServerIP || !glueServerPort || !glueClientIP || !glueClientPort){
+				if(!serverIP || !serverPort || !clientIP || !clientPort){
 					Alert.show('Не настроен контролер склейки');
 					return;
 				}
 				currentState='calibration';
 				cController=new BookJoinHandler();
-				cController.serverIP=glueServerIP;
-				cController.serverPort=glueServerPort;
-				cController.clientIP=glueClientIP;
-				cController.clientPort=glueClientPort;
+				cController.serverIP=serverIP;
+				cController.serverPort=serverPort;
+				cController.clientIP=clientIP;
+				cController.clientPort=clientPort;
 				cController.init();
 				if(calibrateView) calibrateView.start();
 			}
@@ -263,12 +268,25 @@
 			}
 
 			private function start():void{
-				return;
-				if(!techPointObj || !comInfoCover.num || !comInfoBlock.num){
-					Alert.show('Приложение не настроено');
+				if(!techPointObj){
+					Alert.show('Не задана технологическая точка');
 					currentState='config';
 					return;
 				}
+				if(!comInfoCover.num || !comInfoBlock.num){
+					Alert.show('Не настроены сканеры');
+					currentState='config';
+					return;
+				}
+				if(!serverIP || !serverPort || !clientIP || !clientPort){
+					Alert.show('Не настроен контролер');
+					return;
+				}
+				if(splineCalibrationMM<=0 || splineCalibrationSteps<=0){
+					Alert.show('Нет данных калибровки контролера');
+					return;
+				}
+				
 				serialProxy.start([comInfoCover,comInfoBlock]);
 				if(!serialProxy.isStarted){
 					currentState='config';
@@ -303,7 +321,11 @@
 
 				
 				currentState='monitor';
-				if(techMonitor) techMonitor.start();
+				if(techMonitor){
+					techMonitor.cleanLog();
+					techMonitor.start();
+					
+				}
 			}
 			
 			private function closeApp():void{
@@ -315,13 +337,14 @@
 			private function stop():void{
 				if(techMonitor) techMonitor.stop();
 				if(barcodeReaderCover) barcodeReaderCover.stop();
-				serialProxy.stop();
+				if(serialProxy) serialProxy.stop();
 				currentState='config';
 			}
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				MessengerGeneric.disconnect();
 				if(barcodeReaderCover) barcodeReaderCover.stop();
+				if(barcodeReaderBlock) barcodeReaderBlock.stop();
 				if(serialProxy) serialProxy.stop();
 				if(techMonitor) techMonitor.stop();
 			}
@@ -336,15 +359,13 @@
 			}
 			
 			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
-				//if(flap) flap.stop();
-				if(barcodeReaderCover) barcodeReaderCover.stop();
-				if(barcodeReaderBlock) barcodeReaderBlock.stop();
-				serialProxy.stop();
+				/*
 				var bar:String=event.barcode;
 				bar = bar.replace(String.fromCharCode(13),'[LF]');
 				bar = bar.replace(String.fromCharCode(10),'[CR]');
 				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
 				currentState='config';
+				*/
 			}
 			
 			/* protected function btAddCom_clickHandler(event:MouseEvent):void{
@@ -426,11 +447,13 @@
 			
 			protected function saveGlueEth():void{
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.glueServerIP = glueServerIP;
-				so.data.glueServerPort = glueServerPort;
-				so.data.glueClientIP = glueClientIP;
-				so.data.glueClientPort = glueClientPort;
+				so.data.serverIP = serverIP;
+				so.data.serverPort = serverPort;
+				so.data.clientIP = clientIP;
+				so.data.clientPort = clientPort;
 				so.data.splineOffset = splineOffset;
+				so.data.timeoutBlockOut=timeoutBlockOut;
+				so.data.timeoutBlockPass=timeoutBlockPass;
 				so.flush();  
 			}
 
@@ -506,28 +529,38 @@
 		</s:HGroup>
 		
 		<s:Spacer height="5"/>
-		<s:VGroup gap="5">
-			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Компьютер IP:"/>
-				<s:TextInput id="tiPCIP" text="@{glueServerIP}"/>
-				<s:Label text="порт:"/>
-				<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
-								  value="@{glueServerPort}"/>
-			</s:HGroup>
-			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Контролер  IP:"/>
-				<s:TextInput id="tiGlueIP" text="@{glueClientIP}"/>
-				<s:Label text="порт:"/>
-				<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
-								  value="@{glueClientPort}"/>
-			</s:HGroup>
-			
-			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Смещение рейки(мм):" />
-				<s:NumericStepper id="nsSplineOffset" minimum="0" maximum="100" snapInterval="1"
-								  value="@{splineOffset}"/>
-			</s:HGroup>
-		</s:VGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Компьютер IP:"/>
+			<s:TextInput id="tiPCIP" text="@{serverIP}"/>
+			<s:Label text="порт:"/>
+			<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
+							  value="@{serverPort}"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Контролер  IP:"/>
+			<s:TextInput id="tiGlueIP" text="@{clientIP}"/>
+			<s:Label text="порт:"/>
+			<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
+							  value="@{clientPort}"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Смещение рейки(мм):" />
+			<s:NumericStepper id="nsSplineOffset" minimum="0" maximum="100" snapInterval="1"
+							  value="@{splineOffset}"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Таймаут выхода блока после сканирования обложки (сек):" />
+			<s:NumericStepper minimum="0" maximum="100" snapInterval="1"
+							  value="@{timeoutBlockOut}"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Таймаут застревания блока (мсек):" />
+			<s:NumericStepper minimum="0" maximum="10000" snapInterval="100"
+							  value="@{timeoutBlockPass}"/>
+		</s:HGroup>
 
 		<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
 
@@ -541,10 +574,25 @@
 								/>
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<view:TechJoinView id="techMonitor" techPoint="{techPointObj}" 
+		<!--<view:TechJoinView id="techMonitor" techPoint="{techPointObj}" 
 						   barcodeReaderCover="{barcodeReaderCover}"  barcodeReaderBlock="{barcodeReaderBlock}"
 						   useTechBarcode="{useTechBarcode}"
 						   alertSize="{alertSize}" alertTime="{alertTime}"
+						   width="100%" height="100%"/>-->
+		<tech:BookJoinView id="techMonitor" techPoint="{techPointObj}"
+						   alertSize="{alertSize}" alertTime="{alertTime}"
+						   
+						   useTechBarcode="{useTechBarcode}"
+						   barcodeReaderCover="{barcodeReaderCover}"  barcodeReaderBlock="{barcodeReaderBlock}"
+						   
+						   serverIP="{serverIP}" serverPort="{serverPort}"
+						   clientIP="{clientIP}" clientPort="{clientPort}"
+						   
+						   splineCalibrationSteps="{splineCalibrationSteps}"
+						   splineCalibrationMM="{splineCalibrationMM}"
+						   timeoutBlockOutAfterCoverBarcode="{timeoutBlockOut}"
+						   timeoutBlockPass="{timeoutBlockPass}"
+
 						   width="100%" height="100%"/>
 	</s:VGroup>
 	

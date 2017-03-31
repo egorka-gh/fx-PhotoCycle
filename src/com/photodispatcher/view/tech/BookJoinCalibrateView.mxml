@@ -47,7 +47,7 @@
 				if(!dtFmt){
 					dtFmt=new DateTimeFormatter();
 					dtFmt.timeStyle=DateTimeStyle.LONG;
-					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
+					dtFmt.dateTimePattern='HH:mm:ss';
 				}
 				str=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
 				if(str.length>4000){

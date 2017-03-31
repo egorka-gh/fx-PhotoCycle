@@ -1,4 +1,5 @@
 package com.photodispatcher.tech.register{
+	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	
 	[Bindable]
@@ -10,6 +11,9 @@ package com.photodispatcher.tech.register{
 			checkState= PrintGroup.CHECK_STATUS_NONE;
 		}
 		
+		public var order:Order;
+		public var orderId:String;
+		public var subId:String;
 		public var printGroupId:String;
 		public var book:int;
 		public var checkState:int;
@@ -18,5 +22,7 @@ package com.photodispatcher.tech.register{
 		public var sheetsTotal:int;
 		public var sheetsFeeded:int;
 		public var sheetsDone:int;
+		
+		public var thickness:Number;
 	}
 }

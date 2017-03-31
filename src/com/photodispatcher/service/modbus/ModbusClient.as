@@ -48,6 +48,7 @@ package com.photodispatcher.service.modbus{
 		private var socket:Socket;
 		
 		public function start():void{
+			sendQueue=[];
 			if(!serverIP || !serverPort){
 				logErr('TCP IP:Port не настроены');
 				return;
@@ -79,7 +80,8 @@ package com.photodispatcher.service.modbus{
 		}
 		
 		public function stop():void{
-			hasTransaction=false;
+			sendQueue=[];
+			popTransaction();
 			if(reconnectTimer) reconnectTimer.reset();
 			if(socket){
 				socket.removeEventListener(Event.CLOSE, onSocketClose );
@@ -100,45 +102,57 @@ package com.photodispatcher.service.modbus{
 		}
 
 		public function writeRegister(address:int, value:int):void{
-			logMsg('Запись в регистр '+address.toString(16)+' значения '+value.toString(16));
+			logMsg('Запись в регистр '+address.toString(16)+' значения 0x'+value.toString(16));
 			if(!connected){
 				logErr('Не подключен');
 				return;
 			}
+			/*
 			if(hasTransaction){
 				logErr('Не завершена предидущая операция');
 				return;
 			}
+			*/
 			var adu:ModbusADU=new ModbusADU();
 			adu.transactionId=nextTransaction;
 			var pdu:ModbusPDU= new ModbusPDU(ModbusPDU.FUNC_WRITE_REGISTER);
 			pdu.address=address;
 			pdu.value=value;
 			adu.pdu=pdu;
+			sendAdu(adu);
+			/*
 			var ba:ByteArray=adu.createRequest();
 			if(ba && ba.length>0) sendBytes(ba);
+			*/
 		}
 
 		public function readHoldingRegisters(startingAddress:int, quantity:int):void{
-			logMsg('Чтение '+quantity.toString()+' регистров, адрес '+startingAddress.toString(16));
+			logMsg('Чтение '+quantity.toString()+' регистров, адрес 0x'+startingAddress.toString(16));
 			if(!connected){
 				logErr('Не подключен');
 				return;
 			}
+			/*
 			if(hasTransaction){
 				logErr('Не завершена предидущая операция');
 				return;
 			}
+			*/
 			var adu:ModbusADU=new ModbusADU();
 			adu.transactionId=nextTransaction;
 			var pdu:ModbusPDU= new ModbusPDU(ModbusPDU.FUNC_READ_HOLDING_REGISTERS);
 			pdu.address=startingAddress;
 			pdu.value=quantity;
 			adu.pdu=pdu;
+			sendAdu(adu);
+			/*
 			var ba:ByteArray=adu.createRequest();
 			if(ba && ba.length>0) sendBytes(ba);
+			*/
 		}
 
+		
+		
 		private var _transactionId:int=0;
 		public function get currentTransaction():int{
 			return _transactionId;
@@ -162,11 +176,12 @@ package com.photodispatcher.service.modbus{
 				timeoutTimer.start();
 			}
 		}
-		private function popTransaction(transactionId:int):Boolean{
+		private function popTransaction(transactionId:int=0):Boolean{
 			//TODO implement 
 			//dummy flop
 			var res:Boolean=hasTransaction;
 			hasTransaction=false;
+			sendNextAdu();
 			return res;
 		}
 
@@ -174,7 +189,7 @@ package com.photodispatcher.service.modbus{
 		private function onTimeoutTimer(e:TimerEvent):void{
 			if(hasTransaction){
 				logErr('Таймут ожидания отклика контролера');
-				hasTransaction=false;
+				popTransaction();
 			}
 		}
 		private var reconnectTimer:Timer; 
@@ -223,12 +238,12 @@ package com.photodispatcher.service.modbus{
 		private function onSocketData( event:ProgressEvent ):void{
 			var bytes:ByteArray = new ByteArray();
 			event.target.readBytes(bytes, 0, event.target.bytesAvailable);
+			logMsg('◄ '+ModbusBytes.byteArrayToStr(bytes));
 			if(!hasTransaction) return;
-			logMsg('< '+ModbusBytes.byteArrayToStr(bytes));
 			var adu:ModbusADU=ModbusADU.readResponse(bytes);
 			if(adu){
 				dispatchEvent( new ModbusResponseEvent(adu));
-				hasTransaction=false;
+				popTransaction();
 			}else{
 				logMsg('ADU not parsed');
 			}
@@ -239,19 +254,48 @@ package com.photodispatcher.service.modbus{
 			*/
 		}
 		
+		private var sendQueue:Array;
+		private function sendAdu(adu:ModbusADU):void{
+			if(!adu) return;
+			if(!sendQueue) sendQueue=[];
+			sendQueue.push(adu);
+			sendNextAdu();
+		}
+		private function sendNextAdu():void{
+			if(hasTransaction) return;
+			if(!sendQueue || sendQueue.length==0) return;
+			if(!connected){
+				sendQueue=[];
+				logErr('Не подключен');
+				return;
+			}
+
+			var adu:ModbusADU;
+			while(!adu && sendQueue.length>0){
+				adu=sendQueue.shift() as ModbusADU;
+			}
+			if(!adu) return;
+			var ba:ByteArray=adu.createRequest();
+			if(ba && ba.length>0){
+				sendBytes(ba);
+			}else{
+				sendNextAdu();
+			}
+		}
 		
 		private function sendBytes(buffer:ByteArray):void{
 			if(!connected){
 				logErr('Не подключен');
 				return;
 			}
-			logMsg('> '+ModbusBytes.byteArrayToStr(buffer));
+			logMsg('► '+ModbusBytes.byteArrayToStr(buffer));
 			try{
+				pushTransaction();
 				socket.writeBytes(buffer);
 				socket.flush();
-				pushTransaction();
 			}catch(err:Error){
 				logErr('Ошибка отправки: '+err.message);
+				popTransaction();
 			}
 		}
 

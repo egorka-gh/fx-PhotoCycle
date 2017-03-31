@@ -53,7 +53,12 @@ package com.photodispatcher.service.modbus.controller{
 			super();
 		}
 		
-		protected var waiteCmd:int=-1;
+		//protected var waiteCmd:int=-1;
+		
+		[Bindable]
+		public var hasReference:Boolean;
+		[Bindable]
+		public var currPosition:int=-1;
 		
 		public function findReference():void{
 			if(client && client.connected){
@@ -61,6 +66,8 @@ package com.photodispatcher.service.modbus.controller{
 				client.writeRegister(CONTROLLER_REGISTER_FIND_REFERENCE,1);
 				waiteCmd=-1;
 				isBusy=true;
+				hasReference=false;
+				currPosition=-1;
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -72,6 +79,7 @@ package com.photodispatcher.service.modbus.controller{
 				client.writeRegister(CONTROLLER_REGISTER_SET_RELATIVE_POSITION,value);
 				waiteCmd=CONTROLLER_REGISTER_SET_RELATIVE_POSITION;
 				isBusy=true;
+				currPosition=value;
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -96,9 +104,9 @@ package com.photodispatcher.service.modbus.controller{
 		}
 
 		public function setGotoTimeout(msec:int):void{
-			//msec/100 ???
+			//msec/10 ???
 			if(client && client.connected){
-				client.writeRegister(CONTROLLER_REGISTER_GOTO_RELATIVE_POSITION_TIMEOUT,ModbusBytes.int2bcd(int(msec/100)));
+				client.writeRegister(CONTROLLER_REGISTER_GOTO_RELATIVE_POSITION_TIMEOUT,ModbusBytes.int2bcd(int(msec/10)));
 				waiteCmd=-1;
 			}else{
 				logErr('Контроллер не подключен');
@@ -128,14 +136,19 @@ package com.photodispatcher.service.modbus.controller{
 			switch(adu.pdu.value){
 				case CONTROLLER_FIND_REFERENCE_COMPLITE:
 					isBusy=false;
+					hasReference=true;
+					currPosition=0;
 					break;
 				//case CONTROLLER_PAPER_SENSOR_IN:
 				//case CONTROLLER_PAPER_SENSOR_OUT:
 				case CONTROLLER_GOTO_RELATIVE_POSITION_COMPLITE:
 					isBusy=false;
 					break;
-				//case CONTROLLER_ERR_HASNO_REFERENCE:
-				//case CONTROLLER_ERR_GOTO_TIMEOUT:
+				case CONTROLLER_ERR_HASNO_REFERENCE:
+				case CONTROLLER_ERR_GOTO_TIMEOUT:
+					currPosition=-1;
+					hasReference=false;
+					break;
 				default:{
 					riseEvent=false;
 					logMsg('Неизвестный код сообщения '+adu.pdu.value);
@@ -148,13 +161,17 @@ package com.photodispatcher.service.modbus.controller{
 
 		override public function start():void{
 			super.start();
-			waiteCmd=-1;
+			//waiteCmd=-1;
 			isBusy=true;
+			hasReference=false;
+			currPosition=-1;
 		}
 		
 		override public function stop():void{
 			super.stop();
-			waiteCmd=-1;
+			//waiteCmd=-1;
+			hasReference=false;
+			currPosition=-1;
 		}
 		
 		override protected function onClientADU(evt:ModbusResponseEvent):void{
@@ -172,7 +189,8 @@ package com.photodispatcher.service.modbus.controller{
 				case CONTROLLER_REGISTER_GET_RELATIVE_POSITION:{
 					var adu:ModbusADU=evt.adu;
 					if(adu && adu.pdu && adu.pdu.hasValue(0)){
-						dispatchEvent(new ControllerMesageEvent(MBController.MESSAGE_CHANEL_CLIENT,adu.pdu.getValue(0)));
+						currPosition=adu.pdu.getValue(0);
+						dispatchEvent(new ControllerMesageEvent(MBController.MESSAGE_CHANEL_CLIENT,currPosition));
 					}
 					break;
 				}
@@ -181,7 +199,7 @@ package com.photodispatcher.service.modbus.controller{
 		
 		override protected function onClientErr(evt:ErrorEvent):void{
 			super.onClientErr(evt);
-			waiteCmd=-1;
+			//waiteCmd=-1;
 		}
 		
 	}

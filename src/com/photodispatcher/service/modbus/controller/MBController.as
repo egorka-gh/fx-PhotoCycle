@@ -16,7 +16,7 @@ package com.photodispatcher.service.modbus.controller{
 	[Event(name="controllerMesage", type="com.photodispatcher.event.ControllerMesageEvent")]
 	public class MBController extends EventDispatcher{
 		public static const MESSAGE_CHANEL_SERVER:int	=0;
-		public static const MESSAGE_CHANEL_CLIENT:int	=1;
+		public static const MESSAGE_CHANEL_CLIENT:int	=1000;
 
 		
 		public function MBController(){
@@ -37,6 +37,7 @@ package com.photodispatcher.service.modbus.controller{
 		public var clientPort:int=502;
 		
 		public function start():void{
+			waiteCmd=-1;
 			if(server){
 				server.removeEventListener(ErrorEvent.ERROR, onServerErr);
 				server.removeEventListener(ModbusRequestEvent.REQUEST_EVENT, onServerADU);
@@ -54,6 +55,7 @@ package com.photodispatcher.service.modbus.controller{
 		}
 		
 		public function stop():void{
+			waiteCmd=-1;
 			if(server){
 				server.removeEventListener(ErrorEvent.ERROR, onServerErr);
 				server.removeEventListener(ModbusRequestEvent.REQUEST_EVENT, onServerADU);
@@ -72,8 +74,13 @@ package com.photodispatcher.service.modbus.controller{
 			isBusy=false;
 		}
 
+		//TODO work only in serial exchange
+		//refactor to queue?
+		protected var waiteCmd:int=-1;
+		
 		protected function onClientADU(evt:ModbusResponseEvent):void{
 			//register writed
+			waiteCmd=-1;
 		}
 		
 		[Bindable('connectChange')]
@@ -125,6 +132,7 @@ package com.photodispatcher.service.modbus.controller{
 			if(evt.errorID==0){
 				logMsg('Controller: '+ evt.text);
 			}else{
+				waiteCmd=-1;
 				logErr('Controller: '+ evt.text);
 			}
 		}
@@ -141,7 +149,7 @@ package com.photodispatcher.service.modbus.controller{
 			}else{
 				txt='Empty ADU';
 			}
-			logMsg('<< '+txt);
+			logMsg('◄ '+txt);
 			//Implement adu processing
 		}
 		

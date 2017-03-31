@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechLog;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.model.mysql.services.TechService;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.tech.BookJoinHandler;
+			import com.photodispatcher.tech.register.TechBook;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.AlertrPopup;
+			
+			import flash.globalization.DateTimeStyle;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+			
+			public static const LOG_LEN_LIMIT:int=5000;
+			public static const BAR_LEN_LIMIT:int=2000;
+			
+			[Bindable]
+			public var techPoint:TechPoint;
+			[Bindable]
+			public var useTechBarcode:Boolean;
+			public var alertSize:uint=40;
+			public var alertTime:uint=7;
+
+			[Bindable]
+			public var serverIP:String='';
+			[Bindable]
+			public var serverPort:int=503;
+			[Bindable]
+			public var clientIP:String='';
+			[Bindable]
+			public var clientPort:int=502;
+
+			[Bindable]
+			public var splineCalibrationSteps:int;
+			[Bindable]
+			public var splineCalibrationMM:int;
+			[Bindable]
+			public var splineOffset:int;
+
+			[Bindable]
+			public var timeoutBlockOutAfterCoverBarcode:int=0;
+			[Bindable]
+			public var timeoutBlockPass:int=0;
+
+			private var _barcodeReaderCover:ComReader;
+			[Bindable]
+			public function get barcodeReaderCover():ComReader{
+				return _barcodeReaderCover;
+			}
+			public function set barcodeReaderCover(value:ComReader):void{
+				if(_barcodeReaderCover){
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCodeCover);
+				}
+				_barcodeReaderCover = value;
+				if(_barcodeReaderCover){
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_READED,onBarCodeCover);
+				}
+			}
+
+			private var _barcodeReaderBlock:ComReader;
+			[Bindable]
+			public function get barcodeReaderBlock():ComReader{
+				return _barcodeReaderBlock;
+			}
+			public function set barcodeReaderBlock(value:ComReader):void{
+				if(_barcodeReaderBlock){
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCodeBlock);
+				}
+				_barcodeReaderBlock = value;
+				if(_barcodeReaderBlock){
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_READED,onBarCodeBlock);
+				}
+			}
+			
+			[Bindable]
+			private var logText:String = '';
+			private var dtFmt:DateTimeFormatter;
+			
+			public function log(mesage:String):void{
+				var str:String;
+				if(!dtFmt){
+					dtFmt=new DateTimeFormatter();
+					dtFmt.timeStyle=DateTimeStyle.LONG;
+					dtFmt.dateTimePattern='HH:mm:ss';
+				}
+				str=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
+				if(str.length>LOG_LEN_LIMIT){
+					str=str.substr(0,3000);
+				}
+				logText=str;
+			}
+			public function clear():void{
+				logText='';
+			}
+			
+			private var _barText:String='';
+			[Bindable]
+			public function get barText():String{
+				return _barText;
+			}
+			public function set barText(value:String):void{
+				if(!value){
+					_barText='';
+					return;
+				}
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				
+				var txt:String=fmt.format(new Date())+': '+ value+_barText; 
+				if(txt.length>BAR_LEN_LIMIT) txt=txt.substr(0,BAR_LEN_LIMIT);
+				_barText=txt;
+			}
+			
+			private function onBarCodeBlock(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				barText='b:'+barcode+'\n';
+			}
+			
+			private function onBarCodeCover(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				barText='c:'+barcode+'\n';
+			}
+			
+			private function showAlert(msg:String):void{
+				var ap:AlertrPopup=new AlertrPopup();
+				ap.show(msg, alertTime, alertSize);
+			}
+			
+			[Bindable]
+			protected var handler:BookJoinHandler;
+			
+			public function start():void{
+				//cleanLog();
+				if(!techPoint){
+					//TODO rise err or log in screen
+					log('Не задана технологическая точка');
+				}
+				if(handler){
+					handler.removeEventListener(ErrorEvent.ERROR,onHandlerErr); 
+					handler.stop();
+					handler=null;
+				}
+				handler= new BookJoinHandler();
+				handler.logger=this;
+
+				handler.serverIP=serverIP;
+				handler.serverPort=serverPort;
+				handler.clientIP=clientIP;
+				handler.clientPort=clientPort;
+				handler.techPoint=techPoint;
+				handler.useTechBarcode=useTechBarcode;
+				handler.splineCalibrationSteps=splineCalibrationSteps;
+				handler.splineCalibrationMM=splineCalibrationMM;
+				handler.splineOffset=splineOffset;
+				handler.timeoutBlockOutAfterCoverBarcode=timeoutBlockOutAfterCoverBarcode;
+				handler.timeoutBlockPass=timeoutBlockPass;
+				handler.barcodeReaderBlock=barcodeReaderBlock;
+				handler.barcodeReaderCover=barcodeReaderCover;
+				
+				handler.addEventListener(ErrorEvent.ERROR,onHandlerErr);
+
+				handler.init();
+				handler.start();
+			}
+			
+			public function stop():void{
+				if(handler){
+					handler.removeEventListener(ErrorEvent.ERROR,onHandlerErr); 
+					handler.stop();
+					handler=null;
+				}
+				cleanLog();
+			}
+			
+			protected function onHandlerErr(event:ErrorEvent):void{
+				log(event.text);
+				if(handler.isReady) showAlert(event.text);
+			}
+
+			
+			public function cleanLog():void{
+				clear();
+				barText='';
+			}
+			
+			public function blockLabelFunc(item:Object):String {
+				var block:TechBook= item as TechBook;
+				if(!block) return '';
+				var txt:String='0';
+				if(!isNaN(block.thickness)) txt=block.thickness.toFixed(2);
+				return block.printGroupId+':'+block.book.toString()+'/'+txt+'мм';
+			}
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" height="100%">
+			<s:VGroup gap="5" width="200" height="100%">
+				<s:HGroup gap="5" width="100%">
+					<s:Label text="Контролер"/>
+					<s:Label text="{handler.isReady?'Готов':'Не готов'}" 
+							 backgroundColor="{handler.isReady?0x00FF00:0xFFFF00}" backgroundAlpha="1"
+							 fontWeight="bold"
+							 width="100%"/>
+				</s:HGroup>
+				<s:HGroup gap="5" width="100%">
+					<s:Label text="Последняя книга:"/>
+					<s:Label text="{handler.lastBookName}" backgroundColor="#FFFFFF" backgroundAlpha="1"/>
+				</s:HGroup>
+				<s:HGroup gap="5" width="100%">
+					<s:Label text="Обложка:"/>
+					<s:Label text="{handler.currentCoverName}" backgroundColor="#FFFFFF" backgroundAlpha="1"/>
+				</s:HGroup>
+				<s:Label text="Очередь блоков"/>
+				<s:List id="lstBlockQueue" width="100%" height="100%"
+						dataProvider="{handler.blockQueue}"
+						labelFunction="blockLabelFunc"
+						/>
+			</s:VGroup>
+			<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false"/>
+			<s:TextArea id="barTextArea" text="{barText}" fontSize="10" width="170" height="100%" editable="false"/>
+		</s:HGroup>
+
+<!--		<s:HGroup gap="5" width="100%">
+			<s:Button label="Очистить" click="{cleanLog()}"/>
+			<s:Spacer width="5"/>
+			<s:Button label="Сброс" click="{reset()}"/>
+		</s:HGroup> 
+-->		
+	</s:VGroup>
+	
+</s:Group>

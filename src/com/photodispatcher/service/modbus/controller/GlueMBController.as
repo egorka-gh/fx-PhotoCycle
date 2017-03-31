@@ -6,6 +6,7 @@ package com.photodispatcher.service.modbus.controller{
 	import com.photodispatcher.service.modbus.ModbusServer;
 	import com.photodispatcher.service.modbus.data.ModbusADU;
 	import com.photodispatcher.service.modbus.data.ModbusBytes;
+	import com.photodispatcher.service.modbus.data.ModbusPDU;
 	
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
@@ -38,6 +39,9 @@ package com.photodispatcher.service.modbus.controller{
 		D2 (адрес регистра 0x0002) Unload_Timeout_Time - таймаут датчика на выгрузке (формат записи BCD)
 		D3 (адрес регистра 0x0003) Final_paper_D - следующий лист будет последним ( 0x0001 - true, сброс в 0x0000 - автоматически)
 		D4 (адрес регистра 0x0003) Ignore_Errors - игнорирование  ошибок ( 0x0001 - true, 0x0000 - false). При изменении состояния необходима перезагрузка.
+		
+		D5 (адрес регистра 0x0005) Side_Stop_Off_delay - Таймер выключения боковых упоров (формат записи BCD)
+		D6 (адрес регистра 0x0006) Side_Stop_On_delay - Таймер включения боковых упоров (формат записи BCD)
 		*/
 		public static const CONTROLLER_PRESS_PAPER_IN:int	=0;
 		public static const CONTROLLER_PRESS_DONE:int	=1;
@@ -106,6 +110,16 @@ package com.photodispatcher.service.modbus.controller{
 			}
 		}
 		
+		public function readSideStopDelays():void{
+			if(client && client.connected){
+				logMsg('Считывание таймеров боковых упоров');
+				waiteCmd=CONTROLLER_REGISTER_SIDE_STOP_OFF_DELAY;
+				client.readHoldingRegisters(CONTROLLER_REGISTER_SIDE_STOP_OFF_DELAY,2);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
 		
 		public function pushBlock():void{
 			//write Final_paper_D
@@ -125,7 +139,18 @@ package com.photodispatcher.service.modbus.controller{
 				//if(timeoutUnload>0) setUnloadTimeout(timeoutUnload);
 				if(sideStopOffDelay>10) setSideStopOffDelay(sideStopOffDelay);
 				if(sideStopOnDelay>10) setSideStopOnDelay(sideStopOnDelay);
+				/*
+				var timer:Timer= new Timer(1500,1);
+				timer.addEventListener(TimerEvent.TIMER,onClientConnectTimer);
+				timer.start();
+				*/
 			}
+		}
+		
+		private function onClientConnectTimer(evt:TimerEvent):void{
+			var timer:Timer=evt.target as Timer;
+			if(timer) timer.removeEventListener(TimerEvent.TIMER,onClientConnectTimer);
+			readSideStopDelays();
 		}
 		
 		override protected function onServerADU(evt:ModbusRequestEvent):void{
@@ -177,6 +202,22 @@ package com.photodispatcher.service.modbus.controller{
 			}
 			if(txt) logMsg(txt);
 		}
+		
+		override protected function onClientADU(evt:ModbusResponseEvent):void{
+			var adu:ModbusADU=evt.adu;
+			if(waiteCmd==-1) return;
+			var cmd:int=waiteCmd;
+			waiteCmd=-1;
+			if(cmd==CONTROLLER_REGISTER_SIDE_STOP_OFF_DELAY){
+				if(adu && adu.pdu && adu.pdu.functionCode==ModbusPDU.FUNC_READ_HOLDING_REGISTERS){
+					if(adu.pdu.hasValue(0)) logMsg('Значение. Таймер выключения боковых упоров: 0x'+adu.pdu.getValue(0).toString(16));
+					if(adu.pdu.hasValue(1)) logMsg('Значение. Таймер включения боковых упоров: 0x'+adu.pdu.getValue(1).toString(16));
+				}
+				
+			}
+		}
+		
+		
 
 	}
 }

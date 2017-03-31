@@ -107,7 +107,7 @@ package com.photodispatcher.service.modbus{
 				return;
 			}
 			*/
-			logMsg('< '+ModbusBytes.byteArrayToStr(bytes));
+			logMsg('◄ '+ModbusBytes.byteArrayToStr(bytes));
 			var adu:ModbusADU=ModbusADU.readResponse(bytes);
 			var needResponse:Boolean=true;
 			if(adu){
@@ -130,7 +130,7 @@ package com.photodispatcher.service.modbus{
 				logErr('Контроллер не подключен');
 				return;
 			}
-			logMsg('> '+ModbusBytes.byteArrayToStr(buffer));
+			logMsg('► '+ModbusBytes.byteArrayToStr(buffer));
 			try{
 				clientSocket.writeBytes(buffer);
 				clientSocket.flush();
