@@ -647,8 +647,14 @@ package com.photodispatcher.provider.ftp_loader{
 			latch.removeEventListener(Event.COMPLETE,onOrderMerged);
 			if(!webApplicant || !isStarted || forceStop) return;
 			if(!latch.complite){
-				//hz
+				//bd write lock
+				var order:Order=webApplicant;
 				webApplicant=null;
+				order.state=OrderState.ERR_WRITE_LOCK;
+				StateLog.log(OrderState.ERR_WRITE_LOCK,order.id,'','Не выполнен '+OrderState.getStateName(OrderState.FTP_CAPTURED));
+				StateLog.log(OrderState.ERR_LOCK_FAULT,order.id,'','Попытка сброса на сайте');
+				setOrderStateWeb(order,OrderLoad.REMOTE_STATE_READY);
+				removeOrder(order);
 				return;
 			}
 			//get merged files

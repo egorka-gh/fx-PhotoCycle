@@ -42,6 +42,10 @@ package com.photodispatcher.service.modbus.controller{
 		
 		D5 (адрес регистра 0x0005) Side_Stop_Off_delay - Таймер выключения боковых упоров (формат записи BCD)
 		D6 (адрес регистра 0x0006) Side_Stop_On_delay - Таймер включения боковых упоров (формат записи BCD)
+		
+		D7 (адрес регистра 0x0007) Pump_Sens_Filter - Время ожидания "чистого" сигнала (фильтр) (формат записи BCD, 1 = 100ms). По-умолчанию 1 секунда (0x0010)
+		D8 (адрес регистра 0x0008) Pump_Work_Time - Время работы насоса (формат записи BCD, 1 = 100ms). По-умолчанию 10 секунд (0x0100)
+		D9 (адрес регистра 0x0009) Pump_Enable - включение/выключение регулирования уровня клея насосом. ( 0x0001 - true, 0x0000 - false)
 		*/
 		public static const CONTROLLER_PRESS_PAPER_IN:int	=0;
 		public static const CONTROLLER_PRESS_DONE:int	=1;
@@ -57,6 +61,10 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_REGISTER_IGNORE_ERRORS:int				=4;
 		public static const CONTROLLER_REGISTER_SIDE_STOP_OFF_DELAY:int			=5;
 		public static const CONTROLLER_REGISTER_SIDE_STOP_ON_DELAY:int			=6;
+
+		public static const CONTROLLER_REGISTER_PUMP_SENS_FILTER:int			=7;
+		public static const CONTROLLER_REGISTER_PUMP_WORK_TIME:int				=8;
+		public static const CONTROLLER_REGISTER_PUMP_ENABLE:int					=9;
 		
 		public function GlueMBController(){
 			super();
@@ -67,6 +75,10 @@ package com.photodispatcher.service.modbus.controller{
 		public var timeoutUnload:int;
 		public var sideStopOffDelay:int=0;
 		public var sideStopOnDelay:int=0;
+
+		public var pumpSensFilterTime:int;
+		public var pumpWorkTime:int;
+		public var pumpEnable:Boolean;
 
 		//Main_Plate_Forward_Timeout_Time
 		public function setMainPlateForwardTimeout(msec:int):void{
@@ -120,6 +132,30 @@ package com.photodispatcher.service.modbus.controller{
 			}
 		}
 
+		public function setPumpSensFilterTime(sec:int):void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_PUMP_SENS_FILTER, ModbusBytes.int2bcd(int(sec/100)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+		public function setPumpWorkTime(sec:int):void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_PUMP_WORK_TIME, ModbusBytes.int2bcd(int(sec/100)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+		public function setPumpEnable(state:Boolean):void{
+			if(client && client.connected){
+				var val:int=0;
+				if(state) val=1;
+				client.writeRegister(CONTROLLER_REGISTER_PUMP_ENABLE, val);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
 		
 		public function pushBlock():void{
 			//write Final_paper_D
@@ -139,6 +175,9 @@ package com.photodispatcher.service.modbus.controller{
 				//if(timeoutUnload>0) setUnloadTimeout(timeoutUnload);
 				if(sideStopOffDelay>10) setSideStopOffDelay(sideStopOffDelay);
 				if(sideStopOnDelay>10) setSideStopOnDelay(sideStopOnDelay);
+				if(pumpSensFilterTime>0) setPumpSensFilterTime(pumpSensFilterTime);
+				if(pumpWorkTime>0) setPumpWorkTime(pumpWorkTime);
+				setPumpEnable(pumpEnable);
 				/*
 				var timer:Timer= new Timer(1500,1);
 				timer.addEventListener(TimerEvent.TIMER,onClientConnectTimer);
@@ -146,12 +185,13 @@ package com.photodispatcher.service.modbus.controller{
 				*/
 			}
 		}
-		
+		/*
 		private function onClientConnectTimer(evt:TimerEvent):void{
 			var timer:Timer=evt.target as Timer;
 			if(timer) timer.removeEventListener(TimerEvent.TIMER,onClientConnectTimer);
 			readSideStopDelays();
 		}
+		*/
 		
 		override protected function onServerADU(evt:ModbusRequestEvent):void{
 			//msg from controller

@@ -30,6 +30,10 @@ package com.photodispatcher.tech{
 		public var glueSideStopOffDelay:int=0;
 		public var glueSideStopOnDelay:int=0;
 		
+		public var pumpSensFilterTime:int=0;
+		public var pumpWorkTime:int=0;
+		public var pumpEnable:Boolean=false;
+
 
 		private var _controller:GlueMBController;
 		[Bindable]
@@ -74,6 +78,11 @@ package com.photodispatcher.tech{
 			controller.clientPort=clientPort;
 			controller.sideStopOffDelay=glueSideStopOffDelay;
 			controller.sideStopOnDelay=glueSideStopOnDelay;
+
+			controller.pumpSensFilterTime=pumpSensFilterTime;
+			controller.pumpWorkTime=pumpWorkTime;
+			controller.pumpEnable=pumpEnable;
+
 			controller.start();
 		}
 		

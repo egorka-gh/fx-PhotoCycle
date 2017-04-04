@@ -102,19 +102,19 @@ package com.photodispatcher.factory{
 			//fill boxes (barcodes)
 			if(raw.hasOwnProperty('boxes')){
 				for each(barObj in raw.boxes){
-					if(barObj.hasOwnProperty('barcode') && barObj.barcode){
+					//if((barObj.hasOwnProperty('orderNumber') && barObj.orderNumber) || (barObj.hasOwnProperty('barcode') && barObj.barcode)){
 						bar= new MailPackageBarcode();
 						bar.source=source;
 						bar.id=result.id;
-						bar.barcode=barObj.barcode;
 						bar.bar_type=MailPackageBarcode.TYPE_SITE_BOX;
+						if(barObj.hasOwnProperty('barcode')) bar.barcode=barObj.barcode;
 						if(barObj.hasOwnProperty('id')) bar.box_id=barObj.id;
 						if(barObj.hasOwnProperty('number')) bar.box_number=barObj.number;
 						if(barObj.hasOwnProperty('weight')) bar.box_weight=barObj.weight;
 						if(barObj.hasOwnProperty('orderId')) bar.box_orderId=barObj.orderId;
 						if(barObj.hasOwnProperty('orderNumber')) bar.box_orderNumber=barObj.orderNumber;
 						barcodes.push(bar); 
-					}
+					//}
 				}
 			}
 

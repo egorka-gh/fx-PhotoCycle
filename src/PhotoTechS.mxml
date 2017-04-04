@@ -119,6 +119,14 @@
 			public var glueSideStopOffDelay:int=0;
 			[Bindable]
 			public var glueSideStopOnDelay:int=0;
+			[Bindable]
+			public var pumpSensFilterTime:int=0;
+			[Bindable]
+			public var pumpWorkTime:int=0;
+			[Bindable]
+			public var pumpEnable:Boolean=false;
+
+			
 			
 			protected var _alertSound:String;
 			[Bindable]
@@ -242,6 +250,9 @@
 					if(!glueClientPort) glueClientPort=502;
 					glueSideStopOffDelay=so.data.glueSideStopOffDelay;
 					glueSideStopOnDelay=so.data.glueSideStopOnDelay;
+					pumpEnable=so.data.pumpEnable;
+					pumpSensFilterTime=so.data.pumpSensFilterTime;
+					pumpWorkTime=so.data.pumpWorkTime;
 				}
 				if(pushDelay<=0) pushDelay=100;
 				
@@ -344,6 +355,10 @@
 						gh.clientPort=glueClientPort;
 						gh.glueSideStopOffDelay=glueSideStopOffDelay;
 						gh.glueSideStopOnDelay=glueSideStopOnDelay;
+						gh.pumpEnable=pumpEnable;
+						gh.pumpSensFilterTime=pumpSensFilterTime;
+						gh.pumpWorkTime=pumpWorkTime;
+
 						gh.init(null);
 						glueHandler=gh;
 					}
@@ -409,6 +424,7 @@
 			
 			protected function btSaveComs_clickHandler(event:MouseEvent):void{
 				ComInfo.save(coms.source);
+				saveGlueEth()
 			}
 			
 			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
@@ -502,6 +518,10 @@
 				so.data.glueClientPort = glueClientPort;
 				so.data.glueSideStopOffDelay = glueSideStopOffDelay;
 				so.data.glueSideStopOnDelay = glueSideStopOnDelay;
+				so.data.pumpEnable=pumpEnable;
+				so.data.pumpSensFilterTime=pumpSensFilterTime;
+				so.data.pumpWorkTime=pumpWorkTime;
+
 				so.flush();  
 			}
 			
@@ -565,30 +585,52 @@
 
 			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
 				<s:Label text="Компьютер IP:"/>
-				<s:TextInput id="tiPCIP" text="@{glueServerIP}" change="{saveGlueEth()}"/>
+				<s:TextInput id="tiPCIP" text="@{glueServerIP}"/>
 				<s:Label text="порт:"/>
 				<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
-								  value="@{glueServerPort}" change="{saveGlueEth()}"/>
+								  value="@{glueServerPort}"/>
 			</s:HGroup>
 			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
 				<s:Label text="Контролер  IP:"/>
-				<s:TextInput id="tiGlueIP" text="@{glueClientIP}" change="{saveGlueEth()}"/>
+				<s:TextInput id="tiGlueIP" text="@{glueClientIP}"/>
 				<s:Label text="порт:"/>
 				<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
-								  value="@{glueClientPort}" change="{saveGlueEth()}"/>
+								  value="@{glueClientPort}"/>
 			</s:HGroup>
 
-			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
-				<s:Label text="Таймер выключения боковых упоров (мс):"/>
+			<s:HGroup gap="3" verticalAlign="baseline" enabled="{glueType==1}">
+				<s:Label text="Таймеры боковых упоров (мсек)."/>
+				<s:Spacer width="3"/>
+				<s:Label text="Выключения:"/>
 				<s:NumericStepper id="nsSide_Stop_Off_delay" minimum="10" maximum="9000" snapInterval="10"
-								  value="@{glueSideStopOffDelay}" change="{saveGlueEth()}"/>
+								  value="@{glueSideStopOffDelay}"/>
+				<s:Spacer width="3"/>
+				<s:Label text="Включения:"/>
+				<s:NumericStepper id="nsSide_Stop_On_delay" minimum="10" maximum="10000" snapInterval="10"
+								  value="@{glueSideStopOnDelay}"/>
+				
 			</s:HGroup>
 
 			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
+				<s:Label text="Регулирование уровня клея насосом:"/>
+				<s:CheckBox selected="@{pumpEnable}"/>
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
+				<s:Label text="Время работы насоса (мсек):"/>
+				<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
+								  value="@{pumpWorkTime}" />
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
+				<s:Label text="Время ожидания 'чистого' сигнала (фильтр) (мсек):"/>
+				<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
+								  value="@{pumpSensFilterTime}" />
+			</s:HGroup>
+
+			<!--<s:HGroup gap="5" verticalAlign="baseline" enabled="{glueType==1}">
 				<s:Label text="Таймер включения боковых упоров (мс):"/>
 				<s:NumericStepper id="nsSide_Stop_On_delay" minimum="10" maximum="10000" snapInterval="10"
 								  value="@{glueSideStopOnDelay}" change="{saveGlueEth()}"/>
-			</s:HGroup>
+			</s:HGroup>-->
 			
 		</s:VGroup>
 
@@ -604,18 +646,23 @@
 			<s:Label text="Не орать если номер группы >2"/>
 		</s:HGroup>
 
-		<s:VGroup gap="5">
-			<s:HGroup gap="10">
+		<s:Spacer height="3"/>
+		<s:HGroup gap="5">
+			<s:VGroup gap="3" height="100%">
+				<s:Label text="Com порты" fontWeight="bold"/>
+				<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
 				<s:List id="comList" dataProvider="{coms}" height="100%"/>
-				<itemRenderer:ComInfoRenderer data="{comList.selectedItem}"/>
-			</s:HGroup>
-			<s:HGroup gap="10" width="100%" horizontalAlign="right">
+			</s:VGroup>
+			<itemRenderer:ComInfoRenderer data="{comList.selectedItem}"/>
+		</s:HGroup>
+			<!--<s:HGroup gap="10" width="100%" horizontalAlign="right">
 				<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
 				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
-			</s:HGroup>
-		</s:VGroup>
+			</s:HGroup>-->
 		
-		<s:Spacer height="10"/>
+		<s:Spacer height="3"/>
+		<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+		
 	</s:VGroup>
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
