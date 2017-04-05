@@ -47,6 +47,8 @@ package com.photodispatcher.provider.ftp_loader{
 
 		[Bindable]
 		public var checker:CheckManager;
+		protected var skipMD5:Boolean; 
+
 		
 		//private var writeOrders:Array=[];
 
@@ -164,11 +166,13 @@ package com.photodispatcher.provider.ftp_loader{
 			if(!services || services.length==0) return;
 			//writeOrders=[];
 			autoLoadInterval=Context.getAttribute('syncInterval');
+			skipMD5=Context.getAttribute('skipMD5');
 			_isStarted=true;
 			var f:DownloadQueueManager;
 			for each(f in services){
 				if(f) f.start();
 			}
+			checker.skipMD5=skipMD5;
 			checker.isStarted=true;
 			reLoad();
 		}

@@ -100,6 +100,7 @@
 				var ticketPass:String;
 				var syncInterval:int=10;
 				var ftpConnectImeout:int=15;
+				var skipMD5:Boolean;
 				//var cFilterId:int;
 				if (so.size>0){
 					workFolder = so.data.workFolder;
@@ -113,6 +114,7 @@
 					Context.setAttribute('printRotated',Boolean(so.data.printRotated));
 					if(so.data.ftpConnectImeout) ftpConnectImeout=so.data.ftpConnectImeout;
 					Context.setAttribute('ftpConnectImeout',ftpConnectImeout);
+					skipMD5=so.data.skipMD5;
 				}
 				
 				Context.setAttribute('syncInterval',syncInterval);
@@ -127,6 +129,7 @@
 
 
 				Context.setAttribute('manualStart', so.data.manualStart);
+				Context.setAttribute('skipMD5', skipMD5);
 
 				//init app
 				startPopup= new ModalPopUp();

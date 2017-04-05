@@ -7,8 +7,11 @@
 		 xmlns:services="com.jxl.chatserver.mvcs.services.*" 
 		 xmlns:remote="com.photodispatcher.view.remote.*"
 		 xmlns:preprocess="com.photodispatcher.provider.preprocess.*"
+		 xmlns:ns="com.photodispatcher.provider.ftp_loader.*" 
+		 xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
 		 creationComplete="{init()}"
-		 keyDown="onKey(event)" xmlns:ns="com.photodispatcher.provider.ftp_loader.*" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
+		 keyDown="onKey(event)" 
+		 >
 	
 	<fx:Script>
 		<![CDATA[
@@ -40,6 +43,8 @@
 			private var isRuning:Boolean=false;
 			[Bindable]
 			private var sources:ArrayCollection;
+			[Bindable]
+			public var skipMD5:Boolean; 
 
 			[Bindable]
 			public var helperMode:Boolean=false;
@@ -241,7 +246,7 @@
 	
 	<fx:Declarations>
 		<!--<ftp:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true" />-->
-		<ns:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true" />
+		<ns:DownloadManager id="downloadManager" sources="{sources.source}" autoLoad="true"  />
 		<s:DateTimeFormatter id="fmtDate" dateTimePattern="HH:mm"/>
 	</fx:Declarations>
 

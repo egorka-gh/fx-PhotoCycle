@@ -24,6 +24,8 @@ package com.photodispatcher.provider.check{
 	[Event(name="orderLoaded", type="com.photodispatcher.event.ImageProviderEvent")]
 	public class CheckManager extends EventDispatcher{
 		
+		public var skipMD5:Boolean=false; 
+		
 		[Bindable]
 		public var lastError:String='';
 		[Bindable]
@@ -181,7 +183,7 @@ package com.photodispatcher.provider.check{
 			var order:Order;
 			
 			//start  md5Checker
-			if(!md5Checker.isBusy){
+			if(!skipMD5 && !md5Checker.isBusy){
 				for each(order in queue.source){
 					if(order.state==OrderState.FTP_WAITE_CHECK){
 						if(!order.files || order.files.length==0){
@@ -196,9 +198,11 @@ package com.photodispatcher.provider.check{
 			}
 			
 			//start IM checker
+			var imState:int=OrderState.FTP_CHECK;
+			if(skipMD5) imState=OrderState.FTP_WAITE_CHECK;
 			if(!imChecker.isBusy){
 				for each(order in queue.source){
-					if(order.state==OrderState.FTP_CHECK && !md5Checker.isAtCheck(order.id)){
+					if(order.state==imState && !md5Checker.isAtCheck(order.id)){
 						if(!order.files || order.files.length==0){
 							loadFromBD(order);
 						}else{
@@ -302,9 +306,11 @@ package com.photodispatcher.provider.check{
 			}else if(imChecker.currentOrder.state==OrderState.FTP_COMPLETE){
 				//save in bd first  check if saved then set web state, reset db state if web incomplite mark in bd
 				//save, awaited state in bd FTP_CHECK
+				var imState:int=OrderState.FTP_CHECK;
+				if(skipMD5) imState=OrderState.FTP_WAITE_CHECK; //awaited state in bd FTP_WAITE_CHECK
 				var latch:DbLatch= new DbLatch(true);
 				latch.addEventListener(Event.COMPLETE,onSaveIM_OK);
-				latch.addLatch(bdService.save(OrderLoad.fromOrder(imChecker.currentOrder),OrderState.FTP_CHECK),imChecker.currentOrder.id);
+				latch.addLatch(bdService.save(OrderLoad.fromOrder(imChecker.currentOrder),imState),imChecker.currentOrder.id);
 				latch.start();
 			}else{
 				//her poime

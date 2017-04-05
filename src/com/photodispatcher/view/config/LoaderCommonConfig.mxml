@@ -43,6 +43,8 @@
 			private var bdServer:String;
 			[Bindable]
 			private var manualStart:Boolean=false;
+			[Bindable]
+			private var skipMD5:Boolean=false;
 			
 			[Bindable]
 			private var syncInterval:int;
@@ -77,6 +79,7 @@
 				pingIM();
 				
 				manualStart=so.data.manualStart;
+				skipMD5=so.data.skipMD5;
 				syncInterval=so.data.syncInterval;
 				if(!syncInterval) syncInterval=10;
 				ftpConnectImeout=so.data.ftpConnectImeout;
@@ -250,6 +253,14 @@
 				Context.setAttribute('ftpConnectImeout', ftpConnectImeout);
 			}
 			
+			protected function tg_skipMD5_changeHandler(event:Event):void{
+				skipMD5=tg_skipMD5.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.skipMD5 = skipMD5;
+				so.flush();  
+				Context.setAttribute('skipMD5', skipMD5);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -313,6 +324,10 @@
 					<s:Label text="Таймаут подключения FTP (сек)"/>
 					<s:NumericStepper id="nsftpConnectImeout" value="@{ftpConnectImeout}" minimum="15" maximum="90" change="nsftpConnectImeout_changeHandler(event)"/>	
 				</s:HGroup>
+			</s:FormItem>
+
+			<s:FormItem label="Отключить проверку MD5 ">
+					<s:CheckBox id="tg_skipMD5" selected="{skipMD5}" change="tg_skipMD5_changeHandler(event)"/>
 			</s:FormItem>
 
 			<s:FormItem label="Папка ImageMagick">
