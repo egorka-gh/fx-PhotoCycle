@@ -16,6 +16,7 @@ package com.photodispatcher.tech{
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
 	
+	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
@@ -41,8 +42,9 @@ package com.photodispatcher.tech{
 
 		[Bindable]
 		public var currentBookView:TechBook;
-		
-		protected var bookQueue:Array=[];
+		[Bindable]
+		public var bookQueue:ArrayCollection;
+		//protected var bookQueue:Array=[];
 		
 		private var _pushDelay:int;
 		public function get pushDelay():int{
@@ -137,7 +139,7 @@ package com.photodispatcher.tech{
 			if(!checkPrepared(true)) return false;
 			log('Старт');
 			//reset state
-			bookQueue=[];
+			bookQueue=new ArrayCollection();
 			latchPushBook.reset();
 			latchPressOff.reset();
 			stopBook=null;
@@ -180,7 +182,7 @@ package com.photodispatcher.tech{
 			if(printGroupId=='lastAdded' && book==-1){
 				//get last added
 				var tb:TechBook;
-				if(bookQueue && bookQueue.length>0) tb=bookQueue[bookQueue.length-1] as TechBook;
+				if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
 				if(tb){
 					printGroupId=tb.printGroupId;
 					book=tb.book;
@@ -215,26 +217,27 @@ package com.photodispatcher.tech{
 			return false;
 		}
 		
-		public function await(printGroupId:String, book:int, sheet:int, sheetTotal:int):void{
+		public function await(printGroupId:String, book:int, sheet:int, sheetTotal:int, barcode:String=''):void{
 			if(!isRunning ) return;
 			var tb:TechBook;
 			//add to last book or create new
-			if(bookQueue && bookQueue.length>0) tb=bookQueue[bookQueue.length-1] as TechBook;
+			if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
 			if(tb && tb.printGroupId==printGroupId && tb.book==book){
 				if(tb.sheetsFeeded<tb.sheetsTotal) tb.sheetsFeeded++;
 			}else{
 				tb=new TechBook(book,printGroupId);
 				tb.sheetsTotal=sheetTotal;
 				tb.sheetsFeeded++;
-				if(!bookQueue) bookQueue=[];
-				bookQueue.push(tb);
+				tb.barcode=barcode;
+				if(!bookQueue) bookQueue=new ArrayCollection();
+				bookQueue.addItem(tb);
 			}
 			
 		}
 		
 		public function get currentBook():TechBook{
 			var tb:TechBook;
-			if(bookQueue && bookQueue.length>0) tb=bookQueue[0] as TechBook;
+			if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(0) as TechBook;
 			currentBookView=tb;
 			return tb;
 		}
@@ -312,7 +315,9 @@ package com.photodispatcher.tech{
 
 		private var timer:Timer;
 		protected function pushBook():void{
-			var tb:TechBook=bookQueue.shift() as TechBook;
+			//var tb:TechBook=bookQueue.shift() as TechBook;
+			var tb:TechBook;
+			if(bookQueue.length>0) tb=bookQueue.removeItemAt(0) as TechBook;
 			if(!tb) return;
 			log('Убираю книгу '+tb.printGroupId+' '+tb.book);
 			latchPushBook.setOn();
@@ -339,7 +344,9 @@ package com.photodispatcher.tech{
 		public function removeBook():void{
 			if(isRunning && !nonStopMode) return;
 			if(isRunning){
-				var tb:TechBook=bookQueue.shift() as TechBook;
+				//var tb:TechBook=bookQueue.shift() as TechBook;
+				var tb:TechBook;
+				if(bookQueue.length>0) tb=bookQueue.removeItemAt(0) as TechBook;
 				if(tb){
 					log('Убираю книгу '+tb.printGroupId+' '+tb.book);
 					//refresh view

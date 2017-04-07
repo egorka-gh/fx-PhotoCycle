@@ -10,6 +10,8 @@ package com.photodispatcher.tech.register{
 			this.printGroupId=printGroupId;
 			checkState= PrintGroup.CHECK_STATUS_NONE;
 		}
+
+		public var barcode:String;
 		
 		public var order:Order;
 		public var orderId:String;

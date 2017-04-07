@@ -26,7 +26,10 @@
 			import com.photodispatcher.tech.plain_register.TechRegisterCommon;
 			import com.photodispatcher.tech.plain_register.TechRegisterFolding;
 			import com.photodispatcher.tech.plain_register.TechRegisterPrint;
+			import com.photodispatcher.tech.register.TechBook;
 			import com.photodispatcher.util.StrUtil;
+			
+			import flash.globalization.DateTimeStyle;
 			
 			import mx.collections.ArrayCollection;
 			
@@ -36,9 +39,9 @@
 			import spark.formatters.DateTimeFormatter;
 			import spark.utils.TextFlowUtil;
 		
-			public static const LOG_LEN_LIMIT:int=4000;
-			public static const BAR_LEN_LIMIT:int=2000;
-			public static const REGLISTLIMIT:int=100;
+			public static const LOG_LEN_LIMIT:int=6000;
+			public static const BAR_LEN_LIMIT:int=6000;
+			public static const REGLISTLIMIT:int=200;
 			
 			public var extendedPrint:Boolean;
 			public var soundOffOnReprint:Boolean;
@@ -157,6 +160,7 @@
 			}
 			protected function onGlueHandlerErr(event:ErrorEvent):void{
 				logToScreen('Cклейка: '+event.text, true);
+				log(event.text);
 			}
 			
 			private var logText:String = '';
@@ -190,20 +194,20 @@
 			}
 			
 			private function onPrinterDisconnect(event:BarCodeEvent):void{
-				log('!Принтер отключен '+event.barcode);
+				logToScreen('!Принтер отключен '+event.barcode);
 				//pause('Отключен сканер ШК '+event.barcode); busy bug
 			}
 			private function onPrinterConnect(event:BarCodeEvent):void{
-				log('Принтер подключен '+event.barcode);
+				logToScreen('Принтер подключен '+event.barcode);
 				//pause('Отключен сканер ШК '+event.barcode); busy bug
 			}
 
 			private function onBarDisconnect(event:BarCodeEvent):void{
-				log('Отключен '+event.barcode);
+				logToScreen('Отключен '+event.barcode);
 				//pause('Отключен сканер ШК '+event.barcode); busy bug
 			}
 			private function onReaderConnect(event:BarCodeEvent):void{
-				log('Сканер ШК подключен '+event.barcode);
+				logToScreen('Сканер ШК подключен '+event.barcode);
 				//pause('Отключен сканер ШК '+event.barcode); busy bug
 			}
 
@@ -288,6 +292,10 @@
 				currBarcode=barcode;
 				print(barcode);
 				//parce barcode
+				if(!PrintGroup.isTechBarcode(barcode)){
+					logToScreen('---------- Не верный штрих код: '+barcode+' ----------',true);
+					return;
+				}
 				var pgId:String;
 				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 				if(!pgId){
@@ -299,7 +307,7 @@
 				
 				var bookNum:int=int(barcode.substr(0,3));
 				var pageNum:int=int(barcode.substr(6,2));
-				if(hasGlue && glueHandler) glueHandler.await(pgId,bookNum,pageNum,int(barcode.substr(8,2)));
+				if(hasGlue && glueHandler) glueHandler.await(pgId,bookNum,pageNum,int(barcode.substr(8,2)),barcode);
 				
 				if(currRegister && currRegister.checkPrintGroup(pgId)){
 					currRegister.printGroupId=pgId;
@@ -340,10 +348,10 @@
 				var printBar:String=PrintGroup.tech2BookBarcode(barcode);
 				if(!extendedPrint){
 					if(printBar){
-						log('Печать ШК '+printBar);
+						logToScreen('Печать ШК '+printBar);
 						if(printer) printer.sendMessage(printBar);
 					}else{
-						log('!! Не верный ШК. Ошибка преобразования ШК.');
+						logToScreen('!! Не верный ШК. Ошибка преобразования ШК.');
 					}
 					return;
 				}
@@ -357,20 +365,36 @@
 
 				
 				if(printBar && printCaption){
-					log('Печать ШК '+printBar+' '+printCaption);
+					logToScreen('Печать ШК '+printBar+' '+printCaption);
 					if(printer) printer.sendMessages([printBar, printCaption]);
 				}else{
-					log('!! Не верный ШК. Ошибка преобразования ШК.');
+					logToScreen('!! Не верный ШК. Ошибка преобразования ШК.');
 				}
 			}
 
 
-			public function log(mesage:String):void{
-				logToScreen(mesage);
-			}
 			public function clear():void{
 				cleanLog();
 			}
+			
+			[Bindable]
+			private var controllerlogText:String = '';
+			private var dtFmt:DateTimeFormatter;
+			
+			public function log(mesage:String):void{
+				var str:String;
+				if(!dtFmt){
+					dtFmt=new DateTimeFormatter();
+					dtFmt.timeStyle=DateTimeStyle.LONG;
+					dtFmt.dateTimePattern='HH:mm:ss';
+				}
+				str=dtFmt.format(new Date())+' '+ mesage+'\n'+controllerlogText;
+				if(str.length>5000){
+					str=str.substr(0,4000)+'\n';
+				}
+				controllerlogText=str;
+			}
+			
 			
 			private var sound:Sound;
 			public function set alertSound(filepath:String):void{
@@ -385,19 +409,23 @@
 				var color:String=isError?"'#990000'":"'#006600'";
 				var bold:String=isError?"fontWeight='bold'":'';
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				msg= msg.replace('<','◄');
+				msg= msg.replace('>','►');
+				msg= msg.replace('"','&quot;');
+				msg= msg.replace('&','&amp;');
 				fmt.dateTimePattern='HH:mm:ss';
-				logText ="<span>"+fmt.format(new Date())+" </span>"+"<span color="+color+" "+bold+">"+msg+"</span> <br />"+logText ;
+				logText ="<span>"+fmt.format(new Date())+"</span>"+"<span color="+color+" "+bold+"> "+msg+"</span><br/>"+logText ;
 
 				//cut
 				if(logText.length> LOG_LEN_LIMIT){
-					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
+					var idx:int=logText.indexOf('<br/>',LOG_LEN_LIMIT);
 					if(idx!=-1){
-						logText=logText.substr(0,idx+6);
+						logText=logText.substr(0,idx+5);
 					}
 				}
 
 				try{
-					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
+					if(logTextArea) logTextArea.textFlow=TextFlowUtil.importFromString(logText);
 				}catch(error:Error){
 					trace('TextFlow err, txt: '+logText);
 					trace(error.message);
@@ -421,8 +449,7 @@
 			private var regListColumnth:ArrayCollection;
 			
 			public function start():void{
-				cleanLog();
-				barText='';
+				//cleanLog();
 				if(!techPoint){
 					//TODO rise err or log in screen
 					logToScreen('---------- Не задана технологическая точка ----------',true);
@@ -454,7 +481,7 @@
 			}
 
 			public function stop():void{
-				cleanLog();
+				//cleanLog();
 				if(currRegister){
 					currRegister.finalise();
 					currRegister.removeEventListener(ErrorEvent.ERROR,onRegisterMsg);
@@ -479,8 +506,9 @@
 			}
 			
 			private function cleanLog():void{
+				controllerlogText='';
 				logText='';
-				logTextArea.text='';
+				if(logTextArea) logTextArea.text='';
 				barText='';
 				regList= new ArrayCollection();
 			}
@@ -497,6 +525,12 @@
 				if(glueHandler) glueHandler.removeBook();
 			}
 			
+			public function blockLabelFunc(item:Object):String {
+				var block:TechBook= item as TechBook;
+				if(!block) return '';
+				return block.printGroupId+': '+StrUtil.sheetName(block.book,block.sheetsTotal);
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -511,31 +545,61 @@
 			<s:Label text="Выполнено: {currRegister.registred.toString()}"/>
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%" height="100%">
-			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
-			<s:VGroup width="330" height="100%" gap="5">
-				
-				<s:HGroup gap="5" width="100%" height="100%">
-					<s:DataGrid width="100%" height="100%" fontSize="10" skinClass="spark.skins.spark.DataGridSkin"
-								dataProvider="{regList}" locale="ru_RU" columns="{regListColumnth}"/>
-					<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="100%" height="100%" editable="false"/>
-				</s:HGroup>
-				<s:Spacer height="5"/>
-				<s:Label text="Склейка" fontWeight="bold"/>
-				<s:Label text="Заказ: {glueHandler.currentBookView.printGroupId}"/>
-				<s:Label text="Книга: {glueHandler.currentBookView.book}"/>
-				<s:Label text="Листов всего: {glueHandler.currentBookView.sheetsTotal}"/>
-				<s:Label text="Листов подано: {glueHandler.currentBookView.sheetsFeeded}"/>
-				<s:Label text="Листов склеено: {glueHandler.currentBookView.sheetsDone}"/>
-				<s:Button id="btPushBook" label="Убрать книгу" click="btPushBook_clickHandler(event)"  enabled="{glueType==0}"/>
 
+			<s:VGroup gap="2" width="100%" height="100%">
+				<s:TabBar id="tbLogView"  dataProvider="{vsLogViews}"/>
+				<mx:ViewStack id="vsLogViews" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+					<s:NavigatorContent label="Tech" backgroundAlpha="0" width="100%" height="100%">
+						<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%" height="100%">
+						<s:TextArea id="taControllerlog" text="{controllerlogText}" width="100%" height="100%"/>
+					</s:NavigatorContent>
+				</mx:ViewStack>
+			</s:VGroup>
+			
+			<s:VGroup width="330" height="100%" gap="5">
+				<s:Label text="Склейка" fontWeight="bold"/>
+				<s:HGroup gap="5" width="100%">
+					<s:VGroup gap="5">
+						<s:Label text="Заказ: {glueHandler.currentBookView.printGroupId}"/>
+						<s:Label text="Книга: {glueHandler.currentBookView.book}"/>
+					</s:VGroup>
+					<s:VGroup gap="5">
+						<s:Label text="Листов всего: {glueHandler.currentBookView.sheetsTotal}"/>
+						<s:Label text="подано: {glueHandler.currentBookView.sheetsFeeded} склеено: {glueHandler.currentBookView.sheetsDone}"/>
+					</s:VGroup>
+				</s:HGroup>
+				<s:Label text="ШК: {glueHandler.currentBookView.barcode}"/>
+				<s:Button id="btPushBook" label="Убрать книгу" click="btPushBook_clickHandler(event)"  enabled="{glueType==0}"/>
+				
+				<s:Spacer height="5"/>
+				<s:VGroup gap="2" width="100%" height="100%">
+					<s:TabBar id="tbInfoView"  dataProvider="{vsInfoViews}"/>
+					<mx:ViewStack id="vsInfoViews" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+						<s:NavigatorContent label="Сканер" backgroundAlpha="0" width="100%" height="100%">
+							<s:HGroup gap="5" width="100%" height="100%">
+								<s:DataGrid width="100%" height="100%" fontSize="10" skinClass="spark.skins.spark.DataGridSkin"
+											dataProvider="{regList}" locale="ru_RU" columns="{regListColumnth}"/>
+								<s:TextArea id="barTextArea" text="{barText}" fontSize="9" width="100%" height="100%" editable="false"/>
+							</s:HGroup>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%" height="100%">
+							<s:List
+								dataProvider="{glueHandler.bookQueue}"
+								labelFunction="blockLabelFunc"
+								width="100%" height="100%"/>
+						</s:NavigatorContent>
+					</mx:ViewStack>
+				</s:VGroup>
 			</s:VGroup>
 		</s:HGroup>
-		<s:HGroup gap="5" width="100%">
+		<!--<s:HGroup gap="5" width="100%">
 			<s:Button label="Очистить" click="{cleanLog()}"/>
 			<s:Spacer width="100%"/>
 			<s:Button id="btFlapOn" label="Зщелка Вкл" click="btFlapOn_clickHandler(event)" enabled="{flap!=null}"/>
 			<s:Button id="btFlapOff" label="Зщелка Выкл" click="btFlapOff_clickHandler(event)" enabled="{flap!=null}"/>
-		</s:HGroup> 
+		</s:HGroup>--> 
 	</s:VGroup>
 	
 </s:Group>

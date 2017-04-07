@@ -12,6 +12,7 @@ package com.photodispatcher.tech{
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
 	
+	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
@@ -101,7 +102,7 @@ package com.photodispatcher.tech{
 			log('Старт');
 			log('Ожидаю подключение контролера');
 			//reset state
-			bookQueue=[];
+			bookQueue=new ArrayCollection();
 			stopBook=null;
 			
 			isRunning=true;
@@ -141,7 +142,7 @@ package com.photodispatcher.tech{
 			if(tb){
 				tb.sheetsDone++;
 				if(tb.sheetsDone>tb.sheetsFeeded){
-					logErr('Ошибка контроля книги (подано<склеено) '+tb.printGroupId+' '+tb.book);
+					logErr('Ошибка контроля книги (подано меньше чем склеено) '+tb.printGroupId+' '+tb.book);
 				}
 				if(tb.sheetsDone==(tb.sheetsTotal-1)){
 					log('Следующий лист последний '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
@@ -150,7 +151,9 @@ package com.photodispatcher.tech{
 				if(tb.sheetsDone==tb.sheetsTotal){
 					//book complited
 					//remove
-					tb=bookQueue.shift() as TechBook;
+					//tb=bookQueue.shift() as TechBook;
+					tb=null;
+					if(bookQueue.length>0) tb=bookQueue.removeItemAt(0) as TechBook;
 					if(tb){
 						log('Книга завершена '+tb.printGroupId+' '+tb.book);
 						//refresh view

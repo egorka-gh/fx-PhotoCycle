@@ -296,6 +296,7 @@
 				}
 
 				currentState='monitor';
+				if(techMonitor) techMonitor.clear();
 				var reader:ComReader;
 				//stop old?
 				if(barcodeReaders){
@@ -665,7 +666,7 @@
 		
 	</s:VGroup>
 	
-	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
+	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="30">
 		<view:TechMonitorView id="techMonitor" techPoint="{techPointObj}" 
 							  barcodeReaders="{barcodeReaders}" flap="{flap}" 
 							  printer="{printer}" extendedPrint="{extendedPrint}"
