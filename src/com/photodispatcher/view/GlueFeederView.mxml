@@ -29,6 +29,7 @@
 			import spark.events.IndexChangeEvent;
 			import spark.formatters.DateTimeFormatter;
 			
+			public var glueType:int=0;
 			public var techPoint:TechPoint;
 			public var reversOrder:Boolean;
 			public var turnInterval:int;
@@ -103,6 +104,8 @@
 				}else{
 					glue= new GlueStreamed();
 				}
+				
+				glue.glueType=glueType;
 				
 				glue.serialProxy=serialProxy;
 				glue.engineOnStartOn=engineOnStartOn;

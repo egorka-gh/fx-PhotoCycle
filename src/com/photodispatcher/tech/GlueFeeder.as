@@ -237,9 +237,12 @@ package com.photodispatcher.tech{
 			if(!controller) controller= new FeederController();
 			controller.start(proxy);
 
+			/*
 			if(!glueHandler) glueHandler=new GlueHandler();
 			glueHandler.init(serialProxy);
 			glueHandler.pushDelay=pushDelay;
+			*/
+			createGlueHandler();
 			
 			//var barReader:ComReader;
 			var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);

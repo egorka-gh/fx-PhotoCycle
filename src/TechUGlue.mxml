@@ -21,6 +21,7 @@
 			import com.photodispatcher.service.barcode.FeederController;
 			import com.photodispatcher.service.barcode.GlueController;
 			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.NetUtil;
 			import com.photodispatcher.util.StrUtil;
 			
 			import mx.collections.ArrayCollection;
@@ -127,6 +128,21 @@
 					if(so.data.hasOwnProperty('stopOnComplite')) stopOnComplite=so.data.stopOnComplite;
 					pauseOnComplite=so.data.pauseOnComplite;
 					alertSound=so.data.alertSound;
+
+					glueType=so.data.glueType;
+					glueServerIP=so.data.glueServerIP;
+					if(!glueServerIP) glueServerIP=NetUtil.getIP();
+					glueServerPort=so.data.glueServerPort;
+					if(!glueServerPort) glueServerPort=503;
+					glueClientIP=so.data.glueClientIP;
+					glueClientPort=so.data.glueClientPort;
+					if(!glueClientPort) glueClientPort=502;
+					glueSideStopOffDelay=so.data.glueSideStopOffDelay;
+					glueSideStopOnDelay=so.data.glueSideStopOnDelay;
+					pumpEnable=so.data.pumpEnable;
+					pumpSensFilterTime=so.data.pumpSensFilterTime;
+					pumpWorkTime=so.data.pumpWorkTime;
+
 				}
 				
 				currentState='config';
@@ -134,9 +150,23 @@
 			
 			
 			private function start():void{
+				if(glueType==1){
+					Context.setAttribute("glueServerIP", glueServerIP);
+					Context.setAttribute("glueServerPort", glueServerPort);
+					Context.setAttribute("glueClientIP", glueClientIP);
+					Context.setAttribute("glueClientPort", glueClientPort);
+					Context.setAttribute("glueSideStopOffDelay", glueSideStopOffDelay);
+					Context.setAttribute("glueSideStopOnDelay", glueSideStopOnDelay);
+					Context.setAttribute("pumpEnable", pumpEnable);
+					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
+					Context.setAttribute("pumpWorkTime", pumpWorkTime);
+				}
+
+				
 				if(!feedOn) comFeederProxy.num='';
 				if((feedOn && (!comFeederProxy || !comFeederProxy.num)) 
-					|| !comGlueProxy || !comGlueProxy.num 
+					|| (glueType==0 && (!comGlueProxy || !comGlueProxy.num)) 
+					|| (glueType==1 && (!glueServerIP || !glueServerPort || !glueClientIP || !glueClientPort)) 
 					|| comReaders.length==0 ){
 					Alert.show('Приложение не настроено');
 					currentState='config';
@@ -163,6 +193,7 @@
 				if(techPickerView) techPickerView.stop();
 			}
 			
+			/*
 			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
 				var barcodeReader:ComReader= event.target as ComReader;
 				if(barcodeReader) barcodeReader.stop();
@@ -174,10 +205,13 @@
 				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
 				currentState='config';
 			}
+			*/
 			
 			protected function btSaveComs_clickHandler(event:MouseEvent):void{
 				var arr:Array=comReaders.source.concat(comFeederProxy,comGlueProxy);
 				ComInfo.save(arr);
+				
+				saveGlueEth();
 			}
 			
 			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
@@ -261,6 +295,70 @@
 				}catch(error:Error){}
 			}
 
+			private var _glueType:int;
+			[Bindable]
+			public function get glueType():int{
+				return _glueType;
+			}
+			public function set glueType(value:int):void{
+				_glueType = value;
+				Context.setAttribute("glueType", value);
+			}
+
+			protected function ddGlueType_changeHandler(event:IndexChangeEvent):void{
+				glueType=ddGlueType.selectedIndex;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.glueType = glueType;
+				so.flush();  
+			}
+
+			[Bindable]
+			public var glueServerIP:String='';
+			[Bindable]
+			public var glueServerPort:int=503;
+			[Bindable]
+			public var glueClientIP:String='';
+			[Bindable]
+			public var glueClientPort:int=502;
+			
+			[Bindable]
+			public var glueSideStopOffDelay:int=0;
+			[Bindable]
+			public var glueSideStopOnDelay:int=0;
+			[Bindable]
+			public var pumpSensFilterTime:int=0;
+			[Bindable]
+			public var pumpWorkTime:int=0;
+			[Bindable]
+			public var pumpEnable:Boolean=false;
+			
+			protected function saveGlueEth():void{
+				
+				Context.setAttribute("glueServerIP", glueServerIP);
+				Context.setAttribute("glueServerPort", glueServerPort);
+				Context.setAttribute("glueClientIP", glueClientIP);
+				Context.setAttribute("glueClientPort", glueClientPort);
+				Context.setAttribute("glueSideStopOffDelay", glueSideStopOffDelay);
+				Context.setAttribute("glueSideStopOnDelay", glueSideStopOnDelay);
+				Context.setAttribute("pumpEnable", pumpEnable);
+				Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
+				Context.setAttribute("pumpWorkTime", pumpWorkTime);
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.glueServerIP = glueServerIP;
+				so.data.glueServerPort = glueServerPort;
+				so.data.glueClientIP = glueClientIP;
+				so.data.glueClientPort = glueClientPort;
+				so.data.glueSideStopOffDelay = glueSideStopOffDelay;
+				so.data.glueSideStopOnDelay = glueSideStopOnDelay;
+				so.data.pumpEnable=pumpEnable;
+				so.data.pumpSensFilterTime=pumpSensFilterTime;
+				so.data.pumpWorkTime=pumpWorkTime;
+				
+				so.flush();  
+			}
+
+
 		]]>
 	</fx:Script>
 	
@@ -292,11 +390,6 @@
 			<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
 			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)" width="40"/>
 			<s:Button id="btSoundTest" label="►" click="btSoundTest_clickHandler(event)" width="40"/>
-		</s:HGroup>
-
-		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Задержка выброса книги (млсек):"/>
-			<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
 		</s:HGroup>
 
 		<s:HGroup gap="5" verticalAlign="baseline">
@@ -343,16 +436,83 @@
 		
 		<s:Spacer height="5"/>
 		<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
-		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" resizeToContent="true">
+		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" height="250">
 			<s:NavigatorContent label="Подача" backgroundAlpha="0" width="100%" enabled="{feedOn}">
 				<s:Group width="100%">
 					<itemRenderer:ComInfoRenderer  data="{comFeederProxy}" lockType="true" lockSuffix="true"/>
 				</s:Group>
 			</s:NavigatorContent>
+			
 			<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%">
-				<s:Group width="100%">
-					<itemRenderer:ComInfoRenderer  data="{comGlueProxy}" lockType="true" lockSuffix="true"/>
-				</s:Group>
+				<s:VGroup gap="5" width="100%">
+					<s:HGroup gap="5" verticalAlign="baseline">
+						<s:Label text="Тип:"/>
+						<s:DropDownList id="ddGlueType" selectedIndex="{glueType}" change="ddGlueType_changeHandler(event)">
+							<s:ArrayCollection>
+								<fx:String>COM</fx:String>
+								<fx:String>Ethernet</fx:String>
+							</s:ArrayCollection>
+						</s:DropDownList>
+					</s:HGroup>
+					
+					<s:VGroup gap="0" width="100%" visible="{glueType==0}" includeInLayout="{glueType==0}">
+						<itemRenderer:ComInfoRenderer data="{comGlueProxy}" lockType="true" lockSuffix="true"/>
+						
+						<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
+							<s:Label text="Задержка выброса книги (млсек):"/>
+							<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
+						</s:HGroup>
+					</s:VGroup>
+					
+					<s:VGroup gap="5" width="100%" paddingLeft="20" 
+							  visible="{glueType==1}" includeInLayout="{glueType==1}">
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Компьютер IP:"/>
+							<s:TextInput id="tiPCIP" text="@{glueServerIP}"/>
+							<s:Label text="порт:"/>
+							<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
+											  value="@{glueServerPort}"/>
+						</s:HGroup>
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Контролер  IP:"/>
+							<s:TextInput id="tiGlueIP" text="@{glueClientIP}"/>
+							<s:Label text="порт:"/>
+							<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
+											  value="@{glueClientPort}"/>
+						</s:HGroup>
+						
+						<s:HGroup gap="3" verticalAlign="baseline">
+							<s:Label text="Таймеры боковых упоров (мсек)."/>
+							<s:Spacer width="3"/>
+							<s:Label text="Выключения:"/>
+							<s:NumericStepper id="nsSide_Stop_Off_delay" minimum="10" maximum="9000" snapInterval="10"
+											  value="@{glueSideStopOffDelay}"/>
+							<s:Spacer width="3"/>
+							<s:Label text="Включения:"/>
+							<s:NumericStepper id="nsSide_Stop_On_delay" minimum="10" maximum="10000" snapInterval="10"
+											  value="@{glueSideStopOnDelay}"/>
+							
+						</s:HGroup>
+						
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Регулирование уровня клея насосом:"/>
+							<s:CheckBox selected="@{pumpEnable}"/>
+						</s:HGroup>
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Время работы насоса (мсек):"/>
+							<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
+											  value="@{pumpWorkTime}" />
+						</s:HGroup>
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Время ожидания 'чистого' сигнала (фильтр) (мсек):"/>
+							<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
+											  value="@{pumpSensFilterTime}" />
+						</s:HGroup>
+
+						
+					</s:VGroup>
+
+				</s:VGroup>
 			</s:NavigatorContent>
 			<s:NavigatorContent label="Сканеры ШК" backgroundAlpha="0" width="100%">
 				<s:HGroup gap="0">
@@ -386,6 +546,7 @@
 							 feedOn="{feedOn}"
 							 pauseOnComplite="{pauseOnComplite}"
 							 alertSound="{alertSound}"
+							 glueType="{glueType}"
 							 width="100%" height="100%"/>
 	</s:VGroup>
 	

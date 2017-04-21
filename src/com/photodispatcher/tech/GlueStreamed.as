@@ -32,6 +32,8 @@ package com.photodispatcher.tech{
 			feedDelay=100;
 		}
 
+		public var glueType:int;
+		
 		[Bindable]
 		public var prepared:Boolean;
 		
@@ -331,11 +333,32 @@ package com.photodispatcher.tech{
 			startInternal();
 		}
 
+		protected function createGlueHandler():void{
+			if(glueType==0){
+				glueHandler=new GlueHandler();
+				glueHandler.init(serialProxy);
+				glueHandler.pushDelay=pushDelay;
+			}else{
+				var gh:GlueHandlerMB=new GlueHandlerMB();
+				if(Context.getAttribute('glueServerIP')) gh.serverIP=Context.getAttribute('glueServerIP');
+				if(Context.getAttribute('glueServerPort')) gh.serverPort=Context.getAttribute('glueServerPort');
+				if(Context.getAttribute('glueClientIP')) gh.clientIP=Context.getAttribute('glueClientIP');
+				if(Context.getAttribute('glueClientPort')) gh.clientPort=Context.getAttribute('glueClientPort');
+				if(Context.getAttribute('glueSideStopOffDelay')) gh.glueSideStopOffDelay=Context.getAttribute('glueSideStopOffDelay');
+				if(Context.getAttribute('glueSideStopOnDelay')) gh.glueSideStopOnDelay=Context.getAttribute('glueSideStopOnDelay');
+				if(Context.getAttribute('pumpEnable')) gh.pumpEnable=Context.getAttribute('pumpEnable');
+				if(Context.getAttribute('pumpSensFilterTime')) gh.pumpSensFilterTime=Context.getAttribute('pumpSensFilterTime');
+				if(Context.getAttribute('pumpWorkTime')) gh.pumpWorkTime=Context.getAttribute('pumpWorkTime');
+				
+				gh.init(null);
+				glueHandler=gh;
+				
+			}
+		}
+		
 		protected function startDevices():void{
 			//start glueHandler
-			if(!glueHandler) glueHandler=new GlueHandler();
-			glueHandler.init(serialProxy);
-			glueHandler.pushDelay=pushDelay;
+			createGlueHandler();
 			glueHandler.nonStopMode=true;
 			glueHandler.start();
 			
