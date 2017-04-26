@@ -61,6 +61,7 @@ package com.photodispatcher.tech{
 		public var currBookTypeName:String=''; 
 		
 		public var dataBaseOff:Boolean;
+		public var altBarcode:Boolean;
 		
 		public var engineOnStartOn:Boolean=false;
 		public var vacuumOnStartOn:Boolean=false;
@@ -427,9 +428,10 @@ package com.photodispatcher.tech{
 			var pageNum:int;
 			var pageTotal:int;
 			
-			if(!dataBaseOff){
+			if(!altBarcode){
 				//cycle barcode
-				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				//if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				if(PrintGroup.isTechBarcode(barcode)) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 				if(!pgId){
 					logErr('Не верный штрих код: '+barcode);
 					return;

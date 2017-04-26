@@ -106,8 +106,8 @@ package com.photodispatcher.tech{
 				var msg:String='';
 				if(!barcodeReaders || barcodeReaders.length==0) msg='Не инициализированы сканеры ШК';
 				if(!barsConnected) msg='\n Не подключены сканеры ШК';
-				if(!controller) msg+='\n Не инициализирован контролер';
-				if(controller && !controller.connected) msg+='\n Не подключен контролер';
+				if(!controller) msg+='\n Не инициализирован контролер подачи';
+				if(controller && !controller.connected) msg+='\n Не подключен контролер подачи';
 				if(!glueHandler || !glueHandler.isPrepared) msg+='\n Не инициализирована склейка';
 				Alert.show(msg);
 			}
@@ -193,11 +193,15 @@ package com.photodispatcher.tech{
 
 		override public function start():void{
 			if(!serialProxy) return;
-			log('Start');
+			if(logger) logger.clear();
+
+			log('Старт');
 			if(!serialProxy.isStarted){
 				log('SerialProxy not started...');
 				return;
 			}
+			
+			/*
 			if(!isRunning){
 				//connect
 				serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
@@ -210,6 +214,15 @@ package com.photodispatcher.tech{
 				}
 				startInternal();	
 			}
+			*/
+			if(!serialProxy.connected){
+				//connect
+				log('Ожидание подключения COM портов');
+				serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+				serialProxy.connectAll();
+				return;
+			}
+			startInternal();
 		}
 
 		override public function setEngineOn():void{
@@ -226,8 +239,14 @@ package com.photodispatcher.tech{
 		}
 
 		override protected function onProxyConnect(evt:SerialProxyEvent):void{
-			log('SerialProxy: connected to com proxies (start)');
+			
 			serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+			log('SerialProxy: connect complite');
+			if(!serialProxy.connected){
+				log('Часть COM портов не подключено');
+				log('SerialProxy:' +serialProxy.traceDisconnected());
+			}
+
 			//startDevices()
 			startInternal();
 		}
@@ -264,6 +283,7 @@ package com.photodispatcher.tech{
 
 		override protected function startInternal():void{
 			hasPauseRequest=false;
+			startDevices();
 			if(!checkPrepared(true)) return;
 			if(!glueHandler || !glueHandler.start()){
 				log('startInternal: glueHandler init error');
@@ -279,7 +299,6 @@ package com.photodispatcher.tech{
 				resume();
 				return;
 			}
-			if(logger) logger.clear();
 			log('start');
 			currBarcode=null;
 			currPgId='';
@@ -766,9 +785,10 @@ package com.photodispatcher.tech{
 			var pageNum:int;
 			var pageTotal:int;
 			
-			if(!dataBaseOff){
+			if(!altBarcode){
 				//cycle barcode
-				if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				//if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
+				if(PrintGroup.isTechBarcode(barcode)) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 				if(!pgId){
 					pause('Не верный штрих код: '+barcode);
 					return;

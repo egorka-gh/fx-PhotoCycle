@@ -44,8 +44,10 @@
 			public var pauseOnComplite:Boolean=false;
 			public var layerOnComplite:int=0;
 			
-			public  var doubleSheetOff:Boolean=false;
+			public var doubleSheetOff:Boolean=false;
 			public var dataBaseOff:Boolean=false;
+			public var altBarcode:Boolean=false;
+
 			[Bindable]
 			public var feedOn:Boolean=true;
 			
@@ -121,6 +123,7 @@
 				glue.pushDelay=pushDelay;
 				glue.logger=this;
 				glue.dataBaseOff=dataBaseOff;
+				glue.altBarcode=altBarcode;
 				glue.init();
 				
 				glue.addEventListener(ErrorEvent.ERROR, onPickerErr);

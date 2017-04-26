@@ -51,6 +51,8 @@
 			[Bindable]
 			public var dataBaseOff:Boolean=true;
 			[Bindable]
+			public var altBarcode:Boolean;
+			[Bindable]
 			public var feedOn:Boolean=false;
 
 			[Bindable]
@@ -115,6 +117,7 @@
 				if (so.size>0){
 					reversOrder=so.data.reversOrder; 
 					doubleSheetOff=so.data.doubleSheetOff;
+					altBarcode=so.data.altBarcode;
 					feedOn=so.data.feedOn;
 					dataBaseOff=so.data.dataBaseOff;
 					feedDelay=so.data.feedDelay;
@@ -211,6 +214,11 @@
 				var arr:Array=comReaders.source.concat(comFeederProxy,comGlueProxy);
 				ComInfo.save(arr);
 				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.altBarcode = altBarcode;
+				so.flush();
+				Context.setAttribute("altBarcode", altBarcode);
+
 				saveGlueEth();
 			}
 			
@@ -436,7 +444,7 @@
 		
 		<s:Spacer height="5"/>
 		<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
-		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" height="250">
+		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" height="280">
 			<s:NavigatorContent label="Подача" backgroundAlpha="0" width="100%" enabled="{feedOn}">
 				<s:Group width="100%">
 					<itemRenderer:ComInfoRenderer  data="{comFeederProxy}" lockType="true" lockSuffix="true"/>
@@ -515,14 +523,20 @@
 				</s:VGroup>
 			</s:NavigatorContent>
 			<s:NavigatorContent label="Сканеры ШК" backgroundAlpha="0" width="100%">
-				<s:HGroup gap="0">
-					<s:VGroup gap="5" height="92%">
-						<s:List id="comList" dataProvider="{comReaders}"  height="100%"/>
-						<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
-						<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
-					</s:VGroup> 
-					<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
-				</s:HGroup>
+				<s:VGroup gap="5">
+					<s:HGroup gap="0" verticalAlign="baseline">
+						<s:CheckBox id="tg_altBarcode" selected="@{altBarcode}"/> 
+						<s:Label text="Внешний ШК (не стандартный)"/>
+					</s:HGroup>
+					<s:HGroup gap="0">
+						<s:VGroup gap="5" height="92%">
+							<s:List id="comList" dataProvider="{comReaders}"  height="100%"/>
+							<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
+							<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
+						</s:VGroup> 
+						<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
+					</s:HGroup>
+				</s:VGroup>
 			</s:NavigatorContent>
 		</mx:ViewStack>
 		
@@ -543,6 +557,7 @@
 							 stopOnComplite="{stopOnComplite}"
 							 doubleSheetOff="{doubleSheetOff}"
 							 dataBaseOff="true"
+							 altBarcode="{altBarcode}"
 							 feedOn="{feedOn}"
 							 pauseOnComplite="{pauseOnComplite}"
 							 alertSound="{alertSound}"
