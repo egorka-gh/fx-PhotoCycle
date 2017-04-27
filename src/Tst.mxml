@@ -134,7 +134,7 @@
 				taLog.text= taLog.text+txt+'\n';
 			}
 
-			public function log(mesage:String):void{
+			public function log(mesage:String, level:int=0):void{
 				taLog.text= taLog.text+mesage+'\n';
 			}
 			public function clear():void{

@@ -381,7 +381,7 @@
 			private var controllerlogText:String = '';
 			private var dtFmt:DateTimeFormatter;
 			
-			public function log(mesage:String):void{
+			public function log(mesage:String, level:int=0):void{
 				var str:String;
 				if(!dtFmt){
 					dtFmt=new DateTimeFormatter();

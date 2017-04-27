@@ -857,8 +857,12 @@ package com.photodispatcher.tech{
 		}
 
 		override protected function onRegisterErr(event:ErrorEvent):void{
-			if(glueHandler) glueHandler.pauseOnBook();
-			pause(event.text);
+			if(event.errorID>0){
+				if(glueHandler) glueHandler.pauseOnBook();
+				pause(event.text);
+			}else{
+				log(event.text);
+			}
 		}
 		override protected function onRegisterComplite(event:Event):void{
 			currBookIdx=register.currentBook;

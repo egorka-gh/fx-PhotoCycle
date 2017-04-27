@@ -532,8 +532,8 @@ package com.photodispatcher.tech{
 		protected function onRegisterComplite(event:Event):void{
 		}
 
-		protected function log(msg:String):void{
-			if(logger) logger.log(msg);
+		protected function log(msg:String, level:int=0):void{
+			if(logger) logger.log(msg, level);
 		}
 		protected function logErr(msg:String):void{
 			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,msg));

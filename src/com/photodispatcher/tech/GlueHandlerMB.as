@@ -58,7 +58,7 @@ package com.photodispatcher.tech{
 			if(event.errorID!=0){
 				pauseRequest('Ошибка контролера: '+event.text);
 			}else{
-				log(event.text);
+				log(event.text,2);
 			}
 		}
 
@@ -100,7 +100,8 @@ package com.photodispatcher.tech{
 			if(isRunning) return true;
 			if(!checkPrepared(true)) return false;
 			log('Старт');
-			log('Ожидаю подключение контролера');
+			log('Старт',2);
+			log('Ожидаю подключение контролера',2);
 			//reset state
 			bookQueue=new ArrayCollection();
 			stopBook=null;

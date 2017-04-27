@@ -16,6 +16,8 @@
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.tech.GlueFeeder;
 			import com.photodispatcher.tech.GlueStreamed;
+			import com.photodispatcher.tech.register.TechBook;
+			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.itemRenderer.TraySetDataGridRowBackground;
 			
 			import flash.globalization.DateTimeStyle;
@@ -69,21 +71,32 @@
 			
 			[Bindable]
 			private var logText:String = '';
+			[Bindable]
+			private var controllerlogText:String = '';
 			
 			private var dtFmt:DateTimeFormatter;
 
-			public function log(mesage:String):void{
+			public function log(mesage:String, level:int=0):void{
 				var str:String;
 				if(!dtFmt){
 					dtFmt=new DateTimeFormatter();
 					dtFmt.timeStyle=DateTimeStyle.LONG;
 					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
 				}
-				str=dtFmt.format(new Date())+' '+ mesage+'\n'+logText;
-				if(!feedOn && str.length>4000){
-					str=str.substr(-2000);
+				str=dtFmt.format(new Date())+' '+ mesage+'\n';
+				if(level==0){
+					str=str+logText;
+					if(!feedOn && str.length>6000){
+						str=str.substr(0,5000)+'\n';
+					}
+					logText=str;
+				}else{
+					str=str+controllerlogText;
+					if(!feedOn && str.length>6000){
+						str=str.substr(0,5000)+'\n';
+					}
+					controllerlogText=str;
 				}
-				logText=str;
 			}
 			public function clear():void{
 				logText='';
@@ -142,10 +155,10 @@
 			}
 			
 			private function onPickerErr(event:ErrorEvent):void{
+				log(event.text);
 				if(feedOn){
 					Alert.show(event.text);	
 				}else{
-					log(event.text);
 					playAlertSound();
 				}
 			}
@@ -158,6 +171,12 @@
 				if(glue && glue.glueHandler && !glue.glueHandler.isRunning) glue.glueHandler.removeBook(); 
 			}
 			
+			public function blockLabelFunc(item:Object):String {
+				var block:TechBook= item as TechBook;
+				if(!block) return '';
+				return block.printGroupId+': '+StrUtil.sheetName(block.book,block.sheetsTotal);
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -208,7 +227,7 @@
 				</s:HGroup>
 				<s:HGroup gap="10" >
 					<s:Button id="btStart" label="Старт" enabled="{!glue.isRunning || glue.isPaused}" click="glue.start()"/>
-					<s:Button label="Перезапуск COM" enabled="{!glue.isRunning || glue.isPaused}" click="{serialProxy.restart()}"/>
+					<!--<s:Button label="Перезапуск COM" enabled="{!glue.isRunning || glue.isPaused}" click="{serialProxy.restart()}"/>-->
 				</s:HGroup>
 				<s:HGroup gap="10" >
 					<s:Button id="btPause" label="Пауза" enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
@@ -218,10 +237,25 @@
 		</s:HGroup>
 		
 		<s:HGroup gap="10" width="100%" height="100%">
-			<s:VGroup gap="5" width="100%" height="100%">
+			
+<!--			<s:VGroup gap="5" width="100%" height="100%">
 				<s:Label text="Лог"/>
 				<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false" />
+			</s:VGroup>-->
+			
+			<s:VGroup gap="2" width="100%" height="100%">
+				<s:TabBar id="tbLogView"  dataProvider="{vsLogViews}"/>
+				<mx:ViewStack id="vsLogViews" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+					<s:NavigatorContent label="Лог" backgroundAlpha="0" width="100%" height="100%">
+						<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false"/>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%" height="100%">
+						<s:TextArea id="taControllerlog" text="{controllerlogText}" width="100%" height="100%"/>
+					</s:NavigatorContent>
+				</mx:ViewStack>
 			</s:VGroup>
+
+			
 			<s:VGroup gap="5" width="350" height="100%">
 				<s:Label text="Блокировки подачи"/>
 				<s:List id="lstLatches" dataProvider="{acLatches}" width="100%" changing="preventChanging(event)" 
@@ -240,6 +274,11 @@
 				<s:Button id="btPushBook" label="Убрать книгу"
 						  enabled="{!glue.glueHandler.isRunning}"
 						  click="btPushBook_clickHandler(event)" />
+				<s:Label text="Очередь"/>
+				<s:List
+					dataProvider="{glue.glueHandler.bookQueue}"
+					labelFunction="blockLabelFunc"
+					width="100%" height="100%"/>
 			</s:VGroup>
 		</s:HGroup>
 	</s:VGroup>

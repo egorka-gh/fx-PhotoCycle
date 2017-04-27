@@ -163,7 +163,7 @@
 			
 			private var dtFmt:DateTimeFormatter;
 			
-			public function log(mesage:String):void{
+			public function log(mesage:String, level:int=0):void{
 				if(!dtFmt){
 					dtFmt=new DateTimeFormatter();
 					dtFmt.timeStyle=DateTimeStyle.LONG;

@@ -322,7 +322,7 @@
 			}
 
 
-			public function log(mesage:String):void{
+			public function log(mesage:String, level:int=0):void{
 				logToScreen(mesage);
 			}
 			public function clear():void{

@@ -356,8 +356,8 @@ package com.photodispatcher.tech{
 			if(controller) controller.pushBook();
 		}
 		
-		protected function log(msg:String):void{
-			if(logger) logger.log('Контролер склейки. '+msg);
+		protected function log(msg:String, level:int=0):void{
+			if(logger) logger.log('Контролер склейки. '+msg, level);
 		}
 
 	}
