@@ -61,19 +61,28 @@ package com.photodispatcher.service.barcode{
 
 		public var pickerInterval:int=5000;
 
-		public function emulateNext():void{
+		public function emulateNext(wrong:Boolean=false):void{
 			if(book==-1){
 				book=1;
 				sheet=1;
 			}else{
-				sheet++;
-				if(sheet>sheets){
-					sheet=1;
-					book++;
-					if(book>books){
-						//comlite, reset 
-						book=1;
+				if(wrong){
+					sheet++;
+					var newsheet:int=0;
+					while(newsheet==0 || newsheet==sheet){
+						newsheet=Math.random()*sheets;
+					}
+					sheet=newsheet;
+				}else{
+					sheet++;
+					if(sheet>sheets){
 						sheet=1;
+						book++;
+						if(book>books){
+							//comlite, reset 
+							book=1;
+							sheet=1;
+						}
 					}
 				}
 			}

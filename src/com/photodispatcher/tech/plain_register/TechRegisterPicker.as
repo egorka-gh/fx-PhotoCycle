@@ -12,7 +12,7 @@ package com.photodispatcher.tech.plain_register{
 			super(printGroup, books, sheets);
 			logOk=false;
 			bookPart=BookSynonym.BOOK_PART_ANY;
-			lastSheet=-1;
+			//lastSheet=-1;
 			_strictSequence=true;
 		}
 		
@@ -27,6 +27,7 @@ package com.photodispatcher.tech.plain_register{
 		public var noDataBase:Boolean;
 		
 		override public function register(book:int, sheet:int):void{
+			/*
 			if(lastSheet==-1){
 				//first scan - bookPart unknown, 4 next scans TechPicker w'l set bookPart 
 				if(revers){
@@ -39,6 +40,63 @@ package com.photodispatcher.tech.plain_register{
 				}
 				//if !revers still BOOK_PART_ANY
 			}
+			*/
+			if(bookPart==BookSynonym.BOOK_PART_ANY){
+				//first time, init
+				if(sheet==0){
+					if(sheets>1){
+						//can be blockcover in revers order
+						bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
+						logMsg('Наверное БлокОбложка');
+					}else{
+						bookPart=BookSynonym.BOOK_PART_COVER;
+					}
+				}else{
+					bookPart=BookSynonym.BOOK_PART_BLOCK;
+					//can be blockcover 
+				}
+				if(!strictSequence && !lastBook){
+					//detect order
+					if(!revers){
+						if(book==books && 
+							((bookPart==BookSynonym.BOOK_PART_COVER && sheet==0) || 
+								(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER && sheet==0) ||	
+								(bookPart==BookSynonym.BOOK_PART_BLOCK && sheet==sheets))){
+							logMsg('Переключение на обратный порядок');
+							revers=true;
+						}
+					}else{
+						if(book==1 && 
+							((bookPart==BookSynonym.BOOK_PART_COVER && sheet==0) ||
+								(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER && sheet==1) ||
+								(bookPart==BookSynonym.BOOK_PART_BLOCK && sheet==1))){
+							logMsg('Переключение на прямой порядок');
+							revers=false;
+						}
+					}
+				}
+				if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER && revers) lastSheet=1;
+			}
+			
+			if(registred==1){
+				//second pass - can deted blockcover in revers
+				if(bookPart==BookSynonym.BOOK_PART_COVER && lastSheet==0 && lastBook==book && sheet==sheets-1){
+					//blockcover in revers order
+					bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
+					if(!strictSequence) revers=true;
+					logMsg('Наверное БлокОбложка в обратном порядке');
+				}
+			}
+			if(registred==sheets-1){
+				//penult pass - can detect blockcover normal order
+				if(bookPart==BookSynonym.BOOK_PART_BLOCK && lastSheet==sheets-1 && lastBook==book && sheet==0){
+					//blockcover in normal order
+					bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
+					if(!strictSequence) revers=false;
+					logMsg('Наверное БлокОбложка в прямом порядке');
+				}
+			}
+
 			
 			if(!checkSequece(book,sheet) && strictSequence) return;
 			
@@ -101,6 +159,7 @@ package com.photodispatcher.tech.plain_register{
 			return result;
 		}
 		
+		/*
 		override protected function get dueBook():int{
 			if(!lastBook) return revers?books:1; //init
 			
@@ -166,6 +225,8 @@ package com.photodispatcher.tech.plain_register{
 			//not first scan & bookPart still unknown
 			return -1;
 		}
+		
+		*/
 		
 		override public function get isComplete():Boolean{
 			if(inexactBookSequence) return false;//can't detect

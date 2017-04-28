@@ -10,6 +10,7 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.service.barcode.ComInfo;
 	import com.photodispatcher.service.barcode.ComReader;
+	import com.photodispatcher.service.barcode.ComReaderEmulator;
 	import com.photodispatcher.service.barcode.SerialProxy;
 	import com.photodispatcher.service.barcode.Socket2Com;
 	import com.photodispatcher.tech.plain_register.TechRegisterPicker;
@@ -357,11 +358,23 @@ package com.photodispatcher.tech{
 			}
 		}
 		
+		public var barcodeEmulator:ComReaderEmulator;
 		protected function startDevices():void{
 			//start glueHandler
 			createGlueHandler();
 			glueHandler.nonStopMode=true;
 			glueHandler.start();
+			
+			/*
+			//emulate barreader
+			barcodeEmulator= new ComReaderEmulator();
+			barcodeEmulator.books=5;
+			barcodeEmulator.sheets=7;
+			barcodeEmulator.pgId='99999';
+			barcodeEmulator.start();
+			barcodeReaders=[barcodeEmulator];
+			return;
+			*/
 			
 			var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
 			if(!readers || readers.length==0) return;

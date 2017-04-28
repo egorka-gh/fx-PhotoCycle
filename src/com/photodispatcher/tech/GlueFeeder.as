@@ -335,14 +335,15 @@ package com.photodispatcher.tech{
 		}
 
 		protected function pause(alert:String, isError:Boolean=true):void{
+			log(alert);
 			if(!isRunning) return;
 			if(isPaused) return;
 			if(currentGroup==COMMAND_GROUP_STOP || currentGroup==COMMAND_GROUP_PAUSE){
-				log('service sequence: '+alert);
+				log('service sequence');
 				return;
 			}
 			hasPauseRequest=false;
-			log('pause sequence: '+alert);
+			log('pause sequence');
 			if(!isServiceGroup(currentGroup)){
 				pausedGroup=currentGroup;
 				pausedGroupStep=currentGroupStep;

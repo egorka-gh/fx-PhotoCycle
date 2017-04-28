@@ -137,16 +137,18 @@ package com.photodispatcher.tech.plain_register{
 			if(type==TYPE_PRINT || type==TYPE_PICKER) return;
 			//load printgroup & reprints
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-			var latchR:DbLatch= new DbLatch(true);
-			latchR.addEventListener(Event.COMPLETE,onReprintsLoad);
-			latchR.addLatch(svc.loadReprintsByPG(printGroupId));
-			latchR.start();
-			//load rejects
-			var latch:DbLatch= new DbLatch(true);
-			latch.addEventListener(Event.COMPLETE,onRejectsLoad);
-			latch.addLatch(svc.loadRejects4PG(printGroupId));
-			latch.join(latchR);
-			latch.start();
+			if(svc){
+				var latchR:DbLatch= new DbLatch(true);
+				latchR.addEventListener(Event.COMPLETE,onReprintsLoad);
+				latchR.addLatch(svc.loadReprintsByPG(printGroupId));
+				latchR.start();
+				//load rejects
+				var latch:DbLatch= new DbLatch(true);
+				latch.addEventListener(Event.COMPLETE,onRejectsLoad);
+				latch.addLatch(svc.loadRejects4PG(printGroupId));
+				latch.join(latchR);
+				latch.start();
+			}
 		}
 		protected function onReprintsLoad(e:Event):void{
 			printGroups=null;

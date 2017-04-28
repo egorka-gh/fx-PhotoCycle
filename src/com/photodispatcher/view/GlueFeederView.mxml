@@ -274,6 +274,12 @@
 				<s:Button id="btPushBook" label="Убрать книгу"
 						  enabled="{!glue.glueHandler.isRunning}"
 						  click="btPushBook_clickHandler(event)" />
+				
+<!--				<s:HGroup gap="5">
+					<s:Button label="Emulate" click="{glue.barcodeEmulator.emulateNext();}"/>
+					<s:Button label="Emulate wrong" click="{glue.barcodeEmulator.emulateNext(true);}"/>
+				</s:HGroup>
+-->				
 				<s:Label text="Очередь"/>
 				<s:List
 					dataProvider="{glue.glueHandler.bookQueue}"
