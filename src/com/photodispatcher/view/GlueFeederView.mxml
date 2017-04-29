@@ -188,12 +188,10 @@
 		<s:HGroup gap="10" width="100%">
 			<s:VGroup gap="10" width="100%">
 				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:CheckBox id="tgSkipBookNumCheck" selected="@{glue.inexactBookSequence}"
-								enabled="{!glue.isRunning || glue.isPaused}"/>
+					<s:CheckBox id="tgSkipBookNumCheck" selected="@{glue.inexactBookSequence}"/>
 					<s:Label text="Сборка брака"/>
 					<s:Spacer width="20"/>
-					<s:CheckBox id="tgDetectFirstBook" selected="@{glue.detectFirstBook}"
-								enabled="{!glue.isRunning || glue.isPaused}"/>
+					<s:CheckBox id="tgDetectFirstBook" selected="@{glue.detectFirstBook}"/>
 					<s:Label text="Не полный заказ"/>
 				</s:HGroup>
 				
