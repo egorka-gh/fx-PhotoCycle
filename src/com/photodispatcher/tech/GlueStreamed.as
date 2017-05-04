@@ -473,18 +473,17 @@ package com.photodispatcher.tech{
 			currSheetIdx=pageNum;
 
 			if(register && !checkPrintgroup(pgId)){
+				/*
 				register.finalise();
 				if(register.inexactBookSequence){
 					//defect complited
 					inexactBookSequence=false;
 					log('Сборка брака завершена: "'+currPgId);
 				}
-				/*
-				else{
-					logErr('Не верный заказ разворота, текущий: '+currPgId+', заказ разворота'+pgId);
-					return;
-				}
 				*/
+				if(register.finalise()){
+					log('Заказ '+currPgId+' завершен.');
+				}
 				register=null;
 			}
 			
@@ -508,7 +507,7 @@ package com.photodispatcher.tech{
 				register.detectFirstBook=detectFirstBook;
 				register.noDataBase=dataBaseOff;
 				//reset detectFirstBook
-				if(detectFirstBook) detectFirstBook=false;
+				//if(detectFirstBook) detectFirstBook=false;
 			}
 			//check sequence
 			register.register(bookNum,pageNum);

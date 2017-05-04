@@ -448,6 +448,28 @@ package com.photodispatcher.tech.plain_register{
 			}
 		}
 
+		protected function get assumeFirstSheet():int{
+			if(bookPart==BookSynonym.BOOK_PART_COVER){
+				return 0;
+			}else if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
+				return revers?0:1;
+			}else{
+				//BLOCK
+				return revers?sheets:1;
+			}
+		}
+		
+		protected function get assumeEndSheet():int{
+			if(bookPart==BookSynonym.BOOK_PART_COVER){
+				return 0;
+			}else if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
+				return revers?1:0;
+			}else{
+				//BLOCK
+				return revers?1:sheets;
+			}
+		}
+		
 		public function get currentBook():int{
 			return lastBook;
 		}

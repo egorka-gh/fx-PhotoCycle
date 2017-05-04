@@ -269,9 +269,12 @@
 				<s:Label text="Листов всего: {glue.glueHandler.currentBookView.sheetsTotal}"/>
 				<s:Label text="Листов подано: {glue.glueHandler.currentBookView.sheetsFeeded}"/>
 				<s:Label text="Листов склеено: {glue.glueHandler.currentBookView.sheetsDone}"/>
-				<s:Button id="btPushBook" label="Убрать книгу"
-						  enabled="{!glue.glueHandler.isRunning}"
-						  click="btPushBook_clickHandler(event)" />
+				<s:HGroup gap="10">
+					<s:Button id="btPushBook" label="Убрать книгу"
+							  enabled="{!glue.glueHandler.isRunning}"
+							  click="btPushBook_clickHandler(event)" />
+					<s:Button label="Сбросить" click="{glue.glueHandler.reset()}"/>
+				</s:HGroup>
 				
 <!--				<s:HGroup gap="5">
 					<s:Button label="Emulate" click="{glue.barcodeEmulator.emulateNext();}"/>

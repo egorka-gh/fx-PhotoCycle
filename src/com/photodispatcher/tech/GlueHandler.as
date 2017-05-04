@@ -149,6 +149,17 @@ package com.photodispatcher.tech{
 			return true;
 		}
 		
+		public function reset():void{
+			log('Сброс очереди склейки');
+			//reset state
+			bookQueue=new ArrayCollection();
+			latchPushBook.reset();
+			latchPressOff.reset();
+			stopBook=null;
+			hasPauseRequest=false;
+		}
+		
+		
 		public function resume():void{
 			if(!isRunning) return;
 			hasPauseRequest=false;

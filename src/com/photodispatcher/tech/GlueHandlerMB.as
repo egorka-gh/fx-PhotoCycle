@@ -110,7 +110,14 @@ package com.photodispatcher.tech{
 			hasPauseRequest=false;
 			return true;
 		}
-
+		
+		override public function reset():void{
+			log('Сброс очереди склейки');
+			//reset state
+			bookQueue=new ArrayCollection();
+			stopBook=null;
+			hasPauseRequest=false;
+		}
 		
 		override public function resume():void{
 			if(!isRunning) return;

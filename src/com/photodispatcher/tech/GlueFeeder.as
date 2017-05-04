@@ -388,6 +388,11 @@ package com.photodispatcher.tech{
 			isRunning=false;
 			isPaused=false;
 			resetLatches();
+			if(glueHandler){
+				glueHandler.stop();
+				glueHandler.isRunning=false;
+			}
+
 			/*
 			controller.stop();
 			var barReader:ComReader;
@@ -542,8 +547,8 @@ package com.photodispatcher.tech{
 					if(currentGroupStep>=1){
 						if (register && register.isComplete){
 							//order complited
-							if(logger) logger.clear();
-							detectFirstBook=false;
+							//if(logger) logger.clear();
+							//detectFirstBook=false;
 							register.finalise();
 							register=null;
 							currBookTot=-1;
@@ -617,12 +622,27 @@ package com.photodispatcher.tech{
 						barLatch.setOn();
 					}else{
 						//TODO neve run?
-						if(register && register.inexactBookSequence && register.currentBookComplited){
+						if(register && (register.inexactBookSequence || register.detectFirstBook) && register.currentBookComplited){
 							register.finalise();
+							//complited partial order
 							register=null;
-							inexactBookSequence=false;
-							log('Сборка брака завершена: заказ "'+currPgId+'"');
+							currBookTot=-1;
+							currBookIdx=-1;
+							currSheetTot=-1;
+							currSheetIdx=-1;
+							log('Заказ '+currPgId+' завершен.');
+							currPgId='';
+							/*
+							if(stopOnComplite){
 							stop();
+							return;
+							}
+							if(pauseOnComplite){
+							currentGroupStep=0;
+							pause('Пауза между заказами',false);
+							return;
+							}
+							*/
 							return;
 						}
 						pause('Таймаут ожидания. '+l.label+':'+l.caption);
@@ -643,6 +663,7 @@ package com.photodispatcher.tech{
 					//empty tay or some else 
 					//check if defect complited
 					if(currentGroup==COMMAND_GROUP_BOOK_SHEET){
+						/*
 						if(register && register.inexactBookSequence && register.currentBookComplited){
 							register.finalise();
 							register=null;
@@ -650,6 +671,18 @@ package com.photodispatcher.tech{
 							log('Сборка брака завершена: заказ "'+currPgId+'"');
 							stop();
 							return;
+						}
+						*/
+						if(register && (register.inexactBookSequence || register.detectFirstBook) && register.currentBookComplited){
+							register.finalise();
+							//complited partial order
+							register=null;
+							currBookTot=-1;
+							currBookIdx=-1;
+							currSheetTot=-1;
+							currSheetIdx=-1;
+							log('Заказ '+currPgId+' завершен.');
+							currPgId='';
 						}
 					}
 					pause('Заполните лотк подачи');
@@ -814,7 +847,42 @@ package com.photodispatcher.tech{
 			}
 			
 			glueHandler.await(pgId,bookNum,pageNum,pageTotal);
-			//if(currSheetIdx==-1){
+			
+			
+			if(register && !checkPrintgroup(pgId)){
+				if(register.inexactBookSequence || register.detectFirstBook){
+					if(register.finalise()){
+						//complited partial order
+						register=null;
+						currBookTot=-1;
+						currBookIdx=-1;
+						currSheetTot=-1;
+						currSheetIdx=-1;
+						log('Заказ '+currPgId+' завершен.');
+						currPgId='';
+						/*
+						if(stopOnComplite){
+							stop();
+							return;
+						}
+						if(pauseOnComplite){
+							currentGroupStep=0;
+							pause('Пауза между заказами',false);
+							return;
+						}
+						*/
+					}else{
+						//onRegisterErr should suspend sequense
+						log('Не верный заказ разворота, текущий: '+currPgId+', заказ разворота'+pgId);
+						return;
+					}
+				}else{
+					glueHandler.pauseOnBook(pgId,bookNum);
+					pause('Не верный заказ разворота, текущий: '+currPgId+', заказ разворота'+pgId);
+					return;
+				}
+			}
+			
 			if(!register){
 				//new order
 				currPgId=pgId;
@@ -835,8 +903,10 @@ package com.photodispatcher.tech{
 				register.detectFirstBook=detectFirstBook;
 				register.noDataBase=dataBaseOff;
 				//reset detectFirstBook
-				if(detectFirstBook) detectFirstBook=false;
-			}else{
+				//if(detectFirstBook) detectFirstBook=false;
+			}
+			/*
+			else{
 				if(!checkPrintgroup(pgId)){
 					if(register.inexactBookSequence){
 						//defect complited
@@ -851,6 +921,7 @@ package com.photodispatcher.tech{
 					return;
 				}
 			}
+			*/
 			//check sequence
 			registerLatch.setOn();
 			register.register(bookNum,pageNum);

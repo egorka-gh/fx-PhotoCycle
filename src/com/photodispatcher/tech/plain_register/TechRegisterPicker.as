@@ -131,16 +131,10 @@ package com.photodispatcher.tech.plain_register{
 				return false;
 			}
 			if(inexactBookSequence){
-				var firstSheet:int=-1;
-				if(bookPart==BookSynonym.BOOK_PART_BLOCK){
-					firstSheet=revers?sheets:1;
-				}else{
-					firstSheet=revers?0:1;
-				}
-				if(dueSheet==firstSheet) dBook=book;
-			}else if(detectFirstBook){
+				if(dSheet==assumeFirstSheet) dBook=book;
+			}else if(detectFirstBook && !lastBook){
 				dBook=book;
-				detectFirstBook=false;
+				//detectFirstBook=false;
 			}
 			
 			result=dBook==book && dSheet==sheet;
@@ -159,90 +153,29 @@ package com.photodispatcher.tech.plain_register{
 			return result;
 		}
 		
-		/*
-		override protected function get dueBook():int{
-			if(!lastBook) return revers?books:1; //init
-			
-			if(bookPart==BookSynonym.BOOK_PART_BLOCK){
-				//same as base class
-				if(revers){
-					return lastSheet==1?(lastBook-1):lastBook;
-				}else{
-					return lastSheet==sheets?(lastBook+1):lastBook;
-				}
-			}else if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
-				if(revers){
-					return lastSheet==1?(lastBook-1):lastBook;
-				}else{
-					//cover is last
-					return lastSheet==0?(lastBook+1):lastBook;
-				}
+		override public function finalise():Boolean{
+			var result:Boolean=false;
+			if(inexactBookSequence || detectFirstBook){
+				result=currentBookComplited;
+			}else{
+				result=isComplete;
 			}
-			//not first scan & bookPart still unknown
-			return -1;
+			if (!result){
+				if(canInterrupt){
+					if(flap) flap.setOff();
+					if(strictSequence) result=false;
+				}
+				logSequeceErr('Не полная последовательность');
+			}else{
+				if(logOk) logMsg('Ok');
+			}
+			flushData();
+			return result;
 		}
-		
-		override protected function get dueSheet():int{
-			if(lastSheet==-1 && bookPart==BookSynonym.BOOK_PART_ANY){
-				//first scan, bookPart unknown
-				//not revers so 
-				return 1;
-			}
-			
-			if(bookPart==BookSynonym.BOOK_PART_BLOCK){
-				//same as base class
-				if(lastSheet==-1) return revers?sheets:1; //init
-				if(revers){
-					return lastSheet==1?sheets:(lastSheet-1);
-				}else{
-					return lastSheet==sheets?1:(lastSheet+1);
-				}
-			}else if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
-				//cover is last
-				if(lastSheet==-1) return revers?0:1; //init
-				if(revers){
-					if(lastSheet==1){
-						//previous book complited
-						//next (first) cover
-						return 0; 
-					}else if(lastSheet==0){
-						//cover, next last sheet
-						return sheets-1;
-					}
-					return lastSheet-1;
-				}else{
-					if(lastSheet==0){
-						//previous book complited  
-						return 1; 
-					}else if(lastSheet==sheets-1){
-						//next cover
-						return 0;
-					}
-					return lastSheet+1;
-				}
-			}
-			
-			//not first scan & bookPart still unknown
-			return -1;
-		}
-		
-		*/
 		
 		override public function get isComplete():Boolean{
-			if(inexactBookSequence) return false;//can't detect
-			if(detectFirstBook){
-				//check last book & last sheet
-				//TODO not sure, it never run !!!!
-				var endSheet:int=0;
-				if(bookPart==BookSynonym.BOOK_PART_BLOCK){
-					endSheet=revers?1:sheets;
-				}else if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER){
-					endSheet=revers?1:0;
-				}
-				if(lastBook==books && lastSheet==endSheet) return true;
-			}
+			if(inexactBookSequence || detectFirstBook) return false;//can't detect
 			
-			//if(bookPart==BookSynonym.BOOK_PART_BLOCK) return registred>=books*sheets;
 			if(bookPart==BookSynonym.BOOK_PART_COVER) return registred>=books; //one cover per book
 			return registred>=books*sheets;
 		}
@@ -250,9 +183,7 @@ package com.photodispatcher.tech.plain_register{
 		override public function get currentBookComplited():Boolean{
 			if(!lastBook) return false;
 			if(bookPart==BookSynonym.BOOK_PART_COVER) return true;
-			var endSheet:int=revers?1:sheets;
-			if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER) endSheet=revers?1:0;
-			return lastSheet==endSheet;
+			return lastSheet==assumeEndSheet;
 		}
 		
 		
