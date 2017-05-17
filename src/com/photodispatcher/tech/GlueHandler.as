@@ -173,12 +173,12 @@ package com.photodispatcher.tech{
 			//log(err);
 			dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,err));
 		}
-		public function stop(err:String=''):void{
+		public function stop(err:String='', engineStop:Boolean=false):void{
 			if(!isRunning) return;
 			if(!nonStopMode){
 				isRunning=false;
 				hasPauseRequest=false;
-				controller.engineStop();
+				if(engineStop) controller.engineStop();
 			}
 			if(err){
 				log(err);
@@ -220,10 +220,13 @@ package com.photodispatcher.tech{
 				return false;
 			}
 			if(tb.printGroupId==stopBook.printGroupId && tb.book==stopBook.book){
+				/*
 				log('Остановка на книге '+tb.printGroupId+' '+tb.book)
 				controller.engineStop();
+				*/
+				log('Возможно брак. Книга '+tb.printGroupId+' '+tb.book)
 				stopBook=null;
-				return true;
+				//return true;
 			}
 			return false;
 		}

@@ -500,7 +500,7 @@
 				if(printer) printer.stop();
 				if(flap) flap.stop();
 				if(glueHandler){
-					glueHandler.stop();
+					glueHandler.stop('');
 					glueHandler.isRunning=false;
 				}
 			}

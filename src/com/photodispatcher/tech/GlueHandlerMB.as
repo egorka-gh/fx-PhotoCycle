@@ -125,11 +125,11 @@ package com.photodispatcher.tech{
 			checkPrepared(true);
 			//reset state
 		}
-		override public function stop(err:String=''):void{
+		override public function stop(err:String='', engineStop:Boolean=false):void{
 			if(!isRunning) return;
 			isRunning=false;
 			hasPauseRequest=false;
-			if(controller) controller.stop();
+			if(controller && engineStop) controller.stop();
 		}
 		
 		override public function removeBook():void{

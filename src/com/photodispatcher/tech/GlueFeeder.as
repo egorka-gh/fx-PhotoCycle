@@ -60,6 +60,8 @@ package com.photodispatcher.tech{
 		protected var registerLatch:PickerLatch;
 		protected var bdLatch:PickerLatch;
 		
+		protected var feedBookDelay:int=0;
+		
 		protected var currentLayer:int;
 		
 		public function GlueFeeder(){
@@ -200,6 +202,7 @@ package com.photodispatcher.tech{
 				log('SerialProxy not started...');
 				return;
 			}
+			if(Context.getAttribute("feedBookDelay")) feedBookDelay=Context.getAttribute("feedBookDelay");
 			
 			/*
 			if(!isRunning){
@@ -261,7 +264,7 @@ package com.photodispatcher.tech{
 			glueHandler.init(serialProxy);
 			glueHandler.pushDelay=pushDelay;
 			*/
-			createGlueHandler();
+			if(!glueHandler || !isPaused) createGlueHandler();
 			
 			//var barReader:ComReader;
 			var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
@@ -566,6 +569,10 @@ package com.photodispatcher.tech{
 								pause('Пауза между заказами',false);
 								return;
 							}
+							if(startFeedBookDelay()){
+								currentGroupStep=0;
+								return;
+							}
 						}
 						
 						//cycle feeding
@@ -778,9 +785,27 @@ package com.photodispatcher.tech{
 				pause('Лоток подачи. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
 			}
 		}
+
+		
+		private var feedBookTimer:Timer;
+		protected function startFeedBookDelay():Boolean{
+			if(feedBookDelay<100){
+				return false;
+			}
+			
+			if(!feedBookTimer){
+				feedBookTimer= new Timer(feedBookDelay+feedDelay,1);
+				feedBookTimer.addEventListener(TimerEvent.TIMER, onFeedDelayTimer);
+			}else{
+				feedBookTimer.reset();
+				feedBookTimer.delay=feedBookDelay+feedDelay;
+			}
+			feedBookTimer.start();
+			log('Задержка между книгами');
+			return true;
+		}
 		
 		private var feedTimer:Timer;
-		
 		protected function startFeedDelay():void{
 			if(feedDelay<100){
 				//layerOutLatch.forward();
