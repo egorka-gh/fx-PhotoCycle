@@ -149,9 +149,11 @@
 					pumpEnable=so.data.pumpEnable;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
 					pumpWorkTime=so.data.pumpWorkTime;
+					if(so.data.repeatedSignalGap) repeatedSignalGap=so.data.repeatedSignalGap;
 
 				}
 				Context.setAttribute("feedBookDelay", feedBookDelay);
+				Context.setAttribute("repeatedSignalGap", repeatedSignalGap);
 				currentState='config';
 			}
 			
@@ -340,6 +342,9 @@
 			[Bindable]
 			public var pumpSensFilterTime:int=0;
 			[Bindable]
+			public var repeatedSignalGap:int=0;
+			
+			[Bindable]
 			public var pumpWorkTime:int=0;
 			[Bindable]
 			public var pumpEnable:Boolean=false;
@@ -377,7 +382,14 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.feedBookDelay = feedBookDelay;
 				so.flush();  
-
+			}
+			
+			protected function nsRepeatedSignalGap_changeHandler(event:Event):void{
+				repeatedSignalGap=nsRepeatedSignalGap.value;
+				Context.setAttribute("repeatedSignalGap", repeatedSignalGap);
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.repeatedSignalGap = repeatedSignalGap;
+				so.flush();  
 			}
 			
 		]]>
@@ -486,7 +498,7 @@
 						<itemRenderer:ComInfoRenderer data="{comGlueProxy}" lockType="true" lockSuffix="true"/>
 						
 						<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
-							<s:Label text="Задержка выброса книги (млсек):"/>
+							<s:Label text="Задержка выброса книги (мс):"/>
 							<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
 						</s:HGroup>
 					</s:VGroup>
@@ -509,7 +521,7 @@
 						</s:HGroup>
 						
 						<s:HGroup gap="3" verticalAlign="baseline">
-							<s:Label text="Таймеры боковых упоров (мсек)."/>
+							<s:Label text="Таймеры боковых упоров (мс)."/>
 							<s:Spacer width="3"/>
 							<s:Label text="Выключения:"/>
 							<s:NumericStepper id="nsSide_Stop_Off_delay" minimum="10" maximum="9000" snapInterval="10"
@@ -526,17 +538,20 @@
 							<s:CheckBox selected="@{pumpEnable}"/>
 						</s:HGroup>
 						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Время работы насоса (мсек):"/>
+							<s:Label text="Время работы насоса (мс):"/>
 							<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
 											  value="@{pumpWorkTime}" />
 						</s:HGroup>
 						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Время ожидания 'чистого' сигнала (фильтр) (мсек):"/>
+							<s:Label text="Время ожидания 'чистого' сигнала (фильтр) (мс):"/>
 							<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
 											  value="@{pumpSensFilterTime}" />
 						</s:HGroup>
-
-						
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Блокировка срабатывания датчика листа (мс):"/>
+							<s:NumericStepper id="nsRepeatedSignalGap" minimum="0" maximum="100000" snapInterval="10"
+											  value="{repeatedSignalGap}"  change="nsRepeatedSignalGap_changeHandler(event)"/>
+						</s:HGroup>
 					</s:VGroup>
 
 				</s:VGroup>

@@ -61,6 +61,7 @@ package com.photodispatcher.tech{
 		protected var bdLatch:PickerLatch;
 		
 		protected var feedBookDelay:int=0;
+		protected var repeatedSignalGap:int=0;
 		
 		protected var currentLayer:int;
 		
@@ -202,7 +203,16 @@ package com.photodispatcher.tech{
 				log('SerialProxy not started...');
 				return;
 			}
-			if(Context.getAttribute("feedBookDelay")) feedBookDelay=Context.getAttribute("feedBookDelay");
+			if(Context.getAttribute("feedBookDelay")){
+				feedBookDelay=Context.getAttribute("feedBookDelay");
+			}else{
+				feedBookDelay=0;
+			}
+			if(Context.getAttribute("repeatedSignalGap")){
+				repeatedSignalGap=Context.getAttribute("repeatedSignalGap");
+			}else{
+				repeatedSignalGap=0;
+			}
 			
 			/*
 			if(!isRunning){
@@ -292,6 +302,7 @@ package com.photodispatcher.tech{
 				log('startInternal: glueHandler init error');
 				return;
 			}
+			glueHandler.repeatedSignalGap=repeatedSignalGap;
 			log('SerialProxy:' +serialProxy.traceDisconnected());
 			if(!barcodeReaders || barcodeReaders.length==0 || ! controller){
 				log('startInternal: barcodeReaders or controller init error');

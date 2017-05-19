@@ -54,6 +54,8 @@ package com.photodispatcher.tech{
 			_pushDelay = value;
 		}
 		
+		public var repeatedSignalGap:uint=0;
+		
 		public var logger:ISimpleLogger;
 
 		private var _controller:GlueController;

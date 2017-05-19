@@ -54,7 +54,7 @@
 		<s:FormItem label="Тип:" enabled="{!lockType}">
 			<s:DropDownList dataProvider="{comTypes}" selectedIndex="@{comport.type}"/>
 		</s:FormItem>
-		<s:FormItem label="Интервал (мкс):" 
+		<s:FormItem label="Интервал (мс):" 
 					visible="{comport.type==ComInfo.COM_TYPE_BARREADER}" includeInLayout="{comport.type==ComInfo.COM_TYPE_BARREADER}">
 			<s:NumericStepper value="@{comport.doubleScanGap}" minimum="0" maximum="30000" snapInterval="100" toolTip="Интервал сканирования"/>
 		</s:FormItem>

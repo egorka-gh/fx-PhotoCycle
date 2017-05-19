@@ -11,6 +11,7 @@ package com.photodispatcher.tech{
 	import flash.events.IEventDispatcher;
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
+	import flash.utils.getTimer;
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
@@ -141,8 +142,22 @@ package com.photodispatcher.tech{
 			return false;
 		}
 		
+		
+		private var lastMsgTime:uint=0;
+		
 		override protected function onControllerMsg(event:ControllerMesageEvent):void{
 			if(!isRunning ) return;
+			
+			//check wrong sencor trigg
+			if(repeatedSignalGap>0){
+				var newTime:uint=getTimer();
+				if((newTime-lastMsgTime) < repeatedSignalGap){
+					log('Повторное срабатывание датчика');
+					return;
+				}
+				lastMsgTime=newTime;
+			}
+
 			var tb:TechBook=currentBook;//refresh view
 			
 			if (checkStopBook()) return; //???
