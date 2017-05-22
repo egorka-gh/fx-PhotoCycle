@@ -366,6 +366,7 @@ package com.photodispatcher.provider.check{
 			//if IM incomplite - state in bd FTP_CHECK
 			//if complited - state in bd FTP_COMPLETE
 			var fromState:int=OrderState.FTP_CHECK;
+			if(skipMD5) fromState=OrderState.FTP_WAITE_CHECK;
 			if(pw.lastOrderId){
 				order=ArrayUtil.searchItem('id',pw.lastOrderId,queue.source) as Order;
 			}
