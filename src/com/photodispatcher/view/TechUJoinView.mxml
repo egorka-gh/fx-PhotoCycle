@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.util.ArrayUtil;
+			
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+			
+			public static const LOG_LEN_LIMIT:int=4000;
+			public static const BAR_LEN_LIMIT:int=2000;
+			
+			public var alertSize:uint=40;
+			public var alertTime:uint=7;
+			public var firstBookPart:int=0; //0-Block, 1-Cover
+			
+			private var _barcodeReaderCover:ComReader;
+			public function get barcodeReaderCover():ComReader{
+				return _barcodeReaderCover;
+			}
+			public function set barcodeReaderCover(value:ComReader):void{
+				if(_barcodeReaderCover){
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCodeCover);
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onConnected);
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onDisconnected);
+					_barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+				_barcodeReaderCover = value;
+				if(_barcodeReaderCover){
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_READED,onBarCodeCover);
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onConnected);
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onDisconnected);
+					_barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+			}
+
+			private var _barcodeReaderBlock:ComReader;
+			public function get barcodeReaderBlock():ComReader{
+				return _barcodeReaderBlock;
+			}
+			public function set barcodeReaderBlock(value:ComReader):void{
+				if(_barcodeReaderBlock){
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCodeBlock);
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_CONNECTED, onConnected);
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onDisconnected);
+					_barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+				_barcodeReaderBlock = value;
+				if(_barcodeReaderBlock){
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_READED,onBarCodeBlock);
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_CONNECTED, onConnected);
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onDisconnected);
+					_barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_ERR, onError);
+				}
+			}
+			
+			private var logText:String = '';
+			
+			private var _barText:String='';
+			[Bindable]
+			public function get barText():String{
+				return _barText;
+			}
+			public function set barText(value:String):void{
+				if(!value){
+					_barText='';
+					return;
+				}
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				
+				var txt:String=fmt.format(new Date())+': '+ value+_barText; 
+				if(txt.length>BAR_LEN_LIMIT) txt=txt.substr(0,BAR_LEN_LIMIT);
+				_barText=txt;
+			}
+			
+			
+			private function onError(event:BarCodeEvent):void{
+				barText=event.barcode+'\n';
+				logToScreen('Ошибка: '+event.error,true);
+				
+			}
+			
+			private function onDisconnected(event:BarCodeEvent):void{
+				logToScreen('Ошибка: отключен '+event.barcode,true);
+				
+			}
+
+			private function onConnected(event:BarCodeEvent):void{
+				logToScreen('Подключен '+event.barcode);
+				
+			}
+			
+			private var currBarcodeBlock:String;
+			private var currBarcodeCover:String;
+			
+			
+			private function checkBarcode(newBarcodeBlock:String, newBarcodeCover:String):Boolean{
+				var msg:String;
+				var res:Boolean=true;
+				if(newBarcodeBlock && newBarcodeCover){
+					logToScreen('checkBarcode: wrong call',true);
+					return false;
+				}
+				if(newBarcodeBlock){
+					//block scaned
+					if(currBarcodeBlock){
+						if(currBarcodeBlock==newBarcodeBlock){
+							//doublescan?
+							return true;
+						}
+						//previouse block incomplite
+						msg='Небыло обложки для блока ';
+						logToScreen(msg+currBarcodeBlock,true);
+						showAlert(msg);
+						logToScreen('Получен новый ШК блока. ШК обложки для предидущего блока небыло.');
+						res=false;
+					}
+					currBarcodeBlock=newBarcodeBlock;
+					if(firstBookPart==0){
+						//block first
+						currBarcodeCover='';
+						logToScreen('Блок: '+currBarcodeBlock+'. Ожидаю обложку.');
+					}else{
+						//cover first
+						if(!currBarcodeCover){
+							currBarcodeBlock='';
+							msg='Нет обложки для блока ';
+							logToScreen(msg+newBarcodeBlock,true);
+							showAlert(msg);
+							logToScreen('Нарушена последовательность. Сначала должен быть ШК обложки. ШК блока игнорируется.');
+							res=false;
+						}
+					}
+				}
+
+				if(newBarcodeCover){
+					//cover scaned
+					if(currBarcodeCover){
+						if(currBarcodeCover==newBarcodeCover){
+							//doublescan?
+							return true;
+						}
+						//previouse cover incomplite
+						msg='Небыло блока для обложки ';
+						logToScreen(msg+currBarcodeCover,true);
+						showAlert(msg);
+						logToScreen('Получен новый ШК обложки. ШК блока для предидущей обложки небыло.');
+						res=false;
+					}
+					currBarcodeCover=newBarcodeCover;
+					if(firstBookPart!=0){
+						//cover first
+						currBarcodeBlock='';
+						logToScreen('Обложка: '+currBarcodeCover+'. Ожидаю блок.');
+					}else{
+						//blocks first
+						if(!currBarcodeBlock){
+							currBarcodeCover='';
+							msg='Нет блока для обложки ';
+							logToScreen(msg+newBarcodeCover,true);
+							showAlert(msg);
+							logToScreen('Нарушена последовательность. Сначала должен быть ШК блока. ШК обложки игнорируется.');
+							res=false;
+						}
+					}
+				}
+				
+				//check if comlite
+				if(currBarcodeBlock && currBarcodeCover){
+					if(currBarcodeBlock==currBarcodeCover){
+						logToScreen('Книга '+currBarcodeCover+' - OK.');
+					}else{
+						msg='Несоответствие блока и обложки.';
+						logToScreen(msg+' Блок:'+currBarcodeBlock+' Обложка:'+currBarcodeCover,true);
+						showAlert(msg);
+						res=false;
+					}
+					currBarcodeBlock='';
+					currBarcodeCover='';
+				}
+				return res;
+			}
+			
+			private function onBarCodeBlock(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				barText='b:'+barcode+'\n';
+				checkBarcode(barcode,'');
+			}
+			
+			private function onBarCodeCover(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				barText='c:'+barcode+'\n';
+				checkBarcode('',barcode);
+			}
+
+			private function showAlert(msg:String):void{
+				var ap:AlertrPopup=new AlertrPopup();
+				ap.show(msg, alertTime, alertSize);
+			}
+			
+			private function logToScreen(msg:String, isError:Boolean=false):void{
+				var color:String=isError?"'#990000'":"'#006600'";
+				var bold:String=isError?"fontWeight='bold'":'';
+				var txtSize:String=isError?"fontSize='14'":'';
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+
+				logText= "<span>" + fmt.format(new Date()) + " </span>"+"<span color="+color+" "+bold+" "+txtSize+">" + msg + "</span> <br />"+logText;
+
+				//cut
+				if(logText.length> LOG_LEN_LIMIT){
+					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
+					if(idx!=-1){
+						logText=logText.substr(0,idx+6);
+					}
+				}
+
+				try{
+					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
+				}catch(error:Error){
+					trace('TextFlow err, txt: '+logText);
+					trace(error.message);
+				}
+			}
+			
+			public function start():void{
+				cleanLog();
+				reset();
+				if(barcodeReaderBlock) barcodeReaderBlock.start();
+				if(barcodeReaderCover) barcodeReaderCover.start();
+			}
+			
+			public function stop():void{
+				if(barcodeReaderBlock) barcodeReaderBlock.stop();
+				if(barcodeReaderCover) barcodeReaderCover.stop();
+				cleanLog();
+				reset();
+			}
+			
+			public function reset():void{
+				currBarcodeBlock='';
+				currBarcodeCover='';
+			}
+			
+			private function cleanLog():void{
+				logText='';
+				logTextArea.text='';
+				barText='';
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" height="100%">
+			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
+			<s:TextArea id="barTextArea" text="{barText}" fontSize="10" width="170" height="100%" editable="false"/>
+		</s:HGroup>
+		<s:HGroup gap="5" width="100%">
+			<s:Button label="Очистить лог" click="{cleanLog()}"/>
+			<s:Spacer width="5"/>
+			<s:Button label="Сброс" click="{reset()}"/>
+		</s:HGroup> 
+	</s:VGroup>
+	
+</s:Group>

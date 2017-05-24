@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   xmlns:view="com.photodispatcher.view.*" 
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   showStatusBar="false"
+					   creationComplete="{init()}" 
+					   closing="windowedapplication1_closingHandler(event)" 
+					   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.Socket2Com;
+			import com.photodispatcher.service.barcode.ValveCom;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.AlertrPopup;
+			import com.photodispatcher.view.ModalPopUp;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			
+			
+			[Bindable]
+			private var comInfoCover:ComInfo;
+			[Bindable]
+			private var comInfoBlock:ComInfo;
+
+			[Bindable]
+			private var barcodeReaderCover:ComReader;
+			[Bindable]
+			private var barcodeReaderBlock:ComReader;
+
+			[Bindable]
+			private var alertSize:uint=40;
+			[Bindable]
+			private var alertTime:uint=7;
+			[Bindable]
+			private var alertSound:String;
+
+			[Bindable]
+			private var firstBookPart:int=0;
+			[Bindable]
+			private var bookPartAC:ArrayCollection=new ArrayCollection(['Блок','Обложка']);
+			
+			private function init():void{
+				
+				var comifos:Array=ComInfo.load();
+				
+				if(comifos.length>0) comInfoCover=comifos[0] as ComInfo;
+				if(comInfoCover && comInfoCover.type!=ComInfo.COM_TYPE_BARREADER) comInfoCover=null;
+				if(comifos.length>1) comInfoBlock=comifos[1] as ComInfo;
+				if(comInfoBlock && comInfoBlock.type!=ComInfo.COM_TYPE_BARREADER) comInfoBlock=null;
+				
+				if(!comInfoCover){
+					comInfoCover = new ComInfo();
+					comInfoCover.type=ComInfo.COM_TYPE_BARREADER;
+				}
+				if(!comInfoBlock){
+					comInfoBlock = new ComInfo();
+					comInfoBlock.type=ComInfo.COM_TYPE_BARREADER;
+				}
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					var val:uint =so.data.alertSize;
+					if(val) alertSize=val;
+					val=so.data.alertTime;
+					if(val) alertTime=val;
+					alertSound=so.data.alertSound;
+					AlertrPopup.alertSound=alertSound;
+					if(so.data.firstBookPart) firstBookPart=so.data.firstBookPart;
+				}
+				
+				if(comInfoCover.num && comInfoBlock.num){
+					start();
+				}else{
+					currentState='config';
+				}
+			}
+			
+			private function start():void{
+				if(!comInfoCover.num || !comInfoBlock.num){
+					Alert.show('Приложение не настроено');
+					currentState='config';
+					return;
+				}
+				serialProxy.start([comInfoCover,comInfoBlock]);
+				if(!serialProxy.isStarted){
+					currentState='config';
+					return;
+				}
+				if(!comInfoCover.proxy || !comInfoBlock.proxy){
+					serialProxy.stop();
+					currentState='config';
+					return;
+				}
+
+				//create cover reader
+				if(barcodeReaderCover){
+					barcodeReaderCover.stop();
+					barcodeReaderCover.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					barcodeReaderCover=null;
+				}
+				barcodeReaderCover= new ComReader();
+				barcodeReaderCover.cleanNonDigit=true;
+				barcodeReaderCover.comPort=comInfoCover.proxy;
+				barcodeReaderCover.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+				//create block reader
+				if(barcodeReaderBlock){
+					barcodeReaderBlock.stop();
+					barcodeReaderBlock.removeEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+					barcodeReaderBlock=null;
+				}
+				barcodeReaderBlock= new ComReader();
+				barcodeReaderBlock.cleanNonDigit=true;
+				barcodeReaderBlock.comPort=comInfoBlock.proxy;
+				barcodeReaderBlock.addEventListener(BarCodeEvent.BARCODE_ERR,barcodeReader_barcodeErrorHandler);
+
+				
+				currentState='monitor';
+				if(techMonitor) techMonitor.start();
+			}
+			
+			private function closeApp():void{
+				stop(); 
+				FlexGlobals.topLevelApplication.exit();
+			}
+			
+			private function stop():void{
+				if(techMonitor) techMonitor.stop();
+				if(barcodeReaderCover) barcodeReaderCover.stop();
+				serialProxy.stop();
+				currentState='config';
+			}
+			
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				if(barcodeReaderCover) barcodeReaderCover.stop();
+				if(serialProxy) serialProxy.stop();
+				if(techMonitor) techMonitor.stop();
+			}
+			
+			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
+				//if(flap) flap.stop();
+				if(barcodeReaderCover) barcodeReaderCover.stop();
+				if(barcodeReaderBlock) barcodeReaderBlock.stop();
+				serialProxy.stop();
+				var bar:String=event.barcode;
+				bar = bar.replace(String.fromCharCode(13),'[LF]');
+				bar = bar.replace(String.fromCharCode(10),'[CR]');
+				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
+				currentState='config';
+			}
+			
+			protected function btSaveComs_clickHandler(event:MouseEvent):void{
+				//ComInfo.save(coms.source);
+				ComInfo.save([comInfoCover, comInfoBlock]);
+			}
+			
+			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
+				Alert.show('Ошибка SerialProxy \n '+event.error,'Ошибка');
+				currentState='config';
+			}
+			
+			protected function nsalertSize_changeHandler(event:Event):void{
+				var val:uint=nsalertSize.value;
+				if (!val) return;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.alertSize = val;
+				so.flush();  
+			}
+			
+			protected function nsalertTime_changeHandler(event:Event):void{
+				var val:uint=nsalertTime.value;
+				if (!val) return;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.alertTime = val;
+				so.flush();  
+			}
+			
+			protected function btSoundFile_clickHandler(event:MouseEvent):void{
+				//browse
+				var file:File = File.userDirectory;
+				file.addEventListener(Event.SELECT,prtFolderSet);
+				file.browseForOpen('Выбирите файл звука (mp3)');
+			}
+			protected function prtFolderSet(event:Event):void{
+				var file:File = event.target as File;
+				if(file){
+					file.removeEventListener(Event.SELECT,prtFolderSet);
+					//conf.wrk_path=fl.nativePath;
+					alertSound=file.nativePath;;
+					//save last selection
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.alertSound = alertSound;
+					so.flush();
+					AlertrPopup.alertSound=alertSound;
+				}
+			}
+			
+			protected function ddBP_changeHandler(event:IndexChangeEvent):void{
+				if(ddBP.selectedIndex!=-1){
+					firstBookPart=ddBP.selectedIndex;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.firstBookPart = firstBookPart;
+					so.flush();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<barcode:SerialProxy id="serialProxy" serialProxyError="serialProxy_serialProxyErrorHandler(event)"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="config"/>
+		<s:State name="monitor"/>
+	</s:states>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:VGroup  includeIn="config" gap="5" top="5" left="10" right="5" bottom="50">
+		<s:Spacer height="5"/>
+		<s:Label text="Сообщения об ошибках"/>
+		<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
+			<s:Label text="Шрифт:"/>
+			<s:NumericStepper id="nsalertSize" value="@{alertSize}" minimum="10" maximum="100" change="nsalertSize_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
+			<s:Label text="Здержка (сек):"/>
+			<s:NumericStepper id="nsalertTime" value="@{alertTime}" minimum="1" maximum="60" change="nsalertTime_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
+			<s:Label text="Звук:"/>
+			<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
+			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
+			<s:Label text="Очередность. Первым идет:"/>
+			<s:DropDownList id="ddBP" dataProvider="{bookPartAC}" selectedIndex="{firstBookPart}" change="ddBP_changeHandler(event)"/>
+		</s:HGroup>
+
+		<s:Spacer height="5"/>
+		<s:HGroup gap="10">
+			<s:VGroup gap="5">
+				<s:Label text="Сканер обложки" fontWeight="bold"/>
+				<itemRenderer:ComInfoRenderer  data="{comInfoCover}" lockType="true"/>
+			</s:VGroup>
+			
+			<s:VGroup gap="5">
+				<s:Label text="Сканер блока" fontWeight="bold"/>
+				<itemRenderer:ComInfoRenderer  data="{comInfoBlock}" lockType="true"/>
+			</s:VGroup>
+		</s:HGroup>
+
+		<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+		
+	</s:VGroup>
+	
+	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
+		<view:TechUJoinView id="techMonitor"  
+						   barcodeReaderCover="{barcodeReaderCover}"  barcodeReaderBlock="{barcodeReaderBlock}"
+						   firstBookPart="{firstBookPart}"
+						   alertSize="{alertSize}" alertTime="{alertTime}"
+						   width="100%" height="100%"/>
+	</s:VGroup>
+	
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+		<s:Spacer width="100%"/>
+		<s:Button label="Стоп" includeIn="monitor" click="{stop()}"/>
+		<s:Button label="Старт" includeIn="config" click="{start()}"/>
+		<s:Button label="Закрыть" click="{closeApp()}" />
+	</s:HGroup>
+	
+</s:WindowedApplication>
