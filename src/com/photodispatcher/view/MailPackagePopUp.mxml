@@ -180,12 +180,20 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onloadChildOrders);
 					if(latch.complite){
-						mailPackage.orders=latch.lastDataAC;
+						var orders:Array=[];
+						var o:Order;
+						if(latch.lastDataAC){
+							for each(o in latch.lastDataAC){
+								if(o.state< OrderState.CANCELED_SYNC) orders.push(o);
+							}
+						}
+						//mailPackage.orders=latch.lastDataAC;
+						mailPackage.orders=new ArrayCollection(orders);
 						if(mailPackage.state_date==null && mailPackage.orders){
 							mailPackage.state= OrderState.TECH_OTK;
 							mailPackage.state_name= OrderState.getStateName(OrderState.TECH_OTK);
 							//set state by orders
-							for each(var o:Order in mailPackage.orders){
+							for each(o in mailPackage.orders){
 								if(mailPackage.state>o.state){
 									mailPackage.state=o.state;
 									mailPackage.state_name= OrderState.getStateName(mailPackage.state);
