@@ -55,8 +55,12 @@ package com.photodispatcher.provider.preprocess{
 		
 		override protected function releaseWithError(error:int, msg:String):void{
 			//restore rejects state (uncapture)
-			//TODO cancel?
-			setRejectsState(OrderState.REPRINT_WAITE);
+			if(error==OrderState.ERR_FILE_SYSTEM){
+				//has no source images, cancel 
+				setRejectsState(OrderState.PREPROCESS_INCOMPLETE);
+			}else{
+				setRejectsState(OrderState.REPRINT_WAITE);
+			}
 			rejects=null;
 			super.releaseWithError(error, msg);
 		}

@@ -113,7 +113,7 @@
 				//browse
 				var f:File = File.userDirectory;
 				f.addEventListener(Event.SELECT,onOOFolderSet);
-				f.browseForDirectory('Выбирите папку ImageMagick');
+				f.browseForDirectory('Выбирите папку OpenOffice');
 			}
 			protected function onOOFolderSet(event:Event):void{
 				ooPathValid=false;
