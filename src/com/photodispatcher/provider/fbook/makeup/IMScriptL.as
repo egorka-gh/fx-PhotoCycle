@@ -668,13 +668,21 @@ package com.photodispatcher.provider.fbook.makeup{
 			frameSize.x=Math.round(frameSize.x*GeomUtil.getScaleX(fd.matrix));
 			frameSize.y=Math.round(frameSize.y*GeomUtil.getScaleY(fd.matrix));
 			
+			//check if image outside frame
+			var cRect:Rectangle= new Rectangle(0,0,frameSize.x,frameSize.y);
+			var imSize:Point= new Point(fd.imageWidth, fd.imageHeight);
+			if(imSize.x<=0) imSize.x=frameSize.x;
+			if(imSize.y<=0) imSize.y=frameSize.y;
+			var rect:RectangleTransformation= new RectangleTransformation(new Rectangle(0,0,imSize.x,imSize.y),iMatrix);
+			var drawImage:Boolean=cRect.intersects(rect);
+			
 			//generate sized photo
 			var fileName:String=userSubDir+StrUtil.contentIdToFileName(fd.imageId);
 			var gc:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
-			//gc.add('-depth'); gc.add(IMAGE_DEPTH);
+			
 			gc.append(cmdSolidColorImage(frameSize));
-			gc.append(cmdDrawImage(fileName, iMatrix)); //, null));
-			//gc.append(cmdSolidColorImage(frameSize));
+			if(drawImage) gc.append(cmdDrawImage(fileName, iMatrix)); 
+			
 			//save
 			gc.add(tmpFile);
 			gc.setProfile('Подготовка фото, страница #'+ pd.pageNum,tmpFile);
