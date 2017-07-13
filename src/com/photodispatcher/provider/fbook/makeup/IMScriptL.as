@@ -41,6 +41,8 @@ package com.photodispatcher.provider.fbook.makeup{
 		public static const GM_XML_HEAD:String='<?xml version="1.0" encoding="UTF-8"?>\n';
 		public static const PAGE_PREVIEW_BOUND:int=250;
 		public static const IMAGE_DEPTH:String='8';
+		public static const IMAGE_MAX_PIXEL_LEN:int=200000;
+		public static const IMAGE_MAX_PIXEL_SIZE:int=1000000000;
 		
 		private var _book:FBookProject;
 		//private var wrkFolder:String;
@@ -668,13 +670,13 @@ package com.photodispatcher.provider.fbook.makeup{
 			frameSize.x=Math.round(frameSize.x*GeomUtil.getScaleX(fd.matrix));
 			frameSize.y=Math.round(frameSize.y*GeomUtil.getScaleY(fd.matrix));
 			
-			//check if image outside frame
+			//check if image outside frame and pixel width/height < IMAGE_MAX_PIXEL_SIZE
 			var cRect:Rectangle= new Rectangle(0,0,frameSize.x,frameSize.y);
 			var imSize:Point= new Point(fd.imageWidth, fd.imageHeight);
 			if(imSize.x<=0) imSize.x=frameSize.x;
 			if(imSize.y<=0) imSize.y=frameSize.y;
 			var rect:RectangleTransformation= new RectangleTransformation(new Rectangle(0,0,imSize.x,imSize.y),iMatrix);
-			var drawImage:Boolean=cRect.intersects(rect);
+			var drawImage:Boolean=cRect.intersects(rect) && (rect.width<IMAGE_MAX_PIXEL_LEN) && (rect.height<IMAGE_MAX_PIXEL_LEN) &&  ((rect.width*rect.height)<IMAGE_MAX_PIXEL_SIZE);
 			
 			//generate sized photo
 			var fileName:String=userSubDir+StrUtil.contentIdToFileName(fd.imageId);
