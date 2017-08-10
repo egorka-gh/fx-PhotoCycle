@@ -1,13 +1,20 @@
 package com.photodispatcher.service{
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.AsyncSQLEvent;
 	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.ProcessState;
 	import com.photodispatcher.model.mysql.AsyncLatch;
 	import com.photodispatcher.model.mysql.DbLatch;
+	import com.photodispatcher.model.mysql.entities.Order;
+	import com.photodispatcher.model.mysql.entities.OrderLoad;
+	import com.photodispatcher.model.mysql.entities.OrderState;
+	import com.photodispatcher.model.mysql.entities.OrderTemp;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
+	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderLoadService;
 	import com.photodispatcher.service.web.BaseWeb;
+	import com.photodispatcher.service.web.FotoknigaWeb;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.Event;
@@ -51,6 +58,7 @@ package com.photodispatcher.service{
 		
 		private var webLath:DbLatch;
 		private function webSync():void{
+			arrToReset=[];
 			isRunning=true;
 			syncItems=[];
 			webLath=new DbLatch(true);
@@ -82,6 +90,13 @@ package com.photodispatcher.service{
 			isRunning=false;
 			CursorManager.removeBusyCursor();
 			dispatchEvent(new Event(Event.COMPLETE));
+			
+			//load orders 2 restart
+			var dbLatch:DbLatch = new DbLatch(true);
+			dbLatch.addEventListener(Event.COMPLETE, onRestartLoaded);
+			dbLatch.addLatch(service.loadByState(OrderState.CANCELED_LOADER_RESET, OrderState.CANCELED_LOADER_RESET+1));
+			dbLatch.start();
+
 		}
 		
 		private function handleWebComplete(e:Event):void{
@@ -106,6 +121,14 @@ package com.photodispatcher.service{
 				endSync();
 				return;
 			}
+			
+			//mark order to reset
+			for each(var o:OrderTemp in syncItems){
+				if(int(o.src_state) == FotoknigaWeb.ORDER_STATE_PAYMENT_ACCEPTED){
+					o.state=OrderState.CANCELED_LOADER_RESET;
+				}
+			}
+			
 			fillDb();
 		}
 		
@@ -163,6 +186,60 @@ package com.photodispatcher.service{
 				}
 			}
 			endSync();
+		}
+
+
+		private var arrToReset:Array=[];
+		
+		private function onRestartLoaded(e:Event):void{
+			var dbLatch:DbLatch=e.target as DbLatch;
+			if(dbLatch){
+				dbLatch.removeEventListener(Event.COMPLETE,onRestartLoaded);
+				if(dbLatch.complite){
+					arrToReset=dbLatch.lastDataArr;
+					resetNext();
+				}
+			}
+		}
+		
+		private function resetNext():void{
+			if(!arrToReset || arrToReset.length==0) return;
+			var order:Order=arrToReset.shift() as Order;
+			if(!order){
+				resetNext();
+				return;
+			}
+			
+			var source:Source=Context.getSource(order.source);
+			if(!source){
+				resetNext();
+				return;
+			}
+			StateLog.log(order.state, order.id,'','Сброс на сайте');
+			var webService:BaseWeb=WebServiceBuilder.build(source);
+			order.src_state=OrderLoad.REMOTE_STATE_READY.toString();
+			webService.addEventListener(Event.COMPLETE,onSetOrderStateWeb);
+			webService.setLoaderOrderState(order);
+		}
+		private function onSetOrderStateWeb(e:Event):void{
+			var pw:BaseWeb=e.target as BaseWeb;
+			pw.removeEventListener(Event.COMPLETE,onSetOrderStateWeb);
+			var order:Order=pw.getLastOrder();
+			if(order){
+				if(pw.hasError){
+					//web err or site reject state change
+					//reset state
+					order.state=OrderState.CANCELED_USER;
+					StateLog.log(order.state, order.id,'',pw.errMesage);
+					var latch:DbLatch= new DbLatch(true);
+					//latch.addEventListener(Event.COMPLETE,onOrderLoad);
+					latch.addLatch(service.save(OrderLoad.fromOrder(order),0));
+					latch.start();
+				}else{
+					StateLog.log(order.state, order.id,'','Сброс выполнен');
+				}
+			}
+			resetNext();
 		}
 
 	}

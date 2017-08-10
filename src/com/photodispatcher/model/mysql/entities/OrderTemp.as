@@ -10,5 +10,8 @@ package com.photodispatcher.model.mysql.entities {
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.OrderTemp")]
     public class OrderTemp extends OrderTempBase {
+		
+		//remote source state runtime
+		public var src_state:String;
     }
 }

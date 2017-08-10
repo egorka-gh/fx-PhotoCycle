@@ -157,6 +157,14 @@ package com.photodispatcher.service.web{
 						//getData();
 						startSyncActiveLoader();
 						break;
+					/*
+					case CMD_SYNC_RESTART_LDR:
+						orderes=[];
+						startListen();
+						//getData();
+						startSyncRestarLoader();
+						break;
+					*/
 					case CMD_SYNC_LDR:
 						orderes=[];
 						startListen();
@@ -300,6 +308,31 @@ package com.photodispatcher.service.web{
 			client.getData( new InvokerUrl(baseUrl+URL_API),post);
 		}
 
+		/*
+		override public function syncRestarLoader():void{
+			//get orders valid 4 loader (generate list to reset on site ) 
+			is_newAPI=false;
+			if(!source || source.type!=SourceType.SRC_FOTOKNIGA){
+				abort('Не верная иннициализация синхронизации');
+				return;
+			}
+			cmd=CMD_SYNC_RESTART_LDR;
+			_hasError=false;
+			_errMesage='';
+			login();
+		}
+		private function startSyncRestarLoader():void{
+			is_newAPI=false;
+			var post:Object;
+			post= new Object();
+			post[PARAM_KEY]=API_KEY;
+			post[PARAM_COMMAND]=COMMAND_LIST_ORDERS;
+			var states:Array=[PARAM_STATUS_ORDERED_VALUE];
+			post[PARAM_STATUSES]=states;
+			if(source.fbookSid) post.sid=source.fbookSid;
+			client.getData( new InvokerUrl(baseUrl+URL_API),post);
+		}
+		*/
 
 		override public function sync():void{
 			is_newAPI=false;
@@ -500,6 +533,7 @@ package com.photodispatcher.service.web{
 					listFtp();
 					return;
 					break;
+				//case CMD_SYNC_RESTART_LDR:
 				case CMD_SYNC_ACTIVE_LDR:
 					if(!(result.result is Array)){
 						abort('FotoknigaWeb Ошибка структуры данных');

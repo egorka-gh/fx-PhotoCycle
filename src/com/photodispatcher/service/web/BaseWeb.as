@@ -33,6 +33,7 @@ package com.photodispatcher.service.web{
 		protected static const CMD_GET_ORDER_LDR:int=8;
 		protected static const CMD_SET_ORDER_LDR_STATE:int=9;
 		protected static const CMD_SYNC_ACTIVE_LDR:int=10;
+		//protected static const CMD_SYNC_RESTART_LDR:int=11;
 
 		public var isRunning:Boolean=false;
 
@@ -105,8 +106,13 @@ package com.photodispatcher.service.web{
 			throw new Error("You need to override setLoaderOrderState() in your concrete class");
 		}
 		public function syncActiveLoader():void{
-			throw new Error("You need to override syncLoad() in your concrete class");
+			throw new Error("You need to override syncActiveLoader() in your concrete class");
 		}
+		/*
+		public function syncRestarLoader():void{
+			throw new Error("You need to override syncRestarLoader() in your concrete class");
+		}
+		*/
 		
 		public function get lastOrderId():String{
 			throw new Error("You need to override lastOrderId() in your concrete class");

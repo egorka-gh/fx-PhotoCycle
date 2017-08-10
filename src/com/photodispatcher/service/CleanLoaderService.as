@@ -234,7 +234,10 @@ package com.photodispatcher.service{
 			}
 			currFolder=folders2kill.pop() as CleanFileHolder;
 			if(!currFolder || !currFolder.file || !currFolder.file.exists || !currFolder.file.isDirectory){
-				if(currFolder && currFolder.orderId) markKilled(currFolder.orderId);
+				if(currFolder && currFolder.orderId){
+					complited++;
+					markKilled(currFolder.orderId);
+				}
 				killNextFolder();
 				return;
 			}

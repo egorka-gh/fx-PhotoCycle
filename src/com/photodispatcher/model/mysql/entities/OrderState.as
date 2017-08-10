@@ -119,6 +119,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PACKAGE_SEND:int=465;
 		public static const PACKAGE_SEND_SITE:int=466;
 		public static const CANCELED_SYNC:int=505;
+		public static const CANCELED_INACTIVE:int=506;
 		public static const CANCELED:int=507;
 		public static const CANCELED_USER:int=510;
 		public static const CANCEL_PACKAGE_JOIN:int=511;
@@ -127,6 +128,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static const CANCELED_LOADER_INVALID:int=529;
 		public static const CANCELED_LOADER_DELETED:int=530;
+		public static const CANCELED_LOADER_RESET:int=531;
 		
 		private static var stateMap:Object;
 		
