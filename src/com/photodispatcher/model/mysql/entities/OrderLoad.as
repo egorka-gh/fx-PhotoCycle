@@ -26,6 +26,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const REMOTE_STATE_COPY:int=20;
 		public static const REMOTE_STATE_ERROR:int=25;
 		public static const REMOTE_STATE_DONE:int=30;
+		public static const REMOTE_STATE_DEL:int=50;
 
 		
 		public static function gridColumns():ArrayList{

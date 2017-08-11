@@ -20,6 +20,7 @@ package com.photodispatcher.service{
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
+	import flash.filesystem.File;
 	import flash.globalization.DateTimeFormatter;
 	
 	import mx.collections.ArrayCollection;
@@ -190,6 +191,7 @@ package com.photodispatcher.service{
 
 
 		private var arrToReset:Array=[];
+		private var toResetOrder:Order;
 		
 		private function onRestartLoaded(e:Event):void{
 			var dbLatch:DbLatch=e.target as DbLatch;
@@ -204,23 +206,132 @@ package com.photodispatcher.service{
 		
 		private function resetNext():void{
 			if(!arrToReset || arrToReset.length==0) return;
-			var order:Order=arrToReset.shift() as Order;
-			if(!order){
+			if(toResetOrder) return; //running
+			toResetOrder=arrToReset.shift() as Order;
+			if(!toResetOrder){
 				resetNext();
 				return;
 			}
 			
-			var source:Source=Context.getSource(order.source);
+			var source:Source=Context.getSource(toResetOrder.source);
 			if(!source){
+				toResetOrder=null;
 				resetNext();
 				return;
 			}
-			StateLog.log(order.state, order.id,'','Сброс на сайте');
+			//ask loader state and ..
+			StateLog.log(OrderState.CANCELED_LOADER_RESET, toResetOrder.id,'','Попытка перезапуска');
 			var webService:BaseWeb=WebServiceBuilder.build(source);
-			order.src_state=OrderLoad.REMOTE_STATE_READY.toString();
-			webService.addEventListener(Event.COMPLETE,onSetOrderStateWeb);
-			webService.setLoaderOrderState(order);
+			webService.addEventListener(Event.COMPLETE,onGetOrderWeb);
+			webService.getLoaderOrder(toResetOrder);
+			
 		}
+		
+		private function onGetOrderWeb(e:Event):void{
+			var webService:BaseWeb=e.target as BaseWeb;
+			webService.removeEventListener(Event.COMPLETE,onGetOrderWeb);
+			if(!toResetOrder || toResetOrder.id!= webService.getLastOrder().id){
+				//removed from queue or some else
+				//check next or stop
+				toResetOrder=null;
+				resetNext();
+				return;
+			}
+			if(webService.hasError){
+				StateLog.log(OrderState.ERR_WEB, toResetOrder.id,'',webService.errMesage);
+				toResetOrder=null;
+				resetNext();
+				return;
+			}
+			
+			toResetOrder.files=null;
+			var latch:DbLatch;
+			if(toResetOrder.src_state==OrderLoad.REMOTE_STATE_COPY.toString()){
+				//attempt to reset
+				resetSiteState();
+				return;
+			}
+
+			if(toResetOrder.src_state==OrderLoad.REMOTE_STATE_DONE.toString() || toResetOrder.src_state==OrderLoad.REMOTE_STATE_DEL.toString()){
+				//loaded
+				//check lockal files
+				var path:String;
+				var file:File;
+				var source:Source=Context.getSource(toResetOrder.source);
+				if(source) path=source.getWrkFolder();
+				if(path){
+					path=path+File.separator+toResetOrder.ftp_folder;
+					file=new File(path);
+					if(!file.exists || !file.isDirectory) file=null;
+				}
+				if(!file){
+					//deleted lockaly
+					StateLog.log(OrderState.ERR_FILE_SYSTEM,toResetOrder.id,'','Нет локальных файлов заказа (не загружены или удалены)');
+					if(toResetOrder.src_state==OrderLoad.REMOTE_STATE_DONE.toString()){
+						//attempt to reset
+						resetSiteState();
+						return;
+					}else{
+						StateLog.log(OrderState.ERR_LOAD,toResetOrder.id,'','Файлы заказа удалены на сайте');
+						toResetOrder.state=OrderState.FTP_INCOMPLITE;
+						latch= new DbLatch(true);
+						//latch.addEventListener(Event.COMPLETE,onOrderLoad);
+						latch.addLatch(service.save(OrderLoad.fromOrder(toResetOrder),0));
+						latch.start();
+						
+						toResetOrder=null;
+						resetNext();
+						return;
+					}
+				}
+
+				//restore loaded state
+				toResetOrder.state=OrderState.FTP_COMPLETE;
+				latch= new DbLatch(true);
+				//latch.addEventListener(Event.COMPLETE,onOrderLoad);
+				latch.addLatch(service.save(OrderLoad.fromOrder(toResetOrder),0));
+				latch.start();
+				
+				toResetOrder=null;
+				resetNext();
+				return;
+			}
+		}
+
+		private function resetSiteState():void{
+			if(!toResetOrder) return;
+			
+			var latch:DbLatch;
+			//attempt to reset
+			StateLog.log(toResetOrder.state, toResetOrder.id,'','Сброс на сайте');
+			//check if not locked
+			if(!toResetOrder.canChangeRemoteState){
+				//can't change site state
+				StateLog.log(OrderState.ERR_WEB,toResetOrder.id,'','Запрет смены статуса на сайте');
+				//mark canceled
+				toResetOrder.state=OrderState.CANCELED_USER;
+				latch= new DbLatch(true);
+				//latch.addEventListener(Event.COMPLETE,onOrderLoad);
+				latch.addLatch(service.save(OrderLoad.fromOrder(toResetOrder),0));
+				latch.start();
+				
+				toResetOrder=null;
+				resetNext();
+				return;
+			}
+				
+			toResetOrder.src_state=OrderLoad.REMOTE_STATE_READY.toString();
+			var source:Source=Context.getSource(toResetOrder.source);
+			if(!source){
+				toResetOrder=null;
+				resetNext();
+				return;
+			}
+			var webService:BaseWeb=WebServiceBuilder.build(source);
+			webService.addEventListener(Event.COMPLETE,onSetOrderStateWeb);
+			webService.setLoaderOrderState(toResetOrder);
+		}
+		
 		private function onSetOrderStateWeb(e:Event):void{
 			var pw:BaseWeb=e.target as BaseWeb;
 			pw.removeEventListener(Event.COMPLETE,onSetOrderStateWeb);
@@ -239,6 +350,8 @@ package com.photodispatcher.service{
 					StateLog.log(order.state, order.id,'','Сброс выполнен');
 				}
 			}
+
+			toResetOrder=null;
 			resetNext();
 		}
 

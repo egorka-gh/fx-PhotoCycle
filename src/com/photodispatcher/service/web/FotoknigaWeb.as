@@ -573,6 +573,7 @@ package com.photodispatcher.service.web{
 						lastOrder.ftp_folder=str;//ol.ftp_folder;
 						lastOrder.fotos_num=ol.fotos_num;
 						lastOrder.files=ol.files as ArrayCollection;
+						lastOrder.src_state=ol.src_state.toString();
 						lastOrder.canChangeRemoteState=ol.canChangeRemoteState;
 					}else{
 						abort('FotoknigaWeb Ошибка структуры данных');
