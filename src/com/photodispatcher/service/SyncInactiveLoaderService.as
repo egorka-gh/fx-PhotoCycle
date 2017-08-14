@@ -309,7 +309,7 @@ package com.photodispatcher.service{
 				//can't change site state
 				StateLog.log(OrderState.ERR_WEB,toResetOrder.id,'','Запрет смены статуса на сайте');
 				//mark canceled
-				toResetOrder.state=OrderState.CANCELED_USER;
+				toResetOrder.state=OrderState.FTP_INCOMPLITE;
 				latch= new DbLatch(true);
 				//latch.addEventListener(Event.COMPLETE,onOrderLoad);
 				latch.addLatch(service.save(OrderLoad.fromOrder(toResetOrder),0));
@@ -340,7 +340,7 @@ package com.photodispatcher.service{
 				if(pw.hasError){
 					//web err or site reject state change
 					//reset state
-					order.state=OrderState.CANCELED_USER;
+					order.state=OrderState.FTP_INCOMPLITE;
 					StateLog.log(order.state, order.id,'',pw.errMesage);
 					var latch:DbLatch= new DbLatch(true);
 					//latch.addEventListener(Event.COMPLETE,onOrderLoad);
