@@ -12,8 +12,10 @@
 			import com.photodispatcher.event.OrderBuildProgressEvent;
 			import com.photodispatcher.factory.PrintGroupBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderBook;
 			import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 			import com.photodispatcher.model.mysql.entities.OrderExtraMessage;
 			import com.photodispatcher.model.mysql.entities.OrderExtraState;
@@ -51,6 +53,12 @@
 			private var order:Order;
 			[Bindable]
 			private var pgList:ArrayCollection;
+			[Bindable]
+			private var booksBlock:ArrayCollection;
+			[Bindable]
+			private var booksCover:ArrayCollection;
+			[Bindable]
+			private var booksReject:ArrayCollection;
 			[Bindable]
 			private var soList:ArrayCollection;
 			[Bindable]
@@ -112,6 +120,7 @@
 							logFilterList= new ArrayCollection(aa);
 						}
 						
+						//suborders
 						if(!order.suborders){
 							soList= new ArrayCollection();
 						}else{
@@ -124,6 +133,35 @@
 						aa.unshift(so);
 						soList= new ArrayCollection(aa);
 						soFilterList= new ArrayCollection(aa);
+						
+						//fill books
+						if(order.books){
+							booksBlock= new ArrayCollection();
+							booksCover= new ArrayCollection();
+							booksReject= new ArrayCollection();
+							for each(var b:OrderBook in order.books){
+								if(b){
+									if(b.is_reject){
+										booksReject.addItem(b);			
+									}else{
+										if(b.book_part==BookSynonym.BOOK_PART_COVER){
+											booksCover.addItem(b);
+										}else{
+											booksBlock.addItem(b);
+										}
+									}
+								}
+							}
+							if(soFilterList.length>1){
+								booksCover.filterFunction=filterBookList;
+								booksBlock.filterFunction=filterBookList;
+								booksReject.filterFunction=filterBookList;
+							}
+						}
+						if(lstFilterBooks){
+							lstFilterBooks.selectedIndex=0;
+							applyBooksFilter();
+						}
 						
 						techList=order.techLog as ArrayCollection;
 						if(techList){
@@ -177,6 +215,19 @@
 				pgList.refresh();
 			}
 
+			private function filterBookList(item:Object):Boolean {
+				var b:OrderBook=item as OrderBook;
+				if(!b) return false;
+				if(!lstFilterBooks || lstFilterBooks.selectedItem.sub_id!=b.sub_id) return false;
+				return true;
+			}
+			private function applyBooksFilter():void{
+				booksBlock.refresh();
+				booksCover.refresh();
+				booksReject.refresh();
+			}
+
+			
 			private function filterTechList(item:Object):Boolean {
 				if(!dgTechAgg || dgTechAgg.selectedIndex==-1) return true;
 				var f:TechLog=item as TechLog;
@@ -686,6 +737,33 @@
 										width="100" height="100%" change="{applyPgFilter()}"/>
 								<s:DataGrid id="dgPGroups" selectionMode="singleRow" width="100%" height="100%" editable="true"
 											dataProvider="{pgList}" locale="ru_RU" columns="{PrintGroup.shortGridColumns()}"/>
+							</s:HGroup>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Книги" backgroundAlpha="0" width="100%" height="100%"  includeIn="infoFull">
+							<s:HGroup gap="10"  top="10" left="10" right="10" bottom="10">
+								<s:List id="lstFilterBooks" dataProvider="{soFilterList}" labelField="sub_id"
+										width="100" height="100%" change="{applyBooksFilter()}"/>
+								<s:VGroup gap="10" width="100%" height="100%">
+									<s:Label text="Книг {lstFilterBooks.selectedItem.extraInfo.books} Разворотов {lstFilterBooks.selectedItem.extraInfo.sheets}"/>
+									<s:HGroup gap="10" width="100%" height="70%">
+										<s:VGroup gap="5" width="50%" height="100%">
+											<s:Label text="Блок"/>
+											<s:DataGrid selectionMode="singleRow" width="100%" height="100%" editable="true"
+														dataProvider="{booksBlock}" locale="ru_RU" columns="{OrderBook.gridColumns()}"/>
+										</s:VGroup>
+										<s:VGroup gap="5" width="50%" height="100%">
+											<s:Label text="Обложка"/>
+											<s:DataGrid selectionMode="singleRow" width="100%" height="100%" editable="true"
+														dataProvider="{booksCover}" locale="ru_RU" columns="{OrderBook.gridColumns()}"/>
+										</s:VGroup>
+									</s:HGroup>
+									
+									<s:VGroup gap="5" width="100%" height="30%">
+										<s:Label text="Браки"/>
+										<s:DataGrid selectionMode="singleRow" width="100%" height="100%" editable="true"
+													dataProvider="{booksReject}" locale="ru_RU" columns="{OrderBook.gridRejectColumns()}"/>
+									</s:VGroup>
+								</s:VGroup>
 							</s:HGroup>
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Файлы" width="100%" height="100%"  includeIn="infoFull">

@@ -244,6 +244,9 @@ package com.photodispatcher.service{
 				return;
 			}
 			
+			StateLog.log(OrderState.CANCELED_LOADER_RESET, toResetOrder.id,'','Статус на сайте "'+toResetOrder.src_state+'"');
+			StateLog.log(OrderState.CANCELED_LOADER_RESET, toResetOrder.id,'','Разрешена смена статуса '+toResetOrder.canChangeRemoteState);
+			
 			toResetOrder.files=null;
 			var latch:DbLatch;
 			if(toResetOrder.src_state==OrderLoad.REMOTE_STATE_COPY.toString()){
@@ -284,7 +287,7 @@ package com.photodispatcher.service{
 						return;
 					}
 				}
-
+				StateLog.log(OrderState.CANCELED_LOADER_RESET,toResetOrder.id,'','Папка локальных файлов доступна. Восстанавливаю статус заказа Загружен');
 				//restore loaded state
 				toResetOrder.state=OrderState.FTP_COMPLETE;
 				latch= new DbLatch(true);

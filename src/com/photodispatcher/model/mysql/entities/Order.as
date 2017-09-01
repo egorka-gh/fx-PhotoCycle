@@ -354,6 +354,29 @@ package com.photodispatcher.model.mysql.entities {
 				return id;
 			}
 		}
+		
+		/*
+		public function getBooks(bookPart:int):ArrayCollection{
+			var arr:Array=[];
+			if(books){
+				 for each(var b:OrderBook in books){
+					 if(b.book_part==bookPart) arr.push(b);
+				 }
+			}
+			return new ArrayCollection(arr);
+		}
+
+		public function getBooksReject():ArrayCollection{
+			var arr:Array=[];
+			if(books){
+				for each(var b:OrderBook in books){
+					if(b.is_reject) arr.push(b);
+				}
+			}
+			return new ArrayCollection(arr);
+			
+		}
+		*/
 
 	}
 }

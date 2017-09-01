@@ -18,6 +18,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _books:ListCollectionView;
         private var _clean_fs:Boolean;
         private var _clientId:int;
         private var _data_ts:String;
@@ -48,6 +49,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _sync:int;
         private var _tag:String;
         private var _techLog:ListCollectionView;
+
+        public function set books(value:ListCollectionView):void {
+            _books = value;
+        }
+        public function get books():ListCollectionView {
+            return _books;
+        }
 
         public function set clean_fs(value:Boolean):void {
             _clean_fs = value;
@@ -261,6 +269,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _books = input.readObject() as ListCollectionView;
             _clean_fs = input.readObject() as Boolean;
             _clientId = input.readObject() as int;
             _data_ts = input.readObject() as String;
@@ -295,6 +304,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject(_books);
             output.writeObject(_clean_fs);
             output.writeObject(_clientId);
             output.writeObject(_data_ts);

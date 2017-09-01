@@ -208,6 +208,7 @@ package com.photodispatcher.tech{
 			}else{
 				feedBookDelay=0;
 			}
+			log('Задержка между книгами '+feedBookDelay.toString());
 			if(Context.getAttribute("repeatedSignalGap")){
 				repeatedSignalGap=Context.getAttribute("repeatedSignalGap");
 			}else{
@@ -586,6 +587,14 @@ package com.photodispatcher.tech{
 							}
 						}
 						
+						//book delay
+						if (register && register.currentBookComplited){
+							if(startFeedBookDelay()){
+								currentGroupStep=0;
+								return;
+							}
+						}
+						
 						//cycle feeding
 						currentGroupStep=0;
 						//nextStep();
@@ -648,7 +657,7 @@ package com.photodispatcher.tech{
 							currBookIdx=-1;
 							currSheetTot=-1;
 							currSheetIdx=-1;
-							log('Заказ '+currPgId+' завершен.');
+							log('Заказ '+currPgId+' завершен?.');
 							currPgId='';
 							/*
 							if(stopOnComplite){
@@ -811,8 +820,8 @@ package com.photodispatcher.tech{
 				feedBookTimer.reset();
 				feedBookTimer.delay=feedBookDelay+feedDelay;
 			}
+			log('Задержка между книгами '+feedBookDelay.toString());
 			feedBookTimer.start();
-			log('Задержка между книгами');
 			return true;
 		}
 		
@@ -845,8 +854,11 @@ package com.photodispatcher.tech{
 				if(barcode!=currBarcode) pause('Не ожидаемое срабатывание сканера ШК, код:' +barcode);
 				return;
 			}
-			barLatch.forward();
-			if(barcode==currBarcode) return; //doublescan or more then 1 barreader
+			//barLatch.forward();
+			if(barcode==currBarcode){ //doublescan or more then 1 barreader
+				//barLatch.forward();
+				return; 
+			}
 			currBarcode=barcode;
 			//parce barcode
 			var pgId:String;
@@ -894,7 +906,7 @@ package com.photodispatcher.tech{
 						currBookIdx=-1;
 						currSheetTot=-1;
 						currSheetIdx=-1;
-						log('Заказ '+currPgId+' завершен.');
+						log('Заказ '+currPgId+' завершен.b');
 						currPgId='';
 						/*
 						if(stopOnComplite){
@@ -909,7 +921,8 @@ package com.photodispatcher.tech{
 						*/
 					}else{
 						//onRegisterErr should suspend sequense
-						log('Не верный заказ разворота, текущий: '+currPgId+', заказ разворота'+pgId);
+						//log('Не верный заказ разворота, текущий: '+currPgId+', заказ разворота'+pgId);
+						pause('Не верный заказ разворота, текущий: '+currPgId+', заказ разворота'+pgId);
 						return;
 					}
 				}else{
@@ -961,7 +974,7 @@ package com.photodispatcher.tech{
 			//check sequence
 			registerLatch.setOn();
 			register.register(bookNum,pageNum);
-			//barLatch.forward();
+			barLatch.forward();
 		}
 
 		override protected function onRegisterErr(event:ErrorEvent):void{

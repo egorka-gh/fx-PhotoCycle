@@ -249,9 +249,11 @@
 						latch.addLatch(svc.printGroupMarkInPrint(printGroup));
 						latch.start();
 						break;
+					/*
 					case SourceType.TECH_FOLDING:
 						result= new TechRegisterFolding(printGroup,books,sheets);
 						break;
+					*/
 					default:
 						result= new TechRegisterCommon(printGroup,books,sheets);
 						break;

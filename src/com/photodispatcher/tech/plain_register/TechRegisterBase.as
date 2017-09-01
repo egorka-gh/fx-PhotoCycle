@@ -374,9 +374,8 @@ package com.photodispatcher.tech.plain_register{
 		}
 		
 		public function get isBookComplete():Boolean{
-			var endSheet:int=0;
-			if(bookPart==BookSynonym.BOOK_PART_BLOCK) endSheet=revers?1:sheets;
-			return lastSheet==endSheet;
+			if(!lastBook) return false;
+			return lastSheet==assumeEndSheet;
 		}
 		
 		public function get isComplete():Boolean{
@@ -477,11 +476,7 @@ package com.photodispatcher.tech.plain_register{
 			return lastSheet;
 		}
 		public function get currentBookComplited():Boolean{
-			if(!lastBook) return false;
-			if(bookPart==BookSynonym.BOOK_PART_COVER) return true;
-			var endSheet:int=revers?1:sheets;
-			if(bookPart==BookSynonym.BOOK_PART_BLOCKCOVER) endSheet=revers?1:0;
-			return lastSheet==endSheet;
+			return isBookComplete;
 		}
 		
 		public function finalise():Boolean{

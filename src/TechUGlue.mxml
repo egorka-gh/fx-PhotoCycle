@@ -127,7 +127,8 @@
 					if(feedDelay<=0) feedDelay=300;
 					pushDelay=so.data.bookDelay;
 					if(pushDelay<=0) pushDelay=300;
-					if(so.data.feedBookDelay) feedBookDelay=so.data.feedBookDelay;
+					feedBookDelay=so.data.feedBookDelay;
+					if(feedBookDelay<=0) feedBookDelay=0;
 					engineOnStartOn=so.data.engineOnStartOn;
 					vacuumOnStartOn=so.data.vacuumOnStartOn;
 					engineOnErrOff=so.data.engineOnErrOff;
