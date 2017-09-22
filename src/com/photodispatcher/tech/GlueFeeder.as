@@ -60,7 +60,9 @@ package com.photodispatcher.tech{
 		protected var registerLatch:PickerLatch;
 		protected var bdLatch:PickerLatch;
 		
-		protected var feedBookDelay:int=0;
+		//protected var feedBookDelay:int=0;
+		private var feedBookDelays:ArrayCollection;
+		private var feedDelay2:int;
 		protected var repeatedSignalGap:int=0;
 		
 		protected var currentLayer:int;
@@ -203,12 +205,23 @@ package com.photodispatcher.tech{
 				log('SerialProxy not started...');
 				return;
 			}
+			/*
 			if(Context.getAttribute("feedBookDelay")){
 				feedBookDelay=Context.getAttribute("feedBookDelay");
 			}else{
 				feedBookDelay=0;
 			}
 			log('Задержка между книгами '+feedBookDelay.toString());
+			*/
+			
+			feedBookDelays=Context.getAttribute("feedBookDelays");
+			if(!feedBookDelays || feedBookDelays.length==0){
+				log('Не настроены задержки между книгами');
+			}
+			
+			feedDelay2=Context.getAttribute("feedDelay2");
+			if(feedDelay2<=0) feedDelay2=feedDelay;
+			
 			if(Context.getAttribute("repeatedSignalGap")){
 				repeatedSignalGap=Context.getAttribute("repeatedSignalGap");
 			}else{
@@ -295,6 +308,8 @@ package com.photodispatcher.tech{
 			for (i=0; i<readers.length; i++) (barcodeReaders[i] as ComReader).start(readers[i]);
 		}
 
+		private var sheetCount:int=0;
+		
 		override protected function startInternal():void{
 			hasPauseRequest=false;
 			startDevices();
@@ -321,6 +336,7 @@ package com.photodispatcher.tech{
 			currBookIdx=-1;
 			currSheetTot=-1;
 			currSheetIdx=-1;
+			sheetCount=0;
 			pausedGroup=-1;
 			pausedGroupStep=-1;
 			
@@ -564,12 +580,14 @@ package com.photodispatcher.tech{
 							//order complited
 							//if(logger) logger.clear();
 							//detectFirstBook=false;
+							var sheetsPerBook:int=register.sheets;
 							register.finalise();
 							register=null;
 							currBookTot=-1;
 							currBookIdx=-1;
 							currSheetTot=-1;
 							currSheetIdx=-1;
+							sheetCount=0;
 							log('Заказ '+currPgId+' завершен.');
 							currPgId='';
 							if(stopOnComplite){
@@ -581,7 +599,7 @@ package com.photodispatcher.tech{
 								pause('Пауза между заказами',false);
 								return;
 							}
-							if(startFeedBookDelay()){
+							if(startFeedBookDelay(sheetsPerBook)){
 								currentGroupStep=0;
 								return;
 							}
@@ -589,7 +607,8 @@ package com.photodispatcher.tech{
 						
 						//book delay
 						if (register && register.currentBookComplited){
-							if(startFeedBookDelay()){
+							sheetCount=0;
+							if(startFeedBookDelay(register.sheets)){
 								currentGroupStep=0;
 								return;
 							}
@@ -657,6 +676,7 @@ package com.photodispatcher.tech{
 							currBookIdx=-1;
 							currSheetTot=-1;
 							currSheetIdx=-1;
+							sheetCount=0;
 							log('Заказ '+currPgId+' завершен?.');
 							currPgId='';
 							/*
@@ -708,6 +728,7 @@ package com.photodispatcher.tech{
 							currBookIdx=-1;
 							currSheetTot=-1;
 							currSheetIdx=-1;
+							sheetCount=0;
 							log('Заказ '+currPgId+' завершен.');
 							currPgId='';
 						}
@@ -808,7 +829,26 @@ package com.photodispatcher.tech{
 
 		
 		private var feedBookTimer:Timer;
-		protected function startFeedBookDelay():Boolean{
+		protected function startFeedBookDelay(sheetsPerBook:int):Boolean{
+			var feedBookDelay:int=0;
+			//detect feedBookDelay
+			var maxDelay:int=0;
+			var lastSheets:int=-1;
+			if(feedBookDelays && feedBookDelays.length>0){
+				for each (var obj:Object in feedBookDelays){
+					//{sheets:int(0),delay:int(0)}
+					if(obj.hasOwnProperty("sheets") && obj.hasOwnProperty("delay")){
+						if(obj.delay>maxDelay) maxDelay=obj.delay;
+						if(obj.sheets>=lastSheets && obj.sheets<=sheetsPerBook){
+							feedBookDelay=obj.delay;
+							lastSheets=obj.sheets;
+						}
+					}
+				}
+			}
+			//set max delay if feedBookDelay not found
+			if(feedBookDelay==0) feedBookDelay=maxDelay;
+			
 			if(feedBookDelay<100){
 				return false;
 			}
@@ -827,15 +867,19 @@ package com.photodispatcher.tech{
 		
 		private var feedTimer:Timer;
 		protected function startFeedDelay():void{
-			if(feedDelay<100){
+			var delay:int=feedDelay;
+			if(sheetCount==1) delay=feedDelay2;
+			if(delay<100){
 				//layerOutLatch.forward();
 				nextStep();
 				return;
 			}
 			
 			if(!feedTimer){
-				feedTimer= new Timer(feedDelay,1);
+				feedTimer= new Timer(delay,1);
 				feedTimer.addEventListener(TimerEvent.TIMER, onFeedDelayTimer);
+			}else{
+				feedTimer.delay=delay;
 			}
 			feedTimer.start();
 			log('Задержка подачи листа');
@@ -906,6 +950,7 @@ package com.photodispatcher.tech{
 						currBookIdx=-1;
 						currSheetTot=-1;
 						currSheetIdx=-1;
+						sheetCount=0;
 						log('Заказ '+currPgId+' завершен.b');
 						currPgId='';
 						/*
@@ -988,6 +1033,7 @@ package com.photodispatcher.tech{
 		override protected function onRegisterComplite(event:Event):void{
 			currBookIdx=register.currentBook;
 			currSheetIdx=register.currentSheet;
+			sheetCount++;
 			registerLatch.forward();
 		}
 		
