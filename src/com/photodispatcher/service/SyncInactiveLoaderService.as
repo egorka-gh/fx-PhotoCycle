@@ -95,7 +95,11 @@ package com.photodispatcher.service{
 			//load orders 2 restart
 			var dbLatch:DbLatch = new DbLatch(true);
 			dbLatch.addEventListener(Event.COMPLETE, onRestartLoaded);
-			dbLatch.addLatch(service.loadByState(OrderState.CANCELED_LOADER_RESET, OrderState.CANCELED_LOADER_RESET+1));
+			if(restartCount==0){
+				dbLatch.addLatch(service.loadByState(OrderState.FTP_INCOMPLITE, OrderState.FTP_INCOMPLITE+1));
+			}else{
+				dbLatch.addLatch(service.loadByState(OrderState.CANCELED_LOADER_RESET, OrderState.CANCELED_LOADER_RESET+1));
+			}
 			dbLatch.start();
 
 		}
@@ -192,8 +196,11 @@ package com.photodispatcher.service{
 
 		private var arrToReset:Array=[];
 		private var toResetOrder:Order;
+		private var restartCount:int=0;
 		
 		private function onRestartLoaded(e:Event):void{
+			restartCount=(restartCount+1)%10;
+			//restartCount==1 - reset vs FTP_INCOMPLITE state
 			var dbLatch:DbLatch=e.target as DbLatch;
 			if(dbLatch){
 				dbLatch.removeEventListener(Event.COMPLETE,onRestartLoaded);
@@ -230,6 +237,7 @@ package com.photodispatcher.service{
 		}
 		
 		private function onGetOrderWeb(e:Event):void{
+			var latch:DbLatch;
 			var webService:BaseWeb=e.target as BaseWeb;
 			webService.removeEventListener(Event.COMPLETE,onGetOrderWeb);
 			if(!toResetOrder){
@@ -251,8 +259,17 @@ package com.photodispatcher.service{
 			StateLog.log(OrderState.CANCELED_LOADER_RESET, toResetOrder.id,'','Статус на сайте "'+wo.src_state+'"');
 			StateLog.log(OrderState.CANCELED_LOADER_RESET, toResetOrder.id,'','Разрешена смена статуса '+wo.canChangeRemoteState);
 			
-			//toResetOrder.files=null;
-			var latch:DbLatch;
+			if(restartCount==1){
+				//reset vs FTP_INCOMPLITE state
+				if(wo.canChangeRemoteState){
+					resetSiteState();
+					return;
+				}
+				toResetOrder=null;
+				resetNext();
+				return;
+			}
+			
 			if(wo.src_state==OrderLoad.REMOTE_STATE_COPY.toString()  
 				|| (wo.src_state==OrderLoad.REMOTE_STATE_DONE.toString() && wo.canChangeRemoteState)){
 				//attempt to reset
@@ -307,10 +324,9 @@ package com.photodispatcher.service{
 				latch.addLatch(service.save(OrderLoad.fromOrder(toResetOrder),0));
 				latch.start();
 				
-				toResetOrder=null;
-				resetNext();
-				return;
 			}
+			toResetOrder=null;
+			resetNext();
 		}
 
 		private function resetSiteState():void{
