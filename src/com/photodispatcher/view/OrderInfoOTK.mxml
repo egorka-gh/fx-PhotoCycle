@@ -12,6 +12,7 @@
 		<![CDATA[
 			import com.photodispatcher.event.AsyncSQLEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookKit;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
@@ -48,8 +49,8 @@
 			private var pgCover:PrintGroup;
 			[Bindable]
 			private var pgBlok:PrintGroup;
-			[Bindable]
-			private var bookListAC:ArrayCollection;
+			//[Bindable]
+			//private var bookListAC:ArrayCollection;
 			[Bindable]
 			private var bookTotal:int;
 			[Bindable]
@@ -92,7 +93,7 @@
 				order=null;
 				space=null;
 				
-				bookListAC=new ArrayCollection();
+				//bookListAC=new ArrayCollection();
 				bookTotal=0;
 				bookComplited=0;
 				if(!subOrder) return;
@@ -183,10 +184,10 @@
 				if(!order || !order.id){
 					return;
 				}
-				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onBooksLoad);
-				latch.addLatch(svc.loadBooks4Otk(order.id, order.otkSubid));
+				latch.addLatch(svc.loadSubOrderBooks(order.id, order.otkSubid));
 				latch.start();
 			}
 			private function onBooksLoad(event:Event):void{
@@ -196,7 +197,19 @@
 					latch.removeEventListener(Event.COMPLETE,onBooksLoad);
 					a=latch.lastDataArr;
 				}
+				
+				if (pgCover) pgCover.setBooks(a);
+				if (pgBlok) pgBlok.setBooks(a);
+				order.fillBookKits( ((pgCover && pgCover.books)?pgCover.books.source:null), ((pgCover && pgCover.books)?pgCover.books.source:null));
+				
+				var bk:BookKit;
+				if(order.otkBookKits){
+					for each (bk in order.otkBookKits){
+						if(bk && bk.state>=OrderState.TECH_OTK) bookComplited++;
+					}
+				}
 
+				/*
 				var aa:Array;
 				var i:int;
 				if(a){
@@ -218,6 +231,8 @@
 				}
 				bookListAC.source=aa;
 				bookListAC.refresh();
+				*/
+				
 				if (lstBookList && currBook>0) lstBookList.selectedIndex=currBook-1;
 				if(checkAfterRefresh){
 					checkAfterRefresh=false;
@@ -238,23 +253,34 @@
 			
 			protected function btComplite_clickHandler(event:MouseEvent):void{
 				//check book
-				var tll:TechLog=lstBookList.selectedItem as TechLog;
-				if(!tll || tll.log_date){
+				
+				var bk:BookKit=lstBookList.selectedItem as BookKit;
+				if(!bk || bk.state>=OrderState.TECH_OTK){
 					checkComplited();
 					return;
 				}
+				
+				//log 
 				var tl:TechLog= new TechLog()
 				tl.order_id=order.id;
 				tl.sub_id=order.otkSubid;
 				tl.print_group='';
 				tl.src_id=techPoint.id;
 				tl.log_date= new Date();
-				tl.sheet=tll.sheet;
-				
+				tl.setSheet(bk.book,0);
+				//tl.sheet=tll.sheet;
 				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
-				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onBookLog);
+				var latch:DbLatch= new DbLatch(true);
+				//latch.addEventListener(Event.COMPLETE,onBookLog);
 				latch.addLatch(svc.log(tl));
+				latch.start();
+				
+				//set book state
+				var oss:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				bk.state=OrderState.TECH_OTK;
+				latch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onBookLog);
+				latch.addLatch(oss.setEntireBookState(bk.toOrderBook()));
 				latch.start();
 			}
 			private function onBookLog(event:Event):void{
@@ -526,7 +552,7 @@
 			<s:List id="lstBookList" contentBackgroundAlpha="0" borderVisible="false"
 					itemRenderer="com.photodispatcher.view.itemRenderer.BookCheckRenderer"
 					selectedIndex="{currBook-1}" change="lstBookList_changeHandler(event)"
-					dataProvider="{bookListAC}" width="200" height="100%"/>
+					dataProvider="{order.otkBookKits}" width="200" height="100%"/>
 		</s:VGroup>
 		<s:Spacer width="10"/>
 		<s:Spacer width="100%"/>

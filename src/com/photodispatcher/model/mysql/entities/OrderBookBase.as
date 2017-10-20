@@ -22,6 +22,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _book_part_name:String;
         private var _is_reject:Boolean;
         private var _is_rejected:Boolean;
+        private var _order_id:String;
         private var _pg_id:String;
         private var _sa_remark:String;
         private var _sa_type_name:String;
@@ -66,6 +67,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get is_rejected():Boolean {
             return _is_rejected;
+        }
+
+        public function set order_id(value:String):void {
+            _order_id = value;
+        }
+        public function get order_id():String {
+            return _order_id;
         }
 
         public function set pg_id(value:String):void {
@@ -145,6 +153,7 @@ package com.photodispatcher.model.mysql.entities {
             _book_part_name = input.readObject() as String;
             _is_reject = input.readObject() as Boolean;
             _is_rejected = input.readObject() as Boolean;
+            _order_id = input.readObject() as String;
             _pg_id = input.readObject() as String;
             _sa_remark = input.readObject() as String;
             _sa_type_name = input.readObject() as String;
@@ -164,6 +173,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_book_part_name);
             output.writeObject(_is_reject);
             output.writeObject(_is_rejected);
+            output.writeObject(_order_id);
             output.writeObject(_pg_id);
             output.writeObject(_sa_remark);
             output.writeObject(_sa_type_name);

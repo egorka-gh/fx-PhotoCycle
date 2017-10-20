@@ -5,29 +5,25 @@
 				autoDrawBackground="true">
 	<fx:Script>
 		<![CDATA[
-			import com.photodispatcher.model.mysql.entities.BookKit;
-			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.TechLog;
 			
-			
-			private var book:BookKit;
+			[Bindable]
+			private var book:TechLog;
 			[Bindable]
 			private var strDate:String;
 			[Bindable]
 			private var book_num:String;
-			[Bindable]
-			private var hasRejects:Boolean;
 			
 			override public function set data(value:Object):void{
 				super.data = value;
 				book=null;
 				strDate='не проверена';//'01.01.14 12:45';
 				backFill.color=0xeeeeee;
-				book=value as BookKit;
+				book=value as TechLog;
 				if(book){
 					book_num=book.book.toString();
-					hasRejects= (book.blockBook && book.blockBook.hasRejects) || (book.coverBook && book.coverBook.hasRejects);
-					if(book.state>=OrderState.TECH_OTK){
-						strDate = dtfmt.format(book.state_date);
+					if(book.log_date){
+						strDate = dtfmt.format(book.log_date);
 						backFill.color=0x99EE99;
 					}
 				}
@@ -70,11 +66,8 @@
 			<s:SolidColorStroke color="0" weight="1"/>
 		</s:stroke>
 	</s:Rect>
-	<s:HGroup gap="0" top="5" left="5" right="2" bottom="2" verticalAlign="bottom">
+	<s:HGroup gap="10" top="5" left="5" right="2" bottom="2" verticalAlign="bottom">
 		<s:Label id="lbBook" fontSize="18" text="{book_num}" fontWeight="bold"/>
-		<s:Spacer width="5"/>
-		<s:Label fontSize="18" text="!" fontWeight="bold" color="#cc0000" visible="{hasRejects}" toolTip="Брак"/>
-		<s:Spacer width="5"/>
 		<s:Label id="lbDate" fontSize="14" text="{strDate}" width="100%" textAlign="center"/>
 	</s:HGroup>
 	

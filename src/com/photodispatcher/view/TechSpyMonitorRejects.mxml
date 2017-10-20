@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 creationComplete="{init()}"
+		 keyDown="onKey(event)" 
+		 xmlns:view="com.xreport.view.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SpyData;
+			import com.photodispatcher.model.mysql.entities.report.Parameter;
+			import com.photodispatcher.model.mysql.entities.report.Report;
+			import com.photodispatcher.model.mysql.entities.report.ReportResult;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.model.mysql.services.XReportService;
+			import com.photodispatcher.shell.OORuner;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			import com.photodispatcher.view.print.PrintDataGridView;
+			import com.xreport.common.ReportViewer;
+			
+			import flash.globalization.DateTimeStyle;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			import mx.printing.FlexPrintJob;
+			import mx.printing.PrintDataGrid;
+			
+			import org.granite.tide.Tide;
+			import org.granite.tide.events.TideFaultEvent;
+			import org.granite.tide.events.TideResultEvent;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			import spark.formatters.DateTimeFormatter;
+			private var timer:Timer;
+			[Bindable]
+			private var refreshInterval:int;
+
+			[Bindable]
+			private var listAC:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var gridColumnsAC:ArrayCollection;
+			[Bindable]
+			private var techTypeAC:ArrayCollection;
+			[Bindable]
+			private var bookPartAC:ArrayCollection= new ArrayCollection([{id:0, label:'-'}, {id:1, label:'Обложка'}, {id:2, label:'Блок'}]);
+			
+			private var startState:int;
+			private var endState:int;
+			
+			public function start():void{
+				refresh();
+			}
+			
+			public function stop():void{
+				if(timer){
+					timer.stop();
+					timer.removeEventListener(TimerEvent.TIMER, onTimer);
+					timer=null;
+				}
+			}
+
+			private var initComplite:Boolean=false;
+			private function init():void{
+				
+				techTypeAC=Context.getAttribute('tech_typeValueList') as ArrayCollection;
+				createColumnsAC();
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				if (so.size>0){
+					refreshInterval=so.data.refreshInterval;
+					startState=so.data.startState;
+					endState=so.data.endState;
+				}
+				if(!startState) startState= OrderState.PRN_POST;
+				if(!endState) endState= OrderState.TECH_OTK;
+				if(techTypeAC){
+					/*
+					var sort:Sort= new Sort();
+					sort.fields=[new SortField('state',false,true)];
+					techTypeAC.sort=sort;
+					techTypeAC.refresh();
+					*/
+					var arr:Array=techTypeAC.source;
+					var it:FieldValue=ArrayUtil.searchItem('value',startState,arr) as FieldValue; 
+					if(it && ddStartOp) ddStartOp.selectedItem=it;
+					it=ArrayUtil.searchItem('value',endState,arr) as FieldValue;
+					if(it && ddEndOp) ddEndOp.selectedItem=it;
+				}
+				initComplite=true;
+				refresh();
+			}
+			
+			private function startTimer():void{
+				if(timer && timer.running) timer.stop();
+				if(refreshInterval<=0) return;
+				if(!timer){
+					timer= new Timer(refreshInterval*60000,1);
+					timer.addEventListener(TimerEvent.TIMER, onTimer);
+				}
+				timer.delay=refreshInterval*60000;
+				timer.start();
+			}
+
+			private function onTimer(evt:TimerEvent):void{
+				refresh();
+			}
+
+			private function createColumnsAC():void{
+				gridColumnsAC= new ArrayCollection();
+				
+				var col:GridColumn = new GridColumn('id'); col.headerText='Заказ'; gridColumnsAC.addItem(col);
+				col= new GridColumn('sub_id'); col.headerText='Гр. печати'; gridColumnsAC.addItem(col); 
+				col= new GridColumn('bt_name'); col.headerText='Тип'; gridColumnsAC.addItem(col); 
+				col= new GridColumn('alias'); col.headerText='Алиас'; gridColumnsAC.addItem(col); 
+				col= new GridColumn('bp_name'); col.headerText='Часть книги'; gridColumnsAC.addItem(col);
+				col= new GridColumn('op_name'); col.headerText='Операция'; gridColumnsAC.addItem(col); 
+				var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('start_date'); col.headerText='Старт'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
+				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('state_date'); col.headerText='Выполнена'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
+				fmt=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+				col= new GridColumn('transit_date'); col.headerText='Транзит'; col.formatter=fmt; col.width=120; gridColumnsAC.addItem(col);
+				col= new GridColumn('delay'); col.headerText='Задержка (мин)'; gridColumnsAC.addItem(col);
+
+			}
+			
+			private function refresh():void{
+				if(!initComplite) return;
+				if(timer && timer.running) timer.stop();
+				
+				listAC=null;
+				var latch:DbLatch=new DbLatch();
+				//latch.debugName='initSourceLists';
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				latch.addEventListener(Event.COMPLETE,onDataLoad);
+				latch.addLatch(svc.loadSpyRejects(startState, endState));
+				latch.start();
+				return;
+			}
+			private function onDataLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onDataLoad);
+					if(latch.complite){
+						listAC=latch.lastDataAC;
+						listAC.filterFunction=filterList;
+						listAC.refresh();
+					}
+				}
+				if(dgMonitor) dgMonitor.columnHeaderGroup.visibleSortIndicatorIndices=new Vector.<int>([]);
+				startTimer();
+			}
+
+			
+			private function filterList(item:Object):Boolean {
+				if(!ddBookPart || ddBookPart.selectedIndex<1) true;
+				return item.book_part==ddBookPart.selectedIndex;
+			}
+
+			protected function nsRefreshInterval_changeHandler(event:Event):void{
+				refreshInterval= nsRefreshInterval.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.refreshInterval = refreshInterval;
+				so.flush();  
+				startTimer();
+			}
+			
+			protected function ddStartOp_changeHandler(event:IndexChangeEvent):void{
+				var it:FieldValue=ddStartOp.selectedItem as FieldValue;
+				if(!it) return;
+				startState=it.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.startState = startState;
+				so.flush();
+				refresh();
+			}
+			
+			protected function ddEndOp_changeHandler(event:IndexChangeEvent):void{
+				var it:FieldValue=ddEndOp.selectedItem as FieldValue;
+				if(!it) return;
+				endState=it.value;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.endState = endState;
+				so.flush();
+				refresh();
+			}
+			
+			private function onKey(e:KeyboardEvent):void{
+				if(e.ctrlKey && e.keyCode==70){
+					//order lookup
+					var pop:OrderSearchPopup=new OrderSearchPopup();
+					pop.open(null);
+				}
+			}
+
+			
+			private var ordersGridMenu:GridContexMenu;
+			protected function dgMonitor_creationCompleteHandler(event:FlexEvent):void{
+				ordersGridMenu= new GridContexMenu(dgMonitor); //, [GridContexMenu.SEPARATOR,GridContexMenu.SHOW_ORDER]);
+				ordersGridMenu.addItem('Завершон',completeCallBack);
+				//ordersGridMenu.addItem('Сброс задержки',resetCallBack);
+				ordersGridMenu.addItem('');
+				//ordersGridMenu.addItem('Печать',printCallBack);
+				ordersGridMenu.addItem('Состояние',showCallBack);
+			}
+			
+			private function showCallBack(grid:DataGrid,param:int):void{
+				var onItem:Object;
+				onItem=grid.selectedItem;
+				if(onItem && onItem.id){
+					var pop:OrderInfoPopup=new OrderInfoPopup();
+					pop.show(onItem.id,true);
+				}
+			}
+
+			/*
+			private function resetCallBack(grid:DataGrid,param:int):void{
+				var pop:StringValuePopup= new StringValuePopup();
+				pop.addEventListener(PopUpEvent.CLOSE, onResetPopup);
+				pop.show('Укажите примечание');
+			}
+			private function onResetPopup(event:PopUpEvent):void{
+				var pop:StringValuePopup= event.target as StringValuePopup;
+				if(pop){
+					pop.removeEventListener(PopUpEvent.CLOSE, onResetPopup);
+					if(event.commit && pop.value){
+						resetOrder(pop.value);
+					}
+				}
+			}
+			private function resetOrder(comment:String):void{
+				if(!comment) return;
+				var onItem:SpyData=dgMonitor.selectedItem as SpyData;
+				if(onItem){
+					var latch:DbLatch=new DbLatch();
+					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+					latch.addEventListener(Event.COMPLETE,onItemReset);
+					latch.addLatch(svc.extraStateProlong(onItem.id,onItem.sub_id, onItem.state,comment));
+					latch.start();
+				}
+			}
+			private function onItemReset(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch) latch.removeEventListener(Event.COMPLETE,onItemReset);
+				refresh();
+			}
+			*/
+
+			private var writeQueue:Array=[];
+			private var isWriting:Boolean=false;
+			private function completeCallBack(grid:DataGrid,param:int):void{
+				var items:Vector.<Object>;
+				items=grid.selectedItems;
+				if(!items || items.length==0) return;
+				var onItem:SpyData;
+				for each(onItem in items){
+					if (onItem) writeQueue.push(onItem);
+				}
+				if(!isWriting) writeNext();
+			}
+			
+			private function writeNext():void {
+				if(writeQueue.length==0){
+					//complite
+					isWriting=false;
+					refresh();
+					return;
+				}
+				var onItem:SpyData=writeQueue[0] as SpyData;
+				if(onItem){
+					var latch:DbLatch=new DbLatch();
+					var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+					latch.addEventListener(Event.COMPLETE,onItemComplite);
+					latch.addLatch(svc.extraStateStop(onItem.id, onItem.sub_id, onItem.state, new Date()));
+					latch.start();
+				}else{
+					writeQueue.shift();
+					writeNext()
+				}
+			}
+			private function onItemComplite(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onItemComplite);
+					if(latch.complite){
+						writeQueue.shift();
+					}else{
+						writeQueue=[];
+					}
+					writeNext();
+				}
+			}
+
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<s:states>
+		<s:State name="monitor"/>
+	</s:states>
+	
+	<s:VGroup id="gGrid" gap="5" top="0" left="0" right="0" bottom="0" includeIn="monitor">
+		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+			<s:Spacer width="5"/>
+			<s:Label text="Начало"/>
+			<s:DropDownList id="ddStartOp" dataProvider="{techTypeAC}" width="180"
+							change="ddStartOp_changeHandler(event)"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Конец" />
+			<s:DropDownList id="ddEndOp" dataProvider="{techTypeAC}" width="180"
+							change="ddEndOp_changeHandler(event)"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Часть книги"/>
+			<s:DropDownList id="ddBookPart" dataProvider="{bookPartAC}" width="70"
+							creationComplete="{ddBookPart.selectedIndex=0}" change="{refresh()}"/>
+
+			<!--<s:Spacer width="5"/>
+			<s:Label text="Задержка (ч)"/>
+			<s:NumericStepper id="nsDelay" value="{delayInterval}" minimum="0" maximum="300" 
+							  width="50" change="nsDelay_changeHandler(event)"/>-->
+			
+			<!--<s:Spacer width="5"/>
+			<s:Label text="Сброс" toolTip="Показывать сброшенные"/>
+			<s:CheckBox id="chkReset" toolTip="Показывать сброшенные" change="{listAC.refresh()}"/>-->
+
+			<!--<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>-->
+			
+			<s:Spacer width="100%"/>
+			<s:Label text="Обновление (мин)"/>
+			<s:NumericStepper id="nsRefreshInterval" value="{refreshInterval}" minimum="0" maximum="120" 
+							  width="50" change="nsRefreshInterval_changeHandler(event)"/>
+			
+			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+					  cornerRadius="4" width="22" height="22" baseline="4"/>
+		</s:HGroup>
+		<s:DataGrid id="dgMonitor" selectionMode="multipleRows"
+					width="100%" height="100%" 
+					dataProvider="{listAC}" locale="ru_RU" columns="{gridColumnsAC}"
+					creationComplete="dgMonitor_creationCompleteHandler(event)">
+		</s:DataGrid>
+	</s:VGroup>
+	
+</s:Group>

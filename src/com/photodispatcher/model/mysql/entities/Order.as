@@ -76,6 +76,33 @@ package com.photodispatcher.model.mysql.entities {
 		 */
 		public var otkSubid:String;
 		
+		/**
+		 * runtime bookkits 4 otk 
+		 * keeps bookkits only 4 current subid 
+		 * expected 
+		 * coverBooks && blockBooks lenthes are equal
+		 * and books are ordered by book num 
+		 */
+		public var otkBookKits:ArrayCollection;
+		public function fillBookKits(coverBooks:Array, blockBooks:Array):void{
+			otkBookKits=null;
+			if(!coverBooks && !blockBooks ) return;
+			if(coverBooks.length==0 && blockBooks.length==0) return;
+			var len:int=0;
+			if(coverBooks) len=coverBooks.length;
+			if(blockBooks) len=Math.max(len, blockBooks.length);
+			var res:Array= new Array(len);
+			var k:BookKit;
+			for (var i:int = 0; i < len; i++){
+				k=new BookKit();
+				if(coverBooks && i<coverBooks.length) k.coverBook=coverBooks[i] as OrderBook;
+				if(blockBooks && i<blockBooks.length) k.blockBook=blockBooks[i] as OrderBook;
+				res[i]=k;
+			}
+			otkBookKits=new ArrayCollection(res);
+		}
+		
+		
 		//remote source state (4 check if canceled or set remote state) runtime
 		public var src_state:String;
 		//err state comment runtime

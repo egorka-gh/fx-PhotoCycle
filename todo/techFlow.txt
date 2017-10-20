@@ -19,6 +19,38 @@ OrderServiceImpl.addReprintPGroups
 OrderStateServiceImpl - просмотреть весь
 TechServiceImpl  - просмотреть весь
 
+-- OrderStateService
+-- refactored
+printPost - поставлен в печать (перепечатки ок)
+printEndManual - ручное закрытие статуса печати (не нужно)
+printCancel - отмена печати (перепечатки ок)
+extraStateSetOTK - закрытие всех статусов в ОТК (перепечатки ок)
+extraStateSetOTKbyPG - закрытие всех статусов в ОТК для фотопечати
+extraStateStart - в проге не используется только в java и mysql
+extraStateStartMonitor - дублированный extraStateStartOTK
+extraStateStartOTK	- стартует extra если не стартанула, возвращает 2 -звершена, 1 - уже стартанула, 0 - стартую (юзает extraStateStart)
+старты не разрулены (нет исходной pg)
+extraStateSet - напрямую используется только в шпионе и TechMonitorS, в базе в techUnitCalc, перепечатки отделены (techUnitCalc для них не вызывается) 
+extraStateFix - выставляет state_date для указанного статуса для заказа и подзаказов, если нет extra - добавляет (используется в одном месте PreprocessManager по окончании подготовки заказа, перепечатки не касается)
+extraStateProlong - пересмотреть механизм откладывания заказа
+extraStateReset ?
+extraStateStop - stops all extra states less or equal state (fix state_date and transit_date)  	
+
+getStateByPGroups - не используется
+printGroupMarkInPrint - не используется
+
+TechService
+logByPg (techLogPg) - переделаны под ведение браков, остальное по старому (почти)
+calcByPg (techCalcPg) - переделаны под ведение браков, остальное по старому (почти)
+(techUnitCalc) - переделаны под ведение браков, остальное по старому (почти)
+
+MailPackageService
+пока что не трогаем
+startState 
+stopPreviousExtraStates
+
+apps
+TechMonitorS - используется?
 
 eState start
 начало тех операции

@@ -12,15 +12,20 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.TechTimeline;
 			import com.photodispatcher.model.mysql.entities.messenger.CycleStation;
+			import com.photodispatcher.model.mysql.services.TechService;
 			import com.photodispatcher.service.messenger.MessengerGeneric;
 			import com.photodispatcher.shell.OORuner;
 			import com.photodispatcher.view.ModalPopUp;
 			import com.photodispatcher.view.config.DatabasePopup;
 			
+			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
 			
 			import spark.events.PopUpEvent;
 			import spark.events.TextOperationEvent;
@@ -109,6 +114,9 @@
 			[Bindable]
 			private var printer:String;
 			
+			[Bindable]
+			private var techTimelinesAC:ArrayCollection;
+			
 			protected function btOOFolder_clickHandler(event:MouseEvent):void{
 				//browse
 				var f:File = File.userDirectory;
@@ -140,6 +148,33 @@
 				Context.setAttribute('printer',printer);
 			}
 			
+			protected function btSaveTL_clickHandler(event:MouseEvent):void{
+				if(techTimelinesAC && techTimelinesAC.length>0){
+					var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+					var latch:DbLatch=new DbLatch();
+					//latch.addEventListener(Event.COMPLETE,onDataLoad);
+					latch.addLatch(svc.persistTimeLineBatch(techTimelinesAC));
+					latch.start();
+				}
+			}
+			
+			protected function state2_enterStateHandler(event:FlexEvent):void{
+				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onTimeLineLoad);
+				latch.addLatch(svc.loadTimeLine(0));
+				latch.start();
+			}
+			private function onTimeLineLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onTimeLineLoad);
+					if(latch.complite){
+						techTimelinesAC=latch.lastDataAC;
+					}
+				}
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -149,7 +184,7 @@
 	
 	<s:states>
 		<s:State name="disconnected"/>
-		<s:State name="config"/>
+		<s:State name="config" enterState="state2_enterStateHandler(event)"/>
 		<s:State name="monitor" enterState="state1_enterStateHandler(event)"/>
 	</s:states>
 	
@@ -173,6 +208,15 @@
 			<s:Label text="(если не указан, используется принтер по умолчанию)"/>
 			<s:TextInput id="tiPrinter" text="@{printer}" width="210" change="tiPrinter_changeHandler(event)" textAlign="left"/>
 		</s:HGroup>
+		
+		<s:Spacer height="10"/>
+		<s:Label text="Временные рамки тех операций"/>
+		<s:DataGrid id="dgTimeLites" selectionMode="singleRow" editable="true"
+					width="500" height="100%" 
+					dataProvider="{techTimelinesAC}" locale="ru_RU" columns="{TechTimeline.gridColumns()}"/>
+		<s:Button label="Сохранить" id="btSaveTL" click="btSaveTL_clickHandler(event)"/>
+
+		
 	</s:VGroup>
 	
 	<view:TechSpyMonitor id="techMonitor" includeIn="monitor" top="10" left="10" right="10" bottom="35"/>

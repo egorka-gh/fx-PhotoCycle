@@ -24,6 +24,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _bt_name:String;
         private var _delay:int;
         private var _id:String;
+        private var _is_reject:Boolean;
         private var _lastDate:Date;
         private var _op_name:String;
         private var _reset:Boolean;
@@ -32,6 +33,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _state:int;
         private var _state_date:Date;
         private var _sub_id:String;
+        private var _transit_date:Date;
 
         public function set alias(value:String):void {
             _alias = value;
@@ -80,6 +82,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get id():String {
             return _id;
+        }
+
+        public function set is_reject(value:Boolean):void {
+            _is_reject = value;
+        }
+        public function get is_reject():Boolean {
+            return _is_reject;
         }
 
         public function set lastDate(value:Date):void {
@@ -138,6 +147,13 @@ package com.photodispatcher.model.mysql.entities {
             return _sub_id;
         }
 
+        public function set transit_date(value:Date):void {
+            _transit_date = value;
+        }
+        public function get transit_date():Date {
+            return _transit_date;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _alias = input.readObject() as String;
@@ -147,6 +163,7 @@ package com.photodispatcher.model.mysql.entities {
             _bt_name = input.readObject() as String;
             _delay = input.readObject() as int;
             _id = input.readObject() as String;
+            _is_reject = input.readObject() as Boolean;
             _lastDate = input.readObject() as Date;
             _op_name = input.readObject() as String;
             _reset = input.readObject() as Boolean;
@@ -155,6 +172,7 @@ package com.photodispatcher.model.mysql.entities {
             _state = input.readObject() as int;
             _state_date = input.readObject() as Date;
             _sub_id = input.readObject() as String;
+            _transit_date = input.readObject() as Date;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -166,6 +184,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_bt_name);
             output.writeObject(_delay);
             output.writeObject(_id);
+            output.writeObject(_is_reject);
             output.writeObject(_lastDate);
             output.writeObject(_op_name);
             output.writeObject(_reset);
@@ -174,6 +193,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_state);
             output.writeObject(_state_date);
             output.writeObject(_sub_id);
+            output.writeObject(_transit_date);
         }
     }
 }

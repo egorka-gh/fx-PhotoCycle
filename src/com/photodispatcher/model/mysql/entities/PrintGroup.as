@@ -1128,6 +1128,34 @@ package com.photodispatcher.model.mysql.entities {
 			return book;
 		}
 
+		
+		public var books:ArrayCollection;
+		
+		public function setBooks(pBooks:Array):void{
+			books=null;
+			if(!pBooks) return;
+			var resArr:Array= new Array(book_num);
+			var rjArr:Array= [];
+			var bk:OrderBook;
+			var rj:OrderBook;
+			//get books 4 pg
+			for each (bk in pBooks){
+				if(bk && bk.target_pg==id){
+					if(bk.is_reject){
+						rjArr.push(bk);
+					}else{
+						resArr[bk.book-1]=bk;
+					}
+				}
+			}
+			//process rejects
+			for each (rj in rjArr){
+				bk=resArr[rj.book-1] as OrderBook;
+				if(bk) bk.addReject(rj);
+			}
+			books= new ArrayCollection(resArr);
+		}
+		
 
     }
 }
