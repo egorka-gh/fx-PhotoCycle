@@ -168,7 +168,7 @@
 
 			
 			private function filterList(item:Object):Boolean {
-				if(!ddBookPart || ddBookPart.selectedIndex<1) true;
+				if(!ddBookPart || ddBookPart.selectedIndex<1) return true;
 				return item.book_part==ddBookPart.selectedIndex;
 			}
 

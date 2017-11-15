@@ -4,7 +4,7 @@
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
 		 creationComplete="{init()}"
 		 keyDown="onKey(event)" 
-		 xmlns:view="com.xreport.view.*">
+		 xmlns:view="com.xreport.view.*" xmlns:view1="com.photodispatcher.view.*">
 	
 	<fx:Script>
 		<![CDATA[
@@ -76,6 +76,7 @@
 			
 			public function start():void{
 				refresh();
+				if(rejectsMonitor) rejectsMonitor.start();
 			}
 			
 			public function stop():void{
@@ -84,6 +85,7 @@
 					timer.removeEventListener(TimerEvent.TIMER, onTimer);
 					timer=null;
 				}
+				if(rejectsMonitor) rejectsMonitor.stop();
 			}
 
 			private var initComplite:Boolean=false;
@@ -463,58 +465,70 @@
 		<s:State name="monitor"/>
 		<s:State name="report"/>
 	</s:states>
-	
+
+
 	<s:VGroup id="gGrid" gap="5" top="0" left="0" right="0" bottom="0" includeIn="monitor">
-		<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
-			<s:Spacer width="5"/>
-			<s:Label text="Начало"/>
-			<s:DropDownList id="ddStartOp" dataProvider="{techTypeAC}" width="180"
-							change="ddStartOp_changeHandler(event)"/>
-
-			<s:Spacer width="5"/>
-			<s:Label text="Конец" />
-			<s:DropDownList id="ddEndOp" dataProvider="{techTypeAC}" width="180"
-							change="ddEndOp_changeHandler(event)"/>
-
-			<s:Spacer width="5"/>
-			<s:Label text="Часть книги"/>
-			<s:DropDownList id="ddBookPart" dataProvider="{bookPartAC}" width="70"
-							creationComplete="{ddBookPart.selectedIndex=0}" change="{refresh()}"/>
-
-			<s:Spacer width="5"/>
-			<s:Label text="Задержка (ч)"/>
-			<s:NumericStepper id="nsDelay" value="{delayInterval}" minimum="0" maximum="300" 
-							  width="50" change="nsDelay_changeHandler(event)"/>
-			
-			<s:Spacer width="5"/>
-			<s:Label text="Сброс" toolTip="Показывать сброшенные"/>
-			<s:CheckBox id="chkReset" toolTip="Показывать сброшенные" change="{listAC.refresh()}"/>
-
-			<!--<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>-->
-			
-			<s:Spacer width="100%"/>
-			<s:Label text="Обновление (мин)"/>
-			<s:NumericStepper id="nsRefreshInterval" value="{refreshInterval}" minimum="0" maximum="120" 
-							  width="50" change="nsRefreshInterval_changeHandler(event)"/>
-			
-			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
-					  cornerRadius="4" width="22" height="22" baseline="4"/>
-		</s:HGroup>
-		<s:DataGrid id="dgMonitor" selectionMode="multipleRows"
-					width="100%" height="100%" 
-					dataProvider="{listAC}" locale="ru_RU" columns="{gridColumnsAC}"
-					creationComplete="dgMonitor_creationCompleteHandler(event)">
-		</s:DataGrid>
-		<s:HGroup gap="10" width="100%" horizontalAlign="right" verticalAlign="middle">
-			<s:Button id="btPrint" icon="assets/print32.png" 
-					  enabled="{reportViewer &amp;&amp; !curReport.isRunning &amp;&amp; !reportPrinter.busy}" 
-					  click="btPrint_clickHandler(event)"
-					  width="40"/>
-			<s:Button id="btToXLS" icon="assets/xls.png" 
-					  enabled="{reportViewer &amp;&amp; !curReport.isRunning}" 
-					  click="btToXLS_clickHandler(event)"
-					  width="40"/>
-		</s:HGroup>
+		<s:TabBar id="tbView" dataProvider="{vsSubInfo}"/>
+		<mx:ViewStack id="vsSubInfo" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+			<s:NavigatorContent label="Заказы" backgroundAlpha="0" width="100%" height="100%">
+				<s:VGroup width="100%" height="100%">
+					<s:HGroup id="gFilters" width="100%" gap="5" horizontalAlign="left" verticalAlign="baseline">
+						<s:Spacer width="5"/>
+						<s:Label text="Начало"/>
+						<s:DropDownList id="ddStartOp" dataProvider="{techTypeAC}" width="180"
+										change="ddStartOp_changeHandler(event)"/>
+						
+						<s:Spacer width="5"/>
+						<s:Label text="Конец" />
+						<s:DropDownList id="ddEndOp" dataProvider="{techTypeAC}" width="180"
+										change="ddEndOp_changeHandler(event)"/>
+						
+						<s:Spacer width="5"/>
+						<s:Label text="Часть книги"/>
+						<s:DropDownList id="ddBookPart" dataProvider="{bookPartAC}" width="70"
+										creationComplete="{ddBookPart.selectedIndex=0}" change="{refresh()}"/>
+						
+						<s:Spacer width="5"/>
+						<s:Label text="Задержка (ч)"/>
+						<s:NumericStepper id="nsDelay" value="{delayInterval}" minimum="0" maximum="300" 
+										  width="50" change="nsDelay_changeHandler(event)"/>
+						
+						<s:Spacer width="5"/>
+						<s:Label text="Сброс" toolTip="Показывать сброшенные"/>
+						<s:CheckBox id="chkReset" toolTip="Показывать сброшенные" change="{listAC.refresh()}"/>
+						
+						<!--<s:TextInput id="tiOrderFilter" width="100" change="{applyOrdersFilter()}"/>-->
+						
+						<s:Spacer width="100%"/>
+						<s:Label text="Обновление (мин)"/>
+						<s:NumericStepper id="nsRefreshInterval" value="{refreshInterval}" minimum="0" maximum="120" 
+										  width="50" change="nsRefreshInterval_changeHandler(event)"/>
+						
+						<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
+								  cornerRadius="4" width="22" height="22" baseline="4"/>
+					</s:HGroup>
+					<s:DataGrid id="dgMonitor" selectionMode="multipleRows"
+								width="100%" height="100%" 
+								dataProvider="{listAC}" locale="ru_RU" columns="{gridColumnsAC}"
+								creationComplete="dgMonitor_creationCompleteHandler(event)">
+					</s:DataGrid>
+					<s:HGroup gap="10" width="100%" horizontalAlign="right" verticalAlign="middle">
+						<s:Button id="btPrint" icon="assets/print32.png" 
+								  enabled="{reportViewer &amp;&amp; !curReport.isRunning &amp;&amp; !reportPrinter.busy}" 
+								  click="btPrint_clickHandler(event)"
+								  width="40"/>
+						<s:Button id="btToXLS" icon="assets/xls.png" 
+								  enabled="{reportViewer &amp;&amp; !curReport.isRunning}" 
+								  click="btToXLS_clickHandler(event)"
+								  width="40"/>
+					</s:HGroup>
+				</s:VGroup>	
+			</s:NavigatorContent>	
+			<s:NavigatorContent label="Браки" backgroundAlpha="0" width="100%" height="100%">
+				<view1:TechSpyMonitorRejects id="rejectsMonitor" width="100%" height="100%"/>
+			</s:NavigatorContent>
+		</mx:ViewStack>
+		
 		<!--<s:Button id="btAddOrder" label="Добавить" click="btAddOrder_clickHandler(event)" enabled="{manualAdd}"/>-->
 	</s:VGroup>
 	

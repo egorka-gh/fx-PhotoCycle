@@ -87,7 +87,7 @@ package com.photodispatcher.model.mysql.entities {
 		public function fillBookKits(coverBooks:Array, blockBooks:Array):void{
 			otkBookKits=null;
 			if(!coverBooks && !blockBooks ) return;
-			if(coverBooks.length==0 && blockBooks.length==0) return;
+			if((!coverBooks || coverBooks.length==0) && (!blockBooks || blockBooks.length==0)) return;
 			var len:int=0;
 			if(coverBooks) len=coverBooks.length;
 			if(blockBooks) len=Math.max(len, blockBooks.length);

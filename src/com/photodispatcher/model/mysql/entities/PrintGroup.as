@@ -1138,9 +1138,11 @@ package com.photodispatcher.model.mysql.entities {
 			var rjArr:Array= [];
 			var bk:OrderBook;
 			var rj:OrderBook;
+			var added:Boolean=false;
 			//get books 4 pg
 			for each (bk in pBooks){
 				if(bk && bk.target_pg==id){
+					added=true;
 					if(bk.is_reject){
 						rjArr.push(bk);
 					}else{
@@ -1148,6 +1150,7 @@ package com.photodispatcher.model.mysql.entities {
 					}
 				}
 			}
+			if(!added) return;
 			//process rejects
 			for each (rj in rjArr){
 				bk=resArr[rj.book-1] as OrderBook;

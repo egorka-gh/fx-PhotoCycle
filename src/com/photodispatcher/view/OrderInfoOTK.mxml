@@ -200,7 +200,7 @@
 				
 				if (pgCover) pgCover.setBooks(a);
 				if (pgBlok) pgBlok.setBooks(a);
-				order.fillBookKits( ((pgCover && pgCover.books)?pgCover.books.source:null), ((pgCover && pgCover.books)?pgCover.books.source:null));
+				order.fillBookKits( ((pgCover && pgCover.books)?pgCover.books.source:null), ((pgBlok && pgBlok.books)?pgBlok.books.source:null));
 				
 				var bk:BookKit;
 				if(order.otkBookKits){
