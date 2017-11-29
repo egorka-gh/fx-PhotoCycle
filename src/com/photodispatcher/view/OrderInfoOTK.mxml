@@ -73,7 +73,7 @@
 						}
 						if(showOrder.proj_type==0 && this.pgId==pgId){
 							//complite photo printgroup
-							setCompletePhoto();
+							setCompletePhoto(false);
 							return;
 						}
 					}
@@ -310,12 +310,16 @@
 				latch.start();
 			}
 
-			private function setCompletePhoto():void{
-				if(!pgId) return;
+			private function setCompletePhoto(all:Boolean):void{
+				if(!pgId && !all) return;
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onCompliteSet);
-				latch.addLatch(svc.extraStateSetOTKbyPG(pgId, new Date()));
+				if(all){
+					latch.addLatch(svc.extraStateSetOTKbyPG(order.id, new Date()));
+				}else{
+					latch.addLatch(svc.extraStateSetOTKbyPG(pgId, new Date()));
+				}
 				latch.start();
 			}
 
@@ -419,13 +423,20 @@
 			}
 			
 			protected function btComplitePhoto_clickHandler(event:MouseEvent):void{
-				setCompletePhoto();
+				setCompletePhoto(false);
 			}
 			
 			protected function btSpace_clickHandler(event:MouseEvent):void{
 				choiseSpace();
 			}
 			
+			protected function btCompliteAllPhoto_clickHandler(event:MouseEvent):void{
+				Alert.show("Закрыть все группы с фотопечатью?","",Alert.OK | Alert.CANCEL,this,onConfirm);
+			}
+			protected function onConfirm(event:CloseEvent):void{
+				setCompletePhoto(true);
+			}
+
 		]]>
 	</fx:Script>
 	
@@ -560,6 +571,7 @@
 			<s:Button id="btPreview" label="Просмотр" enabled="{currBook!=0}" click="btPreview_clickHandler(event)" includeIn="book"/>
 			<s:Button id="btComplite" label="Проверена" enabled="{currBook!=0}" click="btComplite_clickHandler(event)" includeIn="book"/>
 			<s:Button id="btComplitePhoto" label="Проверено" click="btComplitePhoto_clickHandler(event)" includeIn="photo"/>
+			<s:Button id="btCompliteAllPhoto" label="Закрыть все" click="btCompliteAllPhoto_clickHandler(event)" includeIn="photo"/>
 			<s:Spacer height="100%"/>
 			<s:Button id="btSpace" label="Полка" click="btSpace_clickHandler(event)"/>
 			<s:Button id="btClose" label="Закрыть" click="btClose_clickHandler(event)"/>

@@ -58,6 +58,8 @@
 			private var feedBookDelays:ArrayCollection;
 
 			[Bindable]
+			public var checkFeederEmpty:Boolean=false;
+			[Bindable]
 			public var doubleSheetOff:Boolean=false;
 			[Bindable]
 			public var dataBaseOff:Boolean=true;
@@ -130,6 +132,7 @@
 				if (so.size>0){
 					reversOrder=so.data.reversOrder; 
 					doubleSheetOff=so.data.doubleSheetOff;
+					checkFeederEmpty=so.data.checkFeederEmpty;
 					altBarcode=so.data.altBarcode;
 					feedOn=so.data.feedOn;
 					dataBaseOff=so.data.dataBaseOff;
@@ -183,6 +186,7 @@
 				Context.setAttribute("feedBookDelays", feedBookDelays);
 				Context.setAttribute("feedDelay2", feedDelay2);
 				Context.setAttribute("repeatedSignalGap", repeatedSignalGap);
+				Context.setAttribute("checkFeederEmpty", checkFeederEmpty);
 				currentState='config';
 			}
 			
@@ -508,6 +512,10 @@
 					<s:NumericStepper id="nsFeedBookDelay" minimum="100" maximum="10000" snapInterval="100" value="{feedBookDelay}" change="nsFeedBookDelay_changeHandler(event)"/>
 				</s:HGroup>
 -->				
+				<s:HGroup gap="0" verticalAlign="baseline">
+					<s:CheckBox id="tg_checkFeederEmpty" selected="{checkFeederEmpty}" change="{setBool('checkFeederEmpty')}"/> 
+					<s:Label text="Контроль уровня стопы"/>
+				</s:HGroup>
 				<s:HGroup gap="0" verticalAlign="baseline">
 					<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 
 					<s:Label text="Отключить контроль двойного листа для разворотов"/>

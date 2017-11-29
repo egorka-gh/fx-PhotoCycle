@@ -20,6 +20,58 @@ package com.photodispatcher.service.glue{
 	[Event(name="gluemessage", type="com.photodispatcher.event.GlueMessageEvent")]
 	
 	public class GlueProxy extends EventDispatcher{
+		/*
+		команды считывания статусов
+		инфа в сообщении идет блоками
+		блок описывает одну сущность типа конкретная кнопель на экране -  имя кнопки, подпись, цвет, состояние   
+		общий формат ответа
+		
+		~~блок1~~блок2~~блок3...~~блокN@@
+		@@		 конец сообщения
+		~~ 		разделитель блоков
+		
+		в блоке идут параметры, парами  имя=значение типа Text=Books: 40727
+		формат блока
+		||parametr1=value1||parametr2=value2...||parametrN=valueN||
+		|| 		разделитель параметров
+		
+		конкретно по каждой команде:
+		
+		GetStatus
+		пример ответа:
+		~~||Text=Books: 40727||~~||Text=Books/Day: 5||~~||Text=Page: 0"||~~||Text=Last Book: 20 Pages||~~||Text=Pages per Book: 20||~~||Text=||@@
+		(тут поясню, я из гуи получаю просто 6 строк, думаю нет смысла  мне их парсить, это немного геморно в четвертом там число в середине строки сидит, если 
+		хочешь могу их поименовать, но пока что реализовано так)
+		
+		GetProduct
+		~~||Name=Product||Text=No product loaded||~~||Name=GLM||Text=Halt||~~||Name=GBT||Text==Halt||@@
+		
+		GetMessage
+		~~||Text=30.01 бла бла бла....||ColText=#FFAA11||ColBack=#BBCCDD||~~||Text=30.02 бла бла бла....||ColText=#FFAA11||ColBack=#BBCCDD||@@
+		
+		GetButtons
+		~~||Name=button1||Text=Start||ColBack=#80FF80||Enabled=True||~~||Name=button4||Text=Quit||ColBack=#FFFF80||Enabled=False||@@
+		(максимум 24 кнопки)
+		
+		
+		команды
+		
+		Start
+		Stop
+		Quit 				- закрыть программу
+		Stop after Job 		- не используется, поидее остановка после сборки книги
+		Sheets per Book,N  	- установить кол листов в книге (N - число листов)
+		Select Product,NAME - установить имя продукта (NAME - имя продукта)
+		
+		в ответ на вышерепечисленные команды прилетает OK
+		для следующих прилетает ответ в форамте как описано выше
+		
+		GetStatus
+		GetProduct
+		GetMessage
+		GetButtons
+
+		*/
 		
 		public static const RESPONCE_TIMEOUT:int=5000;
 		

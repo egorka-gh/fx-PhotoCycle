@@ -61,6 +61,7 @@ package com.photodispatcher.tech{
 		protected var bdLatch:PickerLatch;
 		
 		//protected var feedBookDelay:int=0;
+		private var checkFeederEmpty:Boolean;
 		private var feedBookDelays:ArrayCollection;
 		private var feedDelay2:int;
 		protected var repeatedSignalGap:int=0;
@@ -213,6 +214,8 @@ package com.photodispatcher.tech{
 			}
 			log('Задержка между книгами '+feedBookDelay.toString());
 			*/
+			
+			checkFeederEmpty=Context.getAttribute("checkFeederEmpty");
 			
 			feedBookDelays=Context.getAttribute("feedBookDelays");
 			if(!feedBookDelays || feedBookDelays.length==0){
@@ -781,7 +784,12 @@ package com.photodispatcher.tech{
 			if(!isRunning || isPaused) return;
 			if(event.state==FeederController.CHANEL_STATE_FEEDER_EMPTY){
 				var msg:String='Лоток подачи: '+FeederController.chanelStateName(FeederController.CHANEL_STATE_FEEDER_EMPTY);
-				log(msg);
+				
+				if(checkFeederEmpty){
+					pauseRequest(msg);
+				}else{
+					log(msg);	
+				}
 				/*
 				var ap:AlertrPopup= new AlertrPopup();
 				ap.show(msg,3,16);
