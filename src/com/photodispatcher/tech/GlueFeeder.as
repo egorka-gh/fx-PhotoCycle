@@ -62,6 +62,9 @@ package com.photodispatcher.tech{
 		
 		//protected var feedBookDelay:int=0;
 		private var checkFeederEmpty:Boolean;
+		private var pauseFeederCountdown:int=0;
+		private var pauseCountdown:int=0;
+		
 		private var feedBookDelays:ArrayCollection;
 		private var feedDelay2:int;
 		protected var repeatedSignalGap:int=0;
@@ -138,6 +141,53 @@ package com.photodispatcher.tech{
 			register=null;
 		}
 		
+		override public function get feederEmpty():Boolean{
+			return !controller || controller.reamEmpty;
+		}
+		
+		private var _feederReamState:int=FeederController.REAM_STATE_UNKNOWN;
+		[Bindable]
+		override public function get feederReamState():int{
+			return _feederReamState;
+		}
+		override public function set feederReamState(value:int):void{
+			if(value==FeederController.REAM_STATE_COUNTDOWN || value==FeederController.REAM_STATE_UNKNOWN) return;
+			if(!checkFeederEmpty || !isRunning || isPaused){
+				_feederReamState=value;
+			}else{
+				if(value == FeederController.REAM_STATE_FILLED){
+					//new state filled
+					switch(_feederReamState){
+						case FeederController.REAM_STATE_UNKNOWN:
+						case FeederController.REAM_STATE_EMPTY:
+							_feederReamState=FeederController.REAM_STATE_FILLED;
+							break;
+						case FeederController.REAM_STATE_FILLED:
+							break;
+						case FeederController.REAM_STATE_COUNTDOWN:
+							if(pauseCountdown<=0) _feederReamState=FeederController.REAM_STATE_FILLED;
+							break;
+					}
+				}else{
+					//new state empty 	
+					switch(_feederReamState){
+						case FeederController.REAM_STATE_UNKNOWN:
+						case FeederController.REAM_STATE_FILLED:
+							pauseCountdown=pauseFeederCountdown;
+							_feederReamState=FeederController.REAM_STATE_COUNTDOWN;
+							if(pauseCountdown<=0) _feederReamState=FeederController.REAM_STATE_EMPTY;
+							break;
+						case FeederController.REAM_STATE_COUNTDOWN:
+							if(pauseCountdown<=0) _feederReamState=FeederController.REAM_STATE_EMPTY;
+							break;
+						case FeederController.REAM_STATE_EMPTY:
+							break;
+					}
+				}
+			}
+		}
+
+
 		protected var pausedGroup:int=-1;
 		protected var pausedGroupStep:int=-1;
 
@@ -216,6 +266,7 @@ package com.photodispatcher.tech{
 			*/
 			
 			checkFeederEmpty=Context.getAttribute("checkFeederEmpty");
+			pauseFeederCountdown=Context.getAttribute("pauseFeederCountdown");
 			
 			feedBookDelays=Context.getAttribute("feedBookDelays");
 			if(!feedBookDelays || feedBookDelays.length==0){
@@ -328,6 +379,9 @@ package com.photodispatcher.tech{
 				return;
 			}
 			log('SerialProxy:' +serialProxy.traceDisconnected());
+
+			//if(controller && checkFeederEmpty) controller.checkReam();
+
 			if(isRunning){
 				resume();
 				return;
@@ -455,6 +509,7 @@ package com.photodispatcher.tech{
 		protected function nextStep():void{
 			//controller.close(currentTray);
 			//reset refeed
+			//TODO implement controller.checkReam(); on start & resume 
 			refeed=false;
 			
 			if(!isRunning || isPaused) return;
@@ -579,6 +634,22 @@ package com.photodispatcher.tech{
 				case COMMAND_GROUP_BOOK_SHEET:
 					//check completed
 					if(currentGroupStep>=1){
+						//sheet feeded
+						
+						//check ream 
+						if(checkFeederEmpty){
+							if(feederReamState==FeederController.REAM_STATE_COUNTDOWN) pauseCountdown--;
+							if(feederEmpty){
+								feederReamState=FeederController.REAM_STATE_EMPTY;
+							}else{
+								feederReamState=FeederController.REAM_STATE_FILLED;
+							}
+							if(feederReamState==FeederController.REAM_STATE_EMPTY){
+								pause('Не заполнен лоток',false);
+								return;
+							}
+						}
+						
 						if (register && register.isComplete){
 							//order complited
 							//if(logger) logger.clear();
@@ -781,21 +852,45 @@ package com.photodispatcher.tech{
 			aclLatch.forward();
 		}
 		protected function onControllerMsg(event:ControllerMesageEvent):void{
+			var msg:String;
+			//check / set ream state 
+			if(event.state==FeederController.CHANEL_STATE_REAM_FILLED || event.state==FeederController.CHANEL_STATE_REAM_EMPTY){
+				if(event.state==FeederController.CHANEL_STATE_REAM_FILLED){
+					feederReamState=FeederController.REAM_STATE_FILLED;
+				}else{
+					if(feederReamState==FeederController.REAM_STATE_UNKNOWN || feederReamState==FeederController.REAM_STATE_FILLED){
+						//show alert
+						if(isRunning && !isPaused) dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Заполните лоток подачи",10));
+					}
+					feederReamState=FeederController.REAM_STATE_EMPTY;
+				}
+				msg='Лоток подачи: '+FeederController.chanelStateName(event.state);
+				log(msg);
+				return;
+			}
+
 			if(!isRunning || isPaused) return;
-			if(event.state==FeederController.CHANEL_STATE_FEEDER_EMPTY){
-				var msg:String='Лоток подачи: '+FeederController.chanelStateName(FeederController.CHANEL_STATE_FEEDER_EMPTY);
+			
+			/*
+			if(event.state==FeederController.CHANEL_STATE_REAM_FILLED){
+				feederReamState=FeederController.REAM_STATE_FILLED;
+				msg='Лоток подачи: '+FeederController.chanelStateName(FeederController.CHANEL_STATE_REAM_FILLED);
+			}
+			if(event.state==FeederController.CHANEL_STATE_REAM_EMPTY){
+				feederReamState=FeederController.REAM_STATE_EMPTY;
+				msg='Лоток подачи: '+FeederController.chanelStateName(FeederController.CHANEL_STATE_REAM_EMPTY);
 				
 				if(checkFeederEmpty){
 					pauseRequest(msg);
 				}else{
 					log(msg);	
 				}
-				/*
-				var ap:AlertrPopup= new AlertrPopup();
-				ap.show(msg,3,16);
-				*/
+				//var ap:AlertrPopup= new AlertrPopup();
+				//ap.show(msg,3,16);
 				return;
 			}
+			*/
+
 			//reset refeed
 			refeed=false;
 			if(layerInLatch.isOn && (event.state==FeederController.CHANEL_STATE_SINGLE_SHEET || event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET)){
@@ -861,6 +956,8 @@ package com.photodispatcher.tech{
 				return false;
 			}
 			
+			if(controller && checkFeederEmpty) controller.checkReam();
+			
 			if(!feedBookTimer){
 				feedBookTimer= new Timer(feedBookDelay+feedDelay,1);
 				feedBookTimer.addEventListener(TimerEvent.TIMER, onFeedDelayTimer);
@@ -882,6 +979,8 @@ package com.photodispatcher.tech{
 				nextStep();
 				return;
 			}
+			
+			if(controller && checkFeederEmpty) controller.checkReam();
 			
 			if(!feedTimer){
 				feedTimer= new Timer(delay,1);

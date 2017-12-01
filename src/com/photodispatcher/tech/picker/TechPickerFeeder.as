@@ -36,8 +36,8 @@ package com.photodispatcher.tech.picker{
 		
 		override protected function onControllerMsg(event:ControllerMesageEvent):void{
 			if(!isRunning || isPaused) return;
-			if(event.state==FeederController.CHANEL_STATE_FEEDER_EMPTY){
-				var msg:String='Лоток '+(event.chanel+1).toString()+': '+FeederController.chanelStateName(FeederController.CHANEL_STATE_FEEDER_EMPTY);
+			if(event.state==FeederController.CHANEL_STATE_REAM_EMPTY){
+				var msg:String='Лоток '+(event.chanel+1).toString()+': '+FeederController.chanelStateName(FeederController.CHANEL_STATE_REAM_EMPTY);
 				log(msg);
 				/*
 				var ap:AlertrPopup= new AlertrPopup();

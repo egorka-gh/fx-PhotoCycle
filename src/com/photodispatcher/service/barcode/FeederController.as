@@ -43,6 +43,7 @@ package com.photodispatcher.service.barcode{
 		public static const COMMAND_POWER_ON:String='*b1=1'; 
 		public static const COMMAND_POWER_OFF:String='*b1=0'; 
 		public static const COMMAND_FEED:String='*b2=1'; 
+		public static const COMMAND_CHECK_REAM_EMPTY:String='*gets'; 
 		
 		public static const MSG_CONTROLLER_INIT:String='start'; //'start+0x0d
 		public static const MSG_CONTROLLER_ACKNOWLEDGE:String='ok'; //'ok+0x0d
@@ -51,13 +52,20 @@ package com.photodispatcher.service.barcode{
 		public static const MSG_SHEET_PASS:String='*pass'; 
 		public static const MSG_SINGLE_SHEET:String='*sngs'; 
 		public static const MSG_DOUBLE_SHEET:String='*dbls'; 
-		public static const MSG_FEEDER_EMPTY:String='*stck'; 
+		public static const MSG_REAM_EMPTY_OLD:String='*stck'; 
+		public static const MSG_REAM_EMPTY:String='*st=0'; 
+		public static const MSG_REAM_FILLED:String='*st=1'; 
 
 		public static const CHANEL_STATE_SHEET_PASS:int=0; 
 		public static const CHANEL_STATE_SINGLE_SHEET:int=1; 
 		public static const CHANEL_STATE_DOUBLE_SHEET:int=2; 
-		public static const CHANEL_STATE_FEEDER_EMPTY:int=3; 
+		public static const CHANEL_STATE_REAM_EMPTY:int=3; 
+		public static const CHANEL_STATE_REAM_FILLED:int=4; 
 
+		public static const REAM_STATE_UNKNOWN:int=0; 
+		public static const REAM_STATE_EMPTY:int=10; 
+		public static const REAM_STATE_COUNTDOWN:int=50; 
+		public static const REAM_STATE_FILLED:int=100; 
 		
 		
 		public static const MSG_CONTROLLER_ALERT_PREFIX:String='*al'; //
@@ -73,7 +81,8 @@ package com.photodispatcher.service.barcode{
 				chanelStateNameMap[CHANEL_STATE_SHEET_PASS]='Лист вышел';
 				chanelStateNameMap[CHANEL_STATE_SINGLE_SHEET]='Одинарный лист';
 				chanelStateNameMap[CHANEL_STATE_DOUBLE_SHEET]='Двойной лист';
-				chanelStateNameMap[CHANEL_STATE_FEEDER_EMPTY]='Пустая стопа';
+				chanelStateNameMap[CHANEL_STATE_REAM_EMPTY]='Пустая стопа';
+				chanelStateNameMap[CHANEL_STATE_REAM_FILLED]='Стопа заполнена';
 			}
 			var res:String=chanelStateNameMap[state];
 			if(!res) res='State#'+state.toString();
@@ -88,6 +97,11 @@ package com.photodispatcher.service.barcode{
 		private var _isBusy:Boolean;
 		public function get isBusy():Boolean{
 			return _isBusy;
+		}
+		
+		private var _feederEmpty:Boolean=false;
+		public function get reamEmpty():Boolean{
+			return _feederEmpty;
 		}
 		
 		private var lastCommand:String;
@@ -156,8 +170,14 @@ package com.photodispatcher.service.barcode{
 					chanelState=CHANEL_STATE_DOUBLE_SHEET;
 					break;
 				}
-				case MSG_FEEDER_EMPTY:{
-					chanelState=CHANEL_STATE_FEEDER_EMPTY;
+				case MSG_REAM_EMPTY:{
+					chanelState=CHANEL_STATE_REAM_EMPTY;
+					_feederEmpty=true;
+					break;
+				}
+				case MSG_REAM_FILLED:{
+					chanelState=CHANEL_STATE_REAM_FILLED;
+					_feederEmpty=false;
 					break;
 				}
 				default:{
@@ -186,23 +206,25 @@ package com.photodispatcher.service.barcode{
 
 		private var aclTimer:Timer;
 		
-		protected function sendCmd(cmd:String):void{
+		protected function sendCmd(cmd:String, ignoreACL:Boolean=false):void{
 			if(!cmd) return;
-			if(_isBusy){
+			if(!ignoreACL && _isBusy){
 				log('! Busy error; command: '+cmd);
 				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,'Нет потверждения предидущей команды ('+lastCommand+'/'+cmd+')',ERROR_BUSY));
 				return;
 			}
 			log('> '+cmd);
 			var msg:String=cmd+String.fromCharCode(sufix);
-			_isBusy=true;
-			resendCount=0;
-			lastCommand=msg;
-			if(!aclTimer){
-				aclTimer= new Timer(ACKNOWLEDGE_TIMEOUT,1);
-				aclTimer.addEventListener(TimerEvent.TIMER, onAclTimer);
+			if(!ignoreACL){
+				_isBusy=true;
+				resendCount=0;
+				lastCommand=msg;
+				if(!aclTimer){
+					aclTimer= new Timer(ACKNOWLEDGE_TIMEOUT,1);
+					aclTimer.addEventListener(TimerEvent.TIMER, onAclTimer);
+				}
+				aclTimer.start();
 			}
-			aclTimer.start();
 			send(msg);
 		}
 		
@@ -241,6 +263,11 @@ package com.photodispatcher.service.barcode{
 		public function feed():void{
 			if(!isStarted) return;
 			sendCmd(COMMAND_FEED);
+		}
+
+		public function checkReam():void{
+			if(!isStarted) return;
+			sendCmd(COMMAND_CHECK_REAM_EMPTY, true);
 		}
 
 	}

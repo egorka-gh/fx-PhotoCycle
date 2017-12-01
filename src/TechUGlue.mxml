@@ -60,6 +60,9 @@
 			[Bindable]
 			public var checkFeederEmpty:Boolean=false;
 			[Bindable]
+			public var pauseFeederCountdown:int=0;
+			
+			[Bindable]
 			public var doubleSheetOff:Boolean=false;
 			[Bindable]
 			public var dataBaseOff:Boolean=true;
@@ -133,6 +136,7 @@
 					reversOrder=so.data.reversOrder; 
 					doubleSheetOff=so.data.doubleSheetOff;
 					checkFeederEmpty=so.data.checkFeederEmpty;
+					pauseFeederCountdown=so.data.pauseFeederCountdown;
 					altBarcode=so.data.altBarcode;
 					feedOn=so.data.feedOn;
 					dataBaseOff=so.data.dataBaseOff;
@@ -187,6 +191,8 @@
 				Context.setAttribute("feedDelay2", feedDelay2);
 				Context.setAttribute("repeatedSignalGap", repeatedSignalGap);
 				Context.setAttribute("checkFeederEmpty", checkFeederEmpty);
+				Context.setAttribute("pauseFeederCountdown", pauseFeederCountdown);
+				
 				currentState='config';
 			}
 			
@@ -459,6 +465,14 @@
 			}
 			
 			
+			protected function spFeederCountdown_changeHandler(event:Event):void{
+				pauseFeederCountdown=spFeederCountdown.value;
+				Context.setAttribute("pauseFeederCountdown", pauseFeederCountdown);
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.pauseFeederCountdown = pauseFeederCountdown;
+				so.flush();  
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -514,7 +528,14 @@
 -->				
 				<s:HGroup gap="0" verticalAlign="baseline">
 					<s:CheckBox id="tg_checkFeederEmpty" selected="{checkFeederEmpty}" change="{setBool('checkFeederEmpty')}"/> 
-					<s:Label text="Контроль уровня стопы"/>
+					<s:Label text="Контроль уровня стопы."/>
+					<s:Spacer width="5"/>
+					<s:Label text="Пауза после"/>
+					<s:Spacer width="3"/>
+					<s:NumericStepper id="spFeederCountdown" width="40"  change="spFeederCountdown_changeHandler(event)" enabled="{tg_checkFeederEmpty.selected}"
+									  minimum="0" maximum="99" snapInterval="1" value="{pauseFeederCountdown}"/>
+					<s:Spacer width="3"/>
+					<s:Label text="листов"/>
 				</s:HGroup>
 				<s:HGroup gap="0" verticalAlign="baseline">
 					<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 

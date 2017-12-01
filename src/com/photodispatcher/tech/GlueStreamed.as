@@ -11,6 +11,7 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.service.barcode.ComInfo;
 	import com.photodispatcher.service.barcode.ComReader;
 	import com.photodispatcher.service.barcode.ComReaderEmulator;
+	import com.photodispatcher.service.barcode.FeederController;
 	import com.photodispatcher.service.barcode.SerialProxy;
 	import com.photodispatcher.service.barcode.Socket2Com;
 	import com.photodispatcher.tech.plain_register.TechRegisterPicker;
@@ -37,6 +38,20 @@ package com.photodispatcher.tech{
 		
 		[Bindable]
 		public var prepared:Boolean;
+
+		private var _feederReamState:int=FeederController.REAM_STATE_UNKNOWN;
+		[Bindable]
+		public function get feederReamState():int{
+			return _feederReamState;
+		}
+		public function set feederReamState(value:int):void{
+			_feederReamState=value;
+		}
+		
+		public function get feederEmpty():Boolean{
+			return false;
+		}
+
 		
 		private var _inexactBookSequence:Boolean=false;
 		[Bindable]

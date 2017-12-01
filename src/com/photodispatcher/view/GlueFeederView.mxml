@@ -13,6 +13,7 @@
 			import com.photodispatcher.model.mysql.entities.Layerset;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.barcode.FeederController;
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.tech.GlueFeeder;
 			import com.photodispatcher.tech.GlueStreamed;
@@ -157,7 +158,8 @@
 			private function onPickerErr(event:ErrorEvent):void{
 				log(event.text);
 				if(feedOn){
-					Alert.show(event.text);	
+					Alert.show(event.text);
+					if(event.errorID!=0) playAlertSound();
 				}else{
 					playAlertSound();
 				}
@@ -177,6 +179,18 @@
 				return block.printGroupId+': '+StrUtil.sheetName(block.book,block.sheetsTotal);
 			}
 
+			protected function reamColor(reamState:int):uint{
+				if(!reamState || reamState==FeederController.REAM_STATE_UNKNOWN) return btStart.getStyle('chromeColor');
+				if(reamState==FeederController.REAM_STATE_EMPTY) return 0xff4444;
+				if(reamState==FeederController.REAM_STATE_FILLED) return 0x44ff44;
+				if(reamState==FeederController.REAM_STATE_COUNTDOWN) return 0xffff44;
+				return btStart.getStyle('chromeColor');
+			}
+			
+			protected function btReam_clickHandler(event:MouseEvent):void{
+				if((glue is GlueFeeder) && (glue as GlueFeeder).controller) (glue as GlueFeeder).controller.checkReam();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -225,7 +239,8 @@
 				</s:HGroup>
 				<s:HGroup gap="10" >
 					<s:Button id="btStart" label="Старт" enabled="{!glue.isRunning || glue.isPaused}" click="glue.start()"/>
-					<!--<s:Button label="Перезапуск COM" enabled="{!glue.isRunning || glue.isPaused}" click="{serialProxy.restart()}"/>-->
+					<s:Button id="btReam" label="Лоток" enabled="{!glue.isRunning || glue.isPaused}" 
+							  chromeColor="{reamColor(glue.feederReamState)}" click="btReam_clickHandler(event)"/>
 				</s:HGroup>
 				<s:HGroup gap="10" >
 					<s:Button id="btPause" label="Пауза" enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
