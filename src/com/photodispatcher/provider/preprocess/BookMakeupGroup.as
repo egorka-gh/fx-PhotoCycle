@@ -282,6 +282,16 @@ package com.photodispatcher.provider.preprocess{
 				if(barcode) IMCommandUtil.annotateTransparent(command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookTemplate.bar_offset,-90);
 			}
 
+			//expand verticaly
+			if(printGroup.bookTemplate.tech_stair_add){
+				if(printGroup.bookTemplate.is_tech_stair_top){
+					IMCommandUtil.expandImageV(command,printGroup.bookTemplate.tech_stair_add);
+				}
+				if(printGroup.bookTemplate.is_tech_stair_bot){
+					IMCommandUtil.expandImageV(command,printGroup.bookTemplate.tech_stair_add,'South');
+				}
+			}
+
 			//draw tech barcode
 			var barSize:int=printGroup.bookTemplate.tech_bar;
 			if(barSize &&
@@ -293,7 +303,6 @@ package com.photodispatcher.provider.preprocess{
 				var barColor:int=parseInt(printGroup.bookTemplate.tech_bar_color,16);
 				
 				IMCommandUtil.expandImageH(command,printGroup.bookTemplate.tech_add);
-				
 				//mm to pix
 				barSize=UnitUtil.mm2Pixels300(barSize);
 				barcode=printGroup.techBarcodeByFile(file);

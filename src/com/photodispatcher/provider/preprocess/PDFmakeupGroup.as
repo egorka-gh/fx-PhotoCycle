@@ -398,12 +398,23 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		private function drawSheetStair(command:IMCommand, sheet:PdfSheet, sheetSize:Point, sheetIndex:int):void{
+			//expand verticaly
+			if(printGroup.bookTemplate.tech_stair_add){
+				if(printGroup.bookTemplate.is_tech_stair_top){
+					IMCommandUtil.expandImageV(command,printGroup.bookTemplate.tech_stair_add);
+				}
+				if(printGroup.bookTemplate.is_tech_stair_bot){
+					IMCommandUtil.expandImageV(command,printGroup.bookTemplate.tech_stair_add,'South');
+				}
+			}
+
+			//draw stair
 			if(!printGroup.bookTemplate.tech_stair_add || !printGroup.bookTemplate.tech_stair_step || 
 				(!printGroup.bookTemplate.is_tech_stair_bot && !printGroup.bookTemplate.is_tech_stair_top)) return;
 			if(!sheet || (!sheet.leftPage && !sheet.rightPage)) return;
 			
-			var fieldMM:int=printGroup.bookTemplate.tech_stair_add;
-			var field:int=UnitUtil.mm2Pixels300(fieldMM);
+			//var fieldMM:int=printGroup.bookTemplate.tech_stair_add;
+			var field:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_stair_add);
 			var step:int=UnitUtil.mm2Pixels300(printGroup.bookTemplate.tech_stair_step);
 			var stepsPerPage:int=Math.floor((sheetSize.x/2)/step);
 			if(stepsPerPage==0) return;
@@ -430,12 +441,12 @@ package com.photodispatcher.provider.preprocess{
 			command.add('-fill'); command.add('black');
 			if(printGroup.bookTemplate.is_tech_stair_top){
 				yOffset+=field;
-				IMCommandUtil.expandImageV(command,fieldMM);
+				//IMCommandUtil.expandImageV(command,fieldMM);
 				if(lOffset!=-1) IMCommandUtil.drawRectangle(command,lOffset,0,step,field);
 				if(rOffset!=-1) IMCommandUtil.drawRectangle(command,rOffset,0,step,field);
 			}
 			if(printGroup.bookTemplate.is_tech_stair_bot){
-				IMCommandUtil.expandImageV(command,fieldMM,'South');
+				//IMCommandUtil.expandImageV(command,fieldMM,'South');
 				if(lOffset!=-1) IMCommandUtil.drawRectangle(command,lOffset,yOffset,step,field);
 				if(rOffset!=-1) IMCommandUtil.drawRectangle(command,rOffset,yOffset,step,field);
 			}

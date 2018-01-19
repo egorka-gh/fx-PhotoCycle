@@ -159,11 +159,6 @@
 		<s:FormHeading label="Лесенка"/>
 		<s:FormItem label="Увеличение высоты формата (мм)">
 			<s:NumericStepper minimum="0" maximum="10" value="@{template.tech_stair_add}"/>
-		</s:FormItem> 
-		<s:FormItem label="Шаг (мм)">
-			<s:NumericStepper minimum="0" maximum="10" value="@{template.tech_stair_step}"/>
-		</s:FormItem> 
-		<s:FormItem label="Рисовать">
 			<s:HGroup gap="0" verticalAlign="baseline">
 				<s:CheckBox selected="@{template.is_tech_stair_top}"/>
 				<s:Label text="Cверху" width="60"/>
@@ -171,7 +166,19 @@
 				<s:CheckBox selected="@{template.is_tech_stair_bot}"/>
 				<s:Label text="Cнизу" width="60"/>
 			</s:HGroup>
-		</s:FormItem>
+		</s:FormItem> 
+		<s:FormItem label="Шаг (мм)">
+			<s:NumericStepper minimum="0" maximum="10" value="@{template.tech_stair_step}"/>
+		</s:FormItem> 
+		<!--<s:FormItem label="Рисовать">
+			<s:HGroup gap="0" verticalAlign="baseline">
+				<s:CheckBox selected="@{template.is_tech_stair_top}"/>
+				<s:Label text="Cверху" width="60"/>
+				<s:Spacer width="15"/>
+				<s:CheckBox selected="@{template.is_tech_stair_bot}"/>
+				<s:Label text="Cнизу" width="60"/>
+			</s:HGroup>
+		</s:FormItem>-->
 	</s:Form>
 	<s:Button label="Закрыть" click="button1_clickHandler(event)" bottom="10" right="10"/>
 </s:SkinnablePopUpContainer>
