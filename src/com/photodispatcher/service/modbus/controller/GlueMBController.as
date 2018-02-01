@@ -29,8 +29,15 @@ package com.photodispatcher.service.modbus.controller{
 		3 - главная(передняя) плита, таймаут выхода вперед на датчик задней плиты
 		4 - главная(передняя) плита, таймаут выхода назад на датчик исходного положения
 		5 - таймаут датчика на выгрузке (видимо чтото застряло и перекрыло датчик)
-		6 - резерв датчик уровня клея
-		7 - резерв
+		---6 - резерв датчик уровня клея
+		---7 - резерв
+		//2018-01-22
+		6 - Податчик. Высота стопы - появился сигнал
+		7 - Податчик. Высота стопы - пропал сигнал
+		8 - Податчик. Датчик листа - появился сигнал
+		9 - Податчик. Датчик листа - пропал сигнал
+		10 - Реле безопасности. Безопасность в режиме работы. Ошибок нет. Цикл работы машины запущен
+		11 - Реле безопасности. Безопасность в ошибке. Машина остановлена. Необходимо сделать сброс реле безопасности (по физической кнопке) и заупстить цикл работы(по физической кнопке). Цикл остановлен
 		
 		ПК -> ПЛК (6ая функция - запись регистра)
 		D0 (адрес регистра 0x0000) Main_Plate_Forward_Timeout_Time - время таймаута при переходе передней плиты на датчик задней плиты (формат записи BCD (пример 0x0010 = 1 
@@ -46,6 +53,13 @@ package com.photodispatcher.service.modbus.controller{
 		D7 (адрес регистра 0x0007) Pump_Sens_Filter - Время ожидания "чистого" сигнала (фильтр) (формат записи BCD, 1 = 100ms). По-умолчанию 1 секунда (0x0010)
 		D8 (адрес регистра 0x0008) Pump_Work_Time - Время работы насоса (формат записи BCD, 1 = 100ms). По-умолчанию 10 секунд (0x0100)
 		D9 (адрес регистра 0x0009) Pump_Enable - включение/выключение регулирования уровня клея насосом. ( 0x0001 - true, 0x0000 - false)
+
+		//2018-01-22
+		D10(адрес регистра 0x000A) Safety_Time - время ожидания прихода листа для разрешения перемещения передней плиты (формат записи BCD, 1 = 100ms). По-умолчанию 20 (0x0200) = 2 секунды 
+		D11(адрес регистра 0x000B) Feeder_Power_Switch_WORD - подача питания на податчик ( 0x0001 - включить, 0x0000 - выключить)
+		D12(адрес регистра 0x000С) Feeder_Pump_Switch_WORD - подача питания на компрессор податчика ( 0x0001 - включить, 0x0000 - выключить)
+		D13(адрес регистра 0x000D) Feeder_Pop_Paper_WORD - податчик. подать лист ( 0x0001 - пуск)
+
 		*/
 		public static const CONTROLLER_PRESS_PAPER_IN:int	=0;
 		public static const CONTROLLER_PRESS_DONE:int	=1;
@@ -53,6 +67,13 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_PRESS_PUSH_TIMEOUT:int	=3;
 		public static const CONTROLLER_PRESS_PULL_TIMEOUT:int	=4;
 		public static const CONTROLLER_PUSH_TIMEOUT:int	=5;
+		//2018-01-22
+		public static const FEEDER_REAM_FILLED:int=6; 
+		public static const FEEDER_REAM_EMPTY:int=7; 
+		public static const FEEDER_SHEET_IN:int=8; 
+		public static const FEEDER_SHEET_PASS:int=9; 
+		public static const FEEDER_ALARM_OFF:int=10; 
+		public static const FEEDER_ALARM_ON:int=11; 
 
 		public static const CONTROLLER_REGISTER_MAIN_PLATE_FORWARD_TIMEOUT:int	=0;
 		public static const CONTROLLER_REGISTER_MAIN_PLATE_REVERSE_TIMEOUT:int	=1;
@@ -65,6 +86,12 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_REGISTER_PUMP_SENS_FILTER:int			=7;
 		public static const CONTROLLER_REGISTER_PUMP_WORK_TIME:int				=8;
 		public static const CONTROLLER_REGISTER_PUMP_ENABLE:int					=9;
+
+		//2018-01-22
+		public static const FEEDER_REGISTER_SAFETY_TIME:int						=10;
+		public static const FEEDER_REGISTER_POWER_SWITCH:int					=11;
+		public static const FEEDER_REGISTER_PUMP_SWITCH:int						=12;
+		public static const FEEDER_REGISTER_PUSH_PAPER:int						=13;
 		
 		public function GlueMBController(){
 			super();
@@ -79,6 +106,17 @@ package com.photodispatcher.service.modbus.controller{
 		public var pumpSensFilterTime:int;
 		public var pumpWorkTime:int;
 		public var pumpEnable:Boolean;
+		//feeder
+		public var feederSafetyTime:int;
+
+		//feeder
+		public function setFeederSafetyTime(msec:int):void{
+			if(client && client.connected){
+				client.writeRegister(FEEDER_REGISTER_SAFETY_TIME, ModbusBytes.int2bcd(int(msec/100)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
 
 		//Main_Plate_Forward_Timeout_Time
 		public function setMainPlateForwardTimeout(msec:int):void{
@@ -210,7 +248,7 @@ package com.photodispatcher.service.modbus.controller{
 			switch(adu.pdu.value){
 				case CONTROLLER_PRESS_PAPER_IN:{
 					//notify handler
-					dispatchEvent(new ControllerMesageEvent(0,0));
+					dispatchEvent(new ControllerMesageEvent(0,CONTROLLER_PRESS_PAPER_IN));
 					txt='Подача листа на пресс';
 					break;
 				}

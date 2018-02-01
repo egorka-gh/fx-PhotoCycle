@@ -495,7 +495,7 @@ package com.photodispatcher.service.web{
 				//if(result!='OK'){
 					if(!result || result.hasOwnProperty('error')){
 						if(!result){
-							abort('FotoknigaWeb Ошибка web: '+e.data);
+							abort('FotoknigaWeb Ошибка web: '+e.data+', status:'+client.httpStatus);
 						}else{
 							abort(result.error);
 						}
@@ -505,7 +505,7 @@ package com.photodispatcher.service.web{
 			}else{
 				if(!result || !result.hasOwnProperty('result') || !result.result || result.error){
 					if(!result){
-						abort('FotoknigaWeb Ошибка web: '+e.data);
+						abort('FotoknigaWeb Ошибка web: '+e.data+', status:'+client.httpStatus);
 					}else{
 						abort(getErr(result));
 					}
@@ -583,6 +583,11 @@ package com.photodispatcher.service.web{
 					return;
 					break;
 				case CMD_SET_ORDER_LDR_STATE:
+					var resp:String=e.data as String;
+					if (!resp ||  resp.toUpperCase()!='"OK"'){
+						abort('FotoknigaWeb Ошибка web: '+resp+', status:'+client.httpStatus);
+						return;
+					}
 					//complited
 					break;
 

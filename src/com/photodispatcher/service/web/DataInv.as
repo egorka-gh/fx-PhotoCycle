@@ -23,6 +23,7 @@ package com.photodispatcher.service.web{
 			switch (evt.response){
 				case Responses.HTTP_STATUS:					
 			 		loginSuccess= !url.locationUrl || evt.responseURL==url.locationUrl;
+					//client.httpStatus
 					break;
 				case Responses.COMPLETE:
 					if (loginSuccess){

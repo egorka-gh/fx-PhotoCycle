@@ -158,7 +158,7 @@
 		
 		<s:FormHeading label="Лесенка"/>
 		<s:FormItem label="Увеличение высоты формата (мм)">
-			<s:NumericStepper minimum="0" maximum="10" value="@{template.tech_stair_add}"/>
+			<s:NumericStepper minimum="0" maximum="500" value="@{template.tech_stair_add}"/>
 			<s:HGroup gap="0" verticalAlign="baseline">
 				<s:CheckBox selected="@{template.is_tech_stair_top}"/>
 				<s:Label text="Cверху" width="60"/>

@@ -1,8 +1,10 @@
 package com.photodispatcher.service.glue{
 	import com.photodispatcher.util.ArrayUtil;
 	
+	import mx.collections.ArrayCollection;
 	import mx.utils.StringUtil;
 	
+	[Bindable]
 	public class GlueMessage{
 		public static const MSG_CCH_END:String='@@';
 		public static const MSG_CCH_BLOCK:String='~~';
@@ -25,7 +27,18 @@ package com.photodispatcher.service.glue{
 
 		public static function parse(raw:String, cmd:GlueCmd):GlueMessage{
 			var res:GlueMessage= new GlueMessage();
-			if(cmd) res.command=cmd.command;
+			if(cmd){
+				res.command=cmd.command;
+				if(res.command==GlueProxy.CMD_GET_BUTTONS){
+					res.type=GlueMessageBlock.TYPE_BUTTON;	
+				}else if(res.command==GlueProxy.CMD_GET_STATUS){
+					res.type=GlueMessageBlock.TYPE_STATUS;	
+				}else if(res.command==GlueProxy.CMD_GET_PRODUCT){
+					res.type=GlueMessageBlock.TYPE_PRODUCT;	
+				}else if(res.command==GlueProxy.CMD_GET_MESSAGE){
+					res.type=GlueMessageBlock.TYPE_MESSAGE;	
+				}
+			}
 			if(!raw) return res;
 			//remove end chars
 			raw=raw.substring(0,raw.length-MSG_CCH_END.length);
@@ -66,9 +79,10 @@ package com.photodispatcher.service.glue{
 					//create block
 					if(blockName || items.length>0){
 						block=new GlueMessageBlock();
-						block.items=items.concat();
+						block.type=res.type;
+						block.items=new ArrayCollection(items.concat());
 						if(blockName) block.key=blockName;
-						res.blocks.push(block);
+						res.blocks.addItem(block);
 						if(!block.key && cmd.command==GlueProxy.CMD_GET_STATUS){
 							//parse Text item by ':'
 							item=block.getItem(ITEM_KEY_TEXT);
@@ -90,12 +104,13 @@ package com.photodispatcher.service.glue{
 		public function GlueMessage(){
 		}
 		
+		public var type:int;
 		public var command:String;
-		public var blocks:Array=[];
+		public var blocks:ArrayCollection= new ArrayCollection();
 		
 		public function getBlock(key:String):GlueMessageBlock{
 			if(!blocks || blocks.length==0) return null;
-			return ArrayUtil.searchItem('key',key, blocks) as GlueMessageBlock; 
+			return ArrayUtil.searchItem('key',key, blocks.source) as GlueMessageBlock; 
 		}
 		
 		public function getBlockItemValue(keyBlock:String, keyItem:String):String{

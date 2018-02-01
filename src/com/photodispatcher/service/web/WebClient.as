@@ -22,6 +22,7 @@ package com.photodispatcher.service.web{
 		
 		//raw orders
 		public var orderes:Array;
+		public var httpStatus:int; //not correct? last http status if adobe can get it
 
 		private var urlLoader:URLLoader;
 
@@ -59,6 +60,7 @@ package com.photodispatcher.service.web{
 			return;
 		}
 		private function handleResponceStatus(e:HTTPStatusEvent):void{
+			httpStatus=e.status;
 			var ev:WebEvent=new WebEvent(WebEvent.RESPONSE);
 			ev.response=Responses.HTTP_STATUS;
 			ev.responseURL=e.responseURL;
@@ -95,6 +97,7 @@ package com.photodispatcher.service.web{
 
 		private function invoke (invoker:WebInvoker):void{
 			if (currentProcess) return;
+			httpStatus=0;
 			currentProcess = invoker;
 			if (currentProcess.timeout>0){
 				timer= new Timer(currentProcess.timeout*1000,1);

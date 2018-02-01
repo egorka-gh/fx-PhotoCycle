@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.GlueMessageEvent;
+			import com.photodispatcher.service.glue.GlueInfo;
+			import com.photodispatcher.service.glue.GlueMessage;
+			import com.photodispatcher.service.glue.GlueProxy;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+		
+			public static const LOG_LEN_LIMIT:int=4000;
+
+			public var glueIP:String;
+			public var gluePort:int;
+			
+			[Bindable]
+			protected var glueDevice:GlueProxy;
+
+			[Bindable]
+			protected var lastButtonsMessage:GlueMessage;
+			[Bindable]
+			protected var lastStatesMessage:GlueMessage;
+
+			private var logText:String = '';
+			
+			public function log(mesage:String, level:int=0):void{
+				logToScreen(mesage);
+			}
+			public function clear():void{
+				cleanLog();
+			}
+			
+			private function logToScreen(msg:String, isError:Boolean=false):void{
+				var color:String=isError?"'#990000'":"'#006600'";
+				var bold:String=isError?"fontWeight='bold'":'';
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				logText ="<span>"+fmt.format(new Date())+" </span>"+"<span color="+color+" "+bold+">"+msg+"</span> <br />"+logText ;
+
+				//cut
+				if(logText.length> LOG_LEN_LIMIT){
+					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
+					if(idx!=-1){
+						logText=logText.substr(0,idx+6);
+					}
+				}
+
+				try{
+					logTextArea.textFlow=TextFlowUtil.importFromString(logText);
+				}catch(error:Error){
+					trace('TextFlow err, txt: '+logText);
+					trace(error.message);
+				}
+				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
+			}
+
+			public function start():void{
+				cleanLog();
+				//start glue proxy
+				glueDevice=new GlueProxy();
+				glueDevice.loger=this;
+				glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
+				//glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+				glueDevice.start(glueIP,gluePort);
+			}
+			
+			public function stop():void{
+				cleanLog();
+				if(glueDevice){
+					glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
+					glueDevice.stop();
+				}
+				glueDevice=null;
+			}
+			
+			private function cleanLog():void{
+				logText='';
+				logTextArea.text='';
+			}
+			
+			protected function onGlueErr(event:ErrorEvent):void{
+				logToScreen('Склейка ошибка: '+event.text,true);
+			}
+			
+
+			/*
+			protected function onGlueInfo(e:Event):void{
+				if(currGlueInfo){
+					currGlueInfo.removeEventListener(Event.COMPLETE,onGlueInfo);
+					if(currGlueInfo.hasErr){
+						Alert.show(currGlueInfo.errMsg);
+						logToScreen('Ошибка проверки: '+currGlueInfo.errMsg,true);
+					}else{
+						//set command 
+						if(glueDevice){
+							glueDevice.run_SetProduct(currGlueInfo.glueCommand.glue_cmd_name);
+							glueDevice.run_SetSheets(currGlueInfo.glueSheetsNum);
+						}
+					}
+				}
+			}
+			*/
+			
+			protected function btRefreshGlue_clickHandler(event:MouseEvent):void{
+				if(glueDevice && glueDevice.isStarted){
+					glueDevice.run_GetProduct();
+					glueDevice.run_GetStatus();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		
+		
+	</fx:Declarations>
+	
+	<s:VGroup gap="5" width="100%" height="100%" horizontalAlign="right" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" >
+			<s:Label text="Склейка"/>
+			<s:Spacer width="100%"/>
+		<!--	<s:Label text="Бумага: {currGlueInfo.printGroup.paper_name}"/>
+			<s:Label text="Прослойка: {currGlueInfo.extraInfo.interlayer}/{currGlueInfo.inerlayer.name}"/>
+			<s:Label text="Разворотов: {currGlueInfo.printGroup.sheet_num}"/>
+			<s:Label text="Команда: {currGlueInfo.glueCommand.glue_cmd_name}"/>-->
+		</s:HGroup>
+		<s:HGroup id="gDevice" gap="10" width="100%">
+			<s:HGroup id="gDeviceCTRL" gap="25" paddingLeft="15" paddingRight="5"
+					  enabled="{glueDevice.isStarted}"
+					  horizontalAlign="center" verticalAlign="top" 
+					  fontSize="20">
+				<s:Button id="btGlueStart" label="Старт" height="50" click="{glueDevice.run_Start()}"/>
+				<s:Button id="btGluePause" label="Пауза" height="50" enabled="false"/>
+				<s:Button id="btGlueStop" label="Стоп" height="50" click="{glueDevice.run_Stop()}"/>
+				<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>
+			</s:HGroup>
+			<s:Scroller width="100%" height="50">
+				<s:VGroup gap="5" width="100%">
+					<s:HGroup gap="5" verticalAlign="baseline">
+						<s:Label text="Product: {glueDevice.devProduct}"/>
+						<s:Label text="Pages per Book: {glueDevice.devBookPages}"/>
+					</s:HGroup>
+					<s:HGroup gap="5">
+						<s:Label text="GLM: {glueDevice.devGLM}"/>
+						<s:Label text="GBT: {glueDevice.devGBT}"/>
+					</s:HGroup>
+				</s:VGroup>
+			</s:Scroller>
+		</s:HGroup>
+		<s:HGroup gap="5" width="100%" height="100%">
+			<s:VGroup width="110" height="100%" gap="3">
+				<s:Label text="Состояние"/>
+				<s:TabBar id="tbStateView"  dataProvider="{vsStateViews}"/>
+				<mx:ViewStack id="vsStateViews" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+					<s:NavigatorContent label="Кнопки" backgroundAlpha="0" width="100%" height="100%">
+						<s:List width="100%" height="100%"
+								dataProvider="{lastButtonsMessage.blocks}">
+							<s:itemRenderer>
+								<fx:Component id="gBlockRender">
+									<s:VGroup gap="2">
+										<s:Label text="{data.key}"/>
+										<s:List dataProvider="{data.items}">
+											<s:itemRenderer>
+												<fx:Component>
+													<s:HGroup gap="2">
+														<s:Label text="{data.key}:"/>
+														<s:TextInput text="{data.value}"/>
+													</s:HGroup>
+												</fx:Component>
+											</s:itemRenderer>
+										</s:List>
+									</s:VGroup>
+								</fx:Component>
+							</s:itemRenderer>
+						</s:List>
+								
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Статусы" backgroundAlpha="0" width="100%" height="100%">
+						
+					</s:NavigatorContent>
+					<!--<s:NavigatorContent label="Продукт" backgroundAlpha="0" width="100%" height="100%">
+						
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Сообщения" backgroundAlpha="0" width="100%" height="100%">
+						
+					</s:NavigatorContent>-->
+				</mx:ViewStack>
+			</s:VGroup>
+			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
+		</s:HGroup>
+		<s:HGroup gap="5" width="100%">
+			<s:Button label="Очистить" click="{cleanLog()}"/>
+			<s:Spacer width="100%"/>
+		</s:HGroup> 
+	</s:VGroup>
+	
+</s:Group>

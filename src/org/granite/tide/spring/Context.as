@@ -206,9 +206,10 @@ package org.granite.tide.spring {
          *  @return the operation token
          */
         public override function meta_callComponent(serverSession:ServerSession, component:IComponent, op:String, args:Array, withContext:Boolean = true):AsyncToken {
-            log.debug("callComponent {0}.{1}", component.meta_name, op);
-            
-            var token:AsyncToken = super.meta_callComponent(serverSession, component, op, args, withContext);
+			log.debug("callComponent {0}.{1}", component.meta_name, op);
+			
+			var token:AsyncToken; 
+			token= super.meta_callComponent(serverSession, component, op, args, withContext);
 			
             if (withContext) {
                 _pendingUpdates = new ArrayCollection(_updates.toArray());

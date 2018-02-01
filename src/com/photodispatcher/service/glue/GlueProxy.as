@@ -62,6 +62,7 @@ package com.photodispatcher.service.glue{
 		Stop after Job 		- не используется, поидее остановка после сборки книги
 		Sheets per Book,N  	- установить кол листов в книге (N - число листов)
 		Select Product,NAME - установить имя продукта (NAME - имя продукта)
+		Еject Book
 		
 		в ответ на вышерепечисленные команды прилетает OK
 		для следующих прилетает ответ в форамте как описано выше
@@ -82,10 +83,14 @@ package com.photodispatcher.service.glue{
 		public static const MSG_ACL:String='OK';
 		public static const MSG_ERROR:String='ERROR';
 
+		//buttons
 		public static const CMD_DISCONNECT:String='Disconnect';
 		public static const CMD_START:String='Start';
 		public static const CMD_STOP:String='Stop';
 		public static const CMD_QUIT:String='Quit'; //quits the glue station (programm)
+		public static const CMD_EJECT_BOOK:String='Еject Book';
+		
+		//comands
 		public static const CMD_STOP_AFTER_JOB:String='Stop after Job'; //???
 		public static const CMD_SET_SHEETS:String='Sheets per Book,';
 		public static const CMD_SET_PRODUCT:String='Select Product,';
