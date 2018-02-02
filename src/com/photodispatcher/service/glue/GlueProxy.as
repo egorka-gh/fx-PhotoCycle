@@ -188,6 +188,14 @@ package com.photodispatcher.service.glue{
 			run_next();
 			return latch;
 		}
+
+		public function run_GetButtons(createLatch:Boolean=false):AsyncLatch{
+			var latch:AsyncLatch;
+			if(createLatch) latch=new AsyncLatch(true);
+			cmd_stack.push(new GlueCmd(CMD_GET_BUTTONS,true,latch));
+			run_next();
+			return latch;
+		}
 		
 		protected function run_next():void{
 			if(aclLatch && aclLatch.isStarted) return;

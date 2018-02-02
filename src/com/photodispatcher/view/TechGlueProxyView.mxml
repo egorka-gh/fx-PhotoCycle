@@ -11,6 +11,7 @@
 			import com.photodispatcher.event.GlueMessageEvent;
 			import com.photodispatcher.service.glue.GlueInfo;
 			import com.photodispatcher.service.glue.GlueMessage;
+			import com.photodispatcher.service.glue.GlueMessageBlock;
 			import com.photodispatcher.service.glue.GlueProxy;
 			import com.photodispatcher.util.StrUtil;
 			
@@ -72,7 +73,7 @@
 				glueDevice=new GlueProxy();
 				glueDevice.loger=this;
 				glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
-				//glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+				glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
 				glueDevice.start(glueIP,gluePort);
 			}
 			
@@ -80,9 +81,16 @@
 				cleanLog();
 				if(glueDevice){
 					glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
+					glueDevice.removeEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
 					glueDevice.stop();
 				}
 				glueDevice=null;
+			}
+			
+			private function onGlueMessage( event:GlueMessageEvent ):void{
+				if(!event.message ) return;
+				if(event.message.type==GlueMessageBlock.TYPE_BUTTON) lastButtonsMessage=event.message;
+				if(event.message.type==GlueMessageBlock.TYPE_STATUS) lastStatesMessage=event.message;
 			}
 			
 			private function cleanLog():void{
@@ -116,6 +124,7 @@
 			protected function btRefreshGlue_clickHandler(event:MouseEvent):void{
 				if(glueDevice && glueDevice.isStarted){
 					glueDevice.run_GetProduct();
+					glueDevice.run_GetButtons();
 					glueDevice.run_GetStatus();
 				}
 			}
@@ -146,8 +155,8 @@
 				<s:Button id="btGlueStart" label="Старт" height="50" click="{glueDevice.run_Start()}"/>
 				<s:Button id="btGluePause" label="Пауза" height="50" enabled="false"/>
 				<s:Button id="btGlueStop" label="Стоп" height="50" click="{glueDevice.run_Stop()}"/>
-				<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
-						  cornerRadius="4" width="22" height="22" baseline="4"/>
+				<!--<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
+						  cornerRadius="4" width="22" height="22" baseline="4"/>-->
 			</s:HGroup>
 			<s:Scroller width="100%" height="50">
 				<s:VGroup gap="5" width="100%">
@@ -164,34 +173,26 @@
 		</s:HGroup>
 		<s:HGroup gap="5" width="100%" height="100%">
 			<s:VGroup width="110" height="100%" gap="3">
-				<s:Label text="Состояние"/>
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="Состояние"/>
+					<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
+							  cornerRadius="4" width="22" height="22" baseline="4"/>
+					
+				</s:HGroup>
+
 				<s:TabBar id="tbStateView"  dataProvider="{vsStateViews}"/>
 				<mx:ViewStack id="vsStateViews" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
 					<s:NavigatorContent label="Кнопки" backgroundAlpha="0" width="100%" height="100%">
-						<s:List width="100%" height="100%"
-								dataProvider="{lastButtonsMessage.blocks}">
-							<s:itemRenderer>
-								<fx:Component id="gBlockRender">
-									<s:VGroup gap="2">
-										<s:Label text="{data.key}"/>
-										<s:List dataProvider="{data.items}">
-											<s:itemRenderer>
-												<fx:Component>
-													<s:HGroup gap="2">
-														<s:Label text="{data.key}:"/>
-														<s:TextInput text="{data.value}"/>
-													</s:HGroup>
-												</fx:Component>
-											</s:itemRenderer>
-										</s:List>
-									</s:VGroup>
-								</fx:Component>
-							</s:itemRenderer>
-						</s:List>
-								
+						<s:List width="100%" height="100%" 
+								dataProvider="{lastButtonsMessage.blocks}"
+								itemRenderer="com.photodispatcher.view.itemRenderer.GlueBlockRenderer"
+								/>
 					</s:NavigatorContent>
 					<s:NavigatorContent label="Статусы" backgroundAlpha="0" width="100%" height="100%">
-						
+						<s:List width="100%" height="100%"
+								dataProvider="{lastStatesMessage.blocks}"
+								itemRenderer="com.photodispatcher.view.itemRenderer.GlueBlockRenderer"
+								/>
 					</s:NavigatorContent>
 					<!--<s:NavigatorContent label="Продукт" backgroundAlpha="0" width="100%" height="100%">
 						

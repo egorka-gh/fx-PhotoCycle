@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.service.glue.GlueMessageBlock;
+			
+			[Bindable]
+			protected var block:GlueMessageBlock;
+			
+			override public function set data(value:Object):void{
+				// TODO Auto Generated method stub
+				super.data = value;
+				block= value as GlueMessageBlock;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:VGroup gap="3">
+		<s:Label text="{block.key}"/>
+		<s:DataGroup dataProvider="{block.items}" itemRenderer="com.photodispatcher.view.itemRenderer.GlueBlockItemRenderer">
+			<s:layout>
+				<s:VerticalLayout gap="3" requestedRowCount="{block.items.length}"/>
+			</s:layout> 
+		</s:DataGroup>
+	</s:VGroup>
+	
+</s:ItemRenderer>
