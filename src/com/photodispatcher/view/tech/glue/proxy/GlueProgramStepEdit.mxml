@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 >
+	
+	<fx:Metadata>
+		[Event(name="refreshGlue", type="flash.events.Event")]	
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.service.glue.GlueMessage;
+			import com.photodispatcher.service.glue.GlueMessageBlock;
+			import com.photodispatcher.service.glue.GlueMessageItem;
+			import com.photodispatcher.service.glue.GlueProgramStep;
+			import com.photodispatcher.service.glue.GlueProxy;
+			import com.photodispatcher.util.ArrayUtil;
+			
+			import mx.collections.ArrayCollection;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			public var lastButtonsMessage:GlueMessage;
+			[Bindable]
+			public var lastStatesMessage:GlueMessage;
+
+			
+			private var _programStep:GlueProgramStep;
+			[Bindable]
+			public function get programStep():GlueProgramStep
+			{
+				return _programStep;
+			}
+			public function set programStep(value:GlueProgramStep):void
+			{
+				_programStep = value;
+				if(_programStep) _programStep.setCaption();
+				detectState();
+			}
+			
+			[Bindable]
+			protected var waiteItems:ArrayCollection;
+
+			protected function detectState():void{
+				waiteItems=null;
+				if(!_programStep){
+					currentState='none';
+					return;
+				}
+				switch(_programStep.type)
+				{
+					case GlueProgramStep.TYPE_PAUSE:
+					{
+						currentState='pause';
+						break;
+					}
+					case GlueProgramStep.TYPE_PUSH_BUTTON:
+					{
+						currentState='push_button';
+						break;
+					}
+					case GlueProgramStep.TYPE_WAIT_FOR:
+					{
+						waiteItems=_programStep.getItems();
+						currentState='waite';
+						break;
+					}
+						
+					default:
+					{
+						currentState='none';
+						break;
+					}
+				}
+			}
+			
+			protected function btRefreshGlue_clickHandler(event:MouseEvent):void{
+				ddStateType.selectedIndex=0;
+				ddStateBlock.selectedItem=null;
+				lstStateItems.selectedItem=null;
+				dispatchEvent(new Event('refreshGlue'));
+			}
+			
+			[Bindable]
+			protected var stateBlocks:ArrayCollection;
+			
+			protected function ddStateType_changeHandler(event:IndexChangeEvent):void{
+				lstStateItems.selectedItem=null;
+				ddStateBlock.selectedItem=null;
+				stateBlocks=null;
+				switch(ddStateType.selectedIndex)
+				{
+					case GlueMessageBlock.TYPE_BUTTON:
+					{
+						if(lastButtonsMessage) stateBlocks=lastButtonsMessage.blocks;
+						break;
+					}
+					case GlueMessageBlock.TYPE_STATUS:
+					{
+						if(lastStatesMessage) stateBlocks=lastStatesMessage.blocks;
+						break;
+					}
+					default:
+					{
+						break;
+					}
+				}
+			}
+			
+			protected function btAddItem_clickHandler(event:MouseEvent):void{
+				var stateBlock:GlueMessageBlock=ddStateBlock.selectedItem as GlueMessageBlock;
+				var stateItem:GlueMessageItem=lstStateItems.selectedItem as GlueMessageItem;
+				if(!programStep || !stateBlock || !stateItem) return;
+				if(!programStep.checkBlocks) programStep.checkBlocks= new ArrayCollection();
+				
+				var progBlock:GlueMessageBlock= ArrayUtil.searchItem('key',stateBlock.key, programStep.checkBlocks.source) as GlueMessageBlock;
+				if(!progBlock){
+					progBlock=stateBlock.clone();
+					programStep.checkBlocks.addItem(progBlock);
+				}
+				progBlock.replaceItem(stateItem);
+				waiteItems=programStep.getItems();
+				programStep.setCaption();
+			}
+			
+			protected function btDelItem_clickHandler(event:MouseEvent):void{
+				var progItem:GlueMessageItem= lstProgItems.selectedItem as GlueMessageItem;
+				if(!programStep.checkBlocks || !progItem) return;
+				var progBlock:GlueMessageBlock= ArrayUtil.searchItem('key',progItem.parentKey, programStep.checkBlocks.source) as GlueMessageBlock;
+				if(!progBlock) return;
+				var idx:int= progBlock.getItemIdx(progItem.key);
+				if(idx==-1) return;
+				progBlock.items.removeItemAt(idx);
+				if(progBlock.items.length==0){
+					idx=ArrayUtil.searchItemIdx('key',progBlock.key, programStep.checkBlocks.source);
+					if(idx!=-1) programStep.checkBlocks.removeItemAt(idx);
+				}
+				waiteItems=programStep.getItems();
+				programStep.setCaption();
+			}
+			
+			protected function ddStepType_changeHandler(event:IndexChangeEvent):void{
+				programStep.type=ddStepType.selectedIndex;
+				detectState();
+			}
+			
+			protected function nsStepInterval_changeHandler(event:Event):void{
+				programStep.interval=nsStepInterval.value; 
+				programStep.setCaption();
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="none"/>
+		<s:State name="pause"/>
+		<s:State name="push_button"/>
+		<s:State name="waite"/>
+	</s:states>
+	
+	<s:VGroup gap="5" width="100%" height="100%">
+		<s:Label text="Редактирование {programStep.caption}"/>
+		<s:HGroup gap="3" verticalAlign="baseline" width="100%" >
+			<s:Label text="Тип"/>
+			<s:DropDownList id="ddStepType" width="130" 
+							dataProvider="{GlueProgramStep.TYPES_LIST}" 
+							selectedIndex="{programStep.type}" 
+							change="ddStepType_changeHandler(event)"/>
+			
+			<s:Spacer width="5" includeIn="pause,push_button,waite"/>
+
+			<s:Label includeIn="pause" text="Время (мс)"/>
+			<s:Label includeIn="waite" text="Интервал проверки (мс)"/>
+			<s:NumericStepper id="nsStepInterval" includeIn="pause,waite" 
+							  minimum="200" maximum="100000" stepSize="100" 
+							  value="{programStep.interval}" 
+							  change="nsStepInterval_changeHandler(event)"/>
+			
+			<s:DropDownList id="ddStepCommand"
+				includeIn="push_button" dataProvider="{GlueProxy.BUTTON_LIST}" selectedItem="{programStep.command}" 
+				change="{programStep.command=ddStepCommand.selectedItem as String; programStep.setCaption()}"/>
+		</s:HGroup>
+		
+		<s:HGroup includeIn="waite" gap="5" width="100%" height="100%">
+			<s:List id="lstProgItems" width="200" height="100%" 
+					dataProvider="{waiteItems}"
+					itemRenderer="com.photodispatcher.view.tech.glue.proxy.GlueBlockItemRendererP"/>
+			<s:VGroup gap="10" height="100%" verticalAlign="middle">
+				<s:Button id="btAddItem" label="Добавать" click="btAddItem_clickHandler(event)"/>
+				<s:Button id="btDelItem" label="Удалить" click="btDelItem_clickHandler(event)"/>
+			</s:VGroup>
+			<s:VGroup gap="5" height="100%" width="100%">
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="Состояние"/>
+					<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
+							  cornerRadius="4" width="22" height="22" baseline="4"/>
+				</s:HGroup>
+				<s:DropDownList id="ddStateType" dataProvider="{GlueMessageBlock.TYPE_LABELS}" change="ddStateType_changeHandler(event)"/>
+				<s:DropDownList id="ddStateBlock" dataProvider="{stateBlocks}" labelField="key" />
+				<s:List id="lstStateItems" height="100%" width="100%" 
+						dataProvider="{ddStateBlock.selectedItem.items}"
+						itemRenderer="com.photodispatcher.view.tech.glue.proxy.GlueBlockItemRenderer"/>
+				
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+
+</s:Group>

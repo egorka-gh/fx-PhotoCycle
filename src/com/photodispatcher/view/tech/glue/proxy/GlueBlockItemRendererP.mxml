@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				selected="true"
+				showsCaret="true"
+				autoDrawBackground="true">
+
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.service.glue.GlueMessageItem;
+			
+			[Bindable]
+			protected var item:GlueMessageItem;
+			[Bindable]
+			protected var itemColor:uint=0xffffff;
+			[Bindable]
+			protected var isColor:Boolean;
+			
+			override public function set data(value:Object):void{
+				// TODO Auto Generated method stub
+				super.data = value;
+				item= value as GlueMessageItem;
+				
+				if (item.key.toLocaleLowerCase()=='colback' || item.key.toLocaleLowerCase()=='color'){
+					isColor=true;
+					itemColor=uint(item.value.replace('#','0x') );
+					if(itemColor==0) itemColor=0xffffff;
+				}else{
+					isColor=false;
+					itemColor=0xffffff;
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0" visible="{item.isOk}">
+		<s:fill>
+			<s:SolidColor alpha="1" color="#99FF99"/>
+		</s:fill>
+	</s:Rect> 
+
+	<s:HGroup gap="3" verticalAlign="baseline" paddingLeft="3" paddingRight="3" paddingTop="3">
+		<s:Label text="{item.parentKey} {item.key}:" fontWeight="bold" color="#888888"/>
+		<s:Label text="{item.value}"/>
+		<s:Rect id="rColor" height="100%" width="{rColor.height}" visible="{isColor}" includeInLayout="{isColor}">
+			<s:fill>
+				<s:SolidColor alpha="1" color="{itemColor}"/>
+			</s:fill>
+		</s:Rect>
+	</s:HGroup>
+	
+</s:ItemRenderer>

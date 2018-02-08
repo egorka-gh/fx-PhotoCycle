@@ -13,6 +13,8 @@ package com.photodispatcher.service.glue{
 	import flash.events.SecurityErrorEvent;
 	import flash.net.Socket;
 	
+	import mx.collections.ArrayCollection;
+	
 	[Event(name="connect", type="flash.events.Event")]
 	[Event(name="close", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]
@@ -89,6 +91,8 @@ package com.photodispatcher.service.glue{
 		public static const CMD_STOP:String='Stop';
 		public static const CMD_QUIT:String='Quit'; //quits the glue station (programm)
 		public static const CMD_EJECT_BOOK:String='Еject Book';
+
+		public static const BUTTON_LIST:ArrayCollection= new ArrayCollection(['Start','Stop','Еject Book','Quit']);
 		
 		//comands
 		public static const CMD_STOP_AFTER_JOB:String='Stop after Job'; //???
@@ -150,7 +154,20 @@ package com.photodispatcher.service.glue{
 			cmd_stack.push(new GlueCmd(CMD_STOP));
 			run_next();
 		}
-		
+
+		public function run_EjectBook():void{
+			cmd_stack=[];
+			cmd_stack.push(new GlueCmd(CMD_EJECT_BOOK));
+			run_next();
+		}
+
+		public function pushButton(cmd:String):AsyncLatch{
+			var latch:AsyncLatch=new AsyncLatch(true);
+			cmd_stack.push(new GlueCmd(cmd,false,latch));
+			run_next();
+			return latch;
+		}
+
 		public function run_SetSheets(sheets:int):void{
 			if(sheets<=0){
 				riseErr(ERR_SEND,'Не верное количество разворотов: '+sheets.toString());

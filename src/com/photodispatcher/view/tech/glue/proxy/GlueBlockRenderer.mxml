@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="false">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.service.glue.GlueMessageBlock;
+			
+			[Bindable]
+			protected var block:GlueMessageBlock;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				block= value as GlueMessageBlock;
+			}
+			
+		]]>
+	</fx:Script>
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor alpha="1" color="#FFFFFF"/>
+		</s:fill>
+	</s:Rect>
+	<s:VGroup gap="3" paddingLeft="3" paddingRight="3" paddingTop="3">
+		<s:Label text="{block.key}" fontWeight="bold"/>
+		<!--<s:DataGroup dataProvider="{block.items}" itemRenderer="com.photodispatcher.view.itemRenderer.GlueBlockItemRenderer">
+			<s:layout>
+				<s:VerticalLayout paddingLeft="7" gap="3" requestedRowCount="{block.items.length}"/>
+			</s:layout> 
+		</s:DataGroup>-->
+		<s:List dataProvider="{block.items}" 
+				borderVisible="false"
+				contentBackgroundAlpha="0"
+				itemRenderer="com.photodispatcher.view.tech.glue.proxy.GlueBlockItemRenderer">
+			<s:layout>
+				<s:VerticalLayout paddingLeft="7" gap="3" requestedRowCount="{block.items.length}"/>
+			</s:layout> 
+		</s:List>
+	</s:VGroup>
+	
+</s:ItemRenderer>

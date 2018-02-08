@@ -95,6 +95,11 @@ package com.photodispatcher.service.glue{
 								}
 							}
 						}
+						for each (item in block.items){
+							item.type=block.type;
+							item.parentKey=block.key;
+						}
+						
 					}
 				}
 			}

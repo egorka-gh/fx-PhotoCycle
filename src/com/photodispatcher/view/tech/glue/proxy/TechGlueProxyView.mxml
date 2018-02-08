@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*"
+		 creationComplete="{init()}"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.GlueMessageEvent;
+			import com.photodispatcher.service.glue.GlueInfo;
+			import com.photodispatcher.service.glue.GlueMessage;
+			import com.photodispatcher.service.glue.GlueMessageBlock;
+			import com.photodispatcher.service.glue.GlueMessageItem;
+			import com.photodispatcher.service.glue.GlueProgram;
+			import com.photodispatcher.service.glue.GlueProgramHandler;
+			import com.photodispatcher.service.glue.GlueProgramStep;
+			import com.photodispatcher.service.glue.GlueProxy;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+		
+			public static const LOG_LEN_LIMIT:int=4000;
+
+			public var glueIP:String;
+			public var gluePort:int;
+			
+			[Bindable]
+			protected var glueDevice:GlueProxy;
+
+			[Bindable]
+			protected var glueProgramm:GlueProgram;
+			[Bindable]
+			protected var editProgramStep:GlueProgramStep;
+			[Bindable]
+			protected var glueHandler:GlueProgramHandler;
+
+			[Bindable]
+			protected var lastButtonsMessage:GlueMessage;
+			[Bindable]
+			protected var lastStatesMessage:GlueMessage;
+			
+			protected function init():void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				glueProgramm= GlueProgram.fromRaw(so.data.programm);
+				if(glueProgramm) currentState='run';
+			}
+
+			private var logText:String = '';
+			
+			public function log(mesage:String, level:int=0):void{
+				logToScreen(mesage);
+			}
+			public function clear():void{
+				cleanLog();
+			}
+			
+			private function logToScreen(msg:String, isError:Boolean=false):void{
+				var color:String=isError?"'#990000'":"'#006600'";
+				var bold:String=isError?"fontWeight='bold'":'';
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				logText ="<span>"+fmt.format(new Date())+" </span>"+"<span color="+color+" "+bold+">"+msg+"</span> <br />"+logText ;
+
+				//cut
+				if(logText.length> LOG_LEN_LIMIT){
+					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
+					if(idx!=-1){
+						logText=logText.substr(0,idx+6);
+					}
+				}
+
+				try{
+					if(logTextArea) logTextArea.textFlow=TextFlowUtil.importFromString(logText);
+				}catch(error:Error){
+					trace('TextFlow err, txt: '+logText);
+					trace(error.message);
+				}
+				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
+			}
+
+			public function start():void{
+				cleanLog();
+				//start glue proxy
+				glueDevice=new GlueProxy();
+				glueDevice.loger=this;
+				glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
+				glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+				glueDevice.start(glueIP,gluePort);
+			}
+			
+			public function stop():void{
+				cleanLog();
+				if(glueHandler){
+					glueHandler.stop();
+					glueHandler=null;
+				}
+				if(glueDevice){
+					glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
+					glueDevice.removeEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+					glueDevice.stop();
+				}
+				glueDevice=null;
+				
+			}
+			
+			private function onGlueMessage( event:GlueMessageEvent ):void{
+				if(!event.message ) return;
+				if(event.message.type==GlueMessageBlock.TYPE_BUTTON) lastButtonsMessage=event.message;
+				if(event.message.type==GlueMessageBlock.TYPE_STATUS) lastStatesMessage=event.message;
+			}
+			
+			private function cleanLog():void{
+				logText='';
+				if(logTextArea) logTextArea.text='';
+			}
+			
+			protected function onGlueErr(event:ErrorEvent):void{
+				logToScreen('Склейка ошибка: '+event.text,true);
+			}
+
+			
+			protected function refreshGlue():void{
+				lastButtonsMessage=null;
+				lastStatesMessage=null;
+				if(glueDevice && glueDevice.isStarted){
+					//glueDevice.run_GetProduct();
+					glueDevice.run_GetButtons();
+					glueDevice.run_GetStatus();
+				}
+			}
+			
+			protected function btRefreshGlue_clickHandler(event:MouseEvent):void{
+				if(glueDevice && glueDevice.isStarted){
+					refreshGlue();
+				}else{
+					Alert.show('Склейка не подключена');
+				}
+			}
+			
+			/*
+			protected function dummyButt():void{
+				var msg:GlueMessage= new GlueMessage();
+				msg.type=GlueMessageBlock.TYPE_BUTTON;
+				var bl:GlueMessageBlock;
+				var it:GlueMessageItem;
+				
+				// ~~||Name=button1||Text=Start||ColBack=#80FF80||Enabled=True||~~||Name=button4||Text=Quit||ColBack=#FFFF80||Enabled=False||@@
+				bl= new GlueMessageBlock(); bl.type=msg.type; bl.key='button1'; msg.blocks.addItem(bl);
+					it= new GlueMessageItem; it.key='Text'; it.value='Start'; bl.items.addItem(it); it.parentKey=bl.key; it.type=bl.type;
+					it= new GlueMessageItem; it.key='ColBack'; it.value='#80FF80'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+					it= new GlueMessageItem; it.key='Enabled'; it.value='True'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+				bl= new GlueMessageBlock(); bl.type=msg.type; bl.key='button4'; msg.blocks.addItem(bl);
+					it= new GlueMessageItem; it.key='Text'; it.value='Quit'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+					it= new GlueMessageItem; it.key='ColBack'; it.value='#FFFF80'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+					it= new GlueMessageItem; it.key='Enabled'; it.value='False'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+				
+				lastButtonsMessage=msg;
+			}
+			*/
+			
+			protected function btAddStep_clickHandler(event:MouseEvent):void{
+				var ps:GlueProgramStep= new GlueProgramStep();
+				if(!glueProgramm) glueProgramm=new GlueProgram();
+				if(!glueProgramm.steps) glueProgramm.steps=new ArrayCollection();
+				glueProgramm.steps.addItem(ps);
+				editProgramStep=ps;
+			}
+			
+			protected function btSaveSteps_clickHandler(event:MouseEvent):void{
+				if(!glueProgramm) return;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.programm = glueProgramm;
+				so.flush();  
+			}
+			
+			protected function state1_enterStateHandler(event:FlexEvent):void{
+				if(!glueHandler){
+					glueHandler= new GlueProgramHandler();
+				}
+				glueHandler.stop();
+				glueHandler.glue=glueDevice;
+				glueHandler.program=glueProgramm;
+				
+				if(logText){
+					try{
+						if(logTextArea) logTextArea.textFlow=TextFlowUtil.importFromString(logText);
+					}catch(error:Error){
+					}
+				}
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(glueHandler) glueHandler.stop();
+				currentState='edit';
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		
+		
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="edit"/>
+		<s:State name="run" enterState="state1_enterStateHandler(event)"/>
+	</s:states>
+	
+	<s:VGroup includeIn="edit" 
+			  gap="5" width="100%" height="100%" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:Label text="Редактированние программы"/>
+		<s:HGroup gap="5" width="100%" height="100%">
+			<s:VGroup width="30%" height="100%" gap="5">
+				<s:List id="lstPSteps"
+						width="100%" height="100%"
+						labelField="caption"
+						dataProvider="{glueProgramm.steps}"
+						selectedItem="@{editProgramStep}"/>
+				<s:HGroup gap="5" width="100%" >
+					<s:Button id="btAddStep" label="Добавить" click="btAddStep_clickHandler(event)"/>
+					<s:Button id="btDelStep" label="Удалить"/>
+					<s:Spacer width="100%"/>
+					<s:Button id="btSaveSteps" label="Сохранить" click="btSaveSteps_clickHandler(event)"/>
+				</s:HGroup>
+			</s:VGroup>
+			<proxy:GlueProgramStepEdit width="70%" height="90%"
+									   programStep="{lstPSteps.selectedItem}"
+									   lastButtonsMessage="{lastButtonsMessage}"
+									   lastStatesMessage="{lastStatesMessage}"
+									   refreshGlue="{btRefreshGlue_clickHandler(null)}"
+									   />
+		</s:HGroup>
+		<s:Spacer height="5"/>
+		<s:Button label="Выполнение программы" click="{currentState='run'}"/>
+	</s:VGroup>
+
+	
+	<s:VGroup includeIn="run" 
+			  gap="10" width="100%" height="100%" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+
+		<s:HGroup id="gDeviceCTRL" gap="30" width="100%" paddingBottom="10"
+				  enabled="{glueDevice.isStarted}"
+				  horizontalAlign="center" verticalAlign="top" 
+				  fontSize="20">
+			<s:Button id="btGlueStart" label="Старт" height="50" enabled="{!glueHandler.isStarted || glueHandler.isPaused}" click="{glueHandler.start()}"/>
+			<s:Button id="btGluePause" label="Пауза" height="50" enabled="{glueHandler.isStarted}" click="{glueHandler.pause()}" />
+			<s:Button id="btGlueStop" label="Стоп" height="50" click="{glueHandler.stop()}"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" width="100%" height="100%">
+			
+			<s:VGroup width="40%" height="100%" gap="5" >
+				<s:Label text="Программа"/>
+				<s:List id="lstRunSteps"
+						width="100%" height="100%"
+						labelField="caption"
+						dataProvider="{glueProgramm.steps}"
+						selectedIndex="{glueHandler.currStep}"/>
+			</s:VGroup>
+
+			
+			<s:VGroup width="60%" height="100%" gap="5" >
+				<s:HGroup width="100%" gap="10" verticalAlign="baseline">
+					<s:Label text="Лог"/>
+					<s:Button label="Очистить" click="{cleanLog()}"/>
+				</s:HGroup>
+				<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
+			</s:VGroup>
+
+			<s:VGroup width="150" height="100%" gap="3">
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="Состояние"/>
+					<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
+							  cornerRadius="4" width="22" height="22" baseline="4"/>
+				</s:HGroup>
+				<s:TabBar id="tbStateView"  dataProvider="{vsStateViews}"/>
+				<mx:ViewStack id="vsStateViews" borderStyle="none"  width="100%" height="100%">
+					<s:NavigatorContent label="Кнопки" backgroundAlpha="0" width="100%" height="100%">
+						<s:Scroller width="100%" height="100%">
+							<s:DataGroup   
+								dataProvider="{lastButtonsMessage.blocks}"
+								itemRenderer="com.photodispatcher.view.tech.glue.proxy.GlueBlockRenderer">
+								<s:layout>
+									<s:VerticalLayout gap="3"/>
+								</s:layout> 
+							</s:DataGroup>
+						</s:Scroller>
+					</s:NavigatorContent>
+					<s:NavigatorContent label="Статусы" backgroundAlpha="0" width="100%" height="100%">
+						<s:Scroller width="100%" height="100%">
+							<s:DataGroup   
+								dataProvider="{lastStatesMessage.blocks}"
+								itemRenderer="com.photodispatcher.view.tech.glue.proxy.GlueBlockRenderer">
+								<s:layout>
+									<s:VerticalLayout gap="3"/>
+								</s:layout> 
+							</s:DataGroup>
+						</s:Scroller>
+					</s:NavigatorContent>
+				</mx:ViewStack>
+			</s:VGroup>
+
+		</s:HGroup>
+
+		<s:Button label="Редактирование программы" click="button1_clickHandler(event)"/>
+	</s:VGroup>
+	
+</s:Group>
