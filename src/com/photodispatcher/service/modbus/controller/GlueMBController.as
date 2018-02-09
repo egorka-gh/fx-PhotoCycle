@@ -29,8 +29,6 @@ package com.photodispatcher.service.modbus.controller{
 		3 - главная(передняя) плита, таймаут выхода вперед на датчик задней плиты
 		4 - главная(передняя) плита, таймаут выхода назад на датчик исходного положения
 		5 - таймаут датчика на выгрузке (видимо чтото застряло и перекрыло датчик)
-		---6 - резерв датчик уровня клея
-		---7 - резерв
 		//2018-01-22
 		6 - Податчик. Высота стопы - появился сигнал
 		7 - Податчик. Высота стопы - пропал сигнал
@@ -38,6 +36,8 @@ package com.photodispatcher.service.modbus.controller{
 		9 - Податчик. Датчик листа - пропал сигнал
 		10 - Реле безопасности. Безопасность в режиме работы. Ошибок нет. Цикл работы машины запущен
 		11 - Реле безопасности. Безопасность в ошибке. Машина остановлена. Необходимо сделать сброс реле безопасности (по физической кнопке) и заупстить цикл работы(по физической кнопке). Цикл остановлен
+		12 - Пришел новый лист, но задняя плита не сошла с датчика исходного положения
+		13 - Пришел новый лист, но передняя плита не в исходном положении
 		
 		ПК -> ПЛК (6ая функция - запись регистра)
 		D0 (адрес регистра 0x0000) Main_Plate_Forward_Timeout_Time - время таймаута при переходе передней плиты на датчик задней плиты (формат записи BCD (пример 0x0010 = 1 
@@ -59,6 +59,7 @@ package com.photodispatcher.service.modbus.controller{
 		D11(адрес регистра 0x000B) Feeder_Power_Switch_WORD - подача питания на податчик ( 0x0001 - включить, 0x0000 - выключить)
 		D12(адрес регистра 0x000С) Feeder_Pump_Switch_WORD - подача питания на компрессор податчика ( 0x0001 - включить, 0x0000 - выключить)
 		D13(адрес регистра 0x000D) Feeder_Pop_Paper_WORD - податчик. подать лист ( 0x0001 - пуск)
+		D14(адрес регистра 0x000E) - Податчик. Высота стопы - 1 заполнен, 0 - пусто
 
 		*/
 		public static const CONTROLLER_PRESS_PAPER_IN:int	=0;
@@ -74,6 +75,8 @@ package com.photodispatcher.service.modbus.controller{
 		public static const FEEDER_SHEET_PASS:int=9; 
 		public static const FEEDER_ALARM_OFF:int=10; 
 		public static const FEEDER_ALARM_ON:int=11; 
+		public static const CONTROLLER_NEW_SHEET_ERROR1:int	=12;
+		public static const CONTROLLER_NEW_SHEET_ERROR2:int	=13;
 
 		public static const CONTROLLER_REGISTER_MAIN_PLATE_FORWARD_TIMEOUT:int	=0;
 		public static const CONTROLLER_REGISTER_MAIN_PLATE_REVERSE_TIMEOUT:int	=1;
@@ -92,6 +95,7 @@ package com.photodispatcher.service.modbus.controller{
 		public static const FEEDER_REGISTER_POWER_SWITCH:int					=11;
 		public static const FEEDER_REGISTER_PUMP_SWITCH:int						=12;
 		public static const FEEDER_REGISTER_PUSH_PAPER:int						=13;
+		public static const FEEDER_REGISTER_FILLED:int							=14;
 		
 		public function GlueMBController(){
 			super();

@@ -188,6 +188,7 @@
 				}
 				glueHandler.stop();
 				glueHandler.glue=glueDevice;
+				glueHandler.loger=this;
 				glueHandler.program=glueProgramm;
 				
 				if(logText){
@@ -201,6 +202,14 @@
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if(glueHandler) glueHandler.stop();
 				currentState='edit';
+			}
+			
+			protected function btDelStep_clickHandler(event:MouseEvent):void{
+				if(!glueProgramm) return;
+				if(lstPSteps.selectedIndex>-1){
+					glueProgramm.steps.removeItemAt(lstPSteps.selectedIndex);
+					
+				}
 			}
 			
 		]]>
@@ -229,13 +238,13 @@
 						selectedItem="@{editProgramStep}"/>
 				<s:HGroup gap="5" width="100%" >
 					<s:Button id="btAddStep" label="Добавить" click="btAddStep_clickHandler(event)"/>
-					<s:Button id="btDelStep" label="Удалить"/>
+					<s:Button id="btDelStep" label="Удалить" click="btDelStep_clickHandler(event)"/>
 					<s:Spacer width="100%"/>
 					<s:Button id="btSaveSteps" label="Сохранить" click="btSaveSteps_clickHandler(event)"/>
 				</s:HGroup>
 			</s:VGroup>
 			<proxy:GlueProgramStepEdit width="70%" height="90%"
-									   programStep="{lstPSteps.selectedItem}"
+									   programStep="{editProgramStep}"
 									   lastButtonsMessage="{lastButtonsMessage}"
 									   lastStatesMessage="{lastStatesMessage}"
 									   refreshGlue="{btRefreshGlue_clickHandler(null)}"

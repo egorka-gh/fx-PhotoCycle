@@ -144,12 +144,18 @@ package com.photodispatcher.service.glue{
 			}else if(step.type==GlueProgramStep.TYPE_WAIT_FOR){
 				//ask states
 				lastMessages=[];
+				glue.run_GetButtons();
+				glue.run_GetStatus();
+				/*
 				var latch:AsyncLatch=glue.run_GetButtons();
 				latch.join(glue.run_GetStatus());
 				latch.addEventListener(Event.COMPLETE, onMessagesComplite);
+				latch.start();
+				*/
 			}
 		}
 		
+		/*
 		private function onMessagesComplite(evt:Event):void{
 			var latch:AsyncLatch=evt.target as AsyncLatch;
 			if(latch){
@@ -172,6 +178,8 @@ package com.photodispatcher.service.glue{
 				runStep();
 			}
 		}
+		*/
+		
 
 		private function checkMessages():Boolean{
 			var step:GlueProgramStep=program.steps.getItemAt(currStep) as GlueProgramStep;
@@ -200,6 +208,18 @@ package com.photodispatcher.service.glue{
 			if(!event.message ) return;
 			if(step.type==GlueProgramStep.TYPE_WAIT_FOR){
 				lastMessages.push(event.message);
+				if(lastMessages && lastMessages.length==2){
+					if(checkMessages()){
+						//waite complite 
+						log('Проверка состояния - выпонено');
+						nextStep();
+					}else{
+						//keep waite
+						log('Проверка состояния - не выпонено');
+						runStep();
+					}
+
+				}
 			}
 		}
 
