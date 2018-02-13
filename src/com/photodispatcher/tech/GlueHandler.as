@@ -20,10 +20,28 @@ package com.photodispatcher.tech{
 	import mx.controls.Alert;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
+	[Event(name="complete", type="flash.events.Event")]
+	[Event(name="controllerMesage", type="com.photodispatcher.event.ControllerMesageEvent")]
 	public class GlueHandler extends EventDispatcher{
 
 		public function GlueHandler(){
 			super(null);
+		}
+		
+		
+		//feeder
+		public var hasFeeder:Boolean=false;
+		private var _feederEmpty:Boolean=false;
+		public function get reamEmpty():Boolean{
+			return false;
+		}
+		public function feederPower(on:Boolean):void{
+		}
+		public function feederPump(on:Boolean):void{
+		}
+		public function feederFeed():void{
+		}
+		public function feederGetReamState():void{
 		}
 		
 		[Bindable]

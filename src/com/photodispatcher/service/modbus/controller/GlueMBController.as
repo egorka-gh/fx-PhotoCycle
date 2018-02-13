@@ -62,6 +62,10 @@ package com.photodispatcher.service.modbus.controller{
 		D14(адрес регистра 0x000E) - Податчик. Высота стопы - 1 заполнен, 0 - пусто
 
 		*/
+		
+		public static const CHANEL_CONTROLLER_MESSAGE:int			=0;
+		public static const CHANEL_CONTROLLER_COMMAND_ACL:int		=1;
+		
 		public static const CONTROLLER_PRESS_PAPER_IN:int	=0;
 		public static const CONTROLLER_PRESS_DONE:int	=1;
 		public static const CONTROLLER_PAPER_SENSOR:int	=2;
@@ -95,11 +99,13 @@ package com.photodispatcher.service.modbus.controller{
 		public static const FEEDER_REGISTER_POWER_SWITCH:int					=11;
 		public static const FEEDER_REGISTER_PUMP_SWITCH:int						=12;
 		public static const FEEDER_REGISTER_PUSH_PAPER:int						=13;
-		public static const FEEDER_REGISTER_FILLED:int							=14;
+		public static const FEEDER_REGISTER_REAM_FILLED:int						=14;
 		
 		public function GlueMBController(){
 			super();
 		}
+		
+		public var hasFeeder:Boolean=false;
 		
 		public var timeoutMainPlateForward:int;
 		public var timeoutMainPlateRevers:int;
@@ -117,6 +123,44 @@ package com.photodispatcher.service.modbus.controller{
 		public function setFeederSafetyTime(msec:int):void{
 			if(client && client.connected){
 				client.writeRegister(FEEDER_REGISTER_SAFETY_TIME, ModbusBytes.int2bcd(int(msec/100)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function feederPower(on:Boolean):void{
+			if(client && client.connected){
+				var val:int=0;
+				if(on) val=1;
+				waiteCmd=FEEDER_REGISTER_POWER_SWITCH;
+				client.writeRegister(waiteCmd, val);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function feederPump(on:Boolean):void{
+			if(client && client.connected){
+				var val:int=0;
+				if(on) val=1;
+				waiteCmd=FEEDER_REGISTER_PUMP_SWITCH;
+				client.writeRegister(waiteCmd, val);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+		public function feederFeed():void{
+			if(client && client.connected){
+				waiteCmd=FEEDER_REGISTER_PUSH_PAPER;
+				client.writeRegister(waiteCmd, 1);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+		public function feederGetReamState():void{
+			if(client && client.connected){
+				waiteCmd=FEEDER_REGISTER_REAM_FILLED;
+				client.readHoldingRegisters(FEEDER_REGISTER_REAM_FILLED,1);
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -250,9 +294,22 @@ package com.photodispatcher.service.modbus.controller{
 				return;
 			}
 			switch(adu.pdu.value){
+				
+				case CONTROLLER_NEW_SHEET_ERROR1:
+				case CONTROLLER_NEW_SHEET_ERROR2:
+				case FEEDER_ALARM_ON:
+				case FEEDER_ALARM_OFF:
+				case FEEDER_SHEET_IN:
+				case FEEDER_SHEET_PASS:
+				case FEEDER_REAM_FILLED:
+				case FEEDER_REAM_EMPTY:{
+					//notify handler
+					dispatchEvent(new ControllerMesageEvent(CHANEL_CONTROLLER_MESSAGE,adu.pdu.value));
+					break;
+				}
 				case CONTROLLER_PRESS_PAPER_IN:{
 					//notify handler
-					dispatchEvent(new ControllerMesageEvent(0,CONTROLLER_PRESS_PAPER_IN));
+					dispatchEvent(new ControllerMesageEvent(CHANEL_CONTROLLER_MESSAGE,CONTROLLER_PRESS_PAPER_IN));
 					txt='Подача листа на пресс';
 					break;
 				}
@@ -295,7 +352,20 @@ package com.photodispatcher.service.modbus.controller{
 					if(adu.pdu.hasValue(0)) logMsg('Значение. Таймер выключения боковых упоров: 0x'+adu.pdu.getValue(0).toString(16));
 					if(adu.pdu.hasValue(1)) logMsg('Значение. Таймер включения боковых упоров: 0x'+adu.pdu.getValue(1).toString(16));
 				}
-				
+			}else if(cmd==FEEDER_REGISTER_REAM_FILLED){
+				//emulate ream message
+				if(adu && adu.pdu && adu.pdu.functionCode==ModbusPDU.FUNC_READ_HOLDING_REGISTERS){
+					if(adu.pdu.hasValue(0)){
+						if(adu.pdu.getValue(0)==0){
+							dispatchEvent(new ControllerMesageEvent(CHANEL_CONTROLLER_MESSAGE,FEEDER_REAM_EMPTY));
+						}else{
+							dispatchEvent(new ControllerMesageEvent(CHANEL_CONTROLLER_MESSAGE,FEEDER_REAM_FILLED));
+						}
+					}
+				}
+			}else{
+				//command acl
+				dispatchEvent(new ControllerMesageEvent(CHANEL_CONTROLLER_COMMAND_ACL,cmd));
 			}
 		}
 		

@@ -188,7 +188,7 @@
 			}
 			
 			protected function btReam_clickHandler(event:MouseEvent):void{
-				if((glue is GlueFeeder) && (glue as GlueFeeder).controller) (glue as GlueFeeder).controller.checkReam();
+				if((glue is GlueFeeder) && (glue as GlueFeeder).feederController) (glue as GlueFeeder).feederController.checkReam();
 			}
 			
 		]]>

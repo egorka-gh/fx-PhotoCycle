@@ -172,6 +172,7 @@
 					glueSideStopOffDelay=so.data.glueSideStopOffDelay;
 					glueSideStopOnDelay=so.data.glueSideStopOnDelay;
 					pumpEnable=so.data.pumpEnable;
+					glueHasFeeder=so.data.glueHasFeeder;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
 					pumpWorkTime=so.data.pumpWorkTime;
 					if(so.data.repeatedSignalGap) repeatedSignalGap=so.data.repeatedSignalGap;
@@ -203,6 +204,7 @@
 					Context.setAttribute("glueServerPort", glueServerPort);
 					Context.setAttribute("glueClientIP", glueClientIP);
 					Context.setAttribute("glueClientPort", glueClientPort);
+					Context.setAttribute("glueHasFeeder", glueHasFeeder);
 					Context.setAttribute("glueSideStopOffDelay", glueSideStopOffDelay);
 					Context.setAttribute("glueSideStopOnDelay", glueSideStopOnDelay);
 					Context.setAttribute("pumpEnable", pumpEnable);
@@ -392,6 +394,8 @@
 			public var glueClientIP:String='';
 			[Bindable]
 			public var glueClientPort:int=502;
+			[Bindable]
+			public var glueHasFeeder:Boolean=false;
 			
 			[Bindable]
 			public var glueSideStopOffDelay:int=0;
@@ -413,6 +417,7 @@
 				Context.setAttribute("glueServerPort", glueServerPort);
 				Context.setAttribute("glueClientIP", glueClientIP);
 				Context.setAttribute("glueClientPort", glueClientPort);
+				Context.setAttribute("glueHasFeeder", glueHasFeeder);
 				Context.setAttribute("glueSideStopOffDelay", glueSideStopOffDelay);
 				Context.setAttribute("glueSideStopOnDelay", glueSideStopOnDelay);
 				Context.setAttribute("pumpEnable", pumpEnable);
@@ -424,6 +429,7 @@
 				so.data.glueServerPort = glueServerPort;
 				so.data.glueClientIP = glueClientIP;
 				so.data.glueClientPort = glueClientPort;
+				so.data.glueHasFeeder = glueHasFeeder;
 				so.data.glueSideStopOffDelay = glueSideStopOffDelay;
 				so.data.glueSideStopOnDelay = glueSideStopOnDelay;
 				so.data.pumpEnable=pumpEnable;
@@ -594,12 +600,6 @@
 		<s:Spacer height="5"/>
 		<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
 		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" height="280">
-			<s:NavigatorContent label="Подача" backgroundAlpha="0" width="100%" enabled="{feedOn}">
-				<s:Group  width="100%">
-					<itemRenderer:ComInfoRenderer  data="{comFeederProxy}" lockType="true" lockSuffix="true"/>
-				</s:Group>
-			</s:NavigatorContent>
-			
 			<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%">
 				<s:VGroup gap="5" width="100%">
 					<s:HGroup gap="5" verticalAlign="baseline">
@@ -636,6 +636,10 @@
 							<s:Label text="порт:"/>
 							<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
 											  value="@{glueClientPort}"/>
+						</s:HGroup>
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Подача листа:"/>
+							<s:CheckBox selected="@{glueHasFeeder}"/>
 						</s:HGroup>
 						
 						<s:HGroup gap="3" verticalAlign="baseline">
@@ -674,6 +678,13 @@
 
 				</s:VGroup>
 			</s:NavigatorContent>
+			
+			<s:NavigatorContent label="Подача" backgroundAlpha="0" width="100%" enabled="{feedOn &amp;&amp; (glueType==0 || !glueHasFeeder)}">
+				<s:Group  width="100%">
+					<itemRenderer:ComInfoRenderer  data="{comFeederProxy}" lockType="true" lockSuffix="true"/>
+				</s:Group>
+			</s:NavigatorContent>
+			
 			<s:NavigatorContent label="Сканеры ШК" backgroundAlpha="0" width="100%">
 				<s:VGroup gap="5">
 					<s:HGroup gap="0" verticalAlign="baseline">

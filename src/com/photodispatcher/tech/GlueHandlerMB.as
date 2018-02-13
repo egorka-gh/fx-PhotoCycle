@@ -1,6 +1,7 @@
 package com.photodispatcher.tech{
 	import com.photodispatcher.event.ControllerMesageEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
+	import com.photodispatcher.service.barcode.FeederController;
 	import com.photodispatcher.service.barcode.SerialProxy;
 	import com.photodispatcher.service.modbus.controller.GlueMBController;
 	import com.photodispatcher.tech.register.TechBook;
@@ -17,6 +18,8 @@ package com.photodispatcher.tech{
 	import mx.controls.Alert;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
+	[Event(name="complete", type="flash.events.Event")]
+	[Event(name="controllerMesage", type="com.photodispatcher.event.ControllerMesageEvent")]
 	public class GlueHandlerMB extends GlueHandler{
 
 		
@@ -78,6 +81,7 @@ package com.photodispatcher.tech{
 			controller.serverPort=serverPort;
 			controller.clientIP=clientIP;
 			controller.clientPort=clientPort;
+			controller.hasFeeder=hasFeeder;
 			controller.sideStopOffDelay=glueSideStopOffDelay;
 			controller.sideStopOnDelay=glueSideStopOnDelay;
 
@@ -142,51 +146,118 @@ package com.photodispatcher.tech{
 			return false;
 		}
 		
+		//public var hasFeeder:Boolean=false;
+		private var _feederEmpty:Boolean=false;
+		override public function get reamEmpty():Boolean{
+			return _feederEmpty;
+		}
+		override public function feederPower(on:Boolean):void{
+			controller.feederPower(on);
+		}
+		override public function feederPump(on:Boolean):void{
+			controller.feederPump(on);
+		}
+		override public function feederFeed():void{
+			controller.feederFeed();
+		}
+		override public function feederGetReamState():void{
+			controller.feederGetReamState();
+		}
 		
 		private var lastMsgTime:uint=0;
 		
 		override protected function onControllerMsg(event:ControllerMesageEvent):void{
 			if(!isRunning ) return;
 			
-			//check wrong sencor trigg
-			if(repeatedSignalGap>0){
-				var newTime:uint=getTimer();
-				if((newTime-lastMsgTime) < repeatedSignalGap){
-					log('Повторное срабатывание датчика');
-					return;
-				}
-				lastMsgTime=newTime;
-			}
-
-			var tb:TechBook=currentBook;//refresh view
-			
-			if (checkStopBook()) return; //???
-			//check sheet/book
-			if(tb){
-				tb.sheetsDone++;
-				if(tb.sheetsDone>tb.sheetsFeeded){
-					logErr('Ошибка контроля книги (подано меньше чем склеено) '+tb.printGroupId+' '+tb.book);
-				}
-				if(tb.sheetsDone==(tb.sheetsTotal-1)){
-					log('Следующий лист последний '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
-					controller.pushBlock();
-				}
-				if(tb.sheetsDone==tb.sheetsTotal){
-					//book complited
-					//remove
-					//tb=bookQueue.shift() as TechBook;
-					tb=null;
-					if(bookQueue.length>0) tb=bookQueue.removeItemAt(0) as TechBook;
+			if(event.chanel == GlueMBController.CHANEL_CONTROLLER_MESSAGE){
+				//event.state - message
+				if(event.state==GlueMBController.CONTROLLER_PRESS_PAPER_IN){
+					//CONTROLLER_PRESS_PAPER_IN message
+					//check wrong sencor trigg
+					if(repeatedSignalGap>0){
+						var newTime:uint=getTimer();
+						if((newTime-lastMsgTime) < repeatedSignalGap){
+							log('Повторное срабатывание датчика');
+							return;
+						}
+						lastMsgTime=newTime;
+					}
+					
+					var tb:TechBook=currentBook;//refresh view
+					
+					if (checkStopBook()) return; //???
+					//check sheet/book
 					if(tb){
-						log('Книга завершена '+tb.printGroupId+' '+tb.book);
-						//refresh view
-						currentBook;
+						tb.sheetsDone++;
+						if(tb.sheetsDone>tb.sheetsFeeded){
+							logErr('Ошибка контроля книги (подано меньше чем склеено) '+tb.printGroupId+' '+tb.book);
+						}
+						if(tb.sheetsDone==(tb.sheetsTotal-1)){
+							log('Следующий лист последний '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
+							controller.pushBlock();
+						}
+						if(tb.sheetsDone==tb.sheetsTotal){
+							//book complited
+							//remove
+							//tb=bookQueue.shift() as TechBook;
+							tb=null;
+							if(bookQueue.length>0) tb=bookQueue.removeItemAt(0) as TechBook;
+							if(tb){
+								log('Книга завершена '+tb.printGroupId+' '+tb.book);
+								//refresh view
+								currentBook;
+							}
+						}
+					}else{
+						logErr('Нет данных о текущей книге');
+						return;
 					}
 				}
-			}else{
-				logErr('Нет данных о текущей книге');
-				return;
+				if(!hasFeeder) return;
+				var chanelState:int=-1;
+				switch(event.state){
+					case GlueMBController.CONTROLLER_NEW_SHEET_ERROR1:
+						logErr('Пришел новый лист, но задняя плита не сошла с датчика исходного положения');
+						break;
+					case GlueMBController.CONTROLLER_NEW_SHEET_ERROR2:
+						logErr('Пришел новый лист, но передняя плита не в исходном положении');
+						break;
+					case GlueMBController.FEEDER_ALARM_ON:
+						logErr('Сработало Реле безопасности');
+						break;
+					case GlueMBController.FEEDER_ALARM_OFF:
+						break;
+					case GlueMBController.FEEDER_SHEET_IN:
+						chanelState=FeederController.CHANEL_STATE_SINGLE_SHEET;
+						break;
+					case GlueMBController.FEEDER_SHEET_PASS:
+						chanelState=FeederController.CHANEL_STATE_SHEET_PASS;
+						break;
+					case GlueMBController.FEEDER_REAM_FILLED:
+						chanelState=FeederController.CHANEL_STATE_REAM_FILLED;
+						_feederEmpty=false;
+						break;
+					case GlueMBController.FEEDER_REAM_EMPTY:
+						chanelState=FeederController.CHANEL_STATE_REAM_EMPTY;
+						_feederEmpty=true;
+						break;
+				}
+				if(chanelState!=-1) dispatchEvent(new ControllerMesageEvent(0,chanelState));
+				
+			}if(event.chanel == GlueMBController.CHANEL_CONTROLLER_COMMAND_ACL){
+				//command acl
+				//event.state - command register
+				if(!hasFeeder) return;
+				switch(event.state){
+					case GlueMBController.FEEDER_REGISTER_POWER_SWITCH:
+					case GlueMBController.FEEDER_REGISTER_PUMP_SWITCH:
+					case GlueMBController.FEEDER_REGISTER_PUSH_PAPER:
+						dispatchEvent(new Event(Event.COMPLETE));
+						break;
+				}
+				
 			}
+			
 		}
 
 		private function logErr(msg:String):void{

@@ -35,6 +35,7 @@ package com.photodispatcher.tech{
 		}
 
 		public var glueType:int;
+		public var hasFeeder:Boolean=false;
 		
 		[Bindable]
 		public var prepared:Boolean;
@@ -366,6 +367,8 @@ package com.photodispatcher.tech{
 				if(Context.getAttribute('pumpEnable')) gh.pumpEnable=Context.getAttribute('pumpEnable');
 				if(Context.getAttribute('pumpSensFilterTime')) gh.pumpSensFilterTime=Context.getAttribute('pumpSensFilterTime');
 				if(Context.getAttribute('pumpWorkTime')) gh.pumpWorkTime=Context.getAttribute('pumpWorkTime');
+				if(Context.getAttribute('glueHasFeeder')) gh.hasFeeder=Context.getAttribute('glueHasFeeder');
+				
 				
 				gh.init(null);
 				glueHandler=gh;

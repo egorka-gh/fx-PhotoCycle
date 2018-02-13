@@ -95,9 +95,9 @@ package com.photodispatcher.tech{
 		}
 
 		override protected function checkPrepared(alert:Boolean=false):Boolean{
-			prepared=barcodeReaders && barcodeReaders.length>0 && 
-				controller && controller.connected &&
-				glueHandler && glueHandler.isPrepared;
+			prepared=barcodeReaders && barcodeReaders.length>0 &&
+				glueHandler && glueHandler.isPrepared &&
+				(glueHandler.hasFeeder || (feederController && feederController.connected));
 			//check barreaders
 			var barsConnected:Boolean=false;
 			var barReader:ComReader;
@@ -115,8 +115,10 @@ package com.photodispatcher.tech{
 				var msg:String='';
 				if(!barcodeReaders || barcodeReaders.length==0) msg='Не инициализированы сканеры ШК';
 				if(!barsConnected) msg='\n Не подключены сканеры ШК';
-				if(!controller) msg+='\n Не инициализирован контролер подачи';
-				if(controller && !controller.connected) msg+='\n Не подключен контролер подачи';
+				if(!glueHandler.hasFeeder){
+					if(!feederController) msg+='\n Не инициализирован контролер подачи';
+					if(feederController && !feederController.connected) msg+='\n Не подключен контролер подачи';
+				}
 				if(!glueHandler || !glueHandler.isPrepared) msg+='\n Не инициализирована склейка';
 				Alert.show(msg);
 			}
@@ -131,18 +133,24 @@ package com.photodispatcher.tech{
 			}
 			latches=null;
 			logger=null;
-			if(controller) controller.stop();
+			if(feederController) feederController.stop();
 			var barReader:ComReader;
 			if (barcodeReaders){
 				for each(barReader in barcodeReaders) barReader.stop();
 			}
 			barcodeReaders=null;
-			controller=null;
+			feederController=null;
 			register=null;
 		}
 		
 		override public function get feederEmpty():Boolean{
-			return !controller || controller.reamEmpty;
+			var res:Boolean;
+			if(glueHandler && glueHandler.hasFeeder){
+				res=glueHandler.reamEmpty;
+			}else{
+				res=!feederController || feederController.reamEmpty;
+			}
+			return res;
 		}
 		
 		private var _feederReamState:int=FeederController.REAM_STATE_UNKNOWN;
@@ -206,12 +214,26 @@ package com.photodispatcher.tech{
 			_currentGroup = value;
 		}
 
-		protected var _controller:FeederController;
 		
-		public function get controller():FeederController{
+		
+		
+		protected var _controller:FeederController;
+		public function get feederController():FeederController{
 			return _controller;
 		}
-		public function set controller(value:FeederController):void{
+		public function set feederController(value:FeederController):void{
+			if(glueHandler.hasFeeder){
+				if(_controller){
+					_controller.removeEventListener(ErrorEvent.ERROR, onControllerErr);
+					_controller.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
+					_controller.removeEventListener(Event.COMPLETE, onControllerCommandComplite);
+					_controller.removeEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
+					_controller.stop();
+				}
+				_controller=null;
+				return;
+			}
+
 			if(_controller){
 				_controller.removeEventListener(ErrorEvent.ERROR, onControllerErr);
 				_controller.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
@@ -229,6 +251,27 @@ package com.photodispatcher.tech{
 			}
 		}
 		
+		private var _glueHandler:GlueHandler;
+		[Bindable]
+		override public function get glueHandler():GlueHandler{
+			return _glueHandler;
+		}
+		override public function set glueHandler(value:GlueHandler):void{
+			if(_glueHandler){
+				_glueHandler.removeEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				_glueHandler.removeEventListener(Event.COMPLETE, onControllerCommandComplite);
+				_glueHandler.removeEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
+			}
+			_glueHandler = value;
+			if(_glueHandler){
+				_glueHandler.logger=logger;
+				_glueHandler.addEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				if(_glueHandler.hasFeeder){
+					_glueHandler.addEventListener(Event.COMPLETE, onControllerCommandComplite);
+					_glueHandler.addEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
+				}
+			}
+		}
 		override protected function onGlueHandlerErr(event:ErrorEvent):void{
 			if(!isRunning || isPaused){
 				log('Cклейка: '+event.text);
@@ -307,16 +350,32 @@ package com.photodispatcher.tech{
 		}
 
 		override public function setEngineOn():void{
-			if(controller) controller.engineOn(); 
+			if(glueHandler && glueHandler.hasFeeder){
+				glueHandler.feederPower(true);
+			}else{
+				if(feederController) feederController.engineOn();	
+			}
 		}
 		override public function setEngineOff():void{
-			if(controller) controller.engineOff(); 
+			if(glueHandler && glueHandler.hasFeeder){
+				 glueHandler.feederPower(false);
+			}else{
+				if(feederController) feederController.engineOff(); 
+			}
 		}
 		override public function setVacuumOn():void{
-			if(controller) controller.vacuumOn(); 
+			if(glueHandler && glueHandler.hasFeeder){
+				glueHandler.feederPump(true);
+			}else{
+				if(feederController) feederController.vacuumOn(); 
+			}
 		}
 		override public function setVacuumOff():void{
-			if(controller) controller.vacuumOff(); 
+			if(glueHandler && glueHandler.hasFeeder){
+				glueHandler.feederPump(false);
+			}else{
+				if(feederController) feederController.vacuumOff(); 
+			}
 		}
 
 		override protected function onProxyConnect(evt:SerialProxyEvent):void{
@@ -333,16 +392,15 @@ package com.photodispatcher.tech{
 		}
 		override protected function startDevices():void{
 			//create devs
-			var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_CONTROLLER);
-			if(!controller) controller= new FeederController();
-			controller.start(proxy);
 
-			/*
-			if(!glueHandler) glueHandler=new GlueHandler();
-			glueHandler.init(serialProxy);
-			glueHandler.pushDelay=pushDelay;
-			*/
 			if(!glueHandler || !isPaused) createGlueHandler();
+
+			if(!glueHandler.hasFeeder){
+				var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_CONTROLLER);
+				if(!feederController) feederController= new FeederController();
+				feederController.start(proxy);
+			}
+
 			
 			//var barReader:ComReader;
 			var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
@@ -374,8 +432,12 @@ package com.photodispatcher.tech{
 			}
 			glueHandler.repeatedSignalGap=repeatedSignalGap;
 			log('SerialProxy:' +serialProxy.traceDisconnected());
-			if(!barcodeReaders || barcodeReaders.length==0 || ! controller){
-				log('startInternal: barcodeReaders or controller init error');
+			if(!barcodeReaders || barcodeReaders.length==0){
+				log('startInternal: barcodeReaders init error');
+				return;
+			}
+			if(!glueHandler.hasFeeder && !feederController){
+				log('startInternal: controller init error');
 				return;
 			}
 			log('SerialProxy:' +serialProxy.traceDisconnected());
@@ -533,12 +595,12 @@ package com.photodispatcher.tech{
 					if(currentGroupStep==0 && vacuumOnStartOn){
 						//log('vacuumOn');
 						aclLatch.setOn();
-						controller.vacuumOn();
+						setVacuumOn();
 						return;
 					}
 					//log('engineOn');
 					aclLatch.setOn();
-					controller.engineOn();
+					setEngineOn();
 					break;
 				case COMMAND_GROUP_PAUSE:
 					steps=3;
@@ -555,7 +617,7 @@ package com.photodispatcher.tech{
 						case 1:
 							if (vacuumOnErrOff){
 								aclLatch.setOn();
-								controller.vacuumOff();
+								setVacuumOff();
 							}else{
 								currentGroupStep++;
 								nextStep();
@@ -564,7 +626,7 @@ package com.photodispatcher.tech{
 						case 2:
 							if (engineOnErrOff){
 								aclLatch.setOn();
-								controller.engineOff();
+								setEngineOff();
 							}else{
 								currentGroupStep++;
 								nextStep();
@@ -592,7 +654,7 @@ package com.photodispatcher.tech{
 						case 0:
 							if (vacuumOnErrOff){
 								aclLatch.setOn();
-								controller.vacuumOn();
+								setVacuumOn();
 							}else{
 								currentGroupStep++;
 								nextStep();
@@ -601,7 +663,7 @@ package com.photodispatcher.tech{
 						case 1:
 							if (engineOnErrOff){
 								aclLatch.setOn();
-								controller.engineOn();
+								setEngineOn();
 							}else{
 								currentGroupStep++;
 								nextStep();
@@ -623,11 +685,11 @@ package com.photodispatcher.tech{
 							break;
 						case 1:
 							aclLatch.setOn();
-							controller.vacuumOff();
+							setVacuumOff();
 							break;
 						case 2:
 							aclLatch.setOn();
-							controller.engineOff();
+							setEngineOff();
 							break;
 					}
 					break;
@@ -713,7 +775,11 @@ package com.photodispatcher.tech{
 			barLatch.setOn();
 			aclLatch.setOn();
 			log('Старт подачи листа')
-			controller.feed();
+			if(glueHandler.hasFeeder){
+				glueHandler.feederFeed();
+			}else{
+				feederController.feed();
+			}
 		}
 
 		protected function onLatchTimeout(event:ErrorEvent):void{
@@ -778,7 +844,11 @@ package com.photodispatcher.tech{
 						layerInLatch.setOn(); //restart in latch
 						if(currentGroup==COMMAND_GROUP_BOOK_SHEET && barLatch.isOn) barLatch.setOn(); //reset bar latch
 						aclLatch.setOn();
-						controller.feed();
+						if(glueHandler.hasFeeder){
+							glueHandler.feederFeed();
+						}else{
+							feederController.feed();
+						}
 						return;
 					}
 					//empty tay or some else 
@@ -871,26 +941,6 @@ package com.photodispatcher.tech{
 
 			if(!isRunning || isPaused) return;
 			
-			/*
-			if(event.state==FeederController.CHANEL_STATE_REAM_FILLED){
-				feederReamState=FeederController.REAM_STATE_FILLED;
-				msg='Лоток подачи: '+FeederController.chanelStateName(FeederController.CHANEL_STATE_REAM_FILLED);
-			}
-			if(event.state==FeederController.CHANEL_STATE_REAM_EMPTY){
-				feederReamState=FeederController.REAM_STATE_EMPTY;
-				msg='Лоток подачи: '+FeederController.chanelStateName(FeederController.CHANEL_STATE_REAM_EMPTY);
-				
-				if(checkFeederEmpty){
-					pauseRequest(msg);
-				}else{
-					log(msg);	
-				}
-				//var ap:AlertrPopup= new AlertrPopup();
-				//ap.show(msg,3,16);
-				return;
-			}
-			*/
-
 			//reset refeed
 			refeed=false;
 			if(layerInLatch.isOn && (event.state==FeederController.CHANEL_STATE_SINGLE_SHEET || event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET)){
@@ -956,7 +1006,13 @@ package com.photodispatcher.tech{
 				return false;
 			}
 			
-			if(controller && checkFeederEmpty) controller.checkReam();
+			if(checkFeederEmpty){
+				if(glueHandler.hasFeeder){
+					glueHandler.feederGetReamState();
+				}else{
+					if(feederController) feederController.checkReam();
+				}
+			}
 			
 			if(!feedBookTimer){
 				feedBookTimer= new Timer(feedBookDelay+feedDelay,1);
@@ -980,7 +1036,13 @@ package com.photodispatcher.tech{
 				return;
 			}
 			
-			if(controller && checkFeederEmpty) controller.checkReam();
+			if(checkFeederEmpty){
+				if(glueHandler.hasFeeder){
+					glueHandler.feederGetReamState();
+				}else{
+					if(feederController) feederController.checkReam();
+				}
+			}
 			
 			if(!feedTimer){
 				feedTimer= new Timer(delay,1);
