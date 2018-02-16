@@ -238,7 +238,7 @@ package com.photodispatcher.tech.picker{
 					//check completed
 					if(currentGroupStep>=1){
 						//complited
-						if ((currSheetIdx>=currSheetTot) || (register && register.currentBookComplited)){ 
+						if ((sheetCount>=currSheetTot) || (register && register.currentBookComplited)){ 
 							//book complited
 							currentGroup= COMMAND_GROUP_BOOK_END;
 						}else{
@@ -262,6 +262,7 @@ package com.photodispatcher.tech.picker{
 				case COMMAND_GROUP_BOOK_END:
 					//check completed
 					if(currentGroupStep>=currentSequence.length){
+						sheetCount=0;
 						if(logger) logger.clear();
 						//if (currBookIdx>=currBookTot){ 
 						if (register.isComplete){

@@ -26,21 +26,8 @@ package com.photodispatcher.tech.plain_register{
 		
 		public var noDataBase:Boolean;
 		
+		/*
 		override public function register(book:int, sheet:int):void{
-			/*
-			if(lastSheet==-1){
-				//first scan - bookPart unknown, 4 next scans TechPicker w'l set bookPart 
-				if(revers){
-					//can detect bookPart
-					if(sheet==0){
-						bookPart=BookSynonym.BOOK_PART_BLOCKCOVER;
-					}else{
-						bookPart=BookSynonym.BOOK_PART_BLOCK;
-					}
-				}
-				//if !revers still BOOK_PART_ANY
-			}
-			*/
 			if(bookPart==BookSynonym.BOOK_PART_ANY){
 				//first time, init
 				if(sheet==0){
@@ -120,6 +107,7 @@ package com.photodispatcher.tech.plain_register{
 			}
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
+		*/
 		
 		override protected function checkSequece(book:int, sheet:int):Boolean{
 			var dBook:int=dueBook;
@@ -153,6 +141,7 @@ package com.photodispatcher.tech.plain_register{
 			return result;
 		}
 		
+		/*
 		override public function finalise():Boolean{
 			var result:Boolean=false;
 			if(inexactBookSequence || detectFirstBook){
@@ -172,7 +161,9 @@ package com.photodispatcher.tech.plain_register{
 			flushData();
 			return result;
 		}
+		*/
 		
+		/*
 		override public function get isComplete():Boolean{
 			if(inexactBookSequence || detectFirstBook) return false;//can't detect
 			
@@ -185,7 +176,7 @@ package com.photodispatcher.tech.plain_register{
 			if(bookPart==BookSynonym.BOOK_PART_COVER) return true;
 			return lastSheet==assumeEndSheet;
 		}
-		
+		*/
 		
 	}
 }

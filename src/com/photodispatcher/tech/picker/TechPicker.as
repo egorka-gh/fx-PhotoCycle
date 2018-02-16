@@ -185,6 +185,8 @@ package com.photodispatcher.tech.picker{
 		public var currSheetTot:int;
 		[Bindable]
 		public var currSheetIdx:int;
+		protected var sheetCount:int=0;
+
 		
 		protected var currentLayer:int;
 		[Bindable]
@@ -562,6 +564,7 @@ package com.photodispatcher.tech.picker{
 			currBookIdx=-1;
 			currSheetTot=-1;
 			currSheetIdx=-1;
+			sheetCount=0;
 			pausedGroup=-1;
 			pausedGroupStep=-1;
 			
@@ -810,7 +813,7 @@ package com.photodispatcher.tech.picker{
 					//check completed
 					if(currentGroupStep>=1){
 						//complited
-						if ((currSheetIdx>=currSheetTot) || (register && register.currentBookComplited)){ 
+						if ((sheetCount>=currSheetTot) || (register && register.currentBookComplited)){ 
 							//book complited
 							currentGroup= COMMAND_GROUP_BOOK_END;
 						}else{
@@ -841,6 +844,7 @@ package com.photodispatcher.tech.picker{
 					//check completed
 					if(currentGroupStep>=currentSequence.length){
 						if(logger) logger.clear();
+						sheetCount=0;
 						//if (currBookIdx>=currBookTot){ 
 						if (register.isComplete){
 							//order complited
@@ -1161,6 +1165,7 @@ package com.photodispatcher.tech.picker{
 		protected function onRegisterComplite(event:Event):void{
 			currBookIdx=register.currentBook;
 			currSheetIdx=register.currentSheet;
+			sheetCount++;
 			registerLatch.forward();
 			barLatch.forward();
 		}

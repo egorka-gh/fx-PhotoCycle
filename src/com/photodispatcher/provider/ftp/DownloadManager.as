@@ -26,11 +26,15 @@ package com.photodispatcher.provider.ftp{
 	
 	[Event(name="dataChange", type="mx.events.FlexEvent")]
 	public class DownloadManager extends EventDispatcher{
+		
+		public static const RESET_ERRLIMIT_CYCLE:int=10;
 
 		[Bindable]
 		public  var queue:Array;
 		[Bindable]
 		public var lastLoadTime:Date;
+
+		protected var resetErrLimitCounter:int=0;
 
 		private var writeOrders:Array=[];
 
@@ -179,7 +183,16 @@ package com.photodispatcher.provider.ftp{
 
 		public function reLoad():void{
 			stopTimer();
-			//TODO reset errors ?
+
+			resetErrLimitCounter= (resetErrLimitCounter+1) % RESET_ERRLIMIT_CYCLE;
+			if(resetErrLimitCounter==0){
+				//reset errs limit
+				if(services){
+					for each(var f:DownloadQueueManager in services){
+						if(f) f.resetErrLimit();
+					}
+				}
+			}
 			
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			var latch:DbLatch= new DbLatch(true);

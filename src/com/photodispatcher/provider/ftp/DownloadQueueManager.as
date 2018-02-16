@@ -396,6 +396,17 @@ package com.photodispatcher.provider.ftp{
 			return map;
 		}
 
+		public function resetErrLimit():void{
+			var ord:Order;
+			for each (ord in queue){
+				if(ord && ord.exceedErrLimit){
+					ord.resetErrCounter();
+					if(ord.state<0 && ord.state!=OrderState.ERR_WRITE_LOCK) ord.state=OrderState.FTP_WAITE;
+					
+				}
+			}
+		}
+		
 		protected function fetch(forceReset:Boolean=false):Order{
 			var newOrder:Order;
 			var ord:Order;

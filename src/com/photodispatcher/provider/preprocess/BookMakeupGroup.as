@@ -182,6 +182,7 @@ package com.photodispatcher.provider.preprocess{
 			var width:int=printGroup.bookTemplate.sheet_width;
 			var len:int=printGroup.bookTemplate.sheet_len;
 			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER) len=UnitUtil.mm2Pixels300(printGroup.height);
+			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) len=len+buttPix;
 			var command:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			command.folder=folder;
 
@@ -216,19 +217,6 @@ package com.photodispatcher.provider.preprocess{
 				command.add('-crop'); command.add(sheetCrop);
 				command.add('-flatten');
 			}
-
-			/*
-			//crop
-			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_COVER){
-				command.add('-gravity'); command.add('West');
-			}else{
-				command.add('-gravity'); command.add('Center');
-			}
-			command.add('-background'); command.add('white');
-			command.add(file.file_name);
-			command.add('-crop'); command.add(sheetCrop);
-			command.add('-flatten');
-			*/
 			
 			//annotate 
 			annotateCommand(command,file);
@@ -243,13 +231,22 @@ package com.photodispatcher.provider.preprocess{
 				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
 					//standart
 					IMCommandUtil.drawNotching(command,notching,len,width,0);
-				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER && file.book_part==BookSynonym.BOOK_PART_BLOCK){
-					//BLOCKCOVER block
-					//TODO refactor make crop by template page_width*page_len then crop to print size aligned on the left edge
-					//use template.page_len 4 notching (print is aligned on the left edge)
-					if(printGroup.bookTemplate.page_len>0){
-						IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
+				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
+					if(file.book_part==BookSynonym.BOOK_PART_BLOCK){
+						//BLOCKCOVER block
+						//TODO refactor make crop by template page_width*page_len then crop to print size aligned on the left edge
+						//use template.page_len 4 notching (print is aligned on the left edge)
+						if(printGroup.bookTemplate.page_len>0){
+							IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
+						}
+					} /*
+					else if(file.book_part==BookSynonym.BOOK_PART_COVER){
+						//draw cover notching
+						if(buttPix){
+							IMCommandUtil.drawNotching(command,notching,len,width,buttPix);
+						}
 					}
+					*/
 				}
 			}
 			

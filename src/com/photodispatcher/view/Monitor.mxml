@@ -428,43 +428,6 @@
 
 			</s:VGroup>
 			
-			<!--<s:VGroup gap="0" width="400" height="100%">
-				<s:Label text="Очереди"/>
-				<s:Spacer height="5"/>
-				<s:TabBar id="tbQueue" top="0" left="0" height="20" dataProvider="{vsQueue}"/>
-				<mx:ViewStack id="vsQueue" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
-					<s:NavigatorContent label="Двойная ошибка" backgroundAlpha="0" width="100%" height="100%">
-						<s:DataGrid id="dgErrLimit" selectionMode="multipleRows"
-									width="100%" height="100%" creationComplete="dgErrLimit_creationCompleteHandler(event)"
-									dataProvider="{ordersErrLimitList}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
-					</s:NavigatorContent>
-					<s:NavigatorContent label="Обработка" backgroundAlpha="0" width="100%" height="100%">
-						<s:VGroup id="vPrepocess" width="100%" height="100%" gap="5">
-							<s:DataGrid id="dgPrepocessQueue" selectionMode="singleRow"
-										width="100%" height="100%" creationComplete="dgPrepocessQueue_creationCompleteHandler(event)"
-										dataProvider="{preprocessManager.orderList}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
-							<s:HGroup width="100%" gap="5">
-								<s:Label text="Очередь {preprocessManager.queueLenth}({preprocessManager.errorOrdersLenth})"/>
-								<s:Label text="{preprocessManager.lastError}" color="#ff0000"/>
-							</s:HGroup>
-							<mx:ProgressBar mode="event" source="{preprocessManager}" labelPlacement="top" width="100%"
-											fontWeight="normal" labelWidth="{vPrepocess.width-20}"
-											label="{preprocessManager.progressCaption} %1 из %2"/>
-
-						</s:VGroup>
-					</s:NavigatorContent>
-					<s:NavigatorContent label="Запись" backgroundAlpha="{ftpManager.isWriting?1:0}" backgroundColor="#00ff00" width="100%" height="100%">
-						<s:DataGrid id="dgWriteQueue" selectionMode="singleRow"
-									width="100%" height="100%" creationComplete="dgWriteQueue_creationCompleteHandler(event)"
-									dataProvider="{ftpManager.writeOrdersList}" locale="ru_RU" columns="{Order.shortGridColumns()}"/>
-					</s:NavigatorContent>
-				</mx:ViewStack>
-			</s:VGroup>-->
-			<!--<s:VGroup gap="10" width="400" height="100%" visible="true">
-				<s:Label text="Загрузчиков: {ftpManager.remoteLoadManager.connectionsLimit}. Обработчиков: {preprocessManager.remoteBuildersCount}" 
-						 width="100%" maxDisplayedLines="1"/>
-				<remote:ChatServerView width="100%" height="100%" chatService="{chatServer}"/>
-			</s:VGroup>-->
 		</s:HGroup>
 		
 		<view:MonitorLoad id="monitorLoad" top="0" left="0" right="0" bottom="0" includeIn="ordersPending" loader="{downloadManager}"/>

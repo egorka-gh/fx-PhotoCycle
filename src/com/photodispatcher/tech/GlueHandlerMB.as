@@ -138,7 +138,21 @@ package com.photodispatcher.tech{
 		}
 		
 		override public function removeBook():void{
-			
+			if(isRunning && !nonStopMode) return;
+			if(isRunning){
+				//var tb:TechBook=bookQueue.shift() as TechBook;
+				var tb:TechBook;
+				if(bookQueue.length>0) tb=bookQueue.removeItemAt(0) as TechBook;
+				if(tb){
+					log('Убираю книгу '+tb.printGroupId+' '+tb.book);
+					//refresh view
+					currentBook;
+				}
+			}
+			var msg:String='Следующий лист последний ';
+			if(tb) msg=msg+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal;
+			log(msg);
+			controller.pushBlock();
 		}
 		
 		override protected function checkStopBook():Boolean{

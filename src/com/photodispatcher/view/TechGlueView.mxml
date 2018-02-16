@@ -9,38 +9,20 @@
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
-			import com.photodispatcher.event.GlueMessageEvent;
 			import com.photodispatcher.model.LayerAllocation;
 			import com.photodispatcher.model.mysql.DbLatch;
-			import com.photodispatcher.model.mysql.entities.BookSynonym;
-			import com.photodispatcher.model.mysql.entities.BookSynonymGlue;
 			import com.photodispatcher.model.mysql.entities.Layer;
 			import com.photodispatcher.model.mysql.entities.LayerSequence;
-			import com.photodispatcher.model.mysql.entities.Layerset;
 			import com.photodispatcher.model.mysql.entities.LayersetSynonym;
-			import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
-			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
-			import com.photodispatcher.model.mysql.entities.SourceType;
-			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.model.mysql.services.OrderService;
-			import com.photodispatcher.model.mysql.services.OrderStateService;
-			import com.photodispatcher.model.mysql.services.PrintGroupService;
-			import com.photodispatcher.model.mysql.services.TechPickerService;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.EBS6kController;
 			import com.photodispatcher.service.barcode.ValveCom;
 			import com.photodispatcher.service.glue.GlueInfo;
-			import com.photodispatcher.service.glue.GlueMessage;
 			import com.photodispatcher.service.glue.GlueProxy;
 			import com.photodispatcher.tech.plain_register.TechRegisterBase;
-			import com.photodispatcher.tech.plain_register.TechRegisterCommon;
-			import com.photodispatcher.tech.plain_register.TechRegisterFolding;
 			import com.photodispatcher.tech.plain_register.TechRegisterGlue;
-			import com.photodispatcher.tech.plain_register.TechRegisterPrint;
-			import com.photodispatcher.tech.picker.EndpaperSet;
-			import com.photodispatcher.tech.picker.InterlayerSet;
 			import com.photodispatcher.util.StrUtil;
 			
 			import mx.collections.ArrayCollection;
@@ -460,27 +442,8 @@
 				getGlueCommand(pgId);
 			}
 			
-			/*
-			[Bindable]
-			protected var currPG:PrintGroup;
-			[Bindable]
-			protected var currExtraInfo:OrderExtraInfo;
-			*/
 			[Bindable]
 			protected var currGlueInfo:GlueInfo;
-			//[Bindable]
-			//public var currInerlayer:Layerset;
-			//public var interlayerSet:InterlayerSet;
-			//[Bindable]
-			//public var currTemplate:Layerset;
-			//public var templateSet:Array;
-			//[Bindable]
-			//public var currEndPaper:Layerset;
-			//public var endpaperSet:InterlayerSet;
-			//[Bindable]
-			//public var currSheetsNum:int;
-			//[Bindable]
-			//public var currGlueCmd:BookSynonymGlue; 
 
 			protected function getGlueCommand(pgId:String):void{
 				if(!pgId) return;
@@ -489,58 +452,7 @@
 				//currGlueInfo.loger=this;
 				currGlueInfo.addEventListener(Event.COMPLETE,onGlueInfo);
 				currGlueInfo.load(pgId);
-				/*
-				if(!pgId) return;
-				currPG=null;
-				currExtraInfo=null;
-				currInerlayer=null;
-				currTemplate=null;
-				currEndPaper=null;
-				currSheetsNum=0;
-				
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				var latch:DbLatch= new DbLatch();
-				latch.addLatch(svc.loadExtraIfoByPG(pgId));
-				latch.addEventListener(Event.COMPLETE,onOrderFinde);
-				
-				//load pg
-				var latchR:DbLatch= new DbLatch();
-				var svcPG:PrintGroupService=Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
-				latchR.addEventListener(Event.COMPLETE,onPgLoad);
-				latchR.addLatch(svcPG.loadById(pgId));
-				latchR.start();
-				latch.join(latchR);
-				latch.start();
-				*/
 			}
-			/*
-			protected function onPgLoad(e:Event):void{
-				var latch:DbLatch=e.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onPgLoad);
-					if(latch.complite){
-						currPG=latch.lastDataItem as PrintGroup;
-					}
-				}
-			}
-			protected function onOrderFinde(e:Event):void{
-				var latch:DbLatch=e.target as DbLatch;
-				var ei:OrderExtraInfo;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onOrderFinde);
-					currExtraInfo=latch.lastDataItem as OrderExtraInfo;
-				}
-				
-				if(detectGlueCmd()){
-					//set command 
-					if(glueDevice){
-						glueDevice.run_SetProduct(currGlueCmd.glue_cmd_name);
-						glueDevice.run_SetSheets(currSheetsNum);
-					}
-				}
-					
-			}
-			*/
 			
 			protected function onGlueInfo(e:Event):void{
 				if(currGlueInfo){
@@ -593,70 +505,6 @@
 				}
 			}
 
-			/*
-			protected function detectGlueCmd():Boolean{
-				var hasErr:Boolean;
-				var msg:String;
-				
-				if(!currGlueInfo.printGroup){
-					hasErr=true;
-					msg='Не найдена группа печати';
-				}
-				if(!hasErr && !currGlueInfo.extraInfo){
-					hasErr=true;
-					msg='Нет доп информации по заказу';
-				}
-				
-				if(!hasErr && !interlayerSet){
-					hasErr=true;
-					msg='Ошибка инициализации';
-				}
-				
-				//checkget interlayer
-				//check interlayer
-				if(!hasErr){ 
-					currInerlayer=interlayerSet.getBySynonym(currGlueInfo.extraInfo.interlayer);
-					//if(currExtraInfo.interlayer && !currInerlayer){
-					if(!currInerlayer){
-						hasErr=true;
-						msg='Неопределен тип прослойки "'+currGlueInfo.extraInfo.interlayer+'"';
-					}
-				}
-				
-				var bs:BookSynonym;
-				if(!hasErr){
-					bs=BookSynonym.getBookSynonymByPg(currGlueInfo.printGroup);
-					if(!bs){
-						hasErr=true;
-						msg='Неопределен шаблон книги для "'+currGlueInfo.printGroup.alias+'"';
-					}else{
-						//detect glue command
-						currGlueCmd=bs.getGlueCmd(currGlueInfo.printGroup.paper, currInerlayer.id);
-						if(!currGlueCmd || !currGlueCmd.glue_cmd_name){
-							hasErr=true;
-							msg='Неопределена команда склейки "'+currGlueInfo.printGroup.paper_name +'"-"'+currInerlayer.name+'"';
-						}
-					}
-				}
-				if(hasErr){
-					Alert.show(msg);
-					logToScreen('Ошибка: '+msg,true);
-					return false;
-				}
-				
-				//calc sheets
-				currSheetsNum=currGlueInfo.printGroup.sheet_num;
-				
-				
-				//interlayer
-				if(currInerlayer.sequenceMiddle) currSheetsNum=currSheetsNum+(currGlueInfo.printGroup.sheet_num-1)*currInerlayer.sequenceMiddle.length;
-
-				//template book start/end or endpaper
-				currSheetsNum+=currGlueCmd.add_layers;
-					
-				return true;
-			}
-			*/
 
 			protected function btResetRegister_clickHandler(event:MouseEvent):void{
 				if(currRegister){
@@ -671,13 +519,6 @@
 					glueDevice.run_GetStatus();
 				}
 			}
-			
-			/*
-			protected function btDebug_clickHandler(event:MouseEvent):void{
-				if(!tiDebug.text) return;
-				getGlueCommand(tiDebug.text);
-			}
-			*/
 			
 		]]>
 	</fx:Script>
