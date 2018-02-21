@@ -7,9 +7,9 @@ package com.photodispatcher.tech.plain_register{
 
 	public class TechRegisterPicker extends TechRegisterBase{
 		
-		public function TechRegisterPicker(printGroup:String, books:int, sheets:int){
+		public function TechRegisterPicker(printGroup:String, books:int, sheets:int, disconnected:Boolean=false){
 			_type=TYPE_PICKER;
-			super(printGroup, books, sheets);
+			super(printGroup, books, sheets, disconnected);
 			logOk=false;
 			bookPart=BookSynonym.BOOK_PART_ANY;
 			//lastSheet=-1;
@@ -24,7 +24,6 @@ package com.photodispatcher.tech.plain_register{
 			bookPart=value;
 		}
 		
-		public var noDataBase:Boolean;
 		
 		/*
 		override public function register(book:int, sheet:int):void{

@@ -1159,12 +1159,12 @@ package com.photodispatcher.tech{
 				*/
 				checkOrderParams();
 				//new register
-				register= new TechRegisterPicker(pgId,currBookTot,currSheetTot);
+				register= new TechRegisterPicker(pgId,currBookTot,currSheetTot, dataBaseOff);
 				register.techPoint=techPoint;
 				register.revers=reversOrder;
 				register.inexactBookSequence=inexactBookSequence;
 				register.detectFirstBook=detectFirstBook;
-				register.noDataBase=dataBaseOff;
+				//register.noDataBase=dataBaseOff;
 				//reset detectFirstBook
 				//if(detectFirstBook) detectFirstBook=false;
 			}

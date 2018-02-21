@@ -73,6 +73,7 @@ package com.photodispatcher.tech.plain_register{
 		protected var rejectedCount:int=0;
 		
 		protected var logOk:Boolean;
+		protected var noDataBase:Boolean;
 
 		protected var _type:int=TYPE_COMMON;
 		public function get type():int{
@@ -103,7 +104,7 @@ package com.photodispatcher.tech.plain_register{
 
 		public function  flushData():void{
 			if(calcOnLog) return;
-			if(!_needFlush || !printGroupId || !techPoint) return;
+			if(noDataBase || !_needFlush || !printGroupId || !techPoint) return;
 
 			//recalc
 			var latch:DbLatch=new DbLatch(true);
@@ -122,7 +123,7 @@ package com.photodispatcher.tech.plain_register{
 			}
 		}
 
-		public function TechRegisterBase(printGroup:String, books:int,sheets:int){
+		public function TechRegisterBase(printGroup:String, books:int,sheets:int, disconnected:Boolean=false){
 			super(null);
 			printGroupId=printGroup;
 			this.books=books;
@@ -132,9 +133,10 @@ package com.photodispatcher.tech.plain_register{
 			registred=0;
 			logOk=true;
 			calcOnLog=false;
+			this.noDataBase=disconnected;
 			//complited=false;
 			
-			if(type==TYPE_PRINT || type==TYPE_PICKER) return;
+			if(noDataBase || type==TYPE_PRINT) return;
 			//load printgroup & reprints
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			if(svc){
@@ -352,6 +354,7 @@ package com.photodispatcher.tech.plain_register{
 		
 		
 		protected function logRegistred(book:int,sheet:int):void{
+			if(noDataBase) return;
 			//log to data base
 			var tl:TechLog= new TechLog();
 			tl.log_date=new Date();

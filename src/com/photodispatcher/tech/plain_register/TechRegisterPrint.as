@@ -7,8 +7,8 @@ package com.photodispatcher.tech.plain_register{
 	import org.granite.tide.Tide;
 	
 	public class TechRegisterPrint extends TechRegisterBase{
-		public function TechRegisterPrint(printGroup:String, books:int, sheets:int){
-			super(printGroup, books, sheets);
+		public function TechRegisterPrint(printGroup:String, books:int, sheets:int, disconnected:Boolean=false){
+			super(printGroup, books, sheets, disconnected);
 			_type=TYPE_PRINT;
 			logOk=false;
 		}

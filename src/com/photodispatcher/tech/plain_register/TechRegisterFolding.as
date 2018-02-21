@@ -9,8 +9,8 @@ package com.photodispatcher.tech.plain_register{
 
 	public class TechRegisterFolding extends TechRegisterBase{
 		
-		public function TechRegisterFolding(printGroup:String, books:int, sheets:int){
-			super(printGroup, books, sheets);
+		public function TechRegisterFolding(printGroup:String, books:int, sheets:int, disconnected:Boolean=false){
+			super(printGroup, books, sheets, disconnected);
 			_type=TYPE_FOLDING;
 			_logSequenceErr=false;
 			logOk=false;
