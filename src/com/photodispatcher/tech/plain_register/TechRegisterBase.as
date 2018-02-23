@@ -387,9 +387,7 @@ package com.photodispatcher.tech.plain_register{
 			*/
 			if(detectFirstBook || inexactBookSequence){
 				//check last book & last sheet 
-				var endSheet:int=0;
-				if(bookPart==BookSynonym.BOOK_PART_BLOCK) endSheet=revers?1:sheets;
-				if(lastBook==books && lastSheet==endSheet) return true;
+				if(lastBook==books && lastSheet==assumeEndSheet) return true;
 			}
 			if((bookPart==BookSynonym.BOOK_PART_BLOCK || bookPart==BookSynonym.BOOK_PART_BLOCKCOVER) && (registred+rejectedCount)==books*sheets){
 				return true;
@@ -483,6 +481,23 @@ package com.photodispatcher.tech.plain_register{
 		}
 		
 		public function finalise():Boolean{
+			var result:Boolean=false;
+			if(inexactBookSequence || detectFirstBook){
+				result=currentBookComplited;
+			}else{
+				result=isComplete;
+			}
+			if (!result){
+				if(canInterrupt){
+					if(flap) flap.setOff();
+					//if(strictSequence) result=false;
+				}
+				logSequeceErr('Не полная последовательность');
+			}else{
+				if(logOk) logMsg('Ok');
+			}
+
+			/*
 			var result:Boolean=true;
 			if (!isComplete && !inexactBookSequence){
 				if(canInterrupt){
@@ -493,6 +508,7 @@ package com.photodispatcher.tech.plain_register{
 			}else{
 				if(logOk) logMsg('Ok');
 			}
+			*/
 			flushData();
 			return result;
 		}
@@ -509,6 +525,7 @@ package com.photodispatcher.tech.plain_register{
 				return false;
 			}
 			if(inexactBookSequence){
+				/*
 				var firstSheet:int=0;
 				if(bookPart==BookSynonym.BOOK_PART_BLOCK){
 					firstSheet=revers?sheets:1;
@@ -516,9 +533,11 @@ package com.photodispatcher.tech.plain_register{
 					firstSheet=revers?0:1;
 				}
 				if(dueSheet==firstSheet) dBook=book;
-			}else if(detectFirstBook){
+				*/
+				if(dSheet==assumeFirstSheet) dBook=book;
+			}else if(detectFirstBook && !lastBook){
 				dBook=book;
-				detectFirstBook=false;
+				//detectFirstBook=false;
 			}
 			
 			result=dBook==book && dSheet==sheet;

@@ -369,6 +369,9 @@ package com.photodispatcher.tech{
 				if(Context.getAttribute('pumpWorkTime')) gh.pumpWorkTime=Context.getAttribute('pumpWorkTime');
 				if(Context.getAttribute('glueHasFeeder')) gh.hasFeeder=Context.getAttribute('glueHasFeeder');
 				
+				if(Context.getAttribute('whitePaperDelay')) gh.whitePaperDelay=Context.getAttribute('whitePaperDelay');
+				if(Context.getAttribute('bookEjectionDelay')) gh.bookEjectionDelay=Context.getAttribute('bookEjectionDelay');
+				if(Context.getAttribute('finalSqueezingTime')) gh.finalSqueezingTime=Context.getAttribute('finalSqueezingTime');
 				
 				gh.init(null);
 				glueHandler=gh;

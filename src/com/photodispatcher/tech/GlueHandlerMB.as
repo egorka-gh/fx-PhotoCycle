@@ -39,6 +39,10 @@ package com.photodispatcher.tech{
 		public var pumpWorkTime:int=0;
 		public var pumpEnable:Boolean=false;
 
+		public var whitePaperDelay:int=0;
+		public var bookEjectionDelay:int=0;
+		public var finalSqueezingTime:int=0;
+
 
 		private var _controller:GlueMBController;
 		[Bindable]
@@ -84,6 +88,11 @@ package com.photodispatcher.tech{
 			controller.hasFeeder=hasFeeder;
 			controller.sideStopOffDelay=glueSideStopOffDelay;
 			controller.sideStopOnDelay=glueSideStopOnDelay;
+			
+			controller.whitePaperDelay=whitePaperDelay;
+			controller.bookEjectionDelay=bookEjectionDelay;
+			controller.finalSqueezingTime=finalSqueezingTime;
+
 
 			controller.pumpSensFilterTime=pumpSensFilterTime;
 			controller.pumpWorkTime=pumpWorkTime;

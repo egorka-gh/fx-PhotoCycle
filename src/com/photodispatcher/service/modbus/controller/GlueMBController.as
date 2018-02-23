@@ -60,7 +60,9 @@ package com.photodispatcher.service.modbus.controller{
 		D12(адрес регистра 0x000С) Feeder_Pump_Switch_WORD - подача питания на компрессор податчика ( 0x0001 - включить, 0x0000 - выключить)
 		D13(адрес регистра 0x000D) Feeder_Pop_Paper_WORD - податчик. подать лист ( 0x0001 - пуск)
 		D14(адрес регистра 0x000E) - Податчик. Высота стопы - 1 заполнен, 0 - пусто
-
+		D15(адрес регистра 0x000F) White_paper_delay_time -  Время задержки после прихода сигнала на датчик "белого листа" (формат записи BCD, 1 = 10ms)
+		D16(адрес регистра 0x0010) Book_ejection_delay_time - Время задержки перед открытием бункера (после прохода датчика "запрессовки" (экс датчик исх. положения задней плиты) (формат записи BCD, 1 = 10ms)
+		D17(адрес регистра 0x0011) Final_squeezing_time - Время допрессовки  прижимной плитой после прохода датчика "запрессовки" (экс датчик исх. положения задней плиты) (формат записи BCD, 1 = 10ms)
 		*/
 		
 		public static const CHANEL_CONTROLLER_MESSAGE:int			=0;
@@ -100,6 +102,9 @@ package com.photodispatcher.service.modbus.controller{
 		public static const FEEDER_REGISTER_PUMP_SWITCH:int						=12;
 		public static const FEEDER_REGISTER_PUSH_PAPER:int						=13;
 		public static const FEEDER_REGISTER_REAM_FILLED:int						=14;
+		public static const CONTROLLER_REGISTER_WHITE_PAPER_DELAY:int			=15;
+		public static const CONTROLLER_REGISTER_BOOK_EJECTION_DELAY:int			=16;
+		public static const CONTROLLER_REGISTER_FINAL_SQUEEZING_TIME:int		=17;
 		
 		public function GlueMBController(){
 			super();
@@ -112,7 +117,11 @@ package com.photodispatcher.service.modbus.controller{
 		public var timeoutUnload:int;
 		public var sideStopOffDelay:int=0;
 		public var sideStopOnDelay:int=0;
-
+		
+		public var whitePaperDelay:int=0;
+		public var bookEjectionDelay:int=0;
+		public var finalSqueezingTime:int=0;
+		
 		public var pumpSensFilterTime:int;
 		public var pumpWorkTime:int;
 		public var pumpEnable:Boolean;
@@ -242,6 +251,33 @@ package com.photodispatcher.service.modbus.controller{
 			}
 		}
 
+		public function setWhitePaperDelay(msec:int):void{
+			if(!hasFeeder) return;
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_WHITE_PAPER_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function setBookEjectionDelay(msec:int):void{
+			if(!hasFeeder) return;
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_BOOK_EJECTION_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function setFinalSqueezingTime(msec:int):void{
+			if(!hasFeeder) return;
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_FINAL_SQUEEZING_TIME, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
 		
 		public function pushBlock():void{
 			//write Final_paper_D
@@ -264,6 +300,12 @@ package com.photodispatcher.service.modbus.controller{
 				if(pumpSensFilterTime>0) setPumpSensFilterTime(pumpSensFilterTime);
 				if(pumpWorkTime>0) setPumpWorkTime(pumpWorkTime);
 				setPumpEnable(pumpEnable);
+				if(hasFeeder){
+					if(whitePaperDelay>10) setWhitePaperDelay(whitePaperDelay);
+					if(bookEjectionDelay>10) setBookEjectionDelay(whitePaperDelay);
+					if(finalSqueezingTime>10) setFinalSqueezingTime(finalSqueezingTime);
+				}
+
 				/*
 				var timer:Timer= new Timer(1500,1);
 				timer.addEventListener(TimerEvent.TIMER,onClientConnectTimer);

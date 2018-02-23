@@ -222,7 +222,7 @@ package com.photodispatcher.tech{
 			return _controller;
 		}
 		public function set feederController(value:FeederController):void{
-			if(glueHandler.hasFeeder){
+			if(glueHandler && glueHandler.hasFeeder){
 				if(_controller){
 					_controller.removeEventListener(ErrorEvent.ERROR, onControllerErr);
 					_controller.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onControllerDisconnect);
