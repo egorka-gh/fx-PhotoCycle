@@ -183,13 +183,27 @@ package com.photodispatcher.service.glue{
 
 		private function checkMessages():Boolean{
 			var step:GlueProgramStep=program.steps.getItemAt(currStep) as GlueProgramStep;
+			if(!step){
+				log('Не определен шаг программы (checkMessages)');
+				return false;
+			}
+			if(step.type!=GlueProgramStep.TYPE_WAIT_FOR){
+				log('Не верный шаг программы (checkMessages)' +step.type.toString());
+				return false;
+			}
+			if(!step.checkBlocks || step.checkBlocks.length==0){
+				log('Не определены условия проверки (checkMessages)' +step.type.toString());
+				return false;
+			}
 			for each (var checkBlock:GlueMessageBlock in step.checkBlocks){
+				//log('Проверяю блок ' +checkBlock.key+' элементов '+checkBlock.items.length.toString());
 				var mess:GlueMessage= ArrayUtil.searchItem('type',checkBlock.type, lastMessages) as GlueMessage;
 				if(mess){
 					var mBlock:GlueMessageBlock=mess.getBlock(checkBlock.key);
 					if(mBlock){
 						var chItem:GlueMessageItem;
-						for each(chItem in checkBlock){
+						for each(chItem in checkBlock.items){
+							//log('Проверяю ' +chItem.key+'='+chItem.value);
 							var mItem:GlueMessageItem=mBlock.getItem(chItem.key);
 							if(!mItem || mItem.value!=chItem.value) return false;
 						}
