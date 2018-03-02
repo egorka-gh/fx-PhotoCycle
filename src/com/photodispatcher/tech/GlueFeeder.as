@@ -18,6 +18,7 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.service.barcode.GlueController;
 	import com.photodispatcher.service.barcode.SerialProxy;
 	import com.photodispatcher.service.barcode.Socket2Com;
+	import com.photodispatcher.service.modbus.controller.GlueMBController;
 	import com.photodispatcher.tech.picker.PickerLatch;
 	import com.photodispatcher.tech.plain_register.TechRegisterPicker;
 	import com.photodispatcher.util.ArrayUtil;
@@ -923,6 +924,7 @@ package com.photodispatcher.tech{
 		}
 		protected function onControllerMsg(event:ControllerMesageEvent):void{
 			var msg:String;
+			
 			//check / set ream state 
 			if(event.state==FeederController.CHANEL_STATE_REAM_FILLED || event.state==FeederController.CHANEL_STATE_REAM_EMPTY){
 				if(event.state==FeederController.CHANEL_STATE_REAM_FILLED){
@@ -937,6 +939,13 @@ package com.photodispatcher.tech{
 				msg='Лоток подачи: '+FeederController.chanelStateName(event.state);
 				log(msg);
 				return;
+			}
+			
+			//posible bug - GlueMBController && FeederController chanel_state colision
+			//now no problem -> GlueMBController.GLUE_LEVEL_ALARM > FeederController.CHANEL_STATE_REAM_FILLED
+			if(event.state==GlueMBController.GLUE_LEVEL_ALARM){
+				//show alert
+				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
 			}
 
 			if(!isRunning || isPaused) return;

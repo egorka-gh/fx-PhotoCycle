@@ -38,6 +38,7 @@ package com.photodispatcher.service.modbus.controller{
 		11 - Реле безопасности. Безопасность в ошибке. Машина остановлена. Необходимо сделать сброс реле безопасности (по физической кнопке) и заупстить цикл работы(по физической кнопке). Цикл остановлен
 		12 - Пришел новый лист, но задняя плита не сошла с датчика исходного положения
 		13 - Пришел новый лист, но передняя плита не в исходном положении
+		14 - Авария насоса. Закончился клей для преедачи на компьютер
 		
 		ПК -> ПЛК (6ая функция - запись регистра)
 		D0 (адрес регистра 0x0000) Main_Plate_Forward_Timeout_Time - время таймаута при переходе передней плиты на датчик задней плиты (формат записи BCD (пример 0x0010 = 1 
@@ -83,6 +84,7 @@ package com.photodispatcher.service.modbus.controller{
 		public static const FEEDER_ALARM_ON:int=11; 
 		public static const CONTROLLER_NEW_SHEET_ERROR1:int	=12;
 		public static const CONTROLLER_NEW_SHEET_ERROR2:int	=13;
+		public static const GLUE_LEVEL_ALARM:int=14; 
 
 		public static const CONTROLLER_REGISTER_MAIN_PLATE_FORWARD_TIMEOUT:int	=0;
 		public static const CONTROLLER_REGISTER_MAIN_PLATE_REVERSE_TIMEOUT:int	=1;
@@ -337,6 +339,7 @@ package com.photodispatcher.service.modbus.controller{
 			}
 			switch(adu.pdu.value){
 				
+				case GLUE_LEVEL_ALARM:
 				case CONTROLLER_NEW_SHEET_ERROR1:
 				case CONTROLLER_NEW_SHEET_ERROR2:
 				case FEEDER_ALARM_ON:

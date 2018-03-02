@@ -239,6 +239,7 @@ package com.photodispatcher.tech{
 				if(!hasFeeder) return;
 				var chanelState:int=-1;
 				switch(event.state){
+					//posible bug - GlueMBController && FeederController chanel_state colision
 					case GlueMBController.CONTROLLER_NEW_SHEET_ERROR1:
 						logErr('Пришел новый лист, но задняя плита не сошла с датчика исходного положения');
 						break;
@@ -263,6 +264,9 @@ package com.photodispatcher.tech{
 					case GlueMBController.FEEDER_REAM_EMPTY:
 						chanelState=FeederController.CHANEL_STATE_REAM_EMPTY;
 						_feederEmpty=true;
+						break;
+					case GlueMBController.GLUE_LEVEL_ALARM:
+						chanelState=GlueMBController.GLUE_LEVEL_ALARM;
 						break;
 				}
 				if(chanelState!=-1) dispatchEvent(new ControllerMesageEvent(0,chanelState));
