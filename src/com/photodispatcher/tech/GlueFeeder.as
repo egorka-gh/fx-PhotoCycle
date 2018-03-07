@@ -945,7 +945,10 @@ package com.photodispatcher.tech{
 			//now no problem -> GlueMBController.GLUE_LEVEL_ALARM > FeederController.CHANEL_STATE_REAM_FILLED
 			if(event.state==GlueMBController.GLUE_LEVEL_ALARM){
 				//show alert
-				dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
+				if(Context.getAttribute("glueAlarm")){
+					dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
+					
+				}
 			}
 
 			if(!isRunning || isPaused) return;

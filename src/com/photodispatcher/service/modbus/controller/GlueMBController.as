@@ -303,9 +303,9 @@ package com.photodispatcher.service.modbus.controller{
 				if(pumpWorkTime>0) setPumpWorkTime(pumpWorkTime);
 				setPumpEnable(pumpEnable);
 				if(hasFeeder){
-					if(whitePaperDelay>10) setWhitePaperDelay(whitePaperDelay);
-					if(bookEjectionDelay>10) setBookEjectionDelay(whitePaperDelay);
-					if(finalSqueezingTime>10) setFinalSqueezingTime(finalSqueezingTime);
+					setWhitePaperDelay(whitePaperDelay);
+					if(bookEjectionDelay>10) setBookEjectionDelay(bookEjectionDelay);
+					setFinalSqueezingTime(finalSqueezingTime);
 				}
 
 				/*

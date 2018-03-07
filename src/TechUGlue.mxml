@@ -172,6 +172,8 @@
 					glueSideStopOffDelay=so.data.glueSideStopOffDelay;
 					glueSideStopOnDelay=so.data.glueSideStopOnDelay;
 					pumpEnable=so.data.pumpEnable;
+					glueAlarm=so.data.glueAlarm;
+					
 					glueHasFeeder=so.data.glueHasFeeder;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
 					pumpWorkTime=so.data.pumpWorkTime;
@@ -212,6 +214,7 @@
 					Context.setAttribute("glueSideStopOffDelay", glueSideStopOffDelay);
 					Context.setAttribute("glueSideStopOnDelay", glueSideStopOnDelay);
 					Context.setAttribute("pumpEnable", pumpEnable);
+					Context.setAttribute("glueAlarm", glueAlarm);
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
 
@@ -418,6 +421,8 @@
 			public var pumpWorkTime:int=0;
 			[Bindable]
 			public var pumpEnable:Boolean=false;
+			[Bindable]
+			public var glueAlarm:Boolean=false;
 			
 			[Bindable]
 			public var whitePaperDelay:int=0;
@@ -437,6 +442,7 @@
 				Context.setAttribute("glueSideStopOffDelay", glueSideStopOffDelay);
 				Context.setAttribute("glueSideStopOnDelay", glueSideStopOnDelay);
 				Context.setAttribute("pumpEnable", pumpEnable);
+				Context.setAttribute("glueAlarm", glueAlarm);
 				Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 				Context.setAttribute("pumpWorkTime", pumpWorkTime);
 				Context.setAttribute("whitePaperDelay", whitePaperDelay);
@@ -453,6 +459,7 @@
 				so.data.glueSideStopOffDelay = glueSideStopOffDelay;
 				so.data.glueSideStopOnDelay = glueSideStopOnDelay;
 				so.data.pumpEnable=pumpEnable;
+				so.data.glueAlarm=glueAlarm;
 				so.data.pumpSensFilterTime=pumpSensFilterTime;
 				so.data.pumpWorkTime=pumpWorkTime;
 
@@ -682,6 +689,8 @@
 						<s:HGroup gap="5" verticalAlign="baseline">
 							<s:Label text="Регулирование уровня клея насосом:"/>
 							<s:CheckBox selected="@{pumpEnable}"/>
+							<s:Label text="Сообщение об отсутствии клея:"/>
+							<s:CheckBox selected="@{glueAlarm}"/>
 						</s:HGroup>
 						<s:HGroup gap="5" verticalAlign="baseline">
 							<s:Label text="Время работы насоса (мс):"/>

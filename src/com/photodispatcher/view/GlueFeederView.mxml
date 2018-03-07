@@ -170,7 +170,7 @@
 			}
 			
 			protected function btPushBook_clickHandler(event:MouseEvent):void{
-				if(glue && glue.glueHandler && !glue.glueHandler.isRunning) glue.glueHandler.removeBook(); 
+				if(glue && glue.glueHandler) glue.glueHandler.removeBook(); 
 			}
 			
 			public function blockLabelFunc(item:Object):String {
@@ -286,7 +286,6 @@
 				<s:Label text="Листов склеено: {glue.glueHandler.currentBookView.sheetsDone}"/>
 				<s:HGroup gap="10">
 					<s:Button id="btPushBook" label="Убрать книгу"
-							  enabled="{!glue.glueHandler.isRunning}"
 							  click="btPushBook_clickHandler(event)" />
 					<s:Button label="Сбросить" click="{glue.glueHandler.reset()}"/>
 				</s:HGroup>
