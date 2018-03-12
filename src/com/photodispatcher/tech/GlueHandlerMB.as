@@ -143,7 +143,9 @@ package com.photodispatcher.tech{
 			if(!isRunning) return;
 			isRunning=false;
 			hasPauseRequest=false;
-			if(controller && engineStop) controller.stop();
+			
+			//has no stop command
+			//if(controller && engineStop) controller.engineStop();
 		}
 		
 		override public function removeBook():void{

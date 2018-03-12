@@ -116,11 +116,11 @@ package com.photodispatcher.tech{
 				var msg:String='';
 				if(!barcodeReaders || barcodeReaders.length==0) msg='Не инициализированы сканеры ШК';
 				if(!barsConnected) msg='\n Не подключены сканеры ШК';
+				if(!glueHandler || !glueHandler.isPrepared) msg+='\n Не инициализирована склейка';
 				if(!glueHandler.hasFeeder){
 					if(!feederController) msg+='\n Не инициализирован контролер подачи';
 					if(feederController && !feederController.connected) msg+='\n Не подключен контролер подачи';
 				}
-				if(!glueHandler || !glueHandler.isPrepared) msg+='\n Не инициализирована склейка';
 				Alert.show(msg);
 			}
 			return 	prepared;
@@ -948,7 +948,10 @@ package com.photodispatcher.tech{
 				if(Context.getAttribute("glueAlarm")){
 					dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
 					
+				}else{
+					log('Низкий уровень клея');
 				}
+				return;
 			}
 
 			if(!isRunning || isPaused) return;
