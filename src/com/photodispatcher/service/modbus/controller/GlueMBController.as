@@ -64,6 +64,9 @@ package com.photodispatcher.service.modbus.controller{
 		D15(адрес регистра 0x000F) White_paper_delay_time -  Время задержки после прихода сигнала на датчик "белого листа" (формат записи BCD, 1 = 10ms)
 		D16(адрес регистра 0x0010) Book_ejection_delay_time - Время задержки перед открытием бункера (после прохода датчика "запрессовки" (экс датчик исх. положения задней плиты) (формат записи BCD, 1 = 10ms)
 		D17(адрес регистра 0x0011) Final_squeezing_time - Время допрессовки  прижимной плитой после прохода датчика "запрессовки" (экс датчик исх. положения задней плиты) (формат записи BCD, 1 = 10ms)
+
+		D19(адрес регистра 0x0013) Unload_Off_delay Таймер выключения бункера выгрузки (формат записи BCD, 1 = 10ms) 
+		D20(адрес регистра 0x0014) Unload_On_delay Таймер включения бункера выгрузки (формат записи BCD, 1 = 10ms)
 		*/
 		
 		public static const CHANEL_CONTROLLER_MESSAGE:int			=0;
@@ -107,6 +110,9 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_REGISTER_WHITE_PAPER_DELAY:int			=15;
 		public static const CONTROLLER_REGISTER_BOOK_EJECTION_DELAY:int			=16;
 		public static const CONTROLLER_REGISTER_FINAL_SQUEEZING_TIME:int		=17;
+
+		public static const CONTROLLER_REGISTER_UNLOAD_OFF_DELAY:int			=19;
+		public static const CONTROLLER_REGISTER_UNLOAD_ON_DELAY:int				=20;
 		
 		public function GlueMBController(){
 			super();
@@ -123,7 +129,9 @@ package com.photodispatcher.service.modbus.controller{
 		public var whitePaperDelay:int=0;
 		public var bookEjectionDelay:int=0;
 		public var finalSqueezingTime:int=0;
-		
+		public var glueUnloadOffDelay:int=0;
+		public var glueUnloadOnDelay:int=0;
+
 		public var pumpSensFilterTime:int;
 		public var pumpWorkTime:int;
 		public var pumpEnable:Boolean;
@@ -280,6 +288,23 @@ package com.photodispatcher.service.modbus.controller{
 			}
 		}
 
+		public function setUnloadOffDelay(msec:int):void{
+			if(!hasFeeder) return;
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_UNLOAD_OFF_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function setUnloadOnDelay(msec:int):void{
+			if(!hasFeeder) return;
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_UNLOAD_ON_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
 		
 		public function pushBlock():void{
 			//write Final_paper_D
@@ -306,22 +331,11 @@ package com.photodispatcher.service.modbus.controller{
 					setWhitePaperDelay(whitePaperDelay);
 					if(bookEjectionDelay>10) setBookEjectionDelay(bookEjectionDelay);
 					setFinalSqueezingTime(finalSqueezingTime);
+					setUnloadOffDelay(glueUnloadOffDelay);
+					setUnloadOnDelay(glueUnloadOnDelay);
 				}
-
-				/*
-				var timer:Timer= new Timer(1500,1);
-				timer.addEventListener(TimerEvent.TIMER,onClientConnectTimer);
-				timer.start();
-				*/
 			}
 		}
-		/*
-		private function onClientConnectTimer(evt:TimerEvent):void{
-			var timer:Timer=evt.target as Timer;
-			if(timer) timer.removeEventListener(TimerEvent.TIMER,onClientConnectTimer);
-			readSideStopDelays();
-		}
-		*/
 		
 		override protected function onServerADU(evt:ModbusRequestEvent):void{
 			//msg from controller

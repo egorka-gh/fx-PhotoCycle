@@ -182,6 +182,8 @@
 					whitePaperDelay=so.data.whitePaperDelay;
 					bookEjectionDelay=so.data.bookEjectionDelay;
 					finalSqueezingTime=so.data.finalSqueezingTime;
+					glueUnloadOffDelay=so.data.glueUnloadOffDelay;
+					glueUnloadOnDelay=so.data.glueUnloadOnDelay;
 
 				}
 				//Context.setAttribute("feedBookDelay", feedBookDelay);
@@ -221,6 +223,9 @@
 					Context.setAttribute("whitePaperDelay", whitePaperDelay);
 					Context.setAttribute("bookEjectionDelay", bookEjectionDelay);
 					Context.setAttribute("finalSqueezingTime", finalSqueezingTime);
+					Context.setAttribute("glueUnloadOffDelay", glueUnloadOffDelay);
+					Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
+
 				}
 
 				
@@ -430,6 +435,10 @@
 			public var bookEjectionDelay:int=0;
 			[Bindable]
 			public var finalSqueezingTime:int=0;
+			[Bindable]
+			public var glueUnloadOffDelay:int=0;
+			[Bindable]
+			public var glueUnloadOnDelay:int=0;
 
 			
 			protected function saveGlueEth():void{
@@ -448,7 +457,10 @@
 				Context.setAttribute("whitePaperDelay", whitePaperDelay);
 				Context.setAttribute("bookEjectionDelay", bookEjectionDelay);
 				Context.setAttribute("finalSqueezingTime", finalSqueezingTime);
+				Context.setAttribute("glueUnloadOffDelay", glueUnloadOffDelay);
+				Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
 
+				
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueServerIP = glueServerIP;
@@ -466,6 +478,8 @@
 				so.data.whitePaperDelay=whitePaperDelay;
 				so.data.bookEjectionDelay=bookEjectionDelay;
 				so.data.finalSqueezingTime=finalSqueezingTime;
+				so.data.glueUnloadOffDelay=glueUnloadOffDelay;
+				so.data.glueUnloadOnDelay=glueUnloadOnDelay;
 
 				so.flush();  
 			}
@@ -651,83 +665,96 @@
 							<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
 						</s:HGroup>
 					</s:VGroup>
-					
-					<s:VGroup gap="5" width="100%" paddingLeft="20" 
-							  visible="{glueType==1}" includeInLayout="{glueType==1}">
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Компьютер IP:"/>
-							<s:TextInput id="tiPCIP" text="@{glueServerIP}"/>
-							<s:Label text="порт:"/>
-							<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
-											  value="@{glueServerPort}"/>
-						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Контролер  IP:"/>
-							<s:TextInput id="tiGlueIP" text="@{glueClientIP}"/>
-							<s:Label text="порт:"/>
-							<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
-											  value="@{glueClientPort}"/>
-						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Подача листа:"/>
-							<s:CheckBox selected="@{glueHasFeeder}"/>
-						</s:HGroup>
-						
-						<s:HGroup gap="3" verticalAlign="baseline">
-							<s:Label text="Таймеры боковых упоров (мс)."/>
-							<s:Spacer width="3"/>
-							<s:Label text="Выключения:"/>
-							<s:NumericStepper id="nsSide_Stop_Off_delay" minimum="10" maximum="9000" snapInterval="10"
-											  value="@{glueSideStopOffDelay}"/>
-							<s:Spacer width="3"/>
-							<s:Label text="Включения:"/>
-							<s:NumericStepper id="nsSide_Stop_On_delay" minimum="10" maximum="10000" snapInterval="10"
-											  value="@{glueSideStopOnDelay}"/>
+					<s:Scroller width="600" height="295" visible="{glueType==1}" includeInLayout="{glueType==1}" >
+						<s:VGroup gap="5" width="100%" paddingLeft="20" 
+								  >
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Компьютер IP:"/>
+								<s:TextInput id="tiPCIP" text="@{glueServerIP}"/>
+								<s:Label text="порт:"/>
+								<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
+												  value="@{glueServerPort}"/>
+							</s:HGroup>
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Контролер  IP:"/>
+								<s:TextInput id="tiGlueIP" text="@{glueClientIP}"/>
+								<s:Label text="порт:"/>
+								<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
+												  value="@{glueClientPort}"/>
+							</s:HGroup>
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Подача листа:"/>
+								<s:CheckBox selected="@{glueHasFeeder}"/>
+							</s:HGroup>
 							
-						</s:HGroup>
-						
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Регулирование уровня клея насосом:"/>
-							<s:CheckBox selected="@{pumpEnable}"/>
-							<s:Label text="Сообщение об отсутствии клея:"/>
-							<s:CheckBox selected="@{glueAlarm}"/>
-						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Время работы насоса (мс):"/>
-							<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
-											  value="@{pumpWorkTime}" />
-						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Время ожидания 'чистого' сигнала (фильтр) (мс):"/>
-							<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
-											  value="@{pumpSensFilterTime}" />
-						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Блокировка срабатывания датчика листа (мс):"/>
-							<s:NumericStepper id="nsRepeatedSignalGap" minimum="0" maximum="100000" snapInterval="10"
-											  value="{repeatedSignalGap}"  change="nsRepeatedSignalGap_changeHandler(event)"/>
-						</s:HGroup>
-
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Время задержки 'белого листа' (мс):"/>
-							<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
-											  toolTip="Время задержки после прихода сигнала на датчик 'белого листа'"
-											  value="@{whitePaperDelay}"/>
-						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Время задержки открытия бункера (мс):"/>
-							<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
-											  toolTip="Время задержки перед открытием бункера (после прохода датчика 'запрессовки'"
-											  value="@{bookEjectionDelay}"/>
-						</s:HGroup>
-						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Время допрессовки  прижимной плитой (мс):"/>
-							<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
-											  toolTip="Время допрессовки  прижимной плитой после прохода датчика 'запрессовки'"
-											  value="@{finalSqueezingTime}"/>
-						</s:HGroup>
-					
-					</s:VGroup>
+							<s:HGroup gap="3" verticalAlign="baseline">
+								<s:Label text="Таймеры боковых упоров (мс)."/>
+								<s:Spacer width="3"/>
+								<s:Label text="Выключения:"/>
+								<s:NumericStepper id="nsSide_Stop_Off_delay" minimum="10" maximum="9000" snapInterval="10"
+												  value="@{glueSideStopOffDelay}"/>
+								<s:Spacer width="3"/>
+								<s:Label text="Включения:"/>
+								<s:NumericStepper id="nsSide_Stop_On_delay" minimum="10" maximum="10000" snapInterval="10"
+												  value="@{glueSideStopOnDelay}"/>
+								
+							</s:HGroup>
+							
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Регулирование уровня клея насосом:"/>
+								<s:CheckBox selected="@{pumpEnable}"/>
+								<s:Label text="Сообщение об отсутствии клея:"/>
+								<s:CheckBox selected="@{glueAlarm}"/>
+							</s:HGroup>
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Время работы насоса (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
+												  value="@{pumpWorkTime}" />
+							</s:HGroup>
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Время ожидания 'чистого' сигнала (фильтр) (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
+												  value="@{pumpSensFilterTime}" />
+							</s:HGroup>
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Блокировка срабатывания датчика листа (мс):"/>
+								<s:NumericStepper id="nsRepeatedSignalGap" minimum="0" maximum="100000" snapInterval="10"
+												  value="{repeatedSignalGap}"  change="nsRepeatedSignalGap_changeHandler(event)"/>
+							</s:HGroup>
+							
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Время задержки 'белого листа' (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  toolTip="Время задержки после прихода сигнала на датчик 'белого листа'"
+												  value="@{whitePaperDelay}"/>
+							</s:HGroup>
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Время задержки открытия бункера (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  toolTip="Время задержки перед открытием бункера (после прохода датчика 'запрессовки'"
+												  value="@{bookEjectionDelay}"/>
+							</s:HGroup>
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Время допрессовки  прижимной плитой (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  toolTip="Время допрессовки  прижимной плитой после прохода датчика 'запрессовки'"
+												  value="@{finalSqueezingTime}"/>
+							</s:HGroup>
+							
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Таймер выключения бункера выгрузки (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  value="@{glueUnloadOffDelay}"/>
+							</s:HGroup>
+							
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Таймер включения бункера выгрузки (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  value="@{glueUnloadOnDelay}"/>
+							</s:HGroup>
+							
+						</s:VGroup>
+					</s:Scroller>
 
 				</s:VGroup>
 			</s:NavigatorContent>

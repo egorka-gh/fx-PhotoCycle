@@ -154,6 +154,10 @@ package com.photodispatcher.service.barcode{
 				log('ignore ' +msg);
 				return;
 			}
+			if(msg==MSG_REAM_EMPTY_OLD){
+				log('Датчик стопы (старая версия)');
+				return;
+			}
 			
 			//check message
 			var chanelState:int=-1;

@@ -139,6 +139,10 @@ package com.photodispatcher.tech{
 			if (barcodeReaders){
 				for each(barReader in barcodeReaders) barReader.stop();
 			}
+			
+			if(glueHandler) glueHandler.destroy();
+			glueHandler=null;
+			
 			barcodeReaders=null;
 			feederController=null;
 			register=null;
@@ -294,6 +298,8 @@ package com.photodispatcher.tech{
 		override public function start():void{
 			if(!serialProxy) return;
 			if(logger) logger.clear();
+			
+			if(feederReamState==FeederController.REAM_STATE_COUNTDOWN) _feederReamState=FeederController.REAM_STATE_UNKNOWN;
 
 			log('Старт');
 			if(!serialProxy.isStarted){
@@ -394,7 +400,7 @@ package com.photodispatcher.tech{
 		override protected function startDevices():void{
 			//create devs
 
-			if(!glueHandler || !isPaused) createGlueHandler();
+			if(!glueHandler || (glueType==0 && !isPaused)) createGlueHandler();
 
 			if(!glueHandler.hasFeeder){
 				var proxy:Socket2Com=serialProxy.getProxy(ComInfo.COM_TYPE_CONTROLLER);

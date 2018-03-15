@@ -42,6 +42,8 @@ package com.photodispatcher.tech{
 		public var whitePaperDelay:int=0;
 		public var bookEjectionDelay:int=0;
 		public var finalSqueezingTime:int=0;
+		public var glueUnloadOffDelay:int=0;
+		public var glueUnloadOnDelay:int=0;
 
 
 		private var _controller:GlueMBController;
@@ -92,7 +94,8 @@ package com.photodispatcher.tech{
 			controller.whitePaperDelay=whitePaperDelay;
 			controller.bookEjectionDelay=bookEjectionDelay;
 			controller.finalSqueezingTime=finalSqueezingTime;
-
+			controller.glueUnloadOffDelay=glueUnloadOffDelay;
+			controller.glueUnloadOnDelay=glueUnloadOnDelay;
 
 			controller.pumpSensFilterTime=pumpSensFilterTime;
 			controller.pumpWorkTime=pumpWorkTime;
@@ -113,9 +116,11 @@ package com.photodispatcher.tech{
 		override public function start(startDelay:int=0):Boolean{
 			if(isRunning) return true;
 			if(!checkPrepared(true)) return false;
+			_feederEmpty=false;
 			log('Старт');
 			log('Старт',2);
-			log('Ожидаю подключение контролера',2);
+			if(!controller.connected)
+				log('Ожидаю подключение контролера',2);
 			//reset state
 			bookQueue=new ArrayCollection();
 			stopBook=null;
@@ -252,23 +257,29 @@ package com.photodispatcher.tech{
 						logErr('Сработало Реле безопасности');
 						break;
 					case GlueMBController.FEEDER_ALARM_OFF:
+						log('Реле безопасности сброшено',2);
 						break;
 					case GlueMBController.FEEDER_SHEET_IN:
 						chanelState=FeederController.CHANEL_STATE_SINGLE_SHEET;
+						log('Подача: Лист пошел',2);
 						break;
 					case GlueMBController.FEEDER_SHEET_PASS:
 						chanelState=FeederController.CHANEL_STATE_SHEET_PASS;
+						log('Подача: Лист вышел',2);
 						break;
 					case GlueMBController.FEEDER_REAM_FILLED:
 						chanelState=FeederController.CHANEL_STATE_REAM_FILLED;
 						_feederEmpty=false;
+						log('Подача: Датчик стопы - заполнена',2);
 						break;
 					case GlueMBController.FEEDER_REAM_EMPTY:
 						chanelState=FeederController.CHANEL_STATE_REAM_EMPTY;
 						_feederEmpty=true;
+						log('Подача: Датчик стопы - пустая',2);
 						break;
 					case GlueMBController.GLUE_LEVEL_ALARM:
 						chanelState=GlueMBController.GLUE_LEVEL_ALARM;
+						log('Низкий уровень клея',2);
 						break;
 				}
 				if(chanelState!=-1) dispatchEvent(new ControllerMesageEvent(0,chanelState));
@@ -296,6 +307,8 @@ package com.photodispatcher.tech{
 		override protected function pushBook():void{
 		}
 		
-		
+		override public function destroy():void{
+			controller=null;
+		}
 	}
 }

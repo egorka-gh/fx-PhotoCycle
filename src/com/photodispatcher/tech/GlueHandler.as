@@ -394,5 +394,8 @@ package com.photodispatcher.tech{
 			if(logger) logger.log('Контролер склейки. '+msg, level);
 		}
 
+		public function destroy():void{
+			
+		}
 	}
 }

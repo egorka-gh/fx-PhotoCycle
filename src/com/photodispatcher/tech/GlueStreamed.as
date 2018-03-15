@@ -372,7 +372,10 @@ package com.photodispatcher.tech{
 				if(Context.getAttribute('whitePaperDelay')) gh.whitePaperDelay=Context.getAttribute('whitePaperDelay');
 				if(Context.getAttribute('bookEjectionDelay')) gh.bookEjectionDelay=Context.getAttribute('bookEjectionDelay');
 				if(Context.getAttribute('finalSqueezingTime')) gh.finalSqueezingTime=Context.getAttribute('finalSqueezingTime');
-				
+
+				if(Context.getAttribute('glueUnloadOffDelay')) gh.glueUnloadOffDelay=Context.getAttribute('glueUnloadOffDelay');
+				if(Context.getAttribute('glueUnloadOnDelay')) gh.glueUnloadOnDelay=Context.getAttribute('glueUnloadOnDelay');
+
 				gh.init(null);
 				glueHandler=gh;
 				
