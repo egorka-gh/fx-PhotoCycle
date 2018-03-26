@@ -375,6 +375,7 @@ package com.photodispatcher.tech{
 
 				if(Context.getAttribute('glueUnloadOffDelay')) gh.glueUnloadOffDelay=Context.getAttribute('glueUnloadOffDelay');
 				if(Context.getAttribute('glueUnloadOnDelay')) gh.glueUnloadOnDelay=Context.getAttribute('glueUnloadOnDelay');
+				if(Context.getAttribute('gluePlateReturnDelay')) gh.gluePlateReturnDelay=Context.getAttribute('gluePlateReturnDelay');
 
 				gh.init(null);
 				glueHandler=gh;

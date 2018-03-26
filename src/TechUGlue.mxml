@@ -184,6 +184,8 @@
 					finalSqueezingTime=so.data.finalSqueezingTime;
 					glueUnloadOffDelay=so.data.glueUnloadOffDelay;
 					glueUnloadOnDelay=so.data.glueUnloadOnDelay;
+					gluePlateReturnDelay=so.data.gluePlateReturnDelay;
+					
 
 				}
 				//Context.setAttribute("feedBookDelay", feedBookDelay);
@@ -225,6 +227,8 @@
 					Context.setAttribute("finalSqueezingTime", finalSqueezingTime);
 					Context.setAttribute("glueUnloadOffDelay", glueUnloadOffDelay);
 					Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
+					Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
+					
 
 				}
 
@@ -439,6 +443,8 @@
 			public var glueUnloadOffDelay:int=0;
 			[Bindable]
 			public var glueUnloadOnDelay:int=0;
+			[Bindable]
+			public var gluePlateReturnDelay:int=0;
 
 			
 			protected function saveGlueEth():void{
@@ -459,8 +465,7 @@
 				Context.setAttribute("finalSqueezingTime", finalSqueezingTime);
 				Context.setAttribute("glueUnloadOffDelay", glueUnloadOffDelay);
 				Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
-
-				
+				Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueServerIP = glueServerIP;
@@ -480,6 +485,7 @@
 				so.data.finalSqueezingTime=finalSqueezingTime;
 				so.data.glueUnloadOffDelay=glueUnloadOffDelay;
 				so.data.glueUnloadOnDelay=glueUnloadOnDelay;
+				so.data.gluePlateReturnDelay=gluePlateReturnDelay;
 
 				so.flush();  
 			}
@@ -751,6 +757,12 @@
 								<s:Label text="Таймер включения бункера выгрузки (мс):"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{glueUnloadOnDelay}"/>
+							</s:HGroup>
+
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Таймер дожима плиты на последнем листе (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  value="@{gluePlateReturnDelay}"/>
 							</s:HGroup>
 							
 						</s:VGroup>

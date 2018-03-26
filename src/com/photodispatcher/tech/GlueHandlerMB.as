@@ -44,7 +44,7 @@ package com.photodispatcher.tech{
 		public var finalSqueezingTime:int=0;
 		public var glueUnloadOffDelay:int=0;
 		public var glueUnloadOnDelay:int=0;
-
+		public var gluePlateReturnDelay:int=0;
 
 		private var _controller:GlueMBController;
 		[Bindable]
@@ -78,6 +78,7 @@ package com.photodispatcher.tech{
 				controller=null;
 				return;
 			}
+			
 			if(controller && controller.connected){
 				controller.stop();
 			}else{
@@ -96,6 +97,7 @@ package com.photodispatcher.tech{
 			controller.finalSqueezingTime=finalSqueezingTime;
 			controller.glueUnloadOffDelay=glueUnloadOffDelay;
 			controller.glueUnloadOnDelay=glueUnloadOnDelay;
+			controller.gluePlateReturnDelay=gluePlateReturnDelay;
 
 			controller.pumpSensFilterTime=pumpSensFilterTime;
 			controller.pumpWorkTime=pumpWorkTime;
@@ -165,10 +167,10 @@ package com.photodispatcher.tech{
 					currentBook;
 				}
 			}
-			var msg:String='Следующий лист последний ';
+			var msg:String='Принудительный выброс блока ';
 			if(tb) msg=msg+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal;
 			log(msg);
-			controller.pushBlock();
+			controller.pushBlock(); // .pushBlockAfterSheet();
 		}
 		
 		override protected function checkStopBook():Boolean{
@@ -224,7 +226,7 @@ package com.photodispatcher.tech{
 						}
 						if(tb.sheetsDone==(tb.sheetsTotal-1)){
 							log('Следующий лист последний '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
-							controller.pushBlock();
+							controller.pushBlockAfterSheet();
 						}
 						if(tb.sheetsDone==tb.sheetsTotal){
 							//book complited

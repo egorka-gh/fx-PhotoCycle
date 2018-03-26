@@ -92,6 +92,7 @@ package com.photodispatcher.tech{
 				l.addEventListener(ErrorEvent.ERROR, onLatchTimeout);
 				l.addEventListener(Event.COMPLETE, onLatchRelease);
 			}
+			if(!glueHandler && glueType!=0) createGlueHandler();
 			checkPrepared();
 		}
 
@@ -985,7 +986,7 @@ package com.photodispatcher.tech{
 				}
 			}else if(layerOutLatch.isOn && event.state==FeederController.CHANEL_STATE_SHEET_PASS){
 				//sheet out
-				currBarcode=null;//close if added scaner over conveyer
+				//currBarcode=null;//close if added scaner over conveyer
 				layerOutLatch.forward();
 				//if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
 				/*
@@ -1076,6 +1077,7 @@ package com.photodispatcher.tech{
 		}
 		private function onFeedDelayTimer(evt:TimerEvent):void{
 			//layerOutLatch.forward();
+			currBarcode=null;
 			nextStep();
 		}
 
@@ -1083,15 +1085,14 @@ package com.photodispatcher.tech{
 			var barcode:String=event.barcode;
 			log('barcod: '+barcode);
 			if(!isRunning || isPaused) return;
+
+			if(currBarcode && barcode==currBarcode){ //doublescan or more then 1 barreader
+				return; 
+			}
 			if(!barLatch.isOn){
 				//chek doublescan while barcode not covered vs next layer
 				if(barcode!=currBarcode) pause('Не ожидаемое срабатывание сканера ШК, код:' +barcode);
 				return;
-			}
-			//barLatch.forward();
-			if(barcode==currBarcode){ //doublescan or more then 1 barreader
-				//barLatch.forward();
-				return; 
 			}
 			currBarcode=barcode;
 			//parce barcode

@@ -67,6 +67,8 @@ package com.photodispatcher.service.modbus.controller{
 
 		D19(адрес регистра 0x0013) Unload_Off_delay Таймер выключения бункера выгрузки (формат записи BCD, 1 = 10ms) 
 		D20(адрес регистра 0x0014) Unload_On_delay Таймер включения бункера выгрузки (формат записи BCD, 1 = 10ms)
+		D21(адрес регистра 0x0015) Таймер дожимаплиты на последнем листе (формат записи BCD, 1 = 10ms)
+		D22(адрес регистра 0x0016) Экстренный выброс блока (послать 1)
 		*/
 		
 		public static const CHANEL_CONTROLLER_MESSAGE:int			=0;
@@ -113,6 +115,8 @@ package com.photodispatcher.service.modbus.controller{
 
 		public static const CONTROLLER_REGISTER_UNLOAD_OFF_DELAY:int			=19;
 		public static const CONTROLLER_REGISTER_UNLOAD_ON_DELAY:int				=20;
+		public static const CONTROLLER_REGISTER_PLATE_RETURN_DELAY:int			=21;
+		public static const CONTROLLER_REGISTER_BLOCK_OUT:int					=22;
 		
 		public function GlueMBController(){
 			super();
@@ -131,6 +135,7 @@ package com.photodispatcher.service.modbus.controller{
 		public var finalSqueezingTime:int=0;
 		public var glueUnloadOffDelay:int=0;
 		public var glueUnloadOnDelay:int=0;
+		public var gluePlateReturnDelay:int=0;
 
 		public var pumpSensFilterTime:int;
 		public var pumpWorkTime:int;
@@ -305,11 +310,29 @@ package com.photodispatcher.service.modbus.controller{
 				logErr('Контроллер не подключен');
 			}
 		}
+
+		public function setPlateReturnDelay(msec:int):void{
+			if(!hasFeeder) return;
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_PLATE_RETURN_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
 		
-		public function pushBlock():void{
+		public function pushBlockAfterSheet():void{
 			//write Final_paper_D
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_FINAL_PAPER,1);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function pushBlock():void{
+			//write Final_paper_D
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_BLOCK_OUT,1);
 			}else{
 				logErr('Контроллер не подключен');
 			}
@@ -333,6 +356,7 @@ package com.photodispatcher.service.modbus.controller{
 					setFinalSqueezingTime(finalSqueezingTime);
 					setUnloadOffDelay(glueUnloadOffDelay);
 					setUnloadOnDelay(glueUnloadOnDelay);
+					setPlateReturnDelay(gluePlateReturnDelay);
 				}
 			}
 		}

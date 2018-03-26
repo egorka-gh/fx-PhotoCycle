@@ -160,7 +160,7 @@
 			}
 			
 			protected function btFP_clickHandler(event:MouseEvent):void{
-				if(glueHandler) glueHandler.controller.pushBlock();
+				if(glueHandler) glueHandler.controller.pushBlockAfterSheet();
 			}
 			
 			protected function btToBcd_clickHandler(event:MouseEvent):void{
