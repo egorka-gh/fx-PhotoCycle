@@ -40,30 +40,46 @@ package com.photodispatcher.service.glue{
 			if(_glue){
 				_glue.removeEventListener(ErrorEvent.ERROR, onGlueErr);
 				_glue.removeEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+				_glue.removeEventListener(Event.CONNECT, onGlueConnect);
 			}
 			_glue = value;
-			_glue.addEventListener(ErrorEvent.ERROR, onGlueErr);
-			_glue.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
-
+			if(_glue){
+				_glue.addEventListener(ErrorEvent.ERROR, onGlueErr);
+				_glue.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+				_glue.addEventListener(Event.CONNECT, onGlueConnect);
+			}
 		}
 
 		protected function onGlueErr(event:ErrorEvent):void{
+			currStepCaption='Ошибка';
 			if(isStarted && !isPaused){
 				log('Остановка выполнения программы');
 				isPaused=true;
 			}
 		}
 
+		protected function onGlueConnect(event:Event):void{
+			currStepCaption='Подключен';
+		}
+
 		
 		public var currStep:int;
+		public var currStepCaption:String
 		public var isStarted:Boolean;
 		public var isPaused:Boolean;
 		public var debugMode:Boolean;
 		
 		public var loger:ISimpleLogger;
 		
+		public function connect():void{
+			if(!glue) return;
+			if(glue.isStarted) return;
+			currStepCaption='Подключение';
+			glue.start();
+		}
+		
 		public function start():void{
-			if(!glue && !glue.isStarted) return;
+			if(!glue || !glue.isStarted) return;
 			if(!program || !program.steps || program.steps.length<2) return;
 			if(isStarted && !isPaused) return;
 			if(!isPaused){
@@ -82,7 +98,7 @@ package com.photodispatcher.service.glue{
 			if(!isStarted || isPaused) return;
 			isPaused=true;
 			log('Пауза программы');
-
+			currStepCaption='Пауза';
 		}
 
 		/*public function resume():void{
@@ -93,6 +109,7 @@ package com.photodispatcher.service.glue{
 		
 		public function stop():void{
 			log('Остановка программы');
+			currStepCaption='Стоп';
 			isStarted=false;
 			isPaused=false;
 		}
@@ -146,40 +163,8 @@ package com.photodispatcher.service.glue{
 				lastMessages=[];
 				glue.run_GetButtons();
 				glue.run_GetStatus();
-				/*
-				var latch:AsyncLatch=glue.run_GetButtons();
-				latch.join(glue.run_GetStatus());
-				latch.addEventListener(Event.COMPLETE, onMessagesComplite);
-				latch.start();
-				*/
 			}
 		}
-		
-		/*
-		private function onMessagesComplite(evt:Event):void{
-			var latch:AsyncLatch=evt.target as AsyncLatch;
-			if(latch){
-				latch.removeEventListener(Event.COMPLETE, onMessagesComplite);
-				if(!isStarted) return;
-				if(latch.hasError){
-					latch.stop();
-					if(isStarted && !isPaused){
-						log('Остановка выполнения программы');
-						isPaused=true;
-						return;
-					}
-				}
-			}
-			if(checkMessages()){
-				//waite complite 
-				nextStep();
-			}else{
-				//keep waite
-				runStep();
-			}
-		}
-		*/
-		
 
 		private function checkMessages():Boolean{
 			var step:GlueProgramStep=program.steps.getItemAt(currStep) as GlueProgramStep;
@@ -241,6 +226,8 @@ package com.photodispatcher.service.glue{
 			var step:GlueProgramStep=program.steps.getItemAt(currStep) as GlueProgramStep;
 			if(step) log('Завершено '+step.caption);
 			currStep = (currStep+1) % program.steps.length;
+			step=program.steps.getItemAt(currStep) as GlueProgramStep;
+			if(step) currStepCaption=step.caption;
 			runStep();
 		}
 

@@ -132,10 +132,39 @@ package com.photodispatcher.service.glue{
 		[Bindable]
 		public var isStarted:Boolean;
 		
-		public function start(hostIP:String,proxy_port:int):void{
+		private var _cfg:GlueProxyCfg;
+		[Bindable]
+		public function get cfg():GlueProxyCfg
+		{
+			return _cfg;
+		}
+		public function set cfg(value:GlueProxyCfg):void
+		{
+			_cfg = value;
+			if(_cfg) label=cfg.label;
+		}
+
+
+		private var _label:String;
+		[Bindable]
+		public function get label():String
+		{
+			return _label;
+		}
+		public function set label(value:String):void
+		{
+			_label = value;
+		}
+
+
+		public function start(hostIP:String=null,proxy_port:int=8000):void{
 			isStarted=false;
 			cmd_stack=[];
-			connect(hostIP,proxy_port);
+			if(!hostIP && cfg){
+				connect(cfg.ip,cfg.port);
+			}else{
+				connect(hostIP,proxy_port);
+			}
 		}
 
 		public function stop():void{

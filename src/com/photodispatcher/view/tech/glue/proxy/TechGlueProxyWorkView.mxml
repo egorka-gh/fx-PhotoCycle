@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*"
+		 creationComplete="{init()}"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.GlueMessageEvent;
+			import com.photodispatcher.service.glue.GlueInfo;
+			import com.photodispatcher.service.glue.GlueMessage;
+			import com.photodispatcher.service.glue.GlueMessageBlock;
+			import com.photodispatcher.service.glue.GlueMessageItem;
+			import com.photodispatcher.service.glue.GlueProgram;
+			import com.photodispatcher.service.glue.GlueProgramHandler;
+			import com.photodispatcher.service.glue.GlueProgramStep;
+			import com.photodispatcher.service.glue.GlueProxy;
+			import com.photodispatcher.service.glue.GlueProxyCfg;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+		
+			[Bindable]
+			protected var glueHandlersAC:ArrayCollection;
+
+			protected function init():void{
+			}
+
+			public function start(proxyCfgs:ArrayCollection):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				var glueProgramm:GlueProgram= GlueProgram.fromRaw(so.data.programm);
+
+				glueHandlersAC= new ArrayCollection();
+				var gd: GlueProxy;
+				var gh:GlueProgramHandler;
+				
+				if(proxyCfgs){
+					for each (var it:GlueProxyCfg in proxyCfgs){
+						if(it){
+							gd=new GlueProxy();
+							gd.cfg=it;
+							gh= new GlueProgramHandler();
+							gh.glue=gd;
+							gh.program=glueProgramm;
+							glueHandlersAC.addItem(gh);
+						}
+					}
+				}
+			}
+			
+			public function stop():void{
+				var gh:GlueProgramHandler;
+				for each (gh in glueHandlersAC){
+					if(gh){
+						gh.stop();
+						if(gh.glue) gh.glue.stop();
+					}
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		
+		
+	</fx:Declarations>
+
+	<s:Scroller top="5" left="5" right="5" bottom="5">
+		<s:DataGroup  width="100%"
+			dataProvider="{glueHandlersAC}"
+			itemRenderer="com.photodispatcher.view.tech.glue.proxy.GlueHandlerRenderer"
+			>
+			<s:layout>
+				 <s:TileLayout/>
+			</s:layout>
+		</s:DataGroup>
+	</s:Scroller>
+	
+</s:Group>

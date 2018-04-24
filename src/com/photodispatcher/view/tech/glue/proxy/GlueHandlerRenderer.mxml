@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" 
+				autoDrawBackground="true">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.service.glue.GlueProgramHandler;
+			
+			[Bindable]
+			protected var handler:GlueProgramHandler;
+			
+			override public function set data(value:Object):void{
+				super.data = value;
+				handler= value as GlueProgramHandler;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="{handler.isStarted?0xbbeebb:0xeeeeee}"/>
+		</s:fill>
+		<s:stroke>
+			<s:SolidColorStroke color="0" weight="1"/>
+		</s:stroke>
+	</s:Rect>
+
+	<s:HGroup gap="5" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" enabled="{handler!=null}">
+		<s:VGroup width="200" gap="3">
+			<s:Label width="100%" text="{handler.glue.label}" maxDisplayedLines="1" fontWeight="bold"/>
+			<s:Label width="100%" text="{handler.currStepCaption}" maxDisplayedLines="1"/>
+		</s:VGroup>
+		<s:Button label="Подключить" height="100%" click="{handler.connect()}"/>
+		<s:HGroup gap="5" height="100%" enabled="{handler.glue.isStarted}">
+			<s:Button label="Старт" height="100%" enabled="{!handler.isStarted || handler.isPaused}" click="{handler.start()}"/>
+			<s:Button label="Стоп" height="100%" click="{handler.stop()}"/>
+		</s:HGroup>
+	</s:HGroup>
+	
+</s:ItemRenderer>
