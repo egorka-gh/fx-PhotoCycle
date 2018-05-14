@@ -1004,48 +1004,56 @@ package com.photodispatcher.tech{
 			//feed messages
 			//reset refeed
 			refeed=false;
-			if(layerInLatch.isOn && (event.state==FeederController.CHANEL_STATE_SINGLE_SHEET || event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET)){
-				//layerIn msg					
-				var waiteState:int=FeederController.CHANEL_STATE_SINGLE_SHEET;
-				//var wrongState:int=FeederController.CHANEL_STATE_DOUBLE_SHEET;
-				if(currentLayer==Layer.LAYER_SHEET){
-					waiteState=FeederController.CHANEL_STATE_DOUBLE_SHEET;
-					//wrongState=FeederController.CHANEL_STATE_SINGLE_SHEET;
-				}
-				
-				if((event.state==waiteState) || (doubleSheetOff && currentLayer==Layer.LAYER_SHEET && event.state==FeederController.CHANEL_STATE_SINGLE_SHEET)){
-					//start OutLatch
-					layerOutLatch.setOn();
-					//layer in
-					//currentTray=-1;
-					layerInLatch.forward();
-				}else{ //if(event.state==wrongState){
-					//wrong state
-					pause('Лоток подачи: '+FeederController.chanelStateName(event.state));
-				}
-			}else if(layerOutLatch.isOn && event.state==FeederController.CHANEL_STATE_SHEET_PASS){
-				//sheet out
-				//currBarcode=null;//close if added scaner over conveyer
-				layerOutLatch.forward();
-				//if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
-				/*
-				if(feedDelay<100){
+			
+			
+			if(event.state==FeederController.CHANEL_STATE_SINGLE_SHEET || event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET){
+				if(layerInLatch.isOn){
+					//layerIn msg					
+					var waiteState:int=FeederController.CHANEL_STATE_SINGLE_SHEET;
+					//var wrongState:int=FeederController.CHANEL_STATE_DOUBLE_SHEET;
+					if(currentLayer==Layer.LAYER_SHEET){
+						waiteState=FeederController.CHANEL_STATE_DOUBLE_SHEET;
+						//wrongState=FeederController.CHANEL_STATE_SINGLE_SHEET;
+					}
+					
+					if((event.state==waiteState) || (doubleSheetOff && currentLayer==Layer.LAYER_SHEET && event.state==FeederController.CHANEL_STATE_SINGLE_SHEET)){
+						//start OutLatch
+						layerOutLatch.setOn();
+						//layer in
+						//currentTray=-1;
+						layerInLatch.forward();
+					}else{ //if(event.state==wrongState){
+						//wrong state
+						pause('Лоток подачи: '+FeederController.chanelStateName(event.state));
+					}
+				}else if(layerOutLatch.isOn && event.state==FeederController.CHANEL_STATE_SHEET_PASS){
+					//sheet out
+					//currBarcode=null;//close if added scaner over conveyer
 					layerOutLatch.forward();
-				}else{
+					//if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
+					/*
+					if(feedDelay<100){
+					layerOutLatch.forward();
+					}else{
 					startFeedDelay();
+					}
+					*/
+				}else{
+					//unexpected msg
+					pause('Лоток подачи. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
 				}
-				*/
-			}else{
-				//unexpected msg
-				pause('Лоток подачи. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
 			}
 			
 			//book out message
-			if(bookOutLatch.isOn && event.state==GlueMBController.CONTROLLER_BOOK_OUT ){
-				if(currentGroup==COMMAND_GROUP_BOOK_SHEET){
-					bookOutLatch.forward();
+			if(event.state==GlueMBController.CONTROLLER_BOOK_OUT ){
+				if(bookOutLatch.isOn){
+					if(currentGroup==COMMAND_GROUP_BOOK_SHEET){
+						bookOutLatch.forward();
+					}else{
+						bookOutLatch.reset();
+					}
 				}else{
-					bookOutLatch.reset();
+					log('Выгрузка книги. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
 				}
 			}
 			
