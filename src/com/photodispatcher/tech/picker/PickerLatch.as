@@ -15,6 +15,7 @@ package com.photodispatcher.tech.picker{
 		public static const TYPE_REGISTER:int		=4;
 		public static const TYPE_BD:int				=5;
 		public static const TYPE_PRESSOFF:int		=6;
+		public static const TYPE_BOOK_OUT:int		=7;
 
 		
 		[Bindable]

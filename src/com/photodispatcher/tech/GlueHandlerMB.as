@@ -201,6 +201,7 @@ package com.photodispatcher.tech{
 		override protected function onControllerMsg(event:ControllerMesageEvent):void{
 			if(!isRunning ) return;
 			
+			//messages chanel
 			if(event.chanel == GlueMBController.CHANEL_CONTROLLER_MESSAGE){
 				//event.state - message
 				if(event.state==GlueMBController.CONTROLLER_PRESS_PAPER_IN){
@@ -245,8 +246,19 @@ package com.photodispatcher.tech{
 						return;
 					}
 				}
-				if(!hasFeeder) return;
+
 				var chanelState:int=-1;
+				//common messages
+				if(event.state==GlueMBController.CONTROLLER_BOOK_OUT){
+						chanelState=GlueMBController.CONTROLLER_BOOK_OUT;
+						log('Склейка: Книга выгружена',2);
+				}
+
+				if(chanelState!=-1) dispatchEvent(new ControllerMesageEvent(0,chanelState));
+				
+				if(!hasFeeder) return;
+				//Feeder messages
+				chanelState=-1;
 				switch(event.state){
 					//posible bug - GlueMBController && FeederController chanel_state colision
 					case GlueMBController.CONTROLLER_NEW_SHEET_ERROR1:
@@ -286,7 +298,10 @@ package com.photodispatcher.tech{
 				}
 				if(chanelState!=-1) dispatchEvent(new ControllerMesageEvent(0,chanelState));
 				
-			}if(event.chanel == GlueMBController.CHANEL_CONTROLLER_COMMAND_ACL){
+			}
+			
+			//command chanel
+			if(event.chanel == GlueMBController.CHANEL_CONTROLLER_COMMAND_ACL){
 				//command acl
 				//event.state - command register
 				if(!hasFeeder) return;

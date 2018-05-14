@@ -70,6 +70,10 @@
 			public var altBarcode:Boolean;
 			[Bindable]
 			public var feedOn:Boolean=false;
+			[Bindable]
+			public var checkBookOut:Boolean=false;
+			
+			//checkBookOut=Context.getAttribute("checkBookOut");
 
 			[Bindable]
 			public var engineOnStartOn:Boolean=false;
@@ -139,6 +143,7 @@
 					pauseFeederCountdown=so.data.pauseFeederCountdown;
 					altBarcode=so.data.altBarcode;
 					feedOn=so.data.feedOn;
+					checkBookOut=so.data.checkBookOut;
 					dataBaseOff=so.data.dataBaseOff;
 					feedDelay=so.data.feedDelay;
 					if(feedDelay<=0) feedDelay=300;
@@ -228,6 +233,7 @@
 					Context.setAttribute("glueUnloadOffDelay", glueUnloadOffDelay);
 					Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
 					Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
+					Context.setAttribute("checkBookOut", checkBookOut);
 					
 
 				}
@@ -466,6 +472,8 @@
 				Context.setAttribute("glueUnloadOffDelay", glueUnloadOffDelay);
 				Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
 				Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
+				Context.setAttribute("checkBookOut", checkBookOut);
+
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueServerIP = glueServerIP;
@@ -486,6 +494,7 @@
 				so.data.glueUnloadOffDelay=glueUnloadOffDelay;
 				so.data.glueUnloadOnDelay=glueUnloadOnDelay;
 				so.data.gluePlateReturnDelay=gluePlateReturnDelay;
+				so.data.checkBookOut=checkBookOut;
 
 				so.flush();  
 			}
@@ -691,6 +700,10 @@
 							<s:HGroup gap="5" verticalAlign="baseline">
 								<s:Label text="Подача листа:"/>
 								<s:CheckBox selected="@{glueHasFeeder}"/>
+							</s:HGroup>
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Контроль выгрузки книги:"/>
+								<s:CheckBox selected="@{checkBookOut}"/>
 							</s:HGroup>
 							
 							<s:HGroup gap="3" verticalAlign="baseline">

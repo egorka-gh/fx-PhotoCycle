@@ -57,12 +57,14 @@ package com.photodispatcher.tech{
 		protected var aclLatch:PickerLatch;
 		protected var layerInLatch:PickerLatch;
 		protected var layerOutLatch:PickerLatch;
+		protected var bookOutLatch:PickerLatch;
 		protected var barLatch:PickerLatch;
 		protected var registerLatch:PickerLatch;
 		protected var bdLatch:PickerLatch;
 		
 		//protected var feedBookDelay:int=0;
 		private var checkFeederEmpty:Boolean;
+		private var checkBookOut:Boolean;
 		private var pauseFeederCountdown:int=0;
 		private var pauseCountdown:int=0;
 		
@@ -83,10 +85,11 @@ package com.photodispatcher.tech{
 			layerInLatch= new PickerLatch(PickerLatch.TYPE_LAYER_IN, 1,'Фотодатчик Вход','Ожидание листа',2000);
 			barLatch = new PickerLatch(PickerLatch.TYPE_BARCODE, 1,'Сканер','Ожидание штрихкода',layerInLatch.getTimeout()+1000);
 			layerOutLatch= new PickerLatch(PickerLatch.TYPE_LAYER_OUT, 1,'Фотодатчик Выход','Ожидание выхода листа',1000); //1сек
-			registerLatch = new PickerLatch(PickerLatch.TYPE_REGISTER, 1,'Книга','Контроль очередности',200*2);
+			registerLatch = new PickerLatch(PickerLatch.TYPE_REGISTER, 1,'Книга очередность','Контроль очередности',200*2);
+			bookOutLatch= new PickerLatch(PickerLatch.TYPE_BOOK_OUT, 1,'Книга выгрузка','Ожидание выгрузки книги',3000); //1сек
 			bdLatch= new PickerLatch(PickerLatch.TYPE_BD, 1,'База данных','Получение параметров заказа',2*BD_MAX_WAITE); //callDbLate wl pause after BD_MAX_WAITE
 			
-			latches=[aclLatch,layerInLatch,layerOutLatch,barLatch,registerLatch,bdLatch];
+			latches=[aclLatch,layerInLatch,layerOutLatch,barLatch,registerLatch,bookOutLatch,bdLatch];
 			var l:PickerLatch;
 			for each(l in latches){
 				l.addEventListener(ErrorEvent.ERROR, onLatchTimeout);
@@ -318,6 +321,7 @@ package com.photodispatcher.tech{
 			
 			checkFeederEmpty=Context.getAttribute("checkFeederEmpty");
 			pauseFeederCountdown=Context.getAttribute("pauseFeederCountdown");
+			checkBookOut=Context.getAttribute("checkBookOut");
 			
 			feedBookDelays=Context.getAttribute("feedBookDelays");
 			if(!feedBookDelays || feedBookDelays.length==0){
@@ -702,8 +706,9 @@ package com.photodispatcher.tech{
 					}
 					break;
 				case COMMAND_GROUP_BOOK_SHEET:
-					//check completed
-					if(currentGroupStep>=1){
+					if(currentGroupStep==0){
+						feedSheet();
+					}else if(currentGroupStep==1){
 						//sheet feeded
 						
 						//check ream 
@@ -720,6 +725,7 @@ package com.photodispatcher.tech{
 							}
 						}
 						
+						//check order completed
 						if (register && register.isComplete){
 							//order complited
 							//if(logger) logger.clear();
@@ -734,6 +740,7 @@ package com.photodispatcher.tech{
 							sheetCount=0;
 							log('Заказ '+currPgId+' завершен.');
 							currPgId='';
+							
 							if(stopOnComplite){
 								stop();
 								return;
@@ -743,19 +750,43 @@ package com.photodispatcher.tech{
 								pause('Пауза между заказами',false);
 								return;
 							}
+							
+							/*
 							if(startFeedBookDelay(sheetsPerBook)){
 								currentGroupStep=0;
 								return;
 							}
+							*/
+							if(!checkBookOut){
+								//run book out delay
+								currentGroupStep++;
+								nextStep();
+							}else{
+								//waite for book out
+								bookOutLatch.setOn();
+							}
+							return;
 						}
 						
-						//book delay
+						//book complited?
 						if (register && register.currentBookComplited){
+							//reset sheetcount for current book 
 							sheetCount=0;
+							/*
 							if(startFeedBookDelay(register.sheets)){
 								currentGroupStep=0;
 								return;
 							}
+							*/
+							if(!checkBookOut){
+								//run book out delay
+								currentGroupStep++;
+								nextStep();
+							}else{
+								//waite for book out
+								bookOutLatch.setOn();
+							}
+							return;
 						}
 						
 						//cycle feeding
@@ -763,8 +794,13 @@ package com.photodispatcher.tech{
 						//nextStep();
 						startFeedDelay();
 						return;
+					}else if(currentGroupStep>1){
+						//book is out
+						//start book delay or feed sheet
+						currentGroupStep=0;
+						if (register && startFeedBookDelay(register.sheets)) return;
+						startFeedDelay();
 					}
-					feedSheet();
 					break;
 				default:
 					log('Не определена последовательность');
@@ -807,6 +843,8 @@ package com.photodispatcher.tech{
 					//no break to call pause
 				case PickerLatch.TYPE_BD:
 				case PickerLatch.TYPE_REGISTER:
+				case PickerLatch.TYPE_BOOK_OUT:
+					if(l.type==PickerLatch.TYPE_BOOK_OUT && currentGroup==COMMAND_GROUP_BOOK_SHEET) currentGroupStep++; //move step to book delay
 					pause('Таймаут ожидания. '+l.label+':'+l.caption);
 					break;
 				case PickerLatch.TYPE_BARCODE:
@@ -963,6 +1001,7 @@ package com.photodispatcher.tech{
 
 			if(!isRunning || isPaused) return;
 			
+			//feed messages
 			//reset refeed
 			refeed=false;
 			if(layerInLatch.isOn && (event.state==FeederController.CHANEL_STATE_SINGLE_SHEET || event.state==FeederController.CHANEL_STATE_DOUBLE_SHEET)){
@@ -1000,6 +1039,16 @@ package com.photodispatcher.tech{
 				//unexpected msg
 				pause('Лоток подачи. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
 			}
+			
+			//book out message
+			if(bookOutLatch.isOn && event.state==GlueMBController.CONTROLLER_BOOK_OUT ){
+				if(currentGroup==COMMAND_GROUP_BOOK_SHEET){
+					bookOutLatch.forward();
+				}else{
+					bookOutLatch.reset();
+				}
+			}
+			
 		}
 
 		

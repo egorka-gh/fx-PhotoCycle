@@ -39,6 +39,8 @@ package com.photodispatcher.service.modbus.controller{
 		12 - Пришел новый лист, но задняя плита не сошла с датчика исходного положения
 		13 - Пришел новый лист, но передняя плита не в исходном положении
 		14 - Авария насоса. Закончился клей для преедачи на компьютер
+		//2018-05-14
+		19 - датчик выгрузки книги (Книга выгружена)
 		
 		ПК -> ПЛК (6ая функция - запись регистра)
 		D0 (адрес регистра 0x0000) Main_Plate_Forward_Timeout_Time - время таймаута при переходе передней плиты на датчик задней плиты (формат записи BCD (пример 0x0010 = 1 
@@ -90,6 +92,7 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_NEW_SHEET_ERROR1:int	=12;
 		public static const CONTROLLER_NEW_SHEET_ERROR2:int	=13;
 		public static const GLUE_LEVEL_ALARM:int=14; 
+		public static const CONTROLLER_BOOK_OUT:int	=19;
 
 		public static const CONTROLLER_REGISTER_MAIN_PLATE_FORWARD_TIMEOUT:int	=0;
 		public static const CONTROLLER_REGISTER_MAIN_PLATE_REVERSE_TIMEOUT:int	=1;
@@ -385,7 +388,8 @@ package com.photodispatcher.service.modbus.controller{
 				case FEEDER_SHEET_IN:
 				case FEEDER_SHEET_PASS:
 				case FEEDER_REAM_FILLED:
-				case FEEDER_REAM_EMPTY:{
+				case FEEDER_REAM_EMPTY:
+				case CONTROLLER_BOOK_OUT:{
 					//notify handler
 					dispatchEvent(new ControllerMesageEvent(CHANEL_CONTROLLER_MESSAGE,adu.pdu.value));
 					break;
