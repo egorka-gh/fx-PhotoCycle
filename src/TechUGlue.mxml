@@ -23,12 +23,16 @@
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.NetUtil;
 			import com.photodispatcher.util.StrUtil;
+			import com.photodispatcher.view.PasswPopup;
+			
+			import flash.globalization.DateTimeStyle;
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.events.CollectionEvent;
 			import mx.events.CollectionEventKind;
+			import mx.events.FlexEvent;
 			
 			import org.granite.tide.Tide;
 			
@@ -36,6 +40,7 @@
 			import spark.collections.SortField;
 			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
+			import spark.formatters.DateTimeFormatter;
 			
 			[Bindable]
 			private var comReaders:ArrayCollection= new ArrayCollection;
@@ -135,7 +140,8 @@
 				}
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var bookDelays:Array=[];
-				
+				var configPass:String;
+
 				if (so.size>0){
 					reversOrder=so.data.reversOrder; 
 					doubleSheetOff=so.data.doubleSheetOff;
@@ -151,6 +157,7 @@
 					if(feedDelay2<=0) feedDelay2=feedDelay;
 					pushDelay=so.data.bookDelay;
 					if(pushDelay<=0) pushDelay=300;
+					configPass=so.data.configPass;
 					/*
 					feedBookDelay=so.data.feedBookDelay;
 					if(feedBookDelay<=0) feedBookDelay=0;
@@ -191,7 +198,14 @@
 					glueUnloadOnDelay=so.data.glueUnloadOnDelay;
 					gluePlateReturnDelay=so.data.gluePlateReturnDelay;
 					
-
+					statDate=so.data.statDate;
+					if(!statDate){
+						statDate= new Date();
+						so.data.statDate=statDate;
+						so.flush();
+					}
+					statBooks=so.data.statBooks;
+					statSheets=so.data.statSheets;
 				}
 				//Context.setAttribute("feedBookDelay", feedBookDelay);
 				feedBookDelays= new ArrayCollection(bookDelays);
@@ -203,15 +217,36 @@
 				feedBookDelays.sort = numericDataSort;
 				feedBookDelays.refresh();
 				
+				Context.setAttribute('configPass',configPass);
 				Context.setAttribute("feedBookDelays", feedBookDelays);
 				Context.setAttribute("feedDelay2", feedDelay2);
 				Context.setAttribute("repeatedSignalGap", repeatedSignalGap);
 				Context.setAttribute("checkFeederEmpty", checkFeederEmpty);
 				Context.setAttribute("pauseFeederCountdown", pauseFeederCountdown);
 				
+				Context.setAttribute("statDate", statDate);
+				Context.setAttribute("statBooks", statBooks);
+				Context.setAttribute("statSheets", statSheets);
+
 				currentState='config';
 			}
 			
+			[Bindable]
+			public var statString:String='';
+			public function showStat():void{
+				var dt:Date= Context.getAttribute('statDate');
+				var bk:int= Context.getAttribute('statBooks');
+				var sht:int= Context.getAttribute('statSheets');
+				var str:String=' Произведено';
+				if(dt){
+					var fmt:DateTimeFormatter= new DateTimeFormatter();
+					fmt.dateTimePattern='dd.MM.yy HH:mm';
+					str=str +' c ' +fmt.format(dt);
+				}
+				str=str+' Книг:'+bk.toString()+' листов:'+sht.toString();
+				statString=str;
+			}
+
 			
 			private function start():void{
 				if(glueType==1){
@@ -452,6 +487,13 @@
 			[Bindable]
 			public var gluePlateReturnDelay:int=0;
 
+			[Bindable]
+			protected var statDate:Date;
+			[Bindable]
+			protected var statBooks:int=0;
+			[Bindable]
+			protected var statSheets:int=0;
+
 			
 			protected function saveGlueEth():void{
 				
@@ -539,6 +581,77 @@
 				so.flush();  
 			}
 			
+			
+			[Bindable]
+			private var cfgEnabled:Boolean;
+			protected function checkPass():void{
+				var configPass:String=Context.getAttribute('configPass');
+				if(!configPass){
+					cfgEnabled=true;
+					return;
+				}
+				cfgEnabled=false;
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPass);
+				passPop.show(configPass);
+			}
+			protected function onCfgPass(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(passPop) passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					cfgEnabled=true;
+				}
+			}
+
+			protected function state1_enterStateHandler(event:FlexEvent):void
+			{
+				showStat();
+				checkPass();
+			}
+			
+			protected function btSetPass_clickHandler(event:MouseEvent):void{
+				var passPop:PasswPopup= new PasswPopup();
+				passPop.addEventListener(PopUpEvent.CLOSE, onCfgPassSet);
+				passPop.show('',true);
+			}
+			protected function onCfgPassSet(event:PopUpEvent):void{
+				var passPop:PasswPopup=event.target as PasswPopup;
+				if(!passPop) return;
+				passPop.removeEventListener(PopUpEvent.CLOSE, onCfgPass);
+				if(event.commit){
+					var newPass:String=passPop.pass;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.configPass = newPass;
+					so.flush();  
+					Context.setAttribute('configPass', newPass);
+				}
+			}
+			
+			protected function btOffPass_clickHandler(event:MouseEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.configPass = '';
+				so.flush();  
+				Context.setAttribute('configPass', '');
+			}
+
+			
+			protected function btResetStat_clickHandler(event:MouseEvent):void{
+				statDate= new Date();
+				statBooks=0;
+				statSheets=0;
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.statDate = statDate;
+				so.data.statBooks = statBooks;
+				so.data.statSheets = statSheets;
+				so.flush();  
+				
+				Context.setAttribute("statDate", statDate);
+				Context.setAttribute("statBooks", statBooks);
+				Context.setAttribute("statSheets", statSheets);
+				showStat();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -548,7 +661,7 @@
 	
 	<s:states>
 		<s:State name="disconnected"/>
-		<s:State name="config"/>
+		<s:State name="config" enterState="state1_enterStateHandler(event)"/>
 		<s:State name="monitor"/>
 	</s:states>
 	
@@ -558,7 +671,17 @@
 		</s:fill>
 	</s:Rect>
 	
-	<s:VGroup  includeIn="config" gap="10" top="5" left="10" right="5" bottom="50">
+	<s:VGroup  includeIn="config" enabled="{cfgEnabled}" gap="10" top="5" left="10" right="5" bottom="50">
+		
+		<s:HGroup gap="10" verticalAlign="baseline" width="100%">
+			<s:Label text="Защита конфигурации"/>
+			<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
+			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+			<s:Spacer width="100%"/>
+
+			<s:Label text="Статистика: {statString}"/>
+			<s:Button id="btResetStat" label="Сбросить" click="btResetStat_clickHandler(event)"/>
+		</s:HGroup>
 		
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Label text="Обратный порядок:"/>

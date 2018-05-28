@@ -138,6 +138,9 @@ package com.photodispatcher.tech{
 		[Bindable]
 		public var latches:Array;
 		
+		[Bindable]
+		public var statString:String='';
+
 		//print group params
 		[Bindable]
 		public var currPgId:String='';

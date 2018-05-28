@@ -219,6 +219,7 @@
 						</s:HGroup>
 					</s:VGroup>
 				</s:HGroup>
+				<s:Label text="Статистика: {glue.statString}"/>
 			</s:VGroup>	
 			<s:VGroup gap="12" paddingRight="10" enabled="{feedOn}">
 				<!--<s:HGroup gap="5" enabled="{Boolean(techPicker.controller)}">

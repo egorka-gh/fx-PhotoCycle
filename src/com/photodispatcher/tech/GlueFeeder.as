@@ -28,12 +28,16 @@ package com.photodispatcher.tech{
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.events.TimerEvent;
+	import flash.globalization.DateTimeStyle;
+	import flash.net.SharedObject;
 	import flash.utils.Timer;
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
 	
 	import org.granite.tide.Tide;
+	
+	import spark.formatters.DateTimeFormatter;
 	
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	public class GlueFeeder extends GlueStreamed{
@@ -97,6 +101,7 @@ package com.photodispatcher.tech{
 			}
 			if(!glueHandler && glueType!=0) createGlueHandler();
 			checkPrepared();
+			showStat();
 		}
 
 		override protected function checkPrepared(alert:Boolean=false):Boolean{
@@ -300,6 +305,7 @@ package com.photodispatcher.tech{
 		}
 
 		override public function start():void{
+			showStat();
 			if(!serialProxy) return;
 			if(logger) logger.clear();
 			
@@ -580,6 +586,59 @@ package com.photodispatcher.tech{
 			nextStep();
 		}
 		
+		
+		protected var statDate:Date;
+		protected var statBooks:int=0;
+		protected var statSheets:int=0;
+		protected var statSheetCounter:int=0;
+
+		public function showStat():void{
+			var dt:Date= Context.getAttribute('statDate');
+			var bk:int= Context.getAttribute('statBooks');
+			var sht:int= Context.getAttribute('statSheets');
+			var str:String=' Произведено';
+			if(dt){
+				var fmt:DateTimeFormatter= new DateTimeFormatter();
+				fmt.dateTimePattern='dd.MM.yy HH:mm';
+				str=str +' c ' +fmt.format(dt);
+			}
+			str=str+' Книг:'+bk.toString()+' листов:'+(sht+statSheetCounter).toString();
+			statString=str;
+		}
+
+		protected function statCountBook():void{
+			var so:SharedObject = SharedObject.getLocal('appProps','/');
+			statDate=so.data.statDate;
+			statBooks=so.data.statBooks;
+			statSheets=so.data.statSheets;
+			if(statBooks<=0) statBooks=0;
+			if(statSheets<=0) statSheets=0;
+			
+			if(statSheets>= (int.MAX_VALUE-statSheetCounter)){
+				statSheets=0;
+				statBooks=0;
+			}
+			if(statBooks==int.MAX_VALUE) statBooks=0;
+			
+			statBooks++;
+			statSheets=statSheets+statSheetCounter;
+			statSheetCounter=0;
+
+			//save
+			so.data.statBooks=statBooks;
+			so.data.statSheets=statSheets;
+			so.flush();
+			Context.setAttribute("statBooks", statBooks);
+			Context.setAttribute("statSheets", statSheets);
+			showStat();
+		}
+
+		protected function statCountSheet():void{
+			statSheetCounter++;
+			showStat();
+		}
+
+		
 		protected function nextStep():void{
 			//controller.close(currentTray);
 			//reset refeed
@@ -710,6 +769,7 @@ package com.photodispatcher.tech{
 						feedSheet();
 					}else if(currentGroupStep==1){
 						//sheet feeded
+						statCountSheet();
 						
 						//check ream 
 						if(checkFeederEmpty){
@@ -730,7 +790,7 @@ package com.photodispatcher.tech{
 							//order complited
 							//if(logger) logger.clear();
 							//detectFirstBook=false;
-							var sheetsPerBook:int=register.sheets;
+							//var sheetsPerBook:int=register.sheets;
 							register.finalise();
 							register=null;
 							currBookTot=-1;
@@ -796,6 +856,7 @@ package com.photodispatcher.tech{
 						return;
 					}else if(currentGroupStep>1){
 						//book is out
+						statCountBook();
 						//start book delay or feed sheet
 						currentGroupStep=0;
 						if (register && startFeedBookDelay(register.sheets)) return;
@@ -1022,27 +1083,27 @@ package com.photodispatcher.tech{
 						//layer in
 						//currentTray=-1;
 						layerInLatch.forward();
-					}else{ //if(event.state==wrongState){
-						//wrong state
+					}else{ 
+						//wrong state ???
 						pause('Лоток подачи: '+FeederController.chanelStateName(event.state));
 					}
-				}else if(layerOutLatch.isOn && event.state==FeederController.CHANEL_STATE_SHEET_PASS){
-					//sheet out
-					//currBarcode=null;//close if added scaner over conveyer
-					layerOutLatch.forward();
-					//if(currentGroup!=COMMAND_GROUP_BOOK_SHEET) currBarcode=null; //barcode covered vs some layer
-					/*
-					if(feedDelay<100){
-					layerOutLatch.forward();
-					}else{
-					startFeedDelay();
-					}
-					*/
 				}else{
 					//unexpected msg
 					pause('Лоток подачи. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
 				}
 			}
+			
+			if(event.state==FeederController.CHANEL_STATE_SHEET_PASS){
+				//sheet out
+				//currBarcode=null;//close if added scaner over conveyer
+				if(layerOutLatch.isOn){
+					layerOutLatch.forward();
+				}else{
+					//unexpected msg
+					pause('Лоток подачи. Не ожидаемое срабатывание: '+FeederController.chanelStateName(event.state));
+				}
+			}
+		
 			
 			//book out message
 			if(event.state==GlueMBController.CONTROLLER_BOOK_OUT ){
