@@ -77,6 +77,10 @@
 			public var feedOn:Boolean=false;
 			[Bindable]
 			public var checkBookOut:Boolean=false;
+
+			[Bindable]
+			public var debugBarReders:Boolean=false;
+
 			
 			//checkBookOut=Context.getAttribute("checkBookOut");
 
@@ -149,6 +153,7 @@
 					pauseFeederCountdown=so.data.pauseFeederCountdown;
 					altBarcode=so.data.altBarcode;
 					feedOn=so.data.feedOn;
+					debugBarReders=so.data.debugBarReders;
 					checkBookOut=so.data.checkBookOut;
 					dataBaseOff=so.data.dataBaseOff;
 					feedDelay=so.data.feedDelay;
@@ -228,7 +233,13 @@
 				Context.setAttribute("statBooks", statBooks);
 				Context.setAttribute("statSheets", statSheets);
 
-				currentState='config';
+				Context.setAttribute("debugBarReders", debugBarReders);
+
+				if(!configPass){
+					currentState='config';
+				}else{
+					start();
+				}
 			}
 			
 			[Bindable]
@@ -272,7 +283,7 @@
 					
 
 				}
-
+				Context.setAttribute("debugBarReders", debugBarReders);
 				
 				if(!feedOn) comFeederProxy.num='';
 				if((feedOn && (!comFeederProxy || !comFeederProxy.num)) 
@@ -677,15 +688,21 @@
 			<s:Label text="Защита конфигурации"/>
 			<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
 			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+			
 			<s:Spacer width="100%"/>
 
 			<s:Label text="Статистика: {statString}"/>
 			<s:Button id="btResetStat" label="Сбросить" click="btResetStat_clickHandler(event)"/>
 		</s:HGroup>
 		
-		<s:HGroup gap="5" verticalAlign="baseline">
+		<s:HGroup gap="5" verticalAlign="baseline" width="100%">
 			<s:Label text="Обратный порядок:"/>
 			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
+			
+			<s:Spacer width="100%"/>
+			<s:Label text="Отладка сканеров"/>
+			<s:CheckBox id="tg_debugBarReders" selected="{debugBarReders}" change="{setBool('debugBarReders')}"/> 
+		
 		</s:HGroup>
 		
 		<s:HGroup gap="5" verticalAlign="baseline">
@@ -782,9 +799,9 @@
 		
 		<s:Spacer height="5"/>
 		<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
-		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" height="330">
-			<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%">
-				<s:VGroup gap="5" width="100%">
+		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" height="100%" minHeight="250">
+			<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%" height="100%">
+				<s:VGroup gap="5" width="100%" height="100%">
 					<s:HGroup gap="5" verticalAlign="baseline">
 						<s:Label text="Тип:"/>
 						<s:DropDownList id="ddGlueType" selectedIndex="{glueType}" change="ddGlueType_changeHandler(event)">
@@ -803,7 +820,7 @@
 							<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
 						</s:HGroup>
 					</s:VGroup>
-					<s:Scroller width="600" height="295" visible="{glueType==1}" includeInLayout="{glueType==1}" >
+					<s:Scroller width="600" height="100%" visible="{glueType==1}" includeInLayout="{glueType==1}" >
 						<s:VGroup gap="5" width="100%" paddingLeft="20" 
 								  >
 							<s:HGroup gap="5" verticalAlign="baseline">
@@ -930,8 +947,9 @@
 				</s:VGroup>
 			</s:NavigatorContent>
 		</mx:ViewStack>
-		
-		<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+		<s:HGroup width="600" horizontalAlign="right">
+			<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+		</s:HGroup>
 	</s:VGroup>
 	
 	

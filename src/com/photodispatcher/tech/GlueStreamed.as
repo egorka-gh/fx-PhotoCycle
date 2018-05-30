@@ -231,12 +231,17 @@ package com.photodispatcher.tech{
 					//barReader.stop();
 				}
 			}
+			var deb:Boolean=Context.getAttribute('debugBarReders');
 			_barcodeReaders = value;
 			if(_barcodeReaders){
 				for each(barReader in _barcodeReaders){
 					barReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 					barReader.addEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
 					barReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+					if(deb){
+						barReader.debugMode=true;
+						barReader.addEventListener(BarCodeEvent.BARCODE_DEBUG, onBarDebug);
+					}
 				}
 			}
 			/*
@@ -453,6 +458,10 @@ package com.photodispatcher.tech{
 		}
 		
 		public function pauseRequest(msg:String=''):void{
+			
+		}
+		
+		protected function onBarDebug(event:BarCodeEvent):void{
 			
 		}
 		

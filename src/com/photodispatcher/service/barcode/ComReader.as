@@ -13,6 +13,7 @@ package com.photodispatcher.service.barcode{
 	[Event(name="barcodeDisConnected", type="com.photodispatcher.event.BarCodeEvent")]
 	[Event(name="barcodeReaded", type="com.photodispatcher.event.BarCodeEvent")]
 	[Event(name="barcodeError", type="com.photodispatcher.event.BarCodeEvent")]
+	[Event(name="barcodeDebug", type="com.photodispatcher.event.BarCodeEvent")]
 	public class ComReader extends EventDispatcher{
 		public static const TIMEUOT:int=500;
 		public static const DOUBLE_SCAN_GAP:int=200;
@@ -22,6 +23,8 @@ package com.photodispatcher.service.barcode{
 		public var prefix:uint=0; //unused
 		//public var sufix:uint=13; //CR default
 		public var sufix:uint=10; //LF default
+
+		public var debugMode:Boolean=false; 
 
 		protected var buffer:String='';
 		protected var timer:Timer;
@@ -126,11 +129,26 @@ package com.photodispatcher.service.barcode{
 			isStarted=false;
 		}
 
+		protected function formatDebug(message:String):String{
+			var debStr:String=message;
+			debStr = debStr.replace(String.fromCharCode(13),'[13]');
+			debStr = debStr.replace(String.fromCharCode(10),'[10]');
+			debStr = debStr.replace(String.fromCharCode(9),'[09]');
+			debStr = debStr.replace(String.fromCharCode(02),'[02]');
+			debStr = debStr.replace(String.fromCharCode(3),'[03]');
+			debStr='['+debStr+']';
+			return debStr;
+		}
+		
 		protected function onComData(event:SerialProxyEvent):void{
 			//TODO implement prefix
 			var barcode:String;
 			stopTimer();
-			buffer+=event.data;
+			buffer=buffer+event.data;
+			var debStr:String;
+			if(debugMode){
+				debStr=formatDebug(buffer);
+			}
 			var idx:int;
 			do{
 				//look for sufix
@@ -162,6 +180,12 @@ package com.photodispatcher.service.barcode{
 				}
 			} while(idx>-1);
 			if(buffer==null) buffer='';
+			
+			if(debugMode){
+				if(buffer) debStr=debStr + ' -> '+ formatDebug(buffer);
+				dispatchEvent(new BarCodeEvent(BarCodeEvent.BARCODE_DEBUG,debStr));
+			}
+
 			if(buffer) startTimer();
 		}
 

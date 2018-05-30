@@ -6,6 +6,7 @@ package com.photodispatcher.event{
 		public static const BARCODE_CONNECTED:String = "barcodeConnected";
 		public static const BARCODE_READED:String = "barcodeReaded";
 		public static const BARCODE_ERR:String = "barcodeError";
+		public static const BARCODE_DEBUG:String = "barcodeDebug";
 
 		public var barcode:String=''; 
 		public var error:String=''; 

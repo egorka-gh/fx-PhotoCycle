@@ -1198,10 +1198,21 @@ package com.photodispatcher.tech{
 			currBarcode=null;
 			nextStep();
 		}
+		
+		override protected function onBarDebug(event:BarCodeEvent):void{
+			var barReader:ComReader= event.target as ComReader;
+			var com:String='';
+			if(barReader) com=barReader.comCaption+': ';  
+			log(com+event.barcode,100);
+		}
+
 
 		override protected function onBarCode(event:BarCodeEvent):void{
 			var barcode:String=event.barcode;
-			log('barcod: '+barcode);
+			var barReader:ComReader= event.target as ComReader;
+			var com:String='';
+			if(barReader) com=barReader.comCaption+' ';  
+			log(com+'barcod: '+barcode);
 			if(!isRunning || isPaused) return;
 
 			if(currBarcode && barcode==currBarcode){ //doublescan or more then 1 barreader
@@ -1209,7 +1220,7 @@ package com.photodispatcher.tech{
 			}
 			if(!barLatch.isOn){
 				//chek doublescan while barcode not covered vs next layer
-				if(barcode!=currBarcode) pause('Не ожидаемое срабатывание сканера ШК, код:' +barcode);
+				if(barcode!=currBarcode) log('Не ожидаемое срабатывание сканера ШК, код:' +barcode);// pause('Не ожидаемое срабатывание сканера ШК, код:' +barcode);
 				return;
 			}
 			currBarcode=barcode;
