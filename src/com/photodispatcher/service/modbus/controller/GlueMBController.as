@@ -67,6 +67,7 @@ package com.photodispatcher.service.modbus.controller{
 		D16(адрес регистра 0x0010) Book_ejection_delay_time - Время задержки перед открытием бункера (после прохода датчика "запрессовки" (экс датчик исх. положения задней плиты) (формат записи BCD, 1 = 10ms)
 		D17(адрес регистра 0x0011) Final_squeezing_time - Время допрессовки  прижимной плитой после прохода датчика "запрессовки" (экс датчик исх. положения задней плиты) (формат записи BCD, 1 = 10ms)
 
+		D18(адрес регистра 0x0012) Red_Lamp_Sound - ѕодача звукового сигнала + красна€ лампа. ћигание с периодом 1 секунда  ( 0x0001 - true, 0x0000 - false)
 		D19(адрес регистра 0x0013) Unload_Off_delay Таймер выключения бункера выгрузки (формат записи BCD, 1 = 10ms) 
 		D20(адрес регистра 0x0014) Unload_On_delay Таймер включения бункера выгрузки (формат записи BCD, 1 = 10ms)
 		D21(адрес регистра 0x0015) Таймер дожимаплиты на последнем листе (формат записи BCD, 1 = 10ms)
@@ -116,6 +117,8 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_REGISTER_BOOK_EJECTION_DELAY:int			=16;
 		public static const CONTROLLER_REGISTER_FINAL_SQUEEZING_TIME:int		=17;
 
+		public static const CONTROLLER_REGISTER_ALARM_LAMP_SOUND:int			=18;
+		
 		public static const CONTROLLER_REGISTER_UNLOAD_OFF_DELAY:int			=19;
 		public static const CONTROLLER_REGISTER_UNLOAD_ON_DELAY:int				=20;
 		public static const CONTROLLER_REGISTER_PLATE_RETURN_DELAY:int			=21;
@@ -341,6 +344,20 @@ package com.photodispatcher.service.modbus.controller{
 			}
 		}
 		
+		public function setAlarmOn():void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_ALARM_LAMP_SOUND, 1);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+		public function setAlarmOff():void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_ALARM_LAMP_SOUND, 0);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
 		
 		override protected function onClientConnect(evt:Event):void{
 			dispatchEvent(new Event('connectChange'));

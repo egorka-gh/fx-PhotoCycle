@@ -57,8 +57,6 @@
 			[Bindable]
 			private var pushDelay:int=100;
 
-			//[Bindable]
-			//private var feedBookDelay:int=0;
 			[Bindable]
 			private var feedBookDelays:ArrayCollection;
 
@@ -80,9 +78,6 @@
 
 			[Bindable]
 			public var debugBarReders:Boolean=false;
-
-			
-			//checkBookOut=Context.getAttribute("checkBookOut");
 
 			[Bindable]
 			public var engineOnStartOn:Boolean=false;
@@ -163,10 +158,6 @@
 					pushDelay=so.data.bookDelay;
 					if(pushDelay<=0) pushDelay=300;
 					configPass=so.data.configPass;
-					/*
-					feedBookDelay=so.data.feedBookDelay;
-					if(feedBookDelay<=0) feedBookDelay=0;
-					*/
 					bookDelays=so.data.bookDelays;
 					if(!bookDelays) bookDelays=[];
 					
@@ -190,6 +181,7 @@
 					glueSideStopOnDelay=so.data.glueSideStopOnDelay;
 					pumpEnable=so.data.pumpEnable;
 					glueAlarm=so.data.glueAlarm;
+					glueShowAlarm=so.data.glueShowAlarm;
 					
 					glueHasFeeder=so.data.glueHasFeeder;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
@@ -212,7 +204,6 @@
 					statBooks=so.data.statBooks;
 					statSheets=so.data.statSheets;
 				}
-				//Context.setAttribute("feedBookDelay", feedBookDelay);
 				feedBookDelays= new ArrayCollection(bookDelays);
 				var dataSortField:SortField = new SortField();
 				dataSortField.name = 'sheets';
@@ -270,6 +261,7 @@
 					Context.setAttribute("glueSideStopOnDelay", glueSideStopOnDelay);
 					Context.setAttribute("pumpEnable", pumpEnable);
 					Context.setAttribute("glueAlarm", glueAlarm);
+					Context.setAttribute("glueShowAlarm", glueShowAlarm);
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
 
@@ -315,20 +307,6 @@
 				if(techPickerView) techPickerView.stop();
 			}
 			
-			/*
-			protected function barcodeReader_barcodeErrorHandler(event:BarCodeEvent):void{
-				var barcodeReader:ComReader= event.target as ComReader;
-				if(barcodeReader) barcodeReader.stop();
-				//serialProxy.stop();
-				var bar:String=event.barcode;
-				bar = bar.replace(String.fromCharCode(13),'[LF]');
-				bar = bar.replace(String.fromCharCode(10),'[CR]');
-				if(barcodeReader) bar=barcodeReader.comCaption+': '+bar;
-				Alert.show('Ошибка \n'+event.error+';\n данные com: '+bar,'Ошибка');
-				currentState='config';
-			}
-			*/
-			
 			protected function btSaveComs_clickHandler(event:MouseEvent):void{
 				var arr:Array=comReaders.source.concat(comFeederProxy,comGlueProxy);
 				ComInfo.save(arr);
@@ -355,7 +333,6 @@
 			
 			protected function serialProxy_serialProxyErrorHandler(event:SerialProxyEvent):void{
 				Alert.show('Ошибка SerialProxy \n '+event.error,'Ошибка');
-				//currentState='config';
 			}
 			
 			protected function chbRevers_changeHandler(event:Event):void{
@@ -422,7 +399,6 @@
 				var file:File = event.target as File;
 				if(file){
 					file.removeEventListener(Event.SELECT,prtFolderSet);
-					//conf.wrk_path=fl.nativePath;
 					alertSound=file.nativePath;;
 					//save last selection
 					var so:SharedObject = SharedObject.getLocal('appProps','/');
@@ -484,6 +460,8 @@
 			public var pumpEnable:Boolean=false;
 			[Bindable]
 			public var glueAlarm:Boolean=false;
+			[Bindable]
+			public var glueShowAlarm:Boolean=false;
 			
 			[Bindable]
 			public var whitePaperDelay:int=0;
@@ -517,6 +495,7 @@
 				Context.setAttribute("glueSideStopOnDelay", glueSideStopOnDelay);
 				Context.setAttribute("pumpEnable", pumpEnable);
 				Context.setAttribute("glueAlarm", glueAlarm);
+				Context.setAttribute("glueShowAlarm", glueShowAlarm);
 				Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 				Context.setAttribute("pumpWorkTime", pumpWorkTime);
 				Context.setAttribute("whitePaperDelay", whitePaperDelay);
@@ -538,6 +517,7 @@
 				so.data.glueSideStopOnDelay = glueSideStopOnDelay;
 				so.data.pumpEnable=pumpEnable;
 				so.data.glueAlarm=glueAlarm;
+				so.data.glueShowAlarm=glueShowAlarm;
 				so.data.pumpSensFilterTime=pumpSensFilterTime;
 				so.data.pumpWorkTime=pumpWorkTime;
 
@@ -864,6 +844,8 @@
 								<s:CheckBox selected="@{pumpEnable}"/>
 								<s:Label text="Сообщение об отсутствии клея:"/>
 								<s:CheckBox selected="@{glueAlarm}"/>
+								<s:Label text="Выводить на башню:"/>
+								<s:CheckBox selected="@{glueShowAlarm}"/>
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
 								<s:Label text="Время работы насоса (мс):"/>

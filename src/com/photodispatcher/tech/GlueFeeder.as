@@ -1233,7 +1233,6 @@ package com.photodispatcher.tech{
 			
 			if(!altBarcode){
 				//cycle barcode
-				//if(barcode.length>10) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 				if(PrintGroup.isTechBarcode(barcode)) pgId=PrintGroup.idFromDigitId(barcode.substr(10));
 				if(!pgId){
 					pause('Не верный штрих код: '+barcode);
@@ -1273,17 +1272,6 @@ package com.photodispatcher.tech{
 						sheetCount=0;
 						log('Заказ '+currPgId+' завершен.b');
 						currPgId='';
-						/*
-						if(stopOnComplite){
-							stop();
-							return;
-						}
-						if(pauseOnComplite){
-							currentGroupStep=0;
-							pause('Пауза между заказами',false);
-							return;
-						}
-						*/
 					}else{
 						//onRegisterErr should suspend sequense
 						//log('Не верный заказ разворота, текущий: '+currPgId+', заказ разворота'+pgId);
@@ -1315,27 +1303,7 @@ package com.photodispatcher.tech{
 				register.revers=reversOrder;
 				register.inexactBookSequence=inexactBookSequence;
 				register.detectFirstBook=detectFirstBook;
-				//register.noDataBase=dataBaseOff;
-				//reset detectFirstBook
-				//if(detectFirstBook) detectFirstBook=false;
 			}
-			/*
-			else{
-				if(!checkPrintgroup(pgId)){
-					if(register.inexactBookSequence){
-						//defect complited
-						register.finalise();
-						register=null;
-						inexactBookSequence=false;
-						pause('Сборка брака завершена: "'+currPgId+'", отделите заказ "'+currPgId+'" и начало новой книги "'+pgId+'"');
-					}else{
-						glueHandler.pauseOnBook(pgId,bookNum);
-						pause('Не верный заказ разворота, текущий: '+currPgId+', заказ разворота'+pgId);
-					}
-					return;
-				}
-			}
-			*/
 			//check sequence
 			registerLatch.setOn();
 			register.register(bookNum,pageNum);
