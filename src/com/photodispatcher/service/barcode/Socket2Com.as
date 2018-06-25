@@ -17,12 +17,10 @@ package com.photodispatcher.service.barcode{
 	public class Socket2Com extends EventDispatcher{
 		private var comInfo:ComInfo;
 		private var socket:Socket;
-		private var remoteIP:String;
 
-		public function Socket2Com(comInfo:ComInfo, remoteIP:String=null){
+		public function Socket2Com(comInfo:ComInfo){
 			super(null);
 			this.comInfo=comInfo;
-			this.remoteIP=remoteIP;
 		}
 
 		public function get comCaption():String{
@@ -49,6 +47,11 @@ package com.photodispatcher.service.barcode{
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'' ,'Connect error: Порт не настроен'));
 				return;
 			}
+			if(comInfo.isEthernet && !comInfo.remoteIP){
+				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'' ,'Connect error: IP не настроен'));
+				return;
+			}
+			
 			//connect to proxy
 			var proxy_port:int=SerialProxy.PROXY_PORT_BASE+int(comInfo.num);
 			socket = new Socket();
@@ -58,9 +61,9 @@ package com.photodispatcher.service.barcode{
 			socket.addEventListener( SecurityErrorEvent.SECURITY_ERROR, onSecurityError );
 			socket.addEventListener( ProgressEvent.SOCKET_DATA, onSocketData );
 			try{
-				if(remoteIP){
+				if(comInfo.isEthernet){
 					//remote mode
-					socket.connect(remoteIP,proxy_port);
+					socket.connect(comInfo.remoteIP,proxy_port);
 				}else{
 					socket.connect('127.0.0.1',proxy_port);
 				}

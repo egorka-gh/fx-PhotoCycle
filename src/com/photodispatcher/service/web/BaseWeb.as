@@ -14,10 +14,15 @@ package com.photodispatcher.service.web{
 	import flash.events.IEventDispatcher;
 	import flash.events.IOErrorEvent;
 	import flash.events.SecurityErrorEvent;
+	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
 	import flash.net.URLRequestMethod;
 	import flash.net.URLVariables;
+	
+	import spark.formatters.DateTimeFormatter;
 
 	[Event(name="complete", type="flash.events.Event")]
 	public class BaseWeb extends EventDispatcher{
@@ -136,10 +141,41 @@ package com.photodispatcher.service.web{
 			throw new Error("You need to override setMailPackageState() in your concrete class");
 		}
 		
+		protected function logErr(errMsg:String):void{
+			if(!source) return;
+			var path:String=source.getWrkFolder();
+			var file:File=new File(path);
+			if(!file.exists || !file.isDirectory) return;
+			file=file.resolvePath('log');
+			if(!file.exists) file.createDirectory();
+			if(!file.isDirectory) return;
+			
+			var dt:Date= new Date();
+			var fmt:DateTimeFormatter= new DateTimeFormatter();
+			fmt.dateTimePattern='yy-MM-dd_HH-mm-ss';
+			var fname:String=fmt.format(dt)+'.txt';
+			file=file.resolvePath(fname);
+			var fs:FileStream = new FileStream();
+			try {
+				fs.open(file, FileMode.APPEND);
+				fs.writeUTFBytes(errMsg + File.lineEnding);
+				fs.writeUTFBytes('------------------------------------'+ File.lineEnding);
+				if(lastRawData){
+					var s:String=(lastRawData as String);
+					if(s) fs.writeUTFBytes(s + File.lineEnding);
+					fs.writeUTFBytes('------------------------------------'+ File.lineEnding);
+				}
+				fs.close();
+			} catch(e:Error) {
+				trace("FATAL:: Unable to write to log file.");
+			}
+		}
+		
 		protected function abort(errMsg:String):void{
 			_hasError=true;
 			_errMesage=errMsg;
 			stopListen();
+			logErr(errMsg);
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		protected function startListen():void{

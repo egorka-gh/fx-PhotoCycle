@@ -607,7 +607,7 @@
 					<s:CheckBox id="tg_manualStart" selected="{manualStart}" change="tg_manualStart_changeHandler(event)"/>
 					<s:Spacer width="5"/>
 					<s:Label text="Таймаут подключения FTP (сек)"/>
-					<s:NumericStepper id="nsftpConnectImeout" value="@{ftpConnectImeout}" minimum="15" maximum="90" change="nsftpConnectImeout_changeHandler(event)"/>	
+					<s:NumericStepper id="nsftpConnectImeout" value="@{ftpConnectImeout}" minimum="15" maximum="6000" change="nsftpConnectImeout_changeHandler(event)"/>	
 				</s:HGroup>
 			</s:FormItem>
 			<!--<s:FormItem label="Таймаут подключения FTP (сек)">

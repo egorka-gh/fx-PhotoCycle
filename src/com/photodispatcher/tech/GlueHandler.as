@@ -125,6 +125,9 @@ package com.photodispatcher.tech{
 		public function get isPrepared():Boolean{
 			return checkPrepared();
 		}
+		public function get isConnected():Boolean{
+			return controller && controller.connected;
+		}
 		
 		protected function checkPrepared(alert:Boolean=false):Boolean{
 			var prepared:Boolean= controller && controller.connected;

@@ -31,7 +31,7 @@ package pl.maliboo.ftp.invokers
 		
 		override protected function startSequence ():void{
 			sendCommand(new FTPCommand(Commands.PASV));
-			startTimeoutTimer();
+			startTimeoutTimer(400000);
 		}
 		
 		override protected function responseHandler(evt:FTPEvent):void{

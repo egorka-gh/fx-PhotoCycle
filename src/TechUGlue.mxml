@@ -56,10 +56,10 @@
 			private var feedDelay2:int=100;
 			[Bindable]
 			private var pushDelay:int=100;
-
+			
 			[Bindable]
 			private var feedBookDelays:ArrayCollection;
-
+			
 			[Bindable]
 			public var checkFeederEmpty:Boolean=false;
 			[Bindable]
@@ -75,10 +75,10 @@
 			public var feedOn:Boolean=false;
 			[Bindable]
 			public var checkBookOut:Boolean=false;
-
+			
 			[Bindable]
 			public var debugBarReders:Boolean=false;
-
+			
 			[Bindable]
 			public var engineOnStartOn:Boolean=false;
 			[Bindable]
@@ -111,7 +111,7 @@
 				_alertSound = value;
 				Context.setAttribute("alertSound", value);
 			}
-
+			
 			private function initApp():void{
 				init();
 			}
@@ -140,7 +140,7 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var bookDelays:Array=[];
 				var configPass:String;
-
+				
 				if (so.size>0){
 					reversOrder=so.data.reversOrder; 
 					doubleSheetOff=so.data.doubleSheetOff;
@@ -168,7 +168,7 @@
 					if(so.data.hasOwnProperty('stopOnComplite')) stopOnComplite=so.data.stopOnComplite;
 					pauseOnComplite=so.data.pauseOnComplite;
 					alertSound=so.data.alertSound;
-
+					
 					glueType=so.data.glueType;
 					glueServerIP=so.data.glueServerIP;
 					if(!glueServerIP) glueServerIP=NetUtil.getIP();
@@ -223,9 +223,9 @@
 				Context.setAttribute("statDate", statDate);
 				Context.setAttribute("statBooks", statBooks);
 				Context.setAttribute("statSheets", statSheets);
-
+				
 				Context.setAttribute("debugBarReders", debugBarReders);
-
+				
 				if(!configPass){
 					currentState='config';
 				}else{
@@ -248,7 +248,7 @@
 				str=str+' Книг:'+bk.toString()+' листов:'+sht.toString();
 				statString=str;
 			}
-
+			
 			
 			private function start():void{
 				if(glueType==1){
@@ -264,7 +264,7 @@
 					Context.setAttribute("glueShowAlarm", glueShowAlarm);
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
-
+					
 					Context.setAttribute("whitePaperDelay", whitePaperDelay);
 					Context.setAttribute("bookEjectionDelay", bookEjectionDelay);
 					Context.setAttribute("finalSqueezingTime", finalSqueezingTime);
@@ -273,7 +273,7 @@
 					Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
 					Context.setAttribute("checkBookOut", checkBookOut);
 					
-
+					
 				}
 				Context.setAttribute("debugBarReders", debugBarReders);
 				
@@ -327,7 +327,7 @@
 				so.flush();
 				Context.setAttribute("feedBookDelays", feedBookDelays);
 				Context.setAttribute("altBarcode", altBarcode);
-
+				
 				saveGlueEth();
 			}
 			
@@ -416,7 +416,7 @@
 					sound.play();
 				}catch(error:Error){}
 			}
-
+			
 			private var _glueType:int;
 			[Bindable]
 			public function get glueType():int{
@@ -426,14 +426,14 @@
 				_glueType = value;
 				Context.setAttribute("glueType", value);
 			}
-
+			
 			protected function ddGlueType_changeHandler(event:IndexChangeEvent):void{
 				glueType=ddGlueType.selectedIndex;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueType = glueType;
 				so.flush();  
 			}
-
+			
 			[Bindable]
 			public var glueServerIP:String='';
 			[Bindable]
@@ -475,14 +475,14 @@
 			public var glueUnloadOnDelay:int=0;
 			[Bindable]
 			public var gluePlateReturnDelay:int=0;
-
+			
 			[Bindable]
 			protected var statDate:Date;
 			[Bindable]
 			protected var statBooks:int=0;
 			[Bindable]
 			protected var statSheets:int=0;
-
+			
 			
 			protected function saveGlueEth():void{
 				
@@ -505,7 +505,7 @@
 				Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
 				Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
 				Context.setAttribute("checkBookOut", checkBookOut);
-
+				
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueServerIP = glueServerIP;
@@ -520,7 +520,7 @@
 				so.data.glueShowAlarm=glueShowAlarm;
 				so.data.pumpSensFilterTime=pumpSensFilterTime;
 				so.data.pumpWorkTime=pumpWorkTime;
-
+				
 				so.data.whitePaperDelay=whitePaperDelay;
 				so.data.bookEjectionDelay=bookEjectionDelay;
 				so.data.finalSqueezingTime=finalSqueezingTime;
@@ -528,18 +528,18 @@
 				so.data.glueUnloadOnDelay=glueUnloadOnDelay;
 				so.data.gluePlateReturnDelay=gluePlateReturnDelay;
 				so.data.checkBookOut=checkBookOut;
-
+				
 				so.flush();  
 			}
-
-
+			
+			
 			/*
 			protected function nsFeedBookDelay_changeHandler(event:Event):void{
-				feedBookDelay=nsFeedBookDelay.value;
-				Context.setAttribute("feedBookDelay", feedBookDelay);
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.feedBookDelay = feedBookDelay;
-				so.flush();  
+			feedBookDelay=nsFeedBookDelay.value;
+			Context.setAttribute("feedBookDelay", feedBookDelay);
+			var so:SharedObject = SharedObject.getLocal('appProps','/');
+			so.data.feedBookDelay = feedBookDelay;
+			so.flush();  
 			}
 			*/
 			
@@ -593,7 +593,7 @@
 					cfgEnabled=true;
 				}
 			}
-
+			
 			protected function state1_enterStateHandler(event:FlexEvent):void
 			{
 				showStat();
@@ -624,7 +624,7 @@
 				so.flush();  
 				Context.setAttribute('configPass', '');
 			}
-
+			
 			
 			protected function btResetStat_clickHandler(event:MouseEvent):void{
 				statDate= new Date();
@@ -662,147 +662,145 @@
 		</s:fill>
 	</s:Rect>
 	
-	<s:VGroup  includeIn="config" enabled="{cfgEnabled}" gap="10" top="5" left="10" right="5" bottom="50">
-		
-		<s:HGroup gap="10" verticalAlign="baseline" width="100%">
-			<s:Label text="Защита конфигурации"/>
-			<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
-			<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
-			
-			<s:Spacer width="100%"/>
+	<s:Scroller includeIn="config" top="5" left="10" right="5" bottom="40">
+		<s:VGroup enabled="{cfgEnabled}" gap="10"  >
 
-			<s:Label text="Статистика: {statString}"/>
-			<s:Button id="btResetStat" label="Сбросить" click="btResetStat_clickHandler(event)"/>
-		</s:HGroup>
-		
-		<s:HGroup gap="5" verticalAlign="baseline" width="100%">
-			<s:Label text="Обратный порядок:"/>
-			<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
-			
-			<s:Spacer width="100%"/>
-			<s:Label text="Отладка сканеров"/>
-			<s:CheckBox id="tg_debugBarReders" selected="{debugBarReders}" change="{setBool('debugBarReders')}"/> 
-		
-		</s:HGroup>
-		
-		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Звук ошибки:"/>
-			<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
-			<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)" width="40"/>
-			<s:Button id="btSoundTest" label="►" click="btSoundTest_clickHandler(event)" width="40"/>
-		</s:HGroup>
-
-		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Label text="Подача листа"/>
-			<s:CheckBox id="tg_feedOn" selected="{feedOn}" change="{setBool('feedOn')}"/> 
-		</s:HGroup>
-		<s:HGroup gap="10" width="100%" paddingLeft="15" enabled="{feedOn}">
-			<s:VGroup id="vgFeedCfg"  gap="5"   >
-				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:Label text="Задержка подачи листа (млсек):"/>
-					<s:NumericStepper id="spFeedDelay" minimum="100" maximum="5000" snapInterval="10" value="{feedDelay}" change="spFeedDelay_changeHandler(event)"/>
-				</s:HGroup>
-				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:Label text="Задержка подачи второго листа (млсек):"/>
-					<s:NumericStepper id="spFeedDelay2" minimum="100" maximum="5000" snapInterval="10" value="{feedDelay2}" change="spFeedDelay2_changeHandler(event)"/>
-				</s:HGroup>
+			<s:VGroup gap="10">
 				
-<!--				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:Label text="Задержка между книгами (млсек):"/>
-					<s:NumericStepper id="nsFeedBookDelay" minimum="100" maximum="10000" snapInterval="100" value="{feedBookDelay}" change="nsFeedBookDelay_changeHandler(event)"/>
-				</s:HGroup>
--->				
-				<s:HGroup gap="0" verticalAlign="baseline">
-					<s:CheckBox id="tg_checkFeederEmpty" selected="{checkFeederEmpty}" change="{setBool('checkFeederEmpty')}"/> 
-					<s:Label text="Контроль уровня стопы."/>
-					<s:Spacer width="5"/>
-					<s:Label text="Пауза после"/>
-					<s:Spacer width="3"/>
-					<s:NumericStepper id="spFeederCountdown" width="40"  change="spFeederCountdown_changeHandler(event)" enabled="{tg_checkFeederEmpty.selected}"
-									  minimum="0" maximum="99" snapInterval="1" value="{pauseFeederCountdown}"/>
-					<s:Spacer width="3"/>
-					<s:Label text="листов"/>
-				</s:HGroup>
-				<s:HGroup gap="0" verticalAlign="baseline">
-					<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 
-					<s:Label text="Отключить контроль двойного листа для разворотов"/>
-				</s:HGroup>
-				<s:HGroup gap="0" verticalAlign="baseline">
-					<s:Label text="При старте включать:" width="180"/>
-					<s:Spacer width="10"/>
-					<s:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
-					<s:Label text="Привод"/>
-					<s:Spacer width="10"/>
-					<s:CheckBox id="tg_vacuumOnStartOn" selected="{vacuumOnStartOn}" change="{setBool('vacuumOnStartOn')}"/>
-					<s:Label text="Вакуум"/>
-				</s:HGroup>
-				<s:HGroup gap="0" verticalAlign="baseline">
-					<s:Label text="При паузе/ошибке выключать:" width="180"/>
-					<s:Spacer width="10"/>
-					<s:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
-					<s:Label text="Привод"/>
-					<s:Spacer width="10"/>
-					<s:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
-					<s:Label text="Вакуум"/>
-				</s:HGroup>
-				<s:HGroup gap="0" verticalAlign="baseline">
-					<s:Label text="При завершении заказа"  width="180"/>
-					<s:Spacer width="10"/>
-					<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
-					<s:Label text="Стоп"/>
-					<s:Spacer width="10"/>
-					<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
-					<s:Label text="Пауза"/>
-				</s:HGroup>
-			</s:VGroup>
-			<s:VGroup  gap="5"  height="{170}">
-				<s:Label text="Задержка между книгами (млсек):"/>
-				<s:DataGrid id="dgBookDelays" height="100%" 
-							selectionMode="singleRow" editable="true"
-							sortableColumns="false"
-							dataProvider="{feedBookDelays}"
-							>
-					<s:columns>
-						<s:ArrayList>
-							<s:GridColumn dataField="sheets" headerText="Разворотов &lt;=" width="120" editable="true" />
-							<s:GridColumn dataField="delay" headerText="Пауза (мс)" width="100" editable="true"/>
-						</s:ArrayList>
-					</s:columns>
-				</s:DataGrid>
-				<s:HGroup width="100%" gap="10" horizontalAlign="right">
-					<s:Button id="btAddBookDelay" label="Добавить" click="btAddBookDelay_clickHandler(event)"/>
-					<s:Button id="btDelBookDelay" label="Удалить" click="btDelBookDelay_clickHandler(event)"/>
-					<s:Button id="btSortBookDelay" label="Упорядочить" click="{feedBookDelays.refresh()}"/>
-				</s:HGroup> 
-			</s:VGroup> 
-		</s:HGroup>
-		
-		<s:Spacer height="5"/>
-		<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
-		<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" width="100%" height="100%" minHeight="250">
-			<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%" height="100%">
-				<s:VGroup gap="5" width="100%" height="100%">
+			<s:HGroup gap="10" verticalAlign="baseline" >
+				<s:Label text="Защита конфигурации"/>
+				<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
+				<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+				
+				<s:Spacer width="100%"/>
+				
+				<s:Label text="Статистика: {statString}"/>
+				<s:Button id="btResetStat" label="Сбросить" click="btResetStat_clickHandler(event)"/>
+			</s:HGroup>
+			
+			<s:HGroup gap="5" verticalAlign="baseline" width="100%">
+				<s:Label text="Обратный порядок:"/>
+				<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
+				
+				<s:Spacer width="100%"/>
+				<s:Label text="Отладка сканеров"/>
+				<s:CheckBox id="tg_debugBarReders" selected="{debugBarReders}" change="{setBool('debugBarReders')}"/> 
+			</s:HGroup>
+			
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Звук ошибки:"/>
+				<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
+				<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)" width="40"/>
+				<s:Button id="btSoundTest" label="►" click="btSoundTest_clickHandler(event)" width="40"/>
+			</s:HGroup>
+			
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:Label text="Подача листа"/>
+				<s:CheckBox id="tg_feedOn" selected="{feedOn}" change="{setBool('feedOn')}"/> 
+			</s:HGroup>
+			
+			<s:HGroup gap="10"  paddingLeft="15" enabled="{feedOn}">
+				<s:VGroup id="vgFeedCfg"  gap="5"   >
 					<s:HGroup gap="5" verticalAlign="baseline">
-						<s:Label text="Тип:"/>
-						<s:DropDownList id="ddGlueType" selectedIndex="{glueType}" change="ddGlueType_changeHandler(event)">
-							<s:ArrayCollection>
-								<fx:String>COM</fx:String>
-								<fx:String>Ethernet</fx:String>
-							</s:ArrayCollection>
-						</s:DropDownList>
+						<s:Label text="Задержка подачи листа (млсек):"/>
+						<s:NumericStepper id="spFeedDelay" minimum="100" maximum="5000" snapInterval="10" value="{feedDelay}" change="spFeedDelay_changeHandler(event)"/>
+					</s:HGroup>
+					<s:HGroup gap="5" verticalAlign="baseline">
+						<s:Label text="Задержка подачи второго листа (млсек):"/>
+						<s:NumericStepper id="spFeedDelay2" minimum="100" maximum="5000" snapInterval="10" value="{feedDelay2}" change="spFeedDelay2_changeHandler(event)"/>
 					</s:HGroup>
 					
-					<s:VGroup gap="0" width="100%" visible="{glueType==0}" includeInLayout="{glueType==0}">
-						<itemRenderer:ComInfoRenderer data="{comGlueProxy}" lockType="true" lockSuffix="true"/>
-						
-						<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
-							<s:Label text="Задержка выброса книги (мс):"/>
-							<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
+					<s:HGroup gap="0" verticalAlign="baseline">
+						<s:CheckBox id="tg_checkFeederEmpty" selected="{checkFeederEmpty}" change="{setBool('checkFeederEmpty')}"/> 
+						<s:Label text="Контроль уровня стопы."/>
+						<s:Spacer width="5"/>
+						<s:Label text="Пауза после"/>
+						<s:Spacer width="3"/>
+						<s:NumericStepper id="spFeederCountdown" width="40"  change="spFeederCountdown_changeHandler(event)" enabled="{tg_checkFeederEmpty.selected}"
+										  minimum="0" maximum="99" snapInterval="1" value="{pauseFeederCountdown}"/>
+						<s:Spacer width="3"/>
+						<s:Label text="листов"/>
+					</s:HGroup>
+					<s:HGroup gap="0" verticalAlign="baseline">
+						<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 
+						<s:Label text="Отключить контроль двойного листа для разворотов"/>
+					</s:HGroup>
+					<s:HGroup gap="0" verticalAlign="baseline">
+						<s:Label text="При старте включать:" width="180"/>
+						<s:Spacer width="10"/>
+						<s:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
+						<s:Label text="Привод"/>
+						<s:Spacer width="10"/>
+						<s:CheckBox id="tg_vacuumOnStartOn" selected="{vacuumOnStartOn}" change="{setBool('vacuumOnStartOn')}"/>
+						<s:Label text="Вакуум"/>
+					</s:HGroup>
+					<s:HGroup gap="0" verticalAlign="baseline">
+						<s:Label text="При паузе/ошибке выключать:" width="180"/>
+						<s:Spacer width="10"/>
+						<s:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
+						<s:Label text="Привод"/>
+						<s:Spacer width="10"/>
+						<s:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
+						<s:Label text="Вакуум"/>
+					</s:HGroup>
+					<s:HGroup gap="0" verticalAlign="baseline">
+						<s:Label text="При завершении заказа"  width="180"/>
+						<s:Spacer width="10"/>
+						<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
+						<s:Label text="Стоп"/>
+						<s:Spacer width="10"/>
+						<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
+						<s:Label text="Пауза"/>
+					</s:HGroup>
+				</s:VGroup>
+				
+				<s:VGroup  gap="5"  height="170">
+					<s:Label text="Задержка между книгами (млсек):"/>
+					<s:DataGrid id="dgBookDelays" height="100%" 
+								selectionMode="singleRow" editable="true"
+								sortableColumns="false"
+								dataProvider="{feedBookDelays}"
+								>
+						<s:columns>
+							<s:ArrayList>
+								<s:GridColumn dataField="sheets" headerText="Разворотов &lt;=" width="120" editable="true" />
+								<s:GridColumn dataField="delay" headerText="Пауза (мс)" width="100" editable="true"/>
+							</s:ArrayList>
+						</s:columns>
+					</s:DataGrid>
+					<s:HGroup width="100%" gap="10" horizontalAlign="right">
+						<s:Button id="btAddBookDelay" label="Добавить" click="btAddBookDelay_clickHandler(event)"/>
+						<s:Button id="btDelBookDelay" label="Удалить" click="btDelBookDelay_clickHandler(event)"/>
+						<s:Button id="btSortBookDelay" label="Упорядочить" click="{feedBookDelays.refresh()}"/>
+					</s:HGroup> 
+				</s:VGroup> 
+			</s:HGroup>
+			
+			<s:Spacer height="5"/>
+				
+			<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
+			<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" >
+				<s:NavigatorContent label="Склейка" backgroundAlpha="0" >
+					<s:VGroup gap="5" >
+						<s:HGroup gap="5" verticalAlign="baseline">
+							<s:Label text="Тип:"/>
+							<s:DropDownList id="ddGlueType" selectedIndex="{glueType}" change="ddGlueType_changeHandler(event)">
+								<s:ArrayCollection>
+									<fx:String>COM</fx:String>
+									<fx:String>Ethernet</fx:String>
+								</s:ArrayCollection>
+							</s:DropDownList>
 						</s:HGroup>
-					</s:VGroup>
-					<s:Scroller width="600" height="100%" visible="{glueType==1}" includeInLayout="{glueType==1}" >
-						<s:VGroup gap="5" width="100%" paddingLeft="20" 
-								  >
+						
+						<s:VGroup gap="0" visible="{glueType==0}" includeInLayout="{glueType==0}">
+							<itemRenderer:ComInfoRenderer data="{comGlueProxy}" lockType="true" lockSuffix="true"/>
+							
+							<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
+								<s:Label text="Задержка выброса книги (мс):"/>
+								<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
+							</s:HGroup>
+						</s:VGroup>
+						<s:VGroup gap="5" paddingLeft="20" visible="{glueType==1}" includeInLayout="{glueType==1}">
 							<s:HGroup gap="5" verticalAlign="baseline">
 								<s:Label text="Компьютер IP:"/>
 								<s:TextInput id="tiPCIP" text="@{glueServerIP}"/>
@@ -893,7 +891,7 @@
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{glueUnloadOnDelay}"/>
 							</s:HGroup>
-
+							
 							<s:HGroup gap="5" verticalAlign="baseline">
 								<s:Label text="Таймер дожима плиты на последнем листе (мс):"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
@@ -901,38 +899,40 @@
 							</s:HGroup>
 							
 						</s:VGroup>
-					</s:Scroller>
+						
+					</s:VGroup>
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent label="Подача" backgroundAlpha="0"  enabled="{feedOn &amp;&amp; (glueType==0 || !glueHasFeeder)}">
+					<s:Group >
+						<itemRenderer:ComInfoRenderer  data="{comFeederProxy}" lockType="true" lockSuffix="true"/>
+					</s:Group>
+				</s:NavigatorContent>
+				
+				<s:NavigatorContent label="Сканеры ШК" backgroundAlpha="0" >
+					<s:VGroup gap="5">
+						<s:HGroup gap="0" verticalAlign="baseline">
+							<s:CheckBox id="tg_altBarcode" selected="@{altBarcode}"/> 
+							<s:Label text="Внешний ШК (не стандартный)"/>
+						</s:HGroup>
+						<s:HGroup gap="0">
+							<s:VGroup gap="5" >
+								<s:List id="comList" dataProvider="{comReaders}" />
+								<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
+								<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
+							</s:VGroup> 
+							<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
+						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+			</mx:ViewStack>
+			<s:HGroup width="100%" horizontalAlign="right">
+				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+			</s:HGroup>
+			</s:VGroup>
 
-				</s:VGroup>
-			</s:NavigatorContent>
-			
-			<s:NavigatorContent label="Подача" backgroundAlpha="0" width="100%" enabled="{feedOn &amp;&amp; (glueType==0 || !glueHasFeeder)}">
-				<s:Group  width="100%">
-					<itemRenderer:ComInfoRenderer  data="{comFeederProxy}" lockType="true" lockSuffix="true"/>
-				</s:Group>
-			</s:NavigatorContent>
-			
-			<s:NavigatorContent label="Сканеры ШК" backgroundAlpha="0" width="100%">
-				<s:VGroup gap="5">
-					<s:HGroup gap="0" verticalAlign="baseline">
-						<s:CheckBox id="tg_altBarcode" selected="@{altBarcode}"/> 
-						<s:Label text="Внешний ШК (не стандартный)"/>
-					</s:HGroup>
-					<s:HGroup gap="0">
-						<s:VGroup gap="5" height="92%">
-							<s:List id="comList" dataProvider="{comReaders}"  height="100%"/>
-							<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
-							<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
-						</s:VGroup> 
-						<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
-					</s:HGroup>
-				</s:VGroup>
-			</s:NavigatorContent>
-		</mx:ViewStack>
-		<s:HGroup width="600" horizontalAlign="right">
-			<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
-		</s:HGroup>
-	</s:VGroup>
+		</s:VGroup>
+	</s:Scroller>
 	
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">

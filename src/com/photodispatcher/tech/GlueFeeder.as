@@ -448,6 +448,11 @@ package com.photodispatcher.tech{
 				log('startInternal: glueHandler init error');
 				return;
 			}
+			if(!glueHandler.isConnected){
+				log('startInternal: Не подключен контролер склейки');
+				return;
+			}
+			
 			glueHandler.repeatedSignalGap=repeatedSignalGap;
 			log('SerialProxy:' +serialProxy.traceDisconnected());
 			if(!barcodeReaders || barcodeReaders.length==0){
@@ -1053,7 +1058,9 @@ package com.photodispatcher.tech{
 				//show alert
 				if(Context.getAttribute("glueAlarm")){
 					dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
-					
+					if(Context.getAttribute("glueShowAlarm")){
+						(glueHandler as GlueHandlerMB).controller.setAlarmOn();
+					}
 				}else{
 					log('Низкий уровень клея');
 				}

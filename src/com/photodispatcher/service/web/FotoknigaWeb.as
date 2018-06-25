@@ -360,6 +360,12 @@ package com.photodispatcher.service.web{
 		}
 
 		private function listFtp():void{
+			/*
+			//closed 2018-06-22 problem to list root folder 4я качалка 
+			endSync();
+			return;
+			*/
+			
 			var ftp:FTPList= new FTPList(source);
 			ftp.addEventListener(Event.COMPLETE, onFtpList);
 			trace('Web sync list ftp: '+ source.ftpService.url)

@@ -51,12 +51,21 @@
 			<s:FormLayout gap="-15" paddingTop="-20"/>
 		</s:layout>
 		
-		<s:FormItem label="Тип:" enabled="{!lockType}">
-			<s:DropDownList dataProvider="{comTypes}" selectedIndex="@{comport.type}"/>
+		<s:FormItem label="Тип:" >
+			<s:HGroup gap="5" verticalAlign="baseline">
+				<s:DropDownList enabled="{!lockType}" dataProvider="{comTypes}" selectedIndex="@{comport.type}"/>
+				<s:Spacer width="5"/>
+				<s:Label text="Ethernet:"/>
+				<s:CheckBox selected="@{comport.isEthernet}"/>
+			</s:HGroup>
 		</s:FormItem>
 		<s:FormItem label="Интервал (мс):" 
 					visible="{comport.type==ComInfo.COM_TYPE_BARREADER}" includeInLayout="{comport.type==ComInfo.COM_TYPE_BARREADER}">
 			<s:NumericStepper value="@{comport.doubleScanGap}" minimum="0" maximum="30000" snapInterval="100" toolTip="Интервал сканирования"/>
+		</s:FormItem>
+		<s:FormItem label="IP:" visible="{comport.isEthernet}" includeInLayout="{comport.isEthernet}">
+			<s:TextInput  text="@{comport.remoteIP}"/>
+			<s:Label text="{comport.ipLabel}"/>
 		</s:FormItem>
 		<s:FormItem label="Номер COM:">
 			<s:DropDownList dataProvider="{comNums}" selectedItem="@{comport.num}"/>
@@ -65,16 +74,16 @@
 					visible="{comport.type==ComInfo.COM_TYPE_CONTROLLER}" includeInLayout="{comport.type==ComInfo.COM_TYPE_CONTROLLER}">
 			<s:NumericStepper minimum="0" maximum="8" snapInterval="1" value="@{comport.tray}"/>
 		</s:FormItem>
-		<s:FormItem label="Скорость:">
+		<s:FormItem label="Скорость:" visible="{!comport.isEthernet}" includeInLayout="{!comport.isEthernet}">
 			<s:DropDownList dataProvider="{bauds}" selectedItem="@{comport.baud}"/>
 		</s:FormItem>
-		<s:FormItem label="Биты данных:">
+		<s:FormItem label="Биты данных:" visible="{!comport.isEthernet}" includeInLayout="{!comport.isEthernet}">
 			<s:DropDownList dataProvider="{databits}" selectedItem="@{comport.databits}"/>
 		</s:FormItem>
-		<s:FormItem label="Четность:">
+		<s:FormItem label="Четность:" visible="{!comport.isEthernet}" includeInLayout="{!comport.isEthernet}">
 			<s:DropDownList dataProvider="{paritys}" selectedItem="@{comport.parity}"/>
 		</s:FormItem>
-		<s:FormItem label="Стоповые биты:">
+		<s:FormItem label="Стоповые биты:" visible="{!comport.isEthernet}" includeInLayout="{!comport.isEthernet}">
 			<s:DropDownList dataProvider="{stopbits}" selectedItem="@{comport.stopbits}"/>
 		</s:FormItem>
 		<s:FormItem label="Суфикс:" enabled="{!lockSuffix}">

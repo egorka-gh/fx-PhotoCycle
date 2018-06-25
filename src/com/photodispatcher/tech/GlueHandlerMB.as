@@ -115,6 +115,11 @@ package com.photodispatcher.tech{
 			return 	prepared;
 		}
 		
+		override public function get isConnected():Boolean
+		{
+			return controller && controller.connected;
+		}
+		
 		override public function start(startDelay:int=0):Boolean{
 			if(isRunning) return true;
 			if(!checkPrepared(true)) return false;

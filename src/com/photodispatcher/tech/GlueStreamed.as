@@ -228,6 +228,7 @@ package com.photodispatcher.tech{
 					barReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 					barReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
 					barReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+					barReader.removeEventListener(BarCodeEvent.BARCODE_DEBUG, onBarDebug);
 					//barReader.stop();
 				}
 			}

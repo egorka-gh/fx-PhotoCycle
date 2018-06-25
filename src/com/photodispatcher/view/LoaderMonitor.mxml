@@ -304,7 +304,9 @@
 							<s:Label text="Проверка" fontWeight="bold"/>
 							<s:Label text="Очередь: {downloadManager.checker.queue.length}" fontWeight="bold" width="100%" maxDisplayedLines="1"/>
 						</s:HGroup>
-						<s:Label text="{downloadManager.checker.lastError}" fontWeight="bold" height="30" width="100%" maxDisplayedLines="2"/>
+						<s:Label id="lbLastCheckerErr" text="{downloadManager.checker.lastError}"
+								 doubleClickEnabled="true" doubleClick="{downloadManager.checker.lastError=''}"
+								 fontWeight="bold" height="30" width="100%" maxDisplayedLines="2"/>
 						<!--<s:HGroup gap="10">
 							<s:Button id="btBuilderStart" icon="assets/play.png" width="30" height="30" toolTip="Запустить подготовку"/>
 							<s:Button id="btBuilderStop" icon="assets/stop.png" width="30" height="30" toolTip="Остановить подготовку"/>

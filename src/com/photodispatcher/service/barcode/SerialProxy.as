@@ -39,8 +39,6 @@ package com.photodispatcher.service.barcode
 		//TODO refactor to map by type
 		private var comInfos:Array;
 
-		public var remoteIp:String;
-
 		private var _connected:Boolean=false;
 		public function get connected():Boolean{
 			return _connected;
@@ -78,6 +76,7 @@ package com.photodispatcher.service.barcode
 		
 		public function start(newComInfos:Array):void{
 			var proxy:Socket2Com;
+			var startLockal:Boolean=false;
 			//stop();
 			if(_isStarted) return;
 			if(newComInfos) comInfos=newComInfos;
@@ -85,19 +84,29 @@ package com.photodispatcher.service.barcode
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error: Нет настроенных COM портов'));
 				return;
 			}
-			if(remoteIp){
-				//create proxies
+				//create remote proxies
 				for each (ci in comInfos){
 					if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
-						if(!ci.proxy){
-							proxy= new Socket2Com(ci,remoteIp);
-							ci.proxy=proxy;
+						if(ci.isEthernet){
+							if(ci.remoteIP){
+								if(!ci.proxy){
+									proxy= new Socket2Com(ci);
+									ci.proxy=proxy;
+								}
+							}
+						}else{
+							startLockal=true;
 						}
 					}
 				}
-				_isStarted=true;
-				return;
-			}
+
+				if(!startLockal){
+					//all comInfos isEthernet
+					_isStarted=true;
+					return;
+				}
+				
+				
 			//check/copy serial_proxy
 			var srcDir:File=File.applicationDirectory;
 			srcDir=srcDir.resolvePath(PROXY_FOLDER);
@@ -137,7 +146,7 @@ package com.photodispatcher.service.barcode
 			var conf:String;
 			var ci:ComInfo;
 			for each(ci in comInfos){
-				if(ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
+				if(ci.type!=ComInfo.COM_TYPE_NONE && ci.num && !ci.isEthernet){
 					if(ports){
 						ports+=(','+ci.num);
 						conf+=ci.getCoonfig();
@@ -176,11 +185,6 @@ package com.photodispatcher.service.barcode
 				dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy init error'));
 				return;
 			}
-			/*
-			//proc.addEventListener(NativeProcessExitEvent.EXIT,complite);
-			proc.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, procRespond);
-			proc.addEventListener(ProgressEvent.STANDARD_ERROR_DATA, procErr);
-			*/
 			try{
 				process.run();
 			}catch(e:Error){
@@ -190,9 +194,9 @@ package com.photodispatcher.service.barcode
 			
 			//create com proxies
 			for each (ci in comInfos){
-				if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
+				if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num && !ci.isEthernet){
 					if(!ci.proxy){
-						proxy= new Socket2Com(ci,remoteIp);
+						proxy= new Socket2Com(ci);
 						ci.proxy=proxy;
 					}
 				}
@@ -202,25 +206,13 @@ package com.photodispatcher.service.barcode
 			dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_START));
 		}
 		
-		/*
-		private var procResponse:String='';
-		private function procErr(e:Event):void{
-			procResponse+=proc.standardError.readUTFBytes(proc.standardError.bytesAvailable);
-			dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy recponce: '+procResponse));
-		}
-		private function procRespond(e:Event):void{
-			procResponse+=proc.standardOutput.readUTFBytes(proc.standardOutput.bytesAvailable);
-			dispatchEvent( new SerialProxyEvent(SerialProxyEvent.SERIAL_PROXY_ERROR,'','SerialProxy recponce: '+procResponse));
-		}
-		*/
-		
 		public function getProxy(type:int):Socket2Com{
 			if(!_isStarted) return null;
 			var ci:ComInfo;
 			ci = ArrayUtil.searchItem('type',type,comInfos) as ComInfo;
 			if(!ci || ci.type==ComInfo.COM_TYPE_NONE || !ci.num) return null;
 			if (ci.proxy) return ci.proxy;
-			var proxy:Socket2Com= new Socket2Com(ci,remoteIp);
+			var proxy:Socket2Com= new Socket2Com(ci);
 			ci.proxy=proxy;
 			return proxy;
 		}
@@ -233,7 +225,7 @@ package com.photodispatcher.service.barcode
 			for each (ci in comInfos){
 				if(ci && ci.type==type && ci.num){
 					if(!ci.proxy){
-						var proxy:Socket2Com= new Socket2Com(ci,remoteIp);
+						var proxy:Socket2Com= new Socket2Com(ci);
 						ci.proxy=proxy;
 					}
 					result.push(ci.proxy);
@@ -250,7 +242,7 @@ package com.photodispatcher.service.barcode
 			for each (ci in comInfos){
 				if(ci && ci.type!=ComInfo.COM_TYPE_NONE && ci.num){
 					if(!ci.proxy){
-						var proxy:Socket2Com= new Socket2Com(ci,remoteIp);
+						var proxy:Socket2Com= new Socket2Com(ci);
 						ci.proxy=proxy;
 					}
 					if(!ci.proxy.connected){

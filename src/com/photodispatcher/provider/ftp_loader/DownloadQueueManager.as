@@ -356,7 +356,10 @@ package com.photodispatcher.provider.ftp_loader{
 		protected function fetch():Order{
 			var newOrder:Order;
 			var ord:Order;
+			var hasVsErr:Boolean=false;
 			//chek queue
+			
+			//look ws normal state
 			for each (ord in queue.source){
 				if(ord && !ord.exceedErrLimit){
 					if(ord.state>0){
@@ -372,11 +375,39 @@ package com.photodispatcher.provider.ftp_loader{
 							}
 						}
 					}else if(ord.state!=OrderState.ERR_CHECK_MD5){
+						hasVsErr=true;
+						/*
 						//reset error
 						resetOrderState(ord);
+						*/
 					}
 				}
 			}
+
+			//has no normal and exists vs error
+			if(!newOrder && hasVsErr){
+				//reset vs errors
+				var rem:Array=[];
+				hasVsErr=false;
+				for each (ord in queue.source){
+					if(ord && !ord.exceedErrLimit){
+						if(ord.state<0 && ord.state!=OrderState.ERR_CHECK_MD5){
+							resetOrderState(ord);
+							if(ord.state>0){
+								hasVsErr=true;
+							}else{
+								//??
+								rem.push(ord);
+							}
+						}
+					}
+				}
+				//remove vs wrong err state
+				for each (ord in rem) removeOrder(ord);
+				//fetch first from reseted
+				if(hasVsErr) return fetch();
+			}
+
 			return newOrder;
 		}
 		

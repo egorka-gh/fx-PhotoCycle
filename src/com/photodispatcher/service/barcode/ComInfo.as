@@ -12,7 +12,7 @@ package com.photodispatcher.service.barcode{
 		public static const COM_TYPE_GLUECONTROLLER:int=6;
 		public static const COM_TYPE_CAPTIONS:Array=['Отключен','Сканер ШК','Клапан','Контроллер','Принтер EBS6k','Сканер управления','Склейщик']; 
 		
-		public static const COM_NUMS:Array=['1','2','3','4','5','6','7','8','9']; 
+		public static const COM_NUMS:Array=['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20']; 
 		public static const COM_BAUDS:Array=['2400','4800','7200','9600','14400','19200','38400','57600','115200','128000']; 
 		public static const COM_DATABITS:Array=['8','7','6','5','4']; 
 		public static const COM_STOPBITS:Array=['1','2']; 
@@ -20,6 +20,8 @@ package com.photodispatcher.service.barcode{
 		public static const COM_SUFFIX:Array=[13,10,3]; 
 		
 		public static const KEY_TYPE:String='comm_type';
+		public static const KEY_ETHERNET:String='comm_ethernet';
+		public static const KEY_REMOTE_IP:String='comm_ip';
 		public static const KEY_COM:String='comm_num';
 		public static const KEY_TRAY:String='comm_tray';
 		public static const KEY_PORT:String='net_port';
@@ -32,16 +34,49 @@ package com.photodispatcher.service.barcode{
 		
 		public var type:int=COM_TYPE_NONE;
 
+		private var _isEthernet:Boolean=false;
+		public function get isEthernet():Boolean{
+			return _isEthernet;
+		}
+		public function set isEthernet(value:Boolean):void{
+			_isEthernet = value;
+			updateLabel();
+		}
+		
+		private var _remoteIP:String='';
+		public function get remoteIP():String{
+			return _remoteIP;
+		}
+		public function set remoteIP(value:String):void{
+			_remoteIP = value;
+			updateLabel();
+		}
+		
 		private var _num:String;
 		public function get num():String{
 			return _num;
 		}
 		public function set num(value:String):void{
 			_num = value;
-			label='COM'+_num;
+			updateLabel();
+		}
+		
+		private function updateLabel():void{
+			if(isEthernet && remoteIP){
+				var str:String='';	
+				var idx:int=remoteIP.lastIndexOf('.');
+				if(idx!=-1) str=remoteIP.substr(idx+1);
+				label='E'+str+':'+num;
+				ipLabel=remoteIP+':'+(SerialProxy.PROXY_PORT_BASE+int(num)).toString();
+			}else{
+				label='COM'+_num;
+				ipLabel='';
+			}
+			
 		}
 
 		public var label:String='COM?';
+		public var ipLabel:String='';
 		public var baud:String=COM_BAUDS[0];
 		public var databits:String=COM_DATABITS[0];
 		public var stopbits:String=COM_STOPBITS[0];
@@ -108,6 +143,8 @@ package com.photodispatcher.service.barcode{
 			var result:Object= new Object;
 			if(type!=COM_TYPE_NONE && num){
 				result[KEY_TYPE]=type;
+				result[KEY_ETHERNET]=isEthernet;
+				result[KEY_REMOTE_IP]=remoteIP;
 				result[KEY_COM]=num;
 				result[KEY_TRAY]=tray;
 				if(baud) result[KEY_BAUD]=baud;
@@ -122,6 +159,8 @@ package com.photodispatcher.service.barcode{
 		
 		public function fromRaw(value:Object):void{
 			if(value.hasOwnProperty(KEY_TYPE)) type=value[KEY_TYPE];
+			if(value.hasOwnProperty(KEY_ETHERNET)) isEthernet=value[KEY_ETHERNET];
+			if(value.hasOwnProperty(KEY_REMOTE_IP)) remoteIP=value[KEY_REMOTE_IP];
 			if(value.hasOwnProperty(KEY_COM)) num=value[KEY_COM];
 			if(value.hasOwnProperty(KEY_TRAY)) tray=value[KEY_TRAY];
 			if(value.hasOwnProperty(KEY_BAUD)) baud=value[KEY_BAUD];
