@@ -556,6 +556,7 @@ package com.photodispatcher.tech{
 			pausedGroup=-1;
 			pausedGroupStep=-1;
 			register=null;
+			sheetsPerBook=-1;
 			inexactBookSequence=false;
 			detectFirstBook=false;
 			isRunning=false;
@@ -864,7 +865,7 @@ package com.photodispatcher.tech{
 						statCountBook();
 						//start book delay or feed sheet
 						currentGroupStep=0;
-						if (register && startFeedBookDelay(register.sheets)) return;
+						if (startFeedBookDelay()) return;
 						startFeedDelay();
 					}
 					break;
@@ -1129,19 +1130,20 @@ package com.photodispatcher.tech{
 
 		
 		private var feedBookTimer:Timer;
-		protected function startFeedBookDelay(sheetsPerBook:int):Boolean{
+		private var sheetsPerBook:int=-1;
+		protected function startFeedBookDelay():Boolean{
 			var feedBookDelay:int=0;
 			//detect feedBookDelay
 			var maxDelay:int=0;
-			var lastSheets:int=-1;
+			var lastSheets:int=0;
 			if(feedBookDelays && feedBookDelays.length>0){
 				for each (var obj:Object in feedBookDelays){
 					//{sheets:int(0),delay:int(0)}
 					if(obj.hasOwnProperty("sheets") && obj.hasOwnProperty("delay")){
-						if(obj.delay>maxDelay) maxDelay=obj.delay;
-						if(obj.sheets>=lastSheets && obj.sheets<=sheetsPerBook){
-							feedBookDelay=obj.delay;
-							lastSheets=obj.sheets;
+						if(int(obj.delay)>maxDelay) maxDelay=int(obj.delay);
+						if(int(obj.sheets)>=lastSheets && int(obj.sheets)<=sheetsPerBook){
+							feedBookDelay=int(obj.delay);
+							lastSheets=int(obj.sheets);
 						}
 					}
 				}
@@ -1298,6 +1300,7 @@ package com.photodispatcher.tech{
 				currReprints=[];
 				currBookTot=bookTotal;
 				currSheetTot=pageTotal;
+				sheetsPerBook=pageTotal;
 				/*
 				//template check
 				bdWait=0;

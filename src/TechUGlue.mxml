@@ -193,7 +193,8 @@
 					finalSqueezingTime=so.data.finalSqueezingTime;
 					glueUnloadOffDelay=so.data.glueUnloadOffDelay;
 					glueUnloadOnDelay=so.data.glueUnloadOnDelay;
-					gluePlateReturnDelay=so.data.gluePlateReturnDelay;
+					glueScraperDelay=so.data.glueScraperDelay;
+					glueScraperRun=so.data.glueScraperRun;
 					
 					statDate=so.data.statDate;
 					if(!statDate){
@@ -272,7 +273,9 @@
 					Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
 					Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
 					Context.setAttribute("checkBookOut", checkBookOut);
-					
+					Context.setAttribute("glueScraperDelay", glueScraperDelay);
+					Context.setAttribute("glueScraperRun", glueScraperRun);
+
 					
 				}
 				Context.setAttribute("debugBarReders", debugBarReders);
@@ -475,6 +478,11 @@
 			public var glueUnloadOnDelay:int=0;
 			[Bindable]
 			public var gluePlateReturnDelay:int=0;
+
+			[Bindable]
+			public var glueScraperDelay:int=0;
+			[Bindable]
+			public var glueScraperRun:int=0;
 			
 			[Bindable]
 			protected var statDate:Date;
@@ -505,6 +513,8 @@
 				Context.setAttribute("glueUnloadOnDelay", glueUnloadOnDelay);
 				Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
 				Context.setAttribute("checkBookOut", checkBookOut);
+				Context.setAttribute("glueScraperDelay", glueScraperDelay);
+				Context.setAttribute("glueScraperRun", glueScraperRun);
 				
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
@@ -528,6 +538,8 @@
 				so.data.glueUnloadOnDelay=glueUnloadOnDelay;
 				so.data.gluePlateReturnDelay=gluePlateReturnDelay;
 				so.data.checkBookOut=checkBookOut;
+				so.data.glueScraperDelay=glueScraperDelay;
+				so.data.glueScraperRun=glueScraperRun;
 				
 				so.flush();  
 			}
@@ -896,6 +908,17 @@
 								<s:Label text="Таймер дожима плиты на последнем листе (мс):"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{gluePlateReturnDelay}"/>
+							</s:HGroup>
+
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Скребок"/> 
+								<s:Spacer width="5"/>
+								<s:Label text="Пауза перед включением (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  value="@{glueScraperDelay}"/>
+								<s:Label text="Удержание сигнала (мс):"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  value="@{glueScraperRun}"/>
 							</s:HGroup>
 							
 						</s:VGroup>

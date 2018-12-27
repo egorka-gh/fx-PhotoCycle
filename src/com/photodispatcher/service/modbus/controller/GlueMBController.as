@@ -72,6 +72,10 @@ package com.photodispatcher.service.modbus.controller{
 		D20(адрес регистра 0x0014) Unload_On_delay Таймер включения бункера выгрузки (формат записи BCD, 1 = 10ms)
 		D21(адрес регистра 0x0015) Таймер дожимаплиты на последнем листе (формат записи BCD, 1 = 10ms)
 		D22(адрес регистра 0x0016) Экстренный выброс блока (послать 1)
+		
+		//2018-12-27
+		D30 (адрес регистра 0x001E) Scraper_hold_WORD - “аймер удержани€ сигнала "скребка" (формат записи BCD, 1 = 10ms)
+		D29 (адрес регистра 0x001D) Scraper_delay_WORD - “аймер ожидани€ после ухода передней плиты назад на последнем листе перед включением "скребка" (формат записи BCD, 1 = 10ms)
 		*/
 		
 		public static const CHANEL_CONTROLLER_MESSAGE:int			=0;
@@ -123,6 +127,9 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_REGISTER_UNLOAD_ON_DELAY:int				=20;
 		public static const CONTROLLER_REGISTER_PLATE_RETURN_DELAY:int			=21;
 		public static const CONTROLLER_REGISTER_BLOCK_OUT:int					=22;
+		//2018-12-27
+		public static const CONTROLLER_REGISTER_SCRAPER_DELAY:int				=29;
+		public static const CONTROLLER_REGISTER_SCRAPER_RUN:int					=30;
 		
 		public function GlueMBController(){
 			super();
@@ -142,6 +149,8 @@ package com.photodispatcher.service.modbus.controller{
 		public var glueUnloadOffDelay:int=0;
 		public var glueUnloadOnDelay:int=0;
 		public var gluePlateReturnDelay:int=0;
+		public var glueScraperDelay:int=0;
+		public var glueScraperRun:int=0;
 
 		public var pumpSensFilterTime:int;
 		public var pumpWorkTime:int;
@@ -359,6 +368,22 @@ package com.photodispatcher.service.modbus.controller{
 			}
 		}
 		
+		public function setScraperDelay(msec:int):void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_SCRAPER_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function setScraperRun(msec:int):void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_SCRAPER_RUN, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
 		override protected function onClientConnect(evt:Event):void{
 			dispatchEvent(new Event('connectChange'));
 			if(client && client.connected){
@@ -377,6 +402,8 @@ package com.photodispatcher.service.modbus.controller{
 					setUnloadOffDelay(glueUnloadOffDelay);
 					setUnloadOnDelay(glueUnloadOnDelay);
 					setPlateReturnDelay(gluePlateReturnDelay);
+					setScraperDelay(glueScraperDelay);
+					setScraperRun(glueScraperRun);
 				}
 			}
 		}
