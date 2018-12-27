@@ -282,7 +282,7 @@ package com.photodispatcher.service.modbus.controller{
 		}
 
 		public function setWhitePaperDelay(msec:int):void{
-			if(!hasFeeder) return;
+			//if(!hasFeeder) return;
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_WHITE_PAPER_DELAY, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
@@ -291,7 +291,7 @@ package com.photodispatcher.service.modbus.controller{
 		}
 
 		public function setBookEjectionDelay(msec:int):void{
-			if(!hasFeeder) return;
+			//if(!hasFeeder) return;
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_BOOK_EJECTION_DELAY, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
@@ -300,7 +300,7 @@ package com.photodispatcher.service.modbus.controller{
 		}
 
 		public function setFinalSqueezingTime(msec:int):void{
-			if(!hasFeeder) return;
+			//if(!hasFeeder) return;
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_FINAL_SQUEEZING_TIME, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
@@ -309,7 +309,7 @@ package com.photodispatcher.service.modbus.controller{
 		}
 
 		public function setUnloadOffDelay(msec:int):void{
-			if(!hasFeeder) return;
+			//if(!hasFeeder) return;
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_UNLOAD_OFF_DELAY, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
@@ -318,7 +318,7 @@ package com.photodispatcher.service.modbus.controller{
 		}
 
 		public function setUnloadOnDelay(msec:int):void{
-			if(!hasFeeder) return;
+			//if(!hasFeeder) return;
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_UNLOAD_ON_DELAY, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
@@ -327,7 +327,7 @@ package com.photodispatcher.service.modbus.controller{
 		}
 
 		public function setPlateReturnDelay(msec:int):void{
-			if(!hasFeeder) return;
+			//if(!hasFeeder) return;
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_PLATE_RETURN_DELAY, ModbusBytes.int2bcd(int(msec/10)));
 			}else{
@@ -395,7 +395,7 @@ package com.photodispatcher.service.modbus.controller{
 				if(pumpSensFilterTime>0) setPumpSensFilterTime(pumpSensFilterTime);
 				if(pumpWorkTime>0) setPumpWorkTime(pumpWorkTime);
 				setPumpEnable(pumpEnable);
-				if(hasFeeder){
+				//if(hasFeeder){
 					setWhitePaperDelay(whitePaperDelay);
 					if(bookEjectionDelay>10) setBookEjectionDelay(bookEjectionDelay);
 					setFinalSqueezingTime(finalSqueezingTime);
@@ -404,7 +404,7 @@ package com.photodispatcher.service.modbus.controller{
 					setPlateReturnDelay(gluePlateReturnDelay);
 					setScraperDelay(glueScraperDelay);
 					setScraperRun(glueScraperRun);
-				}
+				//}
 			}
 		}
 		

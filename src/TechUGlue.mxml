@@ -193,6 +193,8 @@
 					finalSqueezingTime=so.data.finalSqueezingTime;
 					glueUnloadOffDelay=so.data.glueUnloadOffDelay;
 					glueUnloadOnDelay=so.data.glueUnloadOnDelay;
+					gluePlateReturnDelay=so.data.gluePlateReturnDelay;
+
 					glueScraperDelay=so.data.glueScraperDelay;
 					glueScraperRun=so.data.glueScraperRun;
 					
