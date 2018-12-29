@@ -6,10 +6,155 @@
 					   xmlns:view="com.photodispatcher.view.*" 
 					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
 					   xmlns:config="com.photodispatcher.view.config.*"
+					   xmlns:mdcomp="spark.material.components.*"
+					   xmlns:mdskins="spark.material.skins.*"
 					   showStatusBar="false"
 					   creationComplete="{initApp()}" 
 					   closing="windowedapplication1_closingHandler(event)"  
 					   >
+	
+	
+	<fx:Style>
+		@namespace mdcomp "spark.material.components.*";
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@font-face {
+			src: url("spark/material/assets/fonts/Roboto-Regular.ttf");
+			fontFamily: "Roboto";
+			advancedAntiAliasing: true;
+			fontStyle: normal;
+			cff: true;
+			embed-as-cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/Roboto-Italic.ttf");
+			fontFamily: "Roboto";
+			advancedAntiAliasing: true;
+			fontStyle: italic;
+			cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/Roboto-Bold.ttf");
+			fontFamily: "Roboto";
+			advancedAntiAliasing: true;
+			fontWeight: bold;
+			cff: true;
+		}
+
+		@font-face {
+			src: url("spark/material/assets/fonts/RobotoCondensed-Regular.ttf");
+			fontFamily: "RobotoCond";
+			advancedAntiAliasing: true;
+			fontStyle: normal;
+			cff: true;
+			embed-as-cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/RobotoCondensed-Bold.ttf");
+			fontFamily: "RobotoCond";
+			advancedAntiAliasing: true;
+			fontStyle: bold;
+			cff: true;
+			embed-as-cff: true;
+		}
+
+		@font-face {
+			src: url("spark/material/assets/fonts/RobotoCondensed-Italic.ttf");
+			fontFamily: "RobotoCond";
+			advancedAntiAliasing: true;
+			fontStyle: italic;
+			cff: true;
+			embed-as-cff: true;
+		}
+
+		@font-face {
+			src: url("spark/material/assets/fonts/RobotoCondensed-Light.ttf");
+			fontFamily: "RobotoLight";
+			advancedAntiAliasing: true;
+			fontStyle: normal;
+			cff: true;
+			embed-as-cff: true;
+		}
+
+		global
+		{
+			fontFamily: "Roboto";
+			fontStyle:normal;
+			color: #000000;
+			fontSize: 14;
+			modal-transparency-duration: 0;
+		}
+		
+		mdcomp|Button
+		{
+			color: #455a64;
+		}
+
+		mdcomp|ButtonIcon
+		{
+			color: #455a64;
+		}
+
+		mdcomp|Button.primary
+		{
+			backgroundColor: #607d8b;
+			inkColor: #c6e0fb;
+			color: #ededed;
+		}
+		
+		mdcomp|Button.primary-flat
+		{
+			buttonStyle: flat;
+			inkColor: #82bfff;
+			color: #025aa3;
+		}
+		
+		mdcomp|Button.warn
+		{
+			backgroundColor: #f44336;
+			inkColor: #f68f89;
+			color: #ffffff;
+		}
+		
+		mdcomp|Button.warn-flat
+		{
+			buttonStyle: flat;
+			inkColor: #f68f89;
+			color: #f44336;
+		}
+		
+		mdcomp|FloatingActionButton.lime
+		{
+			backgroundColor: #CDDC39;
+			inkColor: #c6e0fb;
+		}	
+		
+		mdcomp|FloatingActionButton.red
+		{
+			backgroundColor: #FF5252;
+			inkColor: #f68f89;
+		}			
+		
+		mdcomp|FloatingActionButton.amber
+		{
+			backgroundColor: #FFC107;
+			inkColor: #c6e0fb;
+		}
+		
+		mdcomp|FloatingActionButton.indigo
+		{
+			backgroundColor: #536DFE;
+			inkColor: #c6e0fb;
+		}		
+		
+		s|FormItem {
+			skinClass: ClassReference("spark.material.skins.FormItemSkin");
+			showErrorTip: false;
+		}
+	</fx:Style>
+
 	
 	<fx:Script>
 		<![CDATA[
@@ -672,7 +817,7 @@
 	
 	<s:Rect top="0" left="0" right="0" bottom="0">
 		<s:fill>
-			<s:SolidColor color="#cccccc"/>
+			<s:SolidColor color="#e6e7e8"/>
 		</s:fill>
 	</s:Rect>
 	
@@ -682,94 +827,94 @@
 			<s:VGroup gap="10">
 				
 			<s:HGroup gap="10" verticalAlign="baseline" >
-				<s:Label text="Защита конфигурации"/>
-				<s:Button id="btSetPass" label="Назначить пароль" click="btSetPass_clickHandler(event)"/>
-				<s:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+				<s:Label text="Защита конфигурации" fontFamily="RobotoLight" />
+				<mdcomp:Button id="btSetPass" label="Назначить пароль"  click="btSetPass_clickHandler(event)"/>
+				<mdcomp:Button id="btOffPass" label="Снять защиту" click="btOffPass_clickHandler(event)"/>
+			</s:HGroup>
 				
-				<s:Spacer width="100%"/>
-				
-				<s:Label text="Статистика: {statString}"/>
-				<s:Button id="btResetStat" label="Сбросить" click="btResetStat_clickHandler(event)"/>
+			<s:HGroup gap="10" verticalAlign="baseline" >
+				<s:Label text="Статистика: {statString}" fontFamily="RobotoLight"/>
+				<mdcomp:Button id="btResetStat" label="Сбросить" click="btResetStat_clickHandler(event)"/>
 			</s:HGroup>
 			
 			<s:HGroup gap="5" verticalAlign="baseline" width="100%">
-				<s:Label text="Обратный порядок:"/>
-				<s:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
+				<s:Label text="Обратный порядок:" fontFamily="RobotoLight"/>
+				<mdcomp:CheckBox id="chbRevers" selected="{reversOrder}"  change="chbRevers_changeHandler(event)"/>
 				
 				<s:Spacer width="100%"/>
-				<s:Label text="Отладка сканеров"/>
-				<s:CheckBox id="tg_debugBarReders" selected="{debugBarReders}" change="{setBool('debugBarReders')}"/> 
+				<s:Label text="Отладка сканеров"  fontFamily="RobotoLight"/>
+				<mdcomp:CheckBox id="tg_debugBarReders" selected="{debugBarReders}" change="{setBool('debugBarReders')}"/> 
 			</s:HGroup>
 			
-			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Звук ошибки:"/>
+			<s:HGroup gap="5" verticalAlign="middle">
+				<s:Label text="Звук ошибки:" fontFamily="RobotoLight" />
 				<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
-				<s:Button id="btSoundFile" label="..." click="btSoundFile_clickHandler(event)" width="40"/>
-				<s:Button id="btSoundTest" label="►" click="btSoundTest_clickHandler(event)" width="40"/>
+				<mdcomp:ButtonIcon id="btSoundFile" iconFont="\uf07b" click="btSoundFile_clickHandler(event)" width="40"/>
+				<mdcomp:ButtonIcon id="btSoundTest" iconFont="\uf04b" click="btSoundTest_clickHandler(event)" width="40"/>
 			</s:HGroup>
 			
 			<s:HGroup gap="5" verticalAlign="baseline">
-				<s:Label text="Подача листа"/>
-				<s:CheckBox id="tg_feedOn" selected="{feedOn}" change="{setBool('feedOn')}"/> 
+				<s:Label text="Подача листа" fontFamily="Roboto"/>
+				<mdcomp:CheckBox id="tg_feedOn" selected="{feedOn}" change="{setBool('feedOn')}"/> 
 			</s:HGroup>
 			
 			<s:HGroup gap="10"  paddingLeft="15" enabled="{feedOn}">
 				<s:VGroup id="vgFeedCfg"  gap="5"   >
 					<s:HGroup gap="5" verticalAlign="baseline">
-						<s:Label text="Задержка подачи листа (млсек):"/>
+						<s:Label text="Задержка подачи листа (млсек):" fontFamily="RobotoLight"/>
 						<s:NumericStepper id="spFeedDelay" minimum="100" maximum="5000" snapInterval="10" value="{feedDelay}" change="spFeedDelay_changeHandler(event)"/>
 					</s:HGroup>
 					<s:HGroup gap="5" verticalAlign="baseline">
-						<s:Label text="Задержка подачи второго листа (млсек):"/>
+						<s:Label text="Задержка подачи второго листа (млсек):" fontFamily="RobotoLight"/>
 						<s:NumericStepper id="spFeedDelay2" minimum="100" maximum="5000" snapInterval="10" value="{feedDelay2}" change="spFeedDelay2_changeHandler(event)"/>
 					</s:HGroup>
 					
 					<s:HGroup gap="0" verticalAlign="baseline">
-						<s:CheckBox id="tg_checkFeederEmpty" selected="{checkFeederEmpty}" change="{setBool('checkFeederEmpty')}"/> 
-						<s:Label text="Контроль уровня стопы."/>
+						<mdcomp:CheckBox id="tg_checkFeederEmpty" selected="{checkFeederEmpty}" change="{setBool('checkFeederEmpty')}"/> 
+						<s:Label text="Контроль уровня стопы." fontFamily="RobotoLight"/>
 						<s:Spacer width="5"/>
-						<s:Label text="Пауза после"/>
+						<s:Label text="Пауза после" fontFamily="RobotoLight"/>
 						<s:Spacer width="3"/>
 						<s:NumericStepper id="spFeederCountdown" width="40"  change="spFeederCountdown_changeHandler(event)" enabled="{tg_checkFeederEmpty.selected}"
 										  minimum="0" maximum="99" snapInterval="1" value="{pauseFeederCountdown}"/>
 						<s:Spacer width="3"/>
-						<s:Label text="листов"/>
+						<s:Label text="листов" fontFamily="RobotoLight"/>
 					</s:HGroup>
 					<s:HGroup gap="0" verticalAlign="baseline">
-						<s:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 
-						<s:Label text="Отключить контроль двойного листа для разворотов"/>
+						<mdcomp:CheckBox id="tg_doubleSheetOff" selected="{doubleSheetOff}" change="{setBool('doubleSheetOff')}"/> 
+						<s:Label text="Отключить контроль двойного листа для разворотов" fontFamily="RobotoLight"/>
 					</s:HGroup>
 					<s:HGroup gap="0" verticalAlign="baseline">
-						<s:Label text="При старте включать:" width="180"/>
+						<s:Label text="При старте включать:" width="180" fontFamily="RobotoLight"/>
 						<s:Spacer width="10"/>
-						<s:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
-						<s:Label text="Привод"/>
+						<mdcomp:CheckBox id="tg_engineOnStartOn" selected="{engineOnStartOn}" change="{setBool('engineOnStartOn')}"/> 
+						<s:Label text="Привод" fontFamily="RobotoLight"/>
 						<s:Spacer width="10"/>
-						<s:CheckBox id="tg_vacuumOnStartOn" selected="{vacuumOnStartOn}" change="{setBool('vacuumOnStartOn')}"/>
-						<s:Label text="Вакуум"/>
+						<mdcomp:CheckBox id="tg_vacuumOnStartOn" selected="{vacuumOnStartOn}" change="{setBool('vacuumOnStartOn')}"/>
+						<s:Label text="Вакуум" fontFamily="RobotoLight"/>
 					</s:HGroup>
 					<s:HGroup gap="0" verticalAlign="baseline">
-						<s:Label text="При паузе/ошибке выключать:" width="180"/>
+						<s:Label text="При паузе/ошибке выключать:" width="180" fontFamily="RobotoLight"/>
 						<s:Spacer width="10"/>
-						<s:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
-						<s:Label text="Привод"/>
+						<mdcomp:CheckBox id="tg_engineOnErrOff" selected="{engineOnErrOff}" change="{setBool('engineOnErrOff')}"/> 
+						<s:Label text="Привод" fontFamily="RobotoLight"/>
 						<s:Spacer width="10"/>
-						<s:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
-						<s:Label text="Вакуум"/>
+						<mdcomp:CheckBox id="tg_vacuumOnErrOff" selected="{vacuumOnErrOff}" change="{setBool('vacuumOnErrOff')}"/>
+						<s:Label text="Вакуум" fontFamily="RobotoLight"/>
 					</s:HGroup>
 					<s:HGroup gap="0" verticalAlign="baseline">
-						<s:Label text="При завершении заказа"  width="180"/>
+						<s:Label text="При завершении заказа"  width="180" fontFamily="RobotoLight"/>
 						<s:Spacer width="10"/>
-						<s:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
-						<s:Label text="Стоп"/>
+						<mdcomp:CheckBox id="tg_stopOnComplite" selected="{stopOnComplite}"  change="{setBool('stopOnComplite')}"/> 
+						<s:Label text="Стоп" fontFamily="RobotoLight"/>
 						<s:Spacer width="10"/>
-						<s:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
-						<s:Label text="Пауза"/>
+						<mdcomp:CheckBox id="tg_pauseOnComplite" selected="{pauseOnComplite}"  change="{setBool('pauseOnComplite')}"/>
+						<s:Label text="Пауза" fontFamily="RobotoLight"/>
 					</s:HGroup>
 				</s:VGroup>
 				
 				<s:VGroup  gap="5"  height="170">
-					<s:Label text="Задержка между книгами (млсек):"/>
+					<s:Label text="Задержка между книгами (млсек):" fontFamily="RobotoLight"/>
 					<s:DataGrid id="dgBookDelays" height="100%" 
 								selectionMode="singleRow" editable="true"
 								sortableColumns="false"
@@ -783,9 +928,9 @@
 						</s:columns>
 					</s:DataGrid>
 					<s:HGroup width="100%" gap="10" horizontalAlign="right">
-						<s:Button id="btAddBookDelay" label="Добавить" click="btAddBookDelay_clickHandler(event)"/>
-						<s:Button id="btDelBookDelay" label="Удалить" click="btDelBookDelay_clickHandler(event)"/>
-						<s:Button id="btSortBookDelay" label="Упорядочить" click="{feedBookDelays.refresh()}"/>
+						<mdcomp:ButtonIcon id="btAddBookDelay" iconFont="\uf067"  toolTip="Добавить" click="btAddBookDelay_clickHandler(event)"/>
+						<mdcomp:ButtonIcon id="btDelBookDelay" iconFont="\uf068"  toolTip="Удалить" click="btDelBookDelay_clickHandler(event)"/>
+						<mdcomp:ButtonIcon id="btSortBookDelay" iconFont="\uf160" toolTip="Упорядочить" click="{feedBookDelays.refresh()}"/>
 					</s:HGroup> 
 				</s:VGroup> 
 			</s:HGroup>
@@ -794,10 +939,10 @@
 				
 			<s:TabBar id="tbComConfig" dataProvider="{vsComConfig}"/>
 			<mx:ViewStack id="vsComConfig" borderStyle="none" backgroundAlpha="0" >
-				<s:NavigatorContent label="Склейка" backgroundAlpha="0" >
+				<s:NavigatorContent label="Склейка" backgroundAlpha="0"  fontFamily="Roboto">
 					<s:VGroup gap="5" >
 						<s:HGroup gap="5" verticalAlign="baseline">
-							<s:Label text="Тип:"/>
+							<s:Label text="Тип:" fontFamily="RobotoLight"/>
 							<s:DropDownList id="ddGlueType" selectedIndex="{glueType}" change="ddGlueType_changeHandler(event)">
 								<s:ArrayCollection>
 									<fx:String>COM</fx:String>
@@ -810,115 +955,115 @@
 							<itemRenderer:ComInfoRenderer data="{comGlueProxy}" lockType="true" lockSuffix="true"/>
 							
 							<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="20">
-								<s:Label text="Задержка выброса книги (мс):"/>
+								<s:Label text="Задержка выброса книги (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper id="nsBookDelay" minimum="100" maximum="5000" snapInterval="10" value="{pushDelay}" change="nsBookDelay_changeHandler(event)"/>
 							</s:HGroup>
 						</s:VGroup>
 						<s:VGroup gap="5" paddingLeft="20" visible="{glueType==1}" includeInLayout="{glueType==1}">
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Компьютер IP:"/>
+								<s:Label text="Компьютер IP:" fontFamily="RobotoLight"/>
 								<s:TextInput id="tiPCIP" text="@{glueServerIP}"/>
-								<s:Label text="порт:"/>
+								<s:Label text="порт:" fontFamily="RobotoLight"/>
 								<s:NumericStepper id="nsPCPort" minimum="500" maximum="9000" snapInterval="1"
 												  value="@{glueServerPort}"/>
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Контролер  IP:"/>
+								<s:Label text="Контролер  IP:" fontFamily="RobotoLight"/>
 								<s:TextInput id="tiGlueIP" text="@{glueClientIP}"/>
-								<s:Label text="порт:"/>
+								<s:Label text="порт:" fontFamily="RobotoLight"/>
 								<s:NumericStepper id="nsGluePort" minimum="500" maximum="9000" snapInterval="1"
 												  value="@{glueClientPort}"/>
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Подача листа:"/>
-								<s:CheckBox selected="@{glueHasFeeder}"/>
+								<s:Label text="Подача листа:" fontFamily="RobotoLight"/>
+								<mdcomp:CheckBox selected="@{glueHasFeeder}"/>
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Контроль выгрузки книги:"/>
-								<s:CheckBox selected="@{checkBookOut}"/>
+								<s:Label text="Контроль выгрузки книги:" fontFamily="RobotoLight"/>
+								<mdcomp:CheckBox selected="@{checkBookOut}"/>
 							</s:HGroup>
 							
 							<s:HGroup gap="3" verticalAlign="baseline">
-								<s:Label text="Таймеры боковых упоров (мс)."/>
+								<s:Label text="Таймеры боковых упоров (мс)." fontFamily="RobotoLight"/>
 								<s:Spacer width="3"/>
-								<s:Label text="Выключения:"/>
+								<s:Label text="Выключения:" fontFamily="RobotoLight"/>
 								<s:NumericStepper id="nsSide_Stop_Off_delay" minimum="10" maximum="9000" snapInterval="10"
 												  value="@{glueSideStopOffDelay}"/>
 								<s:Spacer width="3"/>
-								<s:Label text="Включения:"/>
+								<s:Label text="Включения:" fontFamily="RobotoLight"/>
 								<s:NumericStepper id="nsSide_Stop_On_delay" minimum="10" maximum="10000" snapInterval="10"
 												  value="@{glueSideStopOnDelay}"/>
 								
 							</s:HGroup>
 							
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Регулирование уровня клея насосом:"/>
-								<s:CheckBox selected="@{pumpEnable}"/>
-								<s:Label text="Сообщение об отсутствии клея:"/>
-								<s:CheckBox selected="@{glueAlarm}"/>
-								<s:Label text="Выводить на башню:"/>
-								<s:CheckBox selected="@{glueShowAlarm}"/>
+								<s:Label text="Регулирование уровня клея насосом:" fontFamily="RobotoLight"/>
+								<mdcomp:CheckBox selected="@{pumpEnable}"/>
+								<s:Label text="Сообщение об отсутствии клея:" fontFamily="RobotoLight"/>
+								<mdcomp:CheckBox selected="@{glueAlarm}"/>
+								<s:Label text="Выводить на башню:" fontFamily="RobotoLight"/>
+								<mdcomp:CheckBox selected="@{glueShowAlarm}"/>
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Время работы насоса (мс):"/>
+								<s:Label text="Время работы насоса (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
 												  value="@{pumpWorkTime}" />
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Время ожидания 'чистого' сигнала (фильтр) (мс):"/>
+								<s:Label text="Время ожидания 'чистого' сигнала (фильтр) (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
 												  value="@{pumpSensFilterTime}" />
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Блокировка срабатывания датчика листа (мс):"/>
+								<s:Label text="Блокировка срабатывания датчика листа (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper id="nsRepeatedSignalGap" minimum="0" maximum="100000" snapInterval="10"
 												  value="{repeatedSignalGap}"  change="nsRepeatedSignalGap_changeHandler(event)"/>
 							</s:HGroup>
 							
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Время задержки 'белого листа' (мс):"/>
+								<s:Label text="Время задержки 'белого листа' (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  toolTip="Время задержки после прихода сигнала на датчик 'белого листа'"
 												  value="@{whitePaperDelay}"/>
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Время задержки открытия бункера (мс):"/>
+								<s:Label text="Время задержки открытия бункера (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  toolTip="Время задержки перед открытием бункера (после прохода датчика 'запрессовки'"
 												  value="@{bookEjectionDelay}"/>
 							</s:HGroup>
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Время допрессовки  прижимной плитой (мс):"/>
+								<s:Label text="Время допрессовки  прижимной плитой (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  toolTip="Время допрессовки  прижимной плитой после прохода датчика 'запрессовки'"
 												  value="@{finalSqueezingTime}"/>
 							</s:HGroup>
 							
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Таймер выключения бункера выгрузки (мс):"/>
+								<s:Label text="Таймер выключения бункера выгрузки (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{glueUnloadOffDelay}"/>
 							</s:HGroup>
 							
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Таймер включения бункера выгрузки (мс):"/>
+								<s:Label text="Таймер включения бункера выгрузки (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{glueUnloadOnDelay}"/>
 							</s:HGroup>
 							
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Таймер дожима плиты на последнем листе (мс):"/>
+								<s:Label text="Таймер дожима плиты на последнем листе (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{gluePlateReturnDelay}"/>
 							</s:HGroup>
 
 							<s:HGroup gap="5" verticalAlign="baseline">
-								<s:Label text="Скребок"/> 
+								<s:Label text="Скребок" fontFamily="RobotoLight"/> 
 								<s:Spacer width="5"/>
-								<s:Label text="Пауза перед включением (мс):"/>
+								<s:Label text="Пауза перед включением (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{glueScraperDelay}"/>
-								<s:Label text="Удержание сигнала (мс):"/>
+								<s:Label text="Удержание сигнала (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{glueScraperRun}"/>
 							</s:HGroup>
@@ -937,14 +1082,16 @@
 				<s:NavigatorContent label="Сканеры ШК" backgroundAlpha="0" >
 					<s:VGroup gap="5">
 						<s:HGroup gap="0" verticalAlign="baseline">
-							<s:CheckBox id="tg_altBarcode" selected="@{altBarcode}"/> 
+							<mdcomp:CheckBox id="tg_altBarcode" selected="@{altBarcode}"/> 
 							<s:Label text="Внешний ШК (не стандартный)"/>
 						</s:HGroup>
 						<s:HGroup gap="0">
 							<s:VGroup gap="5" >
 								<s:List id="comList" dataProvider="{comReaders}" />
-								<s:Button id="btAddCom" label="Добавить" click="btAddCom_clickHandler(event)"/>
-								<s:Button id="btDelCom" label="Удалить" click="btDelCom_clickHandler(event)"/>
+								<s:HGroup gap="10" width="100%" horizontalAlign="center">
+									<mdcomp:ButtonIcon id="btAddCom" iconFont="\uf067" click="btAddCom_clickHandler(event)"/>
+									<mdcomp:ButtonIcon id="btDelCom" iconFont="\uf068" click="btDelCom_clickHandler(event)"/>
+								</s:HGroup>
 							</s:VGroup> 
 							<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
 						</s:HGroup>
@@ -952,8 +1099,9 @@
 				</s:NavigatorContent>
 			</mx:ViewStack>
 			<s:HGroup width="100%" horizontalAlign="right">
-				<s:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
+				<mdcomp:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
 			</s:HGroup>
+				<s:Spacer height="5"/>
 			</s:VGroup>
 
 		</s:VGroup>
@@ -983,9 +1131,9 @@
 	
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
 		<s:Spacer width="100%"/>
-		<s:Button label="Настройки" includeIn="monitor" click="{stop()}"/>
-		<s:Button label="Старт" includeIn="config" click="{start()}"/>
-		<s:Button label="Закрыть" click="{stop(); FlexGlobals.topLevelApplication.exit();}"/>
+		<mdcomp:Button label="Настройки" styleName="primary" includeIn="monitor" click="{stop()}"/>
+		<mdcomp:Button label="Старт" styleName="primary" includeIn="config" click="{start()}"/>
+		<mdcomp:Button label="Закрыть" styleName="primary" click="{stop(); FlexGlobals.topLevelApplication.exit();}"/>
 	</s:HGroup>
 	
 </s:WindowedApplication>
