@@ -60,7 +60,7 @@
 		</s:fill>
 	</s:Ellipse>
 	
-	<s:Label color="0xFFFFFF" fontFamily="FontAwesome" text="{hostComponent.iconFont}" fontSize="{width*0.45}" 
+	<s:Label  fontFamily="FontAwesome" text="{hostComponent.iconFont}" fontSize="{width*0.70}" 
 			 color.disabled="#666666" maxDisplayedLines="1" horizontalCenter="0" verticalCenter="0" verticalAlign="middle" includeInLayout="{hostComponent.iconFont != null}"/>	
    
 	<s:Group id="inkHolder" width="{width}" height="{height}" maskType="clip">

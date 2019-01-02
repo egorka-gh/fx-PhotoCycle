@@ -57,19 +57,19 @@
 			<s:SolidColor id="inkFill" alpha="0" alpha.down=".1"/>
 		</s:fill>
 	</s:Rect>
-	<s:HGroup verticalAlign="middle" verticalCenter="0" horizontalAlign="center" horizontalCenter="0" left="10" right="10" top="2" bottom="2">
+	<s:VGroup verticalAlign="middle" verticalCenter="0" horizontalAlign="center" horizontalCenter="0" left="10" right="10" top="2" bottom="2" gap="10">
 		<s:Label id="iconFont" color.disabled="#666666" text="{hostComponent.iconFont}"
-				 textAlign="left" fontSize="{height*0.55}" fontFamily="FontAwesome"
+				 textAlign="left" fontSize="{height*0.3}" fontFamily="FontAwesome"
 				 maxDisplayedLines="1" includeInLayout="{hostComponent.iconFont != null}"
 				 horizontalCenter="0" verticalCenter="0" verticalAlign="middle">
 		</s:Label>
 	
 	    <s:Label id="labelDisplay" textAlign="center" maxDisplayedLines="1" includeInLayout="{hostComponent.label != ''}"
-				 fontFamily="Roboto"
-             horizontalCenter="0" verticalCenter="1" verticalAlign="middle" fontWeight="bold" 
+				 fontSize="{height*0.2}" fontWeight="bold" fontFamily="Roboto"
+             horizontalCenter="0" verticalCenter="1" verticalAlign="middle" 
               color.disabled="#666666"/>
 		
-	</s:HGroup>
+	</s:VGroup>
 		
     
 	<s:Group id="inkHolder" clipAndEnableScrolling="true" minWidth="20" minHeight="20" maxWidth="{width}" maxHeight="{height}"/>

@@ -173,10 +173,16 @@
 				}
 			}
 			
+			private function showAlert(msg:String):void{
+				var ap:AlertrPopup=new AlertrPopup();
+				ap.show(msg, 0, 40);
+			}
+			
 			private function onPickerErr(event:ErrorEvent):void{
 				log(event.text);
 				if(feedOn){
-					Alert.show(event.text);
+					//Alert.show(event.text);
+					showAlert(event.text);
 					if(event.errorID!=0) playAlertSound();
 				}else{
 					playAlertSound();
@@ -209,6 +215,14 @@
 				if((glue is GlueFeeder) && (glue as GlueFeeder).feederController) (glue as GlueFeeder).feederController.checkReam();
 			}
 			
+			protected function btStateToggle_clickHandler(event:MouseEvent):void{
+				if (currentState == "normal"){
+					currentState = "operator";
+				}else{
+					currentState = "normal";
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -216,11 +230,36 @@
 		<s:ArrayCollection id="acLatches" source="{glue.latches}"/>
 	</fx:Declarations>
 	
-	<s:HGroup gap="20" width="100%" height="100%">
-		<!--left panel-->
-		<s:VGroup gap="10" paddingLeft="7"  width="100%" height="100%">
+	<s:states>
+		<s:State name="normal"/>
+		<s:State name="operator"/>
+	</s:states>
+
+	<s:transitions>
+		<s:Transition fromState="normal" toState="operator">
+			<s:Sequence>
+				<s:Fade target="{toolsGroup}" duration="300" />
+				<s:Parallel targets="{[btStateToggle, buttonGroup]}" >
+					<s:Rotate target="{btStateToggle}" duration="300" />
+					<s:Resize target="{buttonGroup}" duration="300"/>
+				</s:Parallel>
+			</s:Sequence>
+		</s:Transition>
+		<s:Transition fromState="operator" toState="normal">
+			<s:Sequence>
+				<s:Parallel targets="{[btStateToggle, buttonGroup]}" >
+					<s:Rotate target="{btStateToggle}" duration="300" />
+					<s:Resize target="{buttonGroup}" duration="300"/>
+				</s:Parallel>
+				<s:Fade target="{toolsGroup}" duration="300" />
+			</s:Sequence>
+		</s:Transition>
+	</s:transitions>
+	
+		<s:VGroup gap="10" width="100%" height="100%" paddingLeft="10">
+			<!--top panel-->
 			<s:HGroup gap="10" width="100%">
-				<s:VGroup gap="10" width="100%">
+				<s:VGroup gap="10" >
 					<s:Label text="Статистика: {glue.statString}"/>
 					<s:HGroup gap="5" verticalAlign="middle">
 						<mdcomp:Switch id="tgSkipBookNumCheck" selected="@{glue.inexactBookSequence}"/>
@@ -230,98 +269,133 @@
 						<s:Label text="Не полный заказ"/>
 					</s:HGroup>
 					
-					<s:HGroup gap="10" width="100%">
-						<s:VGroup gap="5" width="100%">
+						<s:VGroup  width="100%">
 							<s:HGroup gap="10" width="100%">
 								<s:Label text="Заказ: {glue.currPgId}"/>
 								<s:Label text="Тип книги: {glue.currBookTypeName}"/>
-								<s:Label text="Книга: {glue.currBookIdx.toString()}({glue.currBookTot.toString()})"/>
-								<s:Label text="Разворот: {glue.currSheetIdx.toString()}({glue.currSheetTot.toString()})"/>
 							</s:HGroup>
 						</s:VGroup>
-					</s:HGroup>
 				</s:VGroup>	
-			</s:HGroup>
-			
-			<s:VGroup gap="2" width="100%" height="100%">
-				<s:TabBar id="tbLogView"  dataProvider="{vsLogViews}"/>
-				<mx:ViewStack id="vsLogViews" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
-					<s:NavigatorContent label="Лог" backgroundAlpha="0" width="100%" height="100%">
-						<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false"/>
-					</s:NavigatorContent>
-					<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%" height="100%">
-						<s:TextArea id="taControllerlog" text="{controllerlogText}" width="100%" height="100%"/>
-					</s:NavigatorContent>
-					<s:NavigatorContent label="Сканеры" backgroundAlpha="0" width="100%" height="100%" enabled="{debugBarReders}" >
-						<s:TextArea  text="{barreaderlogText}" width="100%" height="100%"/>
-					</s:NavigatorContent>
-				</mx:ViewStack>
-			</s:VGroup>
 
-			
-		</s:VGroup>
-
-		<!--right panel-->
-		<s:VGroup gap="10" paddingRight="7" height="100%">
-			<s:HGroup gap="10" width="100%">
-				<s:VGroup gap="10" paddingRight="10" enabled="{feedOn}" width="180" height="120">
-					<s:HGroup gap="10" width="100%" height="100%" >
-						<s:Button id="btStart" label="Старт" width="100%" height="100%" enabled="{!glue.isRunning || glue.isPaused}" click="glue.start()"/>
-						<s:Button id="btReam" label="Лоток" width="100%" height="100%" enabled="{!glue.isRunning || glue.isPaused}" 
-								  chromeColor="{reamColor(glue.feederReamState)}" click="btReam_clickHandler(event)"/>
-					</s:HGroup>
-					<s:HGroup gap="10" width="100%" height="100%" >
-						<s:Button id="btPause" label="Пауза" width="100%" height="100%" enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
-						<s:Button id="btStop" label="Стоп" width="100%" height="100%" click="glue.stop()"/>
+				<s:VGroup id="bookGroup" width="100%" height="100%" verticalAlign="middle">
+					<s:HGroup  gap="10" width="100%"  verticalAlign="baseline" horizontalAlign="center">
+						<s:Label text="Книга:"
+								 color="#455a64" fontSize="{bookGroup.height*0.4}"
+								 fontFamily="Roboto" fontWeight="bold"/>
+						<s:Label text="{glue.currBookIdx.toString()}({glue.currBookTot.toString()})"
+								 color="#455a64" fontSize="{bookGroup.height*0.6}"
+								 fontFamily="Roboto" fontWeight="bold"/>
+						<s:Label text="Разворот: {glue.currSheetIdx.toString()}({glue.currSheetTot.toString()})"
+								 color="#455a64" fontSize="{bookGroup.height*0.4}"
+								 fontFamily="Roboto" fontWeight="bold"/>
 					</s:HGroup>
 				</s:VGroup>
-				<s:VGroup gap="12" paddingRight="7" enabled="{feedOn}" >
-					<s:HGroup gap="5" verticalAlign="baseline" width="140" >
-						<s:Label text="Вакуум"/>
-						<s:Spacer width="100%"/>
-						<s:Button label="On" width="40" click="{glue.setVacuumOn()}"/>
-						<s:Button label="Off" width="40" click="{glue.setVacuumOff()}"/>
-					</s:HGroup>
-					<s:HGroup gap="5" verticalAlign="baseline" width="140" >
-						<s:Label text="Мотор"/>
-						<s:Spacer width="100%"/>
-						<s:Button label="On" width="40" click="{glue.setEngineOn()}"/>
-						<s:Button label="Off" width="40" click="{glue.setEngineOff()}"/>
-					</s:HGroup>
-				</s:VGroup>
+
 			</s:HGroup>
-			
-				<s:VGroup gap="5" width="100%" height="100%">
-					<s:Label text="Блокировки подачи"/>
-					<s:List id="lstLatches" dataProvider="{acLatches}" width="100%" changing="preventChanging(event)" 
-							itemRenderer="com.photodispatcher.view.itemRenderer.PickerLatchRenderer">
-						<s:layout>
-							<s:VerticalLayout requestedRowCount="7" gap="0"/>
-						</s:layout>
-					</s:List>
-					<s:Spacer height="5"/>
-					<s:Label text="Склейка" fontWeight="bold"/>
-					<s:Label text="Заказ: {glue.glueHandler.currentBookView.printGroupId}"/>
-					<s:Label text="Книга: {glue.glueHandler.currentBookView.book}"/>
-					<s:Label text="Листов всего: {glue.glueHandler.currentBookView.sheetsTotal}"/>
-					<s:Label text="Листов подано: {glue.glueHandler.currentBookView.sheetsFeeded}"/>
-					<s:Label text="Листов склеено: {glue.glueHandler.currentBookView.sheetsDone}"/>
-					<s:HGroup gap="10">
-						<s:Button id="btPushBook" label="Убрать книгу"
-								  click="btPushBook_clickHandler(event)" />
-						<s:Button label="Сбросить" click="{glue.glueHandler.reset()}"/>
-					</s:HGroup>
+
+			<!--buttons-->
+			<s:Group id="buttonGroup" width="100%" height="60" height.operator="100%">
+
+				<s:Group id="bttGroup" width="100%"  height="100%" minHeight="60" maxHeight="200" maxWidth="960" verticalCenter="0" horizontalCenter="0" >
+					<s:layout>
+						<s:TileLayout   horizontalGap="20" horizontalGap.operator="40" 
+										paddingLeft="40" paddingRight="20" 
+										requestedRowCount="1" requestedColumnCount="4"
+										rowAlign="justifyUsingHeight" columnAlign="justifyUsingWidth"
+										/>
+					</s:layout>
+					<mdcomp:ButtonIcon id="btStart" label="Старт" iconFont="\uf04b" styleName="primary" skinClass="spark.material.skins.ButtonIconVSkin"
+									   enabled="{!glue.isRunning || glue.isPaused}" click="glue.start()"/>
+					<mdcomp:ButtonIcon id="btPause" label="Пауза" iconFont="\uf04c" styleName="light"  skinClass="spark.material.skins.ButtonIconVSkin"
+									   enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
+					<mdcomp:ButtonIcon id="btStop" label="Стоп" iconFont="\uf04d" styleName="primary"  skinClass="spark.material.skins.ButtonIconVSkin"
+									   click="glue.stop()"/>
+					<mdcomp:ButtonIcon id="btReam" label="Лоток" styleName="light" skinClass="spark.material.skins.ButtonIconVSkin" 
+									   enabled="{!glue.isRunning || glue.isPaused}" 
+									   chromeColor="{reamColor(glue.feederReamState)}" click="btReam_clickHandler(event)"/>
+				</s:Group>
+				
+				<mdcomp:FloatingActionButton id="btStateToggle" radius="15" iconFont="\uf0ad"   left="-10" bottom="0" 
+											 rotation.normal="-45" rotation.operator="45" click="btStateToggle_clickHandler(event)" />
+			</s:Group>
+
+			<!--			<s:VGroup gap="10" paddingRight="10" enabled="{feedOn}" width="180" height="120">
+				<s:HGroup gap="10" width="100%" height="100%" >
+					<s:Button id="btStart" label="Старт" width="100%" height="100%" enabled="{!glue.isRunning || glue.isPaused}" click="glue.start()"/>
+					<s:Button id="btReam" label="Лоток" width="100%" height="100%" enabled="{!glue.isRunning || glue.isPaused}" 
+							  chromeColor="{reamColor(glue.feederReamState)}" click="btReam_clickHandler(event)"/>
+				</s:HGroup>
+				<s:HGroup gap="10" width="100%" height="100%" >
+					<s:Button id="btPause" label="Пауза" width="100%" height="100%" enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
+					<s:Button id="btStop" label="Стоп" width="100%" height="100%" click="glue.stop()"/>
+				</s:HGroup>
+			</s:VGroup>-->
+
+			<s:HGroup id="toolsGroup" gap="10" width="100%" height="100%" paddingLeft="15" visible.operator="false" excludeFrom="operator" >
+				<!--left panel (logs)-->
+				<s:VGroup gap="2" width="100%" height="100%">
+					<s:TabBar id="tbLogView"  dataProvider="{vsLogViews}"/>
+					<mx:ViewStack id="vsLogViews" borderStyle="none" backgroundAlpha="0" width="100%" height="100%">
+						<s:NavigatorContent label="Лог" backgroundAlpha="0" width="100%" height="100%">
+							<s:TextArea id="logTextArea" text="{logText}" width="100%" height="100%" editable="false"/>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Склейка" backgroundAlpha="0" width="100%" height="100%">
+							<s:TextArea id="taControllerlog" text="{controllerlogText}" width="100%" height="100%"/>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Сканеры" backgroundAlpha="0" width="100%" height="100%" enabled="{debugBarReders}" >
+							<s:TextArea  text="{barreaderlogText}" width="100%" height="100%"/>
+						</s:NavigatorContent>
+					</mx:ViewStack>
+				</s:VGroup>
+
+				<!--right panel-->
+				<s:VGroup gap="10" paddingRight="7" height="100%">
+						<s:VGroup gap="12" paddingRight="20" paddingTop="10" width="100%" enabled="{feedOn}" >
+							<s:HGroup gap="10"  width="100%" verticalAlign="baseline" >
+								<s:Label text="Вакуум"/>
+								<s:Spacer width="100%"/>
+								<mdcomp:Button label="On" width="40" click="{glue.setVacuumOn()}"/>
+								<mdcomp:Button label="Off" width="40" click="{glue.setVacuumOff()}"/>
+							</s:HGroup>
+							<s:HGroup gap="10"  width="100%" verticalAlign="baseline">
+								<s:Label text="Мотор"/>
+								<s:Spacer width="100%"/>
+								<mdcomp:Button label="On" width="40" click="{glue.setEngineOn()}"/>
+								<mdcomp:Button label="Off" width="40" click="{glue.setEngineOff()}"/>
+							</s:HGroup>
+						</s:VGroup>
 					
-					<s:Label text="Очередь"/>
-					<s:List
-						dataProvider="{glue.glueHandler.bookQueue}"
-						labelFunction="blockLabelFunc"
-						width="100%" height="100%"/>
+					<s:VGroup gap="5" width="100%" height="100%">
+						<s:Label text="Блокировки подачи"/>
+						<s:List id="lstLatches" dataProvider="{acLatches}" width="100%" changing="preventChanging(event)" 
+								itemRenderer="com.photodispatcher.view.itemRenderer.PickerLatchRenderer">
+							<s:layout>
+								<s:VerticalLayout requestedRowCount="7" gap="0"/>
+							</s:layout>
+						</s:List>
+						<s:Spacer height="5"/>
+						<s:Label text="Склейка" fontFamily="Roboto" fontWeight="bold"/>
+						<s:Label text="Заказ: {glue.glueHandler.currentBookView.printGroupId}"/>
+						<s:Label text="Книга: {glue.glueHandler.currentBookView.book}"/>
+						<s:Label text="Листов всего: {glue.glueHandler.currentBookView.sheetsTotal}"/>
+						<s:Label text="Листов подано: {glue.glueHandler.currentBookView.sheetsFeeded}"/>
+						<s:Label text="Листов склеено: {glue.glueHandler.currentBookView.sheetsDone}"/>
+						<s:HGroup gap="10">
+							<mdcomp:Button id="btPushBook" label="Убрать книгу"
+									  click="btPushBook_clickHandler(event)" />
+							<mdcomp:Button label="Сбросить" click="{glue.glueHandler.reset()}"/>
+						</s:HGroup>
+						
+						<s:Label text="Очередь"/>
+						<s:List
+							dataProvider="{glue.glueHandler.bookQueue}"
+							labelFunction="blockLabelFunc"
+							width="100%" height="100%"/>
+					</s:VGroup>
 				</s:VGroup>
+				
+			</s:HGroup>
+
 		</s:VGroup>
 
-		
-	</s:HGroup>
-	
-	
 </s:Group>
