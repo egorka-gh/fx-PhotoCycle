@@ -17,6 +17,14 @@
 	<fx:Style>
 		@namespace mdcomp "spark.material.components.*";
 		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		@font-face { 
+			src: url("spark/material/assets/fonts/FontAwesome.otf"); 
+			fontFamily: FontAwesome;
+			embedAsCFF: true;
+		}
+
+		
 		@font-face {
 			src: url("spark/material/assets/fonts/Roboto-Regular.ttf");
 			fontFamily: "Roboto";

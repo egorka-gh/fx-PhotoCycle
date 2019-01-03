@@ -238,7 +238,7 @@
 	<s:transitions>
 		<s:Transition fromState="normal" toState="operator">
 			<s:Sequence>
-				<s:Fade target="{toolsGroup}" duration="300" />
+				<s:Fade target="{toolsGroup}" duration="250" />
 				<s:Parallel targets="{[btStateToggle, buttonGroup]}" >
 					<s:Rotate target="{btStateToggle}" duration="300" />
 					<s:Resize target="{buttonGroup}" duration="300"/>
@@ -296,11 +296,14 @@
 			<!--buttons-->
 			<s:Group id="buttonGroup" width="100%" height="60" height.operator="100%">
 
+				<mdcomp:FloatingActionButton id="btStateToggle" radius="25" iconFont="\uf0ad"   left="-10" bottom="-10" 
+											 rotation.normal="-45" rotation.operator="45" click="btStateToggle_clickHandler(event)" />
+				
 				<s:Group id="bttGroup" width="100%"  height="100%" minHeight="60" maxHeight="200" maxWidth="960" verticalCenter="0" horizontalCenter="0" >
 					<s:layout>
 						<s:TileLayout   horizontalGap="20" horizontalGap.operator="40" 
-										paddingLeft="40" paddingRight="20" 
-										requestedRowCount="1" requestedColumnCount="4"
+										paddingLeft="60" paddingLeft.operator="20" paddingRight="20" 
+										requestedRowCount="1" requestedColumnCount="3"
 										rowAlign="justifyUsingHeight" columnAlign="justifyUsingWidth"
 										/>
 					</s:layout>
@@ -310,13 +313,11 @@
 									   enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
 					<mdcomp:ButtonIcon id="btStop" label="Стоп" iconFont="\uf04d" styleName="primary"  skinClass="spark.material.skins.ButtonIconVSkin"
 									   click="glue.stop()"/>
-					<mdcomp:ButtonIcon id="btReam" label="Лоток" styleName="light" skinClass="spark.material.skins.ButtonIconVSkin" 
+<!--					<mdcomp:ButtonIcon id="btReam" label="Лоток" styleName="light" skinClass="spark.material.skins.ButtonIconVSkin" 
 									   enabled="{!glue.isRunning || glue.isPaused}" 
-									   chromeColor="{reamColor(glue.feederReamState)}" click="btReam_clickHandler(event)"/>
+									   chromeColor="{reamColor(glue.feederReamState)}" click="btReam_clickHandler(event)"/>-->
 				</s:Group>
 				
-				<mdcomp:FloatingActionButton id="btStateToggle" radius="15" iconFont="\uf0ad"   left="-10" bottom="0" 
-											 rotation.normal="-45" rotation.operator="45" click="btStateToggle_clickHandler(event)" />
 			</s:Group>
 
 			<!--			<s:VGroup gap="10" paddingRight="10" enabled="{feedOn}" width="180" height="120">
@@ -350,7 +351,13 @@
 
 				<!--right panel-->
 				<s:VGroup gap="10" paddingRight="7" height="100%">
-						<s:VGroup gap="12" paddingRight="20" paddingTop="10" width="100%" enabled="{feedOn}" >
+					<s:Spacer height="10"/>
+					
+					<mdcomp:Button id="btReam" label="Проверить лоток" width="100%"  
+								   enabled="{!glue.isRunning || glue.isPaused}" 
+								   chromeColor="{reamColor(glue.feederReamState)}" click="btReam_clickHandler(event)"/>
+					
+						<s:VGroup gap="12" paddingRight="20" width="100%" enabled="{feedOn}" >
 							<s:HGroup gap="10"  width="100%" verticalAlign="baseline" >
 								<s:Label text="Вакуум"/>
 								<s:Spacer width="100%"/>
