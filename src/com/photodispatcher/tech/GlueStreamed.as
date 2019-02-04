@@ -176,6 +176,7 @@ package com.photodispatcher.tech{
 		}
 		
 		public function init():void{
+			if(!glueHandler && glueType!=0) createGlueHandler();
 			//checkPrepared();
 		}
 		
@@ -214,6 +215,9 @@ package com.photodispatcher.tech{
 			}
 			barcodeReaders=null;
 			register=null;
+			if(glueHandler) glueHandler.destroy();
+			glueHandler=null;
+
 		}
 		
 		protected var _barcodeReaders:Array;
@@ -387,6 +391,7 @@ package com.photodispatcher.tech{
 				if(Context.getAttribute('gluePlateReturnDelay')) gh.gluePlateReturnDelay=Context.getAttribute('gluePlateReturnDelay');
 				if(Context.getAttribute('glueScraperDelay')) gh.glueScraperDelay=Context.getAttribute('glueScraperDelay');
 				if(Context.getAttribute('glueScraperRun')) gh.glueScraperRun=Context.getAttribute('glueScraperRun');
+				if(Context.getAttribute('glueFirstSheetDelay')) gh.glueFirstSheetDelay=Context.getAttribute('glueFirstSheetDelay');
 
 				gh.init(null);
 				glueHandler=gh;
@@ -397,9 +402,10 @@ package com.photodispatcher.tech{
 		public var barcodeEmulator:ComReaderEmulator;
 		protected function startDevices():void{
 			//start glueHandler
-			createGlueHandler();
+			//createGlueHandler();
+			if(!glueHandler || (glueType==0 && !isPaused)) createGlueHandler();
 			glueHandler.nonStopMode=true;
-			glueHandler.start();
+			//glueHandler.start();
 			
 			/*
 			//emulate barreader
@@ -436,6 +442,16 @@ package com.photodispatcher.tech{
 				log('Ошибка запуска');
 				return;
 			}
+			
+			if(!glueHandler || !glueHandler.start()){
+				log('startInternal: glueHandler init error');
+				return;
+			}
+			if(!glueHandler.isConnected){
+				log('startInternal: Не подключен контролер склейки');
+				return;
+			}
+			
 			log('SerialProxy:' +serialProxy.traceDisconnected());
 			log('start internal complete');
 			currBarcode=null;

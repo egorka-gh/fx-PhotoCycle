@@ -321,6 +321,7 @@
 
 					glueScraperDelay=so.data.glueScraperDelay;
 					glueScraperRun=so.data.glueScraperRun;
+					glueFirstSheetDelay=so.data.glueFirstSheetDelay;
 					
 					statDate=so.data.statDate;
 					if(!statDate){
@@ -400,14 +401,13 @@
 					Context.setAttribute("gluePlateReturnDelay", gluePlateReturnDelay);
 					Context.setAttribute("checkBookOut", checkBookOut);
 					Context.setAttribute("glueScraperDelay", glueScraperDelay);
-					Context.setAttribute("glueScraperRun", glueScraperRun);
-
+					Context.setAttribute("glueFirstSheetDelay", glueFirstSheetDelay);
 					
 				}
 				Context.setAttribute("debugBarReders", debugBarReders);
 				
 				if(!feedOn) comFeederProxy.num='';
-				if((feedOn && (!comFeederProxy || !comFeederProxy.num)) 
+				if((feedOn && (!comFeederProxy || !comFeederProxy.num) && !glueHasFeeder) 
 					|| (glueType==0 && (!comGlueProxy || !comGlueProxy.num)) 
 					|| (glueType==1 && (!glueServerIP || !glueServerPort || !glueClientIP || !glueClientPort)) 
 					|| comReaders.length==0 ){
@@ -609,6 +609,8 @@
 			public var glueScraperDelay:int=0;
 			[Bindable]
 			public var glueScraperRun:int=0;
+			[Bindable]
+			public var glueFirstSheetDelay:int=0;
 			
 			[Bindable]
 			protected var statDate:Date;
@@ -641,7 +643,7 @@
 				Context.setAttribute("checkBookOut", checkBookOut);
 				Context.setAttribute("glueScraperDelay", glueScraperDelay);
 				Context.setAttribute("glueScraperRun", glueScraperRun);
-				
+				Context.setAttribute("glueFirstSheetDelay", glueFirstSheetDelay);
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueServerIP = glueServerIP;
@@ -666,6 +668,7 @@
 				so.data.checkBookOut=checkBookOut;
 				so.data.glueScraperDelay=glueScraperDelay;
 				so.data.glueScraperRun=glueScraperRun;
+				so.data.glueFirstSheetDelay=glueFirstSheetDelay;
 				
 				so.flush();  
 			}
@@ -1046,7 +1049,13 @@
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{glueScraperRun}"/>
 							</s:HGroup>
-							
+
+							<s:HGroup gap="5" verticalAlign="baseline">
+								<s:Label text="Задержка первого листа (мс):" fontFamily="RobotoLight"/>
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+												  value="@{glueFirstSheetDelay}"/>
+							</s:HGroup>
+
 						</s:VGroup>
 						
 					</s:VGroup>

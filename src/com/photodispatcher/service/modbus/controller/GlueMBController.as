@@ -74,8 +74,13 @@ package com.photodispatcher.service.modbus.controller{
 		D22(адрес регистра 0x0016) Экстренный выброс блока (послать 1)
 		
 		//2018-12-27
-		D30 (адрес регистра 0x001E) Scraper_hold_WORD - “аймер удержани€ сигнала "скребка" (формат записи BCD, 1 = 10ms)
 		D29 (адрес регистра 0x001D) Scraper_delay_WORD - “аймер ожидани€ после ухода передней плиты назад на последнем листе перед включением "скребка" (формат записи BCD, 1 = 10ms)
+		D30 (адрес регистра 0x001E) Scraper_hold_WORD - “аймер удержани€ сигнала "скребка" (формат записи BCD, 1 = 10ms)
+		
+		//2019-02-04
+		D31 (адрес регистра 0x001F) First_paper_hold_delay_WORD - Задержка первого листа (формат записи BCD, 1 = 10ms)
+		D32 (адрес регистра 0x0020) Stop_conveyor_WORD - Остановить конвейер ( 0x0001 - остановить)
+		D33 (адрес регистра 0x0021) Start_conveyor_WORD - Остановить конвейер ( 0x0001 - остановить)		
 		*/
 		
 		public static const CHANEL_CONTROLLER_MESSAGE:int			=0;
@@ -130,6 +135,10 @@ package com.photodispatcher.service.modbus.controller{
 		//2018-12-27
 		public static const CONTROLLER_REGISTER_SCRAPER_DELAY:int				=29;
 		public static const CONTROLLER_REGISTER_SCRAPER_RUN:int					=30;
+		//2019-02-04
+		public static const CONTROLLER_REGISTER_FIRST_SHEET_DELAY:int			=31;
+		public static const CONTROLLER_REGISTER_STOP_CONVEYOR:int				=32;
+		public static const CONTROLLER_REGISTER_START_CONVEYOR:int				=33;
 		
 		public function GlueMBController(){
 			super();
@@ -151,6 +160,7 @@ package com.photodispatcher.service.modbus.controller{
 		public var gluePlateReturnDelay:int=0;
 		public var glueScraperDelay:int=0;
 		public var glueScraperRun:int=0;
+		public var glueFirstSheetDelay:int=0;
 
 		public var pumpSensFilterTime:int;
 		public var pumpWorkTime:int;
@@ -384,6 +394,30 @@ package com.photodispatcher.service.modbus.controller{
 			}
 		}
 
+		public function setFirstSheetDelay(msec:int):void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_FIRST_SHEET_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function stopConveyor():void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_STOP_CONVEYOR, 1);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function startConveyor():void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_START_CONVEYOR, 1);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
 		override protected function onClientConnect(evt:Event):void{
 			dispatchEvent(new Event('connectChange'));
 			if(client && client.connected){
@@ -404,6 +438,7 @@ package com.photodispatcher.service.modbus.controller{
 					setPlateReturnDelay(gluePlateReturnDelay);
 					setScraperDelay(glueScraperDelay);
 					setScraperRun(glueScraperRun);
+					setFirstSheetDelay(glueFirstSheetDelay);
 				//}
 			}
 		}

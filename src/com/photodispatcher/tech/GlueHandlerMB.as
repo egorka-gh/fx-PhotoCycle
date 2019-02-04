@@ -47,6 +47,7 @@ package com.photodispatcher.tech{
 		public var gluePlateReturnDelay:int=0;
 		public var glueScraperDelay:int=0;
 		public var glueScraperRun:int=0;
+		public var glueFirstSheetDelay:int=0;
 
 		private var _controller:GlueMBController;
 		[Bindable]
@@ -102,6 +103,7 @@ package com.photodispatcher.tech{
 			controller.gluePlateReturnDelay=gluePlateReturnDelay;
 			controller.glueScraperDelay=glueScraperDelay;
 			controller.glueScraperRun=glueScraperRun;
+			controller.glueFirstSheetDelay=glueFirstSheetDelay;
 
 			controller.pumpSensFilterTime=pumpSensFilterTime;
 			controller.pumpWorkTime=pumpWorkTime;
