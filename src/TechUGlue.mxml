@@ -306,6 +306,7 @@
 					pumpEnable=so.data.pumpEnable;
 					glueAlarm=so.data.glueAlarm;
 					glueShowAlarm=so.data.glueShowAlarm;
+					showAlarm=so.data.showAlarm;
 					
 					glueHasFeeder=so.data.glueHasFeeder;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
@@ -390,6 +391,7 @@
 					Context.setAttribute("pumpEnable", pumpEnable);
 					Context.setAttribute("glueAlarm", glueAlarm);
 					Context.setAttribute("glueShowAlarm", glueShowAlarm);
+					Context.setAttribute("showAlarm", showAlarm);
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
 					
@@ -591,6 +593,8 @@
 			public var glueAlarm:Boolean=false;
 			[Bindable]
 			public var glueShowAlarm:Boolean=false;
+			[Bindable]
+			public var showAlarm:Boolean=false;
 			
 			[Bindable]
 			public var whitePaperDelay:int=0;
@@ -632,6 +636,7 @@
 				Context.setAttribute("pumpEnable", pumpEnable);
 				Context.setAttribute("glueAlarm", glueAlarm);
 				Context.setAttribute("glueShowAlarm", glueShowAlarm);
+				Context.setAttribute("showAlarm", showAlarm);
 				Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 				Context.setAttribute("pumpWorkTime", pumpWorkTime);
 				Context.setAttribute("whitePaperDelay", whitePaperDelay);
@@ -656,6 +661,7 @@
 				so.data.pumpEnable=pumpEnable;
 				so.data.glueAlarm=glueAlarm;
 				so.data.glueShowAlarm=glueShowAlarm;
+				so.data.showAlarm=showAlarm;
 				so.data.pumpSensFilterTime=pumpSensFilterTime;
 				so.data.pumpWorkTime=pumpWorkTime;
 				
@@ -833,6 +839,11 @@
 				<s:TextInput id="tiSoundFile" text="{alertSound}" editable="false" width="400"/>
 				<mdcomp:ButtonIcon id="btSoundFile" iconFont="\uf07b" click="btSoundFile_clickHandler(event)" width="40"/>
 				<mdcomp:ButtonIcon id="btSoundTest" iconFont="\uf04b" click="btSoundTest_clickHandler(event)" width="40"/>
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="middle" >
+				<s:Label text="Выводить ошибку на башню:" fontFamily="RobotoLight"/>
+				<mdcomp:CheckBox selected="@{showAlarm}"/>
+
 			</s:HGroup>
 			
 			<s:HGroup gap="5" verticalAlign="baseline">

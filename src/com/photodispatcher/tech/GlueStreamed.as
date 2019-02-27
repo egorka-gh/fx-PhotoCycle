@@ -282,11 +282,13 @@ package com.photodispatcher.tech{
 				log('Cклейка: '+event.text);
 				return;
 			}
-			if(glueHandler.isRunning && glueHandler.hasPauseRequest){
+			if(glueHandler.isRunning){
 				logErr('Cклейка: '+event.text);
-			}else{
-				log('Cклейка: '+event.text);
+				//??
 				stop();
+			}else{
+				//hz
+				log('Cклейка: '+event.text);
 			}
 		}
 		

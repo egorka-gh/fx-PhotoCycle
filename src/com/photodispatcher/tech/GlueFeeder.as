@@ -1059,7 +1059,7 @@ package com.photodispatcher.tech{
 				//show alert
 				if(Context.getAttribute("glueAlarm")){
 					dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
-					if(Context.getAttribute("glueShowAlarm")){
+					if(Context.getAttribute("glueShowAlarm") && !Context.getAttribute("showAlarm")){
 						(glueHandler as GlueHandlerMB).controller.setAlarmOn();
 					}
 				}else{

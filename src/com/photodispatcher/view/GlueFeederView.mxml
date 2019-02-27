@@ -19,6 +19,7 @@
 			import com.photodispatcher.service.barcode.FeederController;
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.tech.GlueFeeder;
+			import com.photodispatcher.tech.GlueHandlerMB;
 			import com.photodispatcher.tech.GlueStreamed;
 			import com.photodispatcher.tech.register.TechBook;
 			import com.photodispatcher.util.StrUtil;
@@ -180,11 +181,18 @@
 			
 			private function onPickerErr(event:ErrorEvent):void{
 				log(event.text);
+				var gh:GlueHandlerMB;
 				if(feedOn){
 					//Alert.show(event.text);
 					showAlert(event.text);
-					if(event.errorID!=0) playAlertSound();
+					if(event.errorID!=0){
+						gh = glue.glueHandler as GlueHandlerMB;
+						if(gh && gh.controller && gh.controller.connected) gh.controller.setAlarmOn();
+						playAlertSound();
+					}
 				}else{
+					gh = glue.glueHandler as GlueHandlerMB;
+					if(gh && gh.controller && gh.controller.connected) gh.controller.setAlarmOn();
 					playAlertSound();
 				}
 			}
