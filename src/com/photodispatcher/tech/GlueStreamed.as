@@ -1,6 +1,7 @@
 package com.photodispatcher.tech{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.BarCodeEvent;
+	import com.photodispatcher.event.ControllerMesageEvent;
 	import com.photodispatcher.event.SerialProxyEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
 	import com.photodispatcher.model.mysql.DbLatch;
@@ -14,17 +15,21 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.service.barcode.FeederController;
 	import com.photodispatcher.service.barcode.SerialProxy;
 	import com.photodispatcher.service.barcode.Socket2Com;
+	import com.photodispatcher.service.modbus.controller.GlueMBController;
 	import com.photodispatcher.tech.plain_register.TechRegisterPicker;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import flash.net.SharedObject;
 	
 	import mx.collections.ArrayCollection;
 	import mx.controls.Alert;
 	
 	import org.granite.tide.Tide;
+	
+	import spark.formatters.DateTimeFormatter;
 
 	[Event(name="error", type="flash.events.ErrorEvent")]
 	public class GlueStreamed extends EventDispatcher{
@@ -270,11 +275,13 @@ package com.photodispatcher.tech{
 		public function set glueHandler(value:GlueHandler):void{
 			if(_glueHandler){
 				_glueHandler.removeEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				_glueHandler.removeEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 			}
 			_glueHandler = value;
 			if(_glueHandler){
 				_glueHandler.logger=logger;
 				_glueHandler.addEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				_glueHandler.addEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 			}
 		}
 		protected function onGlueHandlerErr(event:ErrorEvent):void{
@@ -291,6 +298,25 @@ package com.photodispatcher.tech{
 				log('Cклейка: '+event.text);
 			}
 		}
+		
+		protected function onControllerMsg(event:ControllerMesageEvent):void{
+			//posible bug - GlueMBController && FeederController chanel_state colision
+			//now no problem -> GlueMBController.GLUE_LEVEL_ALARM > FeederController.CHANEL_STATE_REAM_FILLED
+			if(event.state==GlueMBController.GLUE_LEVEL_ALARM){
+				//show alert
+				log('Низкий уровень клея');
+				if(Context.getAttribute("glueAlarm")){
+					dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
+					/*
+					if(Context.getAttribute("glueShowAlarm") && !Context.getAttribute("showAlarm")){
+						(glueHandler as GlueHandlerMB).controller.setAlarmOn();
+					}
+					*/
+				}
+				return;
+			}
+		}
+		
 		
 		protected var _register:TechRegisterPicker;
 		public function get register():TechRegisterPicker{
@@ -526,6 +552,7 @@ package com.photodispatcher.tech{
 				pgId=barcode.substr(0,barcode.length-6);
 			}
 			
+			statCountSheet();
 			glueHandler.await(pgId,bookNum,pageNum,pageTotal);
 			currBookIdx=bookNum;
 			currSheetIdx=pageNum;
@@ -539,6 +566,7 @@ package com.photodispatcher.tech{
 					log('Сборка брака завершена: "'+currPgId);
 				}
 				*/
+				
 				if(register.finalise()){
 					log('Заказ '+currPgId+' завершен.');
 				}
@@ -569,6 +597,7 @@ package com.photodispatcher.tech{
 			}
 			//check sequence
 			register.register(bookNum,pageNum);
+			if (register.currentBookComplited) statCountBook();
 			if (register.isComplete){
 				register.flushData();
 				log('Заказ "'+register.printGroupId+'" завершен');
@@ -651,5 +680,57 @@ package com.photodispatcher.tech{
 			if(!result) result='id:'+bookType;
 			return result;
 		}
+		
+		protected var statDate:Date;
+		protected var statBooks:int=0;
+		protected var statSheets:int=0;
+		protected var statSheetCounter:int=0;
+		
+		public function showStat():void{
+			var dt:Date= Context.getAttribute('statDate');
+			var bk:int= Context.getAttribute('statBooks');
+			var sht:int= Context.getAttribute('statSheets');
+			var str:String=' Произведено';
+			if(dt){
+				var fmt:DateTimeFormatter= new DateTimeFormatter();
+				fmt.dateTimePattern='dd.MM.yy HH:mm';
+				str=str +' c ' +fmt.format(dt);
+			}
+			str=str+' Книг:'+bk.toString()+' листов:'+(sht+statSheetCounter).toString();
+			statString=str;
+		}
+		
+		protected function statCountBook():void{
+			var so:SharedObject = SharedObject.getLocal('appProps','/');
+			statDate=so.data.statDate;
+			statBooks=so.data.statBooks;
+			statSheets=so.data.statSheets;
+			if(statBooks<=0) statBooks=0;
+			if(statSheets<=0) statSheets=0;
+			
+			if(statSheets>= (int.MAX_VALUE-statSheetCounter)){
+				statSheets=0;
+				statBooks=0;
+			}
+			if(statBooks==int.MAX_VALUE) statBooks=0;
+			
+			statBooks++;
+			statSheets=statSheets+statSheetCounter;
+			statSheetCounter=0;
+			
+			//save
+			so.data.statBooks=statBooks;
+			so.data.statSheets=statSheets;
+			so.flush();
+			Context.setAttribute("statBooks", statBooks);
+			Context.setAttribute("statSheets", statSheets);
+			showStat();
+		}
+		
+		protected function statCountSheet():void{
+			statSheetCounter++;
+			showStat();
+		}
+
 	}
 }

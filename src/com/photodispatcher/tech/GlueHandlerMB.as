@@ -260,18 +260,7 @@ package com.photodispatcher.tech{
 
 				var chanelState:int=-1;
 				//common messages
-				if(event.state==GlueMBController.CONTROLLER_BOOK_OUT){
-						chanelState=GlueMBController.CONTROLLER_BOOK_OUT;
-						log('Склейка: Книга выгружена',2);
-				}
-
-				if(chanelState!=-1) dispatchEvent(new ControllerMesageEvent(0,chanelState));
-				
-				if(!hasFeeder) return;
-				//Feeder messages
-				chanelState=-1;
 				switch(event.state){
-					//posible bug - GlueMBController && FeederController chanel_state colision
 					case GlueMBController.CONTROLLER_NEW_SHEET_ERROR1:
 						logErr('Пришел новый лист, но задняя плита не сошла с датчика исходного положения');
 						break;
@@ -284,6 +273,22 @@ package com.photodispatcher.tech{
 					case GlueMBController.FEEDER_ALARM_OFF:
 						log('Реле безопасности сброшено',2);
 						break;
+					case GlueMBController.CONTROLLER_BOOK_OUT:
+						chanelState=GlueMBController.CONTROLLER_BOOK_OUT;
+						log('Склейка: Книга выгружена',2);
+						break;
+					case GlueMBController.GLUE_LEVEL_ALARM:
+						chanelState=GlueMBController.GLUE_LEVEL_ALARM;
+						log('Низкий уровень клея',2);
+						break;
+				}
+				if(chanelState!=-1) dispatchEvent(new ControllerMesageEvent(0,chanelState));
+				
+				if(!hasFeeder) return;
+				//Feeder messages
+				chanelState=-1;
+				switch(event.state){
+					//posible bug - GlueMBController && FeederController chanel_state colision
 					case GlueMBController.FEEDER_SHEET_IN:
 						chanelState=FeederController.CHANEL_STATE_SINGLE_SHEET;
 						log('Подача: Лист пошел',2);
@@ -301,10 +306,6 @@ package com.photodispatcher.tech{
 						chanelState=FeederController.CHANEL_STATE_REAM_EMPTY;
 						_feederEmpty=true;
 						log('Подача: Датчик стопы - пустая',2);
-						break;
-					case GlueMBController.GLUE_LEVEL_ALARM:
-						chanelState=GlueMBController.GLUE_LEVEL_ALARM;
-						log('Низкий уровень клея',2);
 						break;
 				}
 				if(chanelState!=-1) dispatchEvent(new ControllerMesageEvent(0,chanelState));

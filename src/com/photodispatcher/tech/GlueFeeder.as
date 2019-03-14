@@ -280,9 +280,9 @@ package com.photodispatcher.tech{
 			if(_glueHandler){
 				_glueHandler.logger=logger;
 				_glueHandler.addEventListener(ErrorEvent.ERROR,onGlueHandlerErr);
+				_glueHandler.addEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 				if(_glueHandler.hasFeeder){
 					_glueHandler.addEventListener(Event.COMPLETE, onControllerCommandComplite);
-					_glueHandler.addEventListener(ControllerMesageEvent.CONTROLLER_MESAGE_EVENT,onControllerMsg);
 				}
 			}
 		}
@@ -591,59 +591,6 @@ package com.photodispatcher.tech{
 		protected function onDelayTimer(evt:TimerEvent):void{
 			nextStep();
 		}
-		
-		
-		protected var statDate:Date;
-		protected var statBooks:int=0;
-		protected var statSheets:int=0;
-		protected var statSheetCounter:int=0;
-
-		public function showStat():void{
-			var dt:Date= Context.getAttribute('statDate');
-			var bk:int= Context.getAttribute('statBooks');
-			var sht:int= Context.getAttribute('statSheets');
-			var str:String=' Произведено';
-			if(dt){
-				var fmt:DateTimeFormatter= new DateTimeFormatter();
-				fmt.dateTimePattern='dd.MM.yy HH:mm';
-				str=str +' c ' +fmt.format(dt);
-			}
-			str=str+' Книг:'+bk.toString()+' листов:'+(sht+statSheetCounter).toString();
-			statString=str;
-		}
-
-		protected function statCountBook():void{
-			var so:SharedObject = SharedObject.getLocal('appProps','/');
-			statDate=so.data.statDate;
-			statBooks=so.data.statBooks;
-			statSheets=so.data.statSheets;
-			if(statBooks<=0) statBooks=0;
-			if(statSheets<=0) statSheets=0;
-			
-			if(statSheets>= (int.MAX_VALUE-statSheetCounter)){
-				statSheets=0;
-				statBooks=0;
-			}
-			if(statBooks==int.MAX_VALUE) statBooks=0;
-			
-			statBooks++;
-			statSheets=statSheets+statSheetCounter;
-			statSheetCounter=0;
-
-			//save
-			so.data.statBooks=statBooks;
-			so.data.statSheets=statSheets;
-			so.flush();
-			Context.setAttribute("statBooks", statBooks);
-			Context.setAttribute("statSheets", statSheets);
-			showStat();
-		}
-
-		protected function statCountSheet():void{
-			statSheetCounter++;
-			showStat();
-		}
-
 		
 		protected function nextStep():void{
 			//controller.close(currentTray);
@@ -1034,8 +981,28 @@ package com.photodispatcher.tech{
 		protected function onControllerCommandComplite(event:Event):void{
 			aclLatch.forward();
 		}
-		protected function onControllerMsg(event:ControllerMesageEvent):void{
+		
+		override protected function onControllerMsg(event:ControllerMesageEvent):void{
 			var msg:String;
+			
+			//posible bug - GlueMBController && FeederController chanel_state colision
+			//now no problem -> GlueMBController.GLUE_LEVEL_ALARM > FeederController.CHANEL_STATE_REAM_FILLED
+			if(event.state==GlueMBController.GLUE_LEVEL_ALARM){
+				//show alert
+				if(Context.getAttribute("glueAlarm")){
+					dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
+					/*
+					if(Context.getAttribute("glueShowAlarm") && !Context.getAttribute("showAlarm")){
+						(glueHandler as GlueHandlerMB).controller.setAlarmOn();
+					}
+					*/
+				}else{
+					log('Низкий уровень клея');
+				}
+				return;
+			}
+
+			if(!glueHandler.hasFeeder) return;
 			
 			//check / set ream state 
 			if(event.state==FeederController.CHANEL_STATE_REAM_FILLED || event.state==FeederController.CHANEL_STATE_REAM_EMPTY){
@@ -1050,21 +1017,6 @@ package com.photodispatcher.tech{
 				}
 				msg='Лоток подачи: '+FeederController.chanelStateName(event.state);
 				log(msg);
-				return;
-			}
-			
-			//posible bug - GlueMBController && FeederController chanel_state colision
-			//now no problem -> GlueMBController.GLUE_LEVEL_ALARM > FeederController.CHANEL_STATE_REAM_FILLED
-			if(event.state==GlueMBController.GLUE_LEVEL_ALARM){
-				//show alert
-				if(Context.getAttribute("glueAlarm")){
-					dispatchEvent(new ErrorEvent(ErrorEvent.ERROR,false,false,"Закончился клей",10));
-					if(Context.getAttribute("glueShowAlarm") && !Context.getAttribute("showAlarm")){
-						(glueHandler as GlueHandlerMB).controller.setAlarmOn();
-					}
-				}else{
-					log('Низкий уровень клея');
-				}
 				return;
 			}
 

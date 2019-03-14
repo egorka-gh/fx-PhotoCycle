@@ -185,9 +185,9 @@
 			private function onPickerErr(event:ErrorEvent):void{
 				log(event.text);
 				var gh:GlueHandlerMB;
+				showAlert(event.text);
 				if(feedOn){
 					//Alert.show(event.text);
-					showAlert(event.text);
 					if(event.errorID!=0){
 						playAlertSound();
 						showControllerAlarm();
