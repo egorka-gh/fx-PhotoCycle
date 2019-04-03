@@ -184,7 +184,6 @@
 			
 			private function onPickerErr(event:ErrorEvent):void{
 				log(event.text);
-				var gh:GlueHandlerMB;
 				showAlert(event.text);
 				if(feedOn){
 					//Alert.show(event.text);
@@ -300,6 +299,7 @@
 			<s:HGroup gap="10" width="100%">
 				<s:VGroup gap="10" >
 					<s:Label text="Статистика: {glue.statString}"/>
+					<s:Label text="{glue.statStringD}"/>
 					<s:HGroup gap="5" verticalAlign="middle">
 						<mdcomp:Switch id="tgSkipBookNumCheck" selected="@{glue.inexactBookSequence}"/>
 						<s:Label text="Сборка брака"/>

@@ -308,6 +308,7 @@
 					glueShowAlarm=so.data.glueShowAlarm;
 					showAlarm=so.data.showAlarm;
 					if(so.data.showAlarmTime) showAlarmTime =so.data.showAlarmTime;
+					glueAllowErrorMode=so.data.glueAllowErrorMode;
 					
 					glueHasFeeder=so.data.glueHasFeeder;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
@@ -394,6 +395,7 @@
 					Context.setAttribute("glueShowAlarm", glueShowAlarm);
 					Context.setAttribute("showAlarm", showAlarm);
 					Context.setAttribute("showAlarmTime", showAlarmTime);
+					Context.setAttribute("glueAllowErrorMode", glueAllowErrorMode);
 					
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
@@ -600,6 +602,8 @@
 			public var showAlarm:Boolean=false;
 			[Bindable]
 			public var showAlarmTime:int =0;
+			[Bindable]
+			public var glueAllowErrorMode:Boolean=false;
 			
 			[Bindable]
 			public var whitePaperDelay:int=0;
@@ -643,6 +647,8 @@
 				Context.setAttribute("glueShowAlarm", glueShowAlarm);
 				Context.setAttribute("showAlarm", showAlarm);
 				Context.setAttribute("showAlarmTime", showAlarmTime);
+				Context.setAttribute("glueAllowErrorMode", glueAllowErrorMode);
+				
 				Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 				Context.setAttribute("pumpWorkTime", pumpWorkTime);
 				Context.setAttribute("whitePaperDelay", whitePaperDelay);
@@ -669,6 +675,8 @@
 				so.data.glueShowAlarm=glueShowAlarm;
 				so.data.showAlarm=showAlarm;
 				so.data.showAlarmTime=showAlarmTime;
+				so.data.glueAllowErrorMode=glueAllowErrorMode;
+				
 				so.data.pumpSensFilterTime=pumpSensFilterTime;
 				so.data.pumpWorkTime=pumpWorkTime;
 				
@@ -853,7 +861,12 @@
 				<s:Label text="в течении (сек):" fontFamily="RobotoLight"/>
 				<s:NumericStepper enabled="{showAlarm}" minimum="0" maximum="1000" snapInterval="1" value="@{showAlarmTime}"/>
 			</s:HGroup>
-			
+
+			<s:HGroup gap="5" verticalAlign="middle" enabled="{!feedOn}">
+				<s:Label text="Не останавливать склейку при ошибке" fontFamily="RobotoLight" toolTip="После ошибки выгружать книгу после следующего последнего листа"/>
+				<mdcomp:CheckBox selected="@{glueAllowErrorMode}"/>
+			</s:HGroup>
+				
 			<s:HGroup gap="5" verticalAlign="baseline">
 				<s:Label text="Подача листа" fontFamily="Roboto"/>
 				<mdcomp:CheckBox id="tg_feedOn" selected="{feedOn}" change="{setBool('feedOn')}"/> 

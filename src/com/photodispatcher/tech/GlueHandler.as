@@ -49,6 +49,27 @@ package com.photodispatcher.tech{
 		
 		public var nonStopMode:Boolean;
 		
+		public var allowErrorMode:Boolean=false;
+		//waites lastSheetFeeded to push broken book(s)
+		private var _errorMode:Boolean;
+		public function get errorMode():Boolean{
+			return _errorMode;
+		}
+		public function set errorMode(value:Boolean):void{
+			if(!nonStopMode || !allowErrorMode || !isRunning){
+				_errorMode=false;
+				return;
+			}
+			if(_errorMode!=value){
+				if(value){
+					log('Переключение в режим ожидания последнего листа киги.');
+				}else{
+					log('Выход из режима ожидания последнего листа киги.');
+				}
+			}
+			_errorMode=value;
+		}
+		
 		//requests feeder pause
 		[Bindable]
 		public var hasPauseRequest:Boolean;
@@ -141,6 +162,7 @@ package com.photodispatcher.tech{
 		
 		private var startTimer:Timer;
 		public function start(startDelay:int=0):Boolean{
+			errorMode =false;
 			createLatches();
 			if(isRunning) return true;
 			if(startDelay<=100){
@@ -198,6 +220,7 @@ package com.photodispatcher.tech{
 		}
 		public function stop(err:String='', engineStop:Boolean=false):void{
 			if(!isRunning) return;
+			errorMode=false;
 			if(!nonStopMode){
 				isRunning=false;
 				hasPauseRequest=false;
@@ -259,8 +282,29 @@ package com.photodispatcher.tech{
 			var tb:TechBook;
 			//add to last book or create new
 			if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
+			
+			if(errorMode){
+				//ignore printGroupId 
+				//collect all sheets into current book, untill lastSheetFeeded
+				if(!tb){
+					tb=new TechBook(book,printGroupId);
+					//tb.sheetsTotal=-1;
+					//tb.sheetsFeeded++;
+					tb.barcode=barcode;
+					if(!bookQueue) bookQueue=new ArrayCollection();
+					bookQueue.addItem(tb);
+				}
+				tb.printGroupId=printGroupId;
+				tb.book=book;
+				//to prevent push book
+				tb.sheetsTotal = -1;
+				tb.sheetsFeeded++;
+				return;
+			}
+			
 			if(tb && tb.printGroupId==printGroupId && tb.book==book){
-				if(tb.sheetsFeeded<tb.sheetsTotal) tb.sheetsFeeded++;
+				//if(tb.sheetsFeeded<tb.sheetsTotal) 
+				tb.sheetsFeeded++;
 			}else{
 				tb=new TechBook(book,printGroupId);
 				tb.sheetsTotal=sheetTotal;
@@ -269,9 +313,21 @@ package com.photodispatcher.tech{
 				if(!bookQueue) bookQueue=new ArrayCollection();
 				bookQueue.addItem(tb);
 			}
-			
 		}
-		
+
+		public function awaitLast(printGroupId:String, book:int, sheet:int, sheetTotal:int, barcode:String=''):void{
+			if(!isRunning ) return;
+			await(printGroupId, book, sheet, sheetTotal, barcode);
+			if(errorMode){
+				var tb:TechBook;
+				if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
+				if(tb){
+					tb.sheetsTotal = tb.sheetsFeeded;
+				}
+				errorMode=false;
+			}
+		}
+
 		public function get currentBook():TechBook{
 			var tb:TechBook;
 			if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(0) as TechBook;
@@ -335,7 +391,7 @@ package com.photodispatcher.tech{
 						stop('Ошибка контроля книги (подано<склеено) '+tb.printGroupId+' '+tb.book);
 						if(!nonStopMode) return;
 					}
-					if(tb.sheetsDone==tb.sheetsTotal && (tb.sheetsFeeded==tb.sheetsTotal || nonStopMode)){
+					if(tb.sheetsDone==tb.sheetsTotal && (tb.sheetsFeeded >= tb.sheetsTotal || nonStopMode)){
 						//book complited
 						if(latchPushBook.isOn){
 							stop('Ошибка не убрана предидущая книга');

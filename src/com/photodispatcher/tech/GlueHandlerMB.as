@@ -128,6 +128,7 @@ package com.photodispatcher.tech{
 		
 		override public function start(startDelay:int=0):Boolean{
 			if(isRunning) return true;
+			errorMode=false;
 			if(!checkPrepared(true)) return false;
 			_feederEmpty=false;
 			log('Старт');
@@ -159,9 +160,9 @@ package com.photodispatcher.tech{
 		}
 		override public function stop(err:String='', engineStop:Boolean=false):void{
 			if(!isRunning) return;
+			errorMode=false;
 			isRunning=false;
 			hasPauseRequest=false;
-			
 			//has no stop command
 			//if(controller && engineStop) controller.engineStop();
 		}
@@ -207,6 +208,24 @@ package com.photodispatcher.tech{
 			controller.feederGetReamState();
 		}
 		
+		override public function awaitLast(printGroupId:String, book:int, sheet:int, sheetTotal:int, barcode:String=''):void{
+			if(!isRunning ) return;
+			await(printGroupId, book, sheet, sheetTotal, barcode);
+			if(errorMode){
+				var tb:TechBook;
+				if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
+				if(tb){
+					tb.sheetsTotal = tb.sheetsFeeded;
+					if(bookQueue.length==1){
+						log('Следующий лист последний (awaitLast) '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
+						tb.sheetsTotal = -1;
+						controller.pushBlockAfterSheet();
+					}
+				}
+				errorMode=false;
+			}
+		}
+
 		private var lastMsgTime:uint=0;
 		
 		override protected function onControllerMsg(event:ControllerMesageEvent):void{
@@ -234,7 +253,13 @@ package com.photodispatcher.tech{
 					if(tb){
 						tb.sheetsDone++;
 						if(tb.sheetsDone>tb.sheetsFeeded){
+							//TODO в общем случае сбой произошел давно и не однократно
+							//даже при плотной подаче должно пройти как минимум 2а белых листа в одной книге 
+							errorMode=true;
 							logErr('Ошибка контроля книги (подано меньше чем склеено) '+tb.printGroupId+' '+tb.book);
+							//+1 что бы выкинуло книгу при скане последнего разворота иначе просто отлогит что книга готова
+							//??
+							if(errorMode) tb.sheetsFeeded = tb.sheetsDone+1;
 						}
 						if(tb.sheetsDone==(tb.sheetsTotal-1)){
 							log('Следующий лист последний '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
@@ -249,10 +274,16 @@ package com.photodispatcher.tech{
 							if(tb){
 								log('Книга завершена '+tb.printGroupId+' '+tb.book);
 								//refresh view
-								currentBook;
+								tb = currentBook;
+								//возможно книга после errorMode (подано меньше чем склеено) или один разворот
+								if(tb && tb.sheetsDone==(tb.sheetsTotal-1)){
+									log('Следующий лист последний '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
+									controller.pushBlockAfterSheet();
+								}
 							}
 						}
 					}else{
+						errorMode=true;
 						logErr('Нет данных о текущей книге');
 						return;
 					}

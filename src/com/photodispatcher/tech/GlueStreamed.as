@@ -41,7 +41,7 @@ package com.photodispatcher.tech{
 
 		public var glueType:int;
 		public var hasFeeder:Boolean=false;
-		
+
 		[Bindable]
 		public var prepared:Boolean;
 
@@ -145,6 +145,8 @@ package com.photodispatcher.tech{
 		
 		[Bindable]
 		public var statString:String='';
+		[Bindable]
+		public var statStringD:String='';
 
 		//print group params
 		[Bindable]
@@ -292,7 +294,9 @@ package com.photodispatcher.tech{
 			if(glueHandler.isRunning){
 				logErr('Cклейка: '+event.text);
 				//??
-				stop();
+				if(!glueHandler.errorMode){
+					stop();
+				}
 			}else{
 				//hz
 				log('Cклейка: '+event.text);
@@ -420,10 +424,11 @@ package com.photodispatcher.tech{
 				if(Context.getAttribute('glueScraperDelay')) gh.glueScraperDelay=Context.getAttribute('glueScraperDelay');
 				if(Context.getAttribute('glueScraperRun')) gh.glueScraperRun=Context.getAttribute('glueScraperRun');
 				if(Context.getAttribute('glueFirstSheetDelay')) gh.glueFirstSheetDelay=Context.getAttribute('glueFirstSheetDelay');
+				
+				gh.allowErrorMode = Context.getAttribute('glueAllowErrorMode');
 
 				gh.init(null);
 				glueHandler=gh;
-				
 			}
 		}
 		
@@ -552,8 +557,6 @@ package com.photodispatcher.tech{
 				pgId=barcode.substr(0,barcode.length-6);
 			}
 			
-			statCountSheet();
-			glueHandler.await(pgId,bookNum,pageNum,pageTotal);
 			currBookIdx=bookNum;
 			currSheetIdx=pageNum;
 
@@ -595,9 +598,17 @@ package com.photodispatcher.tech{
 				//reset detectFirstBook
 				//if(detectFirstBook) detectFirstBook=false;
 			}
+			
+			statCountSheet();
 			//check sequence
 			register.register(bookNum,pageNum);
-			if (register.currentBookComplited) statCountBook();
+			if (register.currentBookComplited){
+				statCountBook();
+				glueHandler.awaitLast(pgId,bookNum,pageNum,pageTotal);
+			}else{
+				glueHandler.await(pgId,bookNum,pageNum,pageTotal);				
+			}
+
 			if (register.isComplete){
 				register.flushData();
 				log('Заказ "'+register.printGroupId+'" завершен');
@@ -623,6 +634,7 @@ package com.photodispatcher.tech{
 		protected function onRegisterErr(event:ErrorEvent):void{
 			if(event.errorID>0){
 				logErr(event.text);
+				if(glueHandler) glueHandler.errorMode = true;
 			}else{
 				log(event.text);
 			}
@@ -684,20 +696,41 @@ package com.photodispatcher.tech{
 		protected var statDate:Date;
 		protected var statBooks:int=0;
 		protected var statSheets:int=0;
+		
+		protected var statDateD:Date;
+		protected var statBooksD:int=0;
+		protected var statSheetsD:int=0;
+		
 		protected var statSheetCounter:int=0;
 		
 		public function showStat():void{
 			var dt:Date= Context.getAttribute('statDate');
 			var bk:int= Context.getAttribute('statBooks');
 			var sht:int= Context.getAttribute('statSheets');
+
+			//curr date
+			var dtd:Date= Context.getAttribute('statDateD');
+			var bkd:int= Context.getAttribute('statBooksD');
+			var shtd:int= Context.getAttribute('statSheetsD');
+			//check curr date
+			var now:Date =  new Date();
+			statDateD = new Date(now.fullYear, now.month, now.date);
+			if(!dtd || dtd.time != statDateD.time){
+				Context.setAttribute("statDateD", statDateD);
+				statBooksD=0;
+				statSheetsD=0;
+			}
+
 			var str:String=' Произведено';
+			var fmt:DateTimeFormatter= new DateTimeFormatter();
+			fmt.dateTimePattern='dd.MM.yy HH:mm';
 			if(dt){
-				var fmt:DateTimeFormatter= new DateTimeFormatter();
-				fmt.dateTimePattern='dd.MM.yy HH:mm';
 				str=str +' c ' +fmt.format(dt);
 			}
 			str=str+' Книг:'+bk.toString()+' листов:'+(sht+statSheetCounter).toString();
 			statString=str;
+
+			statStringD='Произведено '+fmt.format(statDateD)+' Книг:'+bkd.toString()+' листов:'+(shtd+statSheetCounter).toString();
 		}
 		
 		protected function statCountBook():void{
@@ -714,16 +747,40 @@ package com.photodispatcher.tech{
 			}
 			if(statBooks==int.MAX_VALUE) statBooks=0;
 			
+			statDateD=so.data.statDateD;
+			statBooksD=so.data.statBooksD;
+			statSheetsD=so.data.statSheetsD;
+			//check curr date
+			var now:Date =  new Date();
+			now = new Date(now.fullYear, now.month, now.date);
+			if(!statDateD || statDateD.time != now.time){
+				statBooksD=0;
+				statSheetsD=0;
+				statDateD= now;
+			}
+			
 			statBooks++;
 			statSheets=statSheets+statSheetCounter;
+			statBooksD++;
+			statSheetsD=statSheetsD+statSheetCounter;
 			statSheetCounter=0;
 			
 			//save
 			so.data.statBooks=statBooks;
 			so.data.statSheets=statSheets;
+			so.data.statBooksD=statBooksD;
+			so.data.statSheetsD=statSheetsD;
+			so.data.statDateD=statDateD;
+			
 			so.flush();
+			
 			Context.setAttribute("statBooks", statBooks);
 			Context.setAttribute("statSheets", statSheets);
+
+			Context.setAttribute("statBooksD", statBooksD);
+			Context.setAttribute("statSheetsD", statSheetsD);
+			Context.setAttribute("statDateD", statDateD);
+
 			showStat();
 		}
 		
