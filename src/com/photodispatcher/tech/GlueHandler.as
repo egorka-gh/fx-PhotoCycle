@@ -70,6 +70,21 @@ package com.photodispatcher.tech{
 			_errorMode=value;
 		}
 		
+		private var _penultSheet:Boolean;
+		public function get penultSheet():Boolean{
+			return _penultSheet;
+		}
+		public function set penultSheet(value:Boolean):void{
+			if(!errorMode){
+				_penultSheet=false;
+				return;
+			}
+			_penultSheet=value;
+			if(_penultSheet){
+				log('Предпоследний лист киги.');
+			}
+		}
+		
 		//requests feeder pause
 		[Bindable]
 		public var hasPauseRequest:Boolean;

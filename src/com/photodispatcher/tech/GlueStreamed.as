@@ -602,6 +602,12 @@ package com.photodispatcher.tech{
 			statCountSheet();
 			//check sequence
 			register.register(bookNum,pageNum);
+			/*
+			//4 fast glue in error mode
+			if (register.isNextEndSheet){
+				glueHandler.penultSheet =true;
+			}
+			*/
 			if (register.currentBookComplited){
 				statCountBook();
 				glueHandler.awaitLast(pgId,bookNum,pageNum,pageTotal);
@@ -611,7 +617,7 @@ package com.photodispatcher.tech{
 
 			if (register.isComplete){
 				register.flushData();
-				log('Заказ "'+register.printGroupId+'" завершен');
+				log('Заказ "'+register.printGroupId+'" завершен (register)');
 				register=null;
 			}
 		}

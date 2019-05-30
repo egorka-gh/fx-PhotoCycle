@@ -215,7 +215,9 @@ package com.photodispatcher.tech{
 				var tb:TechBook;
 				if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
 				if(tb){
+					//log('Конец книги (awaitLast) '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsFeeded);
 					tb.sheetsTotal = tb.sheetsFeeded;
+					//only for fast glue vs minimal gap between sheets
 					if(bookQueue.length==1){
 						log('Следующий лист последний (awaitLast) '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
 						tb.sheetsTotal = -1;
@@ -255,6 +257,7 @@ package com.photodispatcher.tech{
 						if(tb.sheetsDone>tb.sheetsFeeded){
 							//TODO в общем случае сбой произошел давно и не однократно
 							//даже при плотной подаче должно пройти как минимум 2а белых листа в одной книге 
+							//может >= (походу только для медленных конвейеров)
 							errorMode=true;
 							logErr('Ошибка контроля книги (подано меньше чем склеено) '+tb.printGroupId+' '+tb.book);
 							//+1 что бы выкинуло книгу при скане последнего разворота иначе просто отлогит что книга готова
@@ -275,11 +278,13 @@ package com.photodispatcher.tech{
 								log('Книга завершена '+tb.printGroupId+' '+tb.book);
 								//refresh view
 								tb = currentBook;
+								/*хреньы
 								//возможно книга после errorMode (подано меньше чем склеено) или один разворот
 								if(tb && tb.sheetsDone==(tb.sheetsTotal-1)){
 									log('Следующий лист последний '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
 									controller.pushBlockAfterSheet();
 								}
+								*/
 							}
 						}
 					}else{

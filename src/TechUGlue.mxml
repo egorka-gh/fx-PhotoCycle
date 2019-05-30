@@ -396,6 +396,7 @@
 					Context.setAttribute("showAlarm", showAlarm);
 					Context.setAttribute("showAlarmTime", showAlarmTime);
 					Context.setAttribute("glueAllowErrorMode", glueAllowErrorMode);
+					Context.setAttribute("checkFeederEmpty", checkFeederEmpty);
 					
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
@@ -604,6 +605,12 @@
 			public var showAlarmTime:int =0;
 			[Bindable]
 			public var glueAllowErrorMode:Boolean=false;
+
+			[Bindable]
+			public var useServer:Boolean=false;
+			[Bindable]
+			public var serverUrl:String;
+			
 			
 			[Bindable]
 			public var whitePaperDelay:int=0;
@@ -1118,6 +1125,15 @@
 					</s:VGroup>
 				</s:NavigatorContent>
 			</mx:ViewStack>
+
+			<s:Spacer height="10"/>
+			<s:HGroup gap="5" verticalAlign="middle">
+				<s:Label text="Подключаться к серверу:" fontFamily="RobotoLight"/>
+				<mdcomp:CheckBox selected="@{useServer}"/>
+				<s:Label text="Url:" fontFamily="RobotoLight" />
+				<s:TextInput text="@{serverUrl}" editable="false" width="400"/>
+			</s:HGroup>
+				
 			<s:HGroup width="100%" horizontalAlign="right">
 				<mdcomp:Button id="btSaveComs" label="Сохранить" click="btSaveComs_clickHandler(event)"/>
 			</s:HGroup>

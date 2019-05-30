@@ -470,6 +470,10 @@ package com.photodispatcher.tech.plain_register{
 			}
 		}
 		
+		public function get isNextEndSheet():Boolean{
+			return assumeEndSheet == dueSheet ;
+		}
+		
 		public function get currentBook():int{
 			return lastBook;
 		}

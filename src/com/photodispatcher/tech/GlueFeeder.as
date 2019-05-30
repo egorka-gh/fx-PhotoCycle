@@ -937,7 +937,7 @@ package com.photodispatcher.tech{
 							currPgId='';
 						}
 					}
-					pause('Заполните лотк подачи');
+					pause('Заполните лотк подачи (LatchTimeout)');
 					return;
 					break;
 				case PickerLatch.TYPE_LAYER_OUT:
