@@ -310,6 +310,9 @@
 					if(so.data.showAlarmTime) showAlarmTime =so.data.showAlarmTime;
 					glueAllowErrorMode=so.data.glueAllowErrorMode;
 					
+					useServer=so.data.useServer;
+					serverUrl=so.data.serverUrl;
+					
 					glueHasFeeder=so.data.glueHasFeeder;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
 					pumpWorkTime=so.data.pumpWorkTime;
@@ -398,6 +401,9 @@
 					Context.setAttribute("glueAllowErrorMode", glueAllowErrorMode);
 					Context.setAttribute("checkFeederEmpty", checkFeederEmpty);
 					
+					Context.setAttribute("useServer", useServer);
+					Context.setAttribute("serverUrl", serverUrl);
+
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
 					
@@ -669,6 +675,9 @@
 				Context.setAttribute("glueScraperRun", glueScraperRun);
 				Context.setAttribute("glueFirstSheetDelay", glueFirstSheetDelay);
 				
+				Context.setAttribute("useServer", useServer);
+				Context.setAttribute("serverUrl", serverUrl);
+
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueServerIP = glueServerIP;
 				so.data.glueServerPort = glueServerPort;
@@ -683,6 +692,10 @@
 				so.data.showAlarm=showAlarm;
 				so.data.showAlarmTime=showAlarmTime;
 				so.data.glueAllowErrorMode=glueAllowErrorMode;
+				
+				so.data.useServer=useServer;
+				so.data.serverUrl=serverUrl;
+				
 				
 				so.data.pumpSensFilterTime=pumpSensFilterTime;
 				so.data.pumpWorkTime=pumpWorkTime;
@@ -1131,7 +1144,7 @@
 				<s:Label text="Подключаться к серверу:" fontFamily="RobotoLight"/>
 				<mdcomp:CheckBox selected="@{useServer}"/>
 				<s:Label text="Url:" fontFamily="RobotoLight" />
-				<s:TextInput text="@{serverUrl}" editable="false" width="400"/>
+				<s:TextInput text="@{serverUrl}" enabled="{useServer}" width="400"/>
 			</s:HGroup>
 				
 			<s:HGroup width="100%" horizontalAlign="right">

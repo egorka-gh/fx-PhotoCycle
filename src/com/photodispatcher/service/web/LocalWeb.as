@@ -7,14 +7,13 @@ package com.photodispatcher.service.web
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	
-
-	//[Event(name="error", type="flash.events.ErrorEvent")]
 	
-	[Event(name="complete", type="flash.events.Event")]
+	[Event(name="response", type="com.photodispatcher.event.WebEvent")]
 	public class LocalWeb  extends EventDispatcher{
-		public static const ACTION_SCAN:String = 'scans';
+		//public static const ACTION_SCAN:String = 'scans';
+		public static const ACTION_GLUE:String = 'glue';
 		
-		public static const TASK_BOOK_COMPLETE:String = 'item-complete';
+		public static const TASK_ORDER_COMPLETE:String = 'item-complete';
 		
 		public var isRunning:Boolean=false;
 
@@ -30,11 +29,11 @@ package com.photodispatcher.service.web
 		}
 
 		
-		public function sendBookComplite(batchId:int, orderId:int):void{
+		public function sendOrderComplite(orderId:String):void{
 			//curl -d "action=scans&task=item-complete&data={"batch_item_id":17988121,"order_number":568664}" -X POST http://core.localdev/?r=interface-succession-stage/api
 			
-			var data:String =new JSONEncoder( {batch_item_id: batchId, order_number: orderId} ).getString();
-			var action:LocalWebAction = new LocalWebAction(ACTION_SCAN, TASK_BOOK_COMPLETE, data);
+			var data:String =new JSONEncoder( {item_id: orderId} ).getString();
+			var action:LocalWebAction = new LocalWebAction(ACTION_GLUE, TASK_ORDER_COMPLETE, data);
 			queue.push(action);
 			startNext();
 		}
@@ -46,7 +45,7 @@ package com.photodispatcher.service.web
 			while( !currentAction && queue.length>0) currentAction = queue.shift() as LocalWebAction;
 			startListen();
 			//trace('LocalWeb sendBookComplite '+currentAction.data);
-			client.getData( new InvokerUrl(baseUrl), currentAction.toPostObject());
+			client.sendData( new InvokerUrl(baseUrl), currentAction.toPostObject());
 		}
 		
 		protected function startListen():void{

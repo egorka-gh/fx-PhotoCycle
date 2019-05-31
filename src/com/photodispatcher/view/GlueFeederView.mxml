@@ -61,6 +61,8 @@
 			[Bindable]
 			public var debugBarReders:Boolean=false;
 			
+			[Bindable]
+			protected var useServer:Boolean=false;
 			
 			public var serialProxy:SerialProxy;
 			
@@ -87,6 +89,8 @@
 			private var controllerlogText:String = '';
 			[Bindable]
 			private var barreaderlogText:String = '';
+			[Bindable]
+			private var serverlogText:String = '';
 			
 			private var dtFmt:DateTimeFormatter;
 
@@ -110,6 +114,12 @@
 						str=str.substr(0,5000)+'\n';
 					}
 					barreaderlogText=str;
+				}else if(level==101){
+					str=str+serverlogText;
+					if(!feedOn && str.length>6000){
+						str=str.substr(0,5000)+'\n';
+					}
+					serverlogText=str;
 				}else{
 					str=str+controllerlogText;
 					if(!feedOn && str.length>6000){
@@ -135,6 +145,7 @@
 			
 			public function start():void{
 				debugBarReders= Context.getAttribute('debugBarReders');
+				useServer= Context.getAttribute('useServer');
 				
 				if(feedOn){
 					glue= new GlueFeeder();
@@ -384,6 +395,9 @@
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Сканеры" backgroundAlpha="0" width="100%" height="100%" enabled="{debugBarReders}" >
 							<s:TextArea  text="{barreaderlogText}" width="100%" height="100%"/>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Сервер" backgroundAlpha="0" width="100%" height="100%" enabled="{useServer}" >
+							<s:TextArea  text="{serverlogText}" width="100%" height="100%"/>
 						</s:NavigatorContent>
 					</mx:ViewStack>
 				</s:VGroup>

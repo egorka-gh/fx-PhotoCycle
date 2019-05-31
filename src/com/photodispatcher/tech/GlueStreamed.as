@@ -3,6 +3,7 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.event.BarCodeEvent;
 	import com.photodispatcher.event.ControllerMesageEvent;
 	import com.photodispatcher.event.SerialProxyEvent;
+	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.interfaces.ISimpleLogger;
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.FieldValue;
@@ -16,6 +17,9 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.service.barcode.SerialProxy;
 	import com.photodispatcher.service.barcode.Socket2Com;
 	import com.photodispatcher.service.modbus.controller.GlueMBController;
+	import com.photodispatcher.service.web.LocalWeb;
+	import com.photodispatcher.service.web.LocalWebAction;
+	import com.photodispatcher.service.web.Responses;
 	import com.photodispatcher.tech.plain_register.TechRegisterPicker;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -94,6 +98,10 @@ package com.photodispatcher.tech{
 		public var pauseOnComplite:Boolean=false;
 		
 		public var pushDelay:int=200;
+		
+		protected var useServer:Boolean=false;
+		protected var serverUrl:String;
+
 		
 		private var _serialProxy:SerialProxy;
 		public function get serialProxy():SerialProxy{
@@ -183,8 +191,44 @@ package com.photodispatcher.tech{
 		}
 		
 		public function init():void{
+			useServer = Context.getAttribute("useServer");
+			serverUrl = Context.getAttribute("serverUrl");
+			useServer = useServer && serverUrl;
+			if(lServer) lServer.removeEventListener(WebEvent.RESPONSE, onlServerResp);
+			if (useServer){
+				lServer = new LocalWeb(serverUrl);
+				lServer.addEventListener(WebEvent.RESPONSE, onlServerResp);
+			}
+
 			if(!glueHandler && glueType!=0) createGlueHandler();
 			//checkPrepared();
+		}
+		
+		protected var lServer:LocalWeb;
+		protected function serverOrderComplite(pgId:String):void{
+			if (!useServer || !lServer) return;
+			log('Send OrderComplite '+pgId, 101);
+			lServer.sendOrderComplite(pgId);
+		}
+		
+		protected function onlServerResp(event:WebEvent):void{
+			var action:LocalWebAction = event.data as LocalWebAction;
+			var str:String='';
+			if (action){
+				str = 'HttpStatus: ' + action.httpStatus+'; ';
+				str = str +'data:'+action.data+'; ';  
+			}
+			if(event.response==Responses.SERVICE_ERROR){
+				str = str +'error:'+event.error;
+			}else{
+				//Responses.COMPLETE
+				if (action){
+					str = str +'response: '+action.responce;
+				}else{
+					str = str +'OK';
+				}
+			}
+			log('Response: '+str, 101);
 		}
 		
 		protected function checkPrepared(showAlert:Boolean=false):Boolean{
@@ -572,6 +616,7 @@ package com.photodispatcher.tech{
 				
 				if(register.finalise()){
 					log('Заказ '+currPgId+' завершен.');
+					serverOrderComplite(currPgId);
 				}
 				register=null;
 			}
@@ -618,6 +663,7 @@ package com.photodispatcher.tech{
 			if (register.isComplete){
 				register.flushData();
 				log('Заказ "'+register.printGroupId+'" завершен (register)');
+				serverOrderComplite(register.printGroupId);
 				register=null;
 			}
 		}

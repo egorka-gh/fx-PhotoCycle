@@ -140,7 +140,12 @@ package com.photodispatcher.service.web{
 		}
 
 		public function getData(url:InvokerUrl, post:Object):void{
-			invoke(new DataInv(this,url,post,60));//imeout - 30s 
+			invoke(new DataInv(this,url,post,60));//imeout - 60s 
 		}
+
+		public function sendData(url:InvokerUrl, post:Object):void{
+			invoke(new DataInv(this,url,post,10));//imeout - 10s 
+		}
+
 	}
 }
