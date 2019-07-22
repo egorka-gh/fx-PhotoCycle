@@ -359,6 +359,12 @@
 				if(event.target is Button && event.target.id=='btPrint'){
 					var form:DeliveryTypePrintForm= lstPrint.selectedItem as DeliveryTypePrintForm;
 					if(!form || !mailPackage) return;
+					
+					//disable 'Бел EMS' for K
+					if(form.delivery_type==9 && form.form==3 &&  mailPackage.source==15) return;  
+					//disable 'Бел EMS K' for FB
+					if(form.delivery_type==9 && form.form==4 &&  mailPackage.source==8) return;  
+					
 					var bar:MailPackageBarcode;
 					if(dgBarCode) bar=dgBarCode.selectedItem as MailPackageBarcode;
 					if(!bar && mailPackage.barcodes && mailPackage.barcodes.length>0) bar=mailPackage.barcodes.getItemAt(0) as MailPackageBarcode;
