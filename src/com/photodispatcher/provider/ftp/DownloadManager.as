@@ -66,7 +66,9 @@ package com.photodispatcher.provider.ftp{
 				for each(s in sources){
 					if(s && s.online){
 						f=null;
-						if(s.type==SourceType.SRC_FBOOK_MANUAL){
+						if(s.type==SourceType.SRC_PIXELPARK){
+							f= new DownloadQueueManagerPixelPark(s);
+						}else if(s.type==SourceType.SRC_FBOOK_MANUAL){
 							f= new QueueManagerFBManual(s);
 						}else if(s.ftpService){
 							f= new DownloadQueueManager(s);

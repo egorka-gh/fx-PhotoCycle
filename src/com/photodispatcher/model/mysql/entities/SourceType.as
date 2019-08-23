@@ -14,6 +14,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const SRC_FOTOKNIGA:int=4;
 		public static const SRC_FBOOK:int=7;
 		public static const SRC_FBOOK_MANUAL:int=11;
+		public static const SRC_PIXELPARK:int=25;
 		
 		public static const LAB_FUJI:int=2;
 		public static const LAB_NORITSU:int=3;

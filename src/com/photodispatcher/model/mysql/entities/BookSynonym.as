@@ -114,6 +114,7 @@ package com.photodispatcher.model.mysql.entities {
 		 * @param path
 		 * @param sourceType
 		 * @return BookSynonym
+		 * gets BookSynonym 4 FOTOKNIGA (profiki)
 		 */		
 		private static function translatePath(path:String, sourceType:int=SourceType.SRC_FOTOKNIGA):BookSynonym{
 			if(!path) return null;
@@ -126,6 +127,7 @@ package com.photodispatcher.model.mysql.entities {
 			return map[path] as BookSynonym; 
 		}
 		
+		//get BookSynonym 4 Fbook (roznica)
 		private static function translateAlias(alias:String):BookSynonym{
 			if(!alias) return null;
 			if(!aliasMap){
@@ -137,7 +139,9 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public static function getBookSynonym(alias:String, sourceType:int=SourceType.SRC_FOTOKNIGA):BookSynonym{
 			var res:BookSynonym;
+			//check if defined (redefined) for fbook
 			if(sourceType==SourceType.SRC_FBOOK) res=translateAlias(alias);
+			//get any (regular)
 			if(!res) res=translatePath(alias);
 			return res;
 		}

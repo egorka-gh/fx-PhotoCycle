@@ -5,6 +5,7 @@ package com.photodispatcher.view.menu{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.model.mysql.services.OrderService;
 	import com.photodispatcher.view.OrderInfoPopup;
@@ -38,6 +39,9 @@ package com.photodispatcher.view.menu{
 			var orderId:String=order.id;
 			if(!orderId) return null;
 
+			//TODO refactor for SRC_PIXELPARK
+			if(Context.getSourceType(order.source) == SourceType.SRC_PIXELPARK) return null;
+			
 			var o:Object=new Object;
 			o.order=order;
 			o.oldState=order.state;
@@ -91,6 +95,10 @@ package com.photodispatcher.view.menu{
 		public static function setOrderState(item:Object, newState:int):DbLatch{
 			var order:Order=item as Order;
 			if(!order || newState<=0) return null;
+			
+			//TODO refactor for SRC_PIXELPARK
+			if(Context.getSourceType(order.source) == SourceType.SRC_PIXELPARK) return null;
+			
 			var o:Object=new Object;
 			o.order=order;
 			o.oldState=order.state;

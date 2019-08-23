@@ -5,6 +5,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.service.web.FBookCombo;
 	import com.photodispatcher.service.web.FBookManualWeb;
 	import com.photodispatcher.service.web.FotoknigaWeb;
+	import com.photodispatcher.service.web.PixelParkWeb;
 	import com.photodispatcher.service.web.ProfotoWeb;
 
 	public class WebServiceBuilder{
@@ -23,6 +24,9 @@ package com.photodispatcher.factory{
 					break;
 				case SourceType.SRC_FBOOK:
 					return new FBookCombo(source);
+					break;
+				case SourceType.SRC_PIXELPARK:
+					return new PixelParkWeb(source);
 					break;
 				default:
 					return null;
