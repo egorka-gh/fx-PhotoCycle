@@ -60,6 +60,9 @@ package com.photodispatcher.model.mysql.entities {
 		//public static const FTP_DEPLOY:int=111;//04.04.2013
 		//public static const FTP_REMOTE:int=112;//04.04.2013
 		
+		public static const FTP_UNZIP:int=118;
+		public static const FTP_TRANSFORM:int=119;
+
 		public static const FTP_INCOMPLITE:int=120;
 		public static const FTP_COMPLETE:int=130;
 		
