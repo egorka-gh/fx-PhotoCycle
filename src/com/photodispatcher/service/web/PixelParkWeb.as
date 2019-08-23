@@ -19,7 +19,6 @@ package com.photodispatcher.service.web{
 			}
 			abort('Неподдерживается сервисом');
 		}
-		
 
 		override public function syncActiveLoader():void{
 			if(!source || source.type!=SourceType.SRC_PIXELPARK){
@@ -28,6 +27,7 @@ package com.photodispatcher.service.web{
 			}
 			abort('Неподдерживается сервисом');
 		}
+
 		override public function sync():void{
 			if(!source || source.type!=SourceType.SRC_PIXELPARK){
 				abort('Не верная иннициализация синхронизации');
@@ -51,20 +51,18 @@ package com.photodispatcher.service.web{
 			}
 			abort('Неподдерживается сервисом');
 		}
-
 		
 		//private var _getOrder:Order;
 		override public function get lastOrderId():String{
 			//return _getOrder?_getOrder.id:'';
 			return lastOrder?lastOrder.id:'';
 		}
+
 		override public function isValidLastOrder(forLoad:Boolean=false):Boolean{
 			//TODO implement
-			if(forLoad){
-				return false;
-			}
 			return true;
 		}
+		
 		override public function getOrder(order:Order):void{
 			//TODO implement
 			lastOrder=order;
@@ -78,12 +76,23 @@ package com.photodispatcher.service.web{
 				abort('Не верная иннициализация команды');
 				return;
 			}
+			endGetOrder();
 		}
+		
+		override protected function endGetOrder():void{
+			_hasError=false;
+			_errMesage='';
+
+			stopListen();
+			//lastOrder=_getOrder;
+			trace('FotoknigaWeb loaded order id:'+lastOrder.src_id);
+			dispatchEvent(new Event(Event.COMPLETE));
+		}
+		
 
 		override protected function handleLogin(e:Event):void{
 			//do nothing
 		}
-		
 		
 		override protected function handleData(e:WebEvent):void{
 			//do nothing
@@ -114,7 +123,8 @@ package com.photodispatcher.service.web{
 				abort('Не верная иннициализация команды');
 				return;
 			}
-			abort('Неподдерживается сервисом');		}
+			abort('Неподдерживается сервисом');		
+		}
 		
 		override public function joinMailPackages(ids:Array):void{
 			//TODO implement
