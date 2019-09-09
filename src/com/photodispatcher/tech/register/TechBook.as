@@ -26,5 +26,11 @@ package com.photodispatcher.tech.register{
 		public var sheetsDone:int;
 		
 		public var thickness:Number;
+
+		public function get skipGlue():Boolean{
+			return sheetsTotal == 1;
+		}
+
 	}
+	
 }

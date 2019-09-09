@@ -49,6 +49,8 @@ package com.photodispatcher.tech{
 		public var glueScraperRun:int=0;
 		public var glueFirstSheetDelay:int=0;
 
+		public var glueSkipSheetDelay:int=0;
+
 		private var _controller:GlueMBController;
 		[Bindable]
 		public function get controller():GlueMBController{
@@ -211,8 +213,8 @@ package com.photodispatcher.tech{
 		override public function awaitLast(printGroupId:String, book:int, sheet:int, sheetTotal:int, barcode:String=''):void{
 			if(!isRunning ) return;
 			await(printGroupId, book, sheet, sheetTotal, barcode);
+			var tb:TechBook;
 			if(errorMode){
-				var tb:TechBook;
 				if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
 				if(tb){
 					//log('Конец книги (awaitLast) '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsFeeded);
@@ -226,7 +228,42 @@ package com.photodispatcher.tech{
 				}
 				errorMode=false;
 			}
+			if (allowSkipMode){
+				//only for fast glue vs minimal gap between sheets
+				if(bookQueue && bookQueue.length==1) tb=bookQueue.getItemAt(0) as TechBook;
+				if(tb && tb.skipGlue){
+					skipBook();
+				}
+			}
 		}
+		
+		private var skipTimer:Timer;
+		private function skipBook():void{
+			//var tb:TechBook=bookQueue.shift() as TechBook;
+			var tb:TechBook;
+			if(bookQueue.length>0) tb=bookQueue.removeItemAt(0) as TechBook;
+			if(!tb) return;
+			log('Пропуск книги '+tb.printGroupId+' '+tb.book);
+			
+			if(glueSkipSheetDelay>50){
+				if(!skipTimer){
+					skipTimer=new Timer(glueSkipSheetDelay,1);
+					skipTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onSkipTimer);
+				}
+				skipTimer.delay=glueSkipSheetDelay;
+				skipTimer.reset();
+				skipTimer.start();
+			}else{
+				onSkipTimer(null);
+			}
+		}
+		private function onSkipTimer(e:TimerEvent):void{
+			if(!isRunning ) return;
+			controller.skipSheet();
+			//refresh view
+			currentBook;
+		}
+
 
 		private var lastMsgTime:uint=0;
 		
@@ -285,6 +322,12 @@ package com.photodispatcher.tech{
 									controller.pushBlockAfterSheet();
 								}
 								*/
+								
+								//skip next one page book
+								if (allowSkipMode && tb && tb.skipGlue){
+										skipBook();
+								}
+
 							}
 						}
 					}else{

@@ -70,6 +70,8 @@ package com.photodispatcher.tech{
 			_errorMode=value;
 		}
 		
+		public var allowSkipMode:Boolean=false;
+		
 		private var _penultSheet:Boolean;
 		public function get penultSheet():Boolean{
 			return _penultSheet;

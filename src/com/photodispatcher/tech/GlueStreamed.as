@@ -469,6 +469,10 @@ package com.photodispatcher.tech{
 				if(Context.getAttribute('glueScraperRun')) gh.glueScraperRun=Context.getAttribute('glueScraperRun');
 				if(Context.getAttribute('glueFirstSheetDelay')) gh.glueFirstSheetDelay=Context.getAttribute('glueFirstSheetDelay');
 				
+				gh.allowSkipMode=Context.getAttribute('allowSkipMode');
+				if(Context.getAttribute('glueSkipSheetDelay')) gh.glueFirstSheetDelay=Context.getAttribute('glueSkipSheetDelay');
+
+				
 				gh.allowErrorMode = Context.getAttribute('glueAllowErrorMode');
 
 				gh.init(null);

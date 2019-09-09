@@ -81,7 +81,10 @@ package com.photodispatcher.service.modbus.controller{
 		//2019-02-04
 		D31 (адрес регистра 0x001F) First_paper_hold_delay_WORD - Задержка первого листа (формат записи BCD, 1 = 10ms)
 		D32 (адрес регистра 0x0020) Stop_conveyor_WORD - Остановить конвейер ( 0x0001 - остановить)
-		D33 (адрес регистра 0x0021) Start_conveyor_WORD - Остановить конвейер ( 0x0001 - остановить)		
+		D33 (адрес регистра 0x0021) Start_conveyor_WORD - Остановить конвейер ( 0x0001 - остановить)
+		
+		//2019-09-09
+		D34(адрес регистра 0x0022) Dont_stick_current_paper - поднять стол, чтобы не проклеивать текущий лист ( 0x0001 - пуск)
 		*/
 		
 		public static const CHANEL_CONTROLLER_MESSAGE:int			=0;
@@ -140,6 +143,8 @@ package com.photodispatcher.service.modbus.controller{
 		public static const CONTROLLER_REGISTER_FIRST_SHEET_DELAY:int			=31;
 		public static const CONTROLLER_REGISTER_STOP_CONVEYOR:int				=32;
 		public static const CONTROLLER_REGISTER_START_CONVEYOR:int				=33;
+		//2019-09-09
+		public static const CONTROLLER_REGISTER_SKIP_SHEET:int					=34;
 		
 		public function GlueMBController(){
 			super();
@@ -414,6 +419,14 @@ package com.photodispatcher.service.modbus.controller{
 		public function startConveyor():void{
 			if(client && client.connected){
 				client.writeRegister(CONTROLLER_REGISTER_START_CONVEYOR, 1);
+			}else{
+				logErr('Контроллер не подключен');
+			}
+		}
+
+		public function skipSheet():void{
+			if(client && client.connected){
+				client.writeRegister(CONTROLLER_REGISTER_SKIP_SHEET, 1);
 			}else{
 				logErr('Контроллер не подключен');
 			}
