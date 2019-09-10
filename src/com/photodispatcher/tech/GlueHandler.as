@@ -71,6 +71,7 @@ package com.photodispatcher.tech{
 		}
 		
 		public var allowSkipMode:Boolean=false;
+		public var showSkipAlarm:Boolean=false;
 		
 		private var _penultSheet:Boolean;
 		public function get penultSheet():Boolean{

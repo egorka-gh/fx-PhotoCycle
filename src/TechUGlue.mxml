@@ -331,6 +331,7 @@
 					
 					allowSkipMode=so.data.allowSkipMode;
 					glueSkipSheetDelay=so.data.glueSkipSheetDelay;
+					showSkipAlarm=so.data.showSkipAlarm;
 					
 					
 					statDate=so.data.statDate;
@@ -423,6 +424,7 @@
 
 					Context.setAttribute("allowSkipMode", allowSkipMode);
 					Context.setAttribute("glueSkipSheetDelay", glueSkipSheetDelay);
+					Context.setAttribute("showSkipAlarm", showSkipAlarm);
 					
 				}
 				Context.setAttribute("debugBarReders", debugBarReders);
@@ -656,7 +658,9 @@
 			public var allowSkipMode:Boolean=false;
 			[Bindable]
 			public var glueSkipSheetDelay:int=0;
-
+			[Bindable]
+			public var showSkipAlarm:Boolean=false;
+			
 			
 			protected function saveGlueEth():void{
 				
@@ -688,6 +692,7 @@
 				Context.setAttribute("glueFirstSheetDelay", glueFirstSheetDelay);
 				Context.setAttribute("allowSkipMode", allowSkipMode);
 				Context.setAttribute("glueSkipSheetDelay", glueSkipSheetDelay);
+				Context.setAttribute("showSkipAlarm", showSkipAlarm);
 				
 				Context.setAttribute("useServer", useServer);
 				Context.setAttribute("serverUrl", serverUrl);
@@ -726,6 +731,7 @@
 				so.data.glueFirstSheetDelay=glueFirstSheetDelay;
 				so.data.allowSkipMode=allowSkipMode;
 				so.data.glueSkipSheetDelay=glueSkipSheetDelay;
+				so.data.showSkipAlarm=showSkipAlarm;
 				
 				so.flush();  
 			}
@@ -1130,6 +1136,8 @@
 								<s:Label text="Задержка сигнала (мс):" fontFamily="RobotoLight"/>
 								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
 												  value="@{glueSkipSheetDelay}" enabled="{allowSkipMode}"/>
+								<s:Label text="Выводить на башню:" fontFamily="RobotoLight"/>
+								<mdcomp:CheckBox selected="@{showSkipAlarm}"/>
 							</s:HGroup>
 
 						</s:VGroup>

@@ -238,6 +238,7 @@ package com.photodispatcher.tech{
 		}
 		
 		private var skipTimer:Timer;
+		private var skipAlarmTimer:Timer;
 		private function skipBook():void{
 			//var tb:TechBook=bookQueue.shift() as TechBook;
 			var tb:TechBook;
@@ -256,12 +257,24 @@ package com.photodispatcher.tech{
 			}else{
 				onSkipTimer(null);
 			}
+			if (showSkipAlarm){
+				if(!skipAlarmTimer){
+					skipAlarmTimer=new Timer(1000,1);
+					skipAlarmTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onSkipAlarmTimer);
+				}
+				controller.setAlarmOn();
+				skipAlarmTimer.reset();
+				skipAlarmTimer.start();
+			}
 		}
 		private function onSkipTimer(e:TimerEvent):void{
 			if(!isRunning ) return;
 			controller.skipSheet();
 			//refresh view
 			currentBook;
+		}
+		private function onSkipAlarmTimer(e:TimerEvent):void{
+			controller.setAlarmOff();
 		}
 
 
