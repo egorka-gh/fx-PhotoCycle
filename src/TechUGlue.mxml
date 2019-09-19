@@ -1126,7 +1126,7 @@
 
 							<s:HGroup gap="5" verticalAlign="baseline">
 								<s:Label text="Задержка первого листа (мс):" fontFamily="RobotoLight"/>
-								<s:NumericStepper minimum="0" maximum="100000" snapInterval="10"
+								<s:NumericStepper minimum="0" maximum="100000" snapInterval="100"
 												  value="@{glueFirstSheetDelay}"/>
 							</s:HGroup>
 

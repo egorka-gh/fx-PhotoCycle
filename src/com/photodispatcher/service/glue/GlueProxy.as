@@ -160,10 +160,14 @@ package com.photodispatcher.service.glue{
 		public function start(hostIP:String=null,proxy_port:int=8000):void{
 			isStarted=false;
 			cmd_stack=[];
-			if(!hostIP && cfg){
-				connect(cfg.ip,cfg.port);
-			}else{
-				connect(hostIP,proxy_port);
+			try{
+				if(!hostIP && cfg){
+					connect(cfg.ip,cfg.port);
+				}else{
+					connect(hostIP,proxy_port);
+				}
+			}catch(error:Error){
+				trace(error.message);
 			}
 		}
 
@@ -197,6 +201,11 @@ package com.photodispatcher.service.glue{
 			return latch;
 		}
 
+		public function run_StopAfterJob():void{
+			cmd_stack.push(new GlueCmd(CMD_STOP_AFTER_JOB));
+			run_next();
+		}
+		
 		public function run_SetSheets(sheets:int):void{
 			if(sheets<=0){
 				riseErr(ERR_SEND,'Не верное количество разворотов: '+sheets.toString());

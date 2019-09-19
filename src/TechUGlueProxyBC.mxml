@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:barcode="com.photodispatcher.service.barcode.*"
+					   xmlns:view="com.photodispatcher.view.*" 
+					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   showStatusBar="false"
+					   creationComplete="{init()}" 
+					   closing="windowedapplication1_closingHandler(event)" xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*" 
+					   >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.service.glue.GlueProxyCfg;
+			import com.photodispatcher.util.ArrayUtil;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			
+			import spark.events.TextOperationEvent;
+			
+			/*
+			[Bindable]
+			protected var glueIP:String;
+			[Bindable]
+			protected var gluePort:int;
+			*/
+
+			[Bindable]
+			protected var glueCfgsAC:ArrayCollection;
+			
+			private function init():void{
+				
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				//glueIP=so.data.glueIP;
+				//gluePort=8000;
+				glueCfgsAC=GlueProxyCfg.load();
+			}
+			
+			private function start():void{
+				/*
+				if(!glueIP){
+					Alert.show('Не настроены параметры подключения к Склейке');
+					currentState='config';
+					return;
+				}
+				*/
+				currentState='monitor';
+				
+				if(techMonitor) techMonitor.start(glueCfgsAC);
+			}
+
+			private function startW():void{
+				currentState='work';
+				if(techWork) techWork.start(glueCfgsAC);
+			}
+
+			private function stop():void{
+				if(techMonitor) techMonitor.stop();
+				if(techWork) techWork.stop();
+				currentState='config';
+			}
+			
+			protected function windowedapplication1_closingHandler(event:Event):void{
+				if(techMonitor) techMonitor.stop();
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				if(techMonitor) techMonitor.stop();
+				if(techWork) techWork.stop();
+				FlexGlobals.topLevelApplication.exit();
+			}
+			
+			/*
+			protected function tiGlueIP_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.glueIP = glueIP;
+				so.flush();  
+			}
+			*/
+			protected function button2_clickHandler(event:MouseEvent):void{
+				var g: GlueProxyCfg= new GlueProxyCfg();
+				g.label='';
+				glueCfgsAC.addItem(g);
+				lstProxy.selectedItem=g;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:states>
+		<s:State name="config"/>
+		<s:State name="monitor"/>
+		<s:State name="work"/>
+	</s:states>
+	
+	<s:Rect top="0" left="0" right="0" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:VGroup  includeIn="config" gap="5" top="10" left="5" right="5" bottom="50">
+
+		<s:Label text="Машины"/>
+		<s:List id="lstProxy" height="100%"
+				dataProvider="{glueCfgsAC}" 
+				itemRenderer="com.photodispatcher.view.config.GlueProxyCfgIR"/>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Button name="btAddGlueProxyCfg" label="Добавить" click="button2_clickHandler(event)"/>
+			<s:Button label="Сохранить" click="{GlueProxyCfg.save(glueCfgsAC)}"/>
+		</s:HGroup>
+		<s:Spacer height="10"/>
+	</s:VGroup>
+	
+	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
+		<proxy:TechGlueProxyView id="techMonitor" 
+						   width="100%" height="100%"/>
+	</s:VGroup>
+
+	<s:VGroup  includeIn="work" gap="10" top="5" left="5" right="5" bottom="50">
+		<proxy:TechGlueProxyWorkView id="techWork" 
+								 width="100%" height="100%"/>
+	</s:VGroup>
+
+	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+		<s:Spacer width="100%"/>
+		<s:Button label="Настройки" includeIn="monitor,work" click="{stop()}"/>
+		<s:Button label="Работа" includeIn="config" click="{startW()}"/>
+		<s:Button label="Программа" includeIn="config" click="{start()}"/>
+		<s:Button label="Закрыть" click="button1_clickHandler(event)" />
+	</s:HGroup>
+	
+</s:WindowedApplication>

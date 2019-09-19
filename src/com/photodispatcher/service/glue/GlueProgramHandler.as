@@ -12,13 +12,17 @@ package com.photodispatcher.service.glue{
 	import flash.events.TimerEvent;
 	import flash.utils.Timer;
 	
+	[Event(name="error", type="flash.events.ErrorEvent")]
+	[Event(name="complete", type="flash.events.Event")]
 	[Bindable]
 	public class GlueProgramHandler extends EventDispatcher{
 		
-		public function GlueProgramHandler(){
+		public function GlueProgramHandler(loop:Boolean = true){
 			super(null);
+			this.loop = loop;
 		}
 		
+		private var loop:Boolean; 
 		private var _program:GlueProgram;
 		public function get program():GlueProgram{
 			return _program;
@@ -144,6 +148,13 @@ package com.photodispatcher.service.glue{
 					nextStep();
 					break;
 				}
+				case GlueProgramStep.TYPE_SET_PRODUCT : {
+					//run command
+					glue.run_SetProduct(program.product);
+					//TODO waite acl
+					nextStep();
+					break;
+				}
 					
 				default: {
 					nextStep();
@@ -225,7 +236,17 @@ package com.photodispatcher.service.glue{
 		protected function nextStep():void{
 			var step:GlueProgramStep=program.steps.getItemAt(currStep) as GlueProgramStep;
 			if(step) log('Завершено '+step.caption);
-			currStep = (currStep+1) % program.steps.length;
+			if (loop){
+				currStep = (currStep+1) % program.steps.length;
+			}else{
+				currStep++;
+				if (currStep == program.steps.length){
+					//complited
+					stop();
+					dispatchEvent(new Event(Event.COMPLETE));
+					return;
+				}
+			}
 			step=program.steps.getItemAt(currStep) as GlueProgramStep;
 			if(step) currStepCaption=step.caption;
 			runStep();

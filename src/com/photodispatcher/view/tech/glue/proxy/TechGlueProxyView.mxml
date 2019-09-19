@@ -177,7 +177,6 @@
 				logToScreen('Склейка ошибка: '+event.text,true);
 			}
 
-			
 			protected function refreshGlue():void{
 				lastButtonsMessage=null;
 				lastStatesMessage=null;
@@ -217,6 +216,7 @@
 			}
 			*/
 			
+			/*
 			protected function btAddStep_clickHandler(event:MouseEvent):void{
 				var ps:GlueProgramStep= new GlueProgramStep();
 				if(!glueProgramm) glueProgramm=new GlueProgram();
@@ -231,6 +231,7 @@
 				so.data.programm = glueProgramm;
 				so.flush();  
 			}
+			*/
 			
 			protected function state1_enterStateHandler(event:FlexEvent):void{
 				if(!glueHandler){
@@ -253,7 +254,7 @@
 				if(glueHandler) glueHandler.stop();
 				currentState='edit';
 			}
-			
+			/*
 			protected function btDelStep_clickHandler(event:MouseEvent):void{
 				if(!glueProgramm) return;
 				if(lstPSteps.selectedIndex>-1){
@@ -261,6 +262,7 @@
 					
 				}
 			}
+			*/
 			
 		]]>
 	</fx:Script>
@@ -286,27 +288,7 @@
 						selectedItem="@{glueDevice}"
 						/>
 		</s:HGroup>
-		<s:HGroup gap="5" width="100%" height="100%">
-			<s:VGroup width="30%" height="100%" gap="5">
-				<s:List id="lstPSteps"
-						width="100%" height="100%"
-						labelField="caption"
-						dataProvider="{glueProgramm.steps}"
-						selectedItem="@{editProgramStep}"/>
-				<s:HGroup gap="5" width="100%" >
-					<s:Button id="btAddStep" label="Добавить" click="btAddStep_clickHandler(event)"/>
-					<s:Button id="btDelStep" label="Удалить" click="btDelStep_clickHandler(event)"/>
-					<s:Spacer width="100%"/>
-					<s:Button id="btSaveSteps" label="Сохранить" click="btSaveSteps_clickHandler(event)"/>
-				</s:HGroup>
-			</s:VGroup>
-			<proxy:GlueProgramStepEdit width="70%" height="90%"
-									   programStep="{editProgramStep}"
-									   lastButtonsMessage="{lastButtonsMessage}"
-									   lastStatesMessage="{lastStatesMessage}"
-									   refreshGlue="{btRefreshGlue_clickHandler(null)}"
-									   />
-		</s:HGroup>
+		<proxy:GlueProgramEdit width="100%" height="100%" glueDevice="{glueDevice}" glueProgramm="{glueProgramm}" isProductEnabled="false"/>
 		<s:Spacer height="5"/>
 		<s:Button label="Выполнение программы" click="{currentState='run'}"/>
 	</s:VGroup>

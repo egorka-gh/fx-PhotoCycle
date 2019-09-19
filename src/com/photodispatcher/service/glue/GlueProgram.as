@@ -53,7 +53,7 @@ package com.photodispatcher.service.glue
 		
 		public var steps:ArrayCollection; //GlueProgramStep
 		
-
+		public var product:String;
 
 	}
 }

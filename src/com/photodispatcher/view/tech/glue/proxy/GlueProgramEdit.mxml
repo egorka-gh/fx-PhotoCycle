@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*" 
+		 >
+	
+	<fx:Metadata>
+		[Event(name="refreshGlue", type="flash.events.Event")]	
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.event.GlueMessageEvent;
+			import com.photodispatcher.service.glue.GlueMessage;
+			import com.photodispatcher.service.glue.GlueMessageBlock;
+			import com.photodispatcher.service.glue.GlueProgram;
+			import com.photodispatcher.service.glue.GlueProgramStep;
+			import com.photodispatcher.service.glue.GlueProxy;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			
+			[Bindable]
+			protected var lastButtonsMessage:GlueMessage;
+			[Bindable]
+			protected var lastStatesMessage:GlueMessage;
+			[Bindable]
+			public var glueProgramm:GlueProgram;
+			[Bindable]
+			protected var editProgramStep:GlueProgramStep;
+
+			[Bindable]
+			public var isProductEnabled:Boolean;
+
+			protected var _glueDevice:GlueProxy;
+			[Bindable]
+			public function get glueDevice():GlueProxy
+			{
+				return _glueDevice;
+			}
+			public function set glueDevice(value:GlueProxy):void
+			{
+				if(_glueDevice){
+					//_glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
+					_glueDevice.removeEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+					_glueDevice.stop();
+				}
+				_glueDevice = value;
+				if(_glueDevice){
+					//_glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
+					_glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+					_glueDevice.start();
+				}
+				//if(glueHandler) glueHandler.glue=_glueDevice;
+			}
+
+			private function onGlueMessage( event:GlueMessageEvent ):void{
+				if(!event.message ) return;
+				if(event.message.type==GlueMessageBlock.TYPE_BUTTON) lastButtonsMessage=event.message;
+				if(event.message.type==GlueMessageBlock.TYPE_STATUS) lastStatesMessage=event.message;
+			}
+
+			protected function refreshGlue():void{
+				lastButtonsMessage=null;
+				lastStatesMessage=null;
+				if(glueDevice && glueDevice.isStarted){
+					//glueDevice.run_GetProduct();
+					glueDevice.run_GetButtons();
+					glueDevice.run_GetStatus();
+				}
+			}
+			
+			protected function btRefreshGlue_clickHandler(event:MouseEvent):void{
+				if(glueDevice && glueDevice.isStarted){
+					refreshGlue();
+				}else{
+					Alert.show('Склейка не подключена');
+				}
+			}
+
+			protected function btAddStep_clickHandler(event:MouseEvent):void{
+				var ps:GlueProgramStep= new GlueProgramStep();
+				if(!glueProgramm) glueProgramm=new GlueProgram();
+				if(!glueProgramm.steps) glueProgramm.steps=new ArrayCollection();
+				glueProgramm.steps.addItem(ps);
+				editProgramStep=ps;
+			}
+			
+			protected function btSaveSteps_clickHandler(event:MouseEvent):void{
+				if(!glueProgramm) return;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.programm = glueProgramm;
+				so.flush();  
+			}
+
+			protected function btDelStep_clickHandler(event:MouseEvent):void{
+				if(!glueProgramm) return;
+				if(lstPSteps.selectedIndex>-1){
+					glueProgramm.steps.removeItemAt(lstPSteps.selectedIndex);
+					
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:HGroup gap="5" width="100%" height="100%">
+		<s:VGroup width="30%" height="100%" gap="5">
+			<s:HGroup gap="5" width="100%" verticalAlign="baseline"
+					  visible="{isProductEnabled}" includeInLayout="{isProductEnabled}" >
+				<s:Label text="Продукт:"/>
+				<s:TextInput text="@{glueProgramm.product}"/>
+			</s:HGroup>
+			<s:List id="lstPSteps"
+					width="100%" height="100%"
+					labelField="caption"
+					dataProvider="{glueProgramm.steps}"
+					selectedItem="@{editProgramStep}"/>
+			<s:HGroup gap="5" width="100%" >
+				<s:Button id="btAddStep" label="Добавить" click="btAddStep_clickHandler(event)"/>
+				<s:Button id="btDelStep" label="Удалить" click="btDelStep_clickHandler(event)"/>
+				<s:Spacer width="100%"/>
+				<s:Button id="btSaveSteps" label="Сохранить" click="btSaveSteps_clickHandler(event)"/>
+			</s:HGroup>
+		</s:VGroup>
+		
+		<proxy:GlueProgramStepEdit width="70%" height="90%"
+								   isProductEnabled="{isProductEnabled}"
+								   programm="{glueProgramm}"
+								   programStep="{editProgramStep}"
+								   lastButtonsMessage="{lastButtonsMessage}"
+								   lastStatesMessage="{lastStatesMessage}"
+								   refreshGlue="{btRefreshGlue_clickHandler(null)}"
+								   />
+	</s:HGroup>
+
+</s:Group>

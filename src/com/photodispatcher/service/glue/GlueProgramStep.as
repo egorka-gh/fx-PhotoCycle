@@ -9,8 +9,10 @@ package com.photodispatcher.service.glue
 		public static const TYPE_WAIT_FOR:int=1;
 		public static const TYPE_PAUSE:int=2;
 		public static const TYPE_PUSH_BUTTON:int=3;
+		public static const TYPE_SET_PRODUCT:int=4;
 
-		public static const TYPES_LIST:ArrayCollection= new ArrayCollection(['','Ожидать состояние','Пауза','Нажать']);
+		public static const TYPES_LIST:ArrayCollection= new ArrayCollection(['','Ожидать состояние','Пауза','Нажать','Назначить продукт']);
+		public static const TYPES_LIST_DEFAULT:ArrayCollection= new ArrayCollection(['','Ожидать состояние','Пауза','Нажать']);
 
 		public function GlueProgramStep()
 		{

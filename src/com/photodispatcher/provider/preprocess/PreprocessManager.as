@@ -694,7 +694,40 @@ package com.photodispatcher.provider.preprocess{
 			releaseOrder();
 			startNext();
 		}
-		
+
+		/*
+		private function forwardOrder(order:Order):Boolean{
+			if (!order || order.state >= order.forward_state){
+				return false
+			}
+			//forward to next state
+			order.state = order.forward_state;
+			var latch:DbLatch= new DbLatch(true);
+			latch.callContext = order;
+			latch.addEventListener(Event.COMPLETE,onforwardOrder);
+			latch.addLatch(orderService.setState(order));
+			latch.start();
+			return true
+		}
+		private function onforwardOrder(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onforwardOrder);
+				var order:Order = latch.callContext as Order;
+				if(order){
+					if(latch.complite){
+						//set extra state
+						var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+						latch=new DbLatch();
+						latch.addLatch(svc.extraStateFix(order.id ,order.state, new Date()));
+						latch.start();
+					}
+				}
+			}
+			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
+		}
+		*/
+
 		private function saveOrder(order:Order):void{
 			var latch:DbLatch= new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onsaveOrder);

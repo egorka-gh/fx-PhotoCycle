@@ -435,7 +435,7 @@
 				}
 				
 				if(currRegister && !currRegister.isComplete && !currRegister.isBookComplete){
-					logToScreen('---------- ШК управления отменен. Не закончена текуща песледовательность ----------',true);
+					logToScreen('---------- ШК управления отменен. Не закончена текущая песледовательность ----------',true);
 					return;
 				}
 				

@@ -79,7 +79,7 @@ package com.photodispatcher.service.modbus.controller{
 		D30 (адрес регистра 0x001E) Scraper_hold_WORD - “аймер удержани€ сигнала "скребка" (формат записи BCD, 1 = 10ms)
 		
 		//2019-02-04
-		D31 (адрес регистра 0x001F) First_paper_hold_delay_WORD - Задержка первого листа (формат записи BCD, 1 = 10ms)
+		D31 (адрес регистра 0x001F) First_paper_hold_delay_WORD - Задержка первого листа (формат записи BCD, 1 = 100ms)
 		D32 (адрес регистра 0x0020) Stop_conveyor_WORD - Остановить конвейер ( 0x0001 - остановить)
 		D33 (адрес регистра 0x0021) Start_conveyor_WORD - Остановить конвейер ( 0x0001 - остановить)
 		
@@ -402,7 +402,7 @@ package com.photodispatcher.service.modbus.controller{
 
 		public function setFirstSheetDelay(msec:int):void{
 			if(client && client.connected){
-				client.writeRegister(CONTROLLER_REGISTER_FIRST_SHEET_DELAY, ModbusBytes.int2bcd(int(msec/10)));
+				client.writeRegister(CONTROLLER_REGISTER_FIRST_SHEET_DELAY, ModbusBytes.int2bcd(int(msec/100)));
 			}else{
 				logErr('Контроллер не подключен');
 			}

@@ -471,7 +471,7 @@ package com.photodispatcher.tech{
 				
 				gh.allowSkipMode=Context.getAttribute('allowSkipMode');
 				gh.showSkipAlarm=Context.getAttribute('showSkipAlarm');
-				if(Context.getAttribute('glueSkipSheetDelay')) gh.glueFirstSheetDelay=Context.getAttribute('glueSkipSheetDelay');
+				if(Context.getAttribute('glueSkipSheetDelay')) gh.glueSkipSheetDelay=Context.getAttribute('glueSkipSheetDelay');
 
 				
 				gh.allowErrorMode = Context.getAttribute('glueAllowErrorMode');
