@@ -17,7 +17,7 @@ package com.photodispatcher.service.glue
 			return res;
 		}
 
-		public static function load():ArrayCollection{
+		public static function loadList():ArrayCollection{
 			var res:ArrayCollection= new ArrayCollection();
 			var so:SharedObject = SharedObject.getLocal('appProps','/');
 			var items=so.data.glueProxies;
@@ -38,10 +38,26 @@ package com.photodispatcher.service.glue
 			return res;
 		}
 
-		public static function save(list:ArrayCollection):void{
+		public static function saveList(list:ArrayCollection):void{
 			var so:SharedObject = SharedObject.getLocal('appProps','/');
 			so.data.glueProxies=list.source;
 			so.flush();
+		}
+
+		public static function save(gp: GlueProxyCfg):void{
+			var so:SharedObject = SharedObject.getLocal('appProps','/');
+			so.data.glueProxy=gp;
+			so.flush();
+		}
+
+		public static function load():GlueProxyCfg{
+			var so:SharedObject = SharedObject.getLocal('appProps','/');
+			var res:GlueProxyCfg=fromRaw(so.data.glueProxy);
+			if(!res){
+				res= new GlueProxyCfg();
+				res.port=8000;
+			}
+			return res;
 		}
 
 		public var label:String;

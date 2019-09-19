@@ -38,7 +38,7 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				//glueIP=so.data.glueIP;
 				//gluePort=8000;
-				glueCfgsAC=GlueProxyCfg.load();
+				glueCfgsAC=GlueProxyCfg.loadList();
 			}
 			
 			private function start():void{
@@ -112,7 +112,7 @@
 				itemRenderer="com.photodispatcher.view.config.GlueProxyCfgIR"/>
 		<s:HGroup gap="5" verticalAlign="baseline">
 			<s:Button name="btAddGlueProxyCfg" label="Добавить" click="button2_clickHandler(event)"/>
-			<s:Button label="Сохранить" click="{GlueProxyCfg.save(glueCfgsAC)}"/>
+			<s:Button label="Сохранить" click="{GlueProxyCfg.saveList(glueCfgsAC)}"/>
 		</s:HGroup>
 		<s:Spacer height="10"/>
 	</s:VGroup>

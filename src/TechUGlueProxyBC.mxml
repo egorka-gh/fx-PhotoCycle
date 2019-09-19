@@ -5,14 +5,131 @@
 					   xmlns:barcode="com.photodispatcher.service.barcode.*"
 					   xmlns:view="com.photodispatcher.view.*" 
 					   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+					   xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*"
+					   xmlns:mdcomp="spark.material.components.*"
+					   xmlns:mdskins="spark.material.skins.*"
 					   showStatusBar="false"
 					   creationComplete="{init()}" 
-					   closing="windowedapplication1_closingHandler(event)" xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*" 
+					   closing="windowedapplication1_closingHandler(event)" 
 					   >
+
+	<fx:Style>
+		@namespace mdcomp "spark.material.components.*";
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+		@font-face { 
+			src: url("spark/material/assets/fonts/FontAwesome.otf"); 
+			fontFamily: FontAwesome;
+			embedAsCFF: true;
+		}
+		
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/Roboto-Regular.ttf");
+			fontFamily: "Roboto";
+			advancedAntiAliasing: true;
+			fontStyle: normal;
+			cff: true;
+			embed-as-cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/Roboto-Italic.ttf");
+			fontFamily: "Roboto";
+			advancedAntiAliasing: true;
+			fontStyle: italic;
+			cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/Roboto-Bold.ttf");
+			fontFamily: "Roboto";
+			advancedAntiAliasing: true;
+			fontWeight: bold;
+			cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/RobotoCondensed-Regular.ttf");
+			fontFamily: "RobotoCond";
+			advancedAntiAliasing: true;
+			fontStyle: normal;
+			cff: true;
+			embed-as-cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/RobotoCondensed-Bold.ttf");
+			fontFamily: "RobotoCond";
+			advancedAntiAliasing: true;
+			fontStyle: bold;
+			cff: true;
+			embed-as-cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/RobotoCondensed-Italic.ttf");
+			fontFamily: "RobotoCond";
+			advancedAntiAliasing: true;
+			fontStyle: italic;
+			cff: true;
+			embed-as-cff: true;
+		}
+		
+		@font-face {
+			src: url("spark/material/assets/fonts/RobotoCondensed-Light.ttf");
+			fontFamily: "RobotoLight";
+			advancedAntiAliasing: true;
+			fontStyle: normal;
+			cff: true;
+			embed-as-cff: true;
+		}
+		
+		s|Label{
+			fontFamily:"RobotoLight";
+			fontStyle:normal;
+			fontSize: 14;
+		}
+		
+		mdcomp|Button {
+			color: #455a64;
+		}
+		
+		mdcomp|ButtonIcon {
+			color: #455a64;
+		}
+		
+		mdcomp|ButtonIcon.primary {
+			backgroundColor: #607d8b;
+			inkColor: #c6e0fb;
+			color: #ffffff;
+		}
+		
+		mdcomp|ButtonIcon.light {
+			backgroundColor: #b0bec5;
+			inkColor: #c6e0fb;
+			color: #455a64;
+		}
+		
+		mdcomp|Button.primary {
+			backgroundColor: #607d8b;
+			inkColor: #c6e0fb;
+			color: #ffffff;
+		}
+		
+		mdcomp|Button.primary-flat {
+			buttonStyle: flat;
+			inkColor: #82bfff;
+			color: #025aa3;
+		}
+	</fx:Style>
 	
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.glue.GlueProgram;
+			import com.photodispatcher.service.glue.GlueProgramCode;
 			import com.photodispatcher.service.glue.GlueProxyCfg;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
@@ -31,14 +148,32 @@
 			*/
 
 			[Bindable]
-			protected var glueCfgsAC:ArrayCollection;
+			protected var glueCfg:GlueProxyCfg;
+			[Bindable]
+			protected var progSetProdukt:GlueProgram;
+			[Bindable]
+			protected var progPushStart:GlueProgram;
+			[Bindable]
+			private var comReaders:ArrayCollection= new ArrayCollection();
+			[Bindable]
+			private var progCodes:ArrayCollection= new ArrayCollection();
 			
 			private function init():void{
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				//glueIP=so.data.glueIP;
 				//gluePort=8000;
-				glueCfgsAC=GlueProxyCfg.load();
+				progSetProdukt = GlueProgram.fromRaw(so.data.progSetProdukt);
+				progPushStart = GlueProgram.fromRaw(so.data.progPushStart);
+				progCodes = GlueProgramCode.fromRawList(so.data.progCodes);
+				glueCfg=GlueProxyCfg.load();
+				comReaders= new ArrayCollection();
+				var coms:Array=ComInfo.load();
+				var ci:ComInfo;
+				for each (ci in coms){
+					if (ci.type==ComInfo.COM_TYPE_BARREADER) comReaders.addItem(ci); 
+				}
+
 			}
 			
 			private function start():void{
@@ -49,19 +184,31 @@
 					return;
 				}
 				*/
+				if(!glueCfg.ip || comReaders.length==0 ){
+					Alert.show('Приложение не настроено');
+					currentState='config';
+					return;
+				}
+				var arr:Array=comReaders.source; 
+				serialProxy.start(arr);
+				if(!serialProxy.isStarted){
+					return;
+				}
+				
 				currentState='monitor';
 				
-				if(techMonitor) techMonitor.start(glueCfgsAC);
+				//if(techMonitor) techMonitor.start(glueCfgsAC);
 			}
 
 			private function startW():void{
-				currentState='work';
-				if(techWork) techWork.start(glueCfgsAC);
+				//currentState='work';
+				//if(techWork) techWork.start(glueCfgsAC);
 			}
 
 			private function stop():void{
 				if(techMonitor) techMonitor.stop();
-				if(techWork) techWork.stop();
+				if(serialProxy) serialProxy.stop();				
+				//if(techWork) techWork.stop();
 				currentState='config';
 			}
 			
@@ -71,8 +218,22 @@
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
 				if(techMonitor) techMonitor.stop();
-				if(techWork) techWork.stop();
+				//if(techWork) techWork.stop();
 				FlexGlobals.topLevelApplication.exit();
+			}
+			
+			protected function btAddCom_clickHandler(event:MouseEvent):void{
+				var cp:ComInfo= new ComInfo();
+				cp.type=ComInfo.COM_TYPE_BARREADER;
+				comReaders.addItem(cp);
+				comList.selectedItem=cp;
+			}
+			
+			protected function btDelCom_clickHandler(event:MouseEvent):void{
+				if(comList && comList.selectedIndex!=-1){
+					comReaders.removeItemAt(comList.selectedIndex);
+					comList.selectedIndex=-1
+				}
 			}
 			
 			/*
@@ -82,15 +243,21 @@
 				so.flush();  
 			}
 			*/
+			/*
 			protected function button2_clickHandler(event:MouseEvent):void{
 				var g: GlueProxyCfg= new GlueProxyCfg();
 				g.label='';
 				glueCfgsAC.addItem(g);
 				lstProxy.selectedItem=g;
 			}
+			*/
 			
 		]]>
 	</fx:Script>
+
+	<fx:Declarations>
+		<barcode:SerialProxy id="serialProxy" />
+	</fx:Declarations>
 	
 	<s:states>
 		<s:State name="config"/>
@@ -100,21 +267,65 @@
 	
 	<s:Rect top="0" left="0" right="0" bottom="0">
 		<s:fill>
-			<s:SolidColor color="#cccccc"/>
+			<s:SolidColor color="#e6e7e8"/>
 		</s:fill>
 	</s:Rect>
 	
 	<s:VGroup  includeIn="config" gap="5" top="10" left="5" right="5" bottom="50">
 
-		<s:Label text="Машины"/>
-		<s:List id="lstProxy" height="100%"
-				dataProvider="{glueCfgsAC}" 
-				itemRenderer="com.photodispatcher.view.config.GlueProxyCfgIR"/>
-		<s:HGroup gap="5" verticalAlign="baseline">
-			<s:Button name="btAddGlueProxyCfg" label="Добавить" click="button2_clickHandler(event)"/>
-			<s:Button label="Сохранить" click="{GlueProxyCfg.save(glueCfgsAC)}"/>
+		<s:Label text="Машина" fontFamily="RobotoLight"/>
+		<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="5" paddingRight="5" paddingTop="3" paddingBottom="3">
+			<s:TextInput text="@{glueCfg.label}"/>
+			<s:Label text="IP:"  fontFamily="RobotoLight"/>
+			<s:TextInput text="@{glueCfg.ip}"/>
+			<s:Label text="Порт:" fontFamily="RobotoLight"/>
+			<s:TextInput text="{glueCfg.port.toString()}" editable="false"/>
 		</s:HGroup>
-		<s:Spacer height="10"/>
+
+		<s:HGroup gap="20" paddingBottom="20" height="100%">
+			<s:VGroup  gap="5"  height="100%">
+				<s:Label text="Коды продуктов:" fontFamily="RobotoLight"/>
+				<s:Group height="100%">
+					<s:DataGrid id="dgGlueCodes" height="100%" left="10" 
+								selectionMode="singleRow" editable="true"
+								sortableColumns="false"
+								dataProvider="{progCodes}"
+								>
+						<s:columns>
+							<s:ArrayList>
+								<s:GridColumn dataField="code" headerText="Код" width="50" editable="true" />
+								<s:GridColumn dataField="product" headerText="Продукт" width="130" editable="true"/>
+							</s:ArrayList>
+						</s:columns>
+					</s:DataGrid>
+				</s:Group>
+				<s:HGroup width="100%" gap="10" horizontalAlign="right">
+					<mdcomp:ButtonIcon id="btAddCode" iconFont="\uf067"  toolTip="Добавить" />
+					<mdcomp:ButtonIcon id="btDelCode" iconFont="\uf068"  toolTip="Удалить" />
+					<mdcomp:ButtonIcon id="btSortCode" iconFont="\uf160" toolTip="Упорядочить" />
+				</s:HGroup> 
+			</s:VGroup> 
+
+			<s:VGroup  gap="5">
+				<s:Label text="Сканеры ШК" fontFamily="RobotoLight"/>
+				<s:HGroup gap="0" paddingLeft="10">
+					<s:VGroup gap="5" height="90%">
+						<s:List id="comList" dataProvider="{comReaders}" height="100%"/>
+						<s:HGroup gap="10" width="100%" horizontalAlign="center">
+							<mdcomp:ButtonIcon id="btAddCom" iconFont="\uf067" click="btAddCom_clickHandler(event)"/>
+							<mdcomp:ButtonIcon id="btDelCom" iconFont="\uf068" click="btDelCom_clickHandler(event)"/>
+						</s:HGroup>
+					</s:VGroup> 
+					<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
+				</s:HGroup>
+				<!--			<s:Spacer height="5"/>
+				<s:HGroup gap="5" verticalAlign="baseline" width="100%" horizontalAlign="right" paddingRight="40" >
+				<mdcomp:ButtonIcon id="btSave" label="Сохранить" iconFont="\uf0c7" click="{GlueProxyCfg.save(glueCfg)}"/>
+				</s:HGroup>-->
+			</s:VGroup>
+		</s:HGroup>
+
+		
 	</s:VGroup>
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
@@ -127,12 +338,13 @@
 								 width="100%" height="100%"/>
 	</s:VGroup>
 
-	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
+	<s:HGroup bottom="5" width="100%" gap="15" paddingRight="10" paddingLeft="10" paddingBottom="10" verticalAlign="middle">
+		<mdcomp:ButtonIcon id="btSave" includeIn="config" label="Сохранить" iconFont="\uf0c7" click="{GlueProxyCfg.save(glueCfg)}"/>
 		<s:Spacer width="100%"/>
-		<s:Button label="Настройки" includeIn="monitor,work" click="{stop()}"/>
-		<s:Button label="Работа" includeIn="config" click="{startW()}"/>
-		<s:Button label="Программа" includeIn="config" click="{start()}"/>
-		<s:Button label="Закрыть" click="button1_clickHandler(event)" />
+		<mdcomp:Button label="Настройки" includeIn="monitor,work" click="{stop()}"/>
+		<mdcomp:Button label="Работа" includeIn="config" click="{startW()}"/>
+		<mdcomp:Button label="Программа" includeIn="config" click="{start()}"/>
+		<mdcomp:Button label="Закрыть" click="button1_clickHandler(event)" />
 	</s:HGroup>
 	
 </s:WindowedApplication>
