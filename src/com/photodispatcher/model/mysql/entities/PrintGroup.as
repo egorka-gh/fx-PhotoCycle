@@ -859,6 +859,7 @@ package com.photodispatcher.model.mysql.entities {
 			var arr:Array= id.split('_');
 			var result:String='';
 			if(arr && arr.length==3) result=arr[2]+arr[1];
+			result = result.replace('-','');
 			return result?int(result):0;
 		}
 		

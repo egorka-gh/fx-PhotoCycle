@@ -138,34 +138,31 @@
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
 			import spark.events.TextOperationEvent;
 			
-			/*
-			[Bindable]
-			protected var glueIP:String;
-			[Bindable]
-			protected var gluePort:int;
-			*/
-
 			[Bindable]
 			protected var glueCfg:GlueProxyCfg;
 			[Bindable]
-			protected var progSetProdukt:GlueProgram;
-			[Bindable]
-			protected var progPushStart:GlueProgram;
-			[Bindable]
 			private var comReaders:ArrayCollection= new ArrayCollection();
 			[Bindable]
-			private var progCodes:ArrayCollection= new ArrayCollection();
+			private var progCodes:ArrayCollection;
 			
 			private function init():void{
 				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				//glueIP=so.data.glueIP;
-				//gluePort=8000;
-				progSetProdukt = GlueProgram.fromRaw(so.data.progSetProdukt);
-				progPushStart = GlueProgram.fromRaw(so.data.progPushStart);
-				progCodes = GlueProgramCode.fromRawList(so.data.progCodes);
+
+				var codes:Array= GlueProgramCode.fromRawList(so.data.progCodes);
+				progCodes= new ArrayCollection(codes);
+				var dataSortField:SortField = new SortField();
+				dataSortField.name = 'code';
+				var dataSort:Sort = new Sort();
+				dataSort.fields = [dataSortField];
+				progCodes.sort = dataSort;
+				progCodes.refresh();
+
+				
 				glueCfg=GlueProxyCfg.load();
 				comReaders= new ArrayCollection();
 				var coms:Array=ComInfo.load();
@@ -177,27 +174,19 @@
 			}
 			
 			private function start():void{
-				/*
-				if(!glueIP){
-					Alert.show('Не настроены параметры подключения к Склейке');
-					currentState='config';
-					return;
-				}
-				*/
-				if(!glueCfg.ip || comReaders.length==0 ){
+				if(!glueCfg.ip || comReaders.length==0 || progCodes.length ==0 ){
 					Alert.show('Приложение не настроено');
 					currentState='config';
 					return;
 				}
-				var arr:Array=comReaders.source; 
-				serialProxy.start(arr);
+				serialProxy.start(comReaders.source);
 				if(!serialProxy.isStarted){
 					return;
 				}
 				
 				currentState='monitor';
 				
-				//if(techMonitor) techMonitor.start(glueCfgsAC);
+				if(techMonitor) techMonitor.start(glueCfg, GlueProgramCode.compactCodes(progCodes.source));
 			}
 
 			private function startW():void{
@@ -214,6 +203,7 @@
 			
 			protected function windowedapplication1_closingHandler(event:Event):void{
 				if(techMonitor) techMonitor.stop();
+				if(serialProxy) serialProxy.stop();				
 			}
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
@@ -236,21 +226,28 @@
 				}
 			}
 			
-			/*
-			protected function tiGlueIP_changeHandler(event:TextOperationEvent):void{
+			protected function btSortCode_clickHandler(event:MouseEvent):void{
+				progCodes.source = GlueProgramCode.compactCodes(progCodes.source);
+				progCodes.refresh();
+			}
+			
+			protected function btAddCode_clickHandler(event:MouseEvent):void{
+				progCodes.addItem( new GlueProgramCode());
+			}
+			
+			protected function btDelCode_clickHandler(event:MouseEvent):void{
+				if(dgGlueCodes && dgGlueCodes.selectedIndex>-1){
+					progCodes.removeItemAt(dgGlueCodes.selectedIndex);
+				}
+			}
+			
+			protected function btSave_clickHandler(event:MouseEvent):void{
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.glueIP = glueIP;
-				so.flush();  
+				so.data.progCodes=GlueProgramCode.compactCodes(progCodes.source);
+				so.flush();
+				ComInfo.save(comReaders.source);
+				GlueProxyCfg.save(glueCfg);
 			}
-			*/
-			/*
-			protected function button2_clickHandler(event:MouseEvent):void{
-				var g: GlueProxyCfg= new GlueProxyCfg();
-				g.label='';
-				glueCfgsAC.addItem(g);
-				lstProxy.selectedItem=g;
-			}
-			*/
 			
 		]]>
 	</fx:Script>
@@ -300,9 +297,9 @@
 					</s:DataGrid>
 				</s:Group>
 				<s:HGroup width="100%" gap="10" horizontalAlign="right">
-					<mdcomp:ButtonIcon id="btAddCode" iconFont="\uf067"  toolTip="Добавить" />
-					<mdcomp:ButtonIcon id="btDelCode" iconFont="\uf068"  toolTip="Удалить" />
-					<mdcomp:ButtonIcon id="btSortCode" iconFont="\uf160" toolTip="Упорядочить" />
+					<mdcomp:ButtonIcon id="btAddCode" iconFont="\uf067"  toolTip="Добавить" click="btAddCode_clickHandler(event)" />
+					<mdcomp:ButtonIcon id="btDelCode" iconFont="\uf068"  toolTip="Удалить" click="btDelCode_clickHandler(event)"/>
+					<mdcomp:ButtonIcon id="btSortCode" iconFont="\uf160" toolTip="Упорядочить" click="btSortCode_clickHandler(event)" />
 				</s:HGroup> 
 			</s:VGroup> 
 
@@ -329,17 +326,17 @@
 	</s:VGroup>
 	
 	<s:VGroup  includeIn="monitor" gap="10" top="5" left="5" right="5" bottom="50">
-		<proxy:TechGlueProxyView id="techMonitor" 
+		<proxy:TechGlueProxyBCView id="techMonitor" 
 						   width="100%" height="100%"/>
 	</s:VGroup>
 
-	<s:VGroup  includeIn="work" gap="10" top="5" left="5" right="5" bottom="50">
+	<!--<s:VGroup  includeIn="work" gap="10" top="5" left="5" right="5" bottom="50">
 		<proxy:TechGlueProxyWorkView id="techWork" 
 								 width="100%" height="100%"/>
-	</s:VGroup>
+	</s:VGroup>-->
 
 	<s:HGroup bottom="5" width="100%" gap="15" paddingRight="10" paddingLeft="10" paddingBottom="10" verticalAlign="middle">
-		<mdcomp:ButtonIcon id="btSave" includeIn="config" label="Сохранить" iconFont="\uf0c7" click="{GlueProxyCfg.save(glueCfg)}"/>
+		<mdcomp:ButtonIcon id="btSave" includeIn="config" label="Сохранить" iconFont="\uf0c7" click="btSave_clickHandler(event)"/>
 		<s:Spacer width="100%"/>
 		<mdcomp:Button label="Настройки" includeIn="monitor,work" click="{stop()}"/>
 		<mdcomp:Button label="Работа" includeIn="config" click="{startW()}"/>

@@ -140,7 +140,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static function getBookSynonym(alias:String, sourceType:int=SourceType.SRC_FOTOKNIGA):BookSynonym{
 			var res:BookSynonym;
 			//check if defined (redefined) for fbook
-			if(sourceType==SourceType.SRC_FBOOK) res=translateAlias(alias);
+			if(sourceType==SourceType.SRC_FBOOK || sourceType==SourceType.SRC_PIXELPARK) res=translateAlias(alias);
 			//get any (regular)
 			if(!res) res=translatePath(alias);
 			return res;

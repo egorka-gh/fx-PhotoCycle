@@ -15,17 +15,27 @@ package com.photodispatcher.service.glue
 			return res;
 		}
 
-		public static function fromRawList(raw:Object):ArrayCollection{
-			var res:ArrayCollection= new ArrayCollection();
+		public static function fromRawList(raw:Object):Array{
+			var res:Array= [];
 			var c:GlueProgramCode;
 			for each (var it:Object in raw){
 				c = fromRaw(it);
 				if (c){
-					res.addItem(c);	
+					res.push(c);	
 				}
 			}
 			return res;
 		}
+		
+		public static function compactCodes(codes:Array):Array{
+			var arr:Array=[];
+			var pattern:RegExp = /^\d{2}$/;
+			for each (var it:GlueProgramCode in codes){
+				if(it && it.code && it.product && pattern.exec(it.code)) arr.push(it);
+			}
+			return arr;
+		}
+
 		
 		public function GlueProgramCode(){
 		}
