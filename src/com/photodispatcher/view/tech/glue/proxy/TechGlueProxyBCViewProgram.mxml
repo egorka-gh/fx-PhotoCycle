@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 implements="com.photodispatcher.interfaces.ISimpleLogger"
+		 xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*"
+		 xmlns:mdcomp="spark.material.components.*"
+		 xmlns:mdskins="spark.material.skins.*"
+		 creationComplete="{init()}"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.GlueMessageEvent;
+			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.service.barcode.SerialProxy;
+			import com.photodispatcher.service.glue.GlueInfo;
+			import com.photodispatcher.service.glue.GlueMessage;
+			import com.photodispatcher.service.glue.GlueMessageBlock;
+			import com.photodispatcher.service.glue.GlueMessageItem;
+			import com.photodispatcher.service.glue.GlueProgram;
+			import com.photodispatcher.service.glue.GlueProgramHandler;
+			import com.photodispatcher.service.glue.GlueProgramStep;
+			import com.photodispatcher.service.glue.GlueProxy;
+			import com.photodispatcher.service.glue.GlueProxyCfg;
+			import com.photodispatcher.util.StrUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import spark.formatters.DateTimeFormatter;
+			import spark.utils.TextFlowUtil;
+		
+			public static const LOG_LEN_LIMIT:int=4000;
+
+			/*
+			public var glueIP:String;
+			public var gluePort:int;
+			*/
+			
+			protected var _glueDevice:GlueProxy;
+			[Bindable]
+			public function get glueDevice():GlueProxy
+			{
+				return _glueDevice;
+			}
+			public function set glueDevice(value:GlueProxy):void
+			{
+				if(_glueDevice){
+					_glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
+					_glueDevice.stop();
+					_glueDevice.loger=null;
+				}
+				_glueDevice = value;
+				if(_glueDevice){
+					_glueDevice.loger=this;
+					_glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
+					_glueDevice.start();
+				}
+				if(glueHandler) glueHandler.glue=_glueDevice;
+			}
+
+			private var _serialProxy:SerialProxy;
+			public function get serialProxy():SerialProxy{
+				return _serialProxy;
+			}
+			public function set serialProxy(value:SerialProxy):void{
+				if(_serialProxy){
+					_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
+				}
+				_serialProxy = value;
+				if(_serialProxy){
+					_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
+				}
+			}
+			
+			protected function onProxyErr(evt:SerialProxyEvent):void{
+				logToScreen('SerialProxy error: '+evt.error, true);
+			}
+			
+
+			[Bindable]
+			protected var editProgramStep:GlueProgramStep;
+			[Bindable]
+			protected var glueHandler:GlueProgramHandler;
+			[Bindable]
+			public var progSetProdukt:GlueProgram;
+			[Bindable]
+			public var progPushStart:GlueProgram;
+			[Bindable]
+			public var glueProgramm:GlueProgram;
+			[Bindable]
+			public var glueProgrammSoName:String;
+			
+			protected var progCodes:Array=[];
+			
+			protected function init():void{
+			}
+
+			private var logText:String = '';
+			
+			public function log(mesage:String, level:int=0):void{
+				logToScreen(mesage);
+			}
+			public function clear():void{
+				cleanLog();
+			}
+			
+			private function logToScreen(msg:String, isError:Boolean=false):void{
+				var color:String=isError?"'#990000'":"'#006600'";
+				var bold:String=isError?"fontWeight='bold'":'';
+				var fmt:DateTimeFormatter=new DateTimeFormatter();
+				fmt.dateTimePattern='HH:mm:ss';
+				logText ="<span>"+fmt.format(new Date())+" </span>"+"<span color="+color+" "+bold+">"+msg+"</span> <br />"+logText ;
+
+				//cut
+				if(logText.length> LOG_LEN_LIMIT){
+					var idx:int=logText.indexOf('<br />',LOG_LEN_LIMIT);
+					if(idx!=-1){
+						logText=logText.substr(0,idx+6);
+					}
+				}
+
+				try{
+					if(logTextArea) logTextArea.textFlow=TextFlowUtil.importFromString(logText);
+				}catch(error:Error){
+					trace('TextFlow err, txt: '+logText);
+					trace(error.message);
+				}
+				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
+			}
+
+			public function start(proxyCfg:GlueProxyCfg, codes:Array):void{
+				cleanLog();
+				progCodes=codes;
+				
+				//connect barcodereaders
+				if(!serialProxy.isStarted){
+					logToScreen('SerialProxy not started...', true);
+					//return;
+				}else{
+					if(!serialProxy.connected){
+						//connect
+						log('Ожидание подключения COM портов');
+						serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+						serialProxy.connectAll();
+						//return;
+					}else{
+						onProxyConnect(null);	
+					}
+				}
+
+				//connect glue
+				if (!proxyCfg){
+					logToScreen('Не настроена машина...', true);
+					return;
+				}
+				
+				if (!glueDevice || !glueDevice.isStarted || glueDevice.cfg.ip != proxyCfg.ip ){
+					var gd: GlueProxy;
+					gd=new GlueProxy();
+					gd.cfg=proxyCfg;
+					//listen & start glue proxy
+					glueDevice = gd;	
+				}
+			}
+
+			protected function onProxyConnect(evt:SerialProxyEvent):void{
+				serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+				log('SerialProxy: connect complite');
+				if(!serialProxy.connected){
+					log('Часть COM портов не подключено');
+					log('SerialProxy:' +serialProxy.traceDisconnected());
+				}
+			}
+			
+			
+			public function stop():void{
+				cleanLog();
+				if(glueHandler){
+					glueHandler.stop();
+					//glueHandler=null;
+				}
+				if(glueDevice){
+					glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
+					glueDevice.stop();
+				}
+				glueDevice=null;
+			}
+			
+			private function cleanLog():void{
+				logText='';
+				if(logTextArea) logTextArea.text='';
+			}
+			
+			protected function onGlueErr(event:ErrorEvent):void{
+				logToScreen('Склейка ошибка: '+event.text,true);
+			}
+
+			/*
+			protected function dummyButt():void{
+				var msg:GlueMessage= new GlueMessage();
+				msg.type=GlueMessageBlock.TYPE_BUTTON;
+				var bl:GlueMessageBlock;
+				var it:GlueMessageItem;
+				
+				// ~~||Name=button1||Text=Start||ColBack=#80FF80||Enabled=True||~~||Name=button4||Text=Quit||ColBack=#FFFF80||Enabled=False||@@
+				bl= new GlueMessageBlock(); bl.type=msg.type; bl.key='button1'; msg.blocks.addItem(bl);
+					it= new GlueMessageItem; it.key='Text'; it.value='Start'; bl.items.addItem(it); it.parentKey=bl.key; it.type=bl.type;
+					it= new GlueMessageItem; it.key='ColBack'; it.value='#80FF80'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+					it= new GlueMessageItem; it.key='Enabled'; it.value='True'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+				bl= new GlueMessageBlock(); bl.type=msg.type; bl.key='button4'; msg.blocks.addItem(bl);
+					it= new GlueMessageItem; it.key='Text'; it.value='Quit'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+					it= new GlueMessageItem; it.key='ColBack'; it.value='#FFFF80'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+					it= new GlueMessageItem; it.key='Enabled'; it.value='False'; bl.items.addItem(it);  it.parentKey=bl.key; it.type=bl.type;
+				
+				lastButtonsMessage=msg;
+			}
+			*/
+			
+			protected function cbProgram_valueCommitHandler(event:FlexEvent):void{
+				if (cbProgram.selectedIndex ==0){
+					glueProgramm = progSetProdukt;
+					glueProgrammSoName='progSetProdukt';
+				}else{
+					glueProgramm = progPushStart;
+					glueProgrammSoName='progPushStart';
+				}
+			}
+			
+			protected function btRunProgram_clickHandler(event:MouseEvent):void{
+				if(!glueProgramm || glueProgramm.steps.length ==0){
+					Alert.show('Пустая программа');
+					return;
+				}
+				
+				if(!glueHandler){
+					glueHandler= new GlueProgramHandler(false);
+					glueHandler.glue=glueDevice;
+					glueHandler.loger=this;
+				}
+				glueHandler.program=glueProgramm;
+				glueHandler.currStep=-1;
+				glueHandler.addEventListener(Event.COMPLETE,onglueHandlerComplite);
+				glueHandler.start();
+			}
+			
+			protected function onglueHandlerComplite(event:FlexEvent):void{
+				glueHandler.removeEventListener(Event.COMPLETE,onglueHandlerComplite);
+				glueHandler.currStep=-1;
+				Alert.show('Программа завершена');
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		
+		
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="edit"/>
+	</s:states>
+	
+	<s:VGroup includeIn="edit" 
+			  gap="5" width="100%" height="100%" 
+			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+			<s:Label text="Редактированние программы"/>
+			<s:ComboBox id="cbProgram" 
+						dataProvider="{new ArrayCollection(['Назначить продукт','Нажать старт'])}"
+						creationComplete="{cbProgram.selectedIndex=0;}"
+						valueCommit="cbProgram_valueCommitHandler(event)"
+						width="200"
+						/>
+		</s:HGroup>
+		<proxy:GlueProgramEdit width="100%" height="100%" maxHeight="600" 
+							   glueDevice="{glueDevice}" glueProgramm="{glueProgramm}" soName="{glueProgrammSoName}"
+							   isProductEnabled="{cbProgram.selectedIndex==0}"
+							   runProgramStepIndex="{glueHandler.currStep}"
+							   />
+		
+		<s:Spacer height="5"/>
+		<s:HGroup gap="15" width="100%" verticalAlign="baseline">
+			<!--<s:Button label="Выполнение программы" click="{currentState='run'}"/>-->
+			<mdcomp:ButtonIcon id="btRunProgram" iconFont="\uf04b" label="Выполнить" click="btRunProgram_clickHandler(event)"/>
+			<mdcomp:ButtonIcon id="btStopProgram" iconFont="\uf04D" label="Остановить" click="{if(glueHandler) glueHandler.stop(); }"/>
+		</s:HGroup>
+		
+		<s:Spacer height="5"/>
+		<s:VGroup width="100%" height="100%" gap="5" >
+			<s:HGroup width="100%" gap="10" verticalAlign="bottom">
+				<s:Label text="Лог"/>
+				<!--<s:Button label="Очистить" click="{cleanLog()}"/>-->
+				<mdcomp:ButtonIcon iconFont="\uf014" click="{cleanLog()}"/>
+			</s:HGroup>
+			<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
+		</s:VGroup>
+
+	</s:VGroup>
+
+	
+</s:Group>

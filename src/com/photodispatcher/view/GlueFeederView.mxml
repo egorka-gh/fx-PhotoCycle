@@ -15,7 +15,6 @@
 			import com.photodispatcher.model.LayerAllocation;
 			import com.photodispatcher.model.mysql.entities.Layerset;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
-			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.FeederController;
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.tech.GlueFeeder;

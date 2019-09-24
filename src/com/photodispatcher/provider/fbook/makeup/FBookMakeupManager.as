@@ -11,7 +11,6 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.photodispatcher.model.mysql.entities.SubOrder;
 	import com.photodispatcher.provider.fbook.FBookProject;
 	import com.photodispatcher.provider.fbook.model.PageData;
-	import com.photodispatcher.provider.preprocess.BookMakeupGroup;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMMultiSequenceRuner;
 	import com.photodispatcher.shell.IMSequenceRuner;

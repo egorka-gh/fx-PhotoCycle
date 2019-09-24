@@ -10,9 +10,8 @@ package com.photodispatcher.service.glue
 	public class GlueProgram {
 		
 		public static function fromRaw(raw:Object):GlueProgram{
-			var res:GlueProgram;
-			if(!raw || !raw.hasOwnProperty('steps')) return null;
-			res= new GlueProgram();
+			var res:GlueProgram= new GlueProgram();
+			if(!raw || !raw.hasOwnProperty('steps')) return res;
 			res.steps= new ArrayCollection();
 			for each (var st:Object in raw.steps){
 				if(st.type){
@@ -48,7 +47,7 @@ package com.photodispatcher.service.glue
 		}
 		
 		public function GlueProgram(){
-			
+			steps = new ArrayCollection();
 		}
 		
 		public var steps:ArrayCollection; //GlueProgramStep

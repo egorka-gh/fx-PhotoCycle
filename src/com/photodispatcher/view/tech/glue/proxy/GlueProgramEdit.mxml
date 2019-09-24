@@ -2,6 +2,8 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*" 
+		 xmlns:mdcomp="spark.material.components.*"
+		 xmlns:mdskins="spark.material.skins.*"
 		 >
 	
 	<fx:Metadata>
@@ -30,7 +32,12 @@
 			protected var editProgramStep:GlueProgramStep;
 
 			[Bindable]
+			public var runProgramStepIndex:int;
+
+			[Bindable]
 			public var isProductEnabled:Boolean;
+			
+			public var soName:String= 'programm';
 
 			protected var _glueDevice:GlueProxy;
 			[Bindable]
@@ -43,13 +50,11 @@
 				if(_glueDevice){
 					//_glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
 					_glueDevice.removeEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
-					_glueDevice.stop();
 				}
 				_glueDevice = value;
 				if(_glueDevice){
 					//_glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
 					_glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
-					_glueDevice.start();
 				}
 				//if(glueHandler) glueHandler.glue=_glueDevice;
 			}
@@ -89,7 +94,7 @@
 			protected function btSaveSteps_clickHandler(event:MouseEvent):void{
 				if(!glueProgramm) return;
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.programm = glueProgramm;
+				so.data[soName] = glueProgramm;
 				so.flush();  
 			}
 
@@ -119,12 +124,15 @@
 					width="100%" height="100%"
 					labelField="caption"
 					dataProvider="{glueProgramm.steps}"
-					selectedItem="@{editProgramStep}"/>
+					selectedItem="@{editProgramStep}"
+					selectedIndex="{runProgramStepIndex}"
+					/>
 			<s:HGroup gap="5" width="100%" >
-				<s:Button id="btAddStep" label="Добавить" click="btAddStep_clickHandler(event)"/>
-				<s:Button id="btDelStep" label="Удалить" click="btDelStep_clickHandler(event)"/>
+				<mdcomp:ButtonIcon iconFont="\uf067" id="btAddStep" click="btAddStep_clickHandler(event)"/>
+				<mdcomp:ButtonIcon iconFont="\uf068" id="btDelStep" click="btDelStep_clickHandler(event)"/>
 				<s:Spacer width="100%"/>
-				<s:Button id="btSaveSteps" label="Сохранить" click="btSaveSteps_clickHandler(event)"/>
+				<!--<s:Button id="btSaveSteps" label="Сохранить" click="btSaveSteps_clickHandler(event)"/>-->
+				<mdcomp:ButtonIcon id="btSaveSteps" label="Сохранить" iconFont="\uf0c7" click="btSaveSteps_clickHandler(event)"/>
 			</s:HGroup>
 		</s:VGroup>
 		

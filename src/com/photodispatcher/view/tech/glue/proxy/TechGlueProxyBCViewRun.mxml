@@ -10,18 +10,24 @@
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
+			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.GlueMessageEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.mysql.AsyncLatch;
+			import com.photodispatcher.service.barcode.ComInfo;
+			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.SerialProxy;
 			import com.photodispatcher.service.glue.GlueInfo;
 			import com.photodispatcher.service.glue.GlueMessage;
 			import com.photodispatcher.service.glue.GlueMessageBlock;
 			import com.photodispatcher.service.glue.GlueMessageItem;
 			import com.photodispatcher.service.glue.GlueProgram;
+			import com.photodispatcher.service.glue.GlueProgramCode;
 			import com.photodispatcher.service.glue.GlueProgramHandler;
 			import com.photodispatcher.service.glue.GlueProgramStep;
 			import com.photodispatcher.service.glue.GlueProxy;
 			import com.photodispatcher.service.glue.GlueProxyCfg;
+			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.util.StrUtil;
 			
 			import mx.collections.ArrayCollection;
@@ -69,27 +75,45 @@
 			public function set serialProxy(value:SerialProxy):void{
 				if(_serialProxy){
 					_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
-					//_serialProxy.removeEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0);
 				}
 				_serialProxy = value;
 				if(_serialProxy){
-					//_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_START,onSerialProxyStart);
 					_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_ERROR, onProxyErr);
-					//_serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect0,false,10);
-					//if(_serialProxy.isStarted) _serialProxy.connectAll();
 				}
 			}
-			/*
-			protected function onSerialProxyStart(evt:SerialProxyEvent):void{
-			log('SerialProxy: started, connect to com proxies...');
-			serialProxy.connectAll();
+
+			protected var _barcodeReaders:Array;
+			protected function get barcodeReaders():Array{
+				return _barcodeReaders;
 			}
-			
-			protected function onProxyConnect0(evt:SerialProxyEvent):void{
-			log('SerialProxy: connected, start devices');
-			startDevices();
+			protected function set barcodeReaders(value:Array):void{
+				//log('Set barcode readers');
+				var barReader:ComReader;
+				if(_barcodeReaders){
+					for each(barReader in _barcodeReaders){
+						barReader.removeEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+						barReader.removeEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
+						barReader.removeEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+						//barReader.removeEventListener(BarCodeEvent.BARCODE_DEBUG, onBarDebug);
+						//barReader.stop();
+					}
+				}
+				//var deb:Boolean=Context.getAttribute('debugBarReders');
+				_barcodeReaders = value;
+				if(_barcodeReaders){
+					for each(barReader in _barcodeReaders){
+						barReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
+						barReader.addEventListener(BarCodeEvent.BARCODE_ERR, onBarError);
+						barReader.addEventListener(BarCodeEvent.BARCODE_DISCONNECTED, onBarDisconnect);
+						/*
+						if(deb){
+							barReader.debugMode=true;
+							barReader.addEventListener(BarCodeEvent.BARCODE_DEBUG, onBarDebug);
+						}
+						*/
+					}
+				}
 			}
-			*/
 			
 			protected function onProxyErr(evt:SerialProxyEvent):void{
 				logToScreen('SerialProxy error: '+evt.error, true);
@@ -101,9 +125,9 @@
 			[Bindable]
 			protected var glueHandler:GlueProgramHandler;
 			[Bindable]
-			protected var progSetProdukt:GlueProgram;
+			public var progSetProdukt:GlueProgram;
 			[Bindable]
-			protected var progPushStart:GlueProgram;
+			public var progPushStart:GlueProgram;
 
 			[Bindable]
 			protected var lastButtonsMessage:GlueMessage;
@@ -111,11 +135,20 @@
 			protected var lastStatesMessage:GlueMessage;
 			protected var progCodes:Array=[];
 			
+			[Bindable]
+			protected var glueProduct:String='-';
+			[Bindable]
+			protected var barcodeProduct:String='';
+
+			protected var lastBarcode:String;
+			
+			[Bindable]
+			protected var viewCaption:String;
+			
+			protected var idleTime:int;
+
 			protected function init():void{
-				//load subprograms
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				progSetProdukt = GlueProgram.fromRaw(so.data.progSetProdukt);
-				progPushStart = GlueProgram.fromRaw(so.data.progPushStart);
+				
 			}
 
 			private var logText:String = '';
@@ -151,9 +184,10 @@
 				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
 			}
 
-			public function start(proxyCfg:GlueProxyCfg, codes:Array):void{
+			public function start(proxyCfg:GlueProxyCfg, codes:Array, idleTime:int):void{
 				cleanLog();
 				progCodes=codes;
+				this.idleTime=idleTime;
 				
 				//connect barcodereaders
 				if(!serialProxy.isStarted){
@@ -183,6 +217,14 @@
 					//listen & start glue proxy
 					glueDevice = gd;	
 				}
+				
+				//init programm handler
+				if(!glueHandler){
+					glueHandler= new GlueProgramHandler(false);
+				}
+				glueHandler.stop();
+				glueHandler.glue=glueDevice;
+				glueHandler.loger=this;
 			}
 
 			protected function onProxyConnect(evt:SerialProxyEvent):void{
@@ -192,8 +234,23 @@
 					log('Часть COM портов не подключено');
 					log('SerialProxy:' +serialProxy.traceDisconnected());
 				}
+				var readers:Array= serialProxy.getProxiesByType(ComInfo.COM_TYPE_BARREADER);
+				if(!readers || readers.length==0) return;
+				var i:int;
+				
+				if(!barcodeReaders){
+					//init bar readers
+					var newBarcodeReaders:Array=[];
+					for (i=0; i<readers.length; i++) newBarcodeReaders.push(new ComReader());
+					barcodeReaders=newBarcodeReaders;
+				}
+				if(readers.length!=barcodeReaders.length){
+					barcodeReaders=null;
+					return;
+				}
+				//start readers
+				for (i=0; i<readers.length; i++) (barcodeReaders[i] as ComReader).start(readers[i]);
 			}
-			
 			
 			public function stop():void{
 				cleanLog();
@@ -201,13 +258,11 @@
 					glueHandler.stop();
 					//glueHandler=null;
 				}
-				/*
 				if(glueDevice){
 					glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
 					glueDevice.removeEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
 					glueDevice.stop();
 				}
-				*/
 				glueDevice=null;
 				
 			}
@@ -266,116 +321,195 @@
 			}
 			*/
 			
-			/*
-			protected function btAddStep_clickHandler(event:MouseEvent):void{
-				var ps:GlueProgramStep= new GlueProgramStep();
-				if(!glueProgramm) glueProgramm=new GlueProgram();
-				if(!glueProgramm.steps) glueProgramm.steps=new ArrayCollection();
-				glueProgramm.steps.addItem(ps);
-				editProgramStep=ps;
-			}
+			[Bindable]
+			protected var isRunning:Boolean;
 			
-			protected function btSaveSteps_clickHandler(event:MouseEvent):void{
-				if(!glueProgramm) return;
-				var so:SharedObject = SharedObject.getLocal('appProps','/');
-				so.data.programm = glueProgramm;
-				so.flush();  
-			}
-			*/
-			
-			protected function state1_enterStateHandler(event:FlexEvent):void{
-				if(!glueHandler){
-					glueHandler= new GlueProgramHandler();
-				}
-				glueHandler.stop();
-				glueHandler.glue=glueDevice;
-				glueHandler.loger=this;
-				//glueHandler.program=glueProgramm;
+			protected function run():void{
+				//check barreaders/ glue
+				if(!checkPrepared()) return;
 				
-				if(logText){
-					try{
-						if(logTextArea) logTextArea.textFlow=TextFlowUtil.importFromString(logText);
-					}catch(error:Error){
+				//TODO reset barcode?
+				//barcodeProduct ='';
+				//lastBarcode = '';
+				
+				//get current product
+				getGlueProduct();
+				isRunning = true;
+				viewCaption ='Работа';
+				stratIdleTimer();
+				//waite barcode
+			}
+			
+			protected function checkPrepared(showAlert:Boolean=false):Boolean{
+				var prepared:Boolean=barcodeReaders && barcodeReaders.length>0 && 
+					glueHandler && glueHandler.glue && glueHandler.glue.isStarted ;
+				//check barreaders
+				var barsConnected:Boolean=false;
+				var barReader:ComReader;
+				if (barcodeReaders && barcodeReaders.length>0){
+					for each(barReader in barcodeReaders){
+						if(barReader.connected){
+							barsConnected=true;
+							break;
+						}
 					}
 				}
+				if(!barsConnected) prepared=false;
+				
+				if(!prepared && showAlert){
+					var msg:String='';
+					if(!barcodeReaders || barcodeReaders.length==0) msg='Не инициализированы сканеры ШК';
+					if(!barsConnected) msg= (msg?'\n':'')+'Не подключены сканеры ШК';
+					if(!glueHandler || !glueHandler.glue.isStarted) msg=(msg?'\n':'')+'Не инициализирована склейка';
+					log(msg);
+					Alert.show(msg);
+				}
+				return 	prepared;
 			}
 			
-			protected function button1_clickHandler(event:MouseEvent):void{
-				if(glueHandler) glueHandler.stop();
-				currentState='edit';
+			protected function getGlueProduct():void{
+				glueProduct = '-';
+				viewCaption='Проверка продукта';
+				var latch:AsyncLatch = glueDevice.run_GetProduct(true);
+				latch.addEventListener(Event.COMPLETE,ongetGlueProduct);
+				latch.start();
 			}
-			/*
-			protected function btDelStep_clickHandler(event:MouseEvent):void{
-				if(!glueProgramm) return;
-				if(lstPSteps.selectedIndex>-1){
-					glueProgramm.steps.removeItemAt(lstPSteps.selectedIndex);
-					
+			protected function ongetGlueProduct(e:Event):void{
+				var latch:AsyncLatch = e.target as AsyncLatch; 
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,ongetGlueProduct);
+					if(latch.hasError){
+						logToScreen('Ошибка запроса продукта склейки: '+latch.error,true);
+					}else{
+						glueProduct = glueDevice.devProduct;
+						log('Продукт склейки: '+glueProduct);
+					}
 				}
+				if (isRunning){
+					if(barcodeProduct && glueProduct != barcodeProduct){
+						viewCaption='Работа';
+						logToScreen('Не назначен продукт. Должно быть по ШК: '+barcodeProduct+', продукт склейки: '+glueProduct,true);
+						return;
+					}
+					//run push start program
+					log('Запуск подпрограммы "Нажать старт": '+barcodeProduct);
+					viewCaption='Выполнение подпрограммы "Нажать старт"';
+					glueHandler.program=progPushStart;
+					glueHandler.addEventListener(Event.COMPLETE,onglueStartComplite);
+					glueHandler.start();
+				}else{
+					viewCaption='Простой';
+				}
+				
 			}
-			*/
+			protected function onglueStartComplite(event:FlexEvent):void{
+				glueHandler.removeEventListener(Event.COMPLETE,onglueStartComplite);
+				viewCaption='Работа';
+			}
+
+			protected var idleTimer:Timer;
+			protected function stratIdleTimer():void{
+				if (idleTime==0 || !isRunning) return;
+				if(!idleTimer){
+					idleTimer = new Timer(idleTime*1000,1);
+					idleTimer.addEventListener(TimerEvent.TIMER,onIdleTimer);
+				}
+				idleTimer.reset();
+				idleTimer.start();
+			}
+			protected function onIdleTimer(e:Event):void{
+				isRunning = false;
+				viewCaption ='Простой';
+			}
+
+			
+			protected function onBarCode(event:BarCodeEvent):void{
+				var barcode:String=event.barcode;
+				log('barcod: '+barcode);
+				//check format
+				var pattern:RegExp = /^\d{2}$/;
+				if (barcode.match(pattern) == null) {
+					return;
+				}
+				
+				stratIdleTimer();
+				if(barcode==lastBarcode) return; //doublescan or more then 1 barreader
+				lastBarcode=barcode;
+				//finde/check product
+				var p:GlueProgramCode = ArrayUtil.searchItem('code',barcode, progCodes) as GlueProgramCode;
+				if(!p){
+					log('Не найден продукт для: '+barcode);
+					return;
+				}
+				barcodeProduct = p.product;
+				if(barcodeProduct != glueProduct){
+					log('Запуск подпрограммы "Назначить продукт": '+barcodeProduct);
+				}
+				//run set product program
+				progSetProdukt.product = barcodeProduct; 
+				glueHandler.program=progSetProdukt;
+				viewCaption='Выполнение подпрограммы "Назначить продукт"';
+				glueHandler.addEventListener(Event.COMPLETE,onglueHandlerComplite);
+				glueHandler.start();
+			}
+			protected function onglueHandlerComplite(event:FlexEvent):void{
+				glueHandler.removeEventListener(Event.COMPLETE,onglueHandlerComplite);
+				//check glue product
+				
+				getGlueProduct();
+			}
+
+			protected function onBarError(event:BarCodeEvent):void{
+				log('Ошибка сканера ШК: '+event.error);
+			}
+			protected function onBarDisconnect(event:BarCodeEvent):void{
+				log('Отключен сканер ШК '+event.barcode);
+				//pause('Отключен сканер ШК '+event.barcode); busy bug
+			}
+			
 			
 		]]>
 	</fx:Script>
 	
 	<fx:Declarations>
-		
-		
 	</fx:Declarations>
 	
 	<s:states>
-		<s:State name="edit"/>
-		<s:State name="run" enterState="state1_enterStateHandler(event)"/>
 	</s:states>
-	
-	<s:VGroup includeIn="edit" 
-			  gap="5" width="100%" height="100%" 
+
+	<s:VGroup gap="10" width="100%" height="100%" 
 			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
+
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-			<s:Label text="Редактированние программы"/>
-			<s:Spacer width="5"/>
 			<s:Label text="Машина"/>
-			<!--<s:ComboBox dataProvider="{glueDevicesAC}"
-						selectedItem="@{glueDevice}"
-						/>-->
+			<s:Label text="{glueDevice.label}"/>
 		</s:HGroup>
-		<!--<proxy:GlueProgramEdit width="100%" height="100%" glueDevice="{glueDevice}" glueProgramm="{glueProgramm}" isProductEnabled="false"/>-->
-		<s:Spacer height="5"/>
-		<s:Button label="Выполнение программы" click="{currentState='run'}"/>
-	</s:VGroup>
-
-	
-	<s:VGroup includeIn="run" 
-			  gap="10" width="100%" height="100%" 
-			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
 
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-			<s:Label text="Машина"/>
-		<!--	<s:ComboBox dataProvider="{glueDevicesAC}"
-						selectedItem="@{glueDevice}"
-						enabled="{!glueHandler.isStarted || glueHandler.isPaused}"
-						/>-->
+			<s:Label text="Продукт"/>
+			<s:Label text="Склейка: {glueProduct}"/>
+			<s:Label text="Сканер: {barcodeProduct}"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+			<s:Label text="Состояние: "/>
+			<s:Label text="{viewCaption}"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+			<s:Label text="Программа: "/>
+			<s:Label text="{glueHandler.currStepCaption}"/>
 		</s:HGroup>
 		
 		<s:HGroup id="gDeviceCTRL" gap="30" width="100%" paddingBottom="10"
 				  enabled="{glueDevice.isStarted}"
 				  horizontalAlign="center" verticalAlign="top" 
 				  fontSize="20">
-			<s:Button id="btGlueStart" label="Старт" height="50" enabled="{!glueHandler.isStarted || glueHandler.isPaused}" click="{glueHandler.start()}"/>
-			<s:Button id="btGluePause" label="Пауза" height="50" enabled="{glueHandler.isStarted}" click="{glueHandler.pause()}" />
-			<s:Button id="btGlueStop" label="Стоп" height="50" click="{glueHandler.stop()}"/>
+			<s:Button id="btGlueStart" label="Старт" height="50" enabled="{!isRunning}" click="{run();}"/>
+			<s:Button id="btGlueStop" label="Стоп" height="50" enabled="{isRunning}" click="{isRunning = false;}"/>
 		</s:HGroup>
 		
 		<s:HGroup gap="5" width="100%" height="100%">
-			
-			<s:VGroup width="40%" height="100%" gap="5" >
-				<s:Label text="Программа"/>
-				<!--<s:List id="lstRunSteps"
-						width="100%" height="100%"
-						labelField="caption"
-						dataProvider="{glueProgramm.steps}"
-						selectedIndex="{glueHandler.currStep}"/>-->
-			</s:VGroup>
-
 			
 			<s:VGroup width="60%" height="100%" gap="5" >
 				<s:HGroup width="100%" gap="10" verticalAlign="baseline">
@@ -420,7 +554,6 @@
 
 		</s:HGroup>
 
-		<s:Button label="Редактирование программы" click="button1_clickHandler(event)"/>
 	</s:VGroup>
 	
 </s:Group>

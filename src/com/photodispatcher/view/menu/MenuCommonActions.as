@@ -40,7 +40,7 @@ package com.photodispatcher.view.menu{
 			if(!orderId) return null;
 
 			//TODO refactor for SRC_PIXELPARK
-			if(Context.getSourceType(order.source) == SourceType.SRC_PIXELPARK) return null;
+			if(Context.getSourceType(order.source) == SourceType.SRC_PIXELPARK && state != OrderState.PREPROCESS_WAITE) return null;
 			
 			var o:Object=new Object;
 			o.order=order;

@@ -38,6 +38,11 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var glueProgramm:GlueProgram= GlueProgram.fromRaw(so.data.programm);
 
+				if(!glueProgramm || glueProgramm.steps.length ==0){
+					Alert.show('Не настроена программа');
+					return;
+				}
+
 				glueHandlersAC= new ArrayCollection();
 				var gd: GlueProxy;
 				var gh:GlueProgramHandler;

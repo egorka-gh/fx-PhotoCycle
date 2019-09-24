@@ -234,6 +234,11 @@
 			*/
 			
 			protected function state1_enterStateHandler(event:FlexEvent):void{
+				if(!glueProgramm || glueProgramm.steps.length ==0){
+					Alert.show('Не настроена программа');
+					return;
+				}
+				
 				if(!glueHandler){
 					glueHandler= new GlueProgramHandler();
 				}
@@ -288,7 +293,10 @@
 						selectedItem="@{glueDevice}"
 						/>
 		</s:HGroup>
-		<proxy:GlueProgramEdit width="100%" height="100%" glueDevice="{glueDevice}" glueProgramm="{glueProgramm}" isProductEnabled="false"/>
+		<proxy:GlueProgramEdit width="100%" height="100%" 
+							   glueDevice="{glueDevice}" glueProgramm="{glueProgramm}" 
+							   isProductEnabled="false"
+							   />
 		<s:Spacer height="5"/>
 		<s:Button label="Выполнение программы" click="{currentState='run'}"/>
 	</s:VGroup>

@@ -83,7 +83,10 @@ package com.photodispatcher.service.glue{
 		}
 		
 		public function start():void{
-			if(!glue || !glue.isStarted) return;
+			if(!glue || !glue.isStarted){
+				log('Склейка не подключена');
+				return;
+			}
 			if(!program || !program.steps || program.steps.length<2) return;
 			if(isStarted && !isPaused) return;
 			if(!isPaused){

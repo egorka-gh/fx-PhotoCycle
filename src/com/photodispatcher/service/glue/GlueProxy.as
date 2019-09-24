@@ -142,6 +142,7 @@ package com.photodispatcher.service.glue{
 		{
 			_cfg = value;
 			if(_cfg) label=cfg.label;
+			if(!label) label=cfg.ip;
 		}
 
 
