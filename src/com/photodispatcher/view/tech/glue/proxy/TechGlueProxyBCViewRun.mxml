@@ -4,6 +4,8 @@
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
 		 implements="com.photodispatcher.interfaces.ISimpleLogger"
 		 xmlns:proxy="com.photodispatcher.view.tech.glue.proxy.*"
+		 xmlns:mdcomp="spark.material.components.*"
+		 xmlns:mdskins="spark.material.skins.*"
 		 creationComplete="{init()}"
 		 >
 	
@@ -63,6 +65,7 @@
 					_glueDevice.loger=this;
 					_glueDevice.addEventListener(ErrorEvent.ERROR, onGlueErr);
 					_glueDevice.addEventListener(GlueMessageEvent.GLUE_MESSAGE, onGlueMessage);
+					_glueDevice.addEventListener(Event.CONNECT, onGlueConnect);
 					_glueDevice.start();
 				}
 				if(glueHandler) glueHandler.glue=_glueDevice;
@@ -127,7 +130,7 @@
 			[Bindable]
 			public var progSetProdukt:GlueProgram;
 			[Bindable]
-			public var progPushStart:GlueProgram;
+			public var progSetProduktIdle:GlueProgram;
 
 			[Bindable]
 			protected var lastButtonsMessage:GlueMessage;
@@ -146,6 +149,8 @@
 			protected var viewCaption:String;
 			
 			protected var idleTime:int;
+			[Bindable]
+			protected var isRunning:Boolean;
 
 			protected function init():void{
 				
@@ -188,6 +193,11 @@
 				cleanLog();
 				progCodes=codes;
 				this.idleTime=idleTime;
+				isRunning = false;
+				lastBarcode='';
+				barcodeProduct='';
+				glueProduct='-';
+				viewCaption= 'Простой';
 				
 				//connect barcodereaders
 				if(!serialProxy.isStarted){
@@ -266,7 +276,11 @@
 				glueDevice=null;
 				
 			}
-			
+
+			private function onGlueConnect( event:Event ):void{
+				getGlueProduct();
+			}
+
 			private function onGlueMessage( event:GlueMessageEvent ):void{
 				if(!event.message ) return;
 				if(event.message.type==GlueMessageBlock.TYPE_BUTTON) lastButtonsMessage=event.message;
@@ -321,9 +335,7 @@
 			}
 			*/
 			
-			[Bindable]
-			protected var isRunning:Boolean;
-			
+			/*
 			protected function run():void{
 				//check barreaders/ glue
 				if(!checkPrepared()) return;
@@ -339,6 +351,7 @@
 				stratIdleTimer();
 				//waite barcode
 			}
+			*/
 			
 			protected function checkPrepared(showAlert:Boolean=false):Boolean{
 				var prepared:Boolean=barcodeReaders && barcodeReaders.length>0 && 
@@ -367,45 +380,6 @@
 				return 	prepared;
 			}
 			
-			protected function getGlueProduct():void{
-				glueProduct = '-';
-				viewCaption='Проверка продукта';
-				var latch:AsyncLatch = glueDevice.run_GetProduct(true);
-				latch.addEventListener(Event.COMPLETE,ongetGlueProduct);
-				latch.start();
-			}
-			protected function ongetGlueProduct(e:Event):void{
-				var latch:AsyncLatch = e.target as AsyncLatch; 
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,ongetGlueProduct);
-					if(latch.hasError){
-						logToScreen('Ошибка запроса продукта склейки: '+latch.error,true);
-					}else{
-						glueProduct = glueDevice.devProduct;
-						log('Продукт склейки: '+glueProduct);
-					}
-				}
-				if (isRunning){
-					if(barcodeProduct && glueProduct != barcodeProduct){
-						viewCaption='Работа';
-						logToScreen('Не назначен продукт. Должно быть по ШК: '+barcodeProduct+', продукт склейки: '+glueProduct,true);
-						return;
-					}
-					//run push start program
-					log('Запуск подпрограммы "Нажать старт": '+barcodeProduct);
-					viewCaption='Выполнение подпрограммы "Нажать старт"';
-					glueHandler.program=progPushStart;
-					glueHandler.addEventListener(Event.COMPLETE,onglueStartComplite);
-					glueHandler.start();
-				}else{
-					viewCaption='Простой';
-				}
-				
-			}
-			protected function onglueStartComplite(event:FlexEvent):void{
-				glueHandler.removeEventListener(Event.COMPLETE,onglueStartComplite);
-				viewCaption='Работа';
-			}
 
 			protected var idleTimer:Timer;
 			protected function stratIdleTimer():void{
@@ -432,7 +406,12 @@
 					return;
 				}
 				
+				//flip Running state
+				var running:Boolean = isRunning;
+				isRunning =true;
+				viewCaption ='Работа';
 				stratIdleTimer();
+				
 				if(barcode==lastBarcode) return; //doublescan or more then 1 barreader
 				lastBarcode=barcode;
 				//finde/check product
@@ -442,21 +421,50 @@
 					return;
 				}
 				barcodeProduct = p.product;
+				
+				
 				if(barcodeProduct != glueProduct){
-					log('Запуск подпрограммы "Назначить продукт": '+barcodeProduct);
+					log('Запуск подпрограммы Назначить продукт '+(running?'(работа)':'(простой)')+': '+barcodeProduct);
+				}
+				var prog:GlueProgram;
+				if(running){
+					prog=progSetProdukt;
+				}else{
+					prog=progSetProduktIdle;
 				}
 				//run set product program
-				progSetProdukt.product = barcodeProduct; 
-				glueHandler.program=progSetProdukt;
-				viewCaption='Выполнение подпрограммы "Назначить продукт"';
+				prog.product = barcodeProduct; 
+				glueHandler.program=prog;
 				glueHandler.addEventListener(Event.COMPLETE,onglueHandlerComplite);
 				glueHandler.start();
 			}
 			protected function onglueHandlerComplite(event:FlexEvent):void{
 				glueHandler.removeEventListener(Event.COMPLETE,onglueHandlerComplite);
 				//check glue product
-				
 				getGlueProduct();
+			}
+			protected function getGlueProduct():void{
+				glueProduct = '-';
+				viewCaption='Проверка продукта на машине';
+				var latch:AsyncLatch = glueDevice.run_GetProduct(true);
+				latch.addEventListener(Event.COMPLETE,ongetGlueProduct);
+				latch.start();
+			}
+			protected function ongetGlueProduct(e:Event):void{
+				var latch:AsyncLatch = e.target as AsyncLatch; 
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,ongetGlueProduct);
+					if(latch.hasError){
+						logToScreen('Ошибка запроса продукта склейки: '+latch.error,true);
+					}else{
+						glueProduct = glueDevice.devProduct;
+						log('Продукт склейки: '+glueProduct);
+					}
+				}
+				if(barcodeProduct && glueProduct != barcodeProduct){
+					logToScreen('Не назначен продукт. Должно быть по ШК: '+barcodeProduct+', продукт склейки: '+glueProduct,true);
+				}
+				viewCaption=isRunning?'Работа':'Простой';
 			}
 
 			protected function onBarError(event:BarCodeEvent):void{
@@ -467,6 +475,13 @@
 				//pause('Отключен сканер ШК '+event.barcode); busy bug
 			}
 			
+			protected function btStateToggle_clickHandler(event:MouseEvent):void{
+				if (currentState == "normal"){
+					currentState = "operator";
+				}else{
+					currentState = "normal";
+				}
+			}
 			
 		]]>
 	</fx:Script>
@@ -475,55 +490,75 @@
 	</fx:Declarations>
 	
 	<s:states>
+		<s:State name="normal"/>
+<!--		<s:State name="operator"/>-->
 	</s:states>
 
 	<s:VGroup gap="10" width="100%" height="100%" 
 			  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5">
 
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-			<s:Label text="Машина"/>
-			<s:Label text="{glueDevice.label}"/>
+			<s:Label text="Машина" fontFamily="RobotoLight" fontSize="22"/>
+			<s:Label text="{glueDevice.label}" fontFamily="RobotoLight" fontSize="22"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline" >
+			<s:Label text="Продукт" fontFamily="RobotoLight" fontSize="22"/>
+			<s:Label text="Склейка: {glueProduct}" fontFamily="RobotoLight" fontSize="26"/>
+			<s:Label text="Сканер: {barcodeProduct}" fontFamily="RobotoLight" fontSize="26"/>
+		</s:HGroup>
+		
+		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
+			<s:Label text="Состояние: " fontFamily="RobotoLight" fontSize="22"/>
+			<s:Label text="{viewCaption}" fontFamily="RobotoLight" fontSize="26"/>
 		</s:HGroup>
 
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-			<s:Label text="Продукт"/>
-			<s:Label text="Склейка: {glueProduct}"/>
-			<s:Label text="Сканер: {barcodeProduct}"/>
+			<s:Label text="Выполнение программы: " fontFamily="RobotoLight" fontSize="20"/>
+			<s:Label text="{glueHandler.currStepCaption}" fontFamily="RobotoLight" fontSize="20"/>
 		</s:HGroup>
 		
-		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-			<s:Label text="Состояние: "/>
-			<s:Label text="{viewCaption}"/>
-		</s:HGroup>
-
-		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-			<s:Label text="Программа: "/>
-			<s:Label text="{glueHandler.currStepCaption}"/>
-		</s:HGroup>
+		<!--buttons-->
+		<!--<s:Group id="buttonGroup" width="100%" height="60" height.operator="100%" enabled="{glueDevice.isStarted}">
+			
+			<mdcomp:FloatingActionButton id="btStateToggle" radius="25" iconFont="\uf0ad"   left="-10" bottom="-10" 
+										 rotation.normal="-45" rotation.operator="45" click="btStateToggle_clickHandler(event)" />
+			
+			<s:Group id="bttGroup" width="100%"  height="100%" minHeight="60" maxHeight="200" maxWidth="960" verticalCenter="0" horizontalCenter="0" >
+				<s:layout>
+					<s:TileLayout   horizontalGap="20" horizontalGap.operator="40" 
+									paddingLeft="60" paddingLeft.operator="20" paddingRight="20" 
+									requestedRowCount="1" requestedColumnCount="2"
+									rowAlign="justifyUsingHeight" columnAlign="justifyUsingWidth"
+									/>
+				</s:layout>
+				<mdcomp:ButtonIcon id="btGlueStart"  label="Старт" iconFont="\uf04b" styleName="primary" skinClass="spark.material.skins.ButtonIconVSkin"
+								   click="{run();}"/>
+				<mdcomp:ButtonIcon id="btGlueStop" label="Стоп" iconFont="\uf04d" styleName="primary"  skinClass="spark.material.skins.ButtonIconVSkin"
+								   click="{isRunning = false;}"/>
+			</s:Group>
+			
+		</s:Group>-->
 		
-		<s:HGroup id="gDeviceCTRL" gap="30" width="100%" paddingBottom="10"
-				  enabled="{glueDevice.isStarted}"
-				  horizontalAlign="center" verticalAlign="top" 
-				  fontSize="20">
-			<s:Button id="btGlueStart" label="Старт" height="50" enabled="{!isRunning}" click="{run();}"/>
-			<s:Button id="btGlueStop" label="Стоп" height="50" enabled="{isRunning}" click="{isRunning = false;}"/>
-		</s:HGroup>
-		
-		<s:HGroup gap="5" width="100%" height="100%">
+		<s:Spacer height="10"/>
+		<!--<s:HGroup id="toolsGroup" gap="10" width="100%" height="100%" paddingLeft="15" visible.operator="false" excludeFrom="operator">-->
+		<s:HGroup id="toolsGroup" gap="10" width="100%" height="100%" paddingLeft="15" >
 			
 			<s:VGroup width="60%" height="100%" gap="5" >
-				<s:HGroup width="100%" gap="10" verticalAlign="baseline">
-					<s:Label text="Лог"/>
-					<s:Button label="Очистить" click="{cleanLog()}"/>
+				<s:HGroup width="100%" gap="10" verticalAlign="bottom">
+					<s:Label text="Лог" fontFamily="RobotoLight"/>
+					<!--<s:Button label="Очистить" click="{cleanLog()}"/>-->
+					<mdcomp:ButtonIcon iconFont="\uf014"  click="{cleanLog()}"/>
 				</s:HGroup>
 				<s:TextArea id="logTextArea" width="100%" height="100%" editable="false"/>
 			</s:VGroup>
 
 			<s:VGroup width="150" height="100%" gap="3">
-				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:Label text="Состояние"/>
-					<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
-							  cornerRadius="4" width="22" height="22" baseline="4"/>
+				<s:HGroup gap="5" verticalAlign="bottom">
+					<s:Label text="Состояние склейки" fontFamily="RobotoLight"/>
+					<!--<s:Button id="btRefreshGlue" icon="assets/icon-refresh.gif" click="btRefreshGlue_clickHandler(event)"
+							  cornerRadius="4" width="22" height="22" baseline="4"/>-->
+					<mdcomp:ButtonIcon id="btRefreshGlue" iconFont="\uf021" click="btRefreshGlue_clickHandler(event)"/>
 				</s:HGroup>
 				<s:TabBar id="tbStateView"  dataProvider="{vsStateViews}"/>
 				<mx:ViewStack id="vsStateViews" borderStyle="none"  width="100%" height="100%">

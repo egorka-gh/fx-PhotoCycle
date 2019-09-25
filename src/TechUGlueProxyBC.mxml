@@ -151,7 +151,7 @@
 			[Bindable]
 			protected var progSetProdukt:GlueProgram;
 			[Bindable]
-			protected var progPushStart:GlueProgram;
+			protected var progSetProduktIdle:GlueProgram;
 			[Bindable]
 			protected var idleTime:int;
 			
@@ -160,7 +160,7 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				//load subprograms
 				progSetProdukt = GlueProgram.fromRaw(so.data.progSetProdukt);
-				progPushStart = GlueProgram.fromRaw(so.data.progPushStart);
+				progSetProduktIdle = GlueProgram.fromRaw(so.data.progSetProduktIdle);
 				
 				idleTime = so.data.idleTime;
 
@@ -200,6 +200,7 @@
 				}
 				*/
 				
+				serialProxy.start(comReaders.source);
 				currentState='program';
 				
 				if(techMonitor) techMonitor.start(glueCfg, GlueProgramCode.compactCodes(progCodes.source));
@@ -207,12 +208,13 @@
 
 			private function startW():void{
 				if(techMonitor) techMonitor.stop();
-				if(!glueCfg.ip || comReaders.length==0 || progCodes.length ==0 || progSetProdukt.steps.length==0 || progPushStart.steps.length==0){
+				if(!glueCfg.ip || comReaders.length==0 || progCodes.length ==0 || progSetProdukt.steps.length==0 || progSetProduktIdle.steps.length==0){
 					Alert.show('Приложение не настроено');
 					currentState='config';
 					return;
 				}
 				Context.setAttribute("idleTime", idleTime);
+				serialProxy.start(comReaders.source);
 				currentState='work';
 				if(techWork) techWork.start(glueCfg, GlueProgramCode.compactCodes(progCodes.source), idleTime);
 			}
@@ -293,15 +295,21 @@
 		</s:fill>
 	</s:Rect>
 	
-	<s:VGroup  includeIn="config" gap="5" top="10" left="5" right="5" bottom="50">
+	<s:VGroup  includeIn="config" gap="15" top="10" left="5" right="5" bottom="50">
 
-		<s:Label text="Машина" fontFamily="RobotoLight"/>
 		<s:HGroup gap="5" verticalAlign="baseline" paddingLeft="5" paddingRight="5" paddingTop="3" paddingBottom="3">
-			<s:TextInput text="@{glueCfg.label}"/>
+			<s:Label text="Машина" fontFamily="RobotoLight"/>
+			<!--<s:TextInput text="@{glueCfg.label}"/>-->
 			<s:Label text="IP:"  fontFamily="RobotoLight"/>
 			<s:TextInput text="@{glueCfg.ip}"/>
 			<s:Label text="Порт:" fontFamily="RobotoLight"/>
 			<s:TextInput text="{glueCfg.port.toString()}" editable="false"/>
+		</s:HGroup>
+
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="Простой через (с):" fontFamily="RobotoLight"/>
+			<s:NumericStepper minimum="0" maximum="100000" snapInterval="1"
+							  value="@{idleTime}"/>
 		</s:HGroup>
 
 		<s:HGroup gap="20" paddingBottom="20" height="100%">
@@ -327,14 +335,6 @@
 					<mdcomp:ButtonIcon id="btSortCode" iconFont="\uf160" toolTip="Упорядочить" click="btSortCode_clickHandler(event)" />
 				</s:HGroup> 
 			</s:VGroup> 
-			<s:VGroup  gap="5">
-				<s:HGroup gap="5" verticalAlign="baseline">
-					<s:Label text="Простой через (с):" fontFamily="RobotoLight"/>
-					<s:NumericStepper minimum="0" maximum="100000" snapInterval="1"
-									  value="@{idleTime}"/>
-				</s:HGroup>
-			</s:VGroup>
-			
 
 			<s:VGroup  gap="5">
 				<s:Label text="Сканеры ШК" fontFamily="RobotoLight"/>
@@ -362,7 +362,7 @@
 		<proxy:TechGlueProxyBCViewProgram id="techMonitor" 
 										  serialProxy="{serialProxy}"
 										  progSetProdukt="@{progSetProdukt}"
-										  progPushStart="@{progPushStart}"
+										  progSetProduktIdle="@{progSetProduktIdle}"
 										  width="100%" height="100%"/>
 	</s:VGroup>
 
@@ -370,7 +370,7 @@
 		<proxy:TechGlueProxyBCViewRun id="techWork" 
 									  serialProxy="{serialProxy}"
 									  progSetProdukt="{progSetProdukt}"
-									  progPushStart="{progPushStart}"
+									  progSetProduktIdle="{progSetProduktIdle}"
 								 width="100%" height="100%"/>
 	</s:VGroup>
 
@@ -378,7 +378,7 @@
 		<mdcomp:ButtonIcon id="btSave" includeIn="config" label="Сохранить" iconFont="\uf0c7" click="btSave_clickHandler(event)"/>
 		<s:Spacer width="100%"/>
 		<mdcomp:Button label="Настройки" includeIn="program,work" click="{stop()}"/>
-		<mdcomp:Button label="Работа" includeIn="config" enabled="{Boolean(glueCfg.ip) &amp;&amp; progSetProdukt.steps.length>0 &amp;&amp; progPushStart.steps.length>0 &amp;&amp; comReaders.length>0 &amp;&amp; progCodes.length>0}" 
+		<mdcomp:Button label="Работа" includeIn="config" enabled="{Boolean(glueCfg.ip) &amp;&amp; progSetProdukt.steps.length>0 &amp;&amp; progSetProduktIdle.steps.length>0 &amp;&amp; comReaders.length>0 &amp;&amp; progCodes.length>0}" 
 					   click="{startW()}"/>
 		<mdcomp:Button label="Программа" includeIn="config" enabled="{Boolean(glueCfg.ip)}" click="{start()}"/>
 		<mdcomp:Button label="Закрыть" click="button1_clickHandler(event)" />

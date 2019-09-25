@@ -92,7 +92,7 @@ package com.photodispatcher.service.glue{
 		public static const CMD_QUIT:String='Quit'; //quits the glue station (programm)
 		public static const CMD_EJECT_BOOK:String='Eject Book';
 
-		public static const BUTTON_LIST:ArrayCollection= new ArrayCollection(['Start','Stop','Eject Book','Quit']);
+		public static const BUTTON_LIST:ArrayCollection= new ArrayCollection(['Start','Stop','Eject Book','Stop after Job','Quit']);
 		
 		//comands
 		public static const CMD_STOP_AFTER_JOB:String='Stop after Job'; //???
