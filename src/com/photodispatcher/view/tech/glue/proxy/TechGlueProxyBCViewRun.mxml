@@ -34,7 +34,6 @@
 			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
-			import mx.events.FlexEvent;
 			
 			import spark.formatters.DateTimeFormatter;
 			import spark.utils.TextFlowUtil;
@@ -136,6 +135,10 @@
 			protected var lastButtonsMessage:GlueMessage;
 			[Bindable]
 			protected var lastStatesMessage:GlueMessage;
+			[Bindable]
+			protected var lastStatesProduct:String;
+			
+			
 			protected var progCodes:Array=[];
 			
 			[Bindable]
@@ -147,10 +150,12 @@
 			
 			[Bindable]
 			protected var viewCaption:String;
-			
+			[Bindable]
 			protected var idleTime:int;
 			[Bindable]
 			protected var isRunning:Boolean;
+			[Bindable]
+			protected var idleTicks:int;
 
 			protected function init():void{
 				
@@ -197,6 +202,7 @@
 				lastBarcode='';
 				barcodeProduct='';
 				glueProduct='-';
+				lastStatesProduct="";
 				viewCaption= 'Простой';
 				
 				//connect barcodereaders
@@ -205,15 +211,6 @@
 					return;
 				}
 
-				if(!serialProxy.connected){
-					//connect
-					log('Ожидание подключения COM портов');
-					serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
-					serialProxy.connectAll();
-					return;
-				}
-				onProxyConnect(null);
-				
 				//connect glue
 				if (!proxyCfg){
 					logToScreen('Не настроена машина...', true);
@@ -231,10 +228,23 @@
 				//init programm handler
 				if(!glueHandler){
 					glueHandler= new GlueProgramHandler(false);
+					//glueHandler.addEventListener(Event.COMPLETE,onglueHandlerComplite);
+				}else{
+					glueHandler.stop();
 				}
-				glueHandler.stop();
 				glueHandler.glue=glueDevice;
 				glueHandler.loger=this;
+				
+				//connect barcodereaders
+				if(!serialProxy.connected){
+					//connect
+					log('Ожидание подключения COM портов');
+					serialProxy.addEventListener(SerialProxyEvent.SERIAL_PROXY_CONNECTED, onProxyConnect);
+					serialProxy.connectAll();
+					return;
+				}
+				onProxyConnect(null);
+				
 			}
 
 			protected function onProxyConnect(evt:SerialProxyEvent):void{
@@ -266,7 +276,7 @@
 				cleanLog();
 				if(glueHandler){
 					glueHandler.stop();
-					//glueHandler=null;
+					glueHandler.glue = null;
 				}
 				if(glueDevice){
 					glueDevice.removeEventListener(ErrorEvent.ERROR, onGlueErr);
@@ -303,8 +313,22 @@
 					//glueDevice.run_GetProduct();
 					glueDevice.run_GetButtons();
 					glueDevice.run_GetStatus();
+					lastStatesProduct='?';
+					var latch:AsyncLatch = glueDevice.run_GetProduct(true);
+					latch.addEventListener(Event.COMPLETE,onRefreshGlueProduct);
+					latch.start();
 				}
 			}
+			protected function onRefreshGlueProduct(e:Event):void{
+				var latch:AsyncLatch = e.target as AsyncLatch; 
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onRefreshGlueProduct);
+					if(!latch.hasError){
+						lastStatesProduct=glueDevice.devProduct;;
+					}
+				}
+			}
+
 			
 			protected function btRefreshGlue_clickHandler(event:MouseEvent):void{
 				if(glueDevice && glueDevice.isStarted){
@@ -383,10 +407,12 @@
 
 			protected var idleTimer:Timer;
 			protected function stratIdleTimer():void{
+				idleTicks = 0;
 				if (idleTime==0 || !isRunning) return;
 				if(!idleTimer){
-					idleTimer = new Timer(idleTime*1000,1);
-					idleTimer.addEventListener(TimerEvent.TIMER,onIdleTimer);
+					idleTimer = new Timer(1000,idleTime);
+					idleTimer.addEventListener(TimerEvent.TIMER_COMPLETE ,onIdleTimer);
+					idleTimer.addEventListener(TimerEvent.TIMER,onIdleTimerTick);
 				}
 				idleTimer.reset();
 				idleTimer.start();
@@ -394,6 +420,9 @@
 			protected function onIdleTimer(e:Event):void{
 				isRunning = false;
 				viewCaption ='Простой';
+			}
+			protected function onIdleTimerTick(e:Event):void{
+				idleTicks = idleTimer.currentCount;
 			}
 
 			
@@ -438,7 +467,8 @@
 				glueHandler.addEventListener(Event.COMPLETE,onglueHandlerComplite);
 				glueHandler.start();
 			}
-			protected function onglueHandlerComplite(event:FlexEvent):void{
+			protected function onglueHandlerComplite(event:Event):void{
+				log('Проверка продукта на машине');
 				glueHandler.removeEventListener(Event.COMPLETE,onglueHandlerComplite);
 				//check glue product
 				getGlueProduct();
@@ -458,6 +488,7 @@
 						logToScreen('Ошибка запроса продукта склейки: '+latch.error,true);
 					}else{
 						glueProduct = glueDevice.devProduct;
+						lastStatesProduct=glueProduct;
 						log('Продукт склейки: '+glueProduct);
 					}
 				}
@@ -503,14 +534,17 @@
 		</s:HGroup>
 
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline" >
-			<s:Label text="Продукт" fontFamily="RobotoLight" fontSize="22"/>
+			<s:Label text="Продукт" fontFamily="RobotoLight" fontSize="20"/>
 			<s:Label text="Склейка: {glueProduct}" fontFamily="RobotoLight" fontSize="26"/>
 			<s:Label text="Сканер: {barcodeProduct}" fontFamily="RobotoLight" fontSize="26"/>
 		</s:HGroup>
 		
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
-			<s:Label text="Состояние: " fontFamily="RobotoLight" fontSize="22"/>
-			<s:Label text="{viewCaption}" fontFamily="RobotoLight" fontSize="26"/>
+			<s:Label text="Состояние: " fontFamily="RobotoLight" fontSize="20"/>
+			<s:Label text="{viewCaption}" fontFamily="RobotoLight" fontSize="26" />
+			<s:Spacer width="5"/>
+			<s:Label text="Таймер простоя:" visible="{isRunning}" fontSize="20"/>
+			<s:Label text="{idleTicks}({idleTime})" visible="{isRunning}" fontFamily="RobotoLight" fontSize="26" />
 		</s:HGroup>
 
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
@@ -560,6 +594,7 @@
 							  cornerRadius="4" width="22" height="22" baseline="4"/>-->
 					<mdcomp:ButtonIcon id="btRefreshGlue" iconFont="\uf021" click="btRefreshGlue_clickHandler(event)"/>
 				</s:HGroup>
+				<s:Label text="Продукт:{lastStatesProduct} " fontFamily="RobotoLight"/>
 				<s:TabBar id="tbStateView"  dataProvider="{vsStateViews}"/>
 				<mx:ViewStack id="vsStateViews" borderStyle="none"  width="100%" height="100%">
 					<s:NavigatorContent label="Кнопки" backgroundAlpha="0" width="100%" height="100%">

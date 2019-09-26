@@ -216,13 +216,15 @@ package com.photodispatcher.service.glue{
 			run_next();
 		}
 
-		public function run_SetProduct(product:String):void{
+		public function run_SetProduct(product:String):AsyncLatch{
+			var latch:AsyncLatch=new AsyncLatch(true);
 			if(!product){
 				riseErr(ERR_SEND,'Пустое название продукта');
-				return;
+				return null;
 			}
-			cmd_stack.push(new GlueCmd(CMD_SET_PRODUCT+product));
+			cmd_stack.push(new GlueCmd(CMD_SET_PRODUCT+product,false,latch));
 			run_next();
+			return latch;
 		}
 
 		public function run_GetProduct(createLatch:Boolean=false):AsyncLatch{
@@ -265,7 +267,7 @@ package com.photodispatcher.service.glue{
 			}
 
 			if(!socket || !socket.connected){
-				riseErr(ERR_SEND,'Нет подключения');
+				riseErr(ERR_CONNECT,'Нет подключения');
 				return;
 			}
 			var cmd:GlueCmd=cmd_stack.shift() as GlueCmd;
@@ -282,7 +284,7 @@ package com.photodispatcher.service.glue{
 				log('Отправлено: '+currCommand.command);
 			}catch(err:Error){
 				aclLatch.reset();
-				riseErr(ERR_SEND,'Ошибка отправки: '+err.message);
+				riseErr(ERR_CONNECT,'Ошибка отправки: '+err.message);
 			}
 
 		}

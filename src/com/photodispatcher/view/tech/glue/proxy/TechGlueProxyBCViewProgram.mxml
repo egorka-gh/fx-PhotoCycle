@@ -247,7 +247,7 @@
 				glueHandler.start();
 			}
 			
-			protected function onglueHandlerComplite(event:FlexEvent):void{
+			protected function onglueHandlerComplite(event:Event):void{
 				glueHandler.removeEventListener(Event.COMPLETE,onglueHandlerComplite);
 				glueHandler.currStep=-1;
 				Alert.show('Программа завершена');

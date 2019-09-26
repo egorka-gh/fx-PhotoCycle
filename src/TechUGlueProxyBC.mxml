@@ -221,8 +221,8 @@
 
 			private function stop():void{
 				if(techMonitor) techMonitor.stop();
+				if(techWork) techWork.stop();
 				if(serialProxy) serialProxy.stop();				
-				//if(techWork) techWork.stop();
 				currentState='config';
 			}
 			

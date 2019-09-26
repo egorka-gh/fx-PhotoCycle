@@ -56,9 +56,17 @@ package com.photodispatcher.service.glue{
 
 		protected function onGlueErr(event:ErrorEvent):void{
 			currStepCaption='Ошибка';
-			if(isStarted && !isPaused){
+			
+			if(isStarted){
 				log('Остановка выполнения программы');
-				isPaused=true;
+				if(event.errorID == GlueProxy.ERR_CONNECT){
+					stop();
+					return;
+				}
+				if(!isPaused){
+					log('Остановка выполнения программы');
+					isPaused=true;
+				}
 			}
 		}
 
@@ -87,7 +95,7 @@ package com.photodispatcher.service.glue{
 				log('Склейка не подключена');
 				return;
 			}
-			if(!program || !program.steps || program.steps.length<2) return;
+			if(!program || !program.steps || program.steps.length==0 || (program.steps.length<2 && loop) ) return;
 			if(isStarted && !isPaused) return;
 			if(!isPaused){
 				if(loger) loger.clear();
@@ -115,7 +123,11 @@ package com.photodispatcher.service.glue{
 		}*/
 		
 		public function stop():void{
-			log('Остановка программы');
+			if(loop){
+				log('Остановка программы');
+			}else{
+				log('Программа выполнена');
+			}
 			currStepCaption='Стоп';
 			isStarted=false;
 			isPaused=false;
@@ -127,6 +139,7 @@ package com.photodispatcher.service.glue{
 		protected function runStep():void{
 			if(!isStarted || isPaused) return;
 			var step:GlueProgramStep=program.steps.getItemAt(currStep) as GlueProgramStep;
+			var aclLatch:AsyncLatch;
 			log('Выполнение '+step.caption);
 			switch(step.type){
 				case GlueProgramStep.TYPE_PAUSE: 
@@ -146,16 +159,24 @@ package com.photodispatcher.service.glue{
 				}
 				case GlueProgramStep.TYPE_PUSH_BUTTON : {
 					//run command
-					glue.pushButton(step.command);
-					//TODO waite acl
-					nextStep();
+					aclLatch = glue.pushButton(step.command);
+					if(loop || !aclLatch){
+						nextStep();
+					}else{
+						//waite acl
+						aclLatch.addEventListener(Event.COMPLETE, onAcl);
+					}
 					break;
 				}
 				case GlueProgramStep.TYPE_SET_PRODUCT : {
 					//run command
-					glue.run_SetProduct(program.product);
-					//TODO waite acl
-					nextStep();
+					aclLatch = glue.run_SetProduct(program.product);
+					if(loop || !aclLatch){
+						nextStep();
+					}else{
+						//waite acl
+						aclLatch.addEventListener(Event.COMPLETE, onAcl);
+					}
 					break;
 				}
 					
@@ -165,6 +186,13 @@ package com.photodispatcher.service.glue{
 				}
 			}
 		}
+		
+		private function onAcl(evt:Event):void{
+			var aclLatch:AsyncLatch = evt.target as AsyncLatch;
+			if(aclLatch) aclLatch.removeEventListener(Event.COMPLETE, onAcl);
+			nextStep();
+		}
+
 		
 		private function onTimer(e:TimerEvent):void{
 			if(!isStarted) return;
@@ -246,6 +274,7 @@ package com.photodispatcher.service.glue{
 				if (currStep == program.steps.length){
 					//complited
 					stop();
+					log('Debug: rise COMPLETE');
 					dispatchEvent(new Event(Event.COMPLETE));
 					return;
 				}
