@@ -29,11 +29,12 @@ package com.photodispatcher.service.web
 		}
 
 		
-		public function sendOrderComplite(orderId:String):void{
+		public function sendOrderComplite(techPointName:String, orderId:String):void{
 			//curl -d "action=scans&task=item-complete&data={"batch_item_id":17988121,"order_number":568664}" -X POST http://core.localdev/?r=interface-succession-stage/api
 			
 			var data:String =new JSONEncoder( {item_id: orderId} ).getString();
-			var action:LocalWebAction = new LocalWebAction(ACTION_GLUE, TASK_ORDER_COMPLETE, data);
+			if(!techPointName) techPointName=ACTION_GLUE;
+			var action:LocalWebAction = new LocalWebAction(techPointName, TASK_ORDER_COMPLETE, data);
 			queue.push(action);
 			startNext();
 		}

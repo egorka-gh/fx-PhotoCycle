@@ -101,6 +101,7 @@ package com.photodispatcher.tech{
 		
 		protected var useServer:Boolean=false;
 		protected var serverUrl:String;
+		protected var techPointName:String;
 
 		
 		private var _serialProxy:SerialProxy;
@@ -193,6 +194,10 @@ package com.photodispatcher.tech{
 		public function init():void{
 			useServer = Context.getAttribute("useServer");
 			serverUrl = Context.getAttribute("serverUrl");
+			techPointName = Context.getAttribute("techPointName");
+			if(useServer && !techPointName){
+				techPointName=LocalWeb.ACTION_GLUE;
+			}
 			useServer = useServer && serverUrl;
 			if(lServer) lServer.removeEventListener(WebEvent.RESPONSE, onlServerResp);
 			if (useServer){
@@ -208,7 +213,7 @@ package com.photodispatcher.tech{
 		protected function serverOrderComplite(pgId:String):void{
 			if (!useServer || !lServer) return;
 			log('Send OrderComplite '+pgId, 101);
-			lServer.sendOrderComplite(pgId);
+			lServer.sendOrderComplite(techPointName, pgId);
 		}
 		
 		protected function onlServerResp(event:WebEvent):void{

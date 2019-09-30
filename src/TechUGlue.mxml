@@ -312,6 +312,7 @@
 					
 					useServer=so.data.useServer;
 					serverUrl=so.data.serverUrl;
+					techPointName=so.data.techPointName;
 					
 					glueHasFeeder=so.data.glueHasFeeder;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
@@ -408,6 +409,7 @@
 					
 					Context.setAttribute("useServer", useServer);
 					Context.setAttribute("serverUrl", serverUrl);
+					Context.setAttribute("techPointName", techPointName);
 
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
@@ -625,6 +627,8 @@
 			public var useServer:Boolean=false;
 			[Bindable]
 			public var serverUrl:String;
+			[Bindable]
+			public var techPointName:String;
 			
 			
 			[Bindable]
@@ -696,6 +700,7 @@
 				
 				Context.setAttribute("useServer", useServer);
 				Context.setAttribute("serverUrl", serverUrl);
+				Context.setAttribute("techPointName", techPointName);
 
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueServerIP = glueServerIP;
@@ -714,7 +719,7 @@
 				
 				so.data.useServer=useServer;
 				so.data.serverUrl=serverUrl;
-				
+				so.data.techPointName=techPointName;
 				
 				so.data.pumpSensFilterTime=pumpSensFilterTime;
 				so.data.pumpWorkTime=pumpWorkTime;
@@ -870,7 +875,7 @@
 		<s:VGroup enabled="{cfgEnabled}" gap="10"  >
 
 			<s:VGroup gap="10">
-				
+
 			<s:HGroup gap="10" verticalAlign="baseline" >
 				<s:Label text="Защита конфигурации" fontFamily="RobotoLight" />
 				<mdcomp:Button id="btSetPass" label="Назначить пароль"  click="btSetPass_clickHandler(event)"/>
@@ -1177,6 +1182,10 @@
 				<mdcomp:CheckBox selected="@{useServer}"/>
 				<s:Label text="Url:" fontFamily="RobotoLight" />
 				<s:TextInput text="@{serverUrl}" enabled="{useServer}" width="400"/>
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="middle" enabled="{useServer}">
+				<s:Label text="Технологическая точка:" fontFamily="RobotoLight" />
+				<s:TextInput text="@{techPointName}" width="100"/>
 			</s:HGroup>
 				
 			<s:HGroup width="100%" horizontalAlign="right">
