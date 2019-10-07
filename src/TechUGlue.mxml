@@ -313,6 +313,7 @@
 					useServer=so.data.useServer;
 					serverUrl=so.data.serverUrl;
 					techPointName=so.data.techPointName;
+					webLogPath=so.data.WebLogPath;
 					
 					glueHasFeeder=so.data.glueHasFeeder;
 					pumpSensFilterTime=so.data.pumpSensFilterTime;
@@ -410,6 +411,7 @@
 					Context.setAttribute("useServer", useServer);
 					Context.setAttribute("serverUrl", serverUrl);
 					Context.setAttribute("techPointName", techPointName);
+					Context.setAttribute("WebLogPath", webLogPath);
 
 					Context.setAttribute("pumpSensFilterTime", pumpSensFilterTime);
 					Context.setAttribute("pumpWorkTime", pumpWorkTime);
@@ -629,6 +631,8 @@
 			public var serverUrl:String;
 			[Bindable]
 			public var techPointName:String;
+			[Bindable]
+			public var webLogPath:String;
 			
 			
 			[Bindable]
@@ -701,6 +705,7 @@
 				Context.setAttribute("useServer", useServer);
 				Context.setAttribute("serverUrl", serverUrl);
 				Context.setAttribute("techPointName", techPointName);
+				Context.setAttribute("WebLogPath", webLogPath);
 
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.glueServerIP = glueServerIP;
@@ -720,6 +725,7 @@
 				so.data.useServer=useServer;
 				so.data.serverUrl=serverUrl;
 				so.data.techPointName=techPointName;
+				so.data.WebLogPath=webLogPath;
 				
 				so.data.pumpSensFilterTime=pumpSensFilterTime;
 				so.data.pumpWorkTime=pumpWorkTime;
@@ -1186,6 +1192,9 @@
 			<s:HGroup gap="5" verticalAlign="middle" enabled="{useServer}">
 				<s:Label text="Технологическая точка:" fontFamily="RobotoLight" />
 				<s:TextInput text="@{techPointName}" width="100"/>
+				<s:Spacer width="5"/>
+				<s:Label text="Папка для лога ошибок:" fontFamily="RobotoLight" />
+				<s:TextInput text="@{webLogPath}" width="100"/>
 			</s:HGroup>
 				
 			<s:HGroup width="100%" horizontalAlign="right">

@@ -1,11 +1,17 @@
 package com.photodispatcher.service.web
 {
 	import com.adobe.serialization.json.JSONEncoder;
+	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.WebEvent;
 	
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import flash.filesystem.File;
+	import flash.filesystem.FileMode;
+	import flash.filesystem.FileStream;
+	
+	import spark.formatters.DateTimeFormatter;
 	
 	
 	[Event(name="response", type="com.photodispatcher.event.WebEvent")]
@@ -76,7 +82,39 @@ package com.photodispatcher.service.web
 			evt.error=e.error;
 			evt.data=currentAction;
 			dispatchEvent(evt);
+			logError(e.error);
 			startNext();
+		}
+		
+		private function logError(err:String):void{
+			var path:String= Context.getAttribute("WebLogPath");
+			if(!path) return;
+			var folder:File = new File(path);
+			if (!folder.exists || !folder.isDirectory) return;
+			var df:DateTimeFormatter = new DateTimeFormatter();
+			df.dateTimePattern ="yyyy-MM-dd";
+			
+			folder = folder.resolvePath(df.format(new Date())+'.log');
+			df.dateTimePattern="yyyy-MM-dd HH:mm:ss";
+			var str:String = df.format(new Date())+': Error:'+ err;
+			if(currentAction){
+				str=str+'; '+currentAction.toString(); 
+			}
+			str=str+'\n';
+			try
+			{
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(folder, FileMode.APPEND);
+				fileStream.writeUTFBytes(str);
+				fileStream.close();
+			} 
+			catch(error:Error) 
+			{
+				var evt:WebEvent = new WebEvent(WebEvent.RESPONSE);
+				evt.response=Responses.SERVICE_ERROR;
+				evt.error='Ошибка записи в лог: '+ error.message;
+				dispatchEvent(evt);
+			}
 		}
 
 		protected function handleData(e:WebEvent):void{

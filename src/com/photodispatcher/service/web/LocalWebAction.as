@@ -1,5 +1,7 @@
 package com.photodispatcher.service.web
 {
+	import com.google.zxing.common.flexdatatypes.StringBuilder;
+
 	public class LocalWebAction
 	{
 		public var action:String;
@@ -24,6 +26,10 @@ package com.photodispatcher.service.web
 			post.task=task;
 			post.data=data;
 			return post;			
+		}
+
+		public function toString():String{
+			return 'Action:'+action+'; Task:'+task+'; Data: '+data+'; HttpStatus: '+httpStatus+'; Responce: '+responce;			
 		}
 
 	}
