@@ -212,6 +212,16 @@ package com.photodispatcher.tech{
 		
 		override public function awaitLast(printGroupId:String, book:int, sheet:int, sheetTotal:int, barcode:String=''):void{
 			if(!isRunning ) return;
+			
+			//check/skip onesheet book
+			if (allowSkipMode && sheetTotal==1){
+				//only?? for fast glue vs minimal gap between sheets
+				log('Пропуск книги '+book+'('+printGroupId+')');
+				skipBook();
+				//log('skipBook complited');
+				return;
+			}
+			
 			await(printGroupId, book, sheet, sheetTotal, barcode);
 			var tb:TechBook;
 			if(errorMode){
@@ -228,52 +238,56 @@ package com.photodispatcher.tech{
 				}
 				errorMode=false;
 			}
-			if (allowSkipMode){
-				//only for fast glue vs minimal gap between sheets
-				if(bookQueue && bookQueue.length==1) tb=bookQueue.getItemAt(0) as TechBook;
-				if(tb && tb.skipGlue){
-					skipBook();
-				}
-			}
 		}
 		
-		private var skipTimer:Timer;
-		private var skipAlarmTimer:Timer;
+		//private var skipTimer:Timer;
+		//private var skipAlarmTimer:Timer;
 		private function skipBook():void{
 			//var tb:TechBook=bookQueue.shift() as TechBook;
+			/*
 			var tb:TechBook;
 			if(bookQueue.length>0) tb=bookQueue.removeItemAt(0) as TechBook;
 			if(!tb) return;
 			log('Пропуск книги '+tb.printGroupId+' '+tb.book);
+			*/
 			
 			if(glueSkipSheetDelay>50){
-				if(!skipTimer){
-					skipTimer=new Timer(glueSkipSheetDelay,1);
-					skipTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onSkipTimer);
-				}
-				skipTimer.delay=glueSkipSheetDelay;
-				skipTimer.reset();
+				var skipTimer:Timer=new Timer(glueSkipSheetDelay,1);
+				skipTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onSkipTimer);
+				//log('skipBook timer start');
 				skipTimer.start();
 			}else{
+				//log('skipBook call onSkipTimer');
 				onSkipTimer(null);
 			}
 			if (showSkipAlarm){
-				if(!skipAlarmTimer){
-					skipAlarmTimer=new Timer(1000,1);
-					skipAlarmTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onSkipAlarmTimer);
-				}
 				controller.setAlarmOn();
-				skipAlarmTimer.reset();
+				var skipAlarmTimer:Timer=new Timer(1000,1);
+				skipAlarmTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onSkipAlarmTimer);
 				skipAlarmTimer.start();
 			}
 		}
 		private function onSkipTimer(e:TimerEvent):void{
+			//log('skipBook run onSkipTimer');
+			if(e){
+				var skipTimer:Timer= e.target as Timer;
+				if(skipTimer){
+					skipTimer.removeEventListener(TimerEvent.TIMER_COMPLETE, onSkipTimer);
+				}
+			}
 			if(!isRunning ) return;
+			//log('skipBook controller.skipSheet');
 			controller.skipSheet();
 			//refresh view
 			currentBook;
 		}
 		private function onSkipAlarmTimer(e:TimerEvent):void{
+			if(e){
+				var skipAlarmTimer:Timer= e.target as Timer;
+				if(skipAlarmTimer){
+					skipAlarmTimer.removeEventListener(TimerEvent.TIMER_COMPLETE, onSkipAlarmTimer);
+				}
+			}
 			controller.setAlarmOff();
 		}
 
@@ -335,11 +349,12 @@ package com.photodispatcher.tech{
 									controller.pushBlockAfterSheet();
 								}
 								*/
-								
+								/*never happens, i even don't awaite one sheet book
 								//skip next one page book
 								if (allowSkipMode && tb && tb.skipGlue){
 										skipBook();
 								}
+								*/
 
 							}
 						}

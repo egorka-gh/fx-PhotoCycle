@@ -170,6 +170,12 @@
 				
 			}
 			
+			protected function btSkipBook_clickHandler(event:MouseEvent):void{
+				glueHandler.allowSkipMode = true;
+				glueHandler.glueSkipSheetDelay = 500;
+				glueHandler.awaitLast('111',1,1,1,'0010010101111');
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -213,6 +219,7 @@
 				<s:Button label="Disconnect" click="{disconnect()}"/>
 				<s:Spacer height="10"/>
 				<s:Button label="Final_paper" id="btFP" click="btFP_clickHandler(event)"/> 
+				<s:Button label="skip book" id="btSkipBook" click="btSkipBook_clickHandler(event)"/> 
 				<s:Group >
 					<s:Rect x="0" y="0" width="20" height="20">
 						<s:fill>

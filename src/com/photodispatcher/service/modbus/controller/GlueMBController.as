@@ -12,8 +12,6 @@ package com.photodispatcher.service.modbus.controller{
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
-	import flash.events.TimerEvent;
-	import flash.utils.Timer;
 	
 	[Event(name="connectChange", type="flash.events.Event")]
 	[Event(name="error", type="flash.events.ErrorEvent")]

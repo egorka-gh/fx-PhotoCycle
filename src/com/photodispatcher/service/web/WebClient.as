@@ -34,6 +34,7 @@ package com.photodispatcher.service.web{
 			urlLoader.addEventListener(IOErrorEvent.IO_ERROR,handleErr);
 			urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR,handleSecErr);
 			urlLoader.addEventListener(HTTPStatusEvent.HTTP_RESPONSE_STATUS, handleResponceStatus);
+			//urlLoader.addEventListener(HTTPStatusEvent.HTTP_STATUS, handleResponceStatus);
 			urlLoader.addEventListener(Event.COMPLETE,handleComplete);
 		}
 
