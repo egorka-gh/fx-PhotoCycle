@@ -482,7 +482,7 @@
 			//protected function btSetSiteState_clickHandler(event:MouseEvent):void{
 			private function setSiteState():void{
 				if(!mailPackage || !mailPackage.id) return;
-				if(source.type==SourceType.SRC_FOTOKNIGA || source.type==SourceType.SRC_FBOOK){
+				if(source.type==SourceType.SRC_FOTOKNIGA || source.type==SourceType.SRC_FBOOK || source.type==SourceType.SRC_PIXELPARK){
 					//update site state
 					webService.addEventListener(Event.COMPLETE,setStateHandler);
 					try{
@@ -507,7 +507,9 @@
 						Alert.buttonWidth=75;
 						Alert.yesLabel='Да';
 						Alert.noLabel='Нет';
-					}else{
+					}else if(webService.hasErrCode(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED)){
+						saveNextState();
+					}else {
 						Alert.show(webService.errMesage);
 					}
 				}else{

@@ -14,6 +14,7 @@
 			import com.photodispatcher.service.modbus.data.ModbusADU;
 			import com.photodispatcher.service.modbus.data.ModbusBytes;
 			import com.photodispatcher.tech.GlueHandlerMB;
+			import com.photodispatcher.util.Code128;
 			import com.photodispatcher.util.NetUtil;
 			
 			import flash.sampler.NewObjectSample;
@@ -176,6 +177,16 @@
 				glueHandler.awaitLast('111',1,1,1,'0010010101111');
 			}
 			
+			protected function button1_clickHandler(event:MouseEvent):void{
+				tiCoded.text = Code128.codeIt(tiToCode.text);
+				tiCodedBar.text= Code128.codeIt(tiToCode.text);
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void{
+				var d:Date=new Date();
+				tiCoded.text = d.toString();
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -184,6 +195,21 @@
 	</fx:Declarations>
 	
 	<s:VGroup width="100%" height="100%" gap="5">
+		<s:HGroup gap="5" verticalAlign="baseline" >
+			<s:Label text="To code" />
+			<s:TextInput id="tiToCode" width="200"/>
+			<s:Button label="Code to code128" click="button1_clickHandler(event)" />
+			<s:Button label="Date to string" click="button2_clickHandler(event)" />
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="code128" />
+			<s:TextInput id="tiCoded" width="200"/>
+		</s:HGroup>
+		<s:HGroup gap="5" verticalAlign="baseline">
+			<s:Label text="code128" />
+			<s:TextInput id="tiCodedBar" width="300" height="50" fontSize="26" fontFamily="Code128bWin" borderAlpha="0"  />
+		</s:HGroup>
+
 		<s:HGroup gap="10" >
 			<s:VGroup  gap="5">
 				<s:HGroup gap="5" verticalAlign="baseline">
@@ -211,7 +237,8 @@
 					<s:Button id="btToBcd" label=">" click="btToBcd_clickHandler(event)"/>
 					<s:Label id="lbBcd" text="     "/>
 				</s:HGroup>
-				
+
+
 			</s:VGroup>
 
 			<s:VGroup  gap="5">

@@ -32,6 +32,7 @@ package com.photodispatcher.service.web{
 
 	public class FotoknigaWeb extends BaseWeb{
 		public static const ERR_CODE_BALANCE:int=24;
+		public static const ERR_CODE_SKIP_NOTIMPLEMENTED:int=-333;
 
 		public static const ORDER_STATE_NONE:int=0;
 		public static const ORDER_STATE_CREATED:int=10;

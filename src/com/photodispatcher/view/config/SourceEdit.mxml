@@ -47,14 +47,19 @@
 					typeListIdx=ArrayUtil.searchItemIdx('value',_currentItem.type,typeList.toArray());
 					if(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE && !hideDelivery){
 						//load delivery type dict
-						var latch:DbLatch= new DbLatch();
-						var service:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
-						latch.addEventListener(Event.COMPLETE, onDeliveryTDLoad);
-						latch.addLatch(service.loadDeliveryTypeDictionar4Edit(_currentItem.id));
-						latch.start();
+						deliveryTDLoad();
 					}
 				}
 			}
+
+			private function deliveryTDLoad():void{
+				var latch:DbLatch= new DbLatch();
+				var service:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				latch.addEventListener(Event.COMPLETE, onDeliveryTDLoad);
+				latch.addLatch(service.loadDeliveryTypeDictionar4Edit(_currentItem.id));
+				latch.start();
+			}
+			
 			private function onDeliveryTDLoad(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				deliveryTDAC=null;
@@ -65,7 +70,6 @@
 					}
 				}
 			}
-
 			
 			[Bindable]
 			private var typeList:IList;
@@ -93,8 +97,32 @@
 				if(items.length==0) return;
 				var latch:DbLatch= new DbLatch();
 				var service:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				latch.addEventListener(Event.COMPLETE, onDeliveryTDSave);
 				latch.addLatch(service.persistsDeliveryTypeDictionaryBatch(items));
 				latch.start();
+			}
+			private function onDeliveryTDSave(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onDeliveryTDSave);
+				}
+				deliveryTDLoad();
+			}
+
+			
+			protected function btAddTD_clickHandler(event:MouseEvent):void{
+				var item:DeliveryTypeDictionary = gDeliveryTD.currentItem as DeliveryTypeDictionary;
+				if(!item){
+					return;
+				}
+				var newItem:DeliveryTypeDictionary = new DeliveryTypeDictionary();
+				newItem.delivery_type= item.delivery_type
+				newItem.delivery_type_name= item.delivery_type_name;
+				newItem.source= item.source;
+				newItem.source_name= item.source_name;
+				newItem.site_id= 0;
+				deliveryTDAC.addItem(newItem);
+				gDeliveryTD.currentItem =newItem;
 			}
 			
 		]]>
@@ -143,7 +171,8 @@
 						  currentColumns="{DeliveryTypeDictionary.gridColumns()}"
 						  width="600"
 						  height="100%"/>
-		<s:HGroup width="600" horizontalAlign="right" includeIn="sourceFull">
+		<s:HGroup width="600" horizontalAlign="right" includeIn="sourceFull" gap="5">
+			<s:Button id="btAddTD" label="Дублировать" click="btAddTD_clickHandler(event)"/>
 			<s:Button id="btSaveDeliveryTD" label="Сохранить" click="btSaveDeliveryTD_clickHandler(event)"/>
 		</s:HGroup>
 		

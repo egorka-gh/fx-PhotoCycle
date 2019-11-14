@@ -67,6 +67,7 @@ package com.photodispatcher.factory{
 			var props:Array=[];
 			var prop:MailPackageProperty;
 			for each(ajm in mppMap){
+				
 				val=JsonUtil.getRawVal(ajm.json_key, raw);
 				if(val){
 					prop= new MailPackageProperty();
@@ -91,6 +92,13 @@ package com.photodispatcher.factory{
 						barcodes.push(bar);
 					}
 					*/
+				}else if (ajm.field == 'debt_sum'){
+					prop.source=source;
+					prop.id=result.id;
+					prop.property=ajm.field;
+					prop.property_name=ajm.field_name;
+					prop.value='0';
+					props.push(prop);
 				}
 			}
 			
