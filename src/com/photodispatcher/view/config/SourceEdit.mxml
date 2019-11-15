@@ -172,7 +172,7 @@
 						  width="600"
 						  height="100%"/>
 		<s:HGroup width="600" horizontalAlign="right" includeIn="sourceFull" gap="5">
-			<s:Button id="btAddTD" label="Дублировать" click="btAddTD_clickHandler(event)"/>
+			<!--<s:Button id="btAddTD" label="Дублировать" click="btAddTD_clickHandler(event)"/>-->
 			<s:Button id="btSaveDeliveryTD" label="Сохранить" click="btSaveDeliveryTD_clickHandler(event)"/>
 		</s:HGroup>
 		
