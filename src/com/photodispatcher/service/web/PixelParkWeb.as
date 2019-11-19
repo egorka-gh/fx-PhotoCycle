@@ -13,7 +13,7 @@ package com.photodispatcher.service.web{
 		public static const URL_STATISTICS:String='statistics/';
 		public static const URL_ORDER:String='order/';
 		public static const URL_MAILPACKAGE:String='mailpackage/';
-		public static const URL_STATUS:String='status/';
+		public static const URL_STATUS:String='/status';
 		
 		
 		public static const ORDER_STATE_READY4PROCESSING:String='ReadyToProcessing';
@@ -21,6 +21,8 @@ package com.photodispatcher.service.web{
 		//public static const ORDER_STATE_SOFT_ERROR:String='PrepressCoordinationAwaitingReply';
 		//public static const ORDER_STATE_SOFT_ERROR_RESUME:String='PrepressCoordinationComplete';
 		public static const ORDER_STATE_PROCESSING:String='Printing';
+		public static const ORDER_STATE_MADE:String='Printed';
+		public static const ORDER_STATE_SHIPPED:String='Shipped';
 
 		public function PixelParkWeb(source:Source){
 			super(source);
@@ -76,43 +78,6 @@ package com.photodispatcher.service.web{
 			return (lastOrder && lastOrder.src_state== ORDER_STATE_PROCESSING);
 		}
 		
-		override public function getOrder(order:Order):void{
-			lastOrder=order;
-			/* hz
-			//DO NOT KILL used in print check web state 
-			if(order && !order.src_id && order.id){
-				//create src_id from order.id
-				var arr:Array= order.id.split('_');
-				if(arr && arr.length>1) order.src_id=arr[1];
-			}
-			*/
-			if(!source || source.type!=SourceType.SRC_PIXELPARK || !order || order.groupId==0){
-				abort('Не верная иннициализация команды');
-				return;
-			}
-			cmd=CMD_CHECK_STATE;
-			_hasError=false;
-			_errMesage='';
-
-			orderes=[];
-			startListen();
-			//ask mail gruop
-			//build url
-			var url:String = apiUrl;
-			url += URL_ORDER;
-			url += order.groupId.toString();
-			trace('PixelParkWeb web check order '+order.id);
-			client.getData( new InvokerUrl(url),null);
-		}
-		
-		//not used
-		override protected function endGetOrder():void{
-			_hasError=false;
-			_errMesage='';
-			stopListen();
-			trace('PixelParkWeb loaded order id:'+lastOrder.src_id);
-			dispatchEvent(new Event(Event.COMPLETE));
-		}
 		
 /*
 		override protected function handleLogin(e:Event):void{
@@ -150,6 +115,15 @@ package com.photodispatcher.service.web{
 					lastOrder.src_state=result.result.status;
 					trace('PixelParkWeb loaded order id:'+lastOrder.src_id);
 					break;
+				case CMD_SET_PACKAGE_STATE:
+					if(result.result!='OK'){
+						var msg:String = result.result;
+						if (!msg) msg='';
+						abort('Ошибка сайта при смене статуса группы '+packageId.toString()+' '+msg);
+						return;
+					}
+					trace('FotoknigaWeb MailPackage state changed');
+					break;
 				//TODO implement other
 			}
 			
@@ -181,6 +155,44 @@ package com.photodispatcher.service.web{
 			}
 			url += URL_API;
 			return url;
+		}
+
+		override public function getOrder(order:Order):void{
+			lastOrder=order;
+			/* hz
+			//DO NOT KILL used in print check web state 
+			if(order && !order.src_id && order.id){
+			//create src_id from order.id
+			var arr:Array= order.id.split('_');
+			if(arr && arr.length>1) order.src_id=arr[1];
+			}
+			*/
+			if(!source || source.type!=SourceType.SRC_PIXELPARK || !order || order.groupId==0){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			cmd=CMD_CHECK_STATE;
+			_hasError=false;
+			_errMesage='';
+			
+			orderes=[];
+			startListen();
+			//ask mail gruop
+			//build url
+			var url:String = apiUrl;
+			url += URL_ORDER;
+			url += order.groupId.toString();
+			trace('PixelParkWeb web check order '+order.id);
+			client.getData( new InvokerUrl(url),null);
+		}
+		
+		//not used
+		override protected function endGetOrder():void{
+			_hasError=false;
+			_errMesage='';
+			stopListen();
+			trace('PixelParkWeb loaded order id:'+lastOrder.src_id);
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		
 		override public function getMailPackage(packageId:int):void{
@@ -219,9 +231,46 @@ package com.photodispatcher.service.web{
 				abort('Не верная иннициализация команды');
 				return;
 			}
+			var post_state:String;
+			switch (state){
+				case FotoknigaWeb.ORDER_STATE_MADE:
+					post_state = ORDER_STATE_MADE;
+					break;
+				case FotoknigaWeb.ORDER_STATE_DELIVERY:
+					post_state = ORDER_STATE_SHIPPED;
+					break;
+				//TODO implement other
+				default:
+					abort('Не верная иннициализация команды (статус)');
+					return;
+					break;
+			}
+
+			cmd=CMD_SET_PACKAGE_STATE;
+			packageId=id;
+			packageState=state;
+			forceState=force;
+			_hasError=false;
+			_errMesage='';
 			errCodes=[];
+			//4 Debug
 			errCodes.push(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED);
-			abort('Неподдерживается сервисом');		
+
+			var url:String = apiUrl;
+			url += URL_ORDER;
+			url += id.toString();
+			url += '/status';
+			var post:Object;
+			post= new Object();
+			post['status']=post_state;
+
+			trace('PixelParkWeb set package state '+id+' ' +post_state);
+			client.getData( new InvokerUrl(url),post);
+
+			/*
+			errCodes.push(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED);
+			abort('Неподдерживается сервисом');
+			*/
 		}
 	
 	}

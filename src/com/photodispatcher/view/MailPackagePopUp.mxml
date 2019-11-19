@@ -293,6 +293,7 @@
 						setSiteState();
 					}
 				}else{
+					if(nextState==OrderState.PACKAGE_SEND) setSiteStateSend();
 					saveNextState();
 				}
 			}
@@ -517,7 +518,31 @@
 					saveNextState();
 				}
 			}
-			
+
+			private function setSiteStateSend():void{
+				if(!mailPackage || !mailPackage.id) return;
+				if(source.type==SourceType.SRC_PIXELPARK){
+					//update site state
+					webService.addEventListener(Event.COMPLETE,setStateSendHandler);
+					try{
+						webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_DELIVERY ,false);
+					}catch(error:Error){
+						Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+					}
+				}
+			}
+			private function setStateSendHandler(e:Event):void{
+				webService.removeEventListener(Event.COMPLETE,setStateSendHandler);
+				if(webService.hasError){
+					trace('web err: '+webService.errMesage);
+					if(!webService.hasErrCode(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED)){
+						Alert.show(webService.errMesage);
+					}
+				}else{
+					Alert.show('Статус на сайте изменен');
+				}
+			}
+
 			private function alertClickHandler(evt:CloseEvent):void {
 				if (evt.detail == Alert.YES) {
 					webService.addEventListener(Event.COMPLETE,setForceStateHandler);
