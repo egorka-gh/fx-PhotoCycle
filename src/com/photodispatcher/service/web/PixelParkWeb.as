@@ -265,6 +265,7 @@ package com.photodispatcher.service.web{
 			post['status']=post_state;
 
 			trace('PixelParkWeb set package state '+id+' ' +post_state);
+			startListen();
 			client.getData( new InvokerUrl(url),post);
 
 			/*

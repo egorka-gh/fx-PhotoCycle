@@ -92,9 +92,7 @@ package com.photodispatcher.factory{
 						barcodes.push(bar);
 					}
 					*/
-				}
-				
-				else if (ajm.field == 'debt_sum'){
+				}else if (ajm.field == 'debt_sum'){
 					prop= new MailPackageProperty();
 					prop.source=source;
 					prop.id=result.id;

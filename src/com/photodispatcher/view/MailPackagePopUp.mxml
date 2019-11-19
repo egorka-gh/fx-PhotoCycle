@@ -293,7 +293,9 @@
 						setSiteState();
 					}
 				}else{
-					if(nextState==OrderState.PACKAGE_SEND) setSiteStateSend();
+					if(nextState==OrderState.PACKAGE_SEND){
+						setSiteStateSend();
+					}
 					saveNextState();
 				}
 			}
@@ -303,6 +305,9 @@
 			}
 
 			private function saveNextState():void{
+				if (nextState==0 ){
+					return;
+				}
 				mailPackage.state=nextState;
 				var latch:DbLatch=new DbLatch(); 
 				latch.addEventListener(Event.COMPLETE,onsaveNextState);
@@ -509,6 +514,7 @@
 						Alert.yesLabel='Да';
 						Alert.noLabel='Нет';
 					}else if(webService.hasErrCode(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED)){
+						Alert.show(webService.errMesage);
 						saveNextState();
 					}else {
 						Alert.show(webService.errMesage);
@@ -521,23 +527,23 @@
 
 			private function setSiteStateSend():void{
 				if(!mailPackage || !mailPackage.id) return;
-				if(source.type==SourceType.SRC_PIXELPARK){
-					//update site state
-					webService.addEventListener(Event.COMPLETE,setStateSendHandler);
-					try{
-						webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_DELIVERY ,false);
-					}catch(error:Error){
-						Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
-					}
+				if(source.type!=SourceType.SRC_PIXELPARK) return;
+
+				//update site state
+				webService.addEventListener(Event.COMPLETE,setStateSendHandler);
+				try{
+					webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_DELIVERY ,false);
+				}catch(error:Error){
+					Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
 				}
 			}
 			private function setStateSendHandler(e:Event):void{
 				webService.removeEventListener(Event.COMPLETE,setStateSendHandler);
 				if(webService.hasError){
 					trace('web err: '+webService.errMesage);
-					if(!webService.hasErrCode(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED)){
+					//if(!webService.hasErrCode(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED)){
 						Alert.show(webService.errMesage);
-					}
+					//}
 				}else{
 					Alert.show('Статус на сайте изменен');
 				}
