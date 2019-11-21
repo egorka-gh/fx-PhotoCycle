@@ -40,6 +40,9 @@ package com.photodispatcher.service.web{
 		protected static const CMD_SYNC_ACTIVE_LDR:int=10;
 		//protected static const CMD_SYNC_RESTART_LDR:int=11;
 
+		protected static const CMD_GET_INFO_SYNC:int=11;
+		protected static const CMD_GET_INFO_LOADER:int=12;
+
 		public var isRunning:Boolean=false;
 
 		public var source:Source;
@@ -241,8 +244,10 @@ package com.photodispatcher.service.web{
 		}
 
 		protected var lastRawData:Object;
+		protected var lastRawResult:Object;
 		protected function parseRaw(raw:Object):Object{
 			lastRawData=raw;
+			lastRawResult =null;
 			var s:String=(raw as String);
 			if(!raw ||!s){
 				abort('Ошибка полученных данных');
@@ -256,7 +261,12 @@ package com.photodispatcher.service.web{
 				abort('Ошибка декодирования данных. '+e.message);
 				return null;
 			}
+			lastRawResult = result.result;
 			return result;
+		}
+		
+		public function get RawResult():Object{
+			return lastRawResult; 
 		}
 
 		protected function getErr(raw:Object):String{

@@ -2,19 +2,75 @@ package com.photodispatcher.provider.ftp
 {
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.ImageProviderEvent;
+	import com.photodispatcher.factory.WebServiceBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.provider.fbook.download.FBookDownloadManager;
+	import com.photodispatcher.service.web.PixelParkWeb;
 	import com.photodispatcher.util.StrUtil;
 	
 	import flash.events.Event;
+	import flash.events.TimerEvent;
 	import flash.filesystem.File;
+	import flash.utils.Timer;
 	
 	public class DownloadQueueManagerPixelPark extends DownloadQueueManager{
 		
+		
+		private var web:PixelParkWeb;
+		private var timer:Timer;
+		
 		public function DownloadQueueManagerPixelPark(source:Source=null){
 			super(source);
+			web = new PixelParkWeb(source);
+			web.addEventListener(Event.COMPLETE,handleWebComplete);
+			//TODO listen
+			timer = new Timer(5000);
+			timer.addEventListener(TimerEvent.TIMER, onTimer);
+			timer.start();
+			//TODO listen
 		}
+		
+		
+		private function onTimer(evt:Event):void{
+			lastError='';
+			web.getInfoLoader();
+		}
+
+		private function handleWebComplete(e:Event):void{
+			//check if completed
+			connectionsActive = 0;
+			speed = 0;
+			downloadCaption = '';
+			_queueLenth = 0;
+			_isStarted =  false;
+			
+			if(web.hasError){
+				if(this.source) sourceCaption=this.source.name;
+				lastError = 'Ошибка: '+web.errMesage;
+			}else{
+				var res:Object = web.RawResult;
+				if (res){
+					if(this.source) sourceCaption=this.source.name + ' '+  res.caption;
+					connectionsLimit = res.threads;
+					connectionsActive = res.count;
+					speed = Math.round(res.speed*100)/100;
+					downloadCaption = res.ids;
+					_queueLenth = res.queue;
+					_isStarted =  res.running;
+				}
+			}
+			dispatchEvent(new Event('queueLenthChange'));
+			dispatchEvent(new Event('isStartedChange'));
+		}
+		
+
+		private var _queueLenth:int;
+		[Bindable(event="queueLenthChange")]
+		override public function get queueLenth():int{
+			return _queueLenth;
+		}
+
 		
 		override public function clearCache():void{
 			// do nothing
@@ -78,7 +134,8 @@ package com.photodispatcher.provider.ftp
 		
 		override public function start():void{
 			// TODO implement
-
+			return;
+			
 			//reset
 			lastError='';
 			downloadCaption='Тут будет какая то инфа';
@@ -145,11 +202,13 @@ package com.photodispatcher.provider.ftp
 		
 		override public function stop():void{
 			// TODO implement
+			/*
 			_isStarted=false;
 			forceStop=true;
 			speed=0;
 			dispatchEvent(new Event('queueLenthChange'));
 			dispatchEvent(new Event('isStartedChange'));
+			*/
 		}
 		
 		override protected function unCaptureOrder(orderId:String):void{

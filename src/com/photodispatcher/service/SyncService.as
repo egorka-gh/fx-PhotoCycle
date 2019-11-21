@@ -60,7 +60,12 @@ package com.photodispatcher.service{
 						syncSvc.latch=aLath;
 						webLath.join(aLath);
 						aLath.start();
-						syncSvc.addEventListener(Event.COMPLETE,handleWebComplete);
+						if(src.type!=SourceType.SRC_PIXELPARK){
+							syncSvc.addEventListener(Event.COMPLETE,handleWebComplete);
+						}else{
+							syncSvc.addEventListener(Event.COMPLETE,handlePixelWebComplete);
+							
+						}
 						syncSvc.sync();
 					}
 				}
@@ -81,15 +86,40 @@ package com.photodispatcher.service{
 		private function handleWebComplete(e:Event):void{
 			var proSync:BaseWeb=e.target as BaseWeb;
 			proSync.removeEventListener(Event.COMPLETE,handleWebComplete);
+			var df:DateTimeFormatter=new DateTimeFormatter('ru_RU'); df.setDateTimePattern('HH:mm');
 			//check if completed
 			if(proSync.hasError){
-				proSync.source.syncState.setState(ProcessState.STATE_ERROR,'Ошибка синхронизации ('+proSync.errMesage+')');
+				proSync.source.syncState.setState(ProcessState.STATE_ERROR, df.format(new Date())+' Ошибка: '+proSync.errMesage);
 			}else{
 				if(proSync.orderes){
 					proSync.source.syncState.items=proSync.orderes.length;
 				}
 				proSync.source.syncState.caption='Web ok. Элементов: '+proSync.source.syncState.items.toString();
 				syncItems=syncItems.concat(proSync.orderes);
+			}
+			proSync.latch.release();
+		}
+
+		private function handlePixelWebComplete(e:Event):void{
+			var proSync:BaseWeb=e.target as BaseWeb;
+			proSync.removeEventListener(Event.COMPLETE,handlePixelWebComplete);
+			var df:DateTimeFormatter=new DateTimeFormatter('ru_RU'); df.setDateTimePattern('HH:mm');
+			//check if completed
+			if(proSync.hasError){
+				proSync.source.syncState.setState(ProcessState.STATE_ERROR, df.format(new Date())+' Ошибка: '+proSync.errMesage);
+			}else{
+				var res:Object = proSync.RawResult;
+				if (res){
+					var str:String=df.format(new Date());
+					if (res.hasOwnProperty('site')){
+						str =str+' Pixel:'+res.site;
+					}
+					if (res.hasOwnProperty('cycle')){
+						str =str+' Cycle:'+res.cycle;
+					}
+					proSync.source.syncState.setState(ProcessState.STATE_OK_WAITE, str);
+					
+				}
 			}
 			proSync.latch.release();
 		}
@@ -148,7 +178,7 @@ package com.photodispatcher.service{
 						for each(var result:Source in sa){
 							if(result.online){
 								target=ArrayUtil.searchItem('id',result.id, sources) as Source;
-								if(target){
+								if(target && target.type != SourceType.SRC_PIXELPARK){
 									if(result.sync_state){
 										//s='Синхронизирован в '+df.format(new Date());
 										s='Ok. Элементов: '+target.syncState.items.toString()+', в '+df.format(new Date());
@@ -157,7 +187,7 @@ package com.photodispatcher.service{
 										target.sync_date=result.sync_date;
 										target.sync_state=result.sync_state;
 									}else{
-										s='Ошибка синхронизации в '+df.format(new Date());
+										s='Ошибка в '+df.format(new Date());
 										target.syncState.setState(ProcessState.STATE_ERROR,s);
 									}
 								}
@@ -166,7 +196,7 @@ package com.photodispatcher.service{
 					}
 				}else{
 					for each(target in sources){
-						if(target.online){
+						if(target.online && target.loc_type != SourceType.SRC_PIXELPARK){
 							s='Ошибка синхронизации в '+df.format(new Date());
 							target.syncState.setState(ProcessState.STATE_ERROR,s);
 						}

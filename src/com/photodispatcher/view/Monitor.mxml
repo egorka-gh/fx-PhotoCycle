@@ -9,7 +9,7 @@
 		 xmlns:preprocess="com.photodispatcher.provider.preprocess.*"
 		 xmlns:ftp="com.photodispatcher.provider.ftp.*"
 		 implements="com.photodispatcher.interfaces.IMessageRecipient"
-		 creationComplete="{init()}"
+		 creationComplete="{viewInit()}"
 		 keyDown="onKey(event)">
 	
 	<fx:Declarations>
@@ -92,14 +92,15 @@
 			public function init():void{
 				sources=new ArrayCollection(Context.getSources());
 				productionName=Context.getProductionName();
-				
 				syncService= new SyncService();
 				syncService.sources=sources.source;
-				
-				if(focusManager) focusManager.setFocus(focusHolder);
 				printManager=PrintQueueManager.instance;
-
 				MessengerGeneric.subscribe(MessengerGeneric.TOPIC_PREPARATION,this);
+				viewInit();
+			}
+			
+			private function viewInit():void{
+				if(focusManager) focusManager.setFocus(focusHolder);
 			}
 			
 			public function getMessage(message:CycleMessage):void{

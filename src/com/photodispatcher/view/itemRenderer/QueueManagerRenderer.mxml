@@ -51,7 +51,7 @@
 		<s:HGroup width="100%" gap="7" >
 			<s:Label text="{service?service.sourceCaption:'Загрузка ожидание'}" fontWeight="bold"/>
 			<s:Label text="{service.lastError}" width="100%" textAlign="right" color="#ff0000" maxDisplayedLines="1"/>
-			<s:Label text="Скорость: {service.speed.toString()}Kb/s"/>
+			<s:Label text="Скорость: {service.speed.toString()}mb/s"/>
 		</s:HGroup>
 		<s:HGroup gap="5" verticalAlign="middle" width="100%">
 			
@@ -62,8 +62,8 @@
 					  icon="{(service &amp;&amp; service.isStarted)?'assets/ftp.png':'assets/pause.png'}" click="btStart_clickHandler(event)"
 					  width="28" height="28"/>
 			
-			<s:Label text="Заказов в очереди: {service.queueLenth}" />
-			<s:Label text="Ftp подключений: {service.connectionsActive}/{service.connectionsLimit}({service.connectionsFree},{service.connectionsPending})"/>
+			<s:Label text="Очередь: {service.queueLenth}" />
+			<s:Label text="Подключений: {service.connectionsActive}/{service.connectionsLimit}({service.connectionsFree},{service.connectionsPending})"/>
 		</s:HGroup>
 		<s:Label text="{service.downloadCaption}" maxDisplayedLines="2" width="100%"/>
 		<mx:ProgressBar mode="event" source="{service}" width="100%"

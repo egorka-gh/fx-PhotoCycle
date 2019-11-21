@@ -862,17 +862,21 @@ package com.photodispatcher.provider.ftp{
 			dispatchEvent(new ImageProviderEvent(ImageProviderEvent.FLOW_ERROR_EVENT,null,errMsg));
 		}
 
+		protected function kb2mb(val:Number):Number{
+			return Math.round(val*100/1024)/100; 	
+		}
+		
 		private var ftpSpeed:Number=0;
 		private function onLoadProgress(evt:LoadProgressEvent):void{
 			downloadCaption=evt.caption;
 			ftpSpeed=evt.speed;
-			speed=ftpSpeed;
-			if(fbDownloadManager) speed+=fbDownloadManager.speed;
+			speed=kb2mb(ftpSpeed); 
+			if(fbDownloadManager) speed+=kb2mb(fbDownloadManager.speed);
 			dispatchEvent(evt.clone());
 		}
 		
 		private function onFBLoadProgress(evt:ProgressEvent):void{
-			speed=ftpSpeed+fbDownloadManager.speed;
+			speed=kb2mb(ftpSpeed+fbDownloadManager.speed);
 		}
 		
 		private function onConnProgress(evt:ConnectionsProgressEvent):void{
