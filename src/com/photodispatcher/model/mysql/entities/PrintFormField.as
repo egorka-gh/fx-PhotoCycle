@@ -35,6 +35,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const FIELD_ORDERS_NUM:int=13;
 		public static const FIELD_AT_TO_DOOR:int=17;
 		public static const FIELD_FULL_ADR:int=18;
+		public static const FIELD_DEBET_SUM:int=19;
 		
 		private static var fieldItemsMap:Object;
 		
