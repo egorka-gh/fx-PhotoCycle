@@ -159,14 +159,26 @@ package com.photodispatcher.service.web{
 
 		override public function getOrder(order:Order):void{
 			lastOrder=order;
-			/* hz
 			//DO NOT KILL used in print check web state 
-			if(order && !order.src_id && order.id){
-			//create src_id from order.id
-			var arr:Array= order.id.split('_');
-			if(arr && arr.length>1) order.src_id=arr[1];
+			if(order && order.groupId == 0){
+				//create groupId from order.id
+				if (order.id){
+					//23_1931615-0
+					var idStr:String;
+					//remove source
+					var arr:Array= order.id.split('_');
+					if(arr && arr.length>1){
+						idStr=arr[1];
+						//remove subnumber
+						arr = idStr.split('-');
+						if(arr.length>0){
+							idStr=arr[0];
+							order.groupId =  int(idStr);
+						}
+					}
+				}
 			}
-			*/
+
 			if(!source || source.type!=SourceType.SRC_PIXELPARK || !order || order.groupId==0){
 				abort('Не верная иннициализация команды');
 				return;
