@@ -6,6 +6,8 @@
 				width="100%" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.provider.ftp.DownloadQueueManager;
 
 			[Bindable]
@@ -27,7 +29,7 @@
 			
 			protected function btStart_clickHandler(event:MouseEvent):void{
 				if(service){
-					if (service.isStarted){
+					if (service.isStarted && service.source.type != SourceType.SRC_PIXELPARK ){
 						service.stop();
 					}else{
 						service.start();

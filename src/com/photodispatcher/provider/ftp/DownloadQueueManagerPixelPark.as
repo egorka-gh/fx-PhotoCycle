@@ -24,11 +24,12 @@ package com.photodispatcher.provider.ftp
 			super(source);
 			web = new PixelParkWeb(source);
 			web.addEventListener(Event.COMPLETE,handleWebComplete);
-			//TODO listen
 			timer = new Timer(5000);
 			timer.addEventListener(TimerEvent.TIMER, onTimer);
 			timer.start();
-			//TODO listen
+			//allways started till destoy (if pixelweb is alive)
+			//TODO implement pause/start over web API
+			_isStarted =  true;
 		}
 		
 		
@@ -43,11 +44,11 @@ package com.photodispatcher.provider.ftp
 			speed = 0;
 			downloadCaption = '';
 			_queueLenth = 0;
-			_isStarted =  false;
 			
 			if(web.hasError){
 				if(this.source) sourceCaption=this.source.name;
 				lastError = 'Ошибка: '+web.errMesage;
+				_isStarted =  false;
 			}else{
 				var res:Object = web.RawResult;
 				if (res){
@@ -57,8 +58,10 @@ package com.photodispatcher.provider.ftp
 					speed = Math.round(res.speed*100)/100;
 					downloadCaption = res.ids;
 					_queueLenth = res.queue;
-					_isStarted =  res.running;
+					//_isStarted = res.running;
+					//TODO check if paused in  res.paused;
 				}
+				_isStarted =  true;
 			}
 			dispatchEvent(new Event('queueLenthChange'));
 			dispatchEvent(new Event('isStartedChange'));
@@ -79,6 +82,9 @@ package com.photodispatcher.provider.ftp
 		override public function destroy():void{
 			// TODO implement
 			if(isStarted) stop();
+			timer.stop();
+			_isStarted =false;
+
 		}
 		
 		override public function get fbDownloadManager():FBookDownloadManager{

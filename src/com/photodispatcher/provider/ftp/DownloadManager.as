@@ -55,7 +55,12 @@ package com.photodispatcher.provider.ftp{
 			if(services && services.length>0){
 				for each (f in services){
 					if(f){
-						if(f.isStarted) f.stop(); 
+						if(f.source.type == SourceType.SRC_PIXELPARK){
+							f.destroy();
+						}else{
+							//TODO destroy?? 
+							f.stop(); 
+						}
 						f.removeEventListener(ImageProviderEvent.ORDER_LOADED_EVENT,onOrderLoaded);
 					}
 				}
