@@ -16,6 +16,9 @@ package com.photodispatcher.service.web{
 		public static const ORDER_STATE_PROCESSING:String='Printing';
 		public static const ORDER_STATE_MADE:String='Printed';
 		public static const ORDER_STATE_SHIPPED:String='Shipped';
+		public static const ORDER_STATE_CANCELLED:String='Cancelled';
+		//public static const ORDER_STATE_CANCELLED_DEFECT:String='CancelledWithDefect';
+		//public static const ORDER_STATE_REFUSED:String='Refused';
 
 		public function PixelParkWeb(source:Source){
 			super(source);
@@ -206,7 +209,6 @@ package com.photodispatcher.service.web{
 		}
 		
 		override public function getMailPackage(packageId:int):void{
-			//TODO implement
 			if(!source || !packageId){
 				abort('Не верная иннициализация команды');
 				return;
@@ -261,7 +263,7 @@ package com.photodispatcher.service.web{
 			_errMesage='';
 			errCodes=[];
 			//4 Debug
-			errCodes.push(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED);
+			//errCodes.push(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED);
 
 			var url:String = apiUrl+'/order/'+id.toString()+'/status';
 			var post:Object;

@@ -33,6 +33,7 @@
 			import org.granite.tide.Tide;
 			
 			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
 			import spark.formatters.DateTimeFormatter;
 			
 			public var glueType:int=0;
@@ -90,7 +91,23 @@
 			private var barreaderlogText:String = '';
 			[Bindable]
 			private var serverlogText:String = '';
-			
+
+			[Bindable]
+			private var laminatePapers:ArrayCollection;
+			[Bindable]
+			private var laminateRadius:Number;
+
+			/*
+			private var _statLaminatLen:Number = 0;
+			[Bindable]
+			public function get statLaminatLen():Number{
+				return _statLaminatLen;
+			}
+			public function set statLaminatLen(val:Number):void{
+				_statLaminatLen= val;
+			}
+			*/
+
 			private var dtFmt:DateTimeFormatter;
 
 			public function log(mesage:String, level:int=0):void{
@@ -145,6 +162,12 @@
 			public function start():void{
 				debugBarReders= Context.getAttribute('debugBarReders');
 				useServer= Context.getAttribute('useServer');
+
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				var statLaminatLen:Number = so.data.statLaminatLen;
+				if(!statLaminatLen) statLaminatLen = 0;
+				
+				laminatePapers = Context.getAttribute('laminatePapers');
 				
 				if(feedOn){
 					glue= new GlueFeeder();
@@ -170,15 +193,40 @@
 				glue.logger=this;
 				glue.dataBaseOff=dataBaseOff;
 				glue.altBarcode=altBarcode;
+				glue.statLaminatLen= statLaminatLen;
+				onGlueStats(null);
 				glue.init();
 				
 				glue.addEventListener(ErrorEvent.ERROR, onPickerErr);
+				glue.addEventListener("stats", onGlueStats);
 				if(!feedOn){
 					glue.start();
 				}
 			}
 
+			protected function onGlueStats(event:Event):void{
+				var l:Number = Context.getAttribute("laminatePaperLen");
+				if (!l || l==0) return;
+				l =  Math.floor(glue.statLaminatLen*1000/l);
+				if (l < 0) l = 0;
+				
+				for each (var obj:Object in laminatePapers){
+					obj.height = Math.round(l*obj.thickness)/10;
+				}
+				
+				var t:Number= Context.getAttribute("laminateThickness");
+				var r:Number= Context.getAttribute("laminateInnerD");
+				if(!t) t=0;
+				if(!r) r=0;
+				//laminateRadius = Math.round(Math.sqrt((glue.statLaminatLen*1000*t/1000)/Math.PI + r*r) - r);
+				laminateRadius = Math.round(Math.sqrt((glue.statLaminatLen*t)/Math.PI + r*r) - r)/10;
+			}
+
 			public function stop():void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.statLaminatLen=glue.statLaminatLen;
+				so.flush();
+
 				if(glue){
 					glue.stop();
 					glue.removeEventListener(ErrorEvent.ERROR, onPickerErr);
@@ -271,6 +319,21 @@
 				}
 			}
 			
+			protected function btSetLaminate_clickHandler(event:MouseEvent):void{
+				var pp:LaminatLenthPopup = new LaminatLenthPopup();
+				pp.addEventListener(PopUpEvent.CLOSE, onLaminatLenthPopup);
+				pp.show();
+			}
+			
+			private function onLaminatLenthPopup(evt:PopUpEvent):void{
+				if(!evt.commit) return;
+				glue.statLaminatLen = Context.getAttribute("statLaminatLen");
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.statLaminatLen=glue.statLaminatLen;
+				so.flush();
+				onGlueStats(null);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -306,7 +369,7 @@
 	
 		<s:VGroup gap="10" width="100%" height="100%" paddingLeft="10">
 			<!--top panel-->
-			<s:HGroup gap="10" width="100%">
+			<s:HGroup gap="10" width="100%" paddingRight="20">
 				<s:VGroup gap="10" >
 					<s:Label text="Статистика: {glue.statString}"/>
 					<s:Label text="{glue.statStringD}"/>
@@ -326,22 +389,56 @@
 						</s:VGroup>
 				</s:VGroup>	
 
-				<s:VGroup id="bookGroup" width="100%" height="100%" verticalAlign="middle">
-					<s:HGroup  gap="10" width="100%"  verticalAlign="baseline" horizontalAlign="center">
-						<s:Label text="Книга:"
-								 color="#455a64" fontSize="{bookGroup.height*0.4}"
-								 fontFamily="Roboto" fontWeight="bold"/>
-						<s:Label text="{glue.currBookIdx.toString()}({glue.currBookTot.toString()})"
-								 color="#455a64" fontSize="{bookGroup.height*0.6}"
-								 fontFamily="Roboto" fontWeight="bold"/>
-						<s:Label text="Разворот: {glue.currSheetIdx.toString()}({glue.currSheetTot.toString()})"
-								 color="#455a64" fontSize="{bookGroup.height*0.4}"
-								 fontFamily="Roboto" fontWeight="bold"/>
+				<s:VGroup width="100%" height="100%">
+					<s:VGroup id="bookGroup" width="100%" height="100%" verticalAlign="middle">
+						<s:HGroup  gap="10" width="100%"  verticalAlign="baseline" horizontalAlign="center">
+							<s:Label text="Книга:"
+									 color="#455a64" fontSize="{bookGroup.height*0.4}"
+									 fontFamily="Roboto" fontWeight="bold"/>
+							<s:Label text="{glue.currBookIdx.toString()}({glue.currBookTot.toString()})"
+									 color="#455a64" fontSize="{bookGroup.height*0.6}"
+									 fontFamily="Roboto" fontWeight="bold"/>
+							<s:Label text="Разворот: {glue.currSheetIdx.toString()}({glue.currSheetTot.toString()})"
+									 color="#455a64" fontSize="{bookGroup.height*0.4}"
+									 fontFamily="Roboto" fontWeight="bold"/>
+						</s:HGroup>
+					</s:VGroup>
+					<s:HGroup width="100%" gap="10" verticalAlign="baseline" horizontalAlign="right">
+						<s:Label text="Ламинат" color="#455a64" fontFamily="Roboto" />
+						<s:Label text="Длина:{glue.statLaminatLen}м"
+								 color="#455a64" fontFamily="Roboto"/>
+						<s:Label text="Радиус:{laminateRadius}см"
+								 color="#455a64" fontFamily="Roboto"/>
 					</s:HGroup>
-				</s:VGroup>
+				</s:VGroup> 
 
 			</s:HGroup>
 
+			<!--laminate-->
+			<s:HGroup width="100%" paddingRight="20">
+				<s:Group id="laminateGroup" width="100%"
+						 height="40" height.operator="200">
+					
+					<s:DataGroup top="0" left="0" right="0" bottom="0"
+								 dataProvider="{laminatePapers}"
+								 itemRenderer="com.photodispatcher.view.itemRenderer.PaperStackRenderer">
+						<s:layout>
+							<s:TileLayout   horizontalGap="20" verticalGap="0"
+											paddingLeft="20"  paddingRight="20" 
+											requestedRowCount="1" requestedColumnCount="2"
+											requestedRowCount.operator="2" requestedColumnCount.operator="1"
+											rowAlign="justifyUsingHeight" columnAlign="justifyUsingWidth"
+											/>
+						</s:layout>
+						
+					</s:DataGroup>
+				</s:Group>
+				<mdcomp:ButtonIcon id="btSetLaminate" label="Рулон" iconFont="\uf01e" 
+								   click="btSetLaminate_clickHandler(event)"
+								   styleName="primary" skinClass="spark.material.skins.ButtonIconVSkin"
+								   height="100%"/>
+			</s:HGroup>
+			
 			<!--buttons-->
 			<s:Group id="buttonGroup" width="100%" height="60" height.operator="100%">
 
@@ -368,18 +465,6 @@
 				</s:Group>
 				
 			</s:Group>
-
-			<!--			<s:VGroup gap="10" paddingRight="10" enabled="{feedOn}" width="180" height="120">
-				<s:HGroup gap="10" width="100%" height="100%" >
-					<s:Button id="btStart" label="Старт" width="100%" height="100%" enabled="{!glue.isRunning || glue.isPaused}" click="glue.start()"/>
-					<s:Button id="btReam" label="Лоток" width="100%" height="100%" enabled="{!glue.isRunning || glue.isPaused}" 
-							  chromeColor="{reamColor(glue.feederReamState)}" click="btReam_clickHandler(event)"/>
-				</s:HGroup>
-				<s:HGroup gap="10" width="100%" height="100%" >
-					<s:Button id="btPause" label="Пауза" width="100%" height="100%" enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
-					<s:Button id="btStop" label="Стоп" width="100%" height="100%" click="glue.stop()"/>
-				</s:HGroup>
-			</s:VGroup>-->
 
 			<s:HGroup id="toolsGroup" gap="10" width="100%" height="100%" paddingLeft="15" visible.operator="false" excludeFrom="operator" >
 				<!--left panel (logs)-->

@@ -27,6 +27,7 @@
 			import com.photodispatcher.printer.Printer;
 			import com.photodispatcher.service.web.BaseWeb;
 			import com.photodispatcher.service.web.FotoknigaWeb;
+			import com.photodispatcher.service.web.PixelParkWeb;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
@@ -273,33 +274,32 @@
 
 			private function setNextState():void{
 				if(!mailPackage || nextState==0) return;
-				/*
-				if(nextState==OrderState.PACKAGE_START){
-					if(mailPackage.state<OrderState.TECH_OTK){
-						Alert.show('Минимальный статус заказов "'+mailPackage.state_name+'". Продолжить?','',Alert.YES|Alert.NO, this, onAlert450);
-					}else{
-						saveNextState();
-					}
-				}else if(nextState==OrderState.PACKAGE_SENDING){
-					setSiteState();
-				}else{
-					saveNextState();
+
+				if(source.type == SourceType.SRC_PIXELPARK && mailPackage.src_state_name == PixelParkWeb.ORDER_STATE_CANCELLED){
+					Alert.show('Заказ отменен на сайте. Продолжить?','',Alert.YES|Alert.NO, this, onAlertCancelled);
+					return;
 				}
-				*/
+				setNextStateProceed();
+			}
+			private function onAlertCancelled(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES) setNextStateProceed();
+			}
+
+			private function setNextStateProceed():void{
 				if(nextState==OrderState.PACKAGE_PACKED){
 					if(mailPackage.state<OrderState.TECH_OTK){
 						Alert.show('Минимальный статус заказов "'+mailPackage.state_name+'". Продолжить?','',Alert.YES|Alert.NO, this, onAlert450);
-					}else{
-						setSiteState();
+						return;
 					}
-				}else{
-					if(nextState==OrderState.PACKAGE_SEND){
-						setSiteStateSend();
-					}
-					saveNextState();
+					setSiteState();
+					return;
 				}
+				if(nextState==OrderState.PACKAGE_SEND){
+					setSiteStateSend();
+				}
+				saveNextState();
 			}
-			
+
 			private function onAlert450(evt:CloseEvent):void {
 				if (evt.detail == Alert.YES) setSiteState(); //saveNextState();
 			}

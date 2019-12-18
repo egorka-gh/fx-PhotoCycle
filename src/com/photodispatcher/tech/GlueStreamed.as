@@ -36,6 +36,7 @@ package com.photodispatcher.tech{
 	import spark.formatters.DateTimeFormatter;
 
 	[Event(name="error", type="flash.events.ErrorEvent")]
+	[Event(name="stats", type="flash.events.Event")]
 	public class GlueStreamed extends EventDispatcher{
 		
 		public function GlueStreamed(){
@@ -156,6 +157,9 @@ package com.photodispatcher.tech{
 		public var statString:String='';
 		[Bindable]
 		public var statStringD:String='';
+		
+		[Bindable]
+		public var statLaminatLen:Number = 0; 
 
 		//print group params
 		[Bindable]
@@ -195,6 +199,8 @@ package com.photodispatcher.tech{
 			useServer = Context.getAttribute("useServer");
 			serverUrl = Context.getAttribute("serverUrl");
 			techPointName = Context.getAttribute("techPointName");
+
+			//Context.setAttribute("statLaminatLen", statLaminatLen);
 			if(useServer && !techPointName){
 				techPointName=LocalWeb.ACTION_GLUE;
 			}
@@ -793,6 +799,7 @@ package com.photodispatcher.tech{
 			statString=str;
 
 			statStringD='Произведено '+fmt.format(statDateD)+' Книг:'+bkd.toString()+' листов:'+(shtd+statSheetCounter).toString();
+			dispatchEvent(new Event("stats"));
 		}
 		
 		protected function statCountBook():void{
@@ -833,6 +840,7 @@ package com.photodispatcher.tech{
 			so.data.statBooksD=statBooksD;
 			so.data.statSheetsD=statSheetsD;
 			so.data.statDateD=statDateD;
+			so.data.statLaminatLen=statLaminatLen;
 			
 			so.flush();
 			
@@ -848,6 +856,13 @@ package com.photodispatcher.tech{
 		
 		protected function statCountSheet():void{
 			statSheetCounter++;
+			if (statLaminatLen>0){
+				var l:Number = Context.getAttribute('laminatePaperLen');
+				if(l){ 
+					statLaminatLen=statLaminatLen-l/1000;
+					Context.setAttribute("statLaminatLen", statLaminatLen);
+				}
+			}
 			showStat();
 		}
 

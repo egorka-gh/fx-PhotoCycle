@@ -140,6 +140,7 @@
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.event.SerialProxyEvent;
+			import com.photodispatcher.model.PaperSheet;
 			import com.photodispatcher.service.barcode.ComInfo;
 			import com.photodispatcher.service.barcode.ComReader;
 			import com.photodispatcher.service.barcode.FeederController;
@@ -183,6 +184,17 @@
 			
 			[Bindable]
 			private var feedBookDelays:ArrayCollection;
+
+			[Bindable]
+			private var laminatePapers:ArrayCollection;
+			[Bindable]
+			private var laminatePaperLen:Number=320;
+			[Bindable]
+			private var laminateRollLen:Number=3000;
+			[Bindable]
+			private var laminateThickness:Number=0;
+			[Bindable]
+			private var laminateInnerD:Number=0;
 			
 			[Bindable]
 			public var checkFeederEmpty:Boolean=false;
@@ -264,6 +276,7 @@
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				var bookDelays:Array=[];
 				var configPass:String;
+				var laminatePapersArr:Array=[];
 				
 				if (so.size>0){
 					reversOrder=so.data.reversOrder; 
@@ -284,7 +297,7 @@
 					configPass=so.data.configPass;
 					bookDelays=so.data.bookDelays;
 					if(!bookDelays) bookDelays=[];
-					
+
 					engineOnStartOn=so.data.engineOnStartOn;
 					vacuumOnStartOn=so.data.vacuumOnStartOn;
 					engineOnErrOff=so.data.engineOnErrOff;
@@ -344,8 +357,26 @@
 					}
 					statBooks=so.data.statBooks;
 					statSheets=so.data.statSheets;
+					statLaminatLen = so.data.statLaminatLen;
+					if(!statLaminatLen) statLaminatLen = 0;
+
+					laminatePapersArr=so.data.laminatePapers;
+					if(!laminatePapersArr) laminatePapersArr=[];
+					laminatePaperLen=so.data.laminatePaperLen;
+					if(!laminatePaperLen) laminatePaperLen=320;
+					laminateRollLen=so.data.laminateRollLen;
+					if(!laminateRollLen) laminateRollLen=3000;
+					laminateThickness=so.data.laminateThickness;
+					if(!laminateThickness) laminateThickness=0;
+					laminateInnerD=so.data.laminateInnerD;
+					if(!laminateInnerD) laminateInnerD=0;
 				}
 				feedBookDelays= new ArrayCollection(bookDelays);
+				laminatePapers = new ArrayCollection();
+				for each (var obj:Object in laminatePapersArr){
+					laminatePapers.addItem(new PaperSheet(obj.name, obj.thickness,0));	
+				}
+				
 				var dataSortField:SortField = new SortField();
 				dataSortField.name = 'sheets';
 				dataSortField.numeric = true;
@@ -361,9 +392,15 @@
 				Context.setAttribute("checkFeederEmpty", checkFeederEmpty);
 				Context.setAttribute("pauseFeederCountdown", pauseFeederCountdown);
 				
+				Context.setAttribute("laminatePapers", laminatePapers);
+				Context.setAttribute("laminatePaperLen", laminatePaperLen);
+				Context.setAttribute("laminateRollLen", laminateRollLen);
+				Context.setAttribute("laminateThickness", laminateThickness);
+				
 				Context.setAttribute("statDate", statDate);
 				Context.setAttribute("statBooks", statBooks);
 				Context.setAttribute("statSheets", statSheets);
+				Context.setAttribute("statLaminatLen", statLaminatLen);
 				
 				Context.setAttribute("debugBarReders", debugBarReders);
 				
@@ -432,6 +469,12 @@
 					
 				}
 				Context.setAttribute("debugBarReders", debugBarReders);
+
+				Context.setAttribute("laminatePapers", laminatePapers);
+				Context.setAttribute("laminatePaperLen", laminatePaperLen);
+				Context.setAttribute("laminateRollLen", laminateRollLen);
+				Context.setAttribute("laminateThickness", laminateThickness);
+				Context.setAttribute("laminateInnerD", laminateInnerD);
 				
 				if(!feedOn) comFeederProxy.num='';
 				if((feedOn && (!comFeederProxy || !comFeederProxy.num) && !glueHasFeeder) 
@@ -465,24 +508,47 @@
 			
 			protected function btSaveComs_clickHandler(event:MouseEvent):void{
 				var arr:Array=comReaders.source.concat(comFeederProxy,comGlueProxy);
+				var obj:Object;
 				ComInfo.save(arr);
 				
 				//compact feedBookDelays
 				feedBookDelays.refresh();
 				arr=[];
-				for each (var obj:Object in feedBookDelays){
+				for each (obj in feedBookDelays){
 					//{sheets:int(0),delay:int(0)}
 					if(obj.delay>=100 && obj.sheets>=0) arr.push(obj);
 				}
 				feedBookDelays.source=arr;
 				feedBookDelays.refresh();
 				
+				var arr2:Array=[];
+				for each (obj in laminatePapers){
+					//{sheets:int(0),delay:int(0)}
+					if(obj.name && obj.thickness>0) arr2.push(obj);
+				}
+				laminatePapers.source=arr2;
+				laminatePapers.refresh();
+				
+				
 				var so:SharedObject = SharedObject.getLocal('appProps','/');
 				so.data.altBarcode = altBarcode;
 				so.data.bookDelays=arr;
+				
+				so.data.laminatePapers=arr2;
+				so.data.laminatePaperLen=laminatePaperLen;
+				so.data.laminateRollLen=laminateRollLen;
+				so.data.laminateThickness=laminateThickness;
+				so.data.laminateInnerD=laminateInnerD;
+
 				so.flush();
 				Context.setAttribute("feedBookDelays", feedBookDelays);
 				Context.setAttribute("altBarcode", altBarcode);
+				
+				Context.setAttribute("laminatePapers", laminatePapers);
+				Context.setAttribute("laminatePaperLen", laminatePaperLen);
+				Context.setAttribute("laminateRollLen", laminateRollLen);
+				Context.setAttribute("laminateThickness", laminateThickness);
+				Context.setAttribute("laminateInnerD", laminateInnerD);
 				
 				saveGlueEth();
 			}
@@ -661,6 +727,8 @@
 			protected var statBooks:int=0;
 			[Bindable]
 			protected var statSheets:int=0;
+			[Bindable]
+			protected var statLaminatLen:Number=0;
 
 			[Bindable]
 			public var allowSkipMode:Boolean=false;
@@ -856,6 +924,16 @@
 				Context.setAttribute("statBooks", statBooks);
 				Context.setAttribute("statSheets", statSheets);
 				showStat();
+			}
+			
+			protected function btAddLamPaper_clickHandler(event:MouseEvent):void{
+				laminatePapers.addItem(new PaperSheet());
+			}
+			
+			protected function btDelLamPaper_clickHandler(event:MouseEvent):void{
+				if(dgLamPaper && dgLamPaper.selectedIndex>-1){
+					laminatePapers.removeItemAt(dgLamPaper.selectedIndex);
+				}
 			}
 			
 		]]>
@@ -1178,6 +1256,51 @@
 							</s:VGroup> 
 							<itemRenderer:ComInfoRenderer data="{comList.selectedItem}" lockType="true"/>
 						</s:HGroup>
+					</s:VGroup>
+				</s:NavigatorContent>
+
+				<s:NavigatorContent label="Ламинирование" backgroundAlpha="0" >
+					<s:VGroup gap="5">
+						<s:Label text="Ламинат" fontFamily="RobotoLight"/>
+						<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="15">
+							<s:Label text="Длина рулона(м):" fontFamily="RobotoLight"/>
+							<s:NumericStepper minimum="0" maximum="100000" snapInterval="1" stepSize="100" value="@{laminateRollLen}"/>
+						</s:HGroup>
+						<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="15">
+							<s:Label text="Радиус втулки(мм):" fontFamily="RobotoLight"/>
+							<s:NumericStepper minimum="0" maximum="100000" snapInterval="1" stepSize="1" value="@{laminateInnerD}"/>
+						</s:HGroup>
+						<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="15">
+							<s:Label text="Толщина(мкм):" fontFamily="RobotoLight"/>
+							<s:NumericStepper minimum="0" maximum="100000" snapInterval="1" stepSize="1" value="@{laminateThickness}"/>
+						</s:HGroup>
+						
+						<s:Label text="Бумага" fontFamily="RobotoLight"/>
+						<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="15">
+							<s:Label text="Длина листа(мм):" fontFamily="RobotoLight"/>
+							<s:NumericStepper minimum="0" maximum="100000" snapInterval="1" stepSize="10" value="@{laminatePaperLen}"/>
+						</s:HGroup>
+						<s:VGroup  gap="5" paddingLeft="15"  height="110">
+							<s:DataGrid id="dgLamPaper" height="100%" 
+										selectionMode="singleRow" editable="true"
+										sortableColumns="false"
+										dataProvider="{laminatePapers}"
+										>
+								<s:columns>
+									<s:ArrayList>
+										<s:GridColumn dataField="name" headerText="Название" width="120" editable="true" />
+										<s:GridColumn dataField="thickness" headerText="Толщина(мм)" width="100" editable="true"/>
+									</s:ArrayList>
+								</s:columns>
+							</s:DataGrid>
+							<s:HGroup width="100%" gap="10" horizontalAlign="right">
+								<mdcomp:ButtonIcon id="btAddLamPaper" iconFont="\uf067"  toolTip="Добавить"
+												   enabled="{laminatePapers.length &lt; 2}"
+												   click="btAddLamPaper_clickHandler(event)"/>
+								<mdcomp:ButtonIcon id="btDelLamPaper" iconFont="\uf068"  toolTip="Удалить" click="btDelLamPaper_clickHandler(event)"/>
+							</s:HGroup> 
+						</s:VGroup> 
+						
 					</s:VGroup>
 				</s:NavigatorContent>
 			</mx:ViewStack>

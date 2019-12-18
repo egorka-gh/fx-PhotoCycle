@@ -175,11 +175,11 @@
 		<s:Label text="{label}" width="100%" maxDisplayedLines="1"/>
 		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
 			<s:Label text="Сотрудник"/>
-			<s:DropDownList id="ddStaff" dataProvider="{staffAC}"/>
+			<s:DropDownList id="ddStaff" width="200" dataProvider="{staffAC}"/>
 			
 			<s:Spacer width="5"/>
 			<s:Label text="Причина"/>
-			<s:DropDownList id="ddType" dataProvider="{activityTypeAC}" labelField="name"/>
+			<s:DropDownList id="ddType" width="200" dataProvider="{activityTypeAC}" labelField="name"/>
 			
 			<s:Spacer width="5"/>
 			<s:Label text="Комментарий"/>
