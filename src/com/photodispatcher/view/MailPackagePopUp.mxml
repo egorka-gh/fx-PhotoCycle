@@ -489,6 +489,8 @@
 			private function setSiteState():void{
 				if(!mailPackage || !mailPackage.id) return;
 				if(source.type==SourceType.SRC_FOTOKNIGA || source.type==SourceType.SRC_FBOOK || source.type==SourceType.SRC_PIXELPARK){
+					//double click
+					if (webService.isRunning) return;
 					//update site state
 					webService.addEventListener(Event.COMPLETE,setStateHandler);
 					try{
@@ -528,6 +530,8 @@
 			private function setSiteStateSend():void{
 				if(!mailPackage || !mailPackage.id) return;
 				if(source.type!=SourceType.SRC_PIXELPARK) return;
+				//double click
+				if (webService.isRunning) return;
 
 				//update site state
 				webService.addEventListener(Event.COMPLETE,setStateSendHandler);

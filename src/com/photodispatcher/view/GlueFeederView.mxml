@@ -339,6 +339,7 @@
 	
 	<fx:Declarations>
 		<s:ArrayCollection id="acLatches" source="{glue.latches}"/>
+		<s:NumberFormatter fractionalDigits="1" useGrouping="false" id="numFormatter" />
 	</fx:Declarations>
 	
 	<s:states>
@@ -405,9 +406,9 @@
 					</s:VGroup>
 					<s:HGroup width="100%" gap="10" verticalAlign="baseline" horizontalAlign="right">
 						<s:Label text="Ламинат" color="#455a64" fontFamily="Roboto" />
-						<s:Label text="Длина:{glue.statLaminatLen}м"
+						<s:Label text="Длина:{numFormatter.format(glue.statLaminatLen)}м"
 								 color="#455a64" fontFamily="Roboto"/>
-						<s:Label text="Радиус:{laminateRadius}см"
+						<s:Label text="Радиус:{numFormatter.format(laminateRadius)}см"
 								 color="#455a64" fontFamily="Roboto"/>
 					</s:HGroup>
 				</s:VGroup> 

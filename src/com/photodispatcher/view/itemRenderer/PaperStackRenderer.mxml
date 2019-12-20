@@ -4,10 +4,13 @@
 				xmlns:mx="library://ns.adobe.com/flex/mx" 
 				autoDrawBackground="false">
 
+	<fx:Declarations>
+		<s:NumberFormatter fractionalDigits="1" useGrouping="false" id="numFormatter" />
+	</fx:Declarations>
 
-	<s:Label  text="{data.name}: {data.height} см"
+	<s:Label  text="{data.name}: {numFormatter.format(data.height)} см"
 			  fontSize="{height*0.9}"
 			  fontFamily="Roboto" fontWeight="bold"
-			  verticalCenter="0" horizontalCenter="0"
+			  verticalCenter="0" right="0"
 			  maxDisplayedLines="1" />
 </s:ItemRenderer>

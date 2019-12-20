@@ -43,6 +43,7 @@ package com.photodispatcher.service.web{
 		protected static const CMD_GET_INFO_SYNC:int=11;
 		protected static const CMD_GET_INFO_LOADER:int=12;
 
+		[Bindable]
 		public var isRunning:Boolean=false;
 
 		public var source:Source;
