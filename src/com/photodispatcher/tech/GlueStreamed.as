@@ -21,6 +21,7 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.service.web.LocalWebAction;
 	import com.photodispatcher.service.web.Responses;
 	import com.photodispatcher.tech.plain_register.TechRegisterPicker;
+	import com.photodispatcher.tech.register.TechBook;
 	import com.photodispatcher.util.ArrayUtil;
 	
 	import flash.events.ErrorEvent;
@@ -175,6 +176,9 @@ package com.photodispatcher.tech{
 		public var currSheetTot:int;
 		[Bindable]
 		public var currSheetIdx:int;
+
+		[Bindable]
+		public var errBooks:ArrayCollection=new ArrayCollection();
 		
 		
 		protected var _logger:ISimpleLogger;
@@ -348,10 +352,11 @@ package com.photodispatcher.tech{
 			}
 			if(glueHandler.isRunning){
 				logErr('Cклейка: '+event.text);
-				//??
+				/*??
 				if(!glueHandler.errorMode){
 					stop();
 				}
+				*/
 			}else{
 				//hz
 				log('Cклейка: '+event.text);
@@ -671,9 +676,18 @@ package com.photodispatcher.tech{
 			*/
 			if (register.currentBookComplited){
 				statCountBook();
+				//awaitLast can reset errmode so check add defect book
+				if(glueHandler.errorMode){
+					addDefectBook(pgId, bookNum);	
+				}
 				glueHandler.awaitLast(pgId,bookNum,pageNum,pageTotal);
 			}else{
 				glueHandler.await(pgId,bookNum,pageNum,pageTotal);				
+			}
+			
+			//check add defect book
+			if(register.hasWrongSequence || glueHandler.errorMode){
+				addDefectBook(pgId, bookNum);	
 			}
 
 			if (register.isComplete){
@@ -689,6 +703,15 @@ package com.photodispatcher.tech{
 		protected function onBarDisconnect(event:BarCodeEvent):void{
 			log('Отключен сканер ШК '+event.barcode);
 			//pause('Отключен сканер ШК '+event.barcode); busy bug
+		}
+		
+		protected function addDefectBook(pgId:String, bookNum:int):void{
+			if(!errBooks) errBooks = new ArrayCollection();
+			for each(var tb:TechBook in errBooks){
+				//already added?
+				if(tb && tb.book==bookNum && tb.printGroupId==pgId) return; 
+			}
+			errBooks.addItem(new TechBook(bookNum, pgId));
 		}
 		
 		protected function checkPrintgroup(pgId:String):Boolean{

@@ -597,7 +597,6 @@ package com.photodispatcher.tech.plain_register{
 					}
 					if(!hasWrongSequence) logSequeceErr('Не верная последовательность');
 				}
-				hasWrongSequence=true;
 			}
 			return result;
 		}
@@ -616,6 +615,7 @@ package com.photodispatcher.tech.plain_register{
 		}
 		
 		protected function logSequeceErr(msg:String):void{
+			hasWrongSequence=true;
 			dispatchEvent( new ErrorEvent(ErrorEvent.ERROR,false,false,'Заказ: '+currPgCaption+'. '+msg,ERROR_SEQUENCE));
 		}
 		protected function logMsg(msg:String):void{

@@ -299,6 +299,12 @@
 				return block.printGroupId+': '+StrUtil.sheetName(block.book,block.sheetsTotal);
 			}
 
+			public function bookLabelFunc(item:Object):String {
+				var block:TechBook= item as TechBook;
+				if(!block) return '';
+				return block.printGroupId+': '+StrUtil.lPad(block.book.toString(),3);
+			}
+
 			protected function reamColor(reamState:int):uint{
 				if(!reamState || reamState==FeederController.REAM_STATE_UNKNOWN) return btStart.getStyle('chromeColor');
 				if(reamState==FeederController.REAM_STATE_EMPTY) return 0xff4444;
@@ -483,6 +489,12 @@
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Сервер" backgroundAlpha="0" width="100%" height="100%" enabled="{useServer}" >
 							<s:TextArea  text="{serverlogText}" width="100%" height="100%"/>
+						</s:NavigatorContent>
+						<s:NavigatorContent label="Бракованные книги" backgroundAlpha="0" width="100%" height="100%" >
+							<s:List
+								dataProvider="{glue.errBooks}"
+								labelFunction="bookLabelFunc"
+								width="100%" height="100%"/>
 						</s:NavigatorContent>
 					</mx:ViewStack>
 				</s:VGroup>
