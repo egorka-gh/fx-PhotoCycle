@@ -491,10 +491,15 @@
 							<s:TextArea  text="{serverlogText}" width="100%" height="100%"/>
 						</s:NavigatorContent>
 						<s:NavigatorContent label="Бракованные книги" backgroundAlpha="0" width="100%" height="100%" >
-							<s:List
-								dataProvider="{glue.errBooks}"
-								labelFunction="bookLabelFunc"
-								width="100%" height="100%"/>
+							<s:VGroup width="100%" height="100%">
+								<s:List
+									dataProvider="{glue.errBooks}"
+									labelFunction="bookLabelFunc"
+									width="100%" height="100%"/>
+								<s:HGroup width="100%" horizontalAlign="right">
+									<mdcomp:Button label="Очистить" click="{glue.errBooks = new ArrayCollection();}"/>
+								</s:HGroup>
+							</s:VGroup>
 						</s:NavigatorContent>
 					</mx:ViewStack>
 				</s:VGroup>
