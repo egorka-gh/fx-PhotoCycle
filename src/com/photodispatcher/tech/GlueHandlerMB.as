@@ -232,7 +232,7 @@ package com.photodispatcher.tech{
 					//only for fast glue vs minimal gap between sheets
 					if(bookQueue.length==1){
 						log('Следующий лист последний (awaitLast) '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
-						tb.sheetsTotal = -1;
+						//tb.sheetsTotal = -1;
 						controller.pushBlockAfterSheet();
 					}
 				}

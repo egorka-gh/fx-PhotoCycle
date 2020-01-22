@@ -11,7 +11,11 @@ package com.photodispatcher.model.mysql.entities {
 	
 	import flash.events.Event;
 	
+	import mx.collections.ArrayList;
+	
 	import org.granite.tide.Tide;
+	
+	import spark.components.gridClasses.GridColumn;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.FieldValue")]
@@ -120,6 +124,17 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			return null;
 		}
+		
+		public static function labelValColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			col= new GridColumn('label'); col.headerText='Продукт'; col.editable=false; col.width=90; result.addItem(col); 
+			col= new GridColumn('value'); col.headerText='Кол'; col.editable=false;  result.addItem(col); 
+			
+			return result;
+		}
+
 
     }
 }

@@ -12,6 +12,7 @@
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.DeliveryType;
 			import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
 			import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
 			import com.photodispatcher.model.mysql.entities.MailPackageMessage;
@@ -59,6 +60,9 @@
 
 			[Bindable]
 			public var cliPackages:ArrayCollection;
+
+			[Bindable]
+			public var productsCountAC:ArrayCollection;
 
 			[Bindable]
 			public var printForms:ArrayCollection;
@@ -152,13 +156,14 @@
 				latch.addLatch(bdService.loadChildOrders(mailPackage.source, mailPackage.id));
 				latch.join(latchMp);
 				latch.start();
+				
 				if(showClienGroups){
 					var latchGroups:DbLatch=new DbLatch();
 					latchGroups.addEventListener(Event.COMPLETE,onGroupsload);
 					latchGroups.addLatch(bdService.loadByClient(mailPackage.source, mailPackage.client_id));
 					latchGroups.start();
 				}
-
+				loadProductsCount();
 				loadSpaces();
 			}
 			private function onloadMP(event:Event):void{
@@ -228,12 +233,29 @@
 			}
 
 
+			private function loadProductsCount():void{
+				var latch:DbLatch=new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onProductsCount);
+				latch.addLatch(bdService.getProductsCount(mailPackage.source, mailPackage.id));
+				latch.start();
+			}
+			private function onProductsCount(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadChildOrders);
+					if(latch.complite){
+						productsCountAC = latch.lastDataAC;
+					}else{
+						productsCountAC = null;
+					}
+				}
+			}
+			
 			private function loadSpaces():void{
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onloadSpaces);
 				latch.addLatch(bdService.loadRackSpaces(mailPackage));
 				latch.start();
-				
 			}
 			private function onloadSpaces(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
@@ -402,35 +424,8 @@
 				joinPackages();
 			}
 
-			/*
-			private function checkJoin():void{
-				var latch:DbLatch=new DbLatch();
-				latch.addEventListener(Event.COMPLETE,oncheckJoin);
-				latch.addLatch(bdService.getStateByPackages(source.id,new ArrayCollection(joinIds)));
-				latch.start();
-			}
-			private function oncheckJoin(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,oncheckJoin);
-					if(latch.complite){
-						var state:int=latch.resultCode;
-						if(state> OrderState.PACKAGE_START){
-							joinIds=[];
-							Alert.show('Не допускается объединение групп в статусе "Упакован" и выше.');
-						}else{
-							joinState=state;
-							joinPackages();
-						}
-					}else{
-						joinIds=[];
-					}
-				}
-			}
-			*/
-
 			private function joinPackages():void{
-				if(source.type==SourceType.SRC_FBOOK){
+				if(source.type==SourceType.SRC_FBOOK || source.type==SourceType.SRC_PIXELPARK){
 					Alert.show('Сайт '+source.name+' не поддерживает данную функцию.');
 					return;
 				}
@@ -663,6 +658,10 @@
 				}
 			}
 
+			protected function btDebug_clickHandler(event:MouseEvent):void{
+				bdService.startState(mailPackage);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -696,6 +695,7 @@
 					<s:HGroup width="200" horizontalAlign="right" gap="5" verticalAlign="baseline">
 						<s:Label text="Назначить статус"/>
 						<s:Button id="btState" label="{nextStateName}" click="{setNextState()}" enabled="{nextState!=0}"/>
+						<!--<s:Button id="btDebug" label="Save" click="btDebug_clickHandler(event)" />-->
 					</s:HGroup>
 				</s:FormItem> 
 				<s:FormItem label="Источник">
@@ -729,10 +729,14 @@
 				</s:FormItem> 
 
 			</s:Form>
-			<s:VGroup width="150" height="100%" gap="5">
+			<s:VGroup width="150" height="100%" gap="5" paddingBottom="5">
 				<s:Label width="100%" text="Полки"/>
-				<s:List id="lstSpaces" width="100%" height="100%"
+				<s:List id="lstSpaces" width="100%" height="40%"
 						dataProvider="{spacesAC}" labelFunction="spacesLabelFunc"/> 
+				<s:Label width="100%" text="К отправке"/>
+				<s:DataGrid selectionMode="singleRow"
+							width="100%" height="60%" editable="false"
+							dataProvider="{productsCountAC}" locale="ru_RU" columns="{FieldValue.labelValColumns()}"/>
 			</s:VGroup>
 			<s:Spacer width="7"/>
 			<s:VGroup width="100%" height="100%" gap="5" visible="{showClienGroups}">
