@@ -35,7 +35,7 @@ package com.photodispatcher.model.mysql.entities {
 		
 		public var preorder_num:String='';
 		public var box_id:String='';
-		public var box_number:String='';
+		//public var box_number:String='';
 		public var box_weight:String='';
 		public var box_orderId:String='';
 		public var box_orderNumber:String='';

@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
 
         private var _bar_type:int;
         private var _barcode:String;
+        private var _box_number:int;
         private var _id:int;
         private var _source:int;
 
@@ -34,6 +35,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get barcode():String {
             return _barcode;
+        }
+
+        public function set box_number(value:int):void {
+            _box_number = value;
+        }
+        public function get box_number():int {
+            return _box_number;
         }
 
         public function set id(value:int):void {
@@ -54,6 +62,7 @@ package com.photodispatcher.model.mysql.entities {
             super.readExternal(input);
             _bar_type = input.readObject() as int;
             _barcode = input.readObject() as String;
+            _box_number = input.readObject() as int;
             _id = input.readObject() as int;
             _source = input.readObject() as int;
         }
@@ -62,6 +71,7 @@ package com.photodispatcher.model.mysql.entities {
             super.writeExternal(output);
             output.writeObject(_bar_type);
             output.writeObject(_barcode);
+            output.writeObject(_box_number);
             output.writeObject(_id);
             output.writeObject(_source);
         }

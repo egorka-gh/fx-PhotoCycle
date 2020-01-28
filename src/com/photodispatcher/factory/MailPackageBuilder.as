@@ -119,7 +119,7 @@ package com.photodispatcher.factory{
 						bar.bar_type=MailPackageBarcode.TYPE_SITE_BOX;
 						if(barObj.hasOwnProperty('barcode')) bar.barcode=barObj.barcode;
 						if(barObj.hasOwnProperty('id')) bar.box_id=barObj.id;
-						if(barObj.hasOwnProperty('number')) bar.box_number=barObj.number;
+						if(barObj.hasOwnProperty('number')) bar.box_number=int(barObj.number);
 						if(barObj.hasOwnProperty('weight')) bar.box_weight=barObj.weight;
 						if(barObj.hasOwnProperty('orderId')) bar.box_orderId=barObj.orderId;
 						if(barObj.hasOwnProperty('orderNumber')) bar.box_orderNumber=barObj.orderNumber;
