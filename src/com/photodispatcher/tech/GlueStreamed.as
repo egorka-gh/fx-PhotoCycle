@@ -20,7 +20,8 @@ package com.photodispatcher.tech{
 	import com.photodispatcher.service.web.LocalWeb;
 	import com.photodispatcher.service.web.LocalWebAction;
 	import com.photodispatcher.service.web.Responses;
-	import com.photodispatcher.tech.plain_register.TechRegisterPicker;
+	import com.photodispatcher.tech.plain_register.TechRegisterBase;
+	import com.photodispatcher.tech.plain_register.TechRegisterCommon;
 	import com.photodispatcher.tech.register.TechBook;
 	import com.photodispatcher.util.ArrayUtil;
 	
@@ -382,11 +383,11 @@ package com.photodispatcher.tech{
 		}
 		
 		
-		protected var _register:TechRegisterPicker;
-		public function get register():TechRegisterPicker{
+		protected var _register:TechRegisterBase;
+		public function get register():TechRegisterBase{
 			return _register;
 		}
-		public function set register(value:TechRegisterPicker):void{
+		public function set register(value:TechRegisterBase):void{
 			if(_register){
 				//stop listen
 				_register.removeEventListener(ErrorEvent.ERROR, onRegisterErr);
@@ -655,7 +656,7 @@ package com.photodispatcher.tech{
 				*/
 				checkOrderParams();
 				//new register
-				register= new TechRegisterPicker(pgId,currBookTot,currSheetTot, dataBaseOff);
+				register= new TechRegisterCommon(pgId,currBookTot,currSheetTot, dataBaseOff);
 				register.techPoint=techPoint;
 				register.revers=reversOrder;
 				register.inexactBookSequence=inexactBookSequence;
