@@ -41,6 +41,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_reprint:Boolean;
         private var _is_revers:Boolean;
         private var _lab_name:String;
+        private var _laminat:int;
+        private var _laminat_name:String;
         private var _max_sheet:int;
         private var _min_sheet:int;
         private var _order_folder:String;
@@ -224,6 +226,20 @@ package com.photodispatcher.model.mysql.entities {
             return _lab_name;
         }
 
+        public function set laminat(value:int):void {
+            _laminat = value;
+        }
+        public function get laminat():int {
+            return _laminat;
+        }
+
+        public function set laminat_name(value:String):void {
+            _laminat_name = value;
+        }
+        public function get laminat_name():String {
+            return _laminat_name;
+        }
+
         public function set max_sheet(value:int):void {
             _max_sheet = value;
         }
@@ -396,6 +412,8 @@ package com.photodispatcher.model.mysql.entities {
             _is_reprint = input.readObject() as Boolean;
             _is_revers = input.readObject() as Boolean;
             _lab_name = input.readObject() as String;
+            _laminat = input.readObject() as int;
+            _laminat_name = input.readObject() as String;
             _max_sheet = input.readObject() as int;
             _min_sheet = input.readObject() as int;
             _order_folder = input.readObject() as String;
@@ -444,6 +462,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_is_reprint);
             output.writeObject(_is_revers);
             output.writeObject(_lab_name);
+            output.writeObject(_laminat);
+            output.writeObject(_laminat_name);
             output.writeObject(_max_sheet);
             output.writeObject(_min_sheet);
             output.writeObject(_order_folder);

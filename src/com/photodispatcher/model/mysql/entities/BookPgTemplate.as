@@ -24,29 +24,30 @@ package com.photodispatcher.model.mysql.entities {
 		public static function gridColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
-			col= new GridColumn('book_part'); col.headerText='Часть книги';  col.width=100; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			col= new GridColumn('book_part'); col.headerText='Часть книги'; col.width=100; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.width=70; result.addItem(col);
 			col= new GridColumn('height'); col.headerText='Длина'; col.width=70; result.addItem(col);
-			col= new GridColumn('height_add'); col.headerText='Увеличение длинны с каждой стороны'; result.addItem(col);
+			col= new GridColumn('laminat'); col.headerText='Ламинат'; col.width=90; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+			col= new GridColumn('height_add'); col.headerText='Увеличение длинны с каждой стороны'; col.width=70; result.addItem(col);
 			col= new GridColumn('paper'); col.headerText='Бумага'; col.width=100; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 			col= new GridColumn('is_duplex'); col.headerText='Duplex'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=60; result.addItem(col);
 			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
 			col= new GridColumn('is_sheet_ready'); col.headerText='Готовый разворот'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
 			col= new GridColumn('revers'); col.headerText='Обратный порядок'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); col.width=50; result.addItem(col);
-			col= new GridColumn('sheet_width'); col.headerText='Ширина разворота pix'; result.addItem(col);
-			col= new GridColumn('sheet_len'); col.headerText='Длина разворота pix'; result.addItem(col);
-			col= new GridColumn('page_width'); col.headerText='Ширина страницы pix'; result.addItem(col);
-			col= new GridColumn('page_len'); col.headerText='Длина страницы pix'; result.addItem(col);
+			col= new GridColumn('sheet_width'); col.headerText='Ширина разворота pix'; col.width=70; result.addItem(col);
+			col= new GridColumn('sheet_len'); col.headerText='Длина разворота pix'; col.width=70; result.addItem(col);
+			col= new GridColumn('page_width'); col.headerText='Ширина страницы pix'; col.width=70; result.addItem(col);
+			col= new GridColumn('page_len'); col.headerText='Длина страницы pix'; col.width=70; result.addItem(col);
 			col= new GridColumn('page_hoffset'); col.headerText='Смещение страницы pix'; col.width=60; result.addItem(col);
 			col= new GridColumn('font_size'); col.headerText='Шрифт'; col.width=60; result.addItem(col);
-			col= new GridColumn('font_offset'); col.headerText='Шрифт смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
-			col= new GridColumn('notching'); col.headerText='Насечка pix'; result.addItem(col);
-			col= new GridColumn('stroke'); col.headerText='Рамка pix'; result.addItem(col);
-			col= new GridColumn('bar_size'); col.headerText='Подпись книги высота pix'; result.addItem(col);
-			col= new GridColumn('bar_offset'); col.headerText='Подпись книги смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
+			col= new GridColumn('font_offset'); col.headerText='Шрифт смещение pix'; col.width=60; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
+			col= new GridColumn('notching'); col.headerText='Насечка pix'; col.width=60; result.addItem(col);
+			col= new GridColumn('stroke'); col.headerText='Рамка pix'; col.width=60; result.addItem(col);
+			col= new GridColumn('bar_size'); col.headerText='Подпись книги высота pix'; col.width=60; result.addItem(col);
+			col= new GridColumn('bar_offset'); col.headerText='Подпись книги смещение pix'; col.width=60; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
 			col= new GridColumn('fontv_size'); col.headerText='Вертикальная подпись шрифт'; col.width=60; result.addItem(col);
-			col= new GridColumn('fontv_offset'); col.headerText='Вертикальная подпись смещение pix'; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
-			col= new GridColumn('lab_type'); col.headerText='Тип лабы'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditorFullList); result.addItem(col);
+			col= new GridColumn('fontv_offset'); col.headerText='Вертикальная подпись смещение pix'; col.width=60; col.itemEditor=new ClassFactory(OffsetGridItemEditor); result.addItem(col);
+			col= new GridColumn('lab_type'); col.headerText='Тип лабы'; col.width=70; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditorFullList); result.addItem(col);
 			return result;
 		}
 
@@ -56,6 +57,7 @@ package com.photodispatcher.model.mysql.entities {
 			pg.path=path;
 			pg.book_type=bookType;
 			pg.book_part=book_part;
+			pg.laminat = laminat;
 			pg.width=width;
 			pg.height=height;
 			pg.paper=paper;
@@ -97,6 +99,7 @@ package com.photodispatcher.model.mysql.entities {
 			raw.id=id;
 			raw.book=book;
 			raw.book_part=book_part;
+			raw.laminat = laminat;
 			raw.width=width;
 			raw.height=height;
 			raw.height_add=height_add;
@@ -140,6 +143,8 @@ package com.photodispatcher.model.mysql.entities {
 			pgt.id=raw.id;
 			pgt.book=raw.book;
 			pgt.book_part=raw.book_part;
+			pgt.laminat = raw.laminat;
+
 			pgt.width=raw.width;
 			pgt.height=raw.height;
 			pgt.height_add=raw.height_add;

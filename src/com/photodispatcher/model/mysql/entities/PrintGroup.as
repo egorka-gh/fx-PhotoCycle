@@ -82,6 +82,7 @@ package com.photodispatcher.model.mysql.entities {
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
 			col= new GridColumn('alias'); col.headerText='Алиас'; col.width=200; result.push(col);
+			col= new GridColumn('laminat_name'); col.headerText='Ламинат'; col.width=90; result.push(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.width=50; result.push(col);
 			col= new GridColumn('height'); col.headerText='Длина'; col.width=50; result.push(col);
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.width=100; result.push(col);
@@ -106,20 +107,21 @@ package com.photodispatcher.model.mysql.entities {
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
 			col= new GridColumn('lab_name'); col.headerText='Лаборатория'; col.width=70; result.push(col);
-			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.width=70; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			col= new GridColumn('alias'); col.headerText='Алиас'; col.width=70; result.push(col);
-			col= new GridColumn('path'); col.headerText='Папка'; result.push(col);
-			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
-			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
-			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
-			col= new GridColumn('frame_name'); col.headerText='Рамка'; result.push(col);
-			col= new GridColumn('correction_name'); col.headerText='Коррекция'; result.push(col);
-			col= new GridColumn('cutting_name'); col.headerText='Обрезка'; result.push(col);
-			col= new GridColumn('book_type_name'); col.headerText='Тип книги'; result.push(col);
-			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; result.push(col);
-			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
-			col= new GridColumn('book_num'); col.headerText='Кол книг'; result.push(col);
-			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
+			col= new GridColumn('path'); col.headerText='Папка'; col.width=70; result.push(col);
+			col= new GridColumn('laminat_name'); col.headerText='Ламинат'; col.width=90; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; col.width=70; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; col.width=70; result.push(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.width=70; result.push(col);
+			col= new GridColumn('frame_name'); col.headerText='Рамка'; col.width=70; result.push(col);
+			col= new GridColumn('correction_name'); col.headerText='Коррекция'; col.width=50; result.push(col);
+			col= new GridColumn('cutting_name'); col.headerText='Обрезка'; col.width=50; result.push(col);
+			col= new GridColumn('book_type_name'); col.headerText='Тип книги'; col.width=70; result.push(col);
+			col= new GridColumn('book_part_name'); col.headerText='Часть книги'; col.width=70; result.push(col);
+			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.width=50; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('book_num'); col.headerText='Кол книг'; col.width=70; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; col.width=70; result.push(col);
 			return new ArrayList(result);
 		}
 
@@ -133,10 +135,11 @@ package com.photodispatcher.model.mysql.entities {
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
-			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
-			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
-			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
-			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
+			col= new GridColumn('laminat_name'); col.headerText='Ламинат'; col.width=90; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; col.width=70; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; col.width=70; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; col.width=70; result.push(col);
+			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.width=70; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			return new ArrayList(result);
 		}
 
@@ -148,14 +151,15 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=90; result.push(col); 
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
-			col= new GridColumn('alias'); col.headerText='Алиас'; result.push(col);
+			col= new GridColumn('alias'); col.headerText='Алиас'; col.width=100; result.push(col);
+			col= new GridColumn('laminat_name'); col.headerText='Ламинат'; col.width=90; result.push(col);
 			col= new GridColumn('is_pdf'); col.headerText='PDF'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
 			col= new GridColumn('is_reprint'); col.headerText='Перепечатка'; col.labelFunction=GridUtil.booleanToLabel; col.width=50; result.push(col);
-			col= new GridColumn('paper_name'); col.headerText='Бумага'; result.push(col);
-			col= new GridColumn('width'); col.headerText='Ширина'; result.push(col);
-			col= new GridColumn('height'); col.headerText='Длина'; result.push(col);
-			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; result.push(col);
-			col= new GridColumn('prints_done'); col.headerText='Напечатано'; result.push(col);
+			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.width=70; result.push(col);
+			col= new GridColumn('width'); col.headerText='Ширина'; col.width=70; result.push(col);
+			col= new GridColumn('height'); col.headerText='Длина'; col.width=70; result.push(col);
+			col= new GridColumn('prints'); col.headerText='Кол отпечатков'; col.width=50; result.push(col);
+			col= new GridColumn('prints_done'); col.headerText='Напечатано'; col.width=50; result.push(col);
 			return new ArrayList(result);
 		}
 
@@ -499,6 +503,7 @@ package com.photodispatcher.model.mysql.entities {
 			raw.is_horizontal=is_horizontal?1:0;
 			raw.butt=butt;
 			raw.pageNumber=pageNumber;
+			raw.laminat=laminat;
 			
 			if(bookTemplate) raw.bookTemplate=bookTemplate.toRaw();
 			
@@ -541,6 +546,7 @@ package com.photodispatcher.model.mysql.entities {
 			pg.is_horizontal=Boolean(raw.is_horizontal);
 			pg.butt=raw.butt;
 			pg.pageNumber=raw.pageNumber;
+			pg.laminat=raw.laminat;
 			
 			if(raw.hasOwnProperty('bookTemplate')) pg.bookTemplate=BookPgTemplate.fromRaw(raw.bookTemplate);
 			

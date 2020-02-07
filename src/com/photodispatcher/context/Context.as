@@ -777,6 +777,8 @@ package com.photodispatcher.context{
 					latchAttributeLists.addLatch(dict.getFieldValueList(at.id,false,onFieldList),field);
 				}
 			}
+			
+			latchAttributeLists.addLatch(dict.getFieldValueList(99,false,onFieldList),'laminat');
 
 			latchAttributeLists.addLatch(dict.getBookTypeValueList(false,onFieldList),'book_type');
 

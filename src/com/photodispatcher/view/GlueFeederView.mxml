@@ -197,6 +197,13 @@
 				onGlueStats(null);
 				glue.init();
 				
+				//alert if statLaminatLen lesser then 5%
+				var fullLength:Number = Context.getAttribute("laminateRollLen");
+				if(fullLength && fullLength>0 && glue.statLaminatLen <= fullLength*0.05 ){
+					//alert
+					btSetLaminate_clickHandler(null);
+				}
+				
 				glue.addEventListener(ErrorEvent.ERROR, onPickerErr);
 				glue.addEventListener("stats", onGlueStats);
 				if(!feedOn){
@@ -340,6 +347,16 @@
 				onGlueStats(null);
 			}
 			
+			protected function btStart_clickHandler(event:MouseEvent):void{
+				//alert if statLaminatLen lesser then 5%
+				var fullLength:Number = Context.getAttribute("laminateRollLen");
+				if(fullLength && fullLength>0 && glue.statLaminatLen <= fullLength*0.05 ){
+					//alert
+					btSetLaminate_clickHandler(null);
+				}
+				glue.start()
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -461,7 +478,7 @@
 										/>
 					</s:layout>
 					<mdcomp:ButtonIcon id="btStart" label="Старт" iconFont="\uf04b" styleName="primary" skinClass="spark.material.skins.ButtonIconVSkin"
-									   enabled="{!glue.isRunning || glue.isPaused}" click="glue.start()"/>
+									   enabled="{!glue.isRunning || glue.isPaused}" click="btStart_clickHandler(event)"/>
 					<mdcomp:ButtonIcon id="btPause" label="Пауза" iconFont="\uf04c" styleName="light"  skinClass="spark.material.skins.ButtonIconVSkin"
 									   enabled="{glue.isRunning}" click="glue.pauseRequest()"/>
 					<mdcomp:ButtonIcon id="btStop" label="Стоп" iconFont="\uf04d" styleName="primary"  skinClass="spark.material.skins.ButtonIconVSkin"

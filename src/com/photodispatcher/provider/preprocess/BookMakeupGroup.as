@@ -199,12 +199,32 @@ package com.photodispatcher.provider.preprocess{
 				//BLOCKCOVER
 				//align to left
 				command.add(file.file_name);
+				//do some transform before crop
 				if(file.book_part==BookSynonym.BOOK_PART_COVER){
 					//draw cover barcode before crop
 					barcode=printGroup.bookBarcode(file);
 					if(barcode) IMCommandUtil.drawBarcode(folder, command,printGroup.bookTemplate.bar_size, barcode, printGroup.bookBarcodeText(file),printGroup.bookTemplate.bar_offset,0,'southwest',3,0,10);
+				}else{
+					//block
+					if(printGroup.bookTemplate.page_len>0){
+						//draw notching
+						IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
+						//add offset
+						var offset:int = printGroup.bookTemplate.page_hoffset * -1;
+						if (offset != 0){
+							var pageCrop:String=(printGroup.bookTemplate.page_len+printGroup.bookTemplate.page_hoffset).toString() +'x'+width.toString();//+'+0+0!';
+							var offsetSign:String=offset>=0?'+':'-';
+							offset=Math.abs(offset);
+							pageCrop=pageCrop+offsetSign+offset.toString()+'+0!';
+							command.add('-gravity'); command.add('center');
+							command.add('-background'); command.add('white');
+							command.add('-crop'); command.add(pageCrop);
+							command.add('-flatten');
+						}
+					}
 				}
-				//crop
+				
+				//crop align to left
 				command.add('-gravity'); command.add('West');
 				command.add('-background'); command.add('white');
 				command.add('-crop'); command.add(sheetCrop);
@@ -231,22 +251,6 @@ package com.photodispatcher.provider.preprocess{
 				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCK){
 					//standart
 					IMCommandUtil.drawNotching(command,notching,len,width,0);
-				}else if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
-					if(file.book_part==BookSynonym.BOOK_PART_BLOCK){
-						//BLOCKCOVER block
-						//TODO refactor make crop by template page_width*page_len then crop to print size aligned on the left edge
-						//use template.page_len 4 notching (print is aligned on the left edge)
-						if(printGroup.bookTemplate.page_len>0){
-							IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
-						}
-					} /*
-					else if(file.book_part==BookSynonym.BOOK_PART_COVER){
-						//draw cover notching
-						if(buttPix){
-							IMCommandUtil.drawNotching(command,notching,len,width,buttPix);
-						}
-					}
-					*/
 				}
 			}
 			

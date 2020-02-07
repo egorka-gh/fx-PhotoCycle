@@ -47,6 +47,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _is_tech_top:Boolean;
         private var _lab_type:int;
         private var _lab_type_name:String;
+        private var _laminat:int;
+        private var _laminat_name:String;
         private var _mark_offset:String;
         private var _mark_size:int;
         private var _notching:int;
@@ -277,6 +279,20 @@ package com.photodispatcher.model.mysql.entities {
             return _lab_type_name;
         }
 
+        public function set laminat(value:int):void {
+            _laminat = value;
+        }
+        public function get laminat():int {
+            return _laminat;
+        }
+
+        public function set laminat_name(value:String):void {
+            _laminat_name = value;
+        }
+        public function get laminat_name():String {
+            return _laminat_name;
+        }
+
         public function set mark_offset(value:String):void {
             _mark_offset = value;
         }
@@ -490,6 +506,8 @@ package com.photodispatcher.model.mysql.entities {
             _is_tech_top = input.readObject() as Boolean;
             _lab_type = input.readObject() as int;
             _lab_type_name = input.readObject() as String;
+            _laminat = input.readObject() as int;
+            _laminat_name = input.readObject() as String;
             _mark_offset = input.readObject() as String;
             _mark_size = input.readObject() as int;
             _notching = input.readObject() as int;
@@ -549,6 +567,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_is_tech_top);
             output.writeObject(_lab_type);
             output.writeObject(_lab_type_name);
+            output.writeObject(_laminat);
+            output.writeObject(_laminat_name);
             output.writeObject(_mark_offset);
             output.writeObject(_mark_size);
             output.writeObject(_notching);
