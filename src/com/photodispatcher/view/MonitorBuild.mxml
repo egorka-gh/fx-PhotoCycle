@@ -107,7 +107,7 @@
 		<s:VGroup width="100%" gap="2" height="100%">
 			<s:HGroup width="100%" gap="7" verticalAlign="baseline">
 				<s:Label text="Очередь {builder.queue.length} ({fmtDate.format(builder.lastLoadTime)}). Потоков {builder.imThreads.toString()}"/>
-				<s:Label text="{builder.lastError}" color="#ff0000"/>
+				<s:Label text="{builder.lastError}" color="#ff0000" maxDisplayedLines="1"/>
 				<s:Spacer width="100%"/>
 				
 				<s:Button id="btStart" icon="assets/play.png" click="{builder.isStarted=true}" enabled="{!builder.isStarted}"
