@@ -73,6 +73,7 @@ package com.photodispatcher.tech{
 		public var allowSkipMode:Boolean=false;
 		public var showSkipAlarm:Boolean=false;
 		
+		/*
 		private var _penultSheet:Boolean;
 		public function get penultSheet():Boolean{
 			return _penultSheet;
@@ -87,6 +88,7 @@ package com.photodispatcher.tech{
 				log('Предпоследний лист киги.');
 			}
 		}
+		*/
 		
 		//requests feeder pause
 		[Bindable]
@@ -306,8 +308,6 @@ package com.photodispatcher.tech{
 				//collect all sheets into current book, untill lastSheetFeeded
 				if(!tb){
 					tb=new TechBook(book,printGroupId);
-					//tb.sheetsTotal=-1;
-					//tb.sheetsFeeded++;
 					tb.barcode=barcode;
 					if(!bookQueue) bookQueue=new ArrayCollection();
 					bookQueue.addItem(tb);

@@ -210,6 +210,25 @@ package com.photodispatcher.tech{
 			controller.feederGetReamState();
 		}
 		
+		override public function await(printGroupId:String, book:int, sheet:int, sheetTotal:int, barcode:String=''):void{
+			if(!isRunning ) return;
+			super.awaitLast(printGroupId, book, sheet, sheetTotal, barcode);
+
+			if (errorMode &&  bookQueue.length == 1){
+				//limit sheets in glue while in errorMode 
+				//works in fast mode only
+				//check if not at the start or end of book
+				if (sheet >2 || sheet < (sheetTotal-2)){
+					var tb:TechBook = bookQueue.getItemAt(0) as TechBook;
+					if ((tb.sheetsFeeded - tb.sheetsPushed) > 20  && (tb.sheetsDone - tb.sheetsPushed)>0 ){
+						log('Выгрузка книги >20 листов в режиме ошибки');
+						controller.pushBlockAfterSheet();
+						tb.sheetsPushed = tb.sheetsFeeded;
+					}
+				}
+			}
+			
+		}
 		override public function awaitLast(printGroupId:String, book:int, sheet:int, sheetTotal:int, barcode:String=''):void{
 			if(!isRunning ) return;
 			
@@ -225,16 +244,17 @@ package com.photodispatcher.tech{
 			await(printGroupId, book, sheet, sheetTotal, barcode);
 			var tb:TechBook;
 			if(errorMode){
-				if(bookQueue && bookQueue.length>0) tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
-				if(tb){
-					//log('Конец книги (awaitLast) '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsFeeded);
-					tb.sheetsTotal = tb.sheetsFeeded;
-					//only for fast glue vs minimal gap between sheets
-					if(bookQueue.length==1){
-						log('Следующий лист последний (awaitLast) '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
-						//tb.sheetsTotal = -1;
-						controller.pushBlockAfterSheet();
-					}
+				tb=bookQueue.getItemAt(bookQueue.length-1) as TechBook;
+				
+				//book must have more then 1 sheet
+				if ((tb.sheetsDone - tb.sheetsPushed)<1) return;
+
+				tb.sheetsTotal = tb.sheetsFeeded;
+				//only for fast glue vs minimal gap between sheets
+				if(bookQueue.length==1){
+					log('Следующий лист последний (awaitLast) '+tb.printGroupId+' '+tb.book+' '+tb.sheetsDone+'/'+tb.sheetsTotal);
+					//tb.sheetsTotal = -1;
+					controller.pushBlockAfterSheet();
 				}
 				errorMode=false;
 			}

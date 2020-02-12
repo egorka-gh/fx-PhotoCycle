@@ -208,7 +208,7 @@ package com.photodispatcher.provider.preprocess{
 					//block
 					if(printGroup.bookTemplate.page_len>0){
 						//draw notching
-						IMCommandUtil.drawNotching(command,notching,printGroup.bookTemplate.page_len,width,0);
+						IMCommandUtil.drawNotching(command,printGroup.bookTemplate.notching,printGroup.bookTemplate.page_len,width,0);
 						//add offset
 						var offset:int = printGroup.bookTemplate.page_hoffset * -1;
 						if (offset != 0){

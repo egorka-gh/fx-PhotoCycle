@@ -24,6 +24,7 @@ package com.photodispatcher.tech.register{
 		public var sheetsTotal:int;
 		public var sheetsFeeded:int;
 		public var sheetsDone:int;
+		public var sheetsPushed:int;
 		
 		public var thickness:Number;
 
