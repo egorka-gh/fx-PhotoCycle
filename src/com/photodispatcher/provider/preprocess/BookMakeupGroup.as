@@ -182,7 +182,7 @@ package com.photodispatcher.provider.preprocess{
 			var width:int=printGroup.bookTemplate.sheet_width;
 			var len:int=printGroup.bookTemplate.sheet_len;
 			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER) len=UnitUtil.mm2Pixels300(printGroup.height);
-			if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) len=len+buttPix;
+			//if(printGroup.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) len=len+buttPix;
 			var command:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
 			command.folder=folder;
 
