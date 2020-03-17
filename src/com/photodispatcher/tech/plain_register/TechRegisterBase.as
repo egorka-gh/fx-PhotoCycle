@@ -348,7 +348,6 @@ package com.photodispatcher.tech.plain_register{
 			flushTimer.start();
 		}
 		protected function onFlushTimer(event:TimerEvent):void{
-			flushTimer.removeEventListener(TimerEvent.TIMER, onFlushTimer);
 			flushData();
 		}
 		
@@ -501,18 +500,6 @@ package com.photodispatcher.tech.plain_register{
 				if(logOk) logMsg('Ok');
 			}
 
-			/*
-			var result:Boolean=true;
-			if (!isComplete && !inexactBookSequence){
-				if(canInterrupt){
-					if(flap) flap.setOff();
-					if(strictSequence) result=false;
-				}
-				logSequeceErr('Не полная последовательность');
-			}else{
-				if(logOk) logMsg('Ok');
-			}
-			*/
 			flushData();
 			return result;
 		}
@@ -595,7 +582,7 @@ package com.photodispatcher.tech.plain_register{
 					if(lastBook==book && lastSheet==sheet){
 						logSequeceErr('Повтор последовательности: '+ StrUtil.sheetName(book,sheet));
 					}
-					if(!hasWrongSequence) logSequeceErr('Не верная последовательность');
+					//if(!hasWrongSequence) logSequeceErr('Не верная последовательность');
 				}
 			}
 			return result;
