@@ -249,11 +249,9 @@
 						latch.addLatch(svc.printGroupMarkInPrint(printGroup));
 						latch.start();
 						break;
-					/*
 					case SourceType.TECH_FOLDING:
 						result= new TechRegisterFolding(printGroup,books,sheets);
 						break;
-					*/
 					default:
 						result= new TechRegisterCommon(printGroup,books,sheets);
 						break;
@@ -319,7 +317,8 @@
 						logToScreen('Группа печати "'+currRegister.printGroupId+'" завершена',false);
 					}
 				}else{
-					if(currRegister && !currRegister.finalise()) return;
+					//if(currRegister && !currRegister.finalise()) return;
+					if(currRegister) currRegister.finalise();
 					//create new
 					var bookTot:int=int(barcode.substr(3,3));
 					var pageTot:int=int(barcode.substr(8,2));
@@ -341,7 +340,6 @@
 				if(regList.length> REGLISTLIMIT){
 					regList.source.length=REGLISTLIMIT;
 					regList.refresh();
-						
 				}
 			}
 			
