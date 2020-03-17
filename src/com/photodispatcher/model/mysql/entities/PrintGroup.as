@@ -82,6 +82,7 @@ package com.photodispatcher.model.mysql.entities {
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
 			col= new GridColumn('alias'); col.headerText='Алиас'; col.width=200; result.push(col);
+			col= new GridColumn('compo_type_name'); col.headerText='Комбо'; col.width=70; result.push(col);
 			col= new GridColumn('laminat_name'); col.headerText='Ламинат'; col.width=90; result.push(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.width=50; result.push(col);
 			col= new GridColumn('height'); col.headerText='Длина'; col.width=50; result.push(col);
@@ -111,6 +112,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('alias'); col.headerText='Алиас'; col.width=70; result.push(col);
 			col= new GridColumn('path'); col.headerText='Папка'; col.width=70; result.push(col);
 			col= new GridColumn('laminat_name'); col.headerText='Ламинат'; col.width=90; result.push(col);
+			col= new GridColumn('compo_type_name'); col.headerText='Комбо'; col.width=70; result.push(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.width=70; result.push(col);
 			col= new GridColumn('height'); col.headerText='Длина'; col.width=70; result.push(col);
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.width=70; result.push(col);

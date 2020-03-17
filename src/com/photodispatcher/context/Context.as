@@ -839,6 +839,8 @@ package com.photodispatcher.context{
 			latchAttributeLists.addLatch(dict.getGlueCmdValueList(onFieldList),'glue_cmd');
 			//order program
 			latchAttributeLists.addLatch(dict.getOrderProgramValueList(onFieldList),'order_program');
+			//compo_type
+			latchAttributeLists.addLatch(dict.getCompoTypeValueList(onFieldList),'compo_type');
 
 			var a:ArrayCollection;
 			if(!Context.getAttribute('booleanList')){

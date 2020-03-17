@@ -65,7 +65,8 @@ package com.photodispatcher.model.mysql.entities {
 			pg.correction=correction;
 			pg.cutting=cutting;
 			pg.is_duplex=is_duplex;
-			pg.is_pdf=is_pdf;
+			pg.is_pdf=is_pdf && compo_type != BookSynonymCompo.COMPO_TYPE_CHILD;
+			pg.compo_type = compo_type;
 			pg.butt=butt;
 			pg.bookTemplate=this;
 			return pg;
@@ -133,6 +134,7 @@ package com.photodispatcher.model.mysql.entities {
 			raw.tech_stair_step=tech_stair_step;
 			raw.is_tech_stair_top=is_tech_stair_top;
 			raw.is_tech_stair_bot=is_tech_stair_bot;
+			raw.compo_type=compo_type;
 			
 			return raw;
 		}
@@ -178,7 +180,8 @@ package com.photodispatcher.model.mysql.entities {
 			pgt.tech_stair_step=raw.tech_stair_step;
 			pgt.is_tech_stair_top=raw.is_tech_stair_top;
 			pgt.is_tech_stair_bot=raw.is_tech_stair_bot;
-			
+			pgt.compo_type = raw.compo_type;
+	
 			return pgt;
 		}
 		

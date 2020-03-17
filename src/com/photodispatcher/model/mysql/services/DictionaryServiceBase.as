@@ -56,6 +56,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function getCompoTypeValueList(resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("getCompoTypeValueList", resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("getCompoTypeValueList", resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("getCompoTypeValueList") as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function getFieldValueList(arg0:int, arg1:Boolean, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("getFieldValueList", arg0, arg1, resultHandler, faultHandler) as AsyncToken;

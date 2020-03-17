@@ -24,6 +24,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _book:int;
         private var _book_part:int;
         private var _book_part_name:String;
+        private var _compo_type:int;
         private var _correction:int;
         private var _correction_name:String;
         private var _cutting:int;
@@ -116,6 +117,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get book_part_name():String {
             return _book_part_name;
+        }
+
+        public function set compo_type(value:int):void {
+            _compo_type = value;
+        }
+        public function get compo_type():int {
+            return _compo_type;
         }
 
         public function set correction(value:int):void {
@@ -483,6 +491,7 @@ package com.photodispatcher.model.mysql.entities {
             _book = input.readObject() as int;
             _book_part = input.readObject() as int;
             _book_part_name = input.readObject() as String;
+            _compo_type = input.readObject() as int;
             _correction = input.readObject() as int;
             _correction_name = input.readObject() as String;
             _cutting = input.readObject() as int;
@@ -544,6 +553,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_book);
             output.writeObject(_book_part);
             output.writeObject(_book_part_name);
+            output.writeObject(_compo_type);
             output.writeObject(_correction);
             output.writeObject(_correction_name);
             output.writeObject(_cutting);

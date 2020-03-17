@@ -47,10 +47,11 @@ package com.photodispatcher.model.mysql.entities {
 		public static function gridColumns(short:Boolean=false):ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
-			col= new GridColumn('synonym'); col.headerText='Имя папки'; result.addItem(col);
+			col= new GridColumn('synonym'); col.headerText='Алиас'; result.addItem(col);
 			if(!short){
 				col= new GridColumn('synonym_type'); col.headerText='Тип синонима'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 				col= new GridColumn('book_type'); col.headerText='Тип книги'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+				col= new GridColumn('compo_type'); col.headerText='Комбо'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 				col= new GridColumn('is_horizontal'); col.headerText='Горизотальная'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col);
 				col= new GridColumn('has_backprint'); col.headerText='Бекпринт'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col);
 				col= new GridColumn('order_program'); col.headerText='Программа'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
