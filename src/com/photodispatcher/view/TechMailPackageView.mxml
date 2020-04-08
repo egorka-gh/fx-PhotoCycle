@@ -9,16 +9,21 @@
 
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.GroupNetprint;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
 			import com.photodispatcher.model.mysql.entities.Order;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.Source;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.GroupNetprintService;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayList;
@@ -28,6 +33,7 @@
 			
 			import org.granite.tide.Tide;
 			
+			import spark.events.IndexChangeEvent;
 			import spark.events.PopUpEvent;
 			
 			public var isActive:Boolean;
@@ -40,10 +46,23 @@
 			[Bindable]
 			public var techPointOTK:TechPoint;
 
+			[Bindable]
+			protected var chkSource: Source;
+			[Bindable]
+			protected var sourceList:ArrayCollection;
+			[Bindable]
+			protected var netprintBoxesAC:ArrayCollection;
+			[Bindable]
+			protected var currBox:GroupNetprint;
 			
 			private function init():void{
 				refresh();
 				if(focusManager) focusManager.setFocus(focusHolder);
+				sourceList= new ArrayCollection(Context.getSources());
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				var s:int  =so.data.netprintSource;
+				if (s==0) s=11;
+				chkSource = Context.getSource(s);
 			}
 			
 			private var _bdService:MailPackageService;
@@ -51,6 +70,13 @@
 				if(!_bdService) _bdService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				return _bdService;
 			}
+						
+			private var _netprintSvc:GroupNetprintService;
+			private function get netprintSvc():GroupNetprintService{
+				if(!_netprintSvc) _netprintSvc=Tide.getInstance().getContext().byType(GroupNetprintService,true) as GroupNetprintService;
+				return _netprintSvc;
+			}
+			
 			
 			private function detectState():void{
 				switch(tbView.selectedIndex){
@@ -59,6 +85,9 @@
 						break;
 					case 1:
 						currentState='packedList';
+						break;
+					case 2:
+						currentState='netprintView';
 						break;
 				}
 				refresh();
@@ -178,10 +207,12 @@
 				showMPbyId(item.source, item.id);
 			}
 
-			private function showMPbyId(source:int, groupId:int, showClienGroups:Boolean=true):void{
+			private function showMPbyId(source:int, groupId:int, showClienGroups:Boolean=true, netprintId:String='', boxes:ArrayCollection=null):void{
 				if(!source || !groupId) return;
 				var pop:MailPackagePopUp= new MailPackagePopUp();
 				//if(currentState=='inQueue')
+				pop.netprintId=netprintId;
+				pop.boxes = boxes;
 				pop.addEventListener(PopUpEvent.CLOSE, onMPpopClose);
 				pop.loadFromWeb(source, groupId, showClienGroups, techPointOTK);
 			}
@@ -205,6 +236,38 @@
 					_barcodeReader.addEventListener(BarCodeEvent.BARCODE_READED,onBarCode);
 				}
 			}
+			
+			private function findeByNetprint(netprintId:String):void{
+				
+				if(!chkSource){
+					Alert.show('Не выбран сайт');
+					return;
+				}
+				var latch:DbLatch = new DbLatch();
+				latch.addLatch( netprintSvc.findeByNetprint(chkSource.id,netprintId,false), netprintId);
+				latch.addEventListener(Event.COMPLETE,onNetprintFinde);
+				latch.start();
+			}
+			private function onNetprintFinde(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				var netprintId:String=newScanId;
+				newScanId='';
+				var boxes:ArrayCollection;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onGroupBoxesLoad);
+					if(latch.complite){
+						boxes=latch.lastDataAC;
+					}
+				}
+				if(!boxes || boxes.length==0){
+					Alert.show('Не найдена коробка '+netprintId);
+					return;
+				}
+				var np:GroupNetprint = boxes.getItemAt(0) as GroupNetprint;
+				if(np){
+					showMPbyId(np.source, np.groupId, false, netprintId, boxes);
+				}
+			}
 
 			private var newScanId:String;
 			private function onBarCode(event:BarCodeEvent):void{
@@ -214,6 +277,11 @@
 				newScanId= barcode;
 				if(!newScanId){
 					Alert.show('Не верный ШК: "'+barcode+'".');
+					return;
+				}
+				
+				if (currentState=='netprintView'){
+					findeByNetprint(newScanId);
 					return;
 				}
 				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
@@ -275,6 +343,42 @@
 			}
 			
 
+			protected function ddSource_changeHandler(event:IndexChangeEvent):void {
+				var s:Source = ddSource.selectedItem as Source;
+				if (s){
+					chkSource = s;
+					var so:SharedObject = SharedObject.getLocal('appProps','/');
+					so.data.netprintSource = s.id;
+					so.flush();  
+				}
+			}
+			
+			protected function btFinde_clickHandler(event:MouseEvent):void{
+				netprintBoxesAC = null;
+				var grp:int=int(tiGroup.text)
+				if (grp==0 || !chkSource) return;
+				var latch:DbLatch= new DbLatch();
+				latch.addLatch(netprintSvc.loadByGroup(chkSource.id, grp));
+				latch.addEventListener(Event.COMPLETE,onGroupBoxesLoad);
+				latch.start();
+			}
+			private function onGroupBoxesLoad(e:Event):void{
+				var latch:DbLatch=e.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onGroupBoxesLoad);
+					if(latch.complite){
+						netprintBoxesAC=latch.lastDataAC;
+					}
+				}
+			}
+
+			protected function btOpenByBox_clickHandler(event:MouseEvent):void{
+				var b:GroupNetprint = dgBoxes.selectedItem as GroupNetprint;
+				if(!b) return;
+				var e:BarCodeEvent = new BarCodeEvent(BarCodeEvent.BARCODE_READED,b.netprintId);
+				onBarCode(e);				
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -287,16 +391,18 @@
 		<s:State name="inQueueByClient"/>
 		<s:State name="packedList"/>
 		<s:State name="packageView"/>
+		<s:State name="netprintView"/>
 	</s:states>
 
 	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
 		<mx:ArrayCollection>
 			<fx:String>Ожидают упаковки</fx:String> 
 			<fx:String>Упакован</fx:String> 
+			<fx:String>Нетпринт</fx:String> 
 		</mx:ArrayCollection>
 	</s:TabBar>
 	<s:TextInput id="focusHolder" width="1" height="1" focusEnabled="true" focusAlpha="0" borderAlpha="0"/>
-	<s:VGroup top="20" left="10" right="10" bottom="10" gap="5">
+	<s:VGroup top="20" left="10" right="10" bottom="10" gap="5" excludeFrom="netprintView">
 		<s:HGroup width="100%" horizontalAlign="right" gap="10" verticalAlign="baseline">
 			<s:Button id="btShowByClient" label="Группы клиента" includeIn="inQueue" click="btShowByClient_clickHandler(event)"/>
 			<s:Button id="btCloseByClient" label="Ожидают упаковки" includeIn="inQueueByClient" click="{detectState()}"/>
@@ -321,7 +427,28 @@
 				</fx:Component>
 			</s:rowBackground>
 		</s:DataGrid>
-		
 	</s:VGroup>
-	
+	<s:VGroup top="20" left="10" right="10" bottom="10" gap="10" includeIn="netprintView">
+		<s:HGroup width="100%" gap="5" verticalAlign="baseline" paddingTop="10">
+			<s:Label text="Сайт:"/>
+			<s:DropDownList id="ddSource" dataProvider="{sourceList}" 
+							labelField="name" 
+							selectedItem="{chkSource}"
+							change="ddSource_changeHandler(event)" />
+			<s:Spacer width="10"/>
+			<s:Label text="Проверить группу:"/>
+			<s:TextInput id="tiGroup"   width="200"/>
+			<s:Button id="btFinde"  width="100" label="Найти" click="btFinde_clickHandler(event)"/>
+		</s:HGroup>
+		<s:DataGrid id="dgBoxes" selectionMode="singleRow"
+					fontSize="14" width="100%" height="100%"
+					dataProvider="{netprintBoxesAC}" locale="ru_RU" columns="{GroupNetprint.gridColumns()}">
+			<s:rowBackground>
+				<fx:Component>
+					<itemRenderer:GroupNetprintGridRowBackground/>
+				</fx:Component>
+			</s:rowBackground>
+		</s:DataGrid>
+		<s:Button id="btOpenByBox" width="100" label="Открыть" click="btOpenByBox_clickHandler(event)"/>
+	</s:VGroup>	
 </s:Group>

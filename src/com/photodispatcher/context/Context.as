@@ -28,6 +28,7 @@ package com.photodispatcher.context{
 	import com.photodispatcher.model.mysql.services.ConfigService;
 	import com.photodispatcher.model.mysql.services.ContentFilterService;
 	import com.photodispatcher.model.mysql.services.DictionaryService;
+	import com.photodispatcher.model.mysql.services.GroupNetprintService;
 	import com.photodispatcher.model.mysql.services.LabResizeService;
 	import com.photodispatcher.model.mysql.services.LabService;
 	import com.photodispatcher.model.mysql.services.MailPackageService;
@@ -461,7 +462,8 @@ package com.photodispatcher.context{
 				TechService,
 				OrderService,
 				MailPackageService,
-				XReportService//+
+				XReportService,
+				GroupNetprintService//+
 			]);
 			
 			//fill from config

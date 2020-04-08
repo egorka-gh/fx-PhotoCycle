@@ -506,47 +506,6 @@
 			<s:Button id="btWrkFolder" label="..." click="btWrkFolder_clickHandler(event)"/>
 		</s:HGroup>
 		
-		<!--<s:Spacer height="10"/>
-		<s:HGroup id="gStartTT" gap="5" verticalAlign="baseline">
-		<s:Label text="Базовая операция" width="{lbLong.width}"/>
-		<s:DropDownList id="ddStartTechType" selectedIndex="{startTechTypeIdx}" dataProvider="{techTypeAC}" labelField="name"
-		change="ddStartTechType_changeHandler(event)" width="200"/>
-		</s:HGroup>
-		<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">
-		<s:CheckBox id="tgManualAdd" selected="@{manualAdd}" change="tgManualAdd_changeHandler(event)"/>
-		<s:Label text="Ручное добавление"/>
-		</s:HGroup>
-		
-		<s:Spacer height="10"/>
-		<s:HGroup id="gEndTT" gap="5" verticalAlign="baseline">
-		<s:Label text="Ожидать операцию" width="{lbLong.width}"/>
-		<s:DropDownList id="ddEndTechType" selectedIndex="{endTechTypeIdx}" dataProvider="{techTypeAC}"  labelField="name"
-		change="ddEndTechType_changeHandler(event)" width="200"/>
-		</s:HGroup>-->
-		<!--<s:HGroup gap="0" verticalAlign="baseline" paddingLeft="20">
-		<s:CheckBox id="tgYelloyState" selected="@{yelloyState}" change="tgYelloyState_changeHandler(event)"/>
-		<s:Label text="Проверять начало операции (желтый статус)"/>
-		</s:HGroup>-->
-		
-		<!--<s:Spacer height="10"/>
-		<s:HGroup gap="5" verticalAlign="baseline">
-		<s:Label id="lbLong" text="Выполнен - операция"/>
-		<s:DropDownList id="ddCompliteTechType" selectedIndex="{compliteTechTypeIdx}" dataProvider="{techTypeAC}" 
-		change="ddCompliteTechType_changeHandler(event)" width="200"/>
-		</s:HGroup>-->
-		
-		<!--<s:Spacer height="10"/>
-		<s:HGroup gap="5" verticalAlign="baseline">
-		<s:Label text="Интервал обновления (мин)"/>
-		<s:NumericStepper id="nsRefresh" value="@{refreshInterval}" change="numericstepper1_changeHandler(event)" 
-		minimum="10" maximum="200" snapInterval="1" width="50"/>
-		</s:HGroup>-->
-		
-		<!--<s:Spacer height="10"/>
-		<s:HGroup gap="10" verticalAlign="baseline">
-		<s:CheckBox id="tgFinalOp" selected="@{finalOperation}" change="tgFinalOp_changeHandler(event)"/>
-		<s:Label text="Финальная операция"/>
-		</s:HGroup>-->
 		
 		<s:Spacer height="10"/>
 		<s:Label text="Сканер ШК" fontWeight="bold"/>

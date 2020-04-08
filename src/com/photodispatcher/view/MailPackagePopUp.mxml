@@ -13,6 +13,7 @@
 			import com.photodispatcher.model.mysql.entities.DeliveryType;
 			import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 			import com.photodispatcher.model.mysql.entities.FieldValue;
+			import com.photodispatcher.model.mysql.entities.GroupNetprint;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
 			import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
 			import com.photodispatcher.model.mysql.entities.MailPackageMessage;
@@ -76,6 +77,21 @@
 			private var nextStateName:String;
 
 			public var techPointOTK:TechPoint;
+			
+			private var _netprintId:String;
+			[Bindable]
+			public function get netprintId():String{
+				return _netprintId;
+			}
+			public function set netprintId(val:String):void{
+				_netprintId=val;
+				if(val){
+					currentState="netprint";
+				}
+			}
+			
+			[Bindable]
+			public var boxes:ArrayCollection;
 
 			private var _webService:BaseWeb;
 			private function get webService():BaseWeb{
@@ -143,6 +159,22 @@
 				if(propertiesAC){
 					propertiesAC.filterFunction=filterProps;
 					propertiesAC.refresh();
+				}
+				
+				//netprint??
+				if (netprintId){
+					if(mailPackage.barcodes && mailPackage.barcodes.length>1){
+						//remove all keep only current
+						var newboxes:ArrayCollection = new ArrayCollection();
+						for each(var b:MailPackageBarcode in mailPackage.barcodes){
+							if(b && b.box_orderNumber==netprintId) {
+								newboxes.addItem(b);
+								break;
+							}
+						}
+						mailPackage.barcodes=newboxes;
+					}
+					//TODO ? return; 
 				}
 
 				mailPackage.state_date=null;
@@ -668,6 +700,11 @@
 	<fx:Declarations>
 		<s:DateTimeFormatter id="dtFormater" dateTimePattern="dd.MM.yyyy HH:mm"/>
 	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="common"/>
+		<s:State name="netprint"/>
+	</s:states>
 
 	<s:Rect radiusX="6" top="0" left="0" right="0" bottom="0">
 		<s:stroke>
@@ -692,7 +729,7 @@
 				<s:FormItem label="Статус">
 					<s:TextInput  text="{mailPackage.state_name}" width="200" editable="false"/>
 					<s:Label text="Дата:{dtFormater.format(mailPackage.state_date)}" width="200"/>
-					<s:HGroup width="200" horizontalAlign="right" gap="5" verticalAlign="baseline">
+					<s:HGroup width="200" horizontalAlign="right" gap="5" verticalAlign="baseline" excludeFrom="netprint">
 						<s:Label text="Назначить статус"/>
 						<s:Button id="btState" label="{nextStateName}" click="{setNextState()}" enabled="{nextState!=0}"/>
 						<!--<s:Button id="btDebug" label="Save" click="btDebug_clickHandler(event)" />-->
@@ -729,7 +766,7 @@
 				</s:FormItem> 
 
 			</s:Form>
-			<s:VGroup width="150" height="100%" gap="5" paddingBottom="5">
+			<s:VGroup width="150" height="100%" gap="5" paddingBottom="5" excludeFrom="netprint">
 				<s:Label width="100%" text="Полки"/>
 				<s:List id="lstSpaces" width="100%" height="40%"
 						dataProvider="{spacesAC}" labelFunction="spacesLabelFunc"/> 
@@ -739,7 +776,7 @@
 							dataProvider="{productsCountAC}" locale="ru_RU" columns="{FieldValue.labelValColumns()}"/>
 			</s:VGroup>
 			<s:Spacer width="7"/>
-			<s:VGroup width="100%" height="100%" gap="5" visible="{showClienGroups}">
+			<s:VGroup width="100%" height="100%" gap="5" visible="{showClienGroups}" excludeFrom="netprint">
 				<s:Label text="Все группы клиента"/>
 				<s:DataGrid id="dgPackages" selectionMode="singleRow"
 							 width="100%" height="100%" editable="true"
@@ -755,6 +792,19 @@
 						  enabled="{mailPackage.state &lt; OrderState.PACKAGE_PACKED}"
 						  click="btJoin_clickHandler(event)"/>
 			</s:VGroup>
+			<s:VGroup width="100%" height="100%" gap="5" includeIn="netprint">
+				<s:Label width="100%" text="Коробка {netprintId}"/>
+				<s:Label width="100%" text="Коробки"/>
+				<s:DataGrid id="dgBoxes" selectionMode="singleRow"
+							fontSize="14" width="100%" height="100%"
+							dataProvider="{boxes}" locale="ru_RU" columns="{GroupNetprint.gridColumns()}">
+					<s:rowBackground>
+						<fx:Component>
+							<itemRenderer:GroupNetprintGridRowBackground/>
+						</fx:Component>
+					</s:rowBackground>
+				</s:DataGrid>
+			</s:VGroup>
 		</s:HGroup>
 
 		<s:HGroup width="100%" height="100%" gap="10">
@@ -765,8 +815,9 @@
 							dataProvider="{propertiesAC}" columns="{MailPackageProperty.gridColumns()}"/>
 			</s:VGroup>
 			<s:VGroup width="50%" height="100%" gap="5">
-				<s:Label text="Заказы"/>
+				<s:Label text="Заказы" excludeFrom="netprint"/>
 				<s:DataGrid id="dgProps" selectionMode="singleRow" width="100%" height="100%" locale="ru_RU"
+							excludeFrom="netprint"
 							creationComplete="dgProps_creationCompleteHandler(event)"
 							dataProvider="{mailPackage.orders}" columns="{Order.shortGridColumns()}"/>
 				<s:Spacer height="5"/>
@@ -775,7 +826,8 @@
 						<s:Label text="Штрих коды"/>
 						<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%"  editable="true" locale="ru_RU"
 									dataProvider="{mailPackage.barcodes}" columns="{MailPackageBarcode.gridColumns()}"/>
-						<s:Button id="btAddBarcode" label="Добавить" click="btAddBarcode_clickHandler(event)"/>
+						<s:Button id="btAddBarcode" label="Добавить" excludeFrom="netprint"
+								  click="btAddBarcode_clickHandler(event)"/>
 					</s:VGroup>
 					<!--<s:Button id="btPrintBarcode" label="Печать" click="btPrintBarcode_clickHandler(event)"/>-->
 					<s:VGroup height="100%" gap="5">
