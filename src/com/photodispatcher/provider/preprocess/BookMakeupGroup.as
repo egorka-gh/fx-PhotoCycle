@@ -1,6 +1,7 @@
 package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.BookSynonymCompo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
@@ -70,7 +71,7 @@ package com.photodispatcher.provider.preprocess{
 			printGroup.sheets_per_file=1;
 
 			if(state==STATE_ERR) return;
-			if (printGroup.is_pdf) return;
+			if (printGroup.is_pdf && printGroup.compo_type != BookSynonymCompo.COMPO_TYPE_CHILD) return;
 			if (!printGroup.bookTemplate 
 				|| !printGroup.bookTemplate.sheet_width || !printGroup.bookTemplate.sheet_len){
 				return;

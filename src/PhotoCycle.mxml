@@ -10,7 +10,7 @@
 					   xmlns:download="com.photodispatcher.provider.fbook.download.*"
 					   xmlns:print="com.photodispatcher.print.*"
 					   showStatusBar="false"
-					   creationComplete="{initApp()}" 
+					   creationComplete="{initApp()}" 					   
 					   closing="windowedapplication1_closingHandler(event)" >
 	<fx:Script>
 		<![CDATA[

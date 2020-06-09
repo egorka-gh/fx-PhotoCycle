@@ -151,21 +151,6 @@ package com.photodispatcher.model.mysql.entities {
 			if(!pg) return null;
 			var srcType:int=Context.getSourceType(PrintGroup.sourceIdFromId(pg.id));
 			return getBookSynonym(pg.alias,srcType);
-			/*
-			var alias:String;
-			if(!pg.sub_id){
-				//regular - get by path
-				alias=pg.path;
-				if(!alias) alias=pg.alias;
-				return translatePath(alias,SourceType.SRC_FOTOKNIGA);
-			}else{
-				alias=pg.alias;
-				if(!alias) return null;
-				var bs:BookSynonym=translateAlias(alias);
-				if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
-				return bs;
-			}
-			*/
 		}
 
 		public static function getTemplateByPg(pg:PrintGroup):BookPgTemplate{

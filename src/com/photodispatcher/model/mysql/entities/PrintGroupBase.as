@@ -24,6 +24,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _book_part_name:String;
         private var _book_type:int;
         private var _book_type_name:String;
+        private var _books:ListCollectionView;
         private var _butt:int;
         private var _compo_type:int;
         private var _compo_type_name:String;
@@ -107,6 +108,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get book_type_name():String {
             return _book_type_name;
+        }
+
+        public function set books(value:ListCollectionView):void {
+            _books = value;
+        }
+        public function get books():ListCollectionView {
+            return _books;
         }
 
         public function set butt(value:int):void {
@@ -411,6 +419,7 @@ package com.photodispatcher.model.mysql.entities {
             _book_part_name = input.readObject() as String;
             _book_type = input.readObject() as int;
             _book_type_name = input.readObject() as String;
+            _books = input.readObject() as ListCollectionView;
             _butt = input.readObject() as int;
             _compo_type = input.readObject() as int;
             _compo_type_name = input.readObject() as String;
@@ -463,6 +472,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_book_part_name);
             output.writeObject(_book_type);
             output.writeObject(_book_type_name);
+            output.writeObject(_books);
             output.writeObject(_butt);
             output.writeObject(_compo_type);
             output.writeObject(_compo_type_name);

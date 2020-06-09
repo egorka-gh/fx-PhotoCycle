@@ -80,13 +80,12 @@ package com.photodispatcher.model.mysql.entities {
 		public static const PREPROCESS_WEB_OK:int=156;
 		public static const PREPROCESS_CAPTURED:int=157;
 		public static const PREPROCESS_RESIZE:int=160;
+		public static const PREPROCESS_COMPO:int=162;
 		public static const PREPROCESS_PDF:int=165;
 		public static const PREPROCESS_INCOMPLETE:int=170;
 		public static const PREPROCESS_COMPLETE:int=180;
 
 		public static const COMPO_WAITE:int=185;
-		public static const COMPO_WAITE_PREPROCESS:int=186;
-		public static const COMPO_PREPROCESS:int=187;
 		
 		public static const PRN_WAITE_ORDER_STATE:int=199;
 		public static const PRN_WAITE:int=200;

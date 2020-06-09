@@ -8,12 +8,13 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.Source;
+	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.model.mysql.entities.StateLog;
 	import com.photodispatcher.provider.fbook.makeup.FBookMakeupManager;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMMultiSequenceRuner;
 	import com.photodispatcher.shell.IMRuner;
-	import com.photodispatcher.util.StrUtil;
 	
 	import flash.display.Loader;
 	import flash.display.LoaderInfo;
@@ -73,6 +74,12 @@ package com.photodispatcher.provider.preprocess{
 				fbookBuilder.stop();
 				fbookBuilder=null;
 			}
+			if(compoBuilder){
+				compoBuilder.removeEventListener(Event.COMPLETE,onCompoComplite);
+				compoBuilder.removeEventListener(ProgressEvent.PROGRESS,onResizeProgress);
+				compoBuilder.stop();
+				compoBuilder=null;
+			}
 			IMRuner.stopAll();
 		}
 		
@@ -99,20 +106,29 @@ package com.photodispatcher.provider.preprocess{
 				}
 				//process pdfs only
 				startPdfmakeup();
-			}else{
-				//check create print subfolder
-				for each(pg in order.printGroups){
-					if (pg && pg.state<OrderState.CANCELED_SYNC && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,true)){
-						return;
-					}
-				}
-				//full process sequence
-				var resizeTask:ResizeTask= new ResizeTask(order,orderFolder, prtFolder,logStates);
-				resizeTask.addEventListener(Event.COMPLETE, onResizeComplite);
-				resizeTask.addEventListener(ProgressEvent.PROGRESS, onResizeProgress);
-				resizeTask.run();
+				return;
 			}
-			
+
+			//check create print subfolder
+			for each(pg in order.printGroups){
+				if (pg && pg.state<OrderState.CANCELED_SYNC && !checkCreateSubfolder(pg,PrintGroup.SUBFOLDER_PRINT,true)){
+					return;
+				}
+			}
+
+			var src:Source = Context.getSource(order.source);
+			if(src && src.type == SourceType.SRC_INTERNAL) {
+				// build compo
+				order.state=OrderState.PREPROCESS_COMPO;
+				startCompoMakeup();
+				return ;
+			}
+
+			//full process sequence
+			var resizeTask:ResizeTask= new ResizeTask(order,orderFolder, prtFolder,logStates);
+			resizeTask.addEventListener(Event.COMPLETE, onResizeComplite);
+			resizeTask.addEventListener(ProgressEvent.PROGRESS, onResizeProgress);
+			resizeTask.run();
 		}
 		
 		private function reportProgress(caption:String='',ready:Number=0, total:Number=0):void{
@@ -335,14 +351,28 @@ package com.photodispatcher.provider.preprocess{
 				dispatchEvent(new OrderPreprocessEvent(order,fbookBuilder.errNum,fbookBuilder.error));
 				return;
 			}
-			/*
-			}else{
-				dispatchEvent(new OrderPreprocessEvent(order))
+			startPdfmakeup();
+		}
+
+		private var compoBuilder:CompoMakeupManager;
+		private function startCompoMakeup():void{
+			compoBuilder= new CompoMakeupManager(order,orderFolder);
+			compoBuilder.addEventListener(Event.COMPLETE,onCompoComplite);
+			compoBuilder.addEventListener(ProgressEvent.PROGRESS,onResizeProgress);
+			compoBuilder.run();
+		}
+		
+		private function onCompoComplite(event:Event):void{
+			compoBuilder.removeEventListener(Event.COMPLETE,onCompoComplite);
+			compoBuilder.removeEventListener(ProgressEvent.PROGRESS,onResizeProgress);
+			if(forceStop) return;
+			reportProgress();
+			if(compoBuilder.hasErr){
+				dispatchEvent(new OrderPreprocessEvent(order,compoBuilder.errNum,compoBuilder.error));
+				return;
 			}
-			*/
 			startPdfmakeup();
 		}
 		
-
 	}
 }
