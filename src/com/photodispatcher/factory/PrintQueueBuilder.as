@@ -8,20 +8,9 @@ package com.photodispatcher.factory{
 	public class PrintQueueBuilder{
 		
 		public static function build(printManager:PrintQueueManager, prnQueue:PrnQueue):PrintQueueGeneric{
-		
 			if (!printManager || !prnQueue) return null;
-			// if(!prnQueue)
-			switch(prnQueue.strategy_type){
-				case PrnStrategy.STRATEGY_BYPARTPDF:
-				case PrnStrategy.STRATEGY_BYPART:
-				case PrnStrategy.STRATEGY_BYROLL:
-					return new PrintQueuePartPDF(printManager,prnQueue);
-					break;
-				default:
-					return null;
-					break;
-			}
-
+			if (prnQueue.strategy_type == PrnStrategy.STRATEGY_PUSHER) return null;
+			return new PrintQueuePartPDF(printManager,prnQueue);
 		}
 		
 	}

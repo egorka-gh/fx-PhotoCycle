@@ -236,8 +236,8 @@
 				<s:Button icon="assets/icon-refresh.gif" click="{refresh()}"
 						  visible="{!enableAdd &amp;&amp; strategyType!=0 &amp;&amp; currLab}"
 						  cornerRadius="4" width="100%" height="22" baseline="4"/>
-				<s:Button id="btCreateQueue" label="Печать" enabled="{enableAdd &amp;&amp; currLab.is_managed}"
-						  click="btCreateQueue_clickHandler(event)"/>
+				<!--<s:Button id="btCreateQueue" label="Печать" enabled="{enableAdd &amp;&amp; currLab.is_managed}"
+						  click="btCreateQueue_clickHandler(event)"/>-->
 			</s:VGroup>
 		</s:HGroup>
 		
