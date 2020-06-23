@@ -7,6 +7,7 @@ package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
+	import com.photodispatcher.model.mysql.entities.BookSynonymCompo;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderState;
@@ -186,11 +187,13 @@ package com.photodispatcher.provider.preprocess{
 		}
 
 		private var currOrder:Order;
+		private var currSource:Source;
 
 		private function startNext():void{
 			if(!isStarted){
 				//progressCaption='';
 				currOrder=null;
+				currSource=null;
 				return;
 			}
 			
@@ -230,6 +233,13 @@ package com.photodispatcher.provider.preprocess{
 			
 			currOrder=order;
 			//if(currOrder.state!=OrderState.PREPROCESS_WAITE) currOrder.state=OrderState.PREPROCESS_WAITE;
+			currSource= Context.getSource(currOrder.source);
+			if(!currSource) {
+				currOrder.state= OrderState.ERR_PREPROCESS;
+				currOrder= null;
+				startNext();
+				return;
+			}
 			
 			getLock();
 		}
@@ -278,9 +288,7 @@ package com.photodispatcher.provider.preprocess{
 			progressCaption='Проверка Web '+currOrder.id;
 			trace('PreprocessManager.checkQueue web request '+currOrder.ftp_folder);
 			//check state on site
-			var source:Source= Context.getSource(currOrder.source);
-			if(!source) return;
-			var webService:BaseWeb=WebServiceBuilder.build(source);
+			var webService:BaseWeb=WebServiceBuilder.build(currSource);
 			if(!webService) return;
 			currOrder.state=OrderState.PREPROCESS_WEB_CHECK;
 			webService.addEventListener(Event.COMPLETE,getOrderHandle);
@@ -344,7 +352,8 @@ package com.photodispatcher.provider.preprocess{
 
 		
 		private function fillFromDb():void{
-			if(!currOrder) return;
+			if(!currOrder || ! currSource) return;
+
 			progressCaption='Загрузка из БД '+currOrder.id;
 			var latch:DbLatch=new DbLatch(true);
 			latch.addEventListener(Event.COMPLETE,onfillFromDb);
@@ -373,13 +382,19 @@ package com.photodispatcher.provider.preprocess{
 			}
 			
 			currOrder.suborders=dbOrder.suborders;
-			//forvard
-			//restore from filesystem
-			if(OrderBuilder.restoreFromFilesystem(currOrder)<0){
-				//releaseLock();
-				currOrder= null;
-				startNext();
-				return;
+			//for compo
+			currOrder.printGroups=dbOrder.printGroups;
+			currOrder.books=dbOrder.books;
+			
+			//check in compo	
+			//restore pgs from filesystem if not compo
+			if(currSource.type != SourceType.SRC_INTERNAL){
+				if( OrderBuilder.restoreFromFilesystem(currOrder)<0){
+					//releaseLock();
+					currOrder= null;
+					startNext();
+					return;
+				}
 			}
 
 			//forvard
@@ -641,11 +656,18 @@ package com.photodispatcher.provider.preprocess{
 			}
 			
 			//apply alt paper
+			//check compo 
 			var so:SubOrder;
 			var pg:PrintGroup;
 			var newPaper:int=-1;
 			var newInterlayer:String;
 			for each(pg in currOrder.printGroups){
+				//compo
+				if (!currOrder.is_preload && pg.compo_type == BookSynonymCompo.COMPO_TYPE_CHILD){
+					currOrder.state=OrderState.COMPO_WAITE;
+					pg.state=OrderState.COMPO_WAITE;
+				}
+				//alt paper
 				if(pg.book_type==0 || !pg.bookTemplate) continue;
 				if(pg.book_part!= BookSynonym.BOOK_PART_BLOCK && pg.book_part!= BookSynonym.BOOK_PART_BLOCKCOVER) continue;
 				newPaper=0;
@@ -694,39 +716,6 @@ package com.photodispatcher.provider.preprocess{
 			releaseOrder();
 			startNext();
 		}
-
-		/*
-		private function forwardOrder(order:Order):Boolean{
-			if (!order || order.state >= order.forward_state){
-				return false
-			}
-			//forward to next state
-			order.state = order.forward_state;
-			var latch:DbLatch= new DbLatch(true);
-			latch.callContext = order;
-			latch.addEventListener(Event.COMPLETE,onforwardOrder);
-			latch.addLatch(orderService.setState(order));
-			latch.start();
-			return true
-		}
-		private function onforwardOrder(evt:Event):void{
-			var latch:DbLatch= evt.target as DbLatch;
-			if(latch){
-				latch.removeEventListener(Event.COMPLETE,onforwardOrder);
-				var order:Order = latch.callContext as Order;
-				if(order){
-					if(latch.complite){
-						//set extra state
-						var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
-						latch=new DbLatch();
-						latch.addLatch(svc.extraStateFix(order.id ,order.state, new Date()));
-						latch.start();
-					}
-				}
-			}
-			dispatchEvent(new FlexEvent(FlexEvent.DATA_CHANGE));
-		}
-		*/
 
 		private function saveOrder(order:Order):void{
 			var latch:DbLatch= new DbLatch(true);

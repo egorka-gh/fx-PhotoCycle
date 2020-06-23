@@ -8,6 +8,7 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.print.LabGeneric;
+	import com.photodispatcher.print.PreparePrint;
 	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.util.StrUtil;
 	
@@ -82,6 +83,7 @@ package com.photodispatcher.model.mysql.entities {
 			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
 			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  col.width=110; result.push(col);
 			col= new GridColumn('alias'); col.headerText='Алиас'; col.width=200; result.push(col);
+			col= new GridColumn('compo_type_name'); col.headerText='Комбо'; col.width=70; result.push(col);
 			col= new GridColumn('laminat_name'); col.headerText='Ламинат'; col.width=90; result.push(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.width=50; result.push(col);
 			col= new GridColumn('height'); col.headerText='Длина'; col.width=50; result.push(col);
@@ -111,6 +113,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('alias'); col.headerText='Алиас'; col.width=70; result.push(col);
 			col= new GridColumn('path'); col.headerText='Папка'; col.width=70; result.push(col);
 			col= new GridColumn('laminat_name'); col.headerText='Ламинат'; col.width=90; result.push(col);
+			col= new GridColumn('compo_type_name'); col.headerText='Комбо'; col.width=70; result.push(col);
 			col= new GridColumn('width'); col.headerText='Ширина'; col.width=70; result.push(col);
 			col= new GridColumn('height'); col.headerText='Длина'; col.width=70; result.push(col);
 			col= new GridColumn('paper_name'); col.headerText='Бумага'; col.width=70; result.push(col);
@@ -607,6 +610,7 @@ package com.photodispatcher.model.mysql.entities {
 			}
 		}
 		
+		//works if template set
 		public function get bookFiles():Array{
 			if(!_bookFiles) prepareBookFiles();
 			return _bookFiles;
@@ -1136,8 +1140,6 @@ package com.photodispatcher.model.mysql.entities {
 		}
 
 		
-		public var books:ArrayCollection;
-		
 		public function setBooks(pBooks:Array):void{
 			books=null;
 			if(!pBooks) return;
@@ -1166,6 +1168,44 @@ package com.photodispatcher.model.mysql.entities {
 			books= new ArrayCollection(resArr);
 		}
 		
+		private var _printFolder:File;
+		public function get printFolder():File{
+			if (_printFolder) return _printFolder;
+			//look up prt folder in print & wrk folders
+			var src:Source=Context.getSource(source_id);
+			var srcFName:String;
+			var dir:File;
+			var srcFolder:File;
+			if(src){
+				//check print folder
+				srcFName=src.getPrtFolder()+File.separator+order_folder+File.separator+path;
+				if(printPrepare) srcFName=srcFName+File.separator+PreparePrint.ROTATE_FOLDER;
+				try{ 
+					srcFolder=new File(srcFName);
+				}catch(e:Error){}
+				if(srcFolder && srcFolder.exists){
+					dir=srcFolder.resolvePath(PrintGroup.SUBFOLDER_PRINT);
+					if(!dir.exists || !dir.isDirectory) srcFolder=null;
+				}else{
+					srcFolder=null;
+				}
+				if(!srcFolder){
+					//check wrk folder
+					srcFName=src.getWrkFolder()+File.separator+order_folder+File.separator+path;
+					try{ 
+						srcFolder=new File(srcFName);
+					}catch(e:Error){}
+					if(srcFolder && srcFolder.exists){
+						dir=srcFolder.resolvePath(PrintGroup.SUBFOLDER_PRINT);
+						if(!dir.exists || !dir.isDirectory) srcFolder=null;
+					}else{
+						srcFolder=null;
+					}
+				}
+			}
+			_printFolder=srcFolder;
+			return srcFolder;
+		}
 
     }
 }

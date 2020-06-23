@@ -13,6 +13,7 @@
 		import com.photodispatcher.model.mysql.entities.BookPgAltPaper;
 		import com.photodispatcher.model.mysql.entities.BookPgTemplate;
 		import com.photodispatcher.model.mysql.entities.BookSynonym;
+		import com.photodispatcher.model.mysql.entities.BookSynonymCompo;
 		import com.photodispatcher.model.mysql.entities.SourceType;
 		import com.photodispatcher.model.mysql.services.BookSynonymService;
 		import com.photodispatcher.util.ArrayUtil;
@@ -24,12 +25,18 @@
 		
 		import org.granite.tide.Tide;
 		
+		private var tmp:BookSynonymCompo;
+		
 		[Bindable]
 		private var currentList:ArrayCollection=new ArrayCollection();
+		[Bindable]
+		private var compoChildsAC:ArrayCollection=new ArrayCollection();
 		[Bindable]
 		private var bookTypeFilterList:ArrayCollection;
 		[Bindable]
 		private var synonymTypeFilterList:ArrayCollection;
+		[Bindable]
+		private var compoTypeFilterList:ArrayCollection;
 
 		[Bindable]
 		private var currentBook:BookSynonym;
@@ -55,6 +62,11 @@
 						currentList=latch.lastDataAC;
 						currentList.filterFunction=gridFilter;
 						currentList.refresh();
+						
+						compoChildsAC = new ArrayCollection(latch.lastDataAC.source);
+						compoChildsAC.filterFunction = compoChildsFilter;
+						compoChildsAC.refresh();
+						
 						currentState='list';
 						//restore selection
 						if(itemsGrid && lastSelectedBook){
@@ -77,6 +89,7 @@
 							templatesList= new ArrayCollection();
 						}
 						if (currentBook) currentBook.templates=templatesList;
+						compoChildsAC.refresh();
 						currentState='itemEdit';
 					}else if(latch.lastToken.tag=='copy'){
 						if(latch.resultCode!=0){
@@ -99,6 +112,7 @@
 		private function init():void{
 			bookTypeFilterList=Context.getAttribute('book_typeList');
 			synonymTypeFilterList=Context.getAttribute('synonym_typeList'); 
+			compoTypeFilterList=Context.getAttribute('compo_typeList');
 			service=Tide.getInstance().getContext().byType(BookSynonymService,true) as BookSynonymService;
 			refresh();
 		}
@@ -180,6 +194,7 @@
 			if(!synonym) return false;
 			if(tiSynonymFilter && tiSynonymFilter.text && synonym.synonym.substr(0,tiSynonymFilter.text.length)!=tiSynonymFilter.text) return false;
 			if(ddBookTypeFilter && ddBookTypeFilter.selectedIndex>0 && synonym.book_type!=ddBookTypeFilter.selectedItem.value) return false;
+			if(ddCompoTypeFilter && ddCompoTypeFilter.selectedIndex>0 && synonym.compo_type!=ddCompoTypeFilter.selectedItem.value) return false;
 			if(!ddSynonymTypeFilter || ddSynonymTypeFilter.selectedIndex<=0){
 				//hide deleted
 				if(synonym.synonym_type==-1) return false;
@@ -187,6 +202,24 @@
 				if(synonym.synonym_type!=ddSynonymTypeFilter.selectedItem.value) return false;
 			}
 			return true;
+		}
+		
+		private function compoChildsFilter(item:Object):Boolean{
+			var synonym:BookSynonym=item as BookSynonym;
+			if(!synonym) return false;
+			if(synonym.compo_type != BookSynonymCompo.COMPO_TYPE_CHILD) return false; 
+			if(!currentBook) return false;
+			if(!currentBook.compos || currentBook.compos.length==0) return true;
+			for each (var it:BookSynonymCompo in currentBook.compos){
+				if(it && !it.deleted && it.child == synonym.id) return false;
+			}
+			return  true;
+		}
+
+		private function compoDeletedChildsFilter(item:Object):Boolean{
+			var c:BookSynonymCompo=item as BookSynonymCompo;
+			if(!c) return false;
+			return  !c.deleted;
 		}
 
 		protected function btEdit_clickHandler(event:MouseEvent):void{
@@ -200,7 +233,24 @@
 				latch.addEventListener(Event.COMPLETE, onLoad);
 				latch.addLatch(service.loadTemplates(currentBook.id),'template');
 				latch.start();
+
+				latch = new DbLatch(false);
+				latch.addEventListener(Event.COMPLETE, onLoadCompo);
+				latch.addLatch(service.loadCompo(currentBook.id));
+				latch.start();
 			}
+		}
+		private function onLoadCompo(event:Event):void{
+			var latch:DbLatch= event.target as DbLatch;
+			if(latch){
+				latch.removeEventListener(Event.COMPLETE,onLoadCompo);
+				if(latch.complite ){
+					currentBook.compos = latch.lastDataAC; 
+					currentBook.compos.filterFunction =compoDeletedChildsFilter;
+					currentBook.compos.refresh();
+				}
+			}
+			compoChildsAC.refresh();
 		}
 		
 		protected function btTech_clickHandler(event:MouseEvent):void{
@@ -224,6 +274,29 @@
 			pop.show(templ);
 		}
 		
+		protected function btCompoAdd_clickHandler(event:MouseEvent):void{
+			if (!currentBook || currentBook.compo_type != BookSynonymCompo.COMPO_TYPE_COMPO ) return;
+			var s:BookSynonym = lstCompoChilds.selectedItem as BookSynonym;
+			if(!s) return;
+			var c:BookSynonymCompo = new BookSynonymCompo();
+			c.parent = currentBook.id;
+			c.child = s.id;
+			c.childAlias = s.synonym;
+			if(!currentBook.compos){
+				currentBook.compos = new ArrayCollection();
+				currentBook.compos.filterFunction = compoDeletedChildsFilter;
+			}
+			currentBook.compos.addItem(c);
+			compoChildsAC.refresh();
+		}
+		
+		protected function btComoDel_clickHandler(event:MouseEvent):void{
+		 	var c:BookSynonymCompo = lstCompos.selectedItem as BookSynonymCompo;
+			if(c) c.deleted = true;
+			if(currentBook) currentBook.compos.refresh();
+			compoChildsAC.refresh();
+		}
+		
 	]]>
 </fx:Script>
 	<s:states>
@@ -236,12 +309,16 @@
 			<s:Label text="Фильтрация" fontWeight="bold"/>
 
 			<s:Spacer width="5"/>
-			<s:Label text="Имя папки"/>
+			<s:Label text="Имя алиаса"/>
 			<s:TextInput id="tiSynonymFilter" width="300" change="{applyFilter()}"/>
 			
 			<s:Spacer width="5"/>
-			<s:Label text="Тип синонима"/>
+			<s:Label text="Тип алиаса"/>
 			<s:DropDownList id="ddSynonymTypeFilter" dataProvider="{synonymTypeFilterList}" change="{applyFilter()}"/>
+
+			<s:Spacer width="5"/>
+			<s:Label text="Комбо"/>
+			<s:DropDownList id="ddCompoTypeFilter" dataProvider="{compoTypeFilterList}" change="{applyFilter()}"/>
 			
 			<s:Spacer width="5"/>
 			<s:Label text="Тип книги"/>
@@ -254,11 +331,30 @@
 		<config:ItemsGrid id="itemsGrid" editable="true" includeIn="list"
 						  currentData="{currentList}" currentColumns="{BookSynonym.gridColumns()}" 
 						  width="100%" height="100%"/>
-		<s:Label includeIn="itemEdit" text="{currentBook.synonym}" width="100%" fontWeight="bold"/>
-		<s:Label includeIn="itemEdit" text="{currentBook.book_type_name}" width="100%"/>
-		<config:ItemsGrid id="tempGrid" editable="true" includeIn="itemEdit"
-						  currentData="{templatesList}" currentColumns="{BookPgTemplate.gridColumns()}" 
-						  width="100%" height="100%"/>
+		<s:VGroup gap="10" width="100%" height="100%"
+				  includeIn="itemEdit">
+			<s:Label  text="{currentBook.synonym}" width="100%" fontWeight="bold"/>
+			<s:Label  text="{currentBook.book_type_name}" width="100%"/>
+			<s:VGroup gap="10" width="100%" height="100%" includeInLayout="{currentBook.compo_type == BookSynonymCompo.COMPO_TYPE_COMPO}" visible="{currentBook.compo_type == BookSynonymCompo.COMPO_TYPE_COMPO}">
+				<s:Label  text="Комбинируется из алиасов" />
+				<s:HGroup width="100%" height="100%" paddingLeft="20">
+					<s:List id="lstCompos" width="300" height="100%"
+							dataProvider="{currentBook.compos}" labelField="childAlias">
+					</s:List>
+					<s:VGroup paddingLeft="5" paddingRight="5" gap="20" height="100%" verticalAlign="middle">
+						<s:Button id="btCompoAdd" label="◄" width="40" click="btCompoAdd_clickHandler(event)" />						
+						<s:Button id="btComoDel" label="►" width="40" click="btComoDel_clickHandler(event)"/>						
+					</s:VGroup>
+					<s:List id="lstCompoChilds" width="300" height="100%"
+							dataProvider="{compoChildsAC}" labelField="synonym">
+					</s:List>
+				</s:HGroup>
+			</s:VGroup>
+			<s:Label  text="Состав" />
+			<config:ItemsGrid id="tempGrid" editable="true" 
+							  currentData="{templatesList}" currentColumns="{BookPgTemplate.gridColumns()}" 
+							  width="100%" height="100%"/>
+		</s:VGroup>
 		<s:HGroup gap="10" verticalAlign="baseline" width="100%" horizontalAlign="left">
 			<!--TODO implement DELETE-->
 			<s:Button id="btAdd" label="Добавить" click="{addItem()}"/>

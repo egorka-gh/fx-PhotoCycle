@@ -90,6 +90,9 @@
 			[Bindable]
 			public var progSetProduktIdle:GlueProgram;
 			[Bindable]
+			public var progStop:GlueProgram;
+			
+			[Bindable]
 			public var glueProgramm:GlueProgram;
 			[Bindable]
 			public var glueProgrammSoName:String;
@@ -224,9 +227,12 @@
 				if (cbProgram.selectedIndex ==0){
 					glueProgramm = progSetProduktIdle;
 					glueProgrammSoName='progSetProduktIdle';
-				}else{
+				}else if (cbProgram.selectedIndex ==1){
 					glueProgramm = progSetProdukt;
 					glueProgrammSoName='progSetProdukt';
+				}else{
+					glueProgramm = progStop;
+					glueProgrammSoName='progStop';
 				}
 			}
 			
@@ -271,7 +277,7 @@
 		<s:HGroup gap="5" width="100%" verticalAlign="baseline">
 			<s:Label text="Редактированние программы"/>
 			<s:ComboBox id="cbProgram" 
-						dataProvider="{new ArrayCollection(['Назначить продукт (при старте)','Назначить продукт (на ходу)'])}"
+						dataProvider="{new ArrayCollection(['Назначить продукт (при старте)','Назначить продукт (на ходу)','Стоп'])}"
 						creationComplete="{cbProgram.selectedIndex=0;}"
 						valueCommit="cbProgram_valueCommitHandler(event)"
 						width="200"

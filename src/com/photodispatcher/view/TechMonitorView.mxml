@@ -411,7 +411,7 @@
 				var fmt:DateTimeFormatter=new DateTimeFormatter();
 				msg= msg.replace('<','◄');
 				msg= msg.replace('>','►');
-				msg= msg.replace('"','&quot;');
+				msg= msg.replace('"','');
 				msg= msg.replace('&','&amp;');
 				fmt.dateTimePattern='HH:mm:ss';
 				logText ="<span>"+fmt.format(new Date())+"</span>"+"<span color="+color+" "+bold+"> "+msg+"</span><br/>"+logText ;

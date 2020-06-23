@@ -130,7 +130,10 @@
 			public var progSetProdukt:GlueProgram;
 			[Bindable]
 			public var progSetProduktIdle:GlueProgram;
+			[Bindable]
+			public var progStop:GlueProgram;
 
+			
 			[Bindable]
 			protected var lastButtonsMessage:GlueMessage;
 			[Bindable]
@@ -190,6 +193,7 @@
 				}catch(error:Error){
 					trace('TextFlow err, txt: '+logText);
 					trace(error.message);
+					logTextArea.text =error.message;
 				}
 				//logTextArea.scroller.verticalScrollBar.value = logTextArea.scroller.verticalScrollBar.maximum;
 			}
@@ -273,7 +277,7 @@
 			}
 			
 			public function stop():void{
-				cleanLog();
+				//cleanLog();
 				if(glueHandler){
 					glueHandler.stop();
 					glueHandler.glue = null;
@@ -419,6 +423,7 @@
 			}
 			protected function onIdleTimer(e:Event):void{
 				isRunning = false;
+				lastBarcode ='';
 				viewCaption ='Простой';
 			}
 			protected function onIdleTimerTick(e:Event):void{
@@ -441,31 +446,36 @@
 				viewCaption ='Работа';
 				stratIdleTimer();
 				
-				if(barcode==lastBarcode) return; //doublescan or more then 1 barreader
-				lastBarcode=barcode;
-				//finde/check product
-				var p:GlueProgramCode = ArrayUtil.searchItem('code',barcode, progCodes) as GlueProgramCode;
-				if(!p){
-					log('Не найден продукт для: '+barcode);
-					return;
+				if(barcode != lastBarcode) {
+					//change product
+					lastBarcode=barcode;
+					//finde/check product
+					var p:GlueProgramCode = ArrayUtil.searchItem('code',barcode, progCodes) as GlueProgramCode;
+					if(!p){
+						log('Не найден продукт для: '+barcode);
+						stopGlue();
+						return;
+					}
+					barcodeProduct = p.product;
+					
+					if(barcodeProduct != glueProduct || !running){
+						log('Запуск подпрограммы Назначить продукт '+(running?'(работа)':'(простой)')+': '+barcodeProduct);
+						var prog:GlueProgram;
+						if(running){
+							prog=progSetProdukt;
+						}else{
+							prog=progSetProduktIdle;
+						}
+						//run set product program
+						prog.product = barcodeProduct; 
+						glueHandler.program=prog;
+						glueHandler.addEventListener(Event.COMPLETE,onglueHandlerComplite);
+						glueHandler.start();
+						return;
+					}
 				}
-				barcodeProduct = p.product;
-				
-				
-				if(barcodeProduct != glueProduct){
-					log('Запуск подпрограммы Назначить продукт '+(running?'(работа)':'(простой)')+': '+barcodeProduct);
-				}
-				var prog:GlueProgram;
-				if(running){
-					prog=progSetProdukt;
-				}else{
-					prog=progSetProduktIdle;
-				}
-				//run set product program
-				prog.product = barcodeProduct; 
-				glueHandler.program=prog;
-				glueHandler.addEventListener(Event.COMPLETE,onglueHandlerComplite);
-				glueHandler.start();
+				//check product
+				getGlueProduct();
 			}
 			protected function onglueHandlerComplite(event:Event):void{
 				log('Проверка продукта на машине');
@@ -494,8 +504,24 @@
 				}
 				if(barcodeProduct && glueProduct != barcodeProduct){
 					logToScreen('Не назначен продукт. Должно быть по ШК: '+barcodeProduct+', продукт склейки: '+glueProduct,true);
+					//run stop
+					stopGlue()
 				}
 				viewCaption=isRunning?'Работа':'Простой';
+			}
+			
+			protected function stopGlue():void{
+				log('Запуск подпрограммы Стоп');
+				if(glueHandler.isStarted) glueHandler.stop();
+				glueHandler.program=progStop;
+				glueHandler.addEventListener(Event.COMPLETE,onglueHandlerStopComplite);
+				glueHandler.start();
+			}
+			protected function onglueHandlerStopComplite(event:Event):void{
+				log('Склейка остановлена');
+				glueHandler.removeEventListener(Event.COMPLETE,onglueHandlerStopComplite);
+				if(idleTimer) idleTimer.reset();
+				onIdleTimer(null);
 			}
 
 			protected function onBarError(event:BarCodeEvent):void{

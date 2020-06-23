@@ -47,10 +47,11 @@ package com.photodispatcher.model.mysql.entities {
 		public static function gridColumns(short:Boolean=false):ArrayList{
 			var result:ArrayList= new ArrayList();
 			var col:GridColumn;
-			col= new GridColumn('synonym'); col.headerText='Имя папки'; result.addItem(col);
+			col= new GridColumn('synonym'); col.headerText='Алиас'; result.addItem(col);
 			if(!short){
 				col= new GridColumn('synonym_type'); col.headerText='Тип синонима'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 				col= new GridColumn('book_type'); col.headerText='Тип книги'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
+				col= new GridColumn('compo_type'); col.headerText='Комбо'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
 				col= new GridColumn('is_horizontal'); col.headerText='Горизотальная'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col);
 				col= new GridColumn('has_backprint'); col.headerText='Бекпринт'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col);
 				col= new GridColumn('order_program'); col.headerText='Программа'; col.labelFunction=GridUtil.idToLabel; col.itemEditor=new ClassFactory(CBoxGridItemEditor); result.addItem(col);
@@ -150,21 +151,6 @@ package com.photodispatcher.model.mysql.entities {
 			if(!pg) return null;
 			var srcType:int=Context.getSourceType(PrintGroup.sourceIdFromId(pg.id));
 			return getBookSynonym(pg.alias,srcType);
-			/*
-			var alias:String;
-			if(!pg.sub_id){
-				//regular - get by path
-				alias=pg.path;
-				if(!alias) alias=pg.alias;
-				return translatePath(alias,SourceType.SRC_FOTOKNIGA);
-			}else{
-				alias=pg.alias;
-				if(!alias) return null;
-				var bs:BookSynonym=translateAlias(alias);
-				if(!bs) bs=translatePath(alias,SourceType.SRC_FOTOKNIGA);
-				return bs;
-			}
-			*/
 		}
 
 		public static function getTemplateByPg(pg:PrintGroup):BookPgTemplate{

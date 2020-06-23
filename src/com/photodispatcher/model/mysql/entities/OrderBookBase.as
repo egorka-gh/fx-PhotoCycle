@@ -20,6 +20,10 @@ package com.photodispatcher.model.mysql.entities {
         private var _book:int;
         private var _book_part:int;
         private var _book_part_name:String;
+        private var _compo_book:int;
+        private var _compo_pg:String;
+        private var _compo_type:int;
+        private var _compo_type_name:String;
         private var _is_reject:Boolean;
         private var _is_rejected:Boolean;
         private var _order_id:String;
@@ -53,6 +57,34 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get book_part_name():String {
             return _book_part_name;
+        }
+
+        public function set compo_book(value:int):void {
+            _compo_book = value;
+        }
+        public function get compo_book():int {
+            return _compo_book;
+        }
+
+        public function set compo_pg(value:String):void {
+            _compo_pg = value;
+        }
+        public function get compo_pg():String {
+            return _compo_pg;
+        }
+
+        public function set compo_type(value:int):void {
+            _compo_type = value;
+        }
+        public function get compo_type():int {
+            return _compo_type;
+        }
+
+        public function set compo_type_name(value:String):void {
+            _compo_type_name = value;
+        }
+        public function get compo_type_name():String {
+            return _compo_type_name;
         }
 
         public function set is_reject(value:Boolean):void {
@@ -151,6 +183,10 @@ package com.photodispatcher.model.mysql.entities {
             _book = input.readObject() as int;
             _book_part = input.readObject() as int;
             _book_part_name = input.readObject() as String;
+            _compo_book = input.readObject() as int;
+            _compo_pg = input.readObject() as String;
+            _compo_type = input.readObject() as int;
+            _compo_type_name = input.readObject() as String;
             _is_reject = input.readObject() as Boolean;
             _is_rejected = input.readObject() as Boolean;
             _order_id = input.readObject() as String;
@@ -171,6 +207,10 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_book);
             output.writeObject(_book_part);
             output.writeObject(_book_part_name);
+            output.writeObject(_compo_book);
+            output.writeObject(_compo_pg);
+            output.writeObject(_compo_type);
+            output.writeObject(_compo_type_name);
             output.writeObject(_is_reject);
             output.writeObject(_is_rejected);
             output.writeObject(_order_id);

@@ -13,7 +13,6 @@ package com.photodispatcher.provider.fbook.makeup{
 	import com.photodispatcher.provider.fbook.model.PageData;
 	import com.photodispatcher.shell.IMCommand;
 	import com.photodispatcher.shell.IMMultiSequenceRuner;
-	import com.photodispatcher.shell.IMSequenceRuner;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;

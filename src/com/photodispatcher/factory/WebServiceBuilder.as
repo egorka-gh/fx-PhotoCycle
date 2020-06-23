@@ -2,6 +2,7 @@ package com.photodispatcher.factory{
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
 	import com.photodispatcher.service.web.BaseWeb;
+	import com.photodispatcher.service.web.DummyWeb;
 	import com.photodispatcher.service.web.FBookCombo;
 	import com.photodispatcher.service.web.FBookManualWeb;
 	import com.photodispatcher.service.web.FotoknigaWeb;
@@ -29,7 +30,7 @@ package com.photodispatcher.factory{
 					return new PixelParkWeb(source);
 					break;
 				default:
-					return null;
+					return new DummyWeb(source);
 					break;
 			}
 		}

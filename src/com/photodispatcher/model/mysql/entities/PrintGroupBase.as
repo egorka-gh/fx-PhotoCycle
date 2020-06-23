@@ -24,7 +24,10 @@ package com.photodispatcher.model.mysql.entities {
         private var _book_part_name:String;
         private var _book_type:int;
         private var _book_type_name:String;
+        private var _books:ListCollectionView;
         private var _butt:int;
+        private var _compo_type:int;
+        private var _compo_type_name:String;
         private var _correction:int;
         private var _correction_name:String;
         private var _cutting:int;
@@ -107,11 +110,32 @@ package com.photodispatcher.model.mysql.entities {
             return _book_type_name;
         }
 
+        public function set books(value:ListCollectionView):void {
+            _books = value;
+        }
+        public function get books():ListCollectionView {
+            return _books;
+        }
+
         public function set butt(value:int):void {
             _butt = value;
         }
         public function get butt():int {
             return _butt;
+        }
+
+        public function set compo_type(value:int):void {
+            _compo_type = value;
+        }
+        public function get compo_type():int {
+            return _compo_type;
+        }
+
+        public function set compo_type_name(value:String):void {
+            _compo_type_name = value;
+        }
+        public function get compo_type_name():String {
+            return _compo_type_name;
         }
 
         public function set correction(value:int):void {
@@ -395,7 +419,10 @@ package com.photodispatcher.model.mysql.entities {
             _book_part_name = input.readObject() as String;
             _book_type = input.readObject() as int;
             _book_type_name = input.readObject() as String;
+            _books = input.readObject() as ListCollectionView;
             _butt = input.readObject() as int;
+            _compo_type = input.readObject() as int;
+            _compo_type_name = input.readObject() as String;
             _correction = input.readObject() as int;
             _correction_name = input.readObject() as String;
             _cutting = input.readObject() as int;
@@ -445,7 +472,10 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_book_part_name);
             output.writeObject(_book_type);
             output.writeObject(_book_type_name);
+            output.writeObject(_books);
             output.writeObject(_butt);
+            output.writeObject(_compo_type);
+            output.writeObject(_compo_type_name);
             output.writeObject(_correction);
             output.writeObject(_correction_name);
             output.writeObject(_cutting);

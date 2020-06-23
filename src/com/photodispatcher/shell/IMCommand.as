@@ -69,6 +69,7 @@ package com.photodispatcher.shell{
 		}
 
 		public function add(parameter:String):void{
+			if(!parameter) return;
 			parameters.push(parameter);
 		}
 

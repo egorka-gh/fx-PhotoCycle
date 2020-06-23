@@ -93,13 +93,11 @@ package com.photodispatcher.model.mysql.entities {
 		public function getWrkFolder():String{
 			var wrkFolder:String=Context.getAttribute('workFolder');
 			wrkFolder=wrkFolder+File.separator+StrUtil.toFileName(this.name);
-			//fl=fl.resolvePath(StrUtil.toFileName(src.name)+File.separator+currentOrder.ftp_folder);
 			return wrkFolder;
 		}
 		public function getPrtFolder():String{
 			var wrkFolder:String=Context.getAttribute('prtPath');
 			wrkFolder=wrkFolder+File.separator+StrUtil.toFileName(this.name);
-			//fl=fl.resolvePath(StrUtil.toFileName(src.name)+File.separator+currentOrder.ftp_folder);
 			return wrkFolder;
 		}
 

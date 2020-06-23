@@ -20,6 +20,9 @@ package com.photodispatcher.model.mysql.entities {
 
         private var _book_type:int;
         private var _book_type_name:String;
+        private var _compo_type:int;
+        private var _compo_type_name:String;
+        private var _compos:ListCollectionView;
         private var _glueCommands:ListCollectionView;
         private var _has_backprint:Boolean;
         private var _id:int;
@@ -46,6 +49,27 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get book_type_name():String {
             return _book_type_name;
+        }
+
+        public function set compo_type(value:int):void {
+            _compo_type = value;
+        }
+        public function get compo_type():int {
+            return _compo_type;
+        }
+
+        public function set compo_type_name(value:String):void {
+            _compo_type_name = value;
+        }
+        public function get compo_type_name():String {
+            return _compo_type_name;
+        }
+
+        public function set compos(value:ListCollectionView):void {
+            _compos = value;
+        }
+        public function get compos():ListCollectionView {
+            return _compos;
         }
 
         public function set glueCommands(value:ListCollectionView):void {
@@ -143,6 +167,9 @@ package com.photodispatcher.model.mysql.entities {
             super.readExternal(input);
             _book_type = input.readObject() as int;
             _book_type_name = input.readObject() as String;
+            _compo_type = input.readObject() as int;
+            _compo_type_name = input.readObject() as String;
+            _compos = input.readObject() as ListCollectionView;
             _glueCommands = input.readObject() as ListCollectionView;
             _has_backprint = input.readObject() as Boolean;
             _id = input.readObject() as int;
@@ -162,6 +189,9 @@ package com.photodispatcher.model.mysql.entities {
             super.writeExternal(output);
             output.writeObject(_book_type);
             output.writeObject(_book_type_name);
+            output.writeObject(_compo_type);
+            output.writeObject(_compo_type_name);
+            output.writeObject(_compos);
             output.writeObject(_glueCommands);
             output.writeObject(_has_backprint);
             output.writeObject(_id);
