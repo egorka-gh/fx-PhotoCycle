@@ -283,29 +283,30 @@
 						currentState='ordersPending';
 						break;
 					case 2:
-						currentState='ordersBuild';
+						currentState='compo';
 						break;
 					case 3:
-						currentState='printDeploy';
+						currentState='ordersBuild';
 						break;
 					case 4:
-						currentState='printPrint';
+						currentState='printDeploy';
 						break;
 					case 5:
-						currentState='printReady';
+						currentState='printPrint';
 						break;
 					case 6:
+						currentState='printReady';
+						break;
+					case 7:
 						currentState='logView';
 						break;
-					
-					case 7:
+					case 8:
 						currentState='stopLogView'; // лог простоя
 						break;
-					
-					case 8:
+					case 9:
 						currentState='printPulse'; // автопостановка
 						break;
-					case 9:
+					case 10:
 						currentState='stations'; // messenger
 						break;
 					
@@ -342,6 +343,7 @@
 	<s:states>
 		<s:State name="stateView"/>
 		<s:State name="ordersPending"/>
+		<s:State name="compo"/>
 		<s:State name="ordersBuild"/>
 		<s:State name="printDeploy"/>
 		<s:State name="printPrint"/>
@@ -362,6 +364,7 @@
 		<mx:ArrayCollection>
 			<fx:String>Состояние</fx:String> 
 			<fx:String>Загрузка заказов</fx:String> 
+			<fx:String>Комбо</fx:String> 
 			<fx:String>Подготовка заказов</fx:String> 
 			<fx:String>Распределение на печать</fx:String> 
 			<fx:String>Печать</fx:String> 
@@ -432,6 +435,7 @@
 		</s:HGroup>
 		
 		<view:MonitorLoad id="monitorLoad" top="0" left="0" right="0" bottom="0" includeIn="ordersPending" loader="{downloadManager}"/>
+		<view:MonitorCompo id="monitorCompo" top="0" left="0" right="0" bottom="0" includeIn="compo" />
 		<view:MonitorBuild id="monitorBuild" top="0" left="0" right="0" bottom="0" includeIn="ordersBuild" builder="{preprocessManager}"/>
 		<view:PrintDistribute id="printDistribute" top="0" left="0" right="0" bottom="0" includeIn="printDeploy"/>
 		<view:PrintMonitor id="printMonitor" top="0" left="0" right="0" bottom="0" 

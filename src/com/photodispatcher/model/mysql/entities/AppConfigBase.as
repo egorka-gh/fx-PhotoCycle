@@ -26,6 +26,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _clean_nr_days:int;
         private var _id:int;
         private var _pdf_quality:int;
+        private var _pqSheetLimit:int;
         private var _print_revers:Boolean;
         private var _print_rotate:Boolean;
         private var _production:int;
@@ -94,6 +95,13 @@ package com.photodispatcher.model.mysql.entities {
             return _pdf_quality;
         }
 
+        public function set pqSheetLimit(value:int):void {
+            _pqSheetLimit = value;
+        }
+        public function get pqSheetLimit():int {
+            return _pqSheetLimit;
+        }
+
         public function set print_revers(value:Boolean):void {
             _print_revers = value;
         }
@@ -133,6 +141,7 @@ package com.photodispatcher.model.mysql.entities {
             _clean_nr_days = input.readObject() as int;
             _id = input.readObject() as int;
             _pdf_quality = input.readObject() as int;
+            _pqSheetLimit = input.readObject() as int;
             _print_revers = input.readObject() as Boolean;
             _print_rotate = input.readObject() as Boolean;
             _production = input.readObject() as int;
@@ -150,6 +159,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_clean_nr_days);
             output.writeObject(_id);
             output.writeObject(_pdf_quality);
+            output.writeObject(_pqSheetLimit);
             output.writeObject(_print_revers);
             output.writeObject(_print_rotate);
             output.writeObject(_production);
