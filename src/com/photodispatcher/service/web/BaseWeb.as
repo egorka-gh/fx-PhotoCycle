@@ -250,7 +250,7 @@ package com.photodispatcher.service.web{
 			lastRawData=raw;
 			lastRawResult =null;
 			var s:String=(raw as String);
-			if(!raw ||!s){
+			if(!raw || !s){
 				abort('Ошибка полученных данных');
 				return null;
 			}
@@ -262,7 +262,7 @@ package com.photodispatcher.service.web{
 				abort('Ошибка декодирования данных. '+e.message);
 				return null;
 			}
-			lastRawResult = result.result;
+			if (result.hasOwnProperty(result) ) lastRawResult = result.result;
 			return result;
 		}
 		
