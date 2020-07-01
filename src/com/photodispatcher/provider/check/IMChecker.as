@@ -4,6 +4,7 @@ package com.photodispatcher.provider.check{
 	
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.IMRunerEvent;
+	import com.photodispatcher.factory.PrintGroupBuilder;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderFile;
 	import com.photodispatcher.model.mysql.entities.OrderState;
@@ -131,7 +132,8 @@ package com.photodispatcher.provider.check{
 			var of:OrderFile;
 			var command:IMCommand;
 			for each(of in currOrder.files){
-				if(of && of.state<OrderState.FTP_COMPLETE){
+				if(of && of.state<OrderState.FTP_COMPLETE 
+					&& of.file_name && PrintGroupBuilder.ALLOWED_EXTENSIONS[StrUtil.getFileExtension(of.file_name)] ){
 					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
 					command.folder=orderFolder;
 					command.sourceObject=of;

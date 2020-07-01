@@ -58,6 +58,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _prn_queue:int;
         private var _rejects:ListCollectionView;
         private var _reprint_id:String;
+        private var _sequence:int;
         private var _sheet_num:int;
         private var _sheets_per_file:int;
         private var _source_id:int;
@@ -348,6 +349,13 @@ package com.photodispatcher.model.mysql.entities {
             return _reprint_id;
         }
 
+        public function set sequence(value:int):void {
+            _sequence = value;
+        }
+        public function get sequence():int {
+            return _sequence;
+        }
+
         public function set sheet_num(value:int):void {
             _sheet_num = value;
         }
@@ -453,6 +461,7 @@ package com.photodispatcher.model.mysql.entities {
             _prn_queue = input.readObject() as int;
             _rejects = input.readObject() as ListCollectionView;
             _reprint_id = input.readObject() as String;
+            _sequence = input.readObject() as int;
             _sheet_num = input.readObject() as int;
             _sheets_per_file = input.readObject() as int;
             _source_id = input.readObject() as int;
@@ -506,6 +515,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_prn_queue);
             output.writeObject(_rejects);
             output.writeObject(_reprint_id);
+            output.writeObject(_sequence);
             output.writeObject(_sheet_num);
             output.writeObject(_sheets_per_file);
             output.writeObject(_source_id);
