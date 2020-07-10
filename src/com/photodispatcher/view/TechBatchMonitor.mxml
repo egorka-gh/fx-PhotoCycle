@@ -244,7 +244,7 @@
 					queueRegister.addEventListener(Event.COMPLETE,onQueueComplited);
 					queueRegister.addEventListener(Event.CLEAR,onNewQueue);
 				}
-				queueRegister.revers==Boolean(Context.getAttribute("reversOrder"));
+				queueRegister.revers=Boolean(Context.getAttribute("reversOrder"));
 				queueRegister.start();
 			}
 

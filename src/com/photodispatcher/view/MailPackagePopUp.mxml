@@ -11,6 +11,7 @@
 			import com.photodispatcher.factory.WebServiceBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.DeliveryType;
+			import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
 			import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
 			import com.photodispatcher.model.mysql.entities.FieldValue;
 			import com.photodispatcher.model.mysql.entities.GroupNetprint;
@@ -348,6 +349,8 @@
 					setSiteState();
 					return;
 				}
+				//double click
+				if (webService.isRunning) return;
 				if(nextState==OrderState.PACKAGE_SEND){
 					setSiteStateSend();
 				}
@@ -355,7 +358,7 @@
 			}
 
 			private function onAlert450(evt:CloseEvent):void {
-				if (evt.detail == Alert.YES) setSiteState(); //saveNextState();
+				if (evt.detail == Alert.YES) setSiteState(); 
 			}
 
 			private function saveNextState():void{
@@ -556,16 +559,17 @@
 
 			private function setSiteStateSend():void{
 				if(!mailPackage || !mailPackage.id) return;
-				if(source.type!=SourceType.SRC_PIXELPARK) return;
 				//double click
 				if (webService.isRunning) return;
-
-				//update site state
-				webService.addEventListener(Event.COMPLETE,setStateSendHandler);
-				try{
-					webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_DELIVERY ,false);
-				}catch(error:Error){
-					Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+				var dt:DeliveryTypeDictionary = DeliveryTypeDictionary.getDeliveryTypeDictionary(source.id, mailPackage.delivery_id);
+				if(source.type==SourceType.SRC_PIXELPARK || (dt && dt.setSend)){
+					//update site state
+					webService.addEventListener(Event.COMPLETE,setStateSendHandler);
+					try{
+						webService.setMailPackageState(mailPackage.id, FotoknigaWeb.ORDER_STATE_SHIPPED ,false);
+					}catch(error:Error){
+						Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+					}					
 				}
 			}
 			private function setStateSendHandler(e:Event):void{

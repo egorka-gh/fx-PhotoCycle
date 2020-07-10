@@ -378,7 +378,7 @@ package com.photodispatcher.tech{
 			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
 			var latchR:DbLatch= new DbLatch(true);
 			latchR.addEventListener(Event.COMPLETE,onloadQueue);
-			//TODO load Queue vs items
+			//load Queue vs items
 			latchR.addLatch(svc.loadQueueItemsByPG(pgId, loadRejects),pgId);
 			latchR.start();
 			//signal previose complited

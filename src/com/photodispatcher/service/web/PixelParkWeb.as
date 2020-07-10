@@ -245,7 +245,7 @@ package com.photodispatcher.service.web{
 				case FotoknigaWeb.ORDER_STATE_MADE:
 					post_state = ORDER_STATE_MADE;
 					break;
-				case FotoknigaWeb.ORDER_STATE_DELIVERY:
+				case FotoknigaWeb.ORDER_STATE_SHIPPED:
 					post_state = ORDER_STATE_SHIPPED;
 					break;
 				//TODO implement other

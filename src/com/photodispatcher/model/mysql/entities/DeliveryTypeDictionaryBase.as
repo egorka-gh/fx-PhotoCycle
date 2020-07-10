@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
 
         private var _delivery_type:int;
         private var _delivery_type_name:String;
+        private var _setSend:Boolean;
         private var _site_id:int;
         private var _source:int;
         private var _source_name:String;
@@ -35,6 +36,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get delivery_type_name():String {
             return _delivery_type_name;
+        }
+
+        public function set setSend(value:Boolean):void {
+            _setSend = value;
+        }
+        public function get setSend():Boolean {
+            return _setSend;
         }
 
         public function set site_id(value:int):void {
@@ -62,6 +70,7 @@ package com.photodispatcher.model.mysql.entities {
             super.readExternal(input);
             _delivery_type = input.readObject() as int;
             _delivery_type_name = input.readObject() as String;
+            _setSend = input.readObject() as Boolean;
             _site_id = input.readObject() as int;
             _source = input.readObject() as int;
             _source_name = input.readObject() as String;
@@ -71,6 +80,7 @@ package com.photodispatcher.model.mysql.entities {
             super.writeExternal(output);
             output.writeObject(_delivery_type);
             output.writeObject(_delivery_type_name);
+            output.writeObject(_setSend);
             output.writeObject(_site_id);
             output.writeObject(_source);
             output.writeObject(_source_name);

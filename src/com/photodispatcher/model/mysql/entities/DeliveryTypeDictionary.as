@@ -8,10 +8,13 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.services.MailPackageService;
+	import com.photodispatcher.util.GridUtil;
+	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	
 	import flash.events.Event;
 	
 	import mx.collections.ArrayList;
+	import mx.core.ClassFactory;
 	
 	import org.granite.tide.Tide;
 	
@@ -58,17 +61,21 @@ package com.photodispatcher.model.mysql.entities {
 		}
 		
 		public static function translateDeliveryType(source:int, siteId:int):int{
-			if(!deliveryTypeMap){
-				throw new Error('Ошибка инициализации DeliveryTypeDictionary.initDeliveryTypeMap',OrderState.ERR_APP_INIT);
-				return;
-			}
-			if(source==0 || siteId==0) return 0;
-			var map:Object=deliveryTypeMap[source];
-			if(!map) return 0;
-			var dt:DeliveryTypeDictionary=map[siteId] as DeliveryTypeDictionary;
+			var dt:DeliveryTypeDictionary=getDeliveryTypeDictionary(source, siteId);
 			if(!dt) return 0;
 			return dt.delivery_type;
+		}
 
+		public static function getDeliveryTypeDictionary(source:int, siteId:int):DeliveryTypeDictionary{
+			if(!deliveryTypeMap){
+				throw new Error('Ошибка инициализации DeliveryTypeDictionary.initDeliveryTypeMap',OrderState.ERR_APP_INIT);
+				return null;
+			}
+			if(source==0 || siteId==0) return null;
+			var map:Object=deliveryTypeMap[source];
+			if(!map) return null;
+			var dt:DeliveryTypeDictionary=map[siteId] as DeliveryTypeDictionary;
+			return dt;
 		}
 
 		public static function gridColumns():ArrayList{
@@ -78,6 +85,7 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('delivery_type'); col.headerText='delivery_type'; col.visible=false;  result.addItem(col);
 			col= new GridColumn('delivery_type_name'); col.headerText='Наименование'; col.editable=false;  result.addItem(col);
 			col= new GridColumn('site_id'); col.headerText='Id сайта'; result.addItem(col);
+			col= new GridColumn('setSend'); col.headerText='"Отправлен" на сайте'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col);
 			return result;
 		}
 
