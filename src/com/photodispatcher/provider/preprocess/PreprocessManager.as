@@ -236,6 +236,7 @@ package com.photodispatcher.provider.preprocess{
 			currSource= Context.getSource(currOrder.source);
 			if(!currSource) {
 				currOrder.state= OrderState.ERR_PREPROCESS;
+				StateLog.log(currOrder.state, currOrder.id,'','Не определен источник (сайт)');
 				currOrder= null;
 				startNext();
 				return;
@@ -270,6 +271,7 @@ package com.photodispatcher.provider.preprocess{
 				lastError='Заказ '+currOrder.id+' обрабатывается на другой станции';
 				//StateLog.log(OrderState.ERR_LOCK_FAULT, currOrder.id,'','soft lock');
 				currOrder.state= OrderState.ERR_LOCK_FAULT;
+				StateLog.log(currOrder.state, currOrder.id,'',lastError);
 				currOrder=null;
 				startNext();
 			}
@@ -594,6 +596,7 @@ package com.photodispatcher.provider.preprocess{
 			if(!currOrder) return;
 			releaseLock();
 			currOrder.state=OrderState.ERR_REPRINT;
+			StateLog.log(currOrder.state, currOrder.id,'',lastError);
 			currOrder=null;
 			startNext();
 		}
