@@ -229,8 +229,8 @@
 						//mailPackage.orders=latch.lastDataAC;
 						mailPackage.orders=new ArrayCollection(orders);
 						if(mailPackage.state_date==null && mailPackage.orders){
-							mailPackage.state= OrderState.TECH_OTK;
-							mailPackage.state_name= OrderState.getStateName(OrderState.TECH_OTK);
+							//mailPackage.state= OrderState.TECH_OTK;
+							//mailPackage.state_name= OrderState.getStateName(OrderState.TECH_OTK);
 							//set state by orders
 							for each(o in mailPackage.orders){
 								if(mailPackage.state>o.state){
@@ -561,7 +561,7 @@
 				if(!mailPackage || !mailPackage.id) return;
 				//double click
 				if (webService.isRunning) return;
-				var dt:DeliveryTypeDictionary = DeliveryTypeDictionary.getDeliveryTypeDictionary(source.id, mailPackage.delivery_id);
+				var dt:DeliveryTypeDictionary = DeliveryTypeDictionary.getDeliveryTypeDictionary(source.id, mailPackage.native_delivery_id);
 				if(source.type==SourceType.SRC_PIXELPARK || (dt && dt.setSend)){
 					//update site state
 					webService.addEventListener(Event.COMPLETE,setStateSendHandler);
