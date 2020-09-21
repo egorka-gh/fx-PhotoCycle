@@ -1518,6 +1518,31 @@ package com.photodispatcher.print{
 			printQueue.fetch();
 			*/
 		}
+
+		public function runQueue(pqg:PrintQueueGeneric):void{
+			if(!pqg){
+				log("Пустая очередь" );
+				return;
+			}
+			if(pqg.isPusher()){
+				log("Пушер нельзя запускать" );
+				return;
+				
+			}
+				
+			var devs:Array;
+					if(pqg.isActive()){
+						log("Проверяю очередь " +pqg.caption);
+						devs=getPrintReadyDevices(true,2);
+						if(devs.length==0){
+							log("Нет свободных девайсов");
+						}else{
+							log("Cвободные девайсы: "+devs.join());
+							log("Дергаю очередь");
+							pqg.fetch();
+						}
+					}
+		}
 		
 		protected function onPrintQueueFetch(event:Event):void{
 			if(forceStop) return;

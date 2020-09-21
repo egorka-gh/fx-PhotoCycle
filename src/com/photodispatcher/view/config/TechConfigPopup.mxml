@@ -124,13 +124,21 @@
 		</s:FormItem> 
 
 		<s:FormHeading label="Партия"/>
-		<s:FormItem label="Размер шрифта:">
+		<s:FormItem label="Партия размер шрифта:">
 			<s:NumericStepper minimum="0" maximum="200" value="@{template.queue_size}"/>
 		</s:FormItem> 
-		<s:FormItem label="Смещение от нижнего правого (pix):">
+		<s:FormItem label="Партия cмещение от нижнего правого (pix):">
 			<itemRenderer:OffsetEditor id="tiQueueOffs" enabled="{Boolean(template.queue_size)}"
 									   data="{template.queue_offset}" 
 									   change="{template.queue_offset=tiQueueOffs.data}"/>
+		</s:FormItem> 
+		<s:FormItem label="Книга размер шрифта:">
+			<s:NumericStepper minimum="0" maximum="200" value="@{template.queue_book_size}"/>
+		</s:FormItem> 
+		<s:FormItem label="Книга cмещение от нижнего правого (pix):">
+			<itemRenderer:OffsetEditor id="tiQueueBookOffs" enabled="{Boolean(template.queue_book_size)}"
+									   data="{template.queue_book_offset}" 
+									   change="{template.queue_book_offset=tiQueueBookOffs.data}"/>
 		</s:FormItem> 
 		
 		<s:FormHeading label="Квадрат"/>

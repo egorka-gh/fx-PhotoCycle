@@ -136,7 +136,7 @@ package com.photodispatcher.tech.plain_register{
 			this.noDataBase=disconnected;
 			//complited=false;
 			
-			if(noDataBase || type==TYPE_PRINT) return;
+			if(noDataBase ) return;
 			//load printgroup & reprints
 			var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
 			if(svc){
@@ -167,6 +167,7 @@ package com.photodispatcher.tech.plain_register{
 					printGroup=ArrayUtil.searchItem('id',printGroupId,printGroups) as PrintGroup;
 					if(printGroup){
 						bookPart=printGroup.book_part;
+						if (!inexactBookSequence) inexactBookSequence = printGroup.is_reprint; 
 					}else{
 						//hz
 						var pg:PrintGroup=printGroups[0] as PrintGroup;
@@ -229,9 +230,13 @@ package com.photodispatcher.tech.plain_register{
 			return false;
 		}
 
-		public function isReprint(pgId:String):Boolean{
+		public function isReprint(pgId:String=''):Boolean{
 			if(!pgId) return false;
-			if(!printGroups) return PrintGroup.getIdxFromId(pgId)>2;
+			//if(!printGroups) return PrintGroup.getIdxFromId(pgId)>2;
+			
+			//base print group
+			if (!pgId && printGroup) return printGroup.is_reprint;
+			//check by param in reprints
 			var pg:PrintGroup;
 			for each(pg in printGroups){
 				if(pg.id==pgId) return pg.is_reprint;

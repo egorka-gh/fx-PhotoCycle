@@ -164,7 +164,7 @@ package com.photodispatcher.provider.preprocess{
 			
 			commands=[];
 			for(pdfNum=0;pdfNum<Math.ceil(command2.parameters.length/pageLimit);pdfNum++){
-				pdfName=printGroup.pdfFileNamePrefix+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
+				pdfName=printGroup.pdfFileNamePrefix()+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
 
 				if(altPdf){
 					command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);

@@ -169,16 +169,19 @@ package com.photodispatcher.print{
 		private function markQueue():void{
 			markQueueLink=null;
 			var svc:PrnStrategyService=Tide.getInstance().getContext().byType(PrnStrategyService,true) as PrnStrategyService;
+			/*
 			var latch:DbLatch=new DbLatch();
 			latch.addEventListener(Event.COMPLETE,onLoadMark);
 			latch.addLatch(svc.getQueueMarkPGs(prnQueue.id));
-			
+			*/
 			var slatch:DbLatch=new DbLatch();
 			slatch.addEventListener(Event.COMPLETE,onLoadLink);
 			slatch.addLatch(svc.getLink(prnQueue.id));
 			slatch.start();
+			/*
 			latch.join(slatch);
 			latch.start();
+			*/
 		}
 
 		private function onLoadLink(evt:Event):void{
@@ -187,8 +190,11 @@ package com.photodispatcher.print{
 				latch.removeEventListener(Event.COMPLETE,onLoadLink);
 				if(latch.complite) markQueueLink=latch.lastDataItem as PrnQueueLink;
 			}
+			var qmTask:QueueMarkTask= new QueueMarkTask(prnQueue, markQueueLink);
+			qmTask.addEventListener(Event.COMPLETE, onqmTask);
+			qmTask.run();
 		}
-
+/*
 		private function onLoadMark(evt:Event):void{
 			var latch:DbLatch= evt.target as DbLatch;
 			if(latch){
@@ -198,12 +204,6 @@ package com.photodispatcher.print{
 					var pgStart:PrintGroup=latch.lastDataArr[0] as PrintGroup;
 					var pgEnd:PrintGroup;
 					if(latch.lastDataArr.length>1) pgEnd=latch.lastDataArr[1] as PrintGroup;
-					/*
-					var mtxt:String="";
-					if(markQueueLink) mtxt=" ("+markQueueLink.prn_queue.toString()+'-'+markQueueLink.prn_queue_link.toString()+")";
-					StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pgStart.id,'Сарт маркировки партии '+ pgStart.prn_queue.toString()+mtxt);
-					if(pgEnd) StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pgEnd.id,'Сарт маркировки партии '+ pgEnd.prn_queue.toString()+mtxt);
-					*/
 					var qmTask:QueueMarkTask= new QueueMarkTask(pgStart, pgEnd, markQueueLink);
 					qmTask.addEventListener(Event.COMPLETE, onqmTask);
 					qmTask.run();
@@ -214,12 +214,14 @@ package com.photodispatcher.print{
 				}
 			}
 		}
+		*/
 		private function onqmTask(evt:Event):void{
 			var qmTask:QueueMarkTask=evt.target as QueueMarkTask;
 			if(qmTask){
 				qmTask.removeEventListener(Event.COMPLETE, onqmTask);
 				if(qmTask.hasError){
-					StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,qmTask.startPrintgroup.id,'Ошибка маркировки партии '+qmTask.error);
+					var pg:PrintGroup =prnQueue.printGroups[0] as PrintGroup;
+					if(pg) StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG, pg.id,'Ошибка маркировки партии '+qmTask.error);
 					Alert.show('Ошибка маркировки партии '+qmTask.error);
 				}
 			}

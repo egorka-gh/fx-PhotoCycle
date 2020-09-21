@@ -1,52 +1,112 @@
 package com.photodispatcher.provider.preprocess{
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.event.IMRunerEvent;
+	import com.photodispatcher.model.mysql.AsyncLatch;
+	import com.photodispatcher.model.mysql.DbLatch;
 	import com.photodispatcher.model.mysql.entities.BookSynonym;
 	import com.photodispatcher.model.mysql.entities.OrderState;
 	import com.photodispatcher.model.mysql.entities.PrintGroup;
 	import com.photodispatcher.model.mysql.entities.PrintGroupFile;
+	import com.photodispatcher.model.mysql.entities.PrnQueue;
 	import com.photodispatcher.model.mysql.entities.PrnQueueLink;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.StateLog;
+	import com.photodispatcher.model.mysql.services.PrintGroupService;
 	import com.photodispatcher.shell.IMCommand;
+	import com.photodispatcher.shell.IMMultiSequenceRuner;
 	import com.photodispatcher.shell.IMSequenceRuner;
 	import com.photodispatcher.util.IMCommandUtil;
+	import com.photodispatcher.util.StrUtil;
+	import com.photodispatcher.util.UnitUtil;
 	
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
 	import flash.events.ProgressEvent;
 	import flash.filesystem.File;
+	import flash.text.ReturnKeyLabel;
+	
+	import org.granite.tide.Tide;
 	
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	[Event(name="complete", type="flash.events.Event")]
 	public class QueueMarkTask extends EventDispatcher{
 		public static const TEMP_FOLDER:String='pdf_wrk';
+		public static const ORG_FOLDER:String='org';
+		public static const EMPTY_PAGE:String='000';
 
-		public var startPrintgroup:PrintGroup;
-		private var endPrintgroup:PrintGroup
+		private var prnQueue:PrnQueue;
 		private var queueLink:PrnQueueLink;
-		private var commands:Array;
+		private var pngCommands:Array;
+		private var pageCommands:Array;
+		private var pdfCommands:Array;
+		private var maskCommands:Array;
 		private var tempFolders:Array;
 		
 		public var hasError:Boolean;
 		public var error:String;
 
-		public function QueueMarkTask(startPrintgroup:PrintGroup,endPrintgroup:PrintGroup, queueLink:PrnQueueLink=null){
+		public function QueueMarkTask(prnQueue:PrnQueue, queueLink:PrnQueueLink=null){
 			super(null);
-			this.startPrintgroup=startPrintgroup;
-			this.endPrintgroup=endPrintgroup;
+			this.prnQueue=prnQueue;
 			this.queueLink=queueLink;
-			commands=[];
-			tempFolders=[];
 		}
 		
+		//private var gLatch:AsyncLatch;
 		public function run():void{
+			pngCommands=[];
+			pageCommands=[];
+			pdfCommands=[];
+			maskCommands=[];
+			tempFolders=[];
 			var altPdf:Boolean=Context.getAttribute("altPDF");
 			if(!altPdf){
 				dispatchErr('Не настроена альтернативная сборка в PDF');
 				return;
 			}
+			if (!prnQueue || !prnQueue.printGroups || prnQueue.printGroups.length==0){
+				dispatchErr('Пустая очередь');
+				return;
+			}
+			
+			//load printgroup files and build commands
+			/*
+			gLatch= new AsyncLatch();
+			gLatch.addEventListener(Event.COMPLETE,onCommandsCreated);
+			var svc:PrintGroupService = Tide.getInstance().getContext().byType(PrintGroupService,true) as PrintGroupService;
+			*/
+			var pg:PrintGroup;
+			for each(pg in prnQueue.printGroups){
+				if (pg && pg.book_type != 0 ){
+					/*
+					var latch:DbLatch=new DbLatch();
+					latch.callContext=pg;
+					//priority 1000 - to run before gLatch 
+					latch.addEventListener(Event.COMPLETE,onLoadFiles,false,1000);
+					latch.addLatch(svc.loadFiles(pg.id));
+					gLatch.join(latch);
+					*/
+					processPg(pg);
+				}
+			}
+			/*
+			gLatch.start();
+			gLatch.release();
+			*/
+			if(hasError) return;
+			if (pngCommands.length==0) return;
+			if (pg) StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pg.id,'Старт подготовки');
+			//run sequence
+			var sequences:Array=[pngCommands,pageCommands,pdfCommands,maskCommands];
+			var sequencesRuner:IMMultiSequenceRuner= new IMMultiSequenceRuner();
+			sequencesRuner.addEventListener(ProgressEvent.PROGRESS, onCmdProgress);
+			sequencesRuner.addEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
+			//TODO use maxThreads?
+			var maxThreads:int=Context.getAttribute('imThreads');
+			if (maxThreads<=0) maxThreads=1;
+			sequencesRuner.start(sequences, maxThreads,false);
+			
+			/*
 			createCommands();
 			if(hasError) return;
 			if(commands.length==0){
@@ -59,12 +119,279 @@ package com.photodispatcher.provider.preprocess{
 			runer.addEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
 			runer.addEventListener(ProgressEvent.PROGRESS, onCmdProgress);
 			runer.start();
+			*/
+			
 		}
+
+		/*
+		private function onLoadFiles(evt:Event):void{
+			var latch:DbLatch= evt.target as DbLatch;
+			if(latch ){
+				latch.removeEventListener(Event.COMPLETE,onLoadFiles);
+				if (latch.complite){
+					var pg:PrintGroup = latch.callContext as PrintGroup;
+					if (!pg || !latch.lastDataArr || latch.lastDataArr.length==0) return;
+					pg.files= latch.lastDataAC;
+					processPg(pg);
+				}				
+			}
+		}
+		*/
+		
+		private var wrkDir:File;
+		private var orgDir:File;
+		private function processPg(pg:PrintGroup):void{
+			var source:Source=Context.getSource(PrintGroup.sourceIdFromId(pg.id));
+			if(!source){
+				//gLatch.releaseError("Не определен источник для "+pg.id);
+				dispatchErr("Не определен источник для "+pg.id);
+				return;
+			}
+			pg.bookTemplate= BookSynonym.getTemplateByPg(pg);
+			if(!pg.bookTemplate){
+				//gLatch.releaseError("Не определен шаблон для "+pg.alias+' '+pg.id);
+				dispatchErr("Не определен шаблон для "+pg.alias+' '+pg.id);
+				return;
+			}
+			if(pg.bookTemplate.queue_size<=0 && pg.bookTemplate.queue_book_size <=0 ){
+				//queue mark off
+				return;
+			}
+			wrkDir= new File(source.getPrtFolder()).resolvePath(pg.order_folder).resolvePath(pg.path).resolvePath(PrintGroup.SUBFOLDER_PRINT);
+			if(!wrkDir.exists || !wrkDir.isDirectory){
+				//gLatch.releaseError("Не доступна папка "+wrkPath+' '+pg.id);
+				dispatchErr("Не доступна папка "+wrkDir.nativePath+' '+pg.id);
+				return;
+			}
+			//create backup & move original files
+			orgDir=wrkDir.resolvePath(ORG_FOLDER);
+			try{
+				if(!orgDir.exists){
+					orgDir.createDirectory();
+					/*
+					//move files
+					var list:Array= wrkDir.getDirectoryListing();
+					for each (var f:File in list){
+						if(!f.isDirectory) f.copyTo(orgDir.resolvePath(f.name));
+					}
+					*/
+				}
+				var list:Array= wrkDir.getDirectoryListing();
+				for each (var f:File in list){
+					var fc:File=orgDir.resolvePath(f.name);
+					if(!f.isDirectory && !fc.exists) f.copyTo(fc);
+				}
+			}catch(error:Error){
+				//gLatch.releaseError("Ошибка файлов "+error.message);
+				dispatchErr("Ошибка файлов "+error.message);
+				return;
+			}
+			
+			//create temp folder
+			wrkDir=wrkDir.resolvePath(TEMP_FOLDER);
+			try{
+				if(wrkDir.exists){
+					if(wrkDir.isDirectory){
+						wrkDir.deleteDirectory(true);
+					}else{
+						wrkDir.deleteFile();
+					}
+				}
+				wrkDir.createDirectory();
+			}catch(error:Error){
+				//gLatch.releaseError("Ошибка файлов "+error.message);
+				dispatchErr("Ошибка файлов "+error.message);
+				return;
+			}
+			try{
+
+				if (pg.is_pdf){
+					createPdfCommands(pg);	
+				}else{
+					createCommands(pg);
+				}
+			}catch(error:Error){
+				//gLatch.releaseError("Ошибка файлов "+error.message);
+				dispatchErr("Ошибка "+error.message);
+				return;
+			}
+			
+		}
+		
+		private function createCommands(printGroup:PrintGroup):void{
+			var fileName:String;
+			var txtPart:String;
+			if(printGroup.bookTemplate.queue_size>0){
+				if(queueLink){
+					txtPart=queueLink.prn_queue.toString()+'-'+queueLink.prn_queue_link.toString();
+				}else{
+					txtPart=printGroup.prn_queue.toString();
+				}
+				StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,printGroup.id,'Маркировка партии '+ txtPart);
+			}
+			if( printGroup.bookTemplate.queue_book_size >0 ){
+				StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,printGroup.id,'Маркировка книг партии');
+			}
+			for (var i:int=1; i<=printGroup.book_num;i++){
+				if(printGroup.book_part==BookSynonym.BOOK_PART_COVER){
+					fileName=StrUtil.lPad(i.toString(),3)+'_00.jpg';	
+				}else{
+					fileName=StrUtil.lPad(i.toString(),3)+'_'+StrUtil.lPad(printGroup.sheet_num.toString(),2)+'.jpg';	
+				}
+				var command:IMCommand=new IMCommand(IMCommand.IM_CMD_CONVERT);
+				//use original folder (\print)
+				command.folder = wrkDir.parent.nativePath;
+				command.add(fileName);				
+				if(printGroup.bookTemplate.queue_size>0){
+					IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Партия:'+txtPart,printGroup.bookTemplate.queue_offset);				
+				}
+				
+				var txt:String;
+				if( printGroup.bookTemplate.queue_book_size >0 ){
+					txt= (printGroup.books_offset+i).toString();
+					IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Книга:'+txt,printGroup.bookTemplate.queue_book_offset);						
+				}
+				IMCommandUtil.setOutputParams(command, '100');
+				command.add(fileName);
+				pngCommands.push(command);
+			}
+		}
+		
+		private function createPdfCommands(printGroup:PrintGroup):void{
+			//detect size
+			var width:int=printGroup.bookTemplate.sheet_width;
+			//expand verticaly
+			if(printGroup.bookTemplate.tech_stair_add){
+				width = width+printGroup.bookTemplate.tech_stair_add;
+			}
+			var len:int=printGroup.bookTemplate.sheet_len;
+			if(printGroup.book_part==BookSynonym.BOOK_PART_COVER) len=UnitUtil.mm2Pixels300(printGroup.height);
+
+			//add for tech barcode
+			if(printGroup.bookTemplate.tech_bar &&
+				(printGroup.book_type==BookSynonym.BOOK_TYPE_BOOK || 
+					printGroup.book_type==BookSynonym.BOOK_TYPE_JOURNAL || 
+					printGroup.book_type==BookSynonym.BOOK_TYPE_LEATHER) &&
+				(printGroup.bookTemplate.is_tech_top || printGroup.bookTemplate.is_tech_center || printGroup.bookTemplate.is_tech_bot)){
+				len=len+printGroup.bookTemplate.tech_add;
+			}
+			
+			var command:IMCommand;
+			//create empty page
+			if (printGroup.book_part != BookSynonym.BOOK_PART_COVER){
+				command=new IMCommand(IMCommand.IM_CMD_CONVERT);
+				command.folder = wrkDir.nativePath;
+				command.add('-size'); command.add(len.toString()+'x'+width.toString());
+				command.add('xc:none');
+				IMCommandUtil.setOutputParams(command, '100');
+				command.add(EMPTY_PAGE+'.png');
+				pngCommands.push(command);
+				
+			}
+			
+			var pdfPages:Array=[];
+			var txtPart:String;
+			if(printGroup.bookTemplate.queue_size>0){
+				if(queueLink){
+					txtPart=queueLink.prn_queue.toString()+'-'+queueLink.prn_queue_link.toString();
+				}else{
+					txtPart=printGroup.prn_queue.toString();
+				}
+				StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,printGroup.id,'Маркировка партии '+ txtPart);
+			}
+			if( printGroup.bookTemplate.queue_book_size >0 ){
+				StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,printGroup.id,'Маркировка книг партии');
+			}
+			for (var i:int=1; i<=printGroup.book_num;i++){
+				//for block & blockcover mark last page only
+				//add empty pages
+				if (printGroup.book_part != BookSynonym.BOOK_PART_COVER){
+					for (var j:int=0; j<printGroup.sheet_num-1;j++){
+						pdfPages.push(EMPTY_PAGE+'.pdf');			
+					}
+				}
+				//create sheet with labels
+				command=new IMCommand(IMCommand.IM_CMD_CONVERT);
+				command.folder = wrkDir.nativePath;
+				command.add('-size'); command.add(len.toString()+'x'+width.toString());
+				command.add('xc:none');
+				
+				if(printGroup.bookTemplate.queue_size>0){
+					IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Партия:'+txtPart,printGroup.bookTemplate.queue_offset);				
+				}
+				
+				var txt:String;
+				if( printGroup.bookTemplate.queue_book_size >0 ){
+					txt= (printGroup.books_offset+i).toString();
+					StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,printGroup.id,'Маркировка книги партии '+ txt);
+					IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Книга:'+txt,printGroup.bookTemplate.queue_book_offset);						
+				}
+				
+				IMCommandUtil.setOutputParams(command, '100');
+				//result file name
+				var resultName:String = StrUtil.lPad(i.toString(),3);
+				pdfPages.push(resultName+'.pdf');
+				command.add(resultName+'.png');
+				pngCommands.push(command);
+			}
+			//convert pngs to pdf pages
+			command=new IMCommand(IMCommand.IM_CMD_JPG2PDF);
+			command.folder=wrkDir.nativePath;
+			//set params
+			IMCommandUtil.setPNG2PDFParams(command);
+			//set folder vs png
+			command.add(wrkDir.nativePath);
+			pageCommands.push(command);
+			
+			//collect pages to pdf & apply mask to original pdfs
+			var pageLimit:int=printGroup.sheets_per_file;
+			for(var pdfNum:int=0;pdfNum<Math.ceil(pdfPages.length/pageLimit);pdfNum++){
+				//collect pages to pdf
+				var pdfName:String=printGroup.pdfFileNamePrefix(false)+StrUtil.lPad((pdfNum+1).toString(),3)+'.pdf';
+				command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
+				command.folder=wrkDir.nativePath;
+				for(i=0;i<pageLimit;i++){
+					var idx:int=pdfNum*pageLimit+i;
+					if(printGroup.is_revers){
+						//revers
+						idx=pdfPages.length-1-idx;
+					}
+					//check if out of command2.parameters.length
+					if(idx<0 || idx>=pdfPages.length) break;
+					command.add(pdfPages[idx]);
+				}
+				//finalize pdf command
+					//pdftk *.pdf cat output combined.pdf
+				command.add('cat'); 
+				command.add('output');
+				command.add(pdfName);
+				pdfCommands.push(command);
+				
+				//apply mask to original pdfs
+				//pdftk page.pdf stamp stamp.pdf output final.pdf
+				command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
+				command.folder=wrkDir.nativePath;
+				//add original file
+				//TODO check if original exists
+				command.add(orgDir.resolvePath(pdfName).nativePath);
+				command.add('multistamp');
+				//add mask
+				command.add(pdfName);
+				command.add('output');
+				command.add(wrkDir.parent.resolvePath(pdfName).nativePath);
+				maskCommands.push(command);
+			}
+		}
+
+		
 		private function onCmdComplite(e:IMRunerEvent):void{
-			var runer:IMSequenceRuner=e.target as IMSequenceRuner;
+			//var runer:IMSequenceRuner=e.target as IMSequenceRuner;
+			var runer:IMMultiSequenceRuner=e.target as IMMultiSequenceRuner;
 			runer.removeEventListener(IMRunerEvent.IM_COMPLETED, onCmdComplite);
 			runer.removeEventListener(ProgressEvent.PROGRESS, onCmdProgress);
 			cleanup();
+			var pg:PrintGroup = prnQueue.printGroups.getItemAt(prnQueue.printGroups.length-1) as PrintGroup;
+			if (pg) StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pg.id,'Конец подготовки');
 			if(e.hasError){
 				trace('QueueMarkTask. Error: '+e.error+'\n command: '+(e.command?e.command.toString():''));
 				dispatchErr('Ошибка подготовки: '+e.error);
@@ -96,215 +423,12 @@ package com.photodispatcher.provider.preprocess{
 				}
 			}
 		}
-
-		private function createCommands():void{
-			if(!startPrintgroup && !endPrintgroup) return;
-			createPgCommands(startPrintgroup,true);
-			createPgCommands(endPrintgroup,false);
-		}
-		
-		private function createPgCommands(printGroup:PrintGroup, isStart:Boolean):void{
-			if(!printGroup) return;
-			var idx:int;
-			var pgf:PrintGroupFile;
-			var wrkPath:String;
-			var tmpPath:String;
-			var wrkDir:File;
-			var fileName:String;
-			var command:IMCommand;
-
-			if(printGroup.book_type==0) return;
-			
-			if(printGroup.prn_queue==0){
-				dispatchErr("Не указана партия "+printGroup.id);
-				return;
-			}
-			if(!printGroup.files || printGroup.files.length==0){
-				dispatchErr("Пустая группа печати "+printGroup.id);
-				return;
-			}
-			idx=0;
-			if(isStart){
-				if(!printGroup.is_pdf && printGroup.is_revers){
-					idx=printGroup.files.length-1;
-				}
-			}else{
-				if(!printGroup.is_pdf && !printGroup.is_revers){
-					idx=printGroup.files.length-1;
-				}
-				if(printGroup.is_pdf){
-					idx=printGroup.files.length-1;
-				}
-			}
-			pgf=printGroup.files[idx] as PrintGroupFile;
-			if(pgf) fileName=pgf.file_name;
-			if(!pgf || !fileName){
-				dispatchErr("Не определен файл "+idx.toString()+' '+printGroup.id);
-				return;
-			}
-			
-			var source:Source=Context.getSource(PrintGroup.sourceIdFromId(printGroup.id));
-			if(!source){
-				dispatchErr("Не определен источник для "+printGroup.id);
-				return;
-			}
-			wrkPath=source.getPrtFolder()+File.separator+printGroup.order_folder+File.separator+printGroup.path;//+File.separator+filePath;
-			wrkDir= new File(wrkPath);
-			if(!wrkDir.exists || !wrkDir.isDirectory){
-				dispatchErr("Не доступна папка "+wrkPath+' '+printGroup.id);
-				return;
-			}
-			printGroup.bookTemplate= BookSynonym.getTemplateByPg(printGroup);
-			if(!printGroup.bookTemplate){
-				//dispatchErr("Не определен шаблон для "+printGroup.alias+' '+printGroup.id);
-				return;
-			}
-			
-			if(printGroup.bookTemplate.queue_size<=0){
-				//queue mark off
-				return;
-			}
-			if(printGroup.is_pdf){
-				if(printGroup.sheets_per_file<=0){
-					dispatchErr("Не определено количество листов в пдф "+printGroup.id);
-					return;
-				}
-				//create temp folder
-				wrkDir=wrkDir.resolvePath(TEMP_FOLDER);
-				try{
-					if(wrkDir.exists){
-						if(wrkDir.isDirectory){
-							wrkDir.deleteDirectory(true);
-						}else{
-							wrkDir.deleteFile();
-						}
-					}
-					wrkDir.createDirectory();
-				}catch(error:Error){
-					dispatchErr("Ошибка файлов "+error.message);
-					return;
-				}
-				tempFolders.push(wrkDir.nativePath);
-				//extract pdf page
-				command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
-				command.folder=wrkPath;
-				//pdftk in.pdf cat 1-12 14-end output out1.pdf
-				command.add(fileName);
-				command.add('cat');
-				if(isStart){
-					command.add('1');
-				}else{
-					command.add('end');
-				}
-				command.add('output');
-				command.add(wrkDir.nativePath+File.separator+'page.pdf');
-				commands.push(command);
-				
-				//extract jpg
-				command=new IMCommand(IMCommand.IM_CMD_PDF2JPG);
-				command.folder=wrkPath;
-				//pdfimages.exe -f 1 -l 1  -j 1.pdf img
-				command.add('-f'); command.add('1'); //from page
-				command.add('-l'); command.add('1'); //to page
-				command.add('-j'); //keep jpg
-				command.add(wrkDir.nativePath+File.separator+'page.pdf'); //src pdf
-				command.add(wrkDir.nativePath+File.separator+'img'); //output prefix (img-0000.jpg)
-				commands.push(command);
-			}
-			
-			//draw queue mark
-			command=new IMCommand(IMCommand.IM_CMD_CONVERT);
-			if(!printGroup.is_pdf){
-				command.folder=wrkPath;
-				command.add(fileName);
-			}else{
-				command.folder=wrkDir.nativePath;
-				command.add('img-0000.jpg');
-			}
-			var txt:String;
-			if(queueLink){
-				txt=queueLink.prn_queue.toString()+'-'+queueLink.prn_queue_link.toString();
-			}else{
-				txt=printGroup.prn_queue.toString();
-			}
-			StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,printGroup.id,'Маркировка партии '+ txt);
-			IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Партия:'+txt,printGroup.bookTemplate.queue_offset);
-			IMCommandUtil.setOutputParams(command, '100');
-			if(!printGroup.is_pdf){
-				command.add(fileName);
-			}else{
-				command.add('img-0000.jpg');
-			}
-			commands.push(command);
-
-			//pack to pdf
-			if(printGroup.is_pdf){
-				//detect if  only one page in original pdf
-				var hasOnePage:Boolean=printGroup.prints==1 || printGroup.sheets_per_file==1;
-				if(!hasOnePage){
-					if(!isStart){
-						var pagesInLastFile:int=printGroup.prints % printGroup.sheets_per_file;
-						if(pagesInLastFile==0) pagesInLastFile=printGroup.sheets_per_file;
-						hasOnePage=pagesInLastFile==1;
-					}
-				}
-				
-				//pack to pdf page
-				command=new IMCommand(IMCommand.IM_CMD_JPG2PDF);
-				command.folder=wrkDir.nativePath;
-				//set params
-				IMCommandUtil.setJPG2PDFParams(command);
-				//set jpg path
-				command.add(wrkDir.nativePath+File.separator+'img-0000.jpg');
-				commands.push(command);
-				
-				//replace page
-				if(!hasOnePage){
-					//remove old page
-					command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
-					command.folder=wrkPath;
-					command.add(wrkPath+File.separator+pgf.file_name);
-					command.add('cat');
-					if(isStart){
-						command.add('2-end');
-					}else{
-						//4 last page
-						//pdftk 2.pdf cat 1-r2 output 1.pdf
-						command.add('1-r2');
-					}
-					command.add('output');
-					command.add(wrkDir.nativePath+File.separator+'cat.pdf');
-					commands.push(command);
-				}
-				
-				//join
-				command=new IMCommand(IMCommand.IM_CMD_PDF_TOOL);
-				command.folder=wrkDir.nativePath;
-				if(hasOnePage){
-					//add only new page
-					command.add('img-0000.pdf');//new page
-				}else{
-					if(isStart){
-						//add first
-						command.add('img-0000.pdf');//new page
-						command.add('cat.pdf');//cat pdf
-					}else{
-						//add last
-						command.add('cat.pdf');//cat pdf
-						command.add('img-0000.pdf');//new page
-					}
-				}
-				command.add('cat');
-				command.add('output');
-				command.add(wrkPath+File.separator+pgf.file_name); //replace old
-				commands.push(command);
-			}
-		}
-		
 		
 		private function dispatchErr(errMsg:String):void{
 			hasError=true;
 			error=errMsg;
+			var pg:PrintGroup = prnQueue.printGroups.getItemAt(prnQueue.printGroups.length-1) as PrintGroup;
+			if (pg) StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,pg.id,'Ошибка: '+errMsg);
 			dispatchEvent(new Event(Event.COMPLETE));
 		}
 

@@ -167,10 +167,14 @@
 							  click="{printManager.loadPrnQueues()}" 
 							  cornerRadius="4" width="22" height="22" baseline="4"/>
 				</s:HGroup>
-				<s:DataGrid id="dgQueue" width="100%" height="50%"
-							selectionMode="singleRow" locale="ru_RU"
-							dataProvider="{printManager.prnQueuesAC}"
-							columns="{PrintQueueGeneric.gridColumns()}"/>
+				<s:HGroup width="100%" height="50%" gap="10">
+					<s:DataGrid id="dgQueue" width="100%" height="100%"
+								selectionMode="singleRow" locale="ru_RU"
+								dataProvider="{printManager.prnQueuesAC}"
+								columns="{PrintQueueGeneric.gridColumns()}"/>
+					<s:Button label="Пускануть"
+							  click="{printManager.runQueue(dgQueue.selectedItem as PrintQueueGeneric)}"/>					
+				</s:HGroup>
 				<s:Label text="Группы печати"/>
 				<s:DataGrid id="dgQueuePg" width="100%" height="50%"
 							selectionMode="singleRow" locale="ru_RU"

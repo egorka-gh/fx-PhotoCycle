@@ -365,7 +365,8 @@
 
 				
 				if(printBar && printCaption){
-					logToScreen('Печать ШК '+printBar+' '+printCaption);
+					printCaption = ' '+printCaption;
+					logToScreen('Печать ШК '+printBar+printCaption);
 					if(printer) printer.sendMessages([printBar, printCaption]);
 				}else{
 					logToScreen('!! Не верный ШК. Ошибка преобразования ШК.');

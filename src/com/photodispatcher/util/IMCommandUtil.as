@@ -293,6 +293,17 @@ package com.photodispatcher.util{
 			command.add('-o'); command.add('resolution=300');
 		}
 
+		public static function setPNG2PDFParams(command:IMCommand):void{
+			//bmpp -l pdf -t png -o dct=on -o bpc=off -o interpolation=off   D:\ctmp
+			command.add('-l'); command.add('pdf');
+			command.add('-t'); command.add('png');
+			command.add('-o'); command.add('dct=on');
+			command.add('-o'); command.add('bpc=off');
+			command.add('-o'); command.add('interpolation=off');
+			//command.add('-o'); command.add('resolution=chunk');
+			//command.add('-o'); command.add('resolution=300');
+		}
+
 		
 		public static function setPDFOutputParams(command:IMCommand, quality:String='100'):void{
 			command.add('-units'); command.add('PixelsPerInch');

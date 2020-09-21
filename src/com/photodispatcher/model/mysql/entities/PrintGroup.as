@@ -825,7 +825,7 @@ package com.photodispatcher.model.mysql.entities {
 			return img;
 		}
 		
-		public function get pdfFileNamePrefix():String{
+		public function pdfFileNamePrefix(withFolder:Boolean=true):String{
 			var result:String='';
 			if (book_type!=0 && is_pdf){
 				if(book_part==BookSynonym.BOOK_PART_COVER){
@@ -833,7 +833,7 @@ package com.photodispatcher.model.mysql.entities {
 				}else if(book_part==BookSynonym.BOOK_PART_BLOCK || book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
 					result=humanId+'-'+PDF_FILENAME_SHEETS;
 				}
-				result=SUBFOLDER_PRINT+File.separator+result;
+				if(withFolder) result=SUBFOLDER_PRINT+File.separator+result;
 			}
 			return result;
 		}
