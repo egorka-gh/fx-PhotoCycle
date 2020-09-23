@@ -275,7 +275,7 @@
 			private function onProductsCount(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onloadChildOrders);
+					latch.removeEventListener(Event.COMPLETE,onProductsCount);
 					if(latch.complite){
 						productsCountAC = latch.lastDataAC;
 					}else{
@@ -823,7 +823,7 @@
 				<s:DataGrid id="dgProps" selectionMode="singleRow" width="100%" height="100%" locale="ru_RU"
 							excludeFrom="netprint"
 							creationComplete="dgProps_creationCompleteHandler(event)"
-							dataProvider="{mailPackage.orders}" columns="{Order.shortGridColumns()}"/>
+							dataProvider="{mailPackage.orders}" columns="{Order.mailPackGridColumns()}"/>
 				<s:Spacer height="5"/>
 				<s:HGroup width="100%" height="100%" gap="10">
 					<s:VGroup width="100%" height="100%" gap="5">

@@ -58,6 +58,19 @@ package com.photodispatcher.model.mysql.entities {
 			return result;
 		}
 
+		public static function mailPackGridColumns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			var col:GridColumn;
+			//var o:Order;
+			col= new GridColumn('id'); result.addItem(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; result.addItem(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			col= new GridColumn('extraInfo.books'); col.headerText='Книг'; result.addItem(col);
+			col= new GridColumn('extraInfo.format'); col.headerText='Формат'; result.addItem(col);
+			return result;
+		}
+
 		/*
 		runtime
 		available ftp sources 4 order  
