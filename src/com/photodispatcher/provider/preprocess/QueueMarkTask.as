@@ -324,7 +324,7 @@ package com.photodispatcher.provider.preprocess{
 				if( printGroup.bookTemplate.queue_book_size >0 ){
 					txt= (printGroup.books_offset+i).toString();
 					StateLog.logByPGroup(OrderState.PRN_AUTOPRINTLOG,printGroup.id,'Маркировка книги партии '+ txt);
-					IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, 'Книга:'+txt,printGroup.bookTemplate.queue_book_offset);						
+					IMCommandUtil.annotateImageV(command,printGroup.bookTemplate.queue_size, ':'+txt,printGroup.bookTemplate.queue_book_offset);						
 				}
 				
 				IMCommandUtil.setOutputParams(command, '100');
