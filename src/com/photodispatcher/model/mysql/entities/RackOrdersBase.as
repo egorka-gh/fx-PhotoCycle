@@ -17,7 +17,9 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _boxNum:int;
         private var _group_id:int;
+        private var _isBox:Boolean;
         private var _order_id:String;
         private var _rack:int;
         private var _rack_name:String;
@@ -25,6 +27,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _source_name:String;
         private var _space:int;
         private var _space_name:String;
+
+        public function set boxNum(value:int):void {
+            _boxNum = value;
+        }
+        public function get boxNum():int {
+            return _boxNum;
+        }
 
         public function set group_id(value:int):void {
             _group_id = value;
@@ -84,7 +93,9 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _boxNum = input.readObject() as int;
             _group_id = input.readObject() as int;
+            _isBox = input.readObject() as Boolean;
             _order_id = input.readObject() as String;
             _rack = input.readObject() as int;
             _rack_name = input.readObject() as String;
@@ -96,7 +107,9 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject(_boxNum);
             output.writeObject(_group_id);
+            output.writeObject(_isBox);
             output.writeObject(_order_id);
             output.writeObject(_rack);
             output.writeObject(_rack_name);

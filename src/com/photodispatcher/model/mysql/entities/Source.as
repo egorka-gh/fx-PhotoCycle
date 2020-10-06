@@ -8,11 +8,14 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.context.Context;
 	import com.photodispatcher.model.ProcessState;
+	import com.photodispatcher.util.GridUtil;
 	import com.photodispatcher.util.StrUtil;
+	import com.photodispatcher.view.itemRenderer.BooleanGridItemEditor;
 	
 	import flash.filesystem.File;
 	
 	import mx.collections.ArrayList;
+	import mx.core.ClassFactory;
 	
 	import spark.components.gridClasses.GridColumn;
 
@@ -29,9 +32,10 @@ package com.photodispatcher.model.mysql.entities {
 			var col:GridColumn= new GridColumn('id'); col.headerText='ID'; result.addItem(col);
 			col= new GridColumn('name'); col.headerText='Наименование'; result.addItem(col); 
 			col= new GridColumn('type_name'); col.headerText='Тип'; result.addItem(col); 
-			col= new GridColumn('online'); col.headerText='Online'; result.addItem(col); 
+			col= new GridColumn('online'); col.headerText='Online'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col); 
 			if(!labColumns){
 				col= new GridColumn('code'); col.headerText='Код'; result.addItem(col); 
+				col= new GridColumn('hasBoxes'); col.headerText='Коробки'; col.labelFunction=GridUtil.booleanToLabel; col.itemEditor=new ClassFactory(BooleanGridItemEditor); result.addItem(col); 
 			}
 			return result;
 		}

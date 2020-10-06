@@ -38,11 +38,12 @@
 				typeListIdx=-1;
 				if(_currentItem){
 					_currentItem.edit();
-					if(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE){
+					//if(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE){
 						currentState=hideDelivery?'noDelivery':'sourceFull';
-					}else{
+					//}
+					/*else{
 						currentState='lab';
-					}
+					}*/
 					typeList=Context.getAttribute('src_typeValueList') as ArrayCollection;
 					typeListIdx=ArrayUtil.searchItemIdx('value',_currentItem.type,typeList.toArray());
 					if(_currentItem.loc_type==Source.LOCATION_TYPE_SOURCE && !hideDelivery){
@@ -150,6 +151,9 @@
 			</s:FormItem> 
 			<s:FormItem label="Код" includeIn="source">
 				<s:TextInput id="tiCod" text="@{currentItem.code}" change="tiCod_changeHandler(event)" width="20"/>
+			</s:FormItem> 
+			<s:FormItem label="Коробки">
+				<s:CheckBox id="chbBox" selected="@{currentItem.hasBoxes}" change="{currentItem.changed=true}"/>
 			</s:FormItem> 
 			<s:FormItem label="Сайт" enabled="{currentItem.loaded}" includeIn="source">
 				<config:SourceServiceEdit data="{currentItem.webService}"/>

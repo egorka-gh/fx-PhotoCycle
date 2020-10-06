@@ -22,6 +22,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _fbookService:SourceSvc;
         private var _ftpService:SourceSvc;
         private var _ftpServices:ListCollectionView;
+        private var _hasBoxes:Boolean;
         private var _hotFolder:SourceSvc;
         private var _id:int;
         private var _loc_type:int;
@@ -60,6 +61,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get ftpServices():ListCollectionView {
             return _ftpServices;
+        }
+
+        public function set hasBoxes(value:Boolean):void {
+            _hasBoxes = value;
+        }
+        public function get hasBoxes():Boolean {
+            return _hasBoxes;
         }
 
         public function set hotFolder(value:SourceSvc):void {
@@ -145,6 +153,7 @@ package com.photodispatcher.model.mysql.entities {
             _fbookService = input.readObject() as SourceSvc;
             _ftpService = input.readObject() as SourceSvc;
             _ftpServices = input.readObject() as ListCollectionView;
+            _hasBoxes = input.readObject() as Boolean;
             _hotFolder = input.readObject() as SourceSvc;
             _id = input.readObject() as int;
             _loc_type = input.readObject() as int;
@@ -164,6 +173,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_fbookService);
             output.writeObject(_ftpService);
             output.writeObject(_ftpServices);
+            output.writeObject(_hasBoxes);
             output.writeObject(_hotFolder);
             output.writeObject(_id);
             output.writeObject(_loc_type);
