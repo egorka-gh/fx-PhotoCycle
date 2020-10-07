@@ -114,6 +114,9 @@ package com.photodispatcher.service.web{
 					lastOrder.src_state=result.result.status;
 					trace('PixelParkWeb loaded order id:'+lastOrder.src_id);
 					break;
+				case CMD_GET_INFO_SYNC:
+					trace('PixelParkWeb get sync info');
+					break;					
 				case CMD_SET_PACKAGE_STATE:
 					if(result.result!='OK'){
 						var msg:String = result.result;
@@ -121,7 +124,7 @@ package com.photodispatcher.service.web{
 						abort('Ошибка сайта при смене статуса группы '+packageId.toString()+' '+msg);
 						return;
 					}
-					trace('FotoknigaWeb MailPackage state changed');
+					trace('PixelParkWeb MailPackage state changed');
 					break;
 				//case CMD_GET_INFO_SYNC:
 				//case CMD_GET_INFO_LOADER:
