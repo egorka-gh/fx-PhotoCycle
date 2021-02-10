@@ -18,18 +18,29 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _boxID:String;
         private var _empty:Boolean;
         private var _height:int;
         private var _id:int;
         private var _name:String;
         private var _orders:ListCollectionView;
+        private var _packageID:int;
         private var _rack:int;
         private var _rack_name:String;
         private var _rack_type_name:String;
         private var _rating:Number;
+        private var _source:int;
+        private var _sourceName:String;
         private var _unused_weight:Number;
         private var _weight:Number;
         private var _width:int;
+
+        public function set boxID(value:String):void {
+            _boxID = value;
+        }
+        public function get boxID():String {
+            return _boxID;
+        }
 
         public function set empty(value:Boolean):void {
             _empty = value;
@@ -66,6 +77,13 @@ package com.photodispatcher.model.mysql.entities {
             return _orders;
         }
 
+        public function set packageID(value:int):void {
+            _packageID = value;
+        }
+        public function get packageID():int {
+            return _packageID;
+        }
+
         public function set rack(value:int):void {
             _rack = value;
         }
@@ -94,6 +112,20 @@ package com.photodispatcher.model.mysql.entities {
             return _rating;
         }
 
+        public function set source(value:int):void {
+            _source = value;
+        }
+        public function get source():int {
+            return _source;
+        }
+
+        public function set sourceName(value:String):void {
+            _sourceName = value;
+        }
+        public function get sourceName():String {
+            return _sourceName;
+        }
+
         public function set unused_weight(value:Number):void {
             _unused_weight = value;
         }
@@ -117,15 +149,19 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _boxID = input.readObject() as String;
             _empty = input.readObject() as Boolean;
             _height = input.readObject() as int;
             _id = input.readObject() as int;
             _name = input.readObject() as String;
             _orders = input.readObject() as ListCollectionView;
+            _packageID = input.readObject() as int;
             _rack = input.readObject() as int;
             _rack_name = input.readObject() as String;
             _rack_type_name = input.readObject() as String;
             _rating = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
+            _source = input.readObject() as int;
+            _sourceName = input.readObject() as String;
             _unused_weight = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _weight = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _width = input.readObject() as int;
@@ -133,15 +169,19 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject(_boxID);
             output.writeObject(_empty);
             output.writeObject(_height);
             output.writeObject(_id);
             output.writeObject(_name);
             output.writeObject(_orders);
+            output.writeObject(_packageID);
             output.writeObject(_rack);
             output.writeObject(_rack_name);
             output.writeObject(_rack_type_name);
             output.writeObject(_rating);
+            output.writeObject(_source);
+            output.writeObject(_sourceName);
             output.writeObject(_unused_weight);
             output.writeObject(_weight);
             output.writeObject(_width);

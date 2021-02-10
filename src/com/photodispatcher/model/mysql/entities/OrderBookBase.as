@@ -17,7 +17,10 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _alias:String;
         private var _book:int;
+        private var _bookType:int;
+        private var _bookTypeName:String;
         private var _book_part:int;
         private var _book_part_name:String;
         private var _compo_book:int;
@@ -38,11 +41,32 @@ package com.photodispatcher.model.mysql.entities {
         private var _sub_id:String;
         private var _target_pg:String;
 
+        public function set alias(value:String):void {
+            _alias = value;
+        }
+        public function get alias():String {
+            return _alias;
+        }
+
         public function set book(value:int):void {
             _book = value;
         }
         public function get book():int {
             return _book;
+        }
+
+        public function set bookType(value:int):void {
+            _bookType = value;
+        }
+        public function get bookType():int {
+            return _bookType;
+        }
+
+        public function set bookTypeName(value:String):void {
+            _bookTypeName = value;
+        }
+        public function get bookTypeName():String {
+            return _bookTypeName;
         }
 
         public function set book_part(value:int):void {
@@ -180,7 +204,10 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _alias = input.readObject() as String;
             _book = input.readObject() as int;
+            _bookType = input.readObject() as int;
+            _bookTypeName = input.readObject() as String;
             _book_part = input.readObject() as int;
             _book_part_name = input.readObject() as String;
             _compo_book = input.readObject() as int;
@@ -204,7 +231,10 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject(_alias);
             output.writeObject(_book);
+            output.writeObject(_bookType);
+            output.writeObject(_bookTypeName);
             output.writeObject(_book_part);
             output.writeObject(_book_part_name);
             output.writeObject(_compo_book);

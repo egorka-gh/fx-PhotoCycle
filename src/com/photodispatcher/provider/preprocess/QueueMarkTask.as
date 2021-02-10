@@ -31,7 +31,7 @@ package com.photodispatcher.provider.preprocess{
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	[Event(name="complete", type="flash.events.Event")]
 	public class QueueMarkTask extends EventDispatcher{
-		public static const TEMP_FOLDER:String='pdf_wrk';
+		private static const TEMP_FOLDER:String='pdf_wrk';
 		public static const ORG_FOLDER:String='org';
 		public static const EMPTY_PAGE:String='000';
 

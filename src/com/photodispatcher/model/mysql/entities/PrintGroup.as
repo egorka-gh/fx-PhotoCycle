@@ -931,6 +931,14 @@ package com.photodispatcher.model.mysql.entities {
 			if (result) result+=StrUtil.lPad(file.book_num.toString(),3);
 			return result;
 		}
+		public static function bookBarcodeManual(pgId:String, book:int):String{
+			if(!pgId || book<=0) return '';
+			var p:PrintGroup = new PrintGroup();
+			p.id=pgId;
+			var result:String=p.getDigitId();
+			if (result) result+=StrUtil.lPad(book.toString(),3);
+			return result;
+		}
 
 		/**
 		 * 

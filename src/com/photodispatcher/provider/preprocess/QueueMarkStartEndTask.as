@@ -21,7 +21,7 @@ package com.photodispatcher.provider.preprocess{
 	[Event(name="progress", type="flash.events.ProgressEvent")]
 	[Event(name="complete", type="flash.events.Event")]
 	public class QueueMarkStartEndTask extends EventDispatcher{
-		public static const TEMP_FOLDER:String='pdf_wrk';
+		private static const TEMP_FOLDER:String='pdf_wrk';
 
 		public var startPrintgroup:PrintGroup;
 		private var endPrintgroup:PrintGroup

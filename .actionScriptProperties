@@ -22,28 +22,10 @@
     <application path="TechUGlueProxy.mxml">
       <airExcludes/>
     </application>
-    <application path="TechMonitorS.mxml">
-      <airExcludes/>
-    </application>
-    <application path="PhotoPickerS.mxml">
-      <airExcludes/>
-    </application>
-    <application path="PhotoCycleP.mxml">
-      <airExcludes/>
-    </application>
-    <application path="TechGlue.mxml">
-      <airExcludes/>
-    </application>
     <application path="PhotoPicker2.mxml">
       <airExcludes/>
     </application>
-    <application path="PhotoTechS.mxml">
-      <airExcludes/>
-    </application>
     <application path="PhotoReprint.mxml">
-      <airExcludes/>
-    </application>
-    <application path="TechBG.mxml">
       <airExcludes/>
     </application>
     <application path="PhotoLoader.mxml">
@@ -52,37 +34,55 @@
     <application path="BarcodePrinter.mxml">
       <airExcludes/>
     </application>
-    <application path="TechBatch.mxml">
-      <airExcludes/>
-    </application>
-    <application path="TechUJoin.mxml">
+    <application path="TechJoin.mxml">
       <airExcludes/>
     </application>
     <application path="TechJoinMB.mxml">
       <airExcludes/>
     </application>
-    <application path="TechJoin.mxml">
-      <airExcludes/>
-    </application>
-    <application path="TechUGlueProxyBC.mxml">
+    <application path="Tst.mxml">
       <airExcludes/>
     </application>
     <application path="TechOTKS.mxml">
       <airExcludes/>
     </application>
-    <application path="Tst.mxml">
-      <airExcludes/>
-    </application>
     <application path="TechUGlue.mxml">
-      <airExcludes/>
-    </application>
-    <application path="Laboratory.mxml">
       <airExcludes/>
     </application>
     <application path="PhotoCycle.mxml">
       <airExcludes/>
     </application>
     <application path="PhotoCorrector.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoPickerS.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechMonitorS.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoCycleP.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechGlue.mxml">
+      <airExcludes/>
+    </application>
+    <application path="PhotoTechS.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechBG.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechBatch.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechUJoin.mxml">
+      <airExcludes/>
+    </application>
+    <application path="TechUGlueProxyBC.mxml">
+      <airExcludes/>
+    </application>
+    <application path="Laboratory.mxml">
       <airExcludes/>
     </application>
   </applications>
@@ -93,8 +93,8 @@
     <buildTarget buildTargetName="default">
       <airSettings airCertificatePath="D:/Egorka/Folders/flex/airCert/egorka.p12" airTimestamp="false" anePathSet="true" version="1">
         <airExcludes>
-          <pathEntry path="com"/>
           <pathEntry path="jp"/>
+          <pathEntry path="com"/>
         </airExcludes>
         <anePaths/>
       </airSettings>

@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:view="com.photodispatcher.view.*">
+	
+	<fx:Metadata>
+		[Event(name="close", type="flash.events.Event")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.BookKit;
+			import com.photodispatcher.model.mysql.entities.BookSynonym;
+			import com.photodispatcher.model.mysql.entities.MailPackage;
+			import com.photodispatcher.model.mysql.entities.MailPackageBoxItem;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.PrintGroup;
+			import com.photodispatcher.model.mysql.entities.RackSpace;
+			import com.photodispatcher.model.mysql.entities.SubOrder;
+			import com.photodispatcher.model.mysql.entities.TechLog;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.model.mysql.services.OrderStateService;
+			import com.photodispatcher.model.mysql.services.TechService;
+			import com.photodispatcher.util.ArrayUtil;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.GridSelectionEvent;
+			import spark.events.IndexChangeEvent;
+			import spark.events.PopUpEvent;
+			
+			[Bindable]
+			public var techPoint:TechPoint;
+			
+			private var _box:MailPackage;
+			[Bindable]
+			public function get currBox():MailPackage{
+				return _box;
+			}
+			public function set currBox(b:MailPackage):void{
+				_box = b;
+				currPGID='';
+				currBook=0;
+				currBoxItem=null;
+				order=null;
+				pgCover=null;
+				pgBlok=null;
+				bookTotal=0;
+				bookComplited=0;
+			}
+
+			[Bindable]
+			private var currPGID:String;
+			[Bindable]
+			private var currBook:int;
+			[Bindable]
+			private var currBoxItem:MailPackageBoxItem;
+			
+			
+////TODOOOOOO			
+			
+			[Bindable]
+			private var order:Order;
+			[Bindable]
+			private var pgCover:PrintGroup;
+			[Bindable]
+			private var pgBlok:PrintGroup;
+			//[Bindable]
+			//private var bookListAC:ArrayCollection;
+			[Bindable]
+			private var bookTotal:int;
+			[Bindable]
+			private var bookComplited:int;
+			//[Bindable]
+			//private var space:RackSpace;
+			
+			//private var showOrder:SubOrder;
+			//private var pgId:String;
+			
+			public function show(pgId:String, book:int, checkClose:Boolean=false):void{
+				currPGID='';
+				if (!pgId) return;
+				//look4item
+				var oldBoxItem:MailPackageBoxItem=currBoxItem;
+				currBoxItem = null;
+				for each(var it:MailPackageBoxItem in currBox.box.items){
+					if (it && it.printGroups){
+						for each(var pg:PrintGroup in it.printGroups){
+							if(pg.id==pgId){
+								currPGID=pgId;
+								currBoxItem=it;
+								break;
+							}
+						}
+					}
+					if (currBoxItem) break;
+				}
+				if (!currBoxItem) return;
+				
+				checkAfterRefresh=false;
+				//same box item?
+				if(oldBoxItem && oldBoxItem.orderID==currBoxItem.orderID && oldBoxItem.subID==currBoxItem.subID){
+					if(checkClose){
+						if(book!=0 && currBook==book){
+							//complite book
+							btComplite_clickHandler(null);
+							return;
+						}
+						if(currBoxItem.bookType ==0 ){
+							//complite photo printgroup
+							setCompletePhoto(false);
+							return;
+						}
+					}
+					currBook=book;
+					if(currBoxItem.bookType!=0) refreshBooks();
+					return;
+				}
+				//load order info
+				currBook=book;
+				refresh();
+			}
+			
+			private function refresh():void{
+				pgCover=null;
+				pgBlok=null;
+				order=null;
+				
+				//bookListAC=new ArrayCollection();
+				bookTotal=0;
+				bookComplited=0;
+				if(!currBoxItem) return;
+				bookTotal = currBoxItem.itemTo-currBoxItem.itemFrom+1;
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onOrderLoad);
+				latch.addLatch(svc.loadOrder4Otk(currBoxItem.orderID, currBoxItem.subID));
+				latch.start();
+			}
+
+			private function onOrderLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
+					order=latch.lastDataItem as Order;
+				}
+					
+				if(!order || !order.printGroups) return;
+				if(order.hasSuborders){
+					order.otkSubid=(order.suborders.getItemAt(0) as SubOrder).sub_id;
+				}else{
+					order.otkSubid='';
+				}
+				var pg:PrintGroup;
+				for each(pg in order.printGroups){
+					if(currBoxItem.bookType!=0){
+						if (!pg.is_reprint && pg.book_type!=0){
+							if(pg.book_part==BookSynonym.BOOK_PART_COVER || pg.book_part==BookSynonym.BOOK_PART_INSERT) pgCover=pg;
+							if(pg.book_part==BookSynonym.BOOK_PART_BLOCK || pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) pgBlok=pg;
+						}
+					}else{
+						if(pg.alias == currBoxItem.alias){
+							pgBlok=pg;
+							break;
+						}
+					}
+				}
+				order.printGroups=new ArrayCollection;
+				if(pgCover) order.printGroups.addItem(pgCover);
+				if(pgBlok) order.printGroups.addItem(pgBlok);
+				if(currBoxItem.bookType !=0) refreshBooks();
+				detectState();
+			}
+			
+			private function detectState():void{
+				if(!currBoxItem || currBoxItem.bookType!=0){
+					currentState='book';
+				}else{
+					currentState='photo';
+				}
+			}
+			
+			private function refreshBooks():void{
+				bookComplited=0;
+				if(!order || !order.id){
+					return;
+				}
+				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onBooksLoad);
+				latch.addLatch(svc.loadSubOrderBooks(currBoxItem.orderID , currBoxItem.subID ));
+				latch.start();
+			}
+			private function onBooksLoad(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				var a:Array;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onBooksLoad);
+					a=latch.lastDataArr;
+				}
+				
+				if (pgCover) pgCover.setBooks(a);
+				if (pgBlok) pgBlok.setBooks(a);
+				order.fillBookKits( ((pgCover && pgCover.books)?pgCover.books.toArray():null), ((pgBlok && pgBlok.books)?pgBlok.books.toArray():null));
+				
+				var bk:BookKit;
+				if(order.otkBookKits){
+					for each (bk in order.otkBookKits){
+						bk.disabled = bk.book< currBoxItem.itemFrom || bk.book> currBoxItem.itemTo;
+						if(!bk.disabled && bk.state>=OrderState.TECH_OTK) bookComplited++;
+					}
+				}
+				
+				if (lstBookList && currBook>0) lstBookList.selectedIndex=currBook-1;
+				if(checkAfterRefresh){
+					checkAfterRefresh=false;
+					if(bookTotal==bookComplited){
+						//compltete
+						Alert.show('Все книги проверены. Заказ выполнен?','',Alert.YES|Alert.NO,this,onCompleteAlert);
+					}
+				}
+			}
+
+			protected function btClose_clickHandler(event:MouseEvent):void{
+				closeView();
+			}
+			
+			private function closeView():void{
+				dispatchEvent( new Event(Event.CLOSE));
+			}
+			
+			protected function btComplite_clickHandler(event:MouseEvent):void{
+				//check book
+				
+				var bk:BookKit=lstBookList.selectedItem as BookKit;
+				if(!bk || bk.state>=OrderState.TECH_OTK){
+					checkComplited();
+					return;
+				}
+				
+				//log 
+				var tl:TechLog= new TechLog()
+				tl.order_id=order.id;
+				tl.sub_id=order.otkSubid;
+				tl.print_group='';
+				tl.src_id=techPoint.id;
+				tl.log_date= new Date();
+				tl.setSheet(bk.book,0);
+				//tl.sheet=tll.sheet;
+				var svc:TechService=Tide.getInstance().getContext().byType(TechService,true) as TechService;
+				var latch:DbLatch= new DbLatch(true);
+				//latch.addEventListener(Event.COMPLETE,onBookLog);
+				latch.addLatch(svc.log(tl));
+				latch.start();
+				
+				//set book state
+				var oss:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				bk.state=OrderState.TECH_OTK;
+				latch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onBookLog);
+				latch.addLatch(oss.setEntireBookState(bk.toOrderBook()));
+				latch.start();
+			}
+			private function onBookLog(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onBookLog);
+					if(latch.complite) checkComplited();
+				}
+			}
+
+			private var checkAfterRefresh:Boolean; 
+			private function checkComplited():void{
+				checkAfterRefresh=true;
+				refreshBooks();
+			}
+			private function onCompleteAlert(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES) {
+					setComplete();
+				}
+			}
+			private function setComplete():void{
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onCompliteSet);
+				//latch.addLatch(svc.extraStateSet(order.id,order.otkSubid,techPoint.tech_type, new Date()));
+				latch.addLatch(svc.extraStateSetOTK(currBoxItem.orderID, currBoxItem.subID, new Date()));
+				latch.start();
+			}
+
+			private function setCompletePhoto(all:Boolean):void{
+				if(!currPGID && !all) return;
+				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onCompliteSet);
+				if(all){
+					latch.addLatch(svc.extraStateSetOTKbyPG(order.id, new Date()));
+				}else{
+					latch.addLatch(svc.extraStateSetOTKbyPG(currPGID, new Date()));
+				}
+				latch.start();
+			}
+
+			private function onCompliteSet(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onCompliteSet);
+					if(latch.complite){
+						//closeView();
+						if(order.groupId !=0){
+							//check package
+							latch= new DbLatch();
+							var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+							latch.addEventListener(Event.COMPLETE,onPackageState);
+							latch.addLatch(svc.getStateByOrders(order.source, order.groupId));
+							latch.start();
+						}else{
+							closeView();
+						}
+					}
+				}
+			}
+			private function onPackageState(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onPackageState);
+					if(latch.complite){
+						if(latch.resultCode>=OrderState.TECH_OTK){
+							Alert.show('Все заказы группы '+ order.groupId.toString()+' прошли ОТК. Открыть группу?','',Alert.YES|Alert.NO, this, onAlertOpenPackage);
+						}else{
+							choiseSpace();
+							closeView();
+						}
+					}
+				}
+			}
+			private function onAlertOpenPackage(evt:CloseEvent):void {
+				if (evt.detail == Alert.YES){
+					var pop:MailPackagePopUp= new MailPackagePopUp();
+					pop.addEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
+					pop.loadFromWeb(order.source, order.groupId, true);
+
+				}else{
+					choiseSpace();
+				}
+				closeView();
+			}
+
+			private function onMailPackagePopUpClose(event:PopUpEvent):void{
+				var pop:MailPackagePopUp=event.target as MailPackagePopUp;
+				pop.removeEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
+
+				//recheck real package state (need to call choiseSpace?)
+				var latch:DbLatch = new DbLatch();
+				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				latch.addEventListener(Event.COMPLETE,onPackageRealState);
+				latch.addLatch(svc.getStateByPackages(order.source, new ArrayCollection([order.groupId])));
+				latch.start();
+			}
+			private function onPackageRealState(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onPackageRealState);
+					if(latch.complite && latch.resultCode< OrderState.PACKAGE_PACKED){
+						choiseSpace();
+					}
+				}
+			}
+
+			
+			private function choiseSpace():void{
+				if(!order) return;
+				var pop:RackSpaceChoisePopUp= new RackSpaceChoisePopUp();
+				pop.show(order.id, techPoint.id);
+			}
+			
+			protected function lstBookList_changeHandler(event:IndexChangeEvent):void{
+				currBook=lstBookList.selectedIndex+1;
+			}
+			
+			protected function btPreview_clickHandler(event:MouseEvent):void{
+				if(currentState=='preview' || currBook<=0) return; 
+				if(vPreview){
+					if(vPreview.prepare(order)){
+						currentState='preview';
+						vPreview.showBook(currBook);
+					}else{
+						currentState='info';
+					}
+				}else{
+					currentState='preview';
+				}
+			}
+			
+			protected function vPreview_creationCompleteHandler(event:FlexEvent):void{
+				if (vPreview.prepare(order)){
+					vPreview.showBook(currBook);
+				}else{
+					currentState='info';
+				}
+			}
+			
+			protected function btComplitePhoto_clickHandler(event:MouseEvent):void{
+				setCompletePhoto(false);
+			}
+			
+			protected function btSpace_clickHandler(event:MouseEvent):void{
+				//choiseSpace();
+			}
+			
+			protected function btCompliteAllPhoto_clickHandler(event:MouseEvent):void{
+				Alert.show("Закрыть все группы с фотопечатью?","",Alert.OK | Alert.CANCEL,this,onConfirm);
+			}
+			protected function onConfirm(event:CloseEvent):void{
+				setCompletePhoto(true);
+			}
+
+			protected function dgBoxItems_selectionChangeHandler(event:GridSelectionEvent):void
+			{
+				checkAfterRefresh=false;
+				currBoxItem = dgBoxItems.selectedItem as MailPackageBoxItem;
+				currBook=0;
+				refresh();	
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:DateTimeFormatter id="dtFormater" dateTimePattern="dd.MM.yyyy HH:mm"/>
+	</fx:Declarations>
+	
+	
+	<s:states>
+		<s:State name="book" stateGroups="info"/>
+		<s:State name="photo" stateGroups="info"/>
+		<s:State name="preview"/>
+	</s:states>
+
+	<s:Rect radiusX="6" top="0" left="0" right="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#444444" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#cccccc"/>
+		</s:fill>
+	</s:Rect>
+	
+	<s:HGroup gap="0" top="10" left="10" right="10" bottom="10" includeIn="info">
+		<s:VGroup gap="10" width="100%" height="100%">
+			<s:Form id="frmOrder" width="100%" backgroundAlpha="0" fontSize="14">
+				<s:layout>
+					<s:FormLayout gap="-12"/>
+				</s:layout>
+				<s:FormItem label="Группа заказов">
+					<s:TextInput text="{currBox.source_name} {currBox.id}" editable="false" width="100%"/>
+				</s:FormItem> 
+				<s:FormItem label="Коробка">
+					<s:TextInput text="{currBox.box.boxNum}" editable="false" width="100%"/>
+				</s:FormItem> 
+				<s:FormItem label="Полка">
+					<s:TextInput text="{currBox.rackSpace.rack_name?currBox.rackSpace.rack_name:''} - {currBox.rackSpace.name?currBox.rackSpace.name:''}" editable="false" width="100%"/>
+				</s:FormItem> 
+			</s:Form>
+			<s:DataGrid id="dgBoxItems" selectionMode="singleRow"  
+						fontSize="14" width="100%" height="100%"
+						selectionChange="dgBoxItems_selectionChangeHandler(event)"
+						dataProvider="{currBox.box.items}" locale="ru_RU" columns="{MailPackageBoxItem.columns()}"/>			
+		</s:VGroup>
+		<s:Scroller width="500" height="100%">
+			<s:VGroup width="100%">
+				<s:Form width="100%" backgroundAlpha="0" fontSize="14">
+					<s:layout>
+						<s:FormLayout gap="-12"/>
+					</s:layout>
+					
+					<s:FormItem label="Заказ">
+						<s:TextInput id="tiID" text="{order.id}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Источник">
+						<s:TextInput id="tiSource" text="{order.source_name}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Тип">
+						<s:TextInput text="{pgBlok.book_type_name}" editable="false" width="100%" includeIn="book"/>
+						<s:TextInput text="Фото" editable="false" width="100%" includeIn="photo"/>
+						<s:TextInput text="{order.extraInfo.calc_type}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Обложка" includeIn="book">
+						<s:TextInput text="{order.extraInfo.cover}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Формат" includeIn="book">
+						<s:TextInput text="{order.extraInfo.format}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Алиас">
+						<s:TextInput text="{pgBlok.path}" editable="false" width="100%"/>
+					</s:FormItem> 
+
+					<s:FormItem label="Форзац" includeIn="book">
+						<s:TextInput text="{order.extraInfo.endpaper}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Прослойка" includeIn="book">
+						<s:TextInput text="{order.extraInfo.interlayer}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Углы" includeIn="book">
+						<s:TextInput text="{order.extraInfo.corner_type}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Каптал" includeIn="book">
+						<s:TextInput text="{order.extraInfo.kaptal}" editable="false" width="100%"/>
+					</s:FormItem>
+					
+					<s:FormItem label="Бумага" includeIn="photo">
+						<s:TextInput text="{pgBlok.paper_name}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Размер" includeIn="photo">
+						<s:TextInput text="{pgBlok.height} x {pgBlok.width}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Количество" includeIn="photo">
+						<s:TextInput text="{pgBlok.prints}" editable="false" width="100%"/>
+					</s:FormItem> 
+
+				</s:Form>
+				<s:Form width="100%" backgroundAlpha="0" fontSize="14" includeIn="book">
+					<s:layout>
+						<s:FormLayout gap="-12"/>
+					</s:layout>
+					<s:FormHeading label="Обложка"/>
+					<s:FormItem label="Размер">
+						<s:TextInput text="{pgCover.height}x{pgCover.width}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Бумага">
+						<s:TextInput text="{pgCover.paper_name}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Печать">
+						<s:TextInput text="{pgCover.is_pdf?'Полиграфия':'Фотопечать'}" editable="false" width="100%"/>
+					</s:FormItem>
+					<s:FormItem />
+					<s:FormHeading label="Блок"/>
+					<s:FormItem label="Размер">
+						<s:TextInput text="{pgBlok.height}x{pgBlok.width}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Бумага">
+						<s:TextInput text="{pgBlok.paper_name}" editable="false" width="100%"/>
+					</s:FormItem> 
+					<s:FormItem label="Печать">
+						<s:TextInput text="{pgBlok.is_pdf?('Полиграфия '+(pgBlok.is_duplex?'двусторонняя':'односторонняя')):'Фотопечать'}" editable="false" width="100%"/>
+					</s:FormItem> 
+				</s:Form>
+			</s:VGroup>
+		</s:Scroller>
+		<s:VGroup gap="10" height="100%" includeIn="book">
+			<s:Spacer height="10"/>
+			<s:HGroup gap="5" verticalAlign="baseline" fontSize="14">
+				<s:Label text="Книг" fontWeight="bold" width="{lbBC.width}" />
+				<s:TextInput text="{bookTotal.toString()}" editable="false" width="50"/>
+			</s:HGroup>
+			<s:HGroup gap="5" verticalAlign="baseline" fontSize="14">
+				<s:Label id="lbBC" text="Проверено" fontWeight="bold"/>
+				<s:TextInput text="{bookComplited.toString()}" editable="false" width="50"/>
+			</s:HGroup>
+			<s:List id="lstBookList" contentBackgroundAlpha="0" borderVisible="false"
+					itemRenderer="com.photodispatcher.view.itemRenderer.BookCheckRenderer"
+					selectedIndex="{currBook-1}" change="lstBookList_changeHandler(event)"
+					dataProvider="{order.otkBookKits}" width="200" height="100%"/>
+		</s:VGroup>
+		<s:Spacer width="10"/>
+		<s:VGroup gap="10" height="100%" fontSize="14">
+			<s:Button id="btPreview" label="Просмотр" enabled="{currBook!=0}" click="btPreview_clickHandler(event)" includeIn="book"/>
+			<s:Button id="btComplite" label="Проверена" enabled="{currBook!=0}" click="btComplite_clickHandler(event)" includeIn="book"/>
+			<s:Button id="btComplitePhoto" label="Проверено" click="btComplitePhoto_clickHandler(event)" includeIn="photo"/>
+			<s:Button id="btCompliteAllPhoto" label="Закрыть все" click="btCompliteAllPhoto_clickHandler(event)" includeIn="photo"/>
+			<s:Spacer height="100%"/>
+			<s:Button id="btSpace" label="Полка" click="btSpace_clickHandler(event)"/>
+			<s:Button id="btClose" label="Закрыть" click="btClose_clickHandler(event)"/>
+		</s:VGroup>
+	</s:HGroup>
+	<view:OrderPreviewOTK id="vPreview" top="10" left="10" right="10" bottom="10" includeIn="preview"
+							 techPoint="{techPoint}"
+							 creationComplete="vPreview_creationCompleteHandler(event)"
+							 close="{currentState='book'}"/>
+</s:Group>

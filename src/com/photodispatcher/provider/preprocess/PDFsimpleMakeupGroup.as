@@ -12,7 +12,7 @@ package com.photodispatcher.provider.preprocess{
 	
 	public class PDFsimpleMakeupGroup extends BookMakeupGroup{
 		
-		public static const TEMP_FOLDER:String='pdf_wrk';
+		private static const TEMP_FOLDER:String='pdf_wrk';
 		protected static const TEMP_FILE_TYPE:String='.jpg';//bug - broken jpg - use png or some else
 		//protected static const TEMP_FILE_TYPE:String='.png';
 

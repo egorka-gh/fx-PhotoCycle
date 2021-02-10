@@ -10,9 +10,11 @@
 		<![CDATA[
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.MailPackage;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
-			import com.photodispatcher.model.mysql.entities.SubOrder;
+			import com.photodispatcher.model.mysql.entities.RackSpace;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.service.barcode.ComReader;
@@ -49,8 +51,9 @@
 			}
 			
 			private var lastScanId:String; //last pg id
-			private var lastSubOrder:SubOrder;
 			private var lastBook:int;
+			[Bindable]
+			private var lastBox:MailPackage;
 			private var newScanId:String;
 
 			private function onBarCode(event:BarCodeEvent):void{
@@ -58,120 +61,106 @@
 				var barcode:String=event.barcode;
 				var newBook:int;
 				if(newScanId) return; //previouse scan incomplite
-				if ((barcode.charAt(0) >= 'A' && barcode.charAt(0) <= 'Z') || (barcode.charAt(0) >= 'a' && barcode.charAt(0) <= 'z')){
-					//old barcode vsout bookNum
-					newBook=0;
-					newScanId=barcode;
-				}else{
-					newScanId=PrintGroup.idFromBookBarcode(barcode);
-					newBook=PrintGroup.bookFromBookBarcode(barcode);
-				}
+				newScanId=PrintGroup.idFromBookBarcode(barcode);
+				newBook=PrintGroup.bookFromBookBarcode(barcode);
 				if(!newScanId){
 					Alert.show('Не верный ШК: "'+barcode+'".');
 					return;
 				}
 				lastBook=newBook;
-				//check if same id
-				if(newScanId==lastScanId && lastSubOrder){
+				
+				//check if same box
+				if(lastBox && lastBox.isValidBook(newScanId, lastBook)){
 					//show
 					newScanId='';
-					showOrder(true);
+					showBox(true);
 					return;
 				}
-
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				var latch:DbLatch=svc.findeSuborder(barcode,true);
-				latch.addEventListener(Event.COMPLETE,onOrderFinde);
+				//TODO ask to change box?
+				/*
+				if (newScanId==lastScanId){
+					
+				}
+				*/
+					
+				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				var latch:DbLatch= new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onBoxLoad);
+				latch.addLatch(svc.loadBoxByPG(newScanId,newBook));
 				latch.start();
 			}
-			private function onOrderFinde(e:Event):void{
+			private function onBoxLoad(e:Event):void{
 				var latch:DbLatch=e.target as DbLatch;
-				var ordersList:ArrayCollection;
+				var resList:ArrayCollection;
 				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onOrderFinde);
+					latch.removeEventListener(Event.COMPLETE,onBoxLoad);
 					if(latch.complite){
-						ordersList=latch.lastDataAC;
+						resList=latch.lastDataAC;
 					}
 				}
-				if(!ordersList){
+				if(!resList || resList.length!=1){
 					lastScanId='';
 					newScanId='';
+					lastBox = null;
+					Alert.show('Ошибка загрузки коробки для "'+newScanId+'"/'+lastBook.toString());
 					return;
 				}
-				if(ordersList.length==1){
-					lastScanId=newScanId;
-					newScanId='';
-					addOrder(ordersList.getItemAt(0) as SubOrder);
-				}else{
-					lastScanId='';
-					var pop:OrderAddPopup=new OrderAddPopup();
-					pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
-					pop.show(newScanId,ordersList);
-					newScanId='';
-				}
-			}
-			
-			protected function btAdd_clickHandler(event:MouseEvent):void{
-				lastBook=0;
-				var pop:OrderAddPopup=new OrderAddPopup();
-				pop.addEventListener(PopUpEvent.CLOSE, onOrderAdd);
-				pop.open(null,true);
-			}
+				lastScanId=newScanId;
+				lastBox = resList.getItemAt(0) as MailPackage;
+				newScanId='';
 
-			private function onOrderAdd(event:PopUpEvent):void{
-				var pop:OrderAddPopup=event.target as OrderAddPopup;
-				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onOrderAdd);
-				if(event.commit){
-					addOrder(event.data as SubOrder);
+				if(lastScanId){
+					//start group, box, box item
+					// && start order extra state
+					var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+					latch= new DbLatch();
+					//latch.addEventListener(Event.COMPLETE,onBoxLoad);
+					latch.addLatch(svc.BoxStartOTK(lastBox.boxID, lastScanId));
+					latch.start();
 				}
-			}
-			private function addOrder(order:SubOrder):void{
-				if(!order) return;
-				if(order.prt_qty==0){
-					Alert.show('Не определено количество книг в заказе '+order.humanId);
-					lastSubOrder=null;
+				
+				if (!lastBox.rackSpace){
+					addBox();
 					return;
 				}
+				showBox();
+			}
 
-				lastSubOrder=order;
-				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
+			private function addBox():void{
+				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onAddOrder);
-				latch.addLatch(svc.extraStateStartOTK(order.order_id, order.sub_id, techPoint.tech_type));
+				latch.addEventListener(Event.COMPLETE,onAddBox);
+				latch.addLatch(svc.getBoxSpace(lastBox.source,lastBox.id, lastBox.boxID, techPoint.id));
 				latch.start();
 			}
-			private function onAddOrder(event:Event):void{
+			private function onAddBox(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onAddOrder);
-					if(latch.complite){
-						if(latch.resultCode<2){
-							//started 
-							showOrder();
-						}else if(latch.resultCode==2){
-							Alert.show('Заказ "'+lastSubOrder.humanId+'" уже прошел технологическую операцию');	
-							lastSubOrder=null;
-						}
+					latch.removeEventListener(Event.COMPLETE,onAddBox);
+					if(latch.complite && latch.lastDataAC && latch.lastDataAC.length>0){
+						lastBox.rackSpace = latch.lastDataAC.getItemAt(0) as RackSpace;
+						showBox();
 					}else{
-						lastSubOrder=null;
+						lastBox=null;
+						lastScanId='';
 					}
 				}
 			}
 
-			private function showOrder(checkClose:Boolean=false):void{
-				if(!lastSubOrder) return;
-				if(vInfo) vInfo.show(lastSubOrder, lastScanId, lastBook,checkClose);
+			private function showBox(checkClose:Boolean=false):void{
+				if(!lastBox) return;
 				currentState='book';
+				if(vInfo) vInfo.show(lastScanId, lastBook,checkClose);
 			}
 			
 			[Bindable]
-			private var orderListAC:ArrayCollection;
+			private var usedSpacesListAC:ArrayCollection;
 			
 			private function refresh():void{
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
+				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onRefresh);
-				latch.addLatch(svc.loadSubOrdersOtk());
+				latch.addLatch(svc.usedSpaces(techPoint.id));
 				latch.start();
 			}
 			private function onRefresh(event:Event):void{
@@ -179,7 +168,7 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onRefresh);
 					if(latch.complite){
-						orderListAC=latch.lastDataAC;
+						usedSpacesListAC=latch.lastDataAC;
 					}
 				}
 			}
@@ -198,11 +187,15 @@
 				
 			}
 			private function openCallBack(grid:DataGrid,param:int):void{
-				var onItem:SubOrder=grid.selectedItem as SubOrder;
+				var onItem:RackSpace=grid.selectedItem as RackSpace;
 				if(onItem){
 					lastBook=0;
-					lastSubOrder=onItem;
-					showOrder();
+					lastScanId='';
+					var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+					var latch:DbLatch= new DbLatch();
+					latch.addEventListener(Event.COMPLETE,onBoxLoad);
+					latch.addLatch(svc.loadBox(onItem.source, onItem.packageID, onItem.boxID ));
+					latch.start();
 				}
 			}
 			protected function dgMonitor_doubleClickHandler(event:MouseEvent):void{
@@ -214,8 +207,12 @@
 				currentState='grid';
 			}
 			
-			protected function vInfo_creationCompleteHandler(event:FlexEvent):void{
-				if(lastSubOrder) vInfo.show(lastSubOrder, lastScanId, lastBook);
+			protected function btAddManual_clickHandler(event:MouseEvent):void{
+				var pg:String=tiAddPgId.text;
+				var b:int = int(tiAddBook.text);
+				if(!pg || b<=0) return;
+				var bar:String = PrintGroup.bookBarcodeManual(pg,b);
+				onBarCode( new BarCodeEvent(BarCodeEvent.BARCODE_READED,bar));
 			}
 			
 		]]>
@@ -235,13 +232,16 @@
 					fontSize="14" width="100%" height="100%"
 					creationComplete="dgMonitor_creationCompleteHandler(event)"
 					doubleClickEnabled="true" doubleClick="dgMonitor_doubleClickHandler(event)"
-					dataProvider="{orderListAC}" locale="ru_RU" columns="{SubOrder.gridColumnsOTK()}"/>
-		<s:Button id="btAdd" label="Добавить" fontSize="14" click="btAdd_clickHandler(event)"/>
+					dataProvider="{usedSpacesListAC}" locale="ru_RU" columns="{RackSpace.gridColumnsUsed()}"/>
+		<s:HGroup width="100%" horizontalAlign="right">
+			<s:TextInput id="tiAddPgId"/>
+			<s:TextInput id="tiAddBook"/>
+			<s:Button id="btAddManual" label="Add" click="btAddManual_clickHandler(event)"/>
+		</s:HGroup>
 	</s:VGroup>
 	
-	<view:OrderInfoOTK id="vInfo" top="0" left="0" right="0" bottom="0" includeIn="book"
-					   creationComplete="vInfo_creationCompleteHandler(event)"
+	<view:BoxInfoOTK id="vInfo" top="0" left="0" right="0" bottom="0" includeIn="book"
 					   close="orderinfootk1_closeHandler(event)"  
-					   techPoint="{techPoint}"/>
+					   techPoint="{techPoint}" currBox="{lastBox}" />
 	
 </s:Group>

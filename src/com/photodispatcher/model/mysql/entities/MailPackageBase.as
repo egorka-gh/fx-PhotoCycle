@@ -19,6 +19,8 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         private var _barcodes:ListCollectionView;
+        private var _box:MailPackageBox;
+        private var _boxes:ListCollectionView;
         private var _client_id:int;
         private var _delivery_id:int;
         private var _delivery_name:String;
@@ -32,6 +34,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _orders:ListCollectionView;
         private var _orders_num:int;
         private var _properties:ListCollectionView;
+        private var _rackSpace:RackSpace;
         private var _source:int;
         private var _source_code:String;
         private var _source_name:String;
@@ -47,6 +50,20 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get barcodes():ListCollectionView {
             return _barcodes;
+        }
+
+        public function set box(value:MailPackageBox):void {
+            _box = value;
+        }
+        public function get box():MailPackageBox {
+            return _box;
+        }
+
+        public function set boxes(value:ListCollectionView):void {
+            _boxes = value;
+        }
+        public function get boxes():ListCollectionView {
+            return _boxes;
         }
 
         public function set client_id(value:int):void {
@@ -140,6 +157,13 @@ package com.photodispatcher.model.mysql.entities {
             return _properties;
         }
 
+        public function set rackSpace(value:RackSpace):void {
+            _rackSpace = value;
+        }
+        public function get rackSpace():RackSpace {
+            return _rackSpace;
+        }
+
         public function set source(value:int):void {
             _source = value;
         }
@@ -206,6 +230,8 @@ package com.photodispatcher.model.mysql.entities {
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _barcodes = input.readObject() as ListCollectionView;
+            _box = input.readObject() as MailPackageBox;
+            _boxes = input.readObject() as ListCollectionView;
             _client_id = input.readObject() as int;
             _delivery_id = input.readObject() as int;
             _delivery_name = input.readObject() as String;
@@ -219,6 +245,7 @@ package com.photodispatcher.model.mysql.entities {
             _orders = input.readObject() as ListCollectionView;
             _orders_num = input.readObject() as int;
             _properties = input.readObject() as ListCollectionView;
+            _rackSpace = input.readObject() as RackSpace;
             _source = input.readObject() as int;
             _source_code = input.readObject() as String;
             _source_name = input.readObject() as String;
@@ -233,6 +260,8 @@ package com.photodispatcher.model.mysql.entities {
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
             output.writeObject(_barcodes);
+            output.writeObject(_box);
+            output.writeObject(_boxes);
             output.writeObject(_client_id);
             output.writeObject(_delivery_id);
             output.writeObject(_delivery_name);
@@ -246,6 +275,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_orders);
             output.writeObject(_orders_num);
             output.writeObject(_properties);
+            output.writeObject(_rackSpace);
             output.writeObject(_source);
             output.writeObject(_source_code);
             output.writeObject(_source_name);

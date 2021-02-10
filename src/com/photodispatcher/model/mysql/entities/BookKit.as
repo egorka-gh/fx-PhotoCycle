@@ -15,6 +15,8 @@ package com.photodispatcher.model.mysql.entities{
 		public var state_date:Date;
 		*/
 
+		public var disabled:Boolean;
+		
 		public function BookKit(){
 			sub_id='';
 		}

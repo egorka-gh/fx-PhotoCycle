@@ -43,6 +43,16 @@ package com.photodispatcher.model.mysql.entities {
 			col= new GridColumn('empty'); col.headerText='Cвободна'; col.width=70; col.labelFunction=GridUtil.booleanToLabel; result.push(col);
 			return new ArrayList(result);
 		}
+		public static function gridColumnsUsed():ArrayList{
+			var result:Array= [];
+			var col:GridColumn;
+			col= new GridColumn('rack_name'); col.headerText='Стеллаж'; col.width=70; result.push(col);
+			col= new GridColumn('name'); col.headerText='Полка'; col.width=70; result.push(col);
+			col= new GridColumn('sourceName'); col.headerText='Сайт'; col.width=70; result.push(col);
+			col= new GridColumn('packageID'); col.headerText='Группа'; col.width=100; result.push(col);
+			col= new GridColumn('boxID'); col.headerText='Коробка'; col.width=150; result.push(col);
+			return new ArrayList(result);
+		}
 
         public function RackSpace() {
             super();

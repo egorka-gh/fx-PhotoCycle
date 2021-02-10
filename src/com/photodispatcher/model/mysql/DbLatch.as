@@ -16,6 +16,8 @@ package com.photodispatcher.model.mysql
 	import mx.rpc.events.FaultEvent;
 	import mx.rpc.events.ResultEvent;
 	
+	import org.granite.tide.rpc.ComponentResponder;
+	
 	[Event(name="complete", type="flash.events.Event")]
 	public class DbLatch extends AsyncLatch{
 		
@@ -176,6 +178,15 @@ package com.photodispatcher.model.mysql
 			lastToken=event.token;
 			lastTag=lastToken.tag?lastToken.tag:'';
 			lastError=event.fault.faultString;
+			//get source
+			var cr:ComponentResponder;
+			for each(var r:Object in lastToken.responders){
+				cr = r as ComponentResponder;
+				if(cr) break;
+			}
+			if(cr){
+				lastError = cr.component.meta_name+'.'+cr.op+' : '+lastError;
+			}
 			releaseError('DbLatch RPC fault: ' +lastError + '\n' + event.fault.faultDetail);
 		}
 		

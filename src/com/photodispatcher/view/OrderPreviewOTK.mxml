@@ -205,50 +205,6 @@
 				pageSheetsAC= new ArrayCollection(sheets.slice(pageTop,pageTop+cols*rows));
 			}
 			
-			/*
-			private var _currentSheet:BookPreviewSheet;
-			[Bindable]
-			public function get currentSheet():BookPreviewSheet{
-				return _currentSheet;
-			}
-			public function set currentSheet(value:BookPreviewSheet):void{
-				_currentSheet = value;
-				if(!_currentSheet || _currentSheet.isEmptyCover){
-					leftFile=null;
-					rightFile=null;
-					currentState='empty';
-					return;
-				}
-				if(_currentSheet.doublePage){
-					leftFile=rootDir.nativePath+File.separator+_currentSheet.leftPage;
-					rightFile=rootDir.nativePath+File.separator+_currentSheet.rightPage;
-					currentState='dual';
-				}else{
-					leftFile=rootDir.nativePath+File.separator+_currentSheet.leftPage;
-					rightFile=null;
-					currentState='simple';
-				}
-				if(_currentSheet && currBook){
-					_currentSheet.check=true;
-					var tl:TechLog= new TechLog();
-					tl.log_date=new Date();
-					tl.setSheet(currBook,_currentSheet.sheet);
-					if(_currentSheet.sheet==0){
-						tl.print_group=order.id+'_1';
-					}else{
-						tl.print_group=order.id+'_2';
-					}
-					tl.src_id= techPoint.id;
-					var dao:TechLogDAO=new TechLogDAO();
-					dao.addLog(tl);
-				}
-			}
-			[Bindable]
-			private var leftFile:String;
-			[Bindable]
-			private var rightFile:String;
-			*/
-
 			
 			protected function btClose_clickHandler(event:MouseEvent):void{
 				dispatchEvent( new Event(Event.CLOSE));			

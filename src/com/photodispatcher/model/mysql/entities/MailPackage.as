@@ -55,6 +55,26 @@ package com.photodispatcher.model.mysql.entities {
 			return '';
 		}
 		
+		public function get boxID():String{
+			if (box){
+				return box.boxID
+			}
+			return '';
+		}
+		
+		public function isValidBook(printgroupID:String, book:int):Boolean{
+			if (!box || !printgroupID || book<=0 || !box.items) return false;
+			
+			for each(var it:MailPackageBoxItem in box.items){
+				if(!it || !it.printGroups) continue;
+				if(book < it.itemFrom || book > it.itemTo) continue;
+				for each(var pg:PrintGroup in it.printGroups){
+					if (pg && printgroupID==pg.id ) return true;
+				}
+			}
+			return false;
+		}
+		
 		
 		public static function inQueueColumns():ArrayList{
 			var result:ArrayList= new ArrayList();
