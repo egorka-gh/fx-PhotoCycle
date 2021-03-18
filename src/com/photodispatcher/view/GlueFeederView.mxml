@@ -109,19 +109,31 @@
 			*/
 
 			private var dtFmt:DateTimeFormatter;
-
+			// Get time since the epoch and time since the VM was started
+			private static const dateTime:Number = new Date().time;
+			private static const dateTimestamp:uint = getTimer();
+			/**
+			 * Current time in ms
+			 */ 
+			public static function getCurrentTime():Number
+			{
+				return dateTime + (getTimer() - dateTimestamp);
+			}
+			
 			public function log(mesage:String, level:int=0):void{
 				var str:String;
 				if(!dtFmt){
 					dtFmt=new DateTimeFormatter();
-					dtFmt.timeStyle=DateTimeStyle.LONG;
-					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss';
+					//dtFmt.timeStyle=DateTimeStyle.LONG;
+					dtFmt.dateTimePattern='dd.MM.yy HH:mm:ss:';
 				}
-				str=dtFmt.format(new Date())+' '+ mesage+'\n';
+				var dt:Date =new Date(getCurrentTime());
+				//trace(dt.getMilliseconds());
+				str=dtFmt.format(dt)+StrUtil.lPad(dt.getMilliseconds()+'' ,3)+' '+ mesage+'\n';
 				if(level==0){
 					str=str+logText;
 					if(!feedOn && str.length>6000){
-						str=str.substr(0,5000)+'\n';
+						str=str.substr(0,10000)+'\n';
 					}
 					logText=str;
 				}else if(level==100){
@@ -133,13 +145,13 @@
 				}else if(level==101){
 					str=str+serverlogText;
 					if(!feedOn && str.length>6000){
-						str=str.substr(0,5000)+'\n';
+						str=str.substr(0,20000)+'\n';
 					}
 					serverlogText=str;
 				}else{
 					str=str+controllerlogText;
 					if(!feedOn && str.length>6000){
-						str=str.substr(0,5000)+'\n';
+						str=str.substr(0,20000)+'\n';
 					}
 					controllerlogText=str;
 				}

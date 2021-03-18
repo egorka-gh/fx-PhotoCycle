@@ -51,7 +51,7 @@
 			
 			//dumy declaration 2 include tgranite objs
 			private var glue:BookSynonymGlue;
-			private src:Source;
+			private var src:Source;
 			
 			private var bdPopup:DatabasePopup;
 
