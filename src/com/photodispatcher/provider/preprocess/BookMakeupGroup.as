@@ -232,7 +232,13 @@ package com.photodispatcher.provider.preprocess{
 				command.add('-flatten');
 			}else{
 				//regular crop
-				command.add('-gravity'); command.add('Center');
+				if(printGroup.book_type==BookSynonym.BOOK_TYPE_POLAROID){
+					//crop align to top left
+					command.add('-gravity'); command.add('NorthWest');
+				}else{
+					//crop align to center
+					command.add('-gravity'); command.add('Center');
+				}
 				command.add('-background'); command.add('white');
 				command.add(file.file_name);
 				command.add('-crop'); command.add(sheetCrop);

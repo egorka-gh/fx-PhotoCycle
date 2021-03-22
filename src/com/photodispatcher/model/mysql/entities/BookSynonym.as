@@ -35,6 +35,8 @@ package com.photodispatcher.model.mysql.entities {
 		public static const BOOK_TYPE_BCARD:int=6;
 		public static const BOOK_TYPE_CANVAS:int=7;
 		public static const BOOK_TYPE_CUP:int=8;
+		public static const BOOK_TYPE_CERTIFICATE:int=9;
+		public static const BOOK_TYPE_POLAROID:int=10;
 		
 		public static const BOOK_PART_ANY:int=0;
 		public static const BOOK_PART_COVER:int=1;
