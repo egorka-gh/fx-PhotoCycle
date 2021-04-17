@@ -3,6 +3,8 @@
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
 		 xmlns:view="com.photodispatcher.view.*"
+		 xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+		 
 		 creationComplete="{init()}"
 		 >
 
@@ -11,6 +13,7 @@
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
+			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.RackSpace;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
@@ -32,7 +35,17 @@
 			public var techPoint:TechPoint;
 			public var isActive:Boolean;
 
+
 			private function init():void{
+				//refresh();
+			}
+			
+			[Bindable]
+			private var mode:int;
+			public function setMode(newMode:int):void{
+				mode = newMode;
+				currentState = 'grid';
+				if (vInfo) vInfo.setMode(mode);
 				refresh();
 			}
 			
@@ -55,7 +68,11 @@
 			[Bindable]
 			private var lastBox:MailPackage;
 			private var newScanId:String;
-
+			
+			private function get mpService(): MailPackageService{
+				return Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+			}
+			
 			private function onBarCode(event:BarCodeEvent):void{
 				if(!isActive) return;
 				var barcode:String=event.barcode;
@@ -67,26 +84,31 @@
 					Alert.show('Не верный ШК: "'+barcode+'".');
 					return;
 				}
-				lastBook=newBook;
+				
 				
 				//check if same box
-				if(lastBox && lastBox.isValidBook(newScanId, lastBook)){
-					//show
-					newScanId='';
-					showBox(true);
-					return;
+				if(lastBox){
+					if(lastBox.isValidBook(newScanId, newBook)){
+						//show
+						lastBook=newBook;
+						newScanId='';
+						showBox(true);
+						return;
+					}
+					if (mode == OrderState.TECH_OTK && currentState=='book'){
+						Alert.show('Книга не из этой коробки: '+newScanId+'/'+newBook);
+						newScanId='';
+						lastBook=0;
+						return;
+					}
+					//TODO ask to change box in TECH_OTK_PICKING?
 				}
-				//TODO ask to change box?
-				/*
-				if (newScanId==lastScanId){
-					
-				}
-				*/
-					
-				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+
+				//load box
+				lastBook=newBook;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onBoxLoad);
-				latch.addLatch(svc.loadBoxByPG(newScanId,newBook));
+				latch.addLatch(mpService.loadBoxByPG(newScanId,newBook));
 				latch.start();
 			}
 			private function onBoxLoad(e:Event):void{
@@ -112,10 +134,9 @@
 				if(lastScanId){
 					//start group, box, box item
 					// && start order extra state
-					var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 					latch= new DbLatch();
 					//latch.addEventListener(Event.COMPLETE,onBoxLoad);
-					latch.addLatch(svc.BoxStartOTK(lastBox.boxID, lastScanId));
+					latch.addLatch(mpService.BoxStartOTK(lastBox.boxID, lastScanId));
 					latch.start();
 				}
 				
@@ -127,10 +148,9 @@
 			}
 
 			private function addBox():void{
-				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onAddBox);
-				latch.addLatch(svc.getBoxSpace(lastBox.source,lastBox.id, lastBox.boxID, techPoint.id));
+				latch.addLatch(mpService.getBoxSpace(lastBox.source,lastBox.id, lastBox.boxID, techPoint.id));
 				latch.start();
 			}
 			private function onAddBox(event:Event):void{
@@ -150,17 +170,19 @@
 			private function showBox(checkClose:Boolean=false):void{
 				if(!lastBox) return;
 				currentState='book';
-				if(vInfo) vInfo.show(lastScanId, lastBook,checkClose);
+				if(vInfo){
+					vInfo.setMode(mode);
+					vInfo.show(lastScanId, lastBook,checkClose);
+				}
 			}
 			
 			[Bindable]
 			private var usedSpacesListAC:ArrayCollection;
 			
 			private function refresh():void{
-				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onRefresh);
-				latch.addLatch(svc.usedSpaces(techPoint.id));
+				latch.addLatch(mpService.usedSpaces(techPoint.id, mode));
 				latch.start();
 			}
 			private function onRefresh(event:Event):void{
@@ -173,10 +195,6 @@
 				}
 			}
 
-			public function start():void{
-				refresh();
-			}
-			
 			public function stop():void{
 			}
 
@@ -191,10 +209,9 @@
 				if(onItem){
 					lastBook=0;
 					lastScanId='';
-					var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 					var latch:DbLatch= new DbLatch();
 					latch.addEventListener(Event.COMPLETE,onBoxLoad);
-					latch.addLatch(svc.loadBox(onItem.source, onItem.packageID, onItem.boxID ));
+					latch.addLatch(mpService.loadBox(onItem.source, onItem.packageID, onItem.boxID ));
 					latch.start();
 				}
 			}
@@ -205,6 +222,7 @@
 			protected function orderinfootk1_closeHandler(event:Event):void{
 				refresh();
 				currentState='grid';
+				vInfo.setMode(mode);
 			}
 			
 			protected function btAddManual_clickHandler(event:MouseEvent):void{
@@ -223,7 +241,9 @@
 		<s:State name="book"/>
 	</s:states>
 	<s:VGroup gap="10" top="0" left="0" right="0" bottom="0">
-		<s:HGroup width="100%" horizontalAlign="right">
+		<s:HGroup width="100%" horizontalAlign="right" verticalAlign="baseline">
+			<s:Label fontWeight="bold" fontSize="14" text="{mode == OrderState.TECH_OTK_PICKING? 'ОТК':'Упаковка'}"/>
+			<s:Spacer width="100%"/>
 			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
 					  cornerRadius="4" width="22" height="22" baseline="4"/>
 
@@ -232,9 +252,12 @@
 					fontSize="14" width="100%" height="100%"
 					creationComplete="dgMonitor_creationCompleteHandler(event)"
 					doubleClickEnabled="true" doubleClick="dgMonitor_doubleClickHandler(event)"
-					dataProvider="{usedSpacesListAC}" locale="ru_RU" columns="{RackSpace.gridColumnsUsed()}"/>
-		<s:HGroup width="100%" horizontalAlign="right">
+					dataProvider="{usedSpacesListAC}" locale="ru_RU" columns="{RackSpace.gridColumnsUsed()}">
+		</s:DataGrid>
+		<s:HGroup width="100%" gap="10" horizontalAlign="right">
+			<s:Label text="print group"/>
 			<s:TextInput id="tiAddPgId"/>
+			<s:Label text="book"/>
 			<s:TextInput id="tiAddBook"/>
 			<s:Button id="btAddManual" label="Add" click="btAddManual_clickHandler(event)"/>
 		</s:HGroup>

@@ -236,27 +236,29 @@
 			}
 			
 			protected function button1_clickHandler(event:MouseEvent):void{
-				//var startTT:SourceType=ddStartTechType.selectedItem as SourceType;
-				//var endTT:SourceType=ddEndTechType.selectedItem as SourceType;
 				if(!techPointObj){ // || !startTT ||!endTT){
 					Alert.show('Не настроена тех точка ОТК');
 					return;
 				}
 
 				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_ON,'ОТК'));
-				
 				startBarReader();
-				/*
-				techMonitor.techPoint=techPointObj;
-				techMonitor.startTechType=startTT;
-				techMonitor.manualAdd=manualAdd;
-				techMonitor.endTechType=endTT;
-				techMonitor.refreshInterval=refreshInterval;
-				techMonitor.start();
-				*/
-				if(techMonitor) techMonitor.start();
-				currentState='monitor';
+				currentState='otk';
+				techMonitor.setMode(OrderState.TECH_OTK_PICKING);
 			}
+
+			protected function button5_clickHandler(event:MouseEvent):void{
+				if(!techPointObj){ // || !startTT ||!endTT){
+					Alert.show('Не настроена тех точка ОТК');
+					return;
+				}
+				
+				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_ON,'Упаковка'));
+				startBarReader();
+				currentState='pack';
+				techMonitor.setMode(OrderState.TECH_OTK);
+			}
+			
 			
 			//TODO 4 debug
 			//private var techMonitor:Object;
@@ -391,12 +393,6 @@
 				}
 			}
 			
-			protected function button5_clickHandler(event:MouseEvent):void{
-				startBarReader();
-				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_ON,'Упаковка'));
-				currentState='mail';
-			}
-			
 			protected function ddMTechPoint_changeHandler(event:IndexChangeEvent):void{
 				mailTechPointObj= ddMTechPoint.selectedItem as TechPoint;
 				if(mailTechPointObj){
@@ -471,7 +467,8 @@
 	<s:states>
 		<s:State name="disconnected"/>
 		<s:State name="config"/>
-		<s:State name="monitor" enterState="state1_enterStateHandler(event)"/>
+		<s:State name="otk" stateGroups="monitor" enterState="state1_enterStateHandler(event)"/>
+		<s:State name="pack" stateGroups="monitor" enterState="state1_enterStateHandler(event)"/>
 		<s:State name="mail" enterState="{cfgEnabled=false}"/>
 	</s:states>
 	
@@ -542,7 +539,7 @@
 	
 	<view:TechOTKMonitorBox id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" isActive="{currentState=='monitor'}"
 						 top="20" left="20" right="20" bottom="50"/>
-	<view:TechMailPackageView id="mpView" includeIn="mail" isActive="{currentState=='mail'}" barcodeReader="{barcodeReader}" techPointOTK="{techPointObj}"
+	<view:TechOTKPackingView id="mpView" includeIn="mail" isActive="{currentState=='mail'}" barcodeReader="{barcodeReader}" techPointOTK="{techPointObj}"
 							  top="20" left="20" right="20" bottom="50"/>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
 		<s:Label text="{lastBarcode}" height="100%" verticalAlign="bottom"/>
@@ -551,8 +548,8 @@
 		<s:Spacer width="20"/>
 		<s:Button label="Конфигурация" includeIn="monitor,mail" click="button2_clickHandler(event)"/>
 		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
-		<s:Button label="ОТК" includeIn="config, mail" click="button1_clickHandler(event)"/>
-		<s:Button label="Упаковка" includeIn="config, monitor" click="button5_clickHandler(event)"/>
+		<s:Button label="ОТК" includeIn="config, pack, mail" click="button1_clickHandler(event)"/>
+		<s:Button label="Упаковка" includeIn="config, otk, mail" click="button5_clickHandler(event)"/>
 		<s:Button label="Закрыть программу" click="button4_clickHandler(event)" />
 	</s:HGroup>
 	

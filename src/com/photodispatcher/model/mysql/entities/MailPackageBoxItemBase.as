@@ -28,7 +28,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _printGroups:ListCollectionView;
         private var _state:int;
         private var _state_date:Date;
-        private var _subID:String;
+        private var _state_name:String;
 
         public function set alias(value:String):void {
             _alias = value;
@@ -100,11 +100,11 @@ package com.photodispatcher.model.mysql.entities {
             return _state_date;
         }
 
-        public function set subID(value:String):void {
-            _subID = value;
+        public function set state_name(value:String):void {
+            _state_name = value;
         }
-        public function get subID():String {
-            return _subID;
+        public function get state_name():String {
+            return _state_name;
         }
 
         public override function readExternal(input:IDataInput):void {
@@ -119,7 +119,7 @@ package com.photodispatcher.model.mysql.entities {
             _printGroups = input.readObject() as ListCollectionView;
             _state = input.readObject() as int;
             _state_date = input.readObject() as Date;
-            _subID = input.readObject() as String;
+            _state_name = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -134,7 +134,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_printGroups);
             output.writeObject(_state);
             output.writeObject(_state_date);
-            output.writeObject(_subID);
+            output.writeObject(_state_name);
         }
     }
 }

@@ -40,7 +40,6 @@
 			import flash.utils.flash_proxy;
 			
 			import mx.collections.ArrayCollection;
-			import mx.collections.ListCollectionView;
 			import mx.controls.Alert;
 			import mx.core.FlexGlobals;
 			import mx.managers.PopUpManager;

@@ -25,6 +25,7 @@ package com.photodispatcher.model.mysql.entities {
 			var result:ArrayList= new ArrayList();
 			var i : MailPackageBoxItem;
 			var col:GridColumn;
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=140; result.addItem(col);
 			col= new GridColumn('orderID'); col.headerText='Заказ'; col.width=70; result.addItem(col);
 			col= new GridColumn('bookTypeName'); col.headerText='Тип'; col.width=70; result.addItem(col); 
 			col= new GridColumn('itemFrom'); col.headerText='C'; col.width=45; result.addItem(col); 

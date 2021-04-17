@@ -6,6 +6,10 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import mx.collections.IList;
+	
+	import org.granite.reflect.Field;
+	import org.granite.reflect.Type;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackageBox")]
@@ -14,5 +18,18 @@ package com.photodispatcher.model.mysql.entities {
         public function MailPackageBox() {
             super();
         }
+		public function clone():MailPackageBox{
+			var b:MailPackageBox= new MailPackageBox();
+			var type:Type= Type.forClass(MailPackageBox);
+			var props:Array=type.properties;
+			if(!props || props.length==0) return b;
+			var prop:Field;
+			for each(prop in props){
+				//exclude childs
+				if(this[prop.name] && !(this[prop.name] is IList)) b[prop.name]=this[prop.name];
+			}
+			return b;
+		}
+
     }
 }

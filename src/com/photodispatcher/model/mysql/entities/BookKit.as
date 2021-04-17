@@ -21,6 +21,17 @@ package com.photodispatcher.model.mysql.entities{
 			sub_id='';
 		}
 
+		override public function get state():int{
+			return 	super.state;
+		}
+
+		public override function set state(value:int):void{
+			super.state = value;
+			if(coverBook) coverBook.state=value;
+			if(blockBook) blockBook.state=value;
+		}
+
+		
 		private var _coverBook:OrderBook;
 		public function get coverBook():OrderBook{
 			return _coverBook;

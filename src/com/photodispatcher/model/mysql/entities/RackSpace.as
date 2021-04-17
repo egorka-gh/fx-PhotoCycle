@@ -8,9 +8,12 @@
 package com.photodispatcher.model.mysql.entities {
 	import com.photodispatcher.util.GridUtil;
 	
+	import flash.globalization.DateTimeStyle;
+	
 	import mx.collections.ArrayList;
 	
 	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.RackSpace")]
@@ -46,11 +49,14 @@ package com.photodispatcher.model.mysql.entities {
 		public static function gridColumnsUsed():ArrayList{
 			var result:Array= [];
 			var col:GridColumn;
-			col= new GridColumn('rack_name'); col.headerText='Стеллаж'; col.width=70; result.push(col);
+			col= new GridColumn('rack_name'); col.headerText='Стеллаж'; col.width=100; result.push(col);
 			col= new GridColumn('name'); col.headerText='Полка'; col.width=70; result.push(col);
 			col= new GridColumn('sourceName'); col.headerText='Сайт'; col.width=70; result.push(col);
 			col= new GridColumn('packageID'); col.headerText='Группа'; col.width=100; result.push(col);
-			col= new GridColumn('boxID'); col.headerText='Коробка'; col.width=150; result.push(col);
+			col= new GridColumn('box_num'); col.headerText='Коробка'; col.width=150; result.push(col);
+			col= new GridColumn('state_name'); col.headerText='Статус'; col.width=140; result.push(col);
+			var fmt:DateTimeFormatter = new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.push(col);
 			return new ArrayList(result);
 		}
 

@@ -52,7 +52,7 @@ package com.photodispatcher.model.mysql.entities {
 			sub_id='';
 		}
 		
-		override public function set state(value:int):void{
+		public override function set state(value:int):void{
 			if(super.state != value){
 				state_name= OrderState.getStateName(value);
 				state_date= new Date();

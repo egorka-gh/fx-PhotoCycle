@@ -788,7 +788,7 @@
 							dataProvider="{cliPackages}" locale="ru_RU" columns="{MailPackage.clientPackagesColumns()}">
 					<s:rowBackground>
 						<fx:Component>
-							<itemRenderer:TechMailPDataGridRowBackground/>
+							<itemRenderer:TechBoxItemDataGridRowBackground/>
 						</fx:Component>
 					</s:rowBackground>
 				</s:DataGrid>

@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         private var _boxID:String;
+        private var _box_num:int;
         private var _empty:Boolean;
         private var _height:int;
         private var _id:int;
@@ -31,6 +32,9 @@ package com.photodispatcher.model.mysql.entities {
         private var _rating:Number;
         private var _source:int;
         private var _sourceName:String;
+        private var _state:int;
+        private var _state_date:Date;
+        private var _state_name:String;
         private var _unused_weight:Number;
         private var _weight:Number;
         private var _width:int;
@@ -40,6 +44,13 @@ package com.photodispatcher.model.mysql.entities {
         }
         public function get boxID():String {
             return _boxID;
+        }
+
+        public function set box_num(value:int):void {
+            _box_num = value;
+        }
+        public function get box_num():int {
+            return _box_num;
         }
 
         public function set empty(value:Boolean):void {
@@ -126,6 +137,27 @@ package com.photodispatcher.model.mysql.entities {
             return _sourceName;
         }
 
+        public function set state(value:int):void {
+            _state = value;
+        }
+        public function get state():int {
+            return _state;
+        }
+
+        public function set state_date(value:Date):void {
+            _state_date = value;
+        }
+        public function get state_date():Date {
+            return _state_date;
+        }
+
+        public function set state_name(value:String):void {
+            _state_name = value;
+        }
+        public function get state_name():String {
+            return _state_name;
+        }
+
         public function set unused_weight(value:Number):void {
             _unused_weight = value;
         }
@@ -150,6 +182,7 @@ package com.photodispatcher.model.mysql.entities {
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _boxID = input.readObject() as String;
+            _box_num = input.readObject() as int;
             _empty = input.readObject() as Boolean;
             _height = input.readObject() as int;
             _id = input.readObject() as int;
@@ -162,6 +195,9 @@ package com.photodispatcher.model.mysql.entities {
             _rating = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _source = input.readObject() as int;
             _sourceName = input.readObject() as String;
+            _state = input.readObject() as int;
+            _state_date = input.readObject() as Date;
+            _state_name = input.readObject() as String;
             _unused_weight = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _weight = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _width = input.readObject() as int;
@@ -170,6 +206,7 @@ package com.photodispatcher.model.mysql.entities {
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
             output.writeObject(_boxID);
+            output.writeObject(_box_num);
             output.writeObject(_empty);
             output.writeObject(_height);
             output.writeObject(_id);
@@ -182,6 +219,9 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_rating);
             output.writeObject(_source);
             output.writeObject(_sourceName);
+            output.writeObject(_state);
+            output.writeObject(_state_date);
+            output.writeObject(_state_name);
             output.writeObject(_unused_weight);
             output.writeObject(_weight);
             output.writeObject(_width);

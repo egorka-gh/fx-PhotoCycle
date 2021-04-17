@@ -2,7 +2,7 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
 		 xmlns:s="library://ns.adobe.com/flex/spark" 
 		 xmlns:mx="library://ns.adobe.com/flex/mx" 
-		 xmlns:view="com.photodispatcher.view.*">
+		 xmlns:view="com.photodispatcher.view.*" xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*">
 	
 	<fx:Metadata>
 		[Event(name="close", type="flash.events.Event")]
@@ -14,8 +14,10 @@
 			import com.photodispatcher.model.mysql.entities.BookKit;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
+			import com.photodispatcher.model.mysql.entities.MailPackageBox;
 			import com.photodispatcher.model.mysql.entities.MailPackageBoxItem;
 			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderBook;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.RackSpace;
@@ -29,6 +31,8 @@
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.collections.ListCollectionView;
 			import mx.controls.Alert;
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
@@ -51,23 +55,36 @@
 				_box = b;
 				currPGID='';
 				currBook=0;
+				currBookKit = null;
 				currBoxItem=null;
 				order=null;
 				pgCover=null;
 				pgBlok=null;
 				bookTotal=0;
 				bookComplited=0;
+				canPack = false;
 			}
 
+			[Bindable]
+			public var mode:int;
+			public function setMode(newMode:int):void{
+				
+				canPack = false;
+				mode = newMode;
+			}
+			
 			[Bindable]
 			private var currPGID:String;
 			[Bindable]
 			private var currBook:int;
 			[Bindable]
+			private var currBookKit:BookKit;
+			[Bindable]
 			private var currBoxItem:MailPackageBoxItem;
 			
-			
-////TODOOOOOO			
+			private function get mpService(): MailPackageService{
+				return Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+			}
 			
 			[Bindable]
 			private var order:Order;
@@ -75,41 +92,58 @@
 			private var pgCover:PrintGroup;
 			[Bindable]
 			private var pgBlok:PrintGroup;
-			//[Bindable]
-			//private var bookListAC:ArrayCollection;
 			[Bindable]
 			private var bookTotal:int;
 			[Bindable]
 			private var bookComplited:int;
-			//[Bindable]
-			//private var space:RackSpace;
-			
-			//private var showOrder:SubOrder;
-			//private var pgId:String;
 			
 			public function show(pgId:String, book:int, checkClose:Boolean=false):void{
 				currPGID='';
-				if (!pgId) return;
-				//look4item
-				var oldBoxItem:MailPackageBoxItem=currBoxItem;
-				currBoxItem = null;
-				for each(var it:MailPackageBoxItem in currBox.box.items){
-					if (it && it.printGroups){
-						for each(var pg:PrintGroup in it.printGroups){
-							if(pg.id==pgId){
-								currPGID=pgId;
-								currBoxItem=it;
-								break;
-							}
+				
+				if(!checkClose){
+					//open new box
+					//reset bookkits
+					for each(var o:Order  in currBox.orders){
+						///reset
+						o.otkBookKits=null;
+					}
+					if(mode == OrderState.TECH_OTK){
+						//reset box states for check
+						var sn:String = OrderState.getStateName(OrderState.TECH_OTK_PICKING);
+						currBox.box.state =  OrderState.TECH_OTK_PICKING;
+						currBox.box.state_name=sn;
+						for each (var bit:MailPackageBoxItem in currBox.box.items){
+							bit.state = OrderState.TECH_OTK_PICKING;
+							bit.state_name = sn; 
+						}
+						for each (var b:OrderBook in currBox.box.books){
+							b.state = OrderState.TECH_OTK_PICKING;
 						}
 					}
-					if (currBoxItem) break;
 				}
-				if (!currBoxItem) return;
 				
-				checkAfterRefresh=false;
+				if (pgId){
+					//look4item
+					var oldBoxItem:MailPackageBoxItem=currBoxItem;
+					currBoxItem = null;
+					var newPG:PrintGroup; 
+					for each(var it:MailPackageBoxItem in currBox.box.items){
+						if (it && it.printGroups){
+							for each(var pg:PrintGroup in it.printGroups){
+								if(pg.id==pgId){
+									newPG = pg;
+									currPGID=pgId;
+									currBoxItem=it;
+									break;
+								}
+							}
+						}
+						if (currBoxItem) break;
+					}
+				}
+
 				//same box item?
-				if(oldBoxItem && oldBoxItem.orderID==currBoxItem.orderID && oldBoxItem.subID==currBoxItem.subID){
+				if(currBoxItem && oldBoxItem && oldBoxItem.orderID==currBoxItem.orderID && oldBoxItem.alias==newPG.alias ){
 					if(checkClose){
 						if(book!=0 && currBook==book){
 							//complite book
@@ -135,32 +169,21 @@
 				pgCover=null;
 				pgBlok=null;
 				order=null;
-				
-				//bookListAC=new ArrayCollection();
 				bookTotal=0;
 				bookComplited=0;
-				if(!currBoxItem) return;
+				if(!currBoxItem || !currBoxItem.printGroups || currBoxItem.printGroups.length==0 ) return;
 				bookTotal = currBoxItem.itemTo-currBoxItem.itemFrom+1;
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onOrderLoad);
-				latch.addLatch(svc.loadOrder4Otk(currBoxItem.orderID, currBoxItem.subID));
-				latch.start();
-			}
-
-			private function onOrderLoad(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onOrderLoad);
-					order=latch.lastDataItem as Order;
+				//lookup order
+				for each(var o:Order  in currBox.orders){
+					if (o.id==currBoxItem.orderID){
+						order = o;
+						break;
+					}
 				}
-					
-				if(!order || !order.printGroups) return;
-				if(order.hasSuborders){
-					order.otkSubid=(order.suborders.getItemAt(0) as SubOrder).sub_id;
-				}else{
-					order.otkSubid='';
-				}
+				if(!order) return;
+				order.printGroups =  currBoxItem.printGroups;
+				order.otkSubid='';
+				
 				var pg:PrintGroup;
 				for each(pg in order.printGroups){
 					if(currBoxItem.bookType!=0){
@@ -178,6 +201,11 @@
 				order.printGroups=new ArrayCollection;
 				if(pgCover) order.printGroups.addItem(pgCover);
 				if(pgBlok) order.printGroups.addItem(pgBlok);
+				//fill bokkits
+				var a:Array = currBox.box.books.toArray();
+				if (pgCover) pgCover.setBooks(a);
+				if (pgBlok) pgBlok.setBooks(a);
+				order.fillBookKits( ((pgCover && pgCover.books)?pgCover.books.toArray():null), ((pgBlok && pgBlok.books)?pgBlok.books.toArray():null));
 				if(currBoxItem.bookType !=0) refreshBooks();
 				detectState();
 			}
@@ -192,43 +220,21 @@
 			
 			private function refreshBooks():void{
 				bookComplited=0;
+				currBookKit = null;
 				if(!order || !order.id){
 					return;
 				}
-				var svc:OrderService=Tide.getInstance().getContext().byType(OrderService,true) as OrderService;
-				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onBooksLoad);
-				latch.addLatch(svc.loadSubOrderBooks(currBoxItem.orderID , currBoxItem.subID ));
-				latch.start();
-			}
-			private function onBooksLoad(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				var a:Array;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onBooksLoad);
-					a=latch.lastDataArr;
-				}
-				
-				if (pgCover) pgCover.setBooks(a);
-				if (pgBlok) pgBlok.setBooks(a);
-				order.fillBookKits( ((pgCover && pgCover.books)?pgCover.books.toArray():null), ((pgBlok && pgBlok.books)?pgBlok.books.toArray():null));
 				
 				var bk:BookKit;
 				if(order.otkBookKits){
 					for each (bk in order.otkBookKits){
 						bk.disabled = bk.book< currBoxItem.itemFrom || bk.book> currBoxItem.itemTo;
 						if(!bk.disabled && bk.state>=OrderState.TECH_OTK) bookComplited++;
+						if(bk.book == currBook) currBookKit = bk;
 					}
 				}
 				
-				if (lstBookList && currBook>0) lstBookList.selectedIndex=currBook-1;
-				if(checkAfterRefresh){
-					checkAfterRefresh=false;
-					if(bookTotal==bookComplited){
-						//compltete
-						Alert.show('Все книги проверены. Заказ выполнен?','',Alert.YES|Alert.NO,this,onCompleteAlert);
-					}
-				}
+				if (lstBookList && currBookKit) lstBookList.selectedItem=currBookKit;
 			}
 
 			protected function btClose_clickHandler(event:MouseEvent):void{
@@ -236,15 +242,21 @@
 			}
 			
 			private function closeView():void{
+				canPack = false;
 				dispatchEvent( new Event(Event.CLOSE));
 			}
 			
 			protected function btComplite_clickHandler(event:MouseEvent):void{
 				//check book
-				
 				var bk:BookKit=lstBookList.selectedItem as BookKit;
 				if(!bk || bk.state>=OrderState.TECH_OTK){
-					checkComplited();
+					//checkComplited();
+					checkBoxItem();
+					return;
+				}
+				if (bk && mode == OrderState.TECH_OTK){
+					bk.state=OrderState.TECH_OTK;
+					checkBoxItem();
 					return;
 				}
 				
@@ -275,27 +287,95 @@
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onBookLog);
-					if(latch.complite) checkComplited();
+					//if(latch.complite) checkComplited();
+					checkBoxItem();
+				}
+			}
+			
+			private function checkBoxItem():void{
+				if (!currBoxItem || !order || !order.otkBookKits) return;
+				var bk:BookKit;
+				bookComplited=0;
+				for each (bk in order.otkBookKits){
+					if(bk.book >= currBoxItem.itemFrom && bk.book <= currBoxItem.itemTo
+						&& bk.state>=OrderState.TECH_OTK) bookComplited++;
+				}
+				if (bookComplited == bookTotal){
+					if (mode == OrderState.TECH_OTK){
+						// set box state
+						currBoxItem.state = OrderState.TECH_OTK;
+						currBoxItem.state_name = OrderState.getStateName(OrderState.TECH_OTK);
+						checkBox();
+						return;
+					}
+					// check/set item state
+					var latch:DbLatch = new DbLatch();
+					latch.addEventListener(Event.COMPLETE,onSetBoxItemOTK); 
+					latch.addLatch(mpService.setBoxItemOTK(currBoxItem));
+					latch.start();
+				}
+			}
+			private function onSetBoxItemOTK(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSetBoxItemOTK);
+					if (latch.complite && latch.resultCode >= OrderState.TECH_OTK){
+						// set box state
+						currBoxItem.state = OrderState.TECH_OTK;
+						currBoxItem.state_name = OrderState.getStateName(OrderState.TECH_OTK);
+						checkBox();
+					}
+				}
+			}
+			
+			[Bindable]
+			private var canPack:Boolean;
+			
+			private function checkBox():void{
+				// check all box items complited
+				for each( var bi:MailPackageBoxItem in currBox.box.items){
+					if (bi.state < OrderState.TECH_OTK) return;
+				}
+				//complete
+				if (mode == OrderState.TECH_OTK){
+					currBox.box.state = OrderState.TECH_OTK;
+					currBox.box.state_name = OrderState.getStateName(OrderState.TECH_OTK);
+					canPack = true;
+					return;
+				}
+				//check/set box state
+				var latch:DbLatch = new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onSetBoxOTK); 
+				latch.addLatch(mpService.setBoxOTK(currBox.box));
+				latch.start();
+			}
+			private function onSetBoxOTK(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSetBoxOTK);
+					if (latch.complite && latch.resultCode >= OrderState.TECH_OTK){
+						currBox.state = OrderState.TECH_OTK;
+						currBox.box.state = OrderState.TECH_OTK;
+						currBox.state_name = OrderState.getStateName(OrderState.TECH_OTK);
+						Alert.show('Все заказы коробки '+ order.groupId.toString()+' прошли ОТК. Открыть группу?','',Alert.YES|Alert.NO, this); //, onAlertOpenPackage);
+					}				
 				}
 			}
 
-			private var checkAfterRefresh:Boolean; 
-			private function checkComplited():void{
-				checkAfterRefresh=true;
-				refreshBooks();
-			}
 			private function onCompleteAlert(evt:CloseEvent):void {
 				if (evt.detail == Alert.YES) {
 					setComplete();
 				}
 			}
 			private function setComplete():void{
+				//TODO refactor
+				/*
 				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
 				var latch:DbLatch= new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onCompliteSet);
-				//latch.addLatch(svc.extraStateSet(order.id,order.otkSubid,techPoint.tech_type, new Date()));
-				latch.addLatch(svc.extraStateSetOTK(currBoxItem.orderID, currBoxItem.subID, new Date()));
+				latch.addLatch(svc.extraStateSetOTK(currBoxItem.orderID, '', new Date()));
 				latch.start();
+				*/
 			}
 
 			private function setCompletePhoto(all:Boolean):void{
@@ -317,12 +397,11 @@
 					latch.removeEventListener(Event.COMPLETE,onCompliteSet);
 					if(latch.complite){
 						//closeView();
-						if(order.groupId !=0){
+						if(order.groupId !=0 && currBox.box.boxID==''){
 							//check package
 							latch= new DbLatch();
-							var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 							latch.addEventListener(Event.COMPLETE,onPackageState);
-							latch.addLatch(svc.getStateByOrders(order.source, order.groupId));
+							latch.addLatch(mpService.getStateByOrders(order.source, order.groupId));
 							latch.start();
 						}else{
 							closeView();
@@ -336,22 +415,28 @@
 					latch.removeEventListener(Event.COMPLETE,onPackageState);
 					if(latch.complite){
 						if(latch.resultCode>=OrderState.TECH_OTK){
-							Alert.show('Все заказы группы '+ order.groupId.toString()+' прошли ОТК. Открыть группу?','',Alert.YES|Alert.NO, this, onAlertOpenPackage);
+							Alert.show('Все заказы группы '+ order.groupId.toString()+' прошли ОТК. Упаковка?','',Alert.YES|Alert.NO, this, onAlertSwitchToPack);
 						}else{
-							choiseSpace();
 							closeView();
 						}
 					}
 				}
 			}
+			private function onAlertSwitchToPack(evt:CloseEvent):void {
+				if (evt.detail == Alert.NO) {
+					closeView();
+					return;
+				}
+				mode=OrderState.TECH_OTK;
+				show(currPGID, currBook);
+			}
+			
 			private function onAlertOpenPackage(evt:CloseEvent):void {
 				if (evt.detail == Alert.YES){
 					var pop:MailPackagePopUp= new MailPackagePopUp();
 					pop.addEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
 					pop.loadFromWeb(order.source, order.groupId, true);
 
-				}else{
-					choiseSpace();
 				}
 				closeView();
 			}
@@ -362,30 +447,17 @@
 
 				//recheck real package state (need to call choiseSpace?)
 				var latch:DbLatch = new DbLatch();
-				var svc:MailPackageService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
-				latch.addEventListener(Event.COMPLETE,onPackageRealState);
-				latch.addLatch(svc.getStateByPackages(order.source, new ArrayCollection([order.groupId])));
+				latch.addLatch(mpService.getStateByPackages(order.source, new ArrayCollection([order.groupId])));
 				latch.start();
 			}
-			private function onPackageRealState(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onPackageRealState);
-					if(latch.complite && latch.resultCode< OrderState.PACKAGE_PACKED){
-						choiseSpace();
-					}
-				}
-			}
 
-			
-			private function choiseSpace():void{
-				if(!order) return;
-				var pop:RackSpaceChoisePopUp= new RackSpaceChoisePopUp();
-				pop.show(order.id, techPoint.id);
-			}
-			
 			protected function lstBookList_changeHandler(event:IndexChangeEvent):void{
-				currBook=lstBookList.selectedIndex+1;
+				currBookKit =  lstBookList.selectedItem as BookKit;
+				if(currBookKit){
+					currBook = currBookKit.book;
+				}else{
+					currBook=0;
+				}
 			}
 			
 			protected function btPreview_clickHandler(event:MouseEvent):void{
@@ -414,10 +486,6 @@
 				setCompletePhoto(false);
 			}
 			
-			protected function btSpace_clickHandler(event:MouseEvent):void{
-				//choiseSpace();
-			}
-			
 			protected function btCompliteAllPhoto_clickHandler(event:MouseEvent):void{
 				Alert.show("Закрыть все группы с фотопечатью?","",Alert.OK | Alert.CANCEL,this,onConfirm);
 			}
@@ -425,12 +493,54 @@
 				setCompletePhoto(true);
 			}
 
-			protected function dgBoxItems_selectionChangeHandler(event:GridSelectionEvent):void
-			{
-				checkAfterRefresh=false;
+			protected function dgBoxItems_selectionChangeHandler(event:GridSelectionEvent):void{
 				currBoxItem = dgBoxItems.selectedItem as MailPackageBoxItem;
 				currBook=0;
+				currBookKit=null;
 				refresh();	
+			}
+			
+			protected function btPack_clickHandler(event:MouseEvent):void{
+				var latch:DbLatch = new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onBoxPacked); 
+				latch.addLatch(mpService.setBoxPacked(currBox.box));
+				latch.start();
+			}
+			private function onBoxPacked(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onBoxPacked);
+					if (latch.complite){
+						//close
+						closeView();
+					}
+				}
+			}
+			
+			protected function btPackIcomplete_clickHandler(event:MouseEvent):void{
+				var box:MailPackageBox = currBox.box.clone(); 
+				var bkList:Array = [];
+				var biList:Array = [];
+				for each(var bk:OrderBook in currBox.box.books){
+					if (bk.state != 450){
+						bkList.push(bk);	
+					}
+				}
+				for each(var bi:MailPackageBoxItem in currBox.box.items){
+					if (bi.state != 450){
+						biList.push(bi);	
+					}
+				}
+				/*
+				box.items = new ListCollectionView();
+				box.items.list = biList;
+				box.books = new ListCollectionView();
+				box.books.list = bkList;
+				*/
+				var latch:DbLatch = new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onBoxPacked); 
+				latch.addLatch(mpService.setBoxIncomplete(box.boxID, biList, bkList));
+				latch.start();
 			}
 			
 		]]>
@@ -458,7 +568,8 @@
 	
 	<s:HGroup gap="0" top="10" left="10" right="10" bottom="10" includeIn="info">
 		<s:VGroup gap="10" width="100%" height="100%">
-			<s:Form id="frmOrder" width="100%" backgroundAlpha="0" fontSize="14">
+			<s:Label fontWeight="bold" fontSize="14" text="{mode == OrderState.TECH_OTK_PICKING? 'ОТК':'Упаковка'}"/>
+			<s:Form id="frmOrder" width="100%" backgroundAlpha="{currBox.box.state == OrderState.TECH_OTK? 0.5: 0}" backgroundColor="green" fontSize="14">
 				<s:layout>
 					<s:FormLayout gap="-12"/>
 				</s:layout>
@@ -468,6 +579,9 @@
 				<s:FormItem label="Коробка">
 					<s:TextInput text="{currBox.box.boxNum}" editable="false" width="100%"/>
 				</s:FormItem> 
+				<s:FormItem label="Статус">
+					<s:TextInput text="{currBox.box.state_name}" editable="false" width="100%"/>
+				</s:FormItem> 
 				<s:FormItem label="Полка">
 					<s:TextInput text="{currBox.rackSpace.rack_name?currBox.rackSpace.rack_name:''} - {currBox.rackSpace.name?currBox.rackSpace.name:''}" editable="false" width="100%"/>
 				</s:FormItem> 
@@ -475,7 +589,13 @@
 			<s:DataGrid id="dgBoxItems" selectionMode="singleRow"  
 						fontSize="14" width="100%" height="100%"
 						selectionChange="dgBoxItems_selectionChangeHandler(event)"
-						dataProvider="{currBox.box.items}" locale="ru_RU" columns="{MailPackageBoxItem.columns()}"/>			
+						dataProvider="{currBox.box.items}" locale="ru_RU" columns="{MailPackageBoxItem.columns()}">
+				<s:rowBackground>
+					<fx:Component>
+						<itemRenderer:TechBoxItemDataGridRowBackground/>
+					</fx:Component>
+				</s:rowBackground>
+			</s:DataGrid>			
 		</s:VGroup>
 		<s:Scroller width="500" height="100%">
 			<s:VGroup width="100%">
@@ -569,7 +689,7 @@
 			</s:HGroup>
 			<s:List id="lstBookList" contentBackgroundAlpha="0" borderVisible="false"
 					itemRenderer="com.photodispatcher.view.itemRenderer.BookCheckRenderer"
-					selectedIndex="{currBook-1}" change="lstBookList_changeHandler(event)"
+					selectedItem="{currBookKit}" change="lstBookList_changeHandler(event)"
 					dataProvider="{order.otkBookKits}" width="200" height="100%"/>
 		</s:VGroup>
 		<s:Spacer width="10"/>
@@ -579,7 +699,13 @@
 			<s:Button id="btComplitePhoto" label="Проверено" click="btComplitePhoto_clickHandler(event)" includeIn="photo"/>
 			<s:Button id="btCompliteAllPhoto" label="Закрыть все" click="btCompliteAllPhoto_clickHandler(event)" includeIn="photo"/>
 			<s:Spacer height="100%"/>
-			<s:Button id="btSpace" label="Полка" click="btSpace_clickHandler(event)"/>
+			<s:Button id="btPrint" label="Печать" visible="{mode == OrderState.TECH_OTK}" enabled="{canPack}"
+					  width="100%"/>
+			<s:Button id="btPack" label="Упаковано" visible="{mode == OrderState.TECH_OTK}" enabled="{canPack}"
+					  width="100%" click="btPack_clickHandler(event)"/>
+			<s:Button id="btPackIcomplete" label="Не комплект" visible="{mode == OrderState.TECH_OTK}"
+					  click="btPackIcomplete_clickHandler(event)"/>
+			<s:Spacer height="10"/>
 			<s:Button id="btClose" label="Закрыть" click="btClose_clickHandler(event)"/>
 		</s:VGroup>
 	</s:HGroup>
