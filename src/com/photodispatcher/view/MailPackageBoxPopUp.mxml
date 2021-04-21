@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnablePopUpContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+						   xmlns:s="library://ns.adobe.com/flex/spark" 
+						   xmlns:mx="library://ns.adobe.com/flex/mx"
+						   xmlns:itemRenderer="com.photodispatcher.view.itemRenderer.*"
+						   width="500" height="600">
+	
+	<fx:Script>
+		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.factory.WebServiceBuilder;
+			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.DeliveryType;
+			import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
+			import com.photodispatcher.model.mysql.entities.DeliveryTypePrintForm;
+			import com.photodispatcher.model.mysql.entities.FieldValue;
+			import com.photodispatcher.model.mysql.entities.GroupNetprint;
+			import com.photodispatcher.model.mysql.entities.MailPackage;
+			import com.photodispatcher.model.mysql.entities.MailPackageBarcode;
+			import com.photodispatcher.model.mysql.entities.MailPackageBox;
+			import com.photodispatcher.model.mysql.entities.MailPackageMessage;
+			import com.photodispatcher.model.mysql.entities.MailPackageProperty;
+			import com.photodispatcher.model.mysql.entities.Order;
+			import com.photodispatcher.model.mysql.entities.OrderState;
+			import com.photodispatcher.model.mysql.entities.RackSpace;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceType;
+			import com.photodispatcher.model.mysql.entities.TechPoint;
+			import com.photodispatcher.model.mysql.services.MailPackageService;
+			import com.photodispatcher.model.mysql.services.OrderService;
+			import com.photodispatcher.printer.Printer;
+			import com.photodispatcher.service.web.BaseWeb;
+			import com.photodispatcher.service.web.FotoknigaWeb;
+			import com.photodispatcher.service.web.PixelParkWeb;
+			import com.photodispatcher.view.menu.GridContexMenu;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.CursorManager;
+			import mx.managers.PopUpManager;
+			import mx.utils.object_proxy;
+			
+			import org.granite.tide.Tide;
+			
+			import spark.events.PopUpEvent;
+			
+			[Bindable]
+			private var stateMsg:String;
+			
+			[Bindable]
+			public var mailPackage:MailPackage;
+			[Bindable]
+			public var propertiesAC:ArrayCollection;
+			
+			[Bindable]
+			private var showClienGroups:Boolean;
+			
+			[Bindable]
+			private var source:Source;
+
+			[Bindable]
+			public var printForms:ArrayCollection;
+
+			public var techPointOTK:TechPoint;
+			
+			private var _netprintId:String;
+			[Bindable]
+			public function get netprintId():String{
+				return _netprintId;
+			}
+			public function set netprintId(val:String):void{
+				_netprintId=val;
+				if(val){
+					currentState="netprint";
+				}
+			}
+			
+			[Bindable]
+			public var box:MailPackageBox;
+			
+			[Bindable]
+			public var boxes:ArrayCollection;
+
+			private var _webService:BaseWeb;
+			private function get webService():BaseWeb{
+				if(!_webService) _webService= WebServiceBuilder.build(source);
+				return _webService;
+			}
+			
+			private var _bdService:MailPackageService;
+			private function get bdService():MailPackageService{
+				if(!_bdService) _bdService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
+				return _bdService;
+			}
+			
+			public function loadFromWeb(sourceId:int, id:int, showClienGroups:Boolean=false, techPointOTK:TechPoint=null):void{
+				mailPackage=null;
+				this.showClienGroups=showClienGroups;
+				this.techPointOTK=techPointOTK;
+				stateMsg='Загрузка с сайта';
+				source=Context.getSource(sourceId);
+				if(!source){
+					stateMsg=stateMsg+'. Ошибка инициализации, не найден источник '+sourceId.toString();
+					Alert.show(stateMsg);
+					return;
+				}
+				webService.addEventListener(Event.COMPLETE,webHandler);
+				try{
+					webService.getMailPackage(id);
+				}catch(error:Error){
+					Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+					return;
+				}
+				CursorManager.setBusyCursor();
+				show();
+			}
+			
+			private function show():void{
+				if(this.isOpen) return;
+				this.open((FlexGlobals.topLevelApplication as DisplayObjectContainer),true);
+				this.width=FlexGlobals.topLevelApplication.width-50;
+				this.height=FlexGlobals.topLevelApplication.height-100;
+				PopUpManager.centerPopUp(this);
+
+			}
+			
+			private function webHandler(e:Event):void{
+				var pw:BaseWeb=e.target as BaseWeb;
+				CursorManager.removeBusyCursor();
+				pw.removeEventListener(Event.COMPLETE,webHandler);
+				//TODO load orders
+				if(pw.hasError){
+					trace('web getMailPackage err: '+pw.errMesage);
+					stateMsg='Ошибка загрузки с сайта: '+pw.errMesage;
+					return;
+				}
+				mailPackage=pw.getLastMailPackage();
+				if(!mailPackage){
+					stateMsg='Ошибка загрузки с сайта';
+					return;
+					
+				}
+				
+				printForms=DeliveryTypePrintForm.getForms(mailPackage.delivery_id);
+				propertiesAC=null;
+				if(mailPackage.properties) propertiesAC= new ArrayCollection(mailPackage.properties.toArray());
+				if(propertiesAC){
+					propertiesAC.filterFunction=filterProps;
+					propertiesAC.refresh();
+				}
+				
+				//netprint??
+				if (!box && netprintId){
+					if(mailPackage.barcodes && mailPackage.barcodes.length>1){
+						//remove all keep only current
+						var newboxes:ArrayCollection = new ArrayCollection();
+						for each(var b:MailPackageBarcode in mailPackage.barcodes){
+							if(b && b.box_orderNumber==netprintId) {
+								newboxes.addItem(b);
+								break;
+							}
+						}
+						mailPackage.barcodes=newboxes;
+					}
+					//TODO ? return; 
+				}
+				
+				if(box && box.barcode){
+					b = new MailPackageBarcode();
+					b.barcode=box.barcode;
+					b.box_id = box.boxID;
+					b.box_number = box.boxNum;
+					newboxes = new ArrayCollection();
+					newboxes.addItem(b);
+					mailPackage.barcodes=newboxes;
+				}
+
+				mailPackage.state_date=null;
+				var latchMp:DbLatch=new DbLatch();
+				latchMp.addEventListener(Event.COMPLETE,onloadMP);
+				latchMp.addLatch(bdService.load(mailPackage.source, mailPackage.id));
+				latchMp.start();
+			}
+			private function onloadMP(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onloadMP);
+					if(latch.complite){
+						var mp:MailPackage=latch.lastDataItem as MailPackage;
+						if(mp){
+							//set bd state
+							mailPackage.state=mp.state;
+							mailPackage.state_name=mp.state_name;
+							mailPackage.state_date=mp.state_date;
+						}
+					}
+				}
+			}
+			
+			private function filterProps(item:Object):Boolean{
+				if(!mailPackage) return false;
+				var it:MailPackageProperty= item as MailPackageProperty;
+				if(!it) return false;
+				return !DeliveryType.isInfoHidden(mailPackage.delivery_id,it.property);
+			}
+			
+			protected function list1_clickHandler(event:MouseEvent):void{
+				if(event.target is Button && event.target.id=='btPrint'){
+					var form:DeliveryTypePrintForm= lstPrint.selectedItem as DeliveryTypePrintForm;
+					if(!form || !mailPackage) return;
+					
+					//disable 'Бел EMS' for K
+					if(form.delivery_type==9 && form.form==3 &&  mailPackage.source==15) return;  
+					//disable 'Бел EMS K' for FB
+					if(form.delivery_type==9 && form.form==4 &&  mailPackage.source==8) return;  
+					
+					var bar:MailPackageBarcode;
+					if(dgBarCode) bar=dgBarCode.selectedItem as MailPackageBarcode;
+					if(!bar && mailPackage.barcodes && mailPackage.barcodes.length>0) bar=mailPackage.barcodes.getItemAt(0) as MailPackageBarcode;
+					/*
+					var code:String='';
+					var providerId:String='';
+					if(bar){
+						code=bar.barcode;
+						providerId=bar.preorder_num;
+					}
+					Printer.instance.printDeliveryForm(mailPackage,form,code,providerId);
+					*/
+					Printer.instance.printDeliveryForm(mailPackage, form, bar);
+				}
+			}
+			
+			private function spacesLabelFunc(item:Object):String{
+				var res:String='';
+				var s:RackSpace=item as RackSpace; 
+				if(s){
+					res=s.rack_name+' - '+s.name
+				}
+				return res;
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<s:DateTimeFormatter id="dtFormater" dateTimePattern="dd.MM.yyyy HH:mm"/>
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="common"/>
+		<s:State name="netprint"/>
+	</s:states>
+
+	<s:Rect radiusX="6" top="0" left="0" right="0" bottom="0">
+		<s:stroke>
+			<s:SolidColorStroke color="#444444" weight="1"/>
+		</s:stroke>
+		<s:fill>
+			<s:SolidColor color="#ffffff"/>
+		</s:fill>
+	</s:Rect>
+
+	<s:VGroup gap="5" top="10" left="10" right="10" bottom="10">
+		<s:Label text="{stateMsg}" width="100%"/>
+		<s:HGroup width="100%" gap="10">
+			<s:Form id="frmOrder" backgroundAlpha="0" >
+				<s:layout>
+					<s:FormLayout gap="-12"/>
+				</s:layout>
+				
+				<s:FormItem label="ID">
+					<s:TextInput id="tiID" text="{mailPackage.id_name} ({mailPackage.id})" width="200" editable="false"/>
+					<s:Label text="Коробка:{box.boxNum}" width="200" />
+				</s:FormItem> 
+				<s:FormItem label="Статус">
+					<s:TextInput  text="{mailPackage.state_name}" width="200" editable="false"/>
+					<s:Label text="Дата:{dtFormater.format(mailPackage.state_date)}" width="200"/>
+				</s:FormItem> 
+				<s:FormItem label="Источник">
+					<s:TextInput  text="{mailPackage.source_name}" width="200" editable="false"/>
+				</s:FormItem> 
+				<s:FormItem label="Доставка">
+					<s:TextInput  text="{mailPackage.delivery_name}" width="200" editable="false"/>
+				</s:FormItem> 
+				<s:FormItem label="Срок исполнения">
+					<s:TextInput  text="{dtFormater.format(mailPackage.execution_date)}" width="200" editable="false"/>
+				</s:FormItem> 
+				<s:FormItem label="Примечания">
+					<s:List dataProvider="{mailPackage.messages}" width="300">
+						<s:layout>
+							<s:VerticalLayout gap="0" requestedRowCount="2"/>
+						</s:layout>
+						<s:itemRenderer>
+							<fx:Component>
+								<s:ItemRenderer>
+									<s:VGroup  width="100%" top="2" bottom="2" left="2" right="2" gap="5" horizontalAlign="left">
+										<s:Label text="{data.log_key}:{data.log_user}"/>
+										<s:Label text="{data.message}" width="100%" fontWeight="bold"/>
+									</s:VGroup>
+								</s:ItemRenderer>
+							</fx:Component>
+						</s:itemRenderer>
+					</s:List>
+				</s:FormItem> 
+			</s:Form>
+			<s:VGroup width="100%" height="100%" gap="5" includeIn="netprint">
+				<s:Label width="100%" text="Коробка {netprintId}"/>
+				<s:Label width="100%" text="Коробки"/>
+				<s:DataGrid id="dgBoxes" selectionMode="singleRow"
+							fontSize="14" width="100%" height="100%"
+							dataProvider="{boxes}" locale="ru_RU" columns="{GroupNetprint.gridColumns()}">
+					<s:rowBackground>
+						<fx:Component>
+							<itemRenderer:GroupNetprintGridRowBackground/>
+						</fx:Component>
+					</s:rowBackground>
+				</s:DataGrid>
+			</s:VGroup>
+		</s:HGroup>
+
+			<s:VGroup width="100%" height="100%" gap="5">
+				<s:Label text="Атрибуты"/>
+				<s:DataGrid id="dgAtrs" selectionMode="singleRow" width="100%" height="100%" locale="ru_RU" 
+							editable="true"
+							dataProvider="{propertiesAC}" columns="{MailPackageProperty.gridColumns()}"/>
+			</s:VGroup>
+		<s:Spacer height="10"/>
+				<s:HGroup width="100%"  height="100" gap="10">
+					<s:VGroup width="100%" height="100%" gap="5">
+						<s:Label text="Штрих коды"/>
+						<s:DataGrid id="dgBarCode" selectionMode="singleRow" width="100%" height="100%"  editable="true" locale="ru_RU"
+									dataProvider="{mailPackage.barcodes}" columns="{MailPackageBarcode.gridColumns()}"/>
+					</s:VGroup>
+					<!--<s:Button id="btPrintBarcode" label="Печать" click="btPrintBarcode_clickHandler(event)"/>-->
+					<s:VGroup gap="5" height="100%">
+						<s:Label text="Печать"/>
+						<s:List id="lstPrint" dataProvider="{printForms}" labelField="form_name"
+								contentBackgroundColor="0"
+								contentBackgroundAlpha="0.5"
+								height="100%"
+								itemRenderer="com.photodispatcher.view.itemRenderer.PrintFormButtonRenderer"
+								click="list1_clickHandler(event)"/>
+					</s:VGroup>
+				</s:HGroup>
+
+		<s:Spacer height="5"/>
+		<s:HGroup width="100%" horizontalAlign="right">
+			<!--<s:Button id="btSetSiteState" label="Упакован" toolTip="Сменить статус на сайте" 
+					  enabled="{source.type==SourceType.SRC_FOTOKNIGA}" click="btSetSiteState_clickHandler(event)"/>
+			<s:Spacer width="20"/>-->
+			<s:Button id="btClose" label="Закрыть" click="{close()}"/>
+		</s:HGroup>
+	</s:VGroup>
+</s:SkinnablePopUpContainer>

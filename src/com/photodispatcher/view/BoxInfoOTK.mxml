@@ -192,7 +192,7 @@
 							if(pg.book_part==BookSynonym.BOOK_PART_BLOCK || pg.book_part==BookSynonym.BOOK_PART_BLOCKCOVER) pgBlok=pg;
 						}
 					}else{
-						if(pg.alias == currBoxItem.alias){
+						if(pg.path == currBoxItem.alias || (pg.alias && pg.alias == currBoxItem.alias)){
 							pgBlok=pg;
 							break;
 						}
@@ -379,18 +379,21 @@
 			}
 
 			private function setCompletePhoto(all:Boolean):void{
-				if(!currPGID && !all) return;
-				var svc:OrderStateService=Tide.getInstance().getContext().byType(OrderStateService,true) as OrderStateService;
-				var latch:DbLatch= new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onCompliteSet);
-				if(all){
-					latch.addLatch(svc.extraStateSetOTKbyPG(order.id, new Date()));
-				}else{
-					latch.addLatch(svc.extraStateSetOTKbyPG(currPGID, new Date()));
+				currBoxItem.state = OrderState.TECH_OTK;
+				currBoxItem.state_name = OrderState.getStateName(OrderState.TECH_OTK);
+				if (mode == OrderState.TECH_OTK){
+					// set box state
+					checkBox();
+					return;
 				}
+				// check/set item state
+				var latch:DbLatch = new DbLatch();
+				latch.addEventListener(Event.COMPLETE,onSetBoxItemOTK); 
+				latch.addLatch(mpService.setBoxItemOTK(currBoxItem));
 				latch.start();
 			}
 
+			//not used
 			private function onCompliteSet(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){
@@ -430,26 +433,27 @@
 				mode=OrderState.TECH_OTK;
 				show(currPGID, currBook);
 			}
-			
+			/*
 			private function onAlertOpenPackage(evt:CloseEvent):void {
 				if (evt.detail == Alert.YES){
-					var pop:MailPackagePopUp= new MailPackagePopUp();
-					pop.addEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
+					var pop:MailPackageBoxPopUp= new MailPackageBoxPopUp();
+					pop.box = currBox.box;
+					//pop.addEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
 					pop.loadFromWeb(order.source, order.groupId, true);
 
 				}
-				closeView();
+			//	closeView();
 			}
 
 			private function onMailPackagePopUpClose(event:PopUpEvent):void{
 				var pop:MailPackagePopUp=event.target as MailPackagePopUp;
 				pop.removeEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
-
 				//recheck real package state (need to call choiseSpace?)
 				var latch:DbLatch = new DbLatch();
 				latch.addLatch(mpService.getStateByPackages(order.source, new ArrayCollection([order.groupId])));
 				latch.start();
 			}
+			*/
 
 			protected function lstBookList_changeHandler(event:IndexChangeEvent):void{
 				currBookKit =  lstBookList.selectedItem as BookKit;
@@ -541,6 +545,13 @@
 				latch.addEventListener(Event.COMPLETE,onBoxPacked); 
 				latch.addLatch(mpService.setBoxIncomplete(box.boxID, biList, bkList));
 				latch.start();
+			}
+			
+			protected function btLoad_clickHandler(event:MouseEvent):void			{
+				var pop:MailPackageBoxPopUp= new MailPackageBoxPopUp();
+				pop.box = currBox.box;
+				//pop.addEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
+				pop.loadFromWeb(currBox.source , currBox.id, true);
 			}
 			
 		]]>
@@ -671,7 +682,7 @@
 					<s:FormItem label="Бумага">
 						<s:TextInput text="{pgBlok.paper_name}" editable="false" width="100%"/>
 					</s:FormItem> 
-					<s:FormItem label="Печать">
+					<s:FormItem label="Печать" >
 						<s:TextInput text="{pgBlok.is_pdf?('Полиграфия '+(pgBlok.is_duplex?'двусторонняя':'односторонняя')):'Фотопечать'}" editable="false" width="100%"/>
 					</s:FormItem> 
 				</s:Form>
@@ -699,7 +710,11 @@
 			<s:Button id="btComplitePhoto" label="Проверено" click="btComplitePhoto_clickHandler(event)" includeIn="photo"/>
 			<s:Button id="btCompliteAllPhoto" label="Закрыть все" click="btCompliteAllPhoto_clickHandler(event)" includeIn="photo"/>
 			<s:Spacer height="100%"/>
+			
+			<!--<s:Button id="btLoad" label="Load" width="100%" click="btLoad_clickHandler(event)"/>-->
+			
 			<s:Button id="btPrint" label="Печать" visible="{mode == OrderState.TECH_OTK}" enabled="{canPack}"
+					  click="btLoad_clickHandler(event)"
 					  width="100%"/>
 			<s:Button id="btPack" label="Упаковано" visible="{mode == OrderState.TECH_OTK}" enabled="{canPack}"
 					  width="100%" click="btPack_clickHandler(event)"/>

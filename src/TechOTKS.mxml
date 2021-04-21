@@ -537,8 +537,9 @@
 		</s:HGroup>
 	</s:VGroup>
 	
-	<view:TechOTKMonitorBox id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" isActive="{currentState=='monitor'}"
-						 top="20" left="20" right="20" bottom="50"/>
+	<view:TechOTKMonitorBox id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" 
+							isActive="{currentState=='otk' || currentState=='pack'}"
+							top="20" left="20" right="20" bottom="50"/>
 	<view:TechOTKPackingView id="mpView" includeIn="mail" isActive="{currentState=='mail'}" barcodeReader="{barcodeReader}" techPointOTK="{techPointObj}"
 							  top="20" left="20" right="20" bottom="50"/>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
