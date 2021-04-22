@@ -26,6 +26,8 @@ package com.photodispatcher.model.mysql.entities {
         private var _packageID:int;
         private var _price:Number;
         private var _source:int;
+        private var _source_code:String;
+        private var _source_name:String;
         private var _state:int;
         private var _state_date:Date;
         private var _state_name:String;
@@ -87,6 +89,20 @@ package com.photodispatcher.model.mysql.entities {
             return _source;
         }
 
+        public function set source_code(value:String):void {
+            _source_code = value;
+        }
+        public function get source_code():String {
+            return _source_code;
+        }
+
+        public function set source_name(value:String):void {
+            _source_name = value;
+        }
+        public function get source_name():String {
+            return _source_name;
+        }
+
         public function set state(value:int):void {
             _state = value;
         }
@@ -125,6 +141,8 @@ package com.photodispatcher.model.mysql.entities {
             _packageID = input.readObject() as int;
             _price = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _source = input.readObject() as int;
+            _source_code = input.readObject() as String;
+            _source_name = input.readObject() as String;
             _state = input.readObject() as int;
             _state_date = input.readObject() as Date;
             _state_name = input.readObject() as String;
@@ -141,6 +159,8 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_packageID);
             output.writeObject(_price);
             output.writeObject(_source);
+            output.writeObject(_source_code);
+            output.writeObject(_source_name);
             output.writeObject(_state);
             output.writeObject(_state_date);
             output.writeObject(_state_name);

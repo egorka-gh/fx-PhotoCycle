@@ -193,6 +193,17 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
+        public function loadBoxesByState(arg0:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("loadBoxesByState", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("loadBoxesByState", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("loadBoxesByState", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
         public function loadByClient(arg0:int, arg1:int, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("loadByClient", arg0, arg1, resultHandler, faultHandler) as AsyncToken;
@@ -376,6 +387,17 @@ package com.photodispatcher.model.mysql.services {
                 return callProperty("setBoxPacked", arg0, resultHandler) as AsyncToken;
             else if (resultHandler == null)
                 return callProperty("setBoxPacked", arg0) as AsyncToken;
+            else
+                throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
+        }    
+        
+        public function setBoxSend(arg0:MailPackageBox, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+            if (faultHandler != null)
+                return callProperty("setBoxSend", arg0, resultHandler, faultHandler) as AsyncToken;
+            else if (resultHandler is Function || resultHandler is ITideResponder)
+                return callProperty("setBoxSend", arg0, resultHandler) as AsyncToken;
+            else if (resultHandler == null)
+                return callProperty("setBoxSend", arg0) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    

@@ -6,26 +6,28 @@
 		 creationComplete="{init()}"
 		 keyDown="onKey(event)"
 		 >
-
+	
 	<fx:Script>
 		<![CDATA[
 			import com.photodispatcher.context.Context;
 			import com.photodispatcher.event.BarCodeEvent;
+			import com.photodispatcher.factory.WebServiceBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.GroupNetprint;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
-			import com.photodispatcher.model.mysql.entities.MailPackageBoxItem;
+			import com.photodispatcher.model.mysql.entities.MailPackageBox;
 			import com.photodispatcher.model.mysql.entities.Order;
-			import com.photodispatcher.model.mysql.entities.OrderBook;
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
-			import com.photodispatcher.model.mysql.entities.RackSpace;
 			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
 			import com.photodispatcher.model.mysql.services.GroupNetprintService;
 			import com.photodispatcher.model.mysql.services.MailPackageService;
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.service.barcode.ComReader;
+			import com.photodispatcher.service.web.BaseWeb;
+			import com.photodispatcher.service.web.FotoknigaWeb;
 			import com.photodispatcher.util.ArrayUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
@@ -48,7 +50,7 @@
 			
 			[Bindable]
 			public var techPointOTK:TechPoint;
-
+			
 			[Bindable]
 			protected var chkSource: Source;
 			[Bindable]
@@ -73,7 +75,7 @@
 				if(!_bdService) _bdService=Tide.getInstance().getContext().byType(MailPackageService,true) as MailPackageService;
 				return _bdService;
 			}
-						
+			
 			private var _netprintSvc:GroupNetprintService;
 			private function get netprintSvc():GroupNetprintService{
 				if(!_netprintSvc) _netprintSvc=Tide.getInstance().getContext().byType(GroupNetprintService,true) as GroupNetprintService;
@@ -84,12 +86,9 @@
 			private function detectState():void{
 				switch(tbView.selectedIndex){
 					case 0:
-						currentState='inQueue';
-						break;
-					case 1:
 						currentState='packedList';
 						break;
-					case 2:
+					case 1:
 						currentState='netprintView';
 						break;
 				}
@@ -101,30 +100,18 @@
 				packagesAC=null;
 				gridMenuRemove();
 				switch(currentState){
-					case 'inQueue':
-						gridColumns=RackSpace.gridColumnsUsed();
-						loadInQueue();
-						break;
-					/*
 					case 'packedList':
-						gridColumns=MailPackage.columns();
+						gridColumns=MailPackageBox.columns();
 						loadbyState(OrderState.PACKAGE_PACKED);
 						gridMenuAddPacked();
 						break;
-					*/
 				}
 			}
-
+			
 			private function loadbyState(state:int):void{
 				var latch:DbLatch=new DbLatch();
 				latch.addEventListener(Event.COMPLETE,onload);
-				latch.addLatch(bdService.loadByState(state));
-				latch.start();
-			}
-			private function loadInQueue():void{
-				var latch:DbLatch=new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onload);
-				latch.addLatch(bdService.usedSpaces(techPointOTK.id, OrderState.TECH_OTK));
+				latch.addLatch(bdService.loadBoxesByState(state));
 				latch.start();
 			}
 			private function onload(event:Event):void{
@@ -140,64 +127,21 @@
 			private var gridMenu:GridContexMenu;
 			protected function dgPackages_creationCompleteHandler(event:FlexEvent):void{
 				gridMenu= new GridContexMenu(dgPackages); 
-				//gridMenu.addItem('Открыть',openCallBack);
+				gridMenu.addItem('Открыть',openCallBack);
 			}
-			
 			private function openCallBack(grid:DataGrid,param:int):void{
+				/*
 				var onItem:MailPackage=grid.selectedItem as MailPackage;
 				if(onItem){
 					showMP(onItem);
 				}
+				*/
 			}
 			
 			private function gridMenuRemove(preserve:int=0):void{
 				if(!gridMenu) return;
 				gridMenu.removeByParameter(preserve);
 			}
-
-			private function gridMenuAddPack():void{
-				if(!gridMenu) return;
-				gridMenu.addItem('Упаковка',packCallBack,OrderState.TECH_OTK_PICKING);
-			}
-			private function packCallBack(grid:DataGrid,param:int):void{
-				var onItem:RackSpace=grid.selectedItem as RackSpace;
-				if(onItem){
-					var latch:DbLatch= new DbLatch();
-					latch.addEventListener(Event.COMPLETE,onBoxLoad);
-					latch.addLatch(bdService.loadBox(onItem.source, onItem.packageID, onItem.boxID ));
-					latch.start();
-				}
-			}
-			private function onBoxLoad(e:Event):void{
-				var latch:DbLatch=e.target as DbLatch;
-				var resList:ArrayCollection;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onBoxLoad);
-					if(latch.complite){
-						resList=latch.lastDataAC;
-					}
-				}
-				if(!resList || resList.length!=1){
-					Alert.show('Ошибка загрузки коробки');
-					return;
-				}
-				var box:MailPackage = resList.getItemAt(0) as MailPackage;
-				if(!box){
-					Alert.show('Ошибка загрузки коробки');
-					return;
-				}
-				//reset states
-				box.box.state =  OrderState.TECH_OTK_PICKING;
-				for each (var it:MailPackageBoxItem in box.box.items){
-					it.state = OrderState.TECH_OTK_PICKING;
-					for each (var b:OrderBook in box.box.books){
-						b.state = OrderState.TECH_OTK_PICKING;
-					}
-				}
-				//showBox
-				
-			}
-
 			
 			private function gridMenuAddPacked():void{
 				if(!gridMenu) return;
@@ -207,45 +151,88 @@
 				//var onItem:MailPackage=grid.selectedItem as MailPackage;
 				Alert.show('Сменить статус на "Отправлен"?','',Alert.YES|Alert.NO, this, onAlertSetSend);
 			}
-			private var sendItems:Array=[];
 			private function onAlertSetSend(evt:CloseEvent):void {
-				//sendItems=[];
 				if (evt.detail == Alert.YES && dgPackages.selectedItems && dgPackages.selectedItems.length>0){
-					for each (var item:* in dgPackages.selectedItems) sendItems.push(item);
-				}
-				setSendNext();
-			}
-			private function setSendNext():void{
-				if(sendItems.length==0){
-					refresh();
-					return;
-				}
-				var item:MailPackage=sendItems.shift() as MailPackage;
-				if(!item) setSendNext();
-				item.state= OrderState.PACKAGE_SEND;
-				var latch:DbLatch=new DbLatch(); 
-				latch.addEventListener(Event.COMPLETE,onsetSendNext);
-				latch.addLatch(bdService.startState(item));
-				latch.start();
-			}
-			private function onsetSendNext(event:Event):void{
-				var latch:DbLatch= event.target as DbLatch;
-				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onsetSendNext);
-					if(latch.complite){
-						//close();
-						setSendNext();
-					}
+					setSiteSend(dgPackages.selectedItem as MailPackageBox);
 				}
 			}
 
+			private var sendBox:MailPackageBox;
+			private function setSiteSend(box : MailPackageBox):void{
+				sendBox = null;
+				if(!box) return;
+				sendBox = box;
+				sendBox.state= OrderState.PACKAGE_SEND;
+				var latch:DbLatch=new DbLatch(); 
+				latch.addEventListener(Event.COMPLETE,onSetSend);
+				latch.addLatch(bdService.setBoxSend(sendBox));
+				latch.start();
+			}
+			private function onSetSend(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onSetSend);
+					if(latch.complite){
+						//if whole package is complete
+						if(latch.resultCode < OrderState.PACKAGE_SEND){
+							//no
+							refresh();
+							return;
+						}
+						//set send on site
+						var source:Source =Context.getSource(sendBox.source);
+						if(!source){
+							refresh();
+							return;
+						}
+						if(source.type!=SourceType.SRC_FOTOKNIGA && source.type!=SourceType.SRC_FBOOK && source.type!=SourceType.SRC_PIXELPARK){
+							refresh();
+							return;
+						}
+						var webService:BaseWeb = WebServiceBuilder.build(source);
+						//double click
+						//if (webService.isRunning) return;
+						//update site state
+						//TODO var dt:DeliveryTypeDictionary = DeliveryTypeDictionary.getDeliveryTypeDictionary(source.id, mailPackage.native_delivery_id);
+						//TODO if(source.type==SourceType.SRC_PIXELPARK || (dt && dt.setSend)){
+						//TODO resolve DeliveryType check
+						refresh();
+						return;
+						
+						
+						//update site state
+						webService.addEventListener(Event.COMPLETE,setStateSendHandler);
+						try{
+							webService.setMailPackageState(sendBox.packageID, FotoknigaWeb.ORDER_STATE_SHIPPED ,false);
+						}catch(error:Error){
+							Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+						}					
+					}
+				}
+			}
+			private function setStateSendHandler(e:Event):void{
+				var webService:BaseWeb = e.target as BaseWeb;
+				if(!webService) return;
+				webService.removeEventListener(Event.COMPLETE,setStateSendHandler);
+				if(webService.hasError){
+					trace('web err: '+webService.errMesage);
+					//if(!webService.hasErrCode(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED)){
+					Alert.show(webService.errMesage);
+					//}
+				}else{
+					Alert.show('Статус на сайте изменен');
+				}
+				refresh();
+			}
+				
+			
 			private function showMP(item:MailPackage):void{
 				if(!item) return;
 				//var pop:MailPackagePopUp= new MailPackagePopUp();
 				//if(currentState=='inQueue')
 				showMPbyId(item.source, item.id);
 			}
-
+			
 			private function showMPbyId(source:int, groupId:int, showClienGroups:Boolean=true, netprintId:String='', boxes:ArrayCollection=null):void{
 				if(!source || !groupId) return;
 				var pop:MailPackagePopUp= new MailPackagePopUp();
@@ -261,7 +248,7 @@
 				if(pop) pop.removeEventListener(PopUpEvent.CLOSE, onMPpopClose);
 				refresh();
 			}
-
+			
 			private var _barcodeReader:ComReader;
 			public function get barcodeReader():ComReader{
 				return _barcodeReader;
@@ -293,7 +280,7 @@
 				newScanId='';
 				var boxes:ArrayCollection;
 				if(latch){
-					latch.removeEventListener(Event.COMPLETE,onGroupBoxesLoad);
+					latch.removeEventListener(Event.COMPLETE,onNetprintFinde);
 					if(latch.complite){
 						boxes=latch.lastDataAC;
 					}
@@ -307,7 +294,7 @@
 					showMPbyId(np.source, np.groupId, false, netprintId, boxes);
 				}
 			}
-
+			
 			private var newScanId:String;
 			private function onBarCode(event:BarCodeEvent):void{
 				if(!isActive) return;
@@ -341,7 +328,7 @@
 					}
 				}
 				if(!ordersList) return;
-
+				
 				if(ordersList.length==1){
 					var ord:Order=ordersList.getItemAt(0) as Order;
 					if(ord) showMPbyId(ord.source, ord.groupId);
@@ -369,7 +356,19 @@
 					pop.open(null);
 				}
 			}
-
+			
+			
+			[Bindable]
+			private var byClientMP:MailPackage;
+			protected function btShowByClient_clickHandler(event:MouseEvent):void{
+				if(!dgPackages) return;
+				byClientMP=dgPackages.selectedItem as MailPackage;
+				if(!byClientMP) return;
+				currentState='inQueueByClient';
+				refresh();
+			}
+			
+			
 			protected function ddSource_changeHandler(event:IndexChangeEvent):void {
 				var s:Source = ddSource.selectedItem as Source;
 				if (s){
@@ -398,7 +397,7 @@
 					}
 				}
 			}
-
+			
 			protected function btOpenByBox_clickHandler(event:MouseEvent):void{
 				var b:GroupNetprint = dgBoxes.selectedItem as GroupNetprint;
 				if(!b) return;
@@ -414,15 +413,12 @@
 	</fx:Declarations>
 	
 	<s:states>
-		<s:State name="inQueue"/>
 		<s:State name="packedList"/>
-		<s:State name="packageView"/>
 		<s:State name="netprintView"/>
 	</s:states>
-
+	
 	<s:TabBar id="tbView" top="0" left="0" height="20" change="{detectState()}">
 		<mx:ArrayCollection>
-			<fx:String>Ожидают упаковки</fx:String> 
 			<fx:String>Упакован</fx:String> 
 			<fx:String>Нетпринт</fx:String> 
 		</mx:ArrayCollection>
@@ -433,15 +429,15 @@
 			<s:Button id="btRefresh" icon="assets/icon-refresh.gif" click="{refresh()}"
 					  cornerRadius="4" width="22" height="22" baseline="4"/>
 		</s:HGroup>
-		<s:DataGrid id="dgPackages" selectionMode="multipleRows"
+		<s:DataGrid id="dgPackages" selectionMode="singleRow"
 					fontSize="14" width="100%" height="100%"
 					creationComplete="dgPackages_creationCompleteHandler(event)"
 					dataProvider="{packagesAC}" locale="ru_RU" columns="{gridColumns}">
-<!--			<s:rowBackground>
+			<s:rowBackground>
 				<fx:Component>
-					<itemRenderer:TechMailPDataGridRowBackground/>
+					<itemRenderer:TechBoxItemDataGridRowBackground/>
 				</fx:Component>
-			</s:rowBackground>-->
+			</s:rowBackground>
 		</s:DataGrid>
 	</s:VGroup>
 	<s:VGroup top="20" left="10" right="10" bottom="10" gap="10" includeIn="netprintView">

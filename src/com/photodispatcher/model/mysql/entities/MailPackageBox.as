@@ -6,10 +6,16 @@
  */
 
 package com.photodispatcher.model.mysql.entities {
+	import flash.globalization.DateTimeStyle;
+	
+	import mx.collections.ArrayList;
 	import mx.collections.IList;
 	
 	import org.granite.reflect.Field;
 	import org.granite.reflect.Type;
+	
+	import spark.components.gridClasses.GridColumn;
+	import spark.formatters.DateTimeFormatter;
 
     [Bindable]
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.MailPackageBox")]
@@ -29,6 +35,21 @@ package com.photodispatcher.model.mysql.entities {
 				if(this[prop.name] && !(this[prop.name] is IList)) b[prop.name]=this[prop.name];
 			}
 			return b;
+		}
+
+		public static function columns():ArrayList{
+			var result:ArrayList= new ArrayList();
+			
+			var col:GridColumn;
+			col= new GridColumn('source_name'); col.headerText='Источник'; result.addItem(col);
+			col= new GridColumn('source_code'); col.headerText='Код'; col.width=25; result.addItem(col); 
+			col= new GridColumn('packageID'); col.headerText='Группа'; result.addItem(col); 
+			col= new GridColumn('boxNum'); col.headerText='№ коробки'; result.addItem(col); 
+			col= new GridColumn('barcode'); col.headerText='Штрихкод'; result.addItem(col); 
+			col= new GridColumn('state_name'); col.headerText='Cтатус'; result.addItem(col); 
+			var fmt:DateTimeFormatter=new DateTimeFormatter(); fmt.dateStyle=fmt.timeStyle=DateTimeStyle.SHORT; 
+			col= new GridColumn('state_date'); col.headerText='Дата статуса'; col.formatter=fmt;  result.addItem(col);
+			return result;
 		}
 
     }

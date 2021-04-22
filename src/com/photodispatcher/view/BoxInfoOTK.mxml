@@ -10,6 +10,8 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import com.photodispatcher.context.Context;
+			import com.photodispatcher.factory.WebServiceBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
 			import com.photodispatcher.model.mysql.entities.BookKit;
 			import com.photodispatcher.model.mysql.entities.BookSynonym;
@@ -21,6 +23,8 @@
 			import com.photodispatcher.model.mysql.entities.OrderState;
 			import com.photodispatcher.model.mysql.entities.PrintGroup;
 			import com.photodispatcher.model.mysql.entities.RackSpace;
+			import com.photodispatcher.model.mysql.entities.Source;
+			import com.photodispatcher.model.mysql.entities.SourceType;
 			import com.photodispatcher.model.mysql.entities.SubOrder;
 			import com.photodispatcher.model.mysql.entities.TechLog;
 			import com.photodispatcher.model.mysql.entities.TechPoint;
@@ -28,6 +32,8 @@
 			import com.photodispatcher.model.mysql.services.OrderService;
 			import com.photodispatcher.model.mysql.services.OrderStateService;
 			import com.photodispatcher.model.mysql.services.TechService;
+			import com.photodispatcher.service.web.BaseWeb;
+			import com.photodispatcher.service.web.FotoknigaWeb;
 			import com.photodispatcher.util.ArrayUtil;
 			
 			import mx.collections.ArrayCollection;
@@ -357,7 +363,7 @@
 						currBox.state = OrderState.TECH_OTK;
 						currBox.box.state = OrderState.TECH_OTK;
 						currBox.state_name = OrderState.getStateName(OrderState.TECH_OTK);
-						Alert.show('Все заказы коробки '+ order.groupId.toString()+' прошли ОТК. Открыть группу?','',Alert.YES|Alert.NO, this); //, onAlertOpenPackage);
+						Alert.show('Все заказы коробки '+ order.groupId.toString()+' прошли ОТК. Открыть для упаковки?','',Alert.YES|Alert.NO, this); //, onAlertOpenPackage);
 					}				
 				}
 			}
@@ -515,10 +521,50 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onBoxPacked);
 					if (latch.complite){
-						//close
-						closeView();
+						currBox.box.state = OrderState.PACKAGE_PACKED;
+						currBox.state_name = OrderState.getStateName(OrderState.PACKAGE_PACKED);
+						//if whole package is complete
+						if(latch.resultCode < OrderState.PACKAGE_PACKED){
+							//no
+							//close
+							closeView();
+							return;
+						}
+						currBox.state = OrderState.PACKAGE_PACKED;
+						//set send on site
+						var source:Source = Context.getSource(currBox.source);
+						if(!source){
+							closeView();
+							return;
+						}
+						if(source.type!=SourceType.SRC_FOTOKNIGA && source.type!=SourceType.SRC_FBOOK && source.type!=SourceType.SRC_PIXELPARK){
+							closeView();
+							return;
+							
+						}
+						var webService:BaseWeb = WebServiceBuilder.build(source);
+						//double click
+						//if (webService.isRunning) return;
+						//update site state
+						webService.addEventListener(Event.COMPLETE,setWebStateHandler);
+						try{
+							webService.setMailPackageState(currBox.id, FotoknigaWeb.ORDER_STATE_MADE ,false);
+						}catch(error:Error){
+							Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+						}					
 					}
 				}
+			}
+			private function setWebStateHandler(e:Event):void{
+				var webService:BaseWeb = e.target as BaseWeb;
+				if(!webService) return;
+				webService.removeEventListener(Event.COMPLETE,setWebStateHandler);
+				if(webService.hasError){
+					trace('web err: '+webService.errMesage);
+					//if(!webService.hasErrCode(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED)){
+					Alert.show(webService.errMesage);
+				}
+				closeView();
 			}
 			
 			protected function btPackIcomplete_clickHandler(event:MouseEvent):void{

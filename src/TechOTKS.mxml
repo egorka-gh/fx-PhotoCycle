@@ -457,6 +457,18 @@
 				pop.show();
 			}
 			
+			protected function button6_clickHandler(event:MouseEvent):void{
+				if(!techPointObj){ // || !startTT ||!endTT){
+					Alert.show('Не настроена тех точка ОТК');
+					return;
+				}
+				
+				MessengerGeneric.sendMessage(CycleMessage.createStatusMessage(CycleStation.SATE_ON,'Отправка'));
+				startBarReader();
+				currentState='mail';
+				//techMonitor.setMode(OrderState.TECH_OTK);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -540,7 +552,7 @@
 	<view:TechOTKMonitorBox id="techMonitor" includeIn="monitor" barcodeReader="{barcodeReader}" techPoint="{techPointObj}" 
 							isActive="{currentState=='otk' || currentState=='pack'}"
 							top="20" left="20" right="20" bottom="50"/>
-	<view:TechOTKPackingView id="mpView" includeIn="mail" isActive="{currentState=='mail'}" barcodeReader="{barcodeReader}" techPointOTK="{techPointObj}"
+	<view:TechOTKSendngView id="mpView" includeIn="mail" isActive="{currentState=='mail'}" barcodeReader="{barcodeReader}" techPointOTK="{techPointObj}"
 							  top="20" left="20" right="20" bottom="50"/>
 	<s:HGroup bottom="5" width="100%" gap="10" paddingRight="10" paddingLeft="10" verticalAlign="middle">
 		<s:Label text="{lastBarcode}" height="100%" verticalAlign="bottom"/>
@@ -551,6 +563,7 @@
 		<s:Button label="Пароль конфигурации" includeIn="config" visible="{!cfgEnabled}" click="button3_clickHandler(event)"/>
 		<s:Button label="ОТК" includeIn="config, pack, mail" click="button1_clickHandler(event)"/>
 		<s:Button label="Упаковка" includeIn="config, otk, mail" click="button5_clickHandler(event)"/>
+		<s:Button label="Отправка" includeIn="config, monitor" click="button6_clickHandler(event)"/>
 		<s:Button label="Закрыть программу" click="button4_clickHandler(event)" />
 	</s:HGroup>
 	
