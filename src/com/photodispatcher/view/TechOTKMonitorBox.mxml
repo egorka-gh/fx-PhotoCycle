@@ -91,6 +91,7 @@
 					if(lastBox.isValidBook(newScanId, newBook)){
 						//show
 						lastBook=newBook;
+						lastScanId=newScanId;
 						newScanId='';
 						showBox(true);
 						return;
@@ -259,12 +260,12 @@
 			<s:TextInput id="tiAddPgId"/>
 			<s:Label text="book"/>
 			<s:TextInput id="tiAddBook"/>
-			<s:Button id="btAddManual" label="Add" click="btAddManual_clickHandler(event)"/>
+			<s:Button id="btAddManual" label="Barcod" click="btAddManual_clickHandler(event)"/>
 		</s:HGroup>
 	</s:VGroup>
 	
 	<view:BoxInfoOTK id="vInfo" top="0" left="0" right="0" bottom="0" includeIn="book"
-					   close="orderinfootk1_closeHandler(event)"  
+					   close="orderinfootk1_closeHandler(event)" barcodeReaded="onBarCode(event)"  
 					   techPoint="{techPoint}" currBox="{lastBox}" />
 	
 </s:Group>

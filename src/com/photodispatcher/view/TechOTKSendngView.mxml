@@ -165,7 +165,7 @@
 				sendBox.state= OrderState.PACKAGE_SEND;
 				var latch:DbLatch=new DbLatch(); 
 				latch.addEventListener(Event.COMPLETE,onSetSend);
-				latch.addLatch(bdService.setBoxSend(sendBox));
+				latch.addLatch(bdService.setBoxSend(sendBox.boxID));
 				latch.start();
 			}
 			private function onSetSend(event:Event):void{

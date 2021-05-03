@@ -8,8 +8,6 @@
 package com.photodispatcher.model.mysql.services {
 
     import com.photodispatcher.model.mysql.entities.MailPackage;
-    import com.photodispatcher.model.mysql.entities.MailPackageBox;
-    import com.photodispatcher.model.mysql.entities.MailPackageBoxItem;
     import com.photodispatcher.model.mysql.entities.SelectResult;
     import com.photodispatcher.model.mysql.entities.SqlResult;
     import flash.utils.flash_proxy;
@@ -358,18 +356,18 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
-        public function setBoxItemOTK(arg0:MailPackageBoxItem, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+        public function setBoxItemOTK(arg0:String, arg1:String, arg2:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
-                return callProperty("setBoxItemOTK", arg0, resultHandler, faultHandler) as AsyncToken;
+                return callProperty("setBoxItemOTK", arg0, arg1, arg2, resultHandler, faultHandler) as AsyncToken;
             else if (resultHandler is Function || resultHandler is ITideResponder)
-                return callProperty("setBoxItemOTK", arg0, resultHandler) as AsyncToken;
+                return callProperty("setBoxItemOTK", arg0, arg1, arg2, resultHandler) as AsyncToken;
             else if (resultHandler == null)
-                return callProperty("setBoxItemOTK", arg0) as AsyncToken;
+                return callProperty("setBoxItemOTK", arg0, arg1, arg2) as AsyncToken;
             else
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
-        public function setBoxOTK(arg0:MailPackageBox, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+        public function setBoxOTK(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("setBoxOTK", arg0, resultHandler, faultHandler) as AsyncToken;
             else if (resultHandler is Function || resultHandler is ITideResponder)
@@ -380,7 +378,7 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
-        public function setBoxPacked(arg0:MailPackageBox, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+        public function setBoxPacked(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("setBoxPacked", arg0, resultHandler, faultHandler) as AsyncToken;
             else if (resultHandler is Function || resultHandler is ITideResponder)
@@ -391,7 +389,7 @@ package com.photodispatcher.model.mysql.services {
                 throw new Error("Illegal argument to remote call (last argument should be Function or ITideResponder): " + resultHandler);
         }    
         
-        public function setBoxSend(arg0:MailPackageBox, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
+        public function setBoxSend(arg0:String, resultHandler:Object = null, faultHandler:Function = null):AsyncToken {
             if (faultHandler != null)
                 return callProperty("setBoxSend", arg0, resultHandler, faultHandler) as AsyncToken;
             else if (resultHandler is Function || resultHandler is ITideResponder)
