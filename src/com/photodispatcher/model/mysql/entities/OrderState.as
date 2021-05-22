@@ -114,6 +114,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const TECH_CUTTING:int=360;
 		public static const TECH_COVER_BLOK_PICKING:int=370;
 		public static const TECH_COVER_BLOK_JOIN:int=380;
+		public static const TECH_OTK_WAITE_PRODUCTION:int=445;
 		public static const TECH_OTK_PICKING:int=449;
 		public static const TECH_OTK:int=450;
 		public static const PACKAGE_PACKED:int=460;

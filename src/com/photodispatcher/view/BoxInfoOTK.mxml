@@ -71,12 +71,14 @@
 				bookTotal=0;
 				bookComplited=0;
 				canPack = false;
+				canPrint =false;
 			}
 
 			[Bindable]
 			public var mode:int;
 			public function setMode(newMode:int):void{
 				canPack = false;
+				canPrint =false;
 				mode = newMode;
 			}
 			
@@ -104,6 +106,7 @@
 			[Bindable]
 			private var bookComplited:int;
 			
+			
 			public function show(pgId:String, book:int, checkClose:Boolean=false):void{
 				currPGID='';
 				
@@ -116,16 +119,7 @@
 					}
 					if(mode == OrderState.TECH_OTK){
 						//reset box states for check
-						var sn:String = OrderState.getStateName(OrderState.TECH_OTK_PICKING);
-						currBox.box.state =  OrderState.TECH_OTK_PICKING;
-						currBox.box.state_name=sn;
-						for each (var bit:MailPackageBoxItem in currBox.box.items){
-							bit.state = OrderState.TECH_OTK_PICKING;
-							bit.state_name = sn; 
-						}
-						for each (var b:OrderBook in currBox.box.books){
-							b.state = OrderState.TECH_OTK_PICKING;
-						}
+						setBoxState(OrderState.TECH_OTK_PICKING);
 					}
 				}
 				
@@ -171,6 +165,19 @@
 				//load order info
 				currBook=book;
 				refresh();
+			}
+			
+			private function setBoxState(state:int):void{
+				var sn:String = OrderState.getStateName(state);
+				currBox.box.state =  state;
+				currBox.box.state_name=sn;
+				for each (var bit:MailPackageBoxItem in currBox.box.items){
+					bit.state = state;
+					bit.state_name = sn; 
+				}
+				for each (var b:OrderBook in currBox.box.books){
+					b.state = state;
+				}
 			}
 			
 			private function refresh():void{
@@ -251,6 +258,7 @@
 			
 			private function closeView():void{
 				canPack = false;
+				canPrint =false;
 				dispatchEvent( new Event(Event.CLOSE));
 			}
 			
@@ -346,6 +354,8 @@
 			}
 			
 			[Bindable]
+			private var canPrint:Boolean;
+			[Bindable]
 			private var canPack:Boolean;
 			
 			private function checkBox():void{
@@ -357,7 +367,8 @@
 				if (mode == OrderState.TECH_OTK){
 					currBox.box.state = OrderState.TECH_OTK;
 					currBox.box.state_name = OrderState.getStateName(OrderState.TECH_OTK);
-					canPack = true;
+					canPrint = true;
+					setBoxState(OrderState.PACKAGE_PACKED);
 					Alert.show('Коробка укомплектована.');
 					return;
 				}
@@ -606,15 +617,23 @@
 				box.books.list = bkList;
 				*/
 				var latch:DbLatch = new DbLatch();
-				latch.addEventListener(Event.COMPLETE,onBoxPacked); 
+				latch.addEventListener(Event.COMPLETE,onBoxIncomplete); 
 				latch.addLatch(mpService.setBoxIncomplete(box.boxID, biList, bkList));
 				latch.start();
+			}
+			private function onBoxIncomplete(event:Event):void{
+				var latch:DbLatch= event.target as DbLatch;
+				if(latch){
+					latch.removeEventListener(Event.COMPLETE,onBoxIncomplete);
+				}
+				closeView();
 			}
 			
 			protected function btLoad_clickHandler(event:MouseEvent):void			{
 				var pop:MailPackageBoxPopUp= new MailPackageBoxPopUp();
 				pop.box = currBox.box;
 				//pop.addEventListener(PopUpEvent.CLOSE,onMailPackagePopUpClose);
+				canPack = true;
 				pop.loadFromWeb(currBox.source , currBox.id, true);
 			}
 			
@@ -651,7 +670,7 @@
 	<s:HGroup gap="0" top="10" left="10" right="10" bottom="10" includeIn="info">
 		<s:VGroup gap="10" width="100%" height="100%">
 			<s:Label fontWeight="bold" fontSize="14" text="{mode == OrderState.TECH_OTK_PICKING? 'ОТК':'Упаковка'}"/>
-			<s:Form id="frmOrder" width="100%" backgroundAlpha="{currBox.box.state == OrderState.TECH_OTK? 0.5: 0}" backgroundColor="green" fontSize="14">
+			<s:Form id="frmOrder" width="100%" backgroundAlpha="{currBox.box.state &gt; OrderState.TECH_OTK_PICKING? 0.5: 0}" backgroundColor="green" fontSize="14">
 				<s:layout>
 					<s:FormLayout gap="-12"/>
 				</s:layout>
@@ -794,7 +813,7 @@
 			
 			<!--<s:Button id="btLoad" label="Load" width="100%" click="btLoad_clickHandler(event)"/>-->
 			
-			<s:Button id="btPrint" label="Печать" visible="{mode == OrderState.TECH_OTK}" enabled="{canPack}"
+			<s:Button id="btPrint" label="Печать" visible="{mode == OrderState.TECH_OTK}" enabled="{canPrint}"
 					  click="btLoad_clickHandler(event)"
 					  width="100%"/>
 			<s:Button id="btPack" label="Упаковано" visible="{mode == OrderState.TECH_OTK}" enabled="{canPack}"

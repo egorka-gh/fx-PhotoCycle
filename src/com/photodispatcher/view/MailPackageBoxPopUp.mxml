@@ -168,6 +168,7 @@
 					//TODO ? return; 
 				}
 				
+				/*
 				if(box && box.barcode){
 					b = new MailPackageBarcode();
 					b.barcode=box.barcode;
@@ -176,6 +177,25 @@
 					newboxes = new ArrayCollection();
 					newboxes.addItem(b);
 					mailPackage.barcodes=newboxes;
+				}
+				*/
+				//if not default box look for barcode by num
+				//if barcode not found, show all
+				if(box && box.boxNum>0){
+					if(box.barcode){
+						b = new MailPackageBarcode();
+						b.barcode=box.barcode;
+						b.box_id = box.boxID;
+						b.box_number = box.boxNum;
+						mailPackage.barcodes=new ArrayCollection([b]);
+					}else{
+						for each(b in mailPackage.barcodes){
+							if(b && b.box_number==box.boxNum) {
+								mailPackage.barcodes = new ArrayCollection([b]);
+								break;
+							}
+						}	
+					}
 				}
 
 				mailPackage.state_date=null;
