@@ -165,6 +165,7 @@ package com.photodispatcher.printer{
 
 		public function printOrderTicket(pg:PrintGroup):void{
 			if(!pg) return;
+			if(!Context.getAttribute('isPrintTicket')) return;
 			var report:Report=new Report();
 			
 			report.id='OrderTicketFrm';
@@ -227,11 +228,12 @@ package com.photodispatcher.printer{
 		
 		protected function printMPBarcode2(barcode:MailPackageBarcode):void{
 			if(!barcode) return;
+			/*
 			if(barcode.bar_type!=MailPackageBarcode.TYPE_SITE_BOX){
 				Alert.show('Не верный тип ШК');
 				return;
 			}
-			
+			*/
 			var report:Report=new Report();
 			report.printer=	Context.getAttribute('termPrinter');
 			

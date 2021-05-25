@@ -260,6 +260,8 @@
 				Context.setAttribute("pdfPageLimit", pdfPageLimit);
 				Context.setAttribute('reversPrint', so.data.reversPrint);
 				Context.setAttribute('manualStart', so.data.manualStart);
+				Context.setAttribute('isPrintTicket', Boolean(so.data.isPrintTicket));
+
 
 				//init app
 				startPopup= new ModalPopUp();

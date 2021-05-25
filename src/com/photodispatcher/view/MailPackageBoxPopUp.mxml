@@ -32,6 +32,7 @@
 			import com.photodispatcher.service.web.BaseWeb;
 			import com.photodispatcher.service.web.FotoknigaWeb;
 			import com.photodispatcher.service.web.PixelParkWeb;
+			import com.photodispatcher.util.StrUtil;
 			import com.photodispatcher.view.menu.GridContexMenu;
 			
 			import mx.collections.ArrayCollection;
@@ -152,12 +153,13 @@
 					propertiesAC.refresh();
 				}
 				
+				var b:MailPackageBarcode;
 				//netprint??
 				if (!box && netprintId){
 					if(mailPackage.barcodes && mailPackage.barcodes.length>1){
 						//remove all keep only current
 						var newboxes:ArrayCollection = new ArrayCollection();
-						for each(var b:MailPackageBarcode in mailPackage.barcodes){
+						for each(b in mailPackage.barcodes){
 							if(b && b.box_orderNumber==netprintId) {
 								newboxes.addItem(b);
 								break;
@@ -168,33 +170,30 @@
 					//TODO ? return; 
 				}
 				
-				/*
-				if(box && box.barcode){
-					b = new MailPackageBarcode();
-					b.barcode=box.barcode;
-					b.box_id = box.boxID;
-					b.box_number = box.boxNum;
-					newboxes = new ArrayCollection();
-					newboxes.addItem(b);
-					mailPackage.barcodes=newboxes;
-				}
-				*/
 				//if not default box look for barcode by num
 				//if barcode not found, show all
 				if(box && box.boxNum>0){
+					b = null;
 					if(box.barcode){
 						b = new MailPackageBarcode();
 						b.barcode=box.barcode;
 						b.box_id = box.boxID;
+						b.box_orderNumber=box.barcode;
 						b.box_number = box.boxNum;
-						mailPackage.barcodes=new ArrayCollection([b]);
 					}else{
-						for each(b in mailPackage.barcodes){
-							if(b && b.box_number==box.boxNum) {
-								mailPackage.barcodes = new ArrayCollection([b]);
+						for each(var bb:MailPackageBarcode in mailPackage.barcodes){
+							if(bb && bb.box_number==box.boxNum) {
+								b = bb;
+								b.box_orderNumber = bb.barcode;
 								break;
 							}
 						}	
+					}
+					if(b) {
+						b.bar_type = MailPackageBarcode.TYPE_SITE_BOX;
+						 
+						toBoxberryBarcode(b);
+						mailPackage.barcodes = new ArrayCollection([b]);
 					}
 				}
 
@@ -204,6 +203,14 @@
 				latchMp.addLatch(bdService.load(mailPackage.source, mailPackage.id));
 				latchMp.start();
 			}
+			
+			//patch to Boxberry box barcode
+			private function toBoxberryBarcode(barcode:MailPackageBarcode):void{
+				if(box && mailPackage && mailPackage.delivery_id==20){
+					barcode.barcode = barcode.barcode + StrUtil.lPad(box.boxNum.toString() ,5); 
+				}
+			}
+			
 			private function onloadMP(event:Event):void{
 				var latch:DbLatch= event.target as DbLatch;
 				if(latch){

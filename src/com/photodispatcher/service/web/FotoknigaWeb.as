@@ -3,6 +3,7 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.factory.MailPackageBuilder;
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.factory.OrderLoadBuilder;
+	import com.photodispatcher.model.mysql.entities.MailPackageBox;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.OrderExtraInfo;
 	import com.photodispatcher.model.mysql.entities.OrderLoad;
@@ -101,6 +102,8 @@ package com.photodispatcher.service.web{
 		//public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status';
 		//public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status';
 		public static const ACTION_SET_LOADER_ORDER_STATE:String='fk:set_order_folder_status_by_number';
+
+		public static const ACTION_SET_BOX_STATE:String='fk:update_status_box';
 		
 		public function FotoknigaWeb(source:Source){
 			super(source);
@@ -210,7 +213,31 @@ package com.photodispatcher.service.web{
 						trace('FotoknigaWeb set state order 4 load; action:'+ACTION_SET_LOADER_ORDER_STATE+', '+lastOrder.src_id+', '+lastOrder.src_state);
 						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
 						break;
-					
+					case CMD_SET_BOX_STATE:
+						var nId:int = lastBox.nativeIdFromId();
+						if(nId==0){
+							_hasError=true;
+							_errMesage='Wrong box ID';
+							dispatchEvent(new Event(Event.COMPLETE));
+							return;
+						}
+						var nState:int = lastBox.nativeState();
+						if(nState==0){
+							_hasError=true;
+							_errMesage='Wrong box state';
+							dispatchEvent(new Event(Event.COMPLETE));
+							return;
+						}
+						
+						startListen();
+						//set loader order state
+						post= new Object();
+						post[PARAM_KEY]=appKey;
+						post[PARAM_ACTION]=ACTION_SET_BOX_STATE;
+						post['box']=nId;
+						post['status']=nState;
+						client.getData( new InvokerUrl(baseUrl+URL_API_NEW),post);
+						break;
 					case CMD_CHECK_STATE:
 						orderes=[];
 						startListen();
@@ -424,6 +451,18 @@ package com.photodispatcher.service.web{
 			login();
 		}
 
+		override public function setBoxState(box:MailPackageBox):void{
+			if(!source || source.type!=SourceType.SRC_FOTOKNIGA || !box ){
+				abort('Не верная иннициализация команды');
+				return;
+			}
+			is_newAPI=true;
+			lastBox=box;
+			cmd=CMD_SET_BOX_STATE;
+			_hasError=false;
+			_errMesage='';
+			login();
+		}
 		
 		//private var _getOrder:Order;
 		override public function get lastOrderId():String{

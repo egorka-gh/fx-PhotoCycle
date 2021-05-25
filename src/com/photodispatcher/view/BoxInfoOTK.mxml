@@ -552,15 +552,7 @@
 					if (latch.complite){
 						currBox.box.state = OrderState.PACKAGE_PACKED;
 						currBox.state_name = OrderState.getStateName(OrderState.PACKAGE_PACKED);
-						//if whole package is complete
-						if(latch.resultCode < OrderState.PACKAGE_PACKED){
-							//no
-							//close
-							closeView();
-							return;
-						}
-						currBox.state = OrderState.PACKAGE_PACKED;
-						//set send on site
+
 						var source:Source = Context.getSource(currBox.source);
 						if(!source){
 							closeView();
@@ -571,10 +563,31 @@
 							return;
 							
 						}
-						var webService:BaseWeb = WebServiceBuilder.build(source);
+						var webService:BaseWeb;
+						if(currBox.box.boxNum>0){
+							//set box state
+							webService = WebServiceBuilder.build(source);
+							webService.addEventListener(Event.COMPLETE,setWebStateHandler);
+							try{
+								webService.setBoxState(currBox.box);
+							}catch(error:Error){
+								Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+							}					
+						}
+						
+						//is whole package is complete
+						if(latch.resultCode < OrderState.PACKAGE_PACKED){
+							//no
+							//close
+							closeView();
+							return;
+						}
+						currBox.state = OrderState.PACKAGE_PACKED;
+						//set send on site
 						//double click
 						//if (webService.isRunning) return;
 						//update site state
+						webService = WebServiceBuilder.build(source);
 						webService.addEventListener(Event.COMPLETE,setWebStateHandler);
 						try{
 							webService.setMailPackageState(currBox.id, FotoknigaWeb.ORDER_STATE_MADE ,false);

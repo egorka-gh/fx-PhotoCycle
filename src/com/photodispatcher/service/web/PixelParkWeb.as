@@ -1,6 +1,7 @@
 package com.photodispatcher.service.web{
 	import com.photodispatcher.event.WebEvent;
 	import com.photodispatcher.factory.MailPackageBuilder;
+	import com.photodispatcher.model.mysql.entities.MailPackageBox;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.model.mysql.entities.SourceType;
@@ -315,6 +316,12 @@ package com.photodispatcher.service.web{
 			var url:String = apiUrl + '/info/current';
 			trace('PixelParkWeb web get info loader');
 			client.getData( new InvokerUrl(url),null);
+		}
+
+		override public function setBoxState(box:MailPackageBox):void{
+			_hasError=false;
+			_errMesage='';
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 
 	

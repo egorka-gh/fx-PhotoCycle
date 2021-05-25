@@ -86,6 +86,9 @@
 			[Bindable]
 			public var altPDF:Boolean;
 
+			[Bindable]
+			public var isPrintTicket:Boolean;
+
 			public function setAltPDF(value:Boolean, silent:Boolean=false):Boolean{
 				if(value){
 					if(!imPath || !IMCommand.IM_CMD_JPG2PDF || !IMCommand.IM_CMD_PDF_TOOL){
@@ -163,6 +166,8 @@
 
 				printRotated=Boolean(so.data.printRotated);
 				cacheClipart=Boolean(so.data.cacheClipart);
+				
+				isPrintTicket=Boolean(so.data.isPrintTicket);
 				
 				ooPath=so.data.ooPath;
 				printer=so.data.printer;
@@ -532,6 +537,14 @@
 				Context.setAttribute('ftpConnectImeout', ftpConnectImeout);
 			}
 			
+			protected function tg_PrintTicket_changeHandler(event:Event):void{
+				isPrintTicket=tg_PrintTicket.selected;
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.isPrintTicket = isPrintTicket;
+				so.flush();  
+				Context.setAttribute('isPrintTicket', isPrintTicket);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -670,6 +683,10 @@
 			</s:FormItem> 
 
 			<s:FormItem label="Параметры печати">
+				<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+					<s:CheckBox id="tg_PrintTicket" selected="{isPrintTicket}" change="tg_PrintTicket_changeHandler(event)"/>
+					<s:Label text="Печать тикетов"/>
+				</s:HGroup>
 				<s:HGroup width="100%" gap="5" verticalAlign="baseline">
 					<s:Label text="Путь к OpenOffice"/>
 					<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}" textAlign="left"/>

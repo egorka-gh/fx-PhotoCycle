@@ -13,6 +13,7 @@
 			import com.photodispatcher.event.BarCodeEvent;
 			import com.photodispatcher.factory.WebServiceBuilder;
 			import com.photodispatcher.model.mysql.DbLatch;
+			import com.photodispatcher.model.mysql.entities.DeliveryTypeDictionary;
 			import com.photodispatcher.model.mysql.entities.GroupNetprint;
 			import com.photodispatcher.model.mysql.entities.MailPackage;
 			import com.photodispatcher.model.mysql.entities.MailPackageBox;
@@ -173,13 +174,7 @@
 				if(latch){
 					latch.removeEventListener(Event.COMPLETE,onSetSend);
 					if(latch.complite){
-						//if whole package is complete
-						if(latch.resultCode < OrderState.PACKAGE_SEND){
-							//no
-							refresh();
-							return;
-						}
-						//set send on site
+						
 						var source:Source =Context.getSource(sendBox.source);
 						if(!source){
 							refresh();
@@ -189,16 +184,32 @@
 							refresh();
 							return;
 						}
-						var webService:BaseWeb = WebServiceBuilder.build(source);
+						var webService:BaseWeb;
+						if(sendBox.boxNum>0){
+							//set box state
+							webService = WebServiceBuilder.build(source);
+							webService.addEventListener(Event.COMPLETE,setStateSendHandler);
+							try{
+								webService.setBoxState(sendBox);
+							}catch(error:Error){
+								Alert.show('Ошибка web сервиса '+source.name+': '+error.message );
+							}					
+						}
+						
+						//if whole package is complete
+						if(latch.resultCode < OrderState.PACKAGE_SEND){
+							//no
+							refresh();
+							return;
+						}
+						//set send on site
+						webService = WebServiceBuilder.build(source);
 						//double click
 						//if (webService.isRunning) return;
 						//update site state
-						//TODO var dt:DeliveryTypeDictionary = DeliveryTypeDictionary.getDeliveryTypeDictionary(source.id, mailPackage.native_delivery_id);
+						//var dt:DeliveryTypeDictionary = DeliveryTypeDictionary.getDeliveryTypeDictionary(source.id, mailPackage.native_delivery_id);
 						//TODO if(source.type==SourceType.SRC_PIXELPARK || (dt && dt.setSend)){
 						//TODO resolve DeliveryType check
-						refresh();
-						return;
-						
 						
 						//update site state
 						webService.addEventListener(Event.COMPLETE,setStateSendHandler);
@@ -219,8 +230,6 @@
 					//if(!webService.hasErrCode(FotoknigaWeb.ERR_CODE_SKIP_NOTIMPLEMENTED)){
 					Alert.show(webService.errMesage);
 					//}
-				}else{
-					Alert.show('Статус на сайте изменен');
 				}
 				refresh();
 			}

@@ -24,6 +24,9 @@ package com.photodispatcher.model.mysql.entities {
         public function MailPackageBox() {
             super();
         }
+		
+		public var srcState:int;
+		
 		public function clone():MailPackageBox{
 			var b:MailPackageBox= new MailPackageBox();
 			var type:Type= Type.forClass(MailPackageBox);
@@ -36,6 +39,31 @@ package com.photodispatcher.model.mysql.entities {
 			}
 			return b;
 		}
+		
+		public function nativeIdFromId():int{
+			if(!boxID) return 0;
+			var arr:Array;
+			
+			arr=boxID.split('-');
+			if(arr && arr.length>1){
+				return int(arr[1]);
+			}
+			return 0;
+		}
+
+		public function nativeState():int{
+			var res:int=0;
+			switch (state){
+				case OrderState.PACKAGE_PACKED:
+					res = 40;
+					break;
+				case OrderState.PACKAGE_SEND:
+					res = 42;
+					break;
+			}
+			return res;
+		}
+
 
 		public static function columns():ArrayList{
 			var result:ArrayList= new ArrayList();

@@ -4,6 +4,7 @@ package com.photodispatcher.service.web{
 	import com.photodispatcher.factory.OrderBuilder;
 	import com.photodispatcher.model.mysql.AsyncLatch;
 	import com.photodispatcher.model.mysql.entities.MailPackage;
+	import com.photodispatcher.model.mysql.entities.MailPackageBox;
 	import com.photodispatcher.model.mysql.entities.Order;
 	import com.photodispatcher.model.mysql.entities.Source;
 	import com.photodispatcher.util.JsonUtil;
@@ -42,6 +43,8 @@ package com.photodispatcher.service.web{
 
 		protected static const CMD_GET_INFO_SYNC:int=11;
 		protected static const CMD_GET_INFO_LOADER:int=12;
+
+		protected static const CMD_SET_BOX_STATE:int=14;
 
 		[Bindable]
 		public var isRunning:Boolean=false;
@@ -82,6 +85,11 @@ package com.photodispatcher.service.web{
 		protected var lastPackage:MailPackage;
 		public function getLastMailPackage():MailPackage{
 			return lastPackage;
+		}
+
+		protected var lastBox:MailPackageBox;
+		public function getLastBox():MailPackageBox{
+			return lastBox;
 		}
 		
 		public function getJoinResultId():int{
@@ -136,6 +144,10 @@ package com.photodispatcher.service.web{
 		protected var joinResultId:int;
 		public function joinMailPackages(ids:Array):void{
 			throw new Error("You need to override joinMailPackages() in your concrete class");
+		}
+		
+		public function setBoxState(box:MailPackageBox):void{
+			throw new Error("You need to override setBoxState() in your concrete class");
 		}
 
 		protected var packageId:int;
