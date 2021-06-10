@@ -18,6 +18,8 @@ package com.photodispatcher.printer{
 	import com.photodispatcher.model.mysql.services.XReportService;
 	import com.photodispatcher.shell.OORuner;
 	import com.photodispatcher.util.Code128;
+	import com.photodispatcher.util.StrUtil;
+	import com.xreport.common.ReportLoader;
 	import com.xreport.common.ReportViewer;
 	
 	import flash.events.ErrorEvent;
@@ -48,7 +50,8 @@ package com.photodispatcher.printer{
 		private var queue:Array;
 		private var reportService:XReportService;
 		private var reportPrinter:OORuner;
-		private var reportViewer:ReportViewer
+		private var reportViewer:ReportViewer;
+		private var reportLoader:ReportLoader;
 		private var curReport:Report; 
 
 		public function Printer(){
@@ -59,12 +62,17 @@ package com.photodispatcher.printer{
 			queue=[];
 			reportService=Tide.getInstance().getContext().byType(XReportService,true) as XReportService;
 			reportPrinter=new OORuner();
+			reportPrinter.transport = OORuner.TRANSPORT_FILESYSTEM;
 			//listen
 			reportPrinter.addEventListener(ErrorEvent.ERROR, onPrintErr);
 			reportPrinter.addEventListener(Event.COMPLETE, onPrintComplite);
 			reportViewer= new ReportViewer();
 			reportViewer.silent=true;
 			reportViewer.addEventListener(Event.COMPLETE, onPrintComplite);
+			
+			reportLoader= new ReportLoader();
+			reportLoader.silent=true;
+			reportLoader.addEventListener(Event.COMPLETE, onLoadComplite);
 		}
 		
 		public function print(report:Report):void{
@@ -105,21 +113,13 @@ package com.photodispatcher.printer{
 				}
 				curReport=null;
 				printNext();
+				return;
 			}
 			if(curReport.result.url){
+				
 				if(reportPrinter && reportPrinter.enabled){
-					var prn:String=curReport.printer;
-					if(!prn) prn=Context.getAttribute('printer');
-					var prnStr:String=prn;
-					if(!prnStr) prnStr='default';
-					if(curReport.logOn){
-						if(curReport.logPrintGroupId){
-							StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,curReport.name+' отправлен на принтер '+prnStr);
-						}else if(curReport.logOrderId){
-							StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'',curReport.name+' отправлен на принтер '+prnStr);
-						}
-					}
-					reportPrinter.print(curReport.result.url, prn);
+					//load report
+					reportLoader.load(curReport);
 				}else{
 					if(curReport.logOn){
 						if(curReport.logPrintGroupId){
@@ -144,6 +144,24 @@ package com.photodispatcher.printer{
 			printNext();
 		}
 
+		private function onLoadComplite(event:Event):void{
+			if(!reportLoader || !reportLoader.resultFile ) return;
+			var prn:String=curReport.printer;
+			if(!prn) prn=Context.getAttribute('printer');
+			var prnStr:String=prn;
+			if(!prnStr) prnStr='default';
+			if(curReport.logOn){
+				if(curReport.logPrintGroupId){
+					StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,curReport.name+' отправлен на принтер '+prnStr);
+				}else if(curReport.logOrderId){
+					StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'',curReport.name+' отправлен на принтер '+prnStr);
+				}
+			}
+			reportPrinter.print(reportLoader.resultFile.nativePath, prn);
+			curReport=null;
+			printNext();
+		}
+		
 		private function onPrintComplite(event:Event):void{
 			if(curReport && curReport.result){
 				var latch:DbLatch= new DbLatch();
@@ -269,6 +287,14 @@ package com.photodispatcher.printer{
 		}
 		*/
 		
+		//patch to Boxberry box barcode
+		private function toBoxberryBarcode(mailPackage:MailPackage, barcode:MailPackageBarcode):void{
+			if(!mailPackage || !mailPackage.box || !barcode) return;
+			if(mailPackage.box && mailPackage && mailPackage.delivery_id==20){
+				barcode.barcode = barcode.barcode + StrUtil.lPad(mailPackage.box.boxNum.toString() ,5); 
+			}
+		}
+		
 		private function prepareFormReport(packege:MailPackage, form:DeliveryTypePrintForm):Report{
 			if(!packege || !packege.properties || !form) return null;
 			
@@ -287,6 +313,47 @@ package com.photodispatcher.printer{
 			
 			if(packege.delivery_id==DeliveryType.TYPE_AT){
 				deliverySubType=packege.getProperty(MailPackageProperty.PROP_AT_DELIVERY_TYPE);
+			}
+			
+			//add box data  
+			//look up barcode
+			if (packege.box){
+				var barcode:MailPackageBarcode;
+				if (packege.barcodes && packege.barcodes.length>0){
+					//lookup by box num
+					if (packege.box.boxNum>0){
+						for each(var b:MailPackageBarcode in packege.barcodes){
+							if (b.box_number==packege.box.boxNum){
+								barcode=b;
+								break;
+							}
+						}
+					}
+					if(!barcode){
+						//get first
+						barcode=packege.barcodes[0];
+					}
+					if(!barcode){
+						//generate by box
+						barcode = new MailPackageBarcode();
+						barcode.barcode=packege.box.barcode;
+						barcode.box_id = packege.box.boxID;
+						barcode.box_orderNumber=packege.box.barcode;
+						barcode.box_number = packege.box.boxNum;
+						barcode.bar_type = MailPackageBarcode.TYPE_SITE_BOX;
+						toBoxberryBarcode(packege,barcode);
+					}
+				}
+				
+				//param=new Parameter(); param.id='pgroup_hm'; param.valString=packege.id_name; report.parameters.push(param);
+				if(barcode.preorder_num){
+					param=new Parameter(); param.id='pprovider_id'; param.valString=('K'+barcode.preorder_num); report.parameters.push(param);
+				}else{
+					param=new Parameter(); param.id='pprovider_id'; param.valString=barcode.box_orderNumber; report.parameters.push(param);
+				}
+				param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.barcode); report.parameters.push(param);
+				//TODO ?? param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.box_orderNumber); report.parameters.push(param);
+				param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode.barcode; report.parameters.push(param);
 			}
 			
 			for each(frmParam in params){
@@ -322,7 +389,11 @@ package com.photodispatcher.printer{
 							case PrintFormField.FIELD_ID_NAME:
 								param=new Parameter(); 
 								param.id=frmParam.parametr; 
-								param.valString=packege.id_name; 
+								if(packege.box && packege.box.boxNum>0){
+									param.valString=packege.id_name + "/" + packege.box.boxNum.toString();
+								}else{
+									param.valString=packege.id_name;	
+								}
 								report.parameters.push(param);
 								break;
 							case PrintFormField.FIELD_ORDERS_NUM:
