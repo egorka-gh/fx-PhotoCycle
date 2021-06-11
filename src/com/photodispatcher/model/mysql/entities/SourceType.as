@@ -25,6 +25,7 @@ package com.photodispatcher.model.mysql.entities {
 		public static const LAB_VIRTUAL:int=9;
 		public static const LAB_THERMO:int=23;
 		public static const LAB_XEROX_LONG:int=24;
+		public static const LAB_EFI:int=27;
 		
 		public static const TECH_PRINT:int=300;//=10;
 		public static const TECH_FOLDING:int=320;//12;

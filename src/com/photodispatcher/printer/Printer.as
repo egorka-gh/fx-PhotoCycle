@@ -291,7 +291,8 @@ package com.photodispatcher.printer{
 		private function toBoxberryBarcode(mailPackage:MailPackage, barcode:MailPackageBarcode):void{
 			if(!mailPackage || !mailPackage.box || !barcode) return;
 			if(mailPackage.box && mailPackage && mailPackage.delivery_id==20){
-				barcode.barcode = barcode.barcode + StrUtil.lPad(mailPackage.box.boxNum.toString() ,5); 
+				//barcode.barcode = barcode.barcode + StrUtil.lPad(mailPackage.box.boxNum.toString() ,5);
+				barcode.box_orderNumber = barcode.box_orderNumber + StrUtil.lPad(mailPackage.box.boxNum.toString() ,5);
 			}
 		}
 		
@@ -345,14 +346,19 @@ package com.photodispatcher.printer{
 					}
 				}
 				
-				//param=new Parameter(); param.id='pgroup_hm'; param.valString=packege.id_name; report.parameters.push(param);
+				/*
 				if(barcode.preorder_num){
 					param=new Parameter(); param.id='pprovider_id'; param.valString=('K'+barcode.preorder_num); report.parameters.push(param);
 				}else{
 					param=new Parameter(); param.id='pprovider_id'; param.valString=barcode.box_orderNumber; report.parameters.push(param);
 				}
-				param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.barcode); report.parameters.push(param);
-				//TODO ?? param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.box_orderNumber); report.parameters.push(param);
+				*/
+				param=new Parameter(); param.id='pgroup_hm'; 
+					param.valString=packege.id_name+ " " + (packege.box.boxNum>0? packege.box.boxNum.toString(): '1/1'); 
+					report.parameters.push(param);
+				param=new Parameter(); param.id='pprovider_id'; param.valString=barcode.box_orderNumber; report.parameters.push(param);
+				//TODO ?? param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.barcode); report.parameters.push(param);
+				param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.box_orderNumber); report.parameters.push(param);
 				param=new Parameter(); param.id='pbarcode_hm'; param.valString=barcode.barcode; report.parameters.push(param);
 			}
 			
@@ -389,11 +395,7 @@ package com.photodispatcher.printer{
 							case PrintFormField.FIELD_ID_NAME:
 								param=new Parameter(); 
 								param.id=frmParam.parametr; 
-								if(packege.box && packege.box.boxNum>0){
-									param.valString=packege.id_name + "/" + packege.box.boxNum.toString();
-								}else{
-									param.valString=packege.id_name;	
-								}
+								param.valString=packege.id_name;	
 								report.parameters.push(param);
 								break;
 							case PrintFormField.FIELD_ORDERS_NUM:

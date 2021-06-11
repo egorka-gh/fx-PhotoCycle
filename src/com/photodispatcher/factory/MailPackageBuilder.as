@@ -20,7 +20,7 @@ package com.photodispatcher.factory{
 			var result:MailPackage= new MailPackage();
 			result.source=source;
 			var src:Source= Context.getSource(source);
-			if(src) result.source_name=src.name;
+			if(src) result.source_name=src.caption;
 			var mpMap:Array= AttrJsonMap.getMailPackageJson();
 			var mppMap:Array= AttrJsonMap.getMailPackagePropJson();
 			

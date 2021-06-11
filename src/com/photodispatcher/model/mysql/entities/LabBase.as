@@ -33,6 +33,7 @@ package com.photodispatcher.model.mysql.entities {
         private var _soft_speed:Number;
         private var _src_type:int;
         private var _src_type_name:String;
+        private var _url:String;
 
         public function set devices(value:ListCollectionView):void {
             _devices = value;
@@ -132,6 +133,13 @@ package com.photodispatcher.model.mysql.entities {
             return _src_type_name;
         }
 
+        public function set url(value:String):void {
+            _url = value;
+        }
+        public function get url():String {
+            return _url;
+        }
+
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _devices = input.readObject() as ListCollectionView;
@@ -149,6 +157,7 @@ package com.photodispatcher.model.mysql.entities {
             _soft_speed = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _src_type = input.readObject() as int;
             _src_type_name = input.readObject() as String;
+            _url = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
@@ -168,6 +177,7 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_soft_speed);
             output.writeObject(_src_type);
             output.writeObject(_src_type_name);
+            output.writeObject(_url);
         }
     }
 }

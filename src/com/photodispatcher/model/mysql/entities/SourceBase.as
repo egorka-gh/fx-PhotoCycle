@@ -18,6 +18,7 @@ package com.photodispatcher.model.mysql.entities {
             super();
         }
 
+        private var _caption:String;
         private var _code:String;
         private var _fbookService:SourceSvc;
         private var _ftpService:SourceSvc;
@@ -34,6 +35,13 @@ package com.photodispatcher.model.mysql.entities {
         private var _type:int;
         private var _type_name:String;
         private var _webService:SourceSvc;
+
+        public function set caption(value:String):void {
+            _caption = value;
+        }
+        public function get caption():String {
+            return _caption;
+        }
 
         public function set code(value:String):void {
             _code = value;
@@ -149,6 +157,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
+            _caption = input.readObject() as String;
             _code = input.readObject() as String;
             _fbookService = input.readObject() as SourceSvc;
             _ftpService = input.readObject() as SourceSvc;
@@ -169,6 +178,7 @@ package com.photodispatcher.model.mysql.entities {
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
+            output.writeObject(_caption);
             output.writeObject(_code);
             output.writeObject(_fbookService);
             output.writeObject(_ftpService);

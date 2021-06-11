@@ -140,8 +140,11 @@
 				<s:FormLayout gap="-12"/>
 			</s:layout>
 			
-			<s:FormItem label="Наименование">
+			<s:FormItem label="Код">
 				<s:TextInput id="tiName" text="@{currentItem.name}" change="{currentItem.changed=true}" width="200"/>
+			</s:FormItem> 
+			<s:FormItem label="Наименование">
+				<s:TextInput id="tiCaption" text="@{currentItem.caption}" change="{currentItem.changed=true}" width="200"/>
 			</s:FormItem> 
 			<s:FormItem label="Тип" required="true">
 				<s:DropDownList id="ddType"  dataProvider="{typeList}" selectedIndex="{typeListIdx}" change="ddType_changeHandler(event)" width="200"/>

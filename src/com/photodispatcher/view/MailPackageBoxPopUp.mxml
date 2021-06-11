@@ -145,6 +145,8 @@
 					
 				}
 				
+				mailPackage.box = box;
+				
 				printForms=DeliveryTypePrintForm.getForms(mailPackage.delivery_id);
 				propertiesAC=null;
 				if(mailPackage.properties) propertiesAC= new ArrayCollection(mailPackage.properties.toArray());
