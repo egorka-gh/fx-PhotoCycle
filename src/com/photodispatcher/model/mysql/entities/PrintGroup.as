@@ -829,9 +829,9 @@ package com.photodispatcher.model.mysql.entities {
 			var result:String='';
 			if (book_type!=0 && is_pdf){
 				if(book_part==BookSynonym.BOOK_PART_COVER){
-					result=humanId+'-'+PDF_FILENAME_COVERS;
+					result=id+'-'+PDF_FILENAME_COVERS;
 				}else if(book_part==BookSynonym.BOOK_PART_BLOCK || book_part==BookSynonym.BOOK_PART_BLOCKCOVER){
-					result=humanId+'-'+PDF_FILENAME_SHEETS;
+					result=id+'-'+PDF_FILENAME_SHEETS;
 				}
 				if(withFolder) result=SUBFOLDER_PRINT+File.separator+result;
 			}

@@ -354,7 +354,7 @@ package com.photodispatcher.printer{
 				}
 				*/
 				param=new Parameter(); param.id='pgroup_hm'; 
-					param.valString=packege.id_name+ " " + (packege.box.boxNum>0? packege.box.boxNum.toString(): '1/1'); 
+					param.valString=packege.id_name+ " " + (packege.box.boxNum>0? packege.box.boxNum.toString(): '1') + '/'+ packege.boxCount.toString(); 
 					report.parameters.push(param);
 				param=new Parameter(); param.id='pprovider_id'; param.valString=barcode.box_orderNumber; report.parameters.push(param);
 				//TODO ?? param=new Parameter(); param.id='pbarcode'; param.valString=Code128.codeIt(barcode.barcode); report.parameters.push(param);

@@ -23,6 +23,8 @@ package com.photodispatcher.model.mysql.entities {
 
 		public var rawMessages:String;
 
+		public var boxCount:int;
+		
         public function MailPackage() {
             super();
 			state=OrderState.TECH_OTK;
