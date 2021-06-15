@@ -290,7 +290,7 @@ package com.photodispatcher.printer{
 		//patch to Boxberry box barcode
 		private function toBoxberryBarcode(mailPackage:MailPackage, barcode:MailPackageBarcode):void{
 			if(!mailPackage || !mailPackage.box || !barcode) return;
-			if(mailPackage.box && mailPackage && mailPackage.delivery_id==20){
+			if(mailPackage.box && mailPackage && mailPackage.delivery_id==DeliveryType.TYPE_BOXBERRY){
 				//barcode.barcode = barcode.barcode + StrUtil.lPad(mailPackage.box.boxNum.toString() ,5);
 				barcode.box_orderNumber = barcode.box_orderNumber + StrUtil.lPad(mailPackage.box.boxNum.toString() ,5);
 			}
@@ -342,9 +342,9 @@ package com.photodispatcher.printer{
 						barcode.box_orderNumber=packege.box.barcode;
 						barcode.box_number = packege.box.boxNum;
 						barcode.bar_type = MailPackageBarcode.TYPE_SITE_BOX;
-						toBoxberryBarcode(packege,barcode);
 					}
 				}
+				toBoxberryBarcode(packege,barcode);
 				
 				/*
 				if(barcode.preorder_num){

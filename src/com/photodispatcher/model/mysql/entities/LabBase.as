@@ -19,6 +19,7 @@ package com.photodispatcher.model.mysql.entities {
         }
 
         private var _devices:ListCollectionView;
+        private var _efi:Boolean;
         private var _hot:String;
         private var _hot_nfs:String;
         private var _id:int;
@@ -33,13 +34,19 @@ package com.photodispatcher.model.mysql.entities {
         private var _soft_speed:Number;
         private var _src_type:int;
         private var _src_type_name:String;
-        private var _url:String;
 
         public function set devices(value:ListCollectionView):void {
             _devices = value;
         }
         public function get devices():ListCollectionView {
             return _devices;
+        }
+
+        public function set efi(value:Boolean):void {
+            _efi = value;
+        }
+        public function get efi():Boolean {
+            return _efi;
         }
 
         public function set hot(value:String):void {
@@ -133,16 +140,10 @@ package com.photodispatcher.model.mysql.entities {
             return _src_type_name;
         }
 
-        public function set url(value:String):void {
-            _url = value;
-        }
-        public function get url():String {
-            return _url;
-        }
-
         public override function readExternal(input:IDataInput):void {
             super.readExternal(input);
             _devices = input.readObject() as ListCollectionView;
+            _efi = input.readObject() as Boolean;
             _hot = input.readObject() as String;
             _hot_nfs = input.readObject() as String;
             _id = input.readObject() as int;
@@ -157,12 +158,12 @@ package com.photodispatcher.model.mysql.entities {
             _soft_speed = function(o:*):Number { return (o is Number ? o as Number : Number.NaN) } (input.readObject());
             _src_type = input.readObject() as int;
             _src_type_name = input.readObject() as String;
-            _url = input.readObject() as String;
         }
 
         public override function writeExternal(output:IDataOutput):void {
             super.writeExternal(output);
             output.writeObject(_devices);
+            output.writeObject(_efi);
             output.writeObject(_hot);
             output.writeObject(_hot_nfs);
             output.writeObject(_id);
@@ -177,7 +178,6 @@ package com.photodispatcher.model.mysql.entities {
             output.writeObject(_soft_speed);
             output.writeObject(_src_type);
             output.writeObject(_src_type_name);
-            output.writeObject(_url);
         }
     }
 }

@@ -24,6 +24,9 @@ package com.photodispatcher.model.mysql.entities {
     [RemoteClass(alias="com.photodispatcher.model.mysql.entities.DeliveryType")]
     public class DeliveryType extends DeliveryTypeBase {
 		public static const TYPE_AT:int=5;
+		public static const TYPE_PICKPOINT:int=19;
+		public static const TYPE_BOXBERRY:int=20;
+		
 		public static const CLIENTINFO_ITEMS:Array=[56,57,58,59,60,61,62,63,64,65,66,67,68,69,72];
 		
 		private static var hideClientMap:Object;

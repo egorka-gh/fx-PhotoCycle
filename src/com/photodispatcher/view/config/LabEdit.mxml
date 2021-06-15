@@ -128,8 +128,8 @@
 				<s:FormItem label="Hot folder NHF" enabled="{isNoritsu}">
 					<s:TextInput id="tiHotNsf" text="@{currentItem.hot_nfs}" change="{currentItem.changed=true}" width="200"/>
 				</s:FormItem> 
-				<s:FormItem label="EFI URL" >
-					<s:TextInput  text="@{currentItem.url}" change="{currentItem.changed=true}" width="200"/>
+				<s:FormItem label="EFI" >
+					<s:CheckBox selected="@{currentItem.efi}" change="{currentItem.changed=true}"/>
 				</s:FormItem> 
 				<s:FormItem label="Скорость обрабоки (килобайт/сек)" toolTip="Скорость с которой софт лабы обрабатывает файлы при постановке на печать">
 					<s:NumericStepper value="@{currentItem.post_delay}" minimum="0" maximum="104857600" stepSize="16"
