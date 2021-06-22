@@ -80,18 +80,9 @@ package com.photodispatcher.factory{
 					}else{
 						prop.value=val.toString();
 					}
-					props.push(prop);
-					//barcode?
-					/*
-					if(prop.property=='sl_delivery_code'){
-						bar= new MailPackageBarcode();
-						bar.source=source;
-						bar.id=result.id;
-						bar.barcode=prop.value;
-						bar.bar_type=MailPackageBarcode.TYPE_SITE;
-						barcodes.push(bar);
+					if (prop.value!="" && prop.value!="0"){
+						props.push(prop);
 					}
-					*/
 				}else if (ajm.field == 'debt_sum'){
 					prop= new MailPackageProperty();
 					prop.source=source;
