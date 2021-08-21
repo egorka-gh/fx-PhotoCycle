@@ -180,7 +180,9 @@
 					for each(var bb:MailPackageBarcode in mailPackage.barcodes){
 						if(bb && bb.box_number==box.boxNum) {
 							b = bb;
-							//?? b.box_orderNumber = bb.barcode;
+							if (mailPackage.delivery_id==DeliveryType.TYPE_BOXBERRY || mailPackage.delivery_id==DeliveryType.TYPE_PICKPOINT){
+								b.box_orderNumber = bb.barcode;	
+							}
 							break;
 						}
 					}	
@@ -212,7 +214,7 @@
 			
 			//patch to Boxberry box barcode
 			private function toBoxberryBarcode(barcode:MailPackageBarcode):void{
-				if(box && mailPackage && mailPackage.delivery_id==20){
+				if(box && mailPackage && mailPackage.delivery_id==DeliveryType.TYPE_BOXBERRY){
 					barcode.barcode = barcode.barcode + StrUtil.lPad(box.boxNum.toString() ,5); 
 				}
 			}
