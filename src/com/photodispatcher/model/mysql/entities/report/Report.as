@@ -16,7 +16,8 @@ package com.photodispatcher.model.mysql.entities.report {
 		public var logOn:Boolean=false;
 		public var logPrintGroupId:String; 
 		public var logOrderId:String; 
-		public var result:ReportResult; 
+		public var result:ReportResult=null; 
+		public var fileExt:String='.xls';
 		
 		override public function get name():String{
 			return super.name?super.name:super.id;

@@ -75,6 +75,8 @@
 			[Bindable]
 			private var printer:String;
 			[Bindable]
+			private var evropostHost:String;
+			[Bindable]
 			private var termPrinter:String;
 			
 			//to link class
@@ -168,6 +170,9 @@
 					Context.setAttribute('printer',printer);
 					var oo:OORuner= new OORuner();
 					ooPathValid=oo.check(ooPath);
+					
+					evropostHost=so.data.evropostHost;
+					Context.setAttribute('evropostHost',evropostHost);
 					
 					termPrinter=so.data.termPrinter;
 					Context.setAttribute('termPrinter',termPrinter);
@@ -433,6 +438,13 @@
 				so.flush();
 				Context.setAttribute('printer',printer);
 			}
+
+			protected function tiEvropostHost_changeHandler(event:TextOperationEvent):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.evropostHost = evropostHost;
+				so.flush();
+				Context.setAttribute('evropostHost',evropostHost);
+			}
 			
 			protected function btOOFolderClear_clickHandler(event:MouseEvent):void{
 				//clear oo path
@@ -534,17 +546,21 @@
 		<s:Spacer height="10"/>
 		<s:Label text="Параметры печати" fontWeight="bold"/>
 			<s:HGroup width="100%" gap="5" verticalAlign="baseline">
-				<s:Label id="lbOOpath" text="Путь к OpenOffice"/>
+				<s:Label id="lbOOpath" text="Путь к OpenOffice" width="{lbEvropostHost.width}"/>
 				<s:TextInput id="tiOOFolder" text="{ooPath}" editable="false" width="400" color="{ooPathValid?0:0xff0000}" textAlign="left"/>
 				<s:Button id="btOOFolder" label="..." click="btOOFolder_clickHandler(event)"/>
 				<s:Button id="btOOFolderClear" label="x" click="btOOFolderClear_clickHandler(event)"/>
 			</s:HGroup>
 		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
-			<s:Label text="Принтер" width="{lbOOpath.width}"/>
+			<s:Label id="lbEvropostHost" text="Сервис Европочты" />
+			<s:TextInput id="tiEvropostHost" text="@{evropostHost}" width="210" textAlign="left" change="tiEvropostHost_changeHandler(event)"/>
+		</s:HGroup>
+		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
+			<s:Label text="Принтер" width="{lbEvropostHost.width}"/>
 			<s:TextInput id="tiPrinter" text="@{printer}" width="210" textAlign="left" change="tiPrinter_changeHandler(event)"/>
 		</s:HGroup>
 		<s:HGroup width="100%" gap="5" verticalAlign="baseline">
-			<s:Label text="Принтер этикеток" width="{lbOOpath.width+10}"/>
+			<s:Label text="Принтер этикеток" width="{lbEvropostHost.width}"/>
 			<s:TextInput id="tiTermPrinter" text="@{termPrinter}" width="210" textAlign="left" change="tiTermPrinter_changeHandler(event)" />
 		</s:HGroup>
 	</s:VGroup>

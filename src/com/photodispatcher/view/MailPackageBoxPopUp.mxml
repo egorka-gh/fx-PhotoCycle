@@ -264,6 +264,7 @@
 					}
 					Printer.instance.printDeliveryForm(mailPackage,form,code,providerId);
 					*/
+					Printer.instance.silent(false);
 					Printer.instance.printDeliveryForm(mailPackage, form, bar);
 				}
 			}
