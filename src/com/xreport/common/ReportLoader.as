@@ -8,20 +8,22 @@ package com.xreport.common{
 	import flash.events.ErrorEvent;
 	import flash.events.Event;
 	import flash.events.EventDispatcher;
+	import flash.filesystem.File;
 	
 	import mx.controls.Alert;
 	
 	import org.granite.tide.Tide;
 
 	[Event(name="complete", type="flash.events.Event")]
-	public class ReportViewer extends EventDispatcher implements IReportViewer{
+	public class ReportLoader extends EventDispatcher {
 		
 		public var report:Report;
 		public var silent:Boolean;
+		public var resultFile:File;
 		
 		private var releaseReport:Boolean;
 		
-		public function ReportViewer(){
+		public function ReportLoader(){
 			super(null);
 		}
 		
@@ -44,23 +46,29 @@ package com.xreport.common{
 			}
 		}
 
-		public function open(report:Report, releaseReport:Boolean=true):void{
+		public function load(report:Report, releaseReport:Boolean=true):void{
+			resultFile=null;
 			this.report=report;
 			this.releaseReport=releaseReport;
 			if(!report || !report.result || !report.result.url) return;
-			
+
 			var fileExt:String=report.fileExt;
 			if (!fileExt){
 				fileExt='.xls';
 			} 
 			
-			loader= new RemoteFileLoader(report.result.url,report.id+fileExt,Context.getServerRootUrl());
+			var baseURL:String=report.result.baseURL;
+			if (!baseURL){
+				baseURL=Context.getServerRootUrl();
+			}
+			
+			loader= new RemoteFileLoader(report.result.url, report.id+fileExt, baseURL);
 			loader.load();
 		}
 		
 		private function onComplite(evt : Event):void{
 			if(loader && loader.targetFile){
-				loader.targetFile.openWithDefaultApplication();
+				resultFile=loader.targetFile;
 			}
 			if(report && releaseReport){
 				var reportService:XReportService=Tide.getInstance().getContext().byType(XReportService,true) as XReportService;

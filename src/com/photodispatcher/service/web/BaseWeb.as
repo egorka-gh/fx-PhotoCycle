@@ -262,7 +262,7 @@ package com.photodispatcher.service.web{
 				abort('Ошибка декодирования данных. '+e.message);
 				return null;
 			}
-			if (result.hasOwnProperty(result) ) lastRawResult = result.result;
+			if (result.hasOwnProperty('result') ) lastRawResult = result.result;
 			return result;
 		}
 		

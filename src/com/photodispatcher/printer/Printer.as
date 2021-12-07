@@ -18,6 +18,8 @@ package com.photodispatcher.printer{
 	import com.photodispatcher.model.mysql.services.XReportService;
 	import com.photodispatcher.shell.OORuner;
 	import com.photodispatcher.util.Code128;
+	import com.photodispatcher.util.StrUtil;
+	import com.xreport.common.ReportLoader;
 	import com.xreport.common.ReportViewer;
 	
 	import flash.events.ErrorEvent;
@@ -48,7 +50,8 @@ package com.photodispatcher.printer{
 		private var queue:Array;
 		private var reportService:XReportService;
 		private var reportPrinter:OORuner;
-		private var reportViewer:ReportViewer
+		private var reportViewer:ReportViewer;
+		private var reportLoader:ReportLoader;
 		private var curReport:Report; 
 
 		public function Printer(){
@@ -59,12 +62,22 @@ package com.photodispatcher.printer{
 			queue=[];
 			reportService=Tide.getInstance().getContext().byType(XReportService,true) as XReportService;
 			reportPrinter=new OORuner();
+			reportPrinter.transport = OORuner.TRANSPORT_FILESYSTEM;
 			//listen
 			reportPrinter.addEventListener(ErrorEvent.ERROR, onPrintErr);
 			reportPrinter.addEventListener(Event.COMPLETE, onPrintComplite);
 			reportViewer= new ReportViewer();
 			reportViewer.silent=true;
 			reportViewer.addEventListener(Event.COMPLETE, onPrintComplite);
+			
+			reportLoader= new ReportLoader();
+			reportLoader.silent=true;
+			reportLoader.addEventListener(Event.COMPLETE, onLoadComplite);
+		}
+		
+		public function silent(value:Boolean):void{
+			reportViewer.silent=value;
+			reportLoader.silent=value;
 		}
 		
 		public function print(report:Report):void{
@@ -88,11 +101,20 @@ package com.photodispatcher.printer{
 			if(curReport) return;
 			while(!curReport && queue.length>0) curReport=queue.shift() as Report;
 			if(!curReport) return;
-			reportService.buildReport(curReport, DATA_SOURCE, onBuildReport, onBuildReportFault);
+
+			if(!curReport.result){
+				reportService.buildReport(curReport, DATA_SOURCE, onBuildReport, onBuildReportFault);
+				return;
+			}
+			
+			onReportResult()
 		}
 		private function onBuildReport(event:TideResultEvent):void{
 			//var result:ReportResult=event.result as ReportResult;
-			curReport.result=event.result as ReportResult;
+			curReport.result = event.result as ReportResult;
+			onReportResult()
+		}
+		private function onReportResult():void{
 			if (!curReport.result) return; //alert?
 			if(curReport.result.hasError){
 				releaseErr(curReport.result.error);
@@ -105,21 +127,12 @@ package com.photodispatcher.printer{
 				}
 				curReport=null;
 				printNext();
+				return;
 			}
 			if(curReport.result.url){
 				if(reportPrinter && reportPrinter.enabled){
-					var prn:String=curReport.printer;
-					if(!prn) prn=Context.getAttribute('printer');
-					var prnStr:String=prn;
-					if(!prnStr) prnStr='default';
-					if(curReport.logOn){
-						if(curReport.logPrintGroupId){
-							StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,curReport.name+' отправлен на принтер '+prnStr);
-						}else if(curReport.logOrderId){
-							StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'',curReport.name+' отправлен на принтер '+prnStr);
-						}
-					}
-					reportPrinter.print(curReport.result.url, prn);
+					//load report
+					reportLoader.load(curReport, curReport.result.releaseReport);
 				}else{
 					if(curReport.logOn){
 						if(curReport.logPrintGroupId){
@@ -144,6 +157,27 @@ package com.photodispatcher.printer{
 			printNext();
 		}
 
+		private function onLoadComplite(event:Event):void{
+			if(!reportLoader || !reportLoader.resultFile) {
+				curReport=null;
+				return;
+			}
+			var prn:String=curReport.printer;
+			if(!prn) prn=Context.getAttribute('printer');
+			var prnStr:String=prn;
+			if(!prnStr) prnStr='default';
+			if(curReport.logOn){
+				if(curReport.logPrintGroupId){
+					StateLog.logByPGroup(OrderState.PRN_POST,curReport.logPrintGroupId,curReport.name+' отправлен на принтер '+prnStr);
+				}else if(curReport.logOrderId){
+					StateLog.log(OrderState.PRN_POST,curReport.logOrderId,'',curReport.name+' отправлен на принтер '+prnStr);
+				}
+			}
+			reportPrinter.print(reportLoader.resultFile.nativePath, prn);
+			curReport=null;
+			printNext();
+		}
+		
 		private function onPrintComplite(event:Event):void{
 			if(curReport && curReport.result){
 				var latch:DbLatch= new DbLatch();
@@ -197,11 +231,9 @@ package com.photodispatcher.printer{
 				case 'mpBarcodeFrm2':
 					printMPBarcode2(barcode);
 					break;
-				/*
-				case 'frmATzaiava':
-					printATzaiava(packege);
+				case 'evropochta':
+					printEvropochta(barcode);
 					break;
-				*/
 				default:
 					var report:Report=prepareFormReport(packege,form);
 					if(report) print(report);
@@ -227,11 +259,7 @@ package com.photodispatcher.printer{
 		
 		protected function printMPBarcode2(barcode:MailPackageBarcode):void{
 			if(!barcode) return;
-			if(barcode.bar_type!=MailPackageBarcode.TYPE_SITE_BOX){
-				Alert.show('Не верный тип ШК');
-				return;
-			}
-			
+
 			var report:Report=new Report();
 			report.printer=	Context.getAttribute('termPrinter');
 			
@@ -247,26 +275,45 @@ package com.photodispatcher.printer{
 			param=new Parameter(); param.id='pbarcode_hm'; param.valString=''; report.parameters.push(param);
 			print(report);
 		}
-		
-/*
-		private function printATzaiava(packege:MailPackage):void{
-			if(!packege || !packege.properties) return;
-			var props:Array=packege.properties.toArray();
-			if(!props || props.length==0) return;
+
+		protected function printEvropochta(barcode:MailPackageBarcode):void{
+			if(!barcode){ 
+				Alert.show('Не задан Штрихкод');
+				curReport=null;
+				printNext();
+				return;
+			}
 			
 			var report:Report=new Report();
-			report.id='frmATzaiava';
+			report.printer=	Context.getAttribute('termPrinter');
+			
+			report.id='evropochta';
 			report.parameters=[];
+			report.fileExt='.pdf';
 			var param:Parameter;
-			param=new Parameter(); param.id='pcity'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_CITY,props); report.parameters.push(param);
-			param=new Parameter(); param.id='pfio'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_FIO,props); report.parameters.push(param);
-			param=new Parameter(); param.id='ppass_num'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_PASS_NUM,props); report.parameters.push(param);
-			param=new Parameter(); param.id='ppass_info'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_PASS_INFO,props); report.parameters.push(param);
-			param=new Parameter(); param.id='pphone'; param.valString=PrintFormField.buildField(PrintFormField.FIELD_PHONE,props);; report.parameters.push(param);
+			param=new Parameter(); param.id='pbarcode'; param.valString=barcode.barcode; report.parameters.push(param);
+			
+			var result:ReportResult = new ReportResult();
+			result.hasError=false;
+			result.url=barcode.barcode;
+ //			4 debug result.url='BY080008021664';
+			
+			result.releaseReport=false;
+			var baseURL:String=Context.getAttribute('evropostHost');
+			if (!baseURL){
+				Alert.show('Не задан адрес сервиса Европочты');
+				curReport=null;
+				printNext();
+				return;
+			}
+			if(baseURL.charAt(baseURL.length-1)!='/' ) baseURL+='/';
+			baseURL = baseURL +"api/sticker/";
+			result.baseURL =baseURL;
+			report.result=result;
+			
 			print(report);
 		}
-		*/
-		
+
 		private function prepareFormReport(packege:MailPackage, form:DeliveryTypePrintForm):Report{
 			if(!packege || !packege.properties || !form) return null;
 			
@@ -320,7 +367,7 @@ package com.photodispatcher.printer{
 							case PrintFormField.FIELD_ID_NAME:
 								param=new Parameter(); 
 								param.id=frmParam.parametr; 
-								param.valString=packege.id_name; 
+								param.valString=packege.id_name;	
 								report.parameters.push(param);
 								break;
 							case PrintFormField.FIELD_ORDERS_NUM:
