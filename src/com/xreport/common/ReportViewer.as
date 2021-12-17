@@ -53,8 +53,13 @@ package com.xreport.common{
 			if (!fileExt){
 				fileExt='.xls';
 			} 
+
+			var baseURL:String=report.result.baseURL;
+			if (!baseURL){
+				baseURL=Context.getServerRootUrl();
+			}
 			
-			loader= new RemoteFileLoader(report.result.url,report.id+fileExt,Context.getServerRootUrl());
+			loader= new RemoteFileLoader(report.result.url,report.id+fileExt,baseURL);
 			loader.load();
 		}
 		
