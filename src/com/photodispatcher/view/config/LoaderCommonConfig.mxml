@@ -50,6 +50,8 @@
 			private var syncInterval:int;
 			[Bindable]
 			private var ftpConnectImeout:int;
+			[Bindable]
+			private var imSizeLimit:int;
 
 			[Bindable]
 			public var config:AppConfig;
@@ -84,6 +86,8 @@
 				if(!syncInterval) syncInterval=10;
 				ftpConnectImeout=so.data.ftpConnectImeout;
 				if(!ftpConnectImeout) ftpConnectImeout=15;
+				
+				imSizeLimit=so.data.imSizeLimet;
 				
 				cleaner= new CleanLoaderService();
 			}
@@ -261,6 +265,13 @@
 				Context.setAttribute('skipMD5', skipMD5);
 			}
 			
+			protected function nsimSizeLimet_changeHandler(event:Event):void{
+				var so:SharedObject = SharedObject.getLocal('appProps','/');
+				so.data.imSizeLimit = imSizeLimit;
+				so.flush();  
+				Context.setAttribute('imSizeLimit', imSizeLimit);
+			}
+			
 		]]>
 	</fx:Script>
 	
@@ -332,7 +343,16 @@
 			</s:FormItem>
 
 			<s:FormItem label="Отключить проверку MD5 ">
-					<s:CheckBox id="tg_skipMD5" selected="{skipMD5}" change="tg_skipMD5_changeHandler(event)"/>
+				<s:CheckBox id="tg_skipMD5" selected="{skipMD5}" change="tg_skipMD5_changeHandler(event)"/>
+			</s:FormItem>
+
+			<s:FormItem label="Отключить проверку IM">
+				<s:HGroup gap="5" verticalAlign="baseline">
+					<s:Label text="Для файлов больше (MB)"/>
+					<s:NumericStepper id="nsimSizeLimet" value="@{imSizeLimit}" minimum="0" maximum="10000" 
+									  stepSize="5" snapInterval="5"
+									  change="nsimSizeLimet_changeHandler(event)"/>	
+				</s:HGroup>
 			</s:FormItem>
 
 			<s:FormItem label="Папка ImageMagick">

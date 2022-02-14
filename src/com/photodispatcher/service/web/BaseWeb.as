@@ -148,7 +148,14 @@ package com.photodispatcher.service.web{
 		protected function logErr(errMsg:String):void{
 			if(!source) return;
 			var path:String=source.getWrkFolder();
-			var file:File=new File(path);
+			var file:File;
+			try {
+				file = new File(path);
+			} catch(e:Error) {
+				trace("FATAL:: Unable to write to log file.");
+				return;
+			}
+			
 			if(!file.exists || !file.isDirectory) return;
 			file=file.resolvePath('log');
 			if(!file.exists) file.createDirectory();

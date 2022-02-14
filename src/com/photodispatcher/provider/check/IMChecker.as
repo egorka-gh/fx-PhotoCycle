@@ -38,7 +38,10 @@ package com.photodispatcher.provider.check{
 		private var runner:IMSequenceRuner;
 		private var multiRunner:IMMultiSequenceRuner;
 		private var isScodix:Boolean;
+		private var sizeLimit:int;
 		
+		public static const MByte:int = 1048576;
+			
 		public function IMChecker(){
 			super();
 		}
@@ -47,6 +50,7 @@ package com.photodispatcher.provider.check{
 			imPath=Context.getAttribute('imPath');
 			maxThreads=Context.getAttribute('imThreads');
 			maxThreads=Math.max(1,maxThreads);
+			sizeLimit=Context.getAttribute('imSizeLimit');
 		}
 		
 		override public function stop():void{
@@ -129,11 +133,17 @@ package com.photodispatcher.provider.check{
 		}
 
 		private function createCommands():void{
+			if (sizeLimit==0){
+				return;
+			}
+			
 			var of:OrderFile;
 			var command:IMCommand;
 			for each(of in currOrder.files){
 				if(of && of.state<OrderState.FTP_COMPLETE 
-					&& of.file_name && PrintGroupBuilder.ALLOWED_EXTENSIONS[StrUtil.getFileExtension(of.file_name)] ){
+					&& of.file_name 
+					&& PrintGroupBuilder.ALLOWED_EXTENSIONS[StrUtil.getFileExtension(of.file_name)]
+					&& of.size>0 && (of.size/MByte) < sizeLimit){
 					command=new IMCommand(IMCommand.IM_CMD_CONVERT);
 					command.folder=orderFolder;
 					command.sourceObject=of;
